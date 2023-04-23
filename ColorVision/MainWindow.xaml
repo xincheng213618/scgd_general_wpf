@@ -4,6 +4,8 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision"
+        xmlns:effects="http://gu.se/Geometry"
+        
         mc:Ignorable="d"
         Title="MainWindow" Height="720" Width="1280">
     <Grid>
@@ -13,10 +15,34 @@
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
         <Grid Grid.Row="0">
-            
-        </Grid>
-        
-        
+            <Menu x:Name="Menu1" >
+                <MenuItem Header="文件">
 
+                </MenuItem>
+            </Menu>
+        </Grid>
+        <Grid  Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="200"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+                <Button Content="打开测试图像"  Click="Button_Click"/>
+                <Button Content="绘制圆"  Click="Button1_Click"/>
+
+            </StackPanel>
+            <Grid Grid.Column="1" Background="#c3c3c3">
+                <effects:Zoombox>
+                    <local:DrawCanvas x:Name="ImageShow"/>
+                </effects:Zoombox>
+            </Grid>
+
+
+        </Grid>
+        <Grid Grid.Row="2">
+            <StatusBar>
+                <StatusBarItem Content="2"/>
+            </StatusBar>
+        </Grid>
     </Grid>
 </Window>
