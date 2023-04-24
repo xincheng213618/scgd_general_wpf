@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision"
         xmlns:effects="http://gu.se/Geometry"
-        
+        xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         mc:Ignorable="d"
         Title="MainWindow" Height="720" Width="1280">
     <Grid>
@@ -29,12 +29,21 @@
             <StackPanel Grid.Column="0">
                 <Button Content="打开测试图像"  Click="Button_Click"/>
                 <Button Content="绘制圆"  Click="Button1_Click"/>
-
+                <Button Content="改动圆"  Click="Button2_Click"/>
+                <WindowsFormsHost x:Name="WindowsFormsHost1" Height="150">
+                    <winf:PropertyGrid x:Name="PropertyGrid2">
+                    </winf:PropertyGrid>
+                </WindowsFormsHost>
             </StackPanel>
             <Grid Grid.Column="1" Background="#c3c3c3">
-                <effects:Zoombox>
-                    <local:DrawCanvas x:Name="ImageShow"/>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <effects:Zoombox Grid.Row="0">
+                    <local:DrawCanvas x:Name="ImageShow" MouseDown="ImageShow_MouseDown"/>
                 </effects:Zoombox>
+                <local:InkVisual  Grid.Row="1" x:Name="InkVisual"/>
             </Grid>
 
 

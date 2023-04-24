@@ -32,7 +32,7 @@ namespace ColorVision
             base.RemoveVisualChild(visual);
             base.RemoveLogicalChild(visual);
         }
-        public DrawingVisual GetVisual(Point point)
+        public DrawingVisual? GetVisual(Point point)
         {
             HitTestResult hitResult = VisualTreeHelper.HitTest(this, point);
             return hitResult.VisualHit as DrawingVisual;
@@ -63,4 +63,5 @@ namespace ColorVision
 
 
     }
+
 }
