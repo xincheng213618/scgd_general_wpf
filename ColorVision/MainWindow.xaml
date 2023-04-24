@@ -28,8 +28,8 @@
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column="0">
                 <Button Content="打开测试图像"  Click="Button_Click"/>
-                <Button Content="绘制圆"  Click="Button1_Click"/>
-                <Button Content="改动圆"  Click="Button2_Click"/>
+                <Button Content="绘制图形"  Click="Button1_Click"/>
+                <Button Content="移动图形"  Click="Button2_Click"/>
                 <StackPanel x:Name="ImageInfoText">
                     <TextBlock >
                     <Run Text="R:"/>

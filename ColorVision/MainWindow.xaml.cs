@@ -1,4 +1,5 @@
-﻿using System;
+﻿using log4net;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,6 +24,8 @@ namespace ColorVision
     /// 
     public partial class MainWindow : Window
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
+
         public ImageInfo ImageInfo { get; set; } = new ImageInfo();
         public MainWindow()
         {
@@ -38,6 +41,7 @@ namespace ColorVision
 
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
+                log.Info(openFileDialog.FileName);
                 string filePath = openFileDialog.FileName;
                 ImageShow.Source = new BitmapImage(new Uri(filePath));
 
@@ -48,6 +52,8 @@ namespace ColorVision
 
 
         List<DrawingVisualCircle> dvList = new List<DrawingVisualCircle>();
+        List<DrawingVisualRectangle> dv1List = new List<DrawingVisualRectangle>();
+
 
         private void Button1_Click(object sender, RoutedEventArgs e)
         {
@@ -62,6 +68,20 @@ namespace ColorVision
                     ImageShow.AddVisual(drawingVisualCircle);
                 }
             }
+
+            for (int i = 10; i < 20; i++)
+            {
+                for (int j = 0; j < 10; j++)
+                {
+                    DrawingVisualRectangle drawingVisualCircle = new DrawingVisualRectangle();
+                    drawingVisualCircle.Attribute.Rect = new(i * 50, j * 50,10,10);
+                    drawingVisualCircle.Render();
+                    dv1List.Add(drawingVisualCircle);
+                    ImageShow.AddVisual(drawingVisualCircle);
+                }
+            }
+
+
             PropertyGrid2.SelectedObject = dvList[0].Attribute;
             dvList[0].Attribute.PropertyChanged += (s, e) =>
             {
@@ -87,15 +107,14 @@ namespace ColorVision
         {
             if (sender is DrawCanvas drawCanvas)
             {
-
                 var point = e.GetPosition(drawCanvas);
 
 
                 if (drawCanvas.GetVisual(point) is DrawingVisualCircle drawingVisual)
                 {
-                    if (PropertyGrid2.SelectedObject is CircleAttribute circle)
+                    if (PropertyGrid2.SelectedObject is ViewModelBase viewModelBase)
                     {
-                        circle.PropertyChanged -= (s, e) =>
+                        viewModelBase.PropertyChanged -= (s, e) =>
                         {
                             PropertyGrid2.Refresh();
                         };
@@ -103,6 +122,23 @@ namespace ColorVision
 
                     PropertyGrid2.SelectedObject = drawingVisual.Attribute;
                     drawingVisual.Attribute.PropertyChanged += (s, e) =>
+                    {
+                        PropertyGrid2.Refresh();
+                    };
+                }
+
+                if (drawCanvas.GetVisual(point) is DrawingVisualRectangle drawingVisual1)
+                {
+                    if (PropertyGrid2.SelectedObject is ViewModelBase viewModelBase)
+                    {
+                        viewModelBase.PropertyChanged -= (s, e) =>
+                        {
+                            PropertyGrid2.Refresh();
+                        };
+                    }
+
+                    PropertyGrid2.SelectedObject = drawingVisual1.Attribute;
+                    drawingVisual1.Attribute.PropertyChanged += (s, e) =>
                     {
                         PropertyGrid2.Refresh();
                     };
