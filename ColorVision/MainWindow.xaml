@@ -30,6 +30,31 @@
                 <Button Content="打开测试图像"  Click="Button_Click"/>
                 <Button Content="绘制圆"  Click="Button1_Click"/>
                 <Button Content="改动圆"  Click="Button2_Click"/>
+                <StackPanel x:Name="ImageInfoText">
+                    <TextBlock >
+                    <Run Text="R:"/>
+                    <Run Text="{Binding R}"/>
+                    <Run Text="G:"/>
+                    <Run Text="{Binding G}"/>
+                    <Run Text="B:"/>
+                    <Run Text="{Binding B}"/>
+                    </TextBlock>
+                    <TextBlock>
+                      <Run Text="X:"/>
+                    <Run Text="{Binding X}"/>
+                     <Run Text="Y:"/>
+                    <Run Text="{Binding Y}"/>
+                     <Run Text="X1:"/>
+                    <Run Text="{Binding X1}"/>
+                     <Run Text="Y1:"/>
+                    <Run Text="{Binding Y1}"/>
+                    </TextBlock>
+                    <TextBlock>
+                        <Run Text="Hex:"/>
+                        <Run Text="{Binding Hex}"/>
+                    </TextBlock>
+                    <Rectangle Height="10" Fill="{Binding Color}"/>
+                </StackPanel>
                 <WindowsFormsHost x:Name="WindowsFormsHost1" Height="150">
                     <winf:PropertyGrid x:Name="PropertyGrid2">
                     </winf:PropertyGrid>
@@ -41,7 +66,7 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <effects:Zoombox Grid.Row="0">
-                    <local:DrawCanvas x:Name="ImageShow" MouseDown="ImageShow_MouseDown"/>
+                    <local:DrawCanvas x:Name="ImageShow"  MouseDown="ImageShow_MouseDown" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
                 </effects:Zoombox>
                 <local:InkVisual  Grid.Row="1" x:Name="InkVisual"/>
             </Grid>
