@@ -10,6 +10,7 @@
     <UseWindowsForms>True</UseWindowsForms>
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>$(SolutionDir)ColorVision.snk</AssemblyOriginatorKeyFile>
+    <ApplicationIcon>Image\ColorVision.ico</ApplicationIcon>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -33,6 +34,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="Image\ColorVision.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Gu.Wpf.Geometry" Version="2.2.8" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
@@ -41,6 +46,14 @@
     <Page Include="App.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Config\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Image\ColorVision.ico" />
   </ItemGroup>
 
 </Project>

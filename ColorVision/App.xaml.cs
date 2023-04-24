@@ -1,10 +1,13 @@
-﻿using System;
+﻿using ColorVision.NativeMethods;
+using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -16,11 +19,20 @@ namespace ColorVision
     /// </summary>
     public partial class App : Application
     {
+
+
         [STAThread]
         [DebuggerNonUserCode]
         [GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
         public static void Main(string[] args)
         {
+            Mutex mutex = new Mutex(true, "ElectronicNeedleTherapySystem", out bool ret);
+            if (!ret)
+            {
+                //System.Windows.MessageBox.Show("程序已经运行！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                CheckAppRuning.Check();
+                Environment.Exit(0);
+            }
             App app;
             app = new App();
             app.InitializeComponent();
@@ -28,11 +40,16 @@ namespace ColorVision
         }
 
 
+
+
         private App()
         {
+
             Startup += (s, e) => Application_Startup(s, e);
             Exit += new ExitEventHandler(Application_Exit);
         }
+
+
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {

@@ -1,0 +1,43 @@
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ColorVision.Config
+{
+    public class LiveCfg
+    {
+        [Category("视频窗口参数配置")]
+        public int 窗口数 { set; get; }
+        [Category("视频窗口参数配置")]
+        public int[] 视频窗口坐标X { set; get; }
+        [Category("视频窗口参数配置")]
+        public int[] 视频窗口坐标Y { set; get; }
+        [Category("视频窗口参数配置")]
+        public int[] 视频窗口宽W { set; get; }
+        [Category("视频窗口参数配置")]
+        public int[] 视频窗口高H { set; get; }
+
+        public static LiveCfg cfgLoadliveCfg(string fileName)
+        {
+            LiveCfg cfg = new LiveCfg();
+            string json = System.IO.File.ReadAllText(fileName);
+            JObject jsonObject = JObject.Parse(json);
+            cfg = JsonConvert.DeserializeObject<LiveCfg>(json);
+            return cfg;
+        }
+
+        public static void cfgSave(string fileName, LiveCfg cfg)
+        {
+            string json = JsonConvert.SerializeObject(cfg, Formatting.Indented);
+            System.IO.File.WriteAllText(fileName, json);
+        }
+
+        public static LiveCfg liveCfg;
+    }
+
+}
