@@ -1,0 +1,2497 @@
+﻿#pragma warning disable  CA2101,CA1707,CA1401,CA1051,CA1838,CA1711,CS0649
+using Newtonsoft.Json;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading;
+using System.Windows;
+
+namespace cvColorVision
+{
+    public delegate void TiffShowEvent(string value);
+    public delegate void LiveShowEvent(int w, int h, byte[] rawArray);
+    public delegate void PartLiveShowEvent();
+    public delegate void StopLiveShow();
+    enum CONTROL_ID
+    {
+        /*0*/
+        CONTROL_BRIGHTNESS = 0, //!< image brightness
+        /*1*/
+        CONTROL_CONTRAST,       //!< image contrast
+        /*2*/
+        CONTROL_WBR,            //!< red of white balance
+        /*3*/
+        CONTROL_WBB,            //!< blue of white balance
+        /*4*/
+        CONTROL_WBG,            //!< the green of white balance
+        /*5*/
+        CONTROL_GAMMA,          //!< screen gamma
+        /*6*/
+        CONTROL_GAIN,           //!< camera gain
+        /*7*/
+        CONTROL_OFFSET,         //!< camera offset
+        /*8*/
+        CONTROL_EXPOSURE,       //!< expose time (us)
+        /*9*/
+        CONTROL_SPEED,          //!< transfer speed
+        /*10*/
+        CONTROL_TRANSFERBIT,    //!< image depth bits
+        /*11*/
+        CONTROL_CHANNELS,       //!< image channels
+        /*12*/
+        CONTROL_USBTRAFFIC,     //!< hblank
+        /*13*/
+        CONTROL_ROWNOISERE,     //!< row denoise
+        /*14*/
+        CONTROL_CURTEMP,        //!< current cmos or ccd temprature
+        /*15*/
+        CONTROL_CURPWM,         //!< current cool pwm
+        /*16*/
+        CONTROL_MANULPWM,       //!< set the cool pwm
+        /*17*/
+        CONTROL_CFWPORT,        //!< control camera color filter wheel port
+        /*18*/
+        CONTROL_COOLER,         //!< check if camera has cooler
+        /*19*/
+        CONTROL_ST4PORT,        //!< check if camera has st4port
+        /*20*/
+        CAM_COLOR,
+        /*21*/
+        CAM_BIN1X1MODE,         //!< check if camera has bin1x1 mode
+        /*22*/
+        CAM_BIN2X2MODE,         //!< check if camera has bin2x2 mode
+        /*23*/
+        CAM_BIN3X3MODE,         //!< check if camera has bin3x3 mode
+        /*24*/
+        CAM_BIN4X4MODE,         //!< check if camera has bin4x4 mode
+        /*25*/
+        CAM_MECHANICALSHUTTER,                   //!< mechanical shutter
+        /*26*/
+        CAM_TRIGER_INTERFACE,                    //!< check if camera has triger interface
+        /*27*/
+        CAM_TECOVERPROTECT_INTERFACE,            //!< tec overprotect
+        /*28*/
+        CAM_SINGNALCLAMP_INTERFACE,              //!< singnal clamp
+        /*29*/
+        CAM_FINETONE_INTERFACE,                  //!< fine tone
+        /*30*/
+        CAM_SHUTTERMOTORHEATING_INTERFACE,       //!< shutter motor heating
+        /*31*/
+        CAM_CALIBRATEFPN_INTERFACE,              //!< calibrated frame
+        /*32*/
+        CAM_CHIPTEMPERATURESENSOR_INTERFACE,     //!< chip temperaure sensor
+        /*33*/
+        CAM_USBREADOUTSLOWEST_INTERFACE,         //!< usb readout slowest
+
+        /*34*/
+        CAM_8BITS,                               //!< 8bit depth
+        /*35*/
+        CAM_16BITS,                              //!< 16bit depth
+        /*36*/
+        CAM_GPS,                                 //!< check if camera has gps
+
+        /*37*/
+        CAM_IGNOREOVERSCAN_INTERFACE,            //!< ignore overscan area
+
+        /*38*/
+        QHYCCD_3A_AUTOBALANCE,
+        /*39*/
+        QHYCCD_3A_AUTOEXPOSURE,
+        /*40*/
+        QHYCCD_3A_AUTOFOCUS,
+        /*41*/
+        CONTROL_AMPV,                            //!< ccd or cmos ampv
+        /*42*/
+        CONTROL_VCAM,                            //!< Virtual Camera on off
+        /*43*/
+        CAM_VIEW_MODE,
+
+        /*44*/
+        CONTROL_CFWSLOTSNUM,         //!< check CFW slots number
+        /*45*/
+        IS_EXPOSING_DONE,
+        /*46*/
+        ScreenStretchB,
+        /*47*/
+        ScreenStretchW,
+        /*48*/
+        CONTROL_DDR,
+        /*49*/
+        CAM_LIGHT_PERFORMANCE_MODE,
+
+        /*50*/
+        CAM_QHY5II_GUIDE_MODE,
+        /*51*/
+        DDR_BUFFER_CAPACITY,
+        /*52*/
+        DDR_BUFFER_READ_THRESHOLD,
+        /*53*/
+        DefaultGain,
+        /*54*/
+        DefaultOffset,
+        /*55*/
+        OutputDataActualBits,
+        /*56*/
+        OutputDataAlignment,
+
+        /*57*/
+        CAM_SINGLEFRAMEMODE,
+        /*58*/
+        CAM_LIVEVIDEOMODE,
+        /*59*/
+        CAM_IS_COLOR,
+        /*60*/
+        hasHardwareFrameCounter,
+        /*61*/
+        CONTROL_MAX_ID_Error, //** No Use , last max index */
+        /*62*/
+        CAM_HUMIDITY,           //!<check if camera has	 humidity sensor  20191021 LYL Unified humidity function
+        /*63*/
+        CAM_PRESSURE,             //check if camera has pressure sensor
+        /*64*/
+        CONTROL_VACUUM_PUMP,        /// if camera has VACUUM PUMP
+        /*65*/
+        CONTROL_SensorChamberCycle_PUMP, ///air cycle pump for sensor drying
+        /*66*/
+        CAM_32BITS,
+        /*67*/
+        CAM_Sensor_ULVO_Status, /// Sensor working status [0:init  1:good  2:checkErr  3:monitorErr 8:good 9:powerChipErr]  410 461 411 600 268 [Eris board]
+        /*68*/
+        CAM_SensorPhaseReTrain, /// 2020,4040/PRO，6060,42PRO
+        /*69*/
+        CAM_InitConfigFromFlash, /// 2410 461 411 600 268 for now
+        /*70*/
+        CAM_TRIGER_MODE, //check if camera has multiple triger mode
+        /*71*/
+        CAM_TRIGER_OUT, //check if camera support triger out function
+        /*72*/
+        CAM_BURST_MODE, //check if camera support burst mode
+
+
+        /* Do not Put Item after  CONTROL_MAX_ID !! This should be the max index of the list */
+        /*Last One */
+        CONTROL_MAX_ID
+    };
+
+    class GetFrameParam
+    {
+        //滤色片数量
+        public int channelCount;
+        //测量次数
+        public int measureCount;
+        //ob
+        public int ob;
+        public int obR;
+        public int obT;
+        public int obB;
+        //startBurst
+        public uint startBurst;
+        //endBurst
+        public uint endBurst;
+        public uint posBurst;
+        //测量标题名称
+        public string title;
+        //自动曝光标识
+        public bool autoExpFlag;
+        //亮度校正
+        public CalibrationItem lumChromaCheck;
+        //滤色片通道
+        public List<ChannelParam> channels;
+
+        public GetFrameParam()
+        {
+            channels = new List<ChannelParam>();
+        }
+
+        public void BuildChannelsFileName(string path, string ext)
+        {
+            foreach (ChannelParam item in channels)
+            {
+                item.fileName = path + "\\" + title + ext;
+            }
+        }
+    }
+
+    public enum CalibrationType : int
+    {
+        //DefectWPoint = 1,
+        //DefectBPoint = 2,
+        //DefectPoint = 3,
+        //DSNU = 4,
+        //Uniformity = 5,
+        //Luminance = 6,
+        //Distortion = 11,
+        //Empty = 9999
+        DarkNoise = 0,
+        DefectWPoint = 1,
+        DefectBPoint = 2,
+        DefectPoint = 3,
+        DSNU = 4,
+        Uniformity = 5,
+        Luminance = 6,
+        LumOneColor = 7,
+        LumFourColor = 8,
+        LumMultiColor = 9,
+        LumColor = 10,
+        Distortion = 11,
+        ColorShift = 12,
+        Empty = 9999
+    };
+
+    public class CalibrationItem
+    {
+        public CalibrationType type { set; get; }
+        public bool enable { set; get; }
+        public string title { set; get; }
+        public string doc { set; get; }
+
+        public CalibrationItem(CalibrationType type, bool enable, string title, string fileName)
+        {
+            this.type = type;
+            this.enable = enable;
+            this.title = title;
+            this.doc = fileName;
+        }
+    }
+
+    public class ExpTimeCfg
+    {
+        public int autoExpTimeBegin { set; get; }
+        public bool autoExpFlag { set; get; }
+        //自动同步频率
+        public float autoExpSyncFreq { set; get; }
+        public float autoExpSaturation { set; get; }
+        public UInt16 autoExpSatMaxAD { set; get; }
+        //
+        public double autoExpMaxPecentage { set; get; }
+        //误差值
+        public float autoExpSatDev { set; get; }
+        //最大/小曝光
+        public float maxExpTime { set; get; }
+        public float minExpTime { set; get; }
+        //burst的阈值
+        public float burstThreshold { set; get; }
+    }
+    public struct SIZE
+    {
+        public int cx;
+        public int cy;
+    };
+    enum CornerType //角点提取方法
+    {
+        Circlepoint = 0,    //圆点提取
+        Checkerboard = 1,   //棋盘格角点提取
+    };
+    enum SlopeType  //斜率计算方法
+    {
+        CenterPoint = 0,    //中心点九点取斜率
+        lb_Variance = 1,        //去除方差较大的点后取斜率
+    };
+
+    enum LayoutType //理想点布点方法
+    {
+        SlopeIN = 0,    //采用斜率布点
+        SlopeOUT = 1,   //不采用斜率布点
+    };
+    public struct BlobThreParams
+    {
+        public bool filterByColor; //是否使用颜色过滤
+                                   //unsigned char blobColor; //亮斑255暗斑0
+        public int blobColor; //亮斑255暗斑0
+        public float minThreshold; //阈值每次间隔值
+        public float thresholdStep; //斑点最小灰度
+        public float maxThreshold; //斑点最大灰度
+        public float minDistBetweenBlobs; //斑点间隔距离
+        public bool filterByArea; //是否使用面积过滤
+        public float minArea; //斑点最小面积值
+        public float maxArea;  //斑点最大面积值
+        public int minRepeatability;  //重复次数认定
+        public bool filterByCircularity;  //形状控制（圆，方）
+        public float minCircularity;
+        public float maxCircularity;
+        public bool filterByConvexity;  //形状控制（豁口）
+        public float minConvexity;
+        public float maxConvexity;
+        public bool filterByInertia;  //形状控制（椭圆度）
+        public float minInertiaRatio;
+        public float maxInertiaRatio;
+    }
+    public struct CRECT
+    {
+        public int x;
+        public int y;
+        public int cx;
+        public int cy;
+    };
+    public enum EvaFunc
+    {
+        Variance = 0,
+        Tenengrad = 1,
+        Laplace,
+        CalResol,
+    };
+    public struct HImage
+    {
+        public uint nWidth;
+        public uint nHeight;
+        public uint nChannels;
+        public uint nBpp;
+        public IntPtr pData;
+    };
+    enum FOCUS_COMMUN
+    {
+        VID_SERIAL,
+        CANON_SERIAL,
+        NED_SERIAL,
+    };
+    public struct AutoFocusCfg
+    {
+        public double forwardparam { set; get; }        //步径摆动范围
+        public double curtailparam { set; get; }        //步径每次缩减系数
+        public int curStep { set; get; }                //目前使用步径
+        public int stopStep { set; get; }               //停止步径
+        public int minPosition { set; get; }            //电机移动区间下限
+        public int maxPosition { set; get; }            //电机移动区间上限
+        public EvaFunc eEvaFunc { set; get; }           //评价函数类型
+        public double dMinValue { set; get; } 			//最低评价值
+    };
+    public class CameraCfg
+    {
+        public int ob { set; get; }
+        public int obR { set; get; }
+        public int obB { set; get; }
+        public int obT { set; get; }
+        public bool tempCtlChecked { set; get; }
+        public float targetTemp { set; get; }
+        public float usbTraffic { set; get; }
+        public int offset { set; get; }
+        public int gain { set; get; }
+        public int ex { set; get; }
+        public int ey { set; get; }
+        public int ew { set; get; }
+        public int eh { set; get; }
+    }
+
+    public class ChannelCfg
+    {
+        [JsonProperty]
+        public string title { set; get; }
+        [JsonProperty]
+        public ushort cfwport { set; get; }
+        [JsonProperty]
+        public ImageChannelType chtype { set; get; }
+
+        public override string ToString()
+        {
+            return string.Format("{0}", title);
+        }
+    }
+
+    public class ProjectSysCfg
+    {
+        public ExpTimeCfg expTimeCfg;
+        public CameraCfg cameraCfg { set; get; }
+        public List<CalibrationItem> calibrationLibCfg;
+        public List<ChannelCfg> channelCfg;
+
+        public ProjectSysCfg()
+        {
+            expTimeCfg = new ExpTimeCfg();
+            calibrationLibCfg = new List<CalibrationItem>();
+            channelCfg = new List<ChannelCfg>();
+            cameraCfg = new CameraCfg();
+        }
+    }
+
+    class ChannelCalibration
+    {
+        //暗噪声校正参数
+        public CalibrationItem dsnuCheck;
+        //均匀场校正文件
+        public CalibrationItem uniformityCheck;
+        //白点校正文件
+        public CalibrationItem defectCheck;
+        //白点校正文件
+        public CalibrationItem distortionCheck;
+    }
+
+    class ChannelParam
+    {
+        //曝光时间，单位毫秒
+        public float exp;
+        //滤色轮端口
+        public int cfwport;
+        //通道类型
+        public int channelType;
+        //滤色片类型
+        public int imageFilterType;//
+        //校正
+        public ChannelCalibration check;
+        //文件名
+        public string fileName;
+    }
+    public enum ImageFilterType : int
+    {
+        Color_Filter = 0,//滤色片
+        ND = 1//
+    };
+    public enum ImageChannelType : int
+    {
+        Channel_X = 0,
+        Channel_Y = 1,
+        Channel_Z = 2
+        //RGB_G = 30,
+        //RGB_R = 31,
+        //RGB_B = 32,
+    };
+    //enum TakeImageMode
+    //{
+    //    Single = 1,
+    //    Live = 2,
+    //    LiveEx = 3,
+    //    LiveExByfast = 4
+    //};
+    public enum TakeImageMode : int
+    {
+        Measure_Normal = 0,
+        Live,
+        Measure_Fast,
+        Measure_FastEx,
+    };
+
+    public enum CameraType : int
+    {
+        CV_Q = 0,
+        LV_Q,
+        BV_Q,
+        MIL_CL,
+        MIL_CXP,
+        BV_H,
+        LV_H,
+        HK_CXP,
+        LV_MIL_CL,
+        MIL_CXP_VIDEO,
+        CameraType_Total,
+    };
+
+    class cvCameraCSLib
+    {
+        public static TiffShowEvent event_ShowTiff;
+        public static LiveShowEvent event_ShowLive;
+        public static PartLiveShowEvent event_PartShowLive;
+        public static StopLiveShow event_StopLiveShow;
+
+        public static byte[] liveImageDataPartShow;
+        public static int picw;
+        public static int pich;
+        public static int picbpp;
+        public static int picchannels;
+
+        //public enum CameraType : int
+        //{
+        //    QHYCCD_CV = 0,
+        //    QHYCCD_LV,
+        //    QHYCCD_BV,
+        //    MIL_CL,
+        //    MIL_CXP,
+        //    MIL_CXP_VIDEO,
+        //    CameraType_Total,
+        //};
+
+
+        private static string UnicodeToGB(string text)
+        {
+            System.Text.RegularExpressions.MatchCollection mc = System.Text.RegularExpressions.Regex.Matches(text, "\\\\u([\\w]{4})");
+            if (mc != null && mc.Count > 0)
+            {
+                foreach (System.Text.RegularExpressions.Match m2 in mc)
+                {
+                    string v = m2.Value;
+                    string word = v.Substring(2);
+                    byte[] codes = new byte[2];
+                    int code = System.Convert.ToInt32(word.Substring(0, 2), 16);
+                    int code2 = System.Convert.ToInt32(word.Substring(2), 16);
+                    codes[0] = (byte)code2;
+                    codes[1] = (byte)code;
+                    text = text.Replace(v, Encoding.Unicode.GetString(codes));
+                }
+            }
+            else
+            {
+
+            }
+            return text;
+        }
+
+        public delegate UInt64 QHYCCDProcCallBack(int handle, IntPtr pData, int nW, int nH, int lss, int bpp, int channels, IntPtr usrData);
+
+        #region cvAoi.dll ----------------------------
+
+        private const string LIBRARY_CVAOI = "cvAoi.dll";
+
+        [DllImport(LIBRARY_CVAOI, EntryPoint = "AOIInit",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern void AOIInit_O(string sn);
+
+        [DllImport(LIBRARY_CVAOI, EntryPoint = "AOIRelease",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern void AOIRelease_O();
+        [DllImport(LIBRARY_CVAOI, EntryPoint = "test",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern void test_O();
+        [DllImport(LIBRARY_CVAOI, EntryPoint = "AOIDetector",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern void AOIDetector_O(string para, string src_path, bool saveFlag);
+        [DllImport(LIBRARY_CVAOI, EntryPoint = "MuraDetector",
+           CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern void MuraDetector_O(string para, string src_path);
+        [DllImport(LIBRARY_CVAOI, EntryPoint = "getMatrix",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern void getMatrix_O(float map_x1, float map_y1, float map_x2, float map_y2, float map_x3, float map_y3,
+            float map_x4, float map_y4, float img_x1, float img_y1, float img_x2, float img_y2, float img_x3, float img_y3, float img_x4, float img_y4,
+            float map_x, float map_y, ref float img_x, ref float img_y);
+        #endregion
+
+        #region cvCamera-old.dll --------------------------------
+        private const string LIBRARY_CVCAMERA_Old = "cvCamera-old.dll";
+
+        [DllImport(LIBRARY_CVCAMERA_Old, EntryPoint = "CheckLunKuo",
+     CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern void CheckLunKuo_O(bool is8bits, UInt32 w, UInt32 h, byte[] imgdata, int buzhen,
+            ref float x1, ref float y1, ref float x2, ref float y2, ref float x3, ref float y3, ref float x4, ref float y4);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "findBrightArea",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool findBrightArea(UInt32 w, UInt32 h, UInt32 bpp, UInt32 channels, byte[] imgdata,
+        float[] pPointX, float[] pPointY, double thresh, bool direct, uint bright_w, uint bright_h, int dilateTime = 0, bool keyToFindExact = false,
+        double qualityLevel = 0.6);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "makeMap2ImgByPointEx",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool makeMap2ImgByPointEx(float[] cad4corner_X, float[] cad4corner_Y,
+        float[] img4corner_X, float[] img4corner_Y, float[] definePoints_X, float[] definePoints_Y,
+            int definePointNummbers, int[] imgPoints_X, int[] imgPoints_Y);
+
+        //[DllImport(LIBRARY_CVCAMERA_Old, EntryPoint = "findBrightArea",
+        //    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        //public unsafe static extern bool findBrightArea_O(UInt32 w, UInt32 h, UInt32 bpp, UInt32 channels, byte[] imgdata
+        //    , int[] Pointx, int[] Pointy, double thresh = 100, bool keyToFindExact = true, int dilateTime = 4, double qualityLevel = 0.6);
+        [DllImport(LIBRARY_CVCAMERA_Old, EntryPoint = "LedCheckYaQi",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern double LedCheckYaQi_O(bool isdebug, int checkChannel, UInt32 w, UInt32 h, UInt32 bpp, UInt32 channels, byte[] imgdata
+            , int isguding, int gudingrid, int lunkuomianji, int pointNum, double hegexishu, int erzhihuapiancha, double[] databanjin
+            , int[] datazuobiaoX, int[] datazuobiaoY, int picwid
+            , int pichig, int[] 关注范围, int 发光区二值化补正, int boundry, double[] LengthCheck, double[] LengthRange, double[] LengthResult, bool isuseLocalRdPoint, float[] localRdMark, double[] PointX, double[] PointY);
+        [DllImport(LIBRARY_CVCAMERA_Old, EntryPoint = "XYZ2xyuv",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool XYZ2xyuv_O(double dataX, double dataY, double dataZ, ref double testx, ref double testy, ref double testu, ref double testv, ref double cct, ref double 波长);
+        [DllImport(LIBRARY_CVCAMERA_Old, EntryPoint = "CheckLedJudge",
+CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CheckLedJudge_O(double[] CheckData, int checkNum, int pointnum, bool isCheckAn, double 暗点固定阈值, double 暗点百分比阈值, bool isCheckLiang, double 亮点固定阈值, double 亮点百分比阈值, int[] 判断结果);
+        #endregion
+
+        //public struct IRECT
+        //{
+        //    public int left;
+        //    public int top;
+        //    public int right;
+        //    public int bottom;
+        //};
+
+        #region cvCamera/cvCameraCV.dll ---------------------------
+        private const string LIBRARY_CVCAMERA = "cvCamera.dll";
+        private const string LIBRARY_CVCAMERA_CV = "cvCameraCV.dll";
+        public static int connectedCameraType = 1;
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "InitResource",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern void InitResource_Gen(IntPtr CallBackFunc, IntPtr hOperate_data);
+
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "InitResource",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern void InitResource_CV(IntPtr CallBackFunc, IntPtr hOperate_data);
+
+        public static void InitResource(IntPtr CallBackFunc, IntPtr hOperate_data)
+        {
+            InitResource_Gen(CallBackFunc, hOperate_data);
+
+        }
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "ReleaseResource",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern void ReleaseResource_Gen();
+
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "ReleaseResource",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern void ReleaseResource_CV();
+        public static void ReleaseResource()
+        {
+            ReleaseResource_Gen();
+            //if (connectedCameraType == 1)
+            //{
+            //    ReleaseResource_Gen();
+            //}
+            //else if (connectedCameraType == 2)
+            //{
+            //    ReleaseResource_CV();
+            //}
+        }
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetCameraID",
+         CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern bool GetCameraID(CameraType eType, StringBuilder sn, int len);
+
+        public static bool GetCameraID(CameraType eType, ref string szText)
+        {
+            StringBuilder builder = new StringBuilder(256);
+
+            if (GetCameraID(eType, builder, 256))
+            {
+                szText = builder.ToString();
+                return true;
+            }
+
+            return false;
+        }
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetAllCameraID",
+          CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern bool GetAllCameraID_Gen(CameraType eType, StringBuilder sn, int len);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_GetAllCameraID",
+          CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern bool GetAllCameraID_CV(CameraType eType, StringBuilder sn, int len);
+
+        public static bool GetAllCameraID(CameraType eType, ref string szText)
+        {
+            StringBuilder builder = new StringBuilder(256);
+            if (GetAllCameraID_Gen(eType, builder, 256))
+            {
+                szText = builder.ToString();
+                return true;
+            }
+            //if (connectedCameraType == 1)
+            //{
+            //    if (GetAllCameraID_Gen(eType, builder, 256))
+            //    {
+            //        szText = builder.ToString();
+            //        return true;
+            //    }
+            //}
+            //else if (connectedCameraType == 2)
+            //{
+            //    if (GetAllCameraID_CV(eType, builder, 256))
+            //    {
+            //        szText = builder.ToString();
+            //        return true;
+            //    }
+            //}
+            //else
+            //{
+            //    return false;
+            //}
+            return false;
+        }
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_CreatCameraManager",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern IntPtr CreatCameraManager_Gen(CameraType eType, string CameraID, string cfgFilename);
+
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_CreatCameraManager",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern IntPtr CreatCameraManager_CV(CameraType eType, string CameraID, string cfgFilename);
+        public static IntPtr CreatCameraManager(CameraType eType, string CameraID, string cfgFilename)
+        => CreatCameraManager_Gen(eType, CameraID, cfgFilename);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_ReleaseCameraManager",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool ReleaseCameraManager_Gen(IntPtr handle);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_ReleaseCameraManager",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool ReleaseCameraManager_CV(IntPtr handle);
+        public static bool ReleaseCameraManager(IntPtr handle)
+        => ReleaseCameraManager_Gen(handle);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetCameraID",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern void SetCameraID_Gen(IntPtr handle, string szCameraId);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_SetCameraID",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern void SetCameraID_CV(IntPtr handle, string szCameraId);
+        public static void SetCameraID(IntPtr handle, string szCameraId)
+        {
+            SetCameraID_Gen(handle, szCameraId);
+        }
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetImageBpp",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SetImageBpp_Gen(IntPtr handle, int nBpp);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_SetImageBpp",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SetImageBpp_CV(IntPtr handle, int nBpp);
+        public static bool CM_SetImageBpp(IntPtr handle, int nBpp)
+        => CM_SetImageBpp_Gen(handle, nBpp);
+
+        //新建一个校正用的句柄
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CreatCalibrationManage",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern IntPtr CreatCalibrationManage_Gen();
+
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CreatCalibrationManage",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern IntPtr CreatCalibrationManage_CV();
+        public static IntPtr CreatCalibrationManage()
+        {
+            return CreatCalibrationManage_Gen();
+            //if (connectedCameraType == 1)
+            //{
+            //    return CreatCalibrationManage_Gen();
+            //}
+            //else if (connectedCameraType == 2)
+            //{
+            //    return CreatCalibrationManage_CV();
+            //}
+            //else
+            //{
+            //    return new IntPtr();
+            //}
+        }
+        //释放校正用的句柄
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "ReleaseCalibrationManage",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool ReleaseCalibrationManage_Gen(IntPtr intPtr);
+
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "ReleaseCalibrationManage",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool ReleaseCalibrationManage_CV(IntPtr intPtr);
+        public static bool ReleaseCalibrationManage(IntPtr intPtr)
+        => ReleaseCalibrationManage_Gen(intPtr);
+        [DllImport(LIBRARY_CVCAMERA, CharSet = CharSet.Auto, EntryPoint = "CM_SetIndent",
+            CallingConvention = CallingConvention.Cdecl)]
+        public static extern void CM_SetIndent(IntPtr handle, int nL, int nT, int nR, int nB);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetCalibParam",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SetCalibParam_Gen(IntPtr handle, CalibrationType cType, bool bEnabled, string filename);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_SetCalibParam",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SetCalibParam_CV(IntPtr handle, CalibrationType cType, bool bEnabled, string filename);
+        public static bool CM_SetCalibParam(IntPtr handle, CalibrationType cType, bool bEnabled, string filename)
+        => CM_SetCalibParam_Gen(handle, cType, bEnabled, filename);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetParamDarkNoise",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SetParamDarkNoise(IntPtr handle, bool bEnabled, float darkNoiseRatio);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetParamDefectWPoint",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SetParamDefectWPoint(IntPtr handle, bool bEnabled, int[] pX, int[] pY, int nLen);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetParamDefectBPoint",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SetParamDefectBPoint(IntPtr handle, bool bEnabled, int[] pX, int[] pY, int nLen);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetParamDefectPoint",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SetParamDefectPoint(IntPtr handle, bool bEnabled, int[] pX, int[] pY, int nLen);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetParamDSNU",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SetParamDSNU(IntPtr handle, bool bEnabled, uint dsnuWidth, uint dsnuHeight,
+            ushort[] pdsnuData);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetParamUniformity",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SetParamUniformity(IntPtr handle, bool bEnabled, uint UniftyWidth,
+            uint UniftyHeight, float[] pUniftyData);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetParamDistortion",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SetParamDistortion(IntPtr handle, bool bEnabled, SIZE tImgSize, float[] cameraMatrix,
+            float[] distCoeffs, float alpha, bool buseFisheye);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetParamLuminance",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SetParamLuminance(IntPtr handle, bool bEnabled, float[] Texp, float[] Gain, float[] pa);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetParamColorOne",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SetParamColorOne(IntPtr handle, bool bEnabled, float[] Texp, float[] Gain, float[] pa);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetParamColorFour",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SetParamColorFour(IntPtr handle, bool bEnabled, float[] Texp, float[] Gain, float[] pa);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetParamColorMulti",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SetParamColorMulti(IntPtr handle, bool bEnabled, float[] pa, float[] gain, int N);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetParamColorShift",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SetParamColorShift(IntPtr handle, bool bEnabled, int OffX, int OffY, bool FillOffset);
+        //[DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_Preprocess",
+        //     CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        //public unsafe static extern bool CM_SCGD_SDP_Preprocess(IntPtr handle, int w, int h, uint channels, byte[] imgdata);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_DarkNoise",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_DarkNoise_Gen(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_SCGD_SDP_DarkNoise",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_DarkNoise_CV(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
+        public static bool CM_SCGD_SDP_DarkNoise(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata)
+        => CM_SCGD_SDP_DarkNoise_Gen(handle, w, h, bpp, channels, imgdata);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_DefectWPoint",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_DefectWPoint_Gen(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_SCGD_SDP_DefectWPoint",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_DefectWPoint_CV(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
+        public static bool CM_SCGD_SDP_DefectWPoint(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata)
+        => CM_SCGD_SDP_DefectWPoint_Gen(handle, w, h, bpp, channels, imgdata);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_DefectBPoint",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_DefectBPoint_Gen(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_SCGD_SDP_DefectBPoint",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_DefectBPoint_CV(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
+        public static bool CM_SCGD_SDP_DefectBPoint(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata)
+        => CM_SCGD_SDP_DefectBPoint_Gen(handle, w, h, bpp, channels, imgdata);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_DefectPoint",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_DefectPoint_Gen(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_SCGD_SDP_DefectPoint",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_DefectPoint_CV(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
+        public static bool CM_SCGD_SDP_DefectPoint(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata)
+        => CM_SCGD_SDP_DefectPoint_Gen(handle, w, h, bpp, channels, imgdata);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_Uniformity",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_Uniformity_Gen(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_SCGD_SDP_Uniformity",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_Uniformity_CV(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
+        public static bool CM_SCGD_SDP_Uniformity(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata)
+        => CM_SCGD_SDP_Uniformity_Gen(handle, w, h, bpp, channels, imgdata);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_DSNU",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_DSNU_Gen(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_SCGD_SDP_DSNU",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_DSNU_CV(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
+        public static bool CM_SCGD_SDP_DSNU(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata)
+        => CM_SCGD_SDP_DSNU_Gen(handle, w, h, bpp, channels, imgdata);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_ColorShift",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_ColorShift_Gen(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_SCGD_SDP_ColorShift",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_ColorShift_CV(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
+        public static bool CM_SCGD_SDP_ColorShift(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata)
+        => CM_SCGD_SDP_ColorShift_Gen(handle, w, h, bpp, channels, imgdata);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_Distortion",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_Distortion_Gen(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_SCGD_SDP_Distortion",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_Distortion_CV(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
+        public static bool CM_SCGD_SDP_Distortion(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata)
+        => CM_SCGD_SDP_Distortion_Gen(handle, w, h, bpp, channels, imgdata);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_Luminance",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_Luminance_Gen(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcimgdata
+            , byte[] dstimgdata, float[] dexp);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_SCGD_SDP_Luminance",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_Luminance_CV(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcimgdata
+           , byte[] dstimgdata, float[] dexp);
+        public static bool CM_SCGD_SDP_Luminance(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcimgdata
+           , byte[] dstimgdata, float[] dexp)
+        => CM_SCGD_SDP_Luminance_Gen(handle, w, h, bpp, channels, srcimgdata, dstimgdata, dexp);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_ColorOne",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_ColorOne_Gen(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcimgdata
+            , byte[] dstimgdata, float[] dexp);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_SCGD_SDP_ColorOne",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_ColorOne_CV(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcimgdata
+            , byte[] dstimgdata, float[] dexp);
+        public static bool CM_SCGD_SDP_ColorOne(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcimgdata
+           , byte[] dstimgdata, float[] dexp)
+        => CM_SCGD_SDP_ColorOne_Gen(handle, w, h, bpp, channels, srcimgdata, dstimgdata, dexp);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_ColorOneEx",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_ColorOneEx_Gen(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcx, byte[] srcy
+            , byte[] srcz, byte[] dstimgdata, float[] dexp);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_SCGD_SDP_ColorOneEx",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_ColorOneEx_CV(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcx, byte[] srcy
+           , byte[] srcz, byte[] dstimgdata, float[] dexp);
+        public static bool CM_SCGD_SDP_ColorOneEx(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcx, byte[] srcy
+           , byte[] srcz, byte[] dstimgdata, float[] dexp)
+        => CM_SCGD_SDP_ColorOneEx_Gen(handle, w, h, bpp, channels, srcx, srcy, srcz, dstimgdata, dexp);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_ColorFour",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_ColorFour_Gen(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcimgdata
+            , byte[] dstimgdata, float[] dexp);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_SCGD_SDP_ColorFour",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_ColorFour_CV(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcimgdata
+           , byte[] dstimgdata, float[] dexp);
+        public static bool CM_SCGD_SDP_ColorFour(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcimgdata
+           , byte[] dstimgdata, float[] dexp)
+        => CM_SCGD_SDP_ColorFour_Gen(handle, w, h, bpp, channels, srcimgdata, dstimgdata, dexp);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_ColorFourEx",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_ColorFourEx_Gen(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcx, byte[] srcy
+            , byte[] srcz, byte[] dstimgdata, float[] dexp);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_SCGD_SDP_ColorFourEx",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_ColorFourEx_CV(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcx, byte[] srcy
+            , byte[] srcz, byte[] dstimgdata, float[] dexp);
+        public static bool CM_SCGD_SDP_ColorFourEx(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcx, byte[] srcy
+            , byte[] srcz, byte[] dstimgdata, float[] dexp)
+        => CM_SCGD_SDP_ColorFourEx_Gen(handle, w, h, bpp, channels, srcx, srcy, srcz, dstimgdata, dexp);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_ColorMulti",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_ColorMulti_Gen(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcimgdata
+            , byte[] dstimgdata, float[] dexp);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_SCGD_SDP_ColorMulti",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_ColorMulti_CV(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcimgdata
+            , byte[] dstimgdata, float[] dexp);
+        public static bool CM_SCGD_SDP_ColorMulti(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcimgdata
+            , byte[] dstimgdata, float[] dexp)
+        => CM_SCGD_SDP_ColorMulti_Gen(handle, w, h, bpp, channels, srcimgdata, dstimgdata, dexp);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_ColorMultiEx",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_ColorMultiEx_Gen(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcx, byte[] srcy
+            , byte[] srcz, byte[] dstimgdata, float[] dexp);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_SCGD_SDP_ColorMultiEx",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_ColorMultiEx_CV(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcx, byte[] srcy
+            , byte[] srcz, byte[] dstimgdata, float[] dexp);
+        public static bool CM_SCGD_SDP_ColorMultiEx(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcx, byte[] srcy
+            , byte[] srcz, byte[] dstimgdata, float[] dexp)
+        => CM_SCGD_SDP_ColorMultiEx_Gen(handle, w, h, bpp, channels, srcx, srcy, srcz, dstimgdata, dexp);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_IsOpen",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_IsOpen_Gen(IntPtr handle);
+
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_IsOpen",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_IsOpen_CV(IntPtr handle);
+        public static bool CM_IsOpen(IntPtr handle)
+        => CM_IsOpen_Gen(handle);
+
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetDeviceOnline",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_GetDeviceOnline_Gen(IntPtr handle);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_GetDeviceOnline",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_GetDeviceOnline_CV(IntPtr handle);
+        public static bool CM_GetDeviceOnline(IntPtr handle)
+        => CM_GetDeviceOnline_Gen(handle);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetTakeImageMode",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SetTakeImageMode_Gen(IntPtr handle, TakeImageMode eTakeImageMode);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_SetTakeImageMode",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SetTakeImageMode_CV(IntPtr handle, TakeImageMode eTakeImageMode);
+        public static bool CM_SetTakeImageMode(IntPtr handle, TakeImageMode eTakeImageMode)
+        => CM_SetTakeImageMode_Gen(handle, eTakeImageMode);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Open",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_Open_Gen(IntPtr handle);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_Open",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_Open_CV(IntPtr handle);
+        public static bool CM_Open(IntPtr handle)
+        => CM_Open_Gen(handle);
+
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_LiveOpen",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_LiveOpen_Gen(IntPtr handle);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_LiveOpen",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_LiveOpen_CV(IntPtr handle);
+        public static bool CM_LiveOpen(IntPtr handle)
+        => CM_LiveOpen_Gen(handle);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetGain",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SetGain_Gen(IntPtr handle, float fGain);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_SetGain",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SetGain_CV(IntPtr handle, float fGain);
+        public static bool CM_SetGain(IntPtr handle, float fGain)
+        => CM_SetGain_Gen(handle, fGain);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetExpTime",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SetExpTime_Gen(IntPtr handle, float expTime);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_SetExpTime",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SetExpTime_CV(IntPtr handle, float expTime);
+        public static bool CM_SetExpTime(IntPtr handle, float expTime)
+        => CM_SetExpTime_Gen(handle, expTime);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetExpTimeEx",
+CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SetExpTimeEx_Gen(IntPtr handle, int index, float expTime);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_SetExpTimeEx",
+CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SetExpTimeEx_CV(IntPtr handle, int index, float expTime);
+        public static bool CM_SetExpTimeEx(IntPtr handle, int index, float expTime)
+        => CM_SetExpTimeEx_Gen(handle, index, expTime);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetParam",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern bool CM_SetParam_Gen(IntPtr handle, int pid, double val);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_SetParam",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern bool CM_SetParam_CV(IntPtr handle, int pid, double val);
+
+        public static bool CM_SetParam(IntPtr handle, CONTROL_ID pid, double val)
+        => CM_SetParam_Gen(handle, (int)pid, val);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_IsFeatureAvailable",
+        CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_IsFeatureAvailable_Gen(IntPtr handle, int pid);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_IsFeatureAvailable",
+       CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_IsFeatureAvailable_CV(IntPtr handle, int pid);
+        public static bool CM_IsFeatureAvailable(IntPtr handle, int pid)
+        => CM_IsFeatureAvailable_Gen(handle, pid);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Sleep",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern void CM_Sleep(float ms);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetPort",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SetPort_Gen(IntPtr handle, int port);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_SetPort",
+        CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SetPort_CV(IntPtr handle, int port);
+        public static bool CM_SetPort(IntPtr handle, int port)
+        => CM_SetPort_Gen(handle, port);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_IsBurstmodeAvailable",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_IsBurstmodeAvailable_Gen(IntPtr handle);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_IsBurstmodeAvailable",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_IsBurstmodeAvailable_CV(IntPtr handle);
+        public static bool CM_IsBurstmodeAvailable(IntPtr handle)
+        => CM_IsBurstmodeAvailable_Gen(handle);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetFrame_TIFF",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern bool C_CM_GetFrame_TIFF_Gen(IntPtr handle, StringBuilder jsonPm);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_GetFrame_TIFF",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern bool C_CM_GetFrame_TIFF_CV(IntPtr handle, StringBuilder jsonPm);
+        public static bool C_CM_GetFrame_TIFF(IntPtr handle, StringBuilder jsonPm)
+        => C_CM_GetFrame_TIFF_Gen(handle, jsonPm);
+
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetFrameEx_TIFF",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern bool C_CM_GetFrameEx_TIFF_Gen(IntPtr handle, StringBuilder jsonPm);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_GetFrameEx_TIFF",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern bool C_CM_GetFrameEx_TIFF_CV(IntPtr handle, StringBuilder jsonPm);
+        public static bool C_CM_GetFrameEx_TIFF(IntPtr handle, StringBuilder jsonPm)
+        => C_CM_GetFrameEx_TIFF_Gen(handle, jsonPm);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetLiveFrame",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_GetLiveFrame(IntPtr handle, ref UInt32 w, ref UInt32 h, byte[] rawArray);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetFrame",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_GetFrame_Gen(IntPtr handle, string jsonPm, ref UInt32 w, ref UInt32 h,
+           ref UInt32 srcbpp, ref UInt32 bpp, ref UInt32 channels, byte[] srcrawArray, byte[] rawArray);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_GetFrame",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_GetFrame_CV(IntPtr handle, string jsonPm, ref UInt32 w, ref UInt32 h,
+   ref UInt32 srcbpp, ref UInt32 bpp, ref UInt32 channels, byte[] srcrawArray, byte[] rawArray);
+        public static bool CM_GetFrame(IntPtr handle, string jsonPm, ref UInt32 w, ref UInt32 h,
+   ref UInt32 srcbpp, ref UInt32 bpp, ref UInt32 channels, byte[] srcrawArray, byte[] rawArray)
+        => CM_GetFrame_Gen(handle, jsonPm, ref w, ref h, ref srcbpp, ref bpp, ref channels, srcrawArray, rawArray);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_ExportToTIFF",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_ExportToTIFF(string fileName, UInt32 w, UInt32 h, UInt32 bpp, UInt32 channels, byte[] rawArray);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_ExportToTIFFEx",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_ExportToTIFFEx(string fileName, uint w, uint h, uint bpp, uint channels,
+            byte[] rawArray, double dRate);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetDeviceMode",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern void C_CM_GetDeviceMode_Gen(IntPtr handle, StringBuilder mode, int len);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_GetDeviceMode",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern void C_CM_GetDeviceMode_CV(IntPtr handle, StringBuilder mode, int len);
+
+        public static string CM_GetDeviceMode(IntPtr handle)
+        {
+            StringBuilder builder = new StringBuilder(1024);
+            C_CM_GetDeviceMode_Gen(handle, builder, 1024);
+            //if (connectedCameraType == 1)
+            //{
+            //    C_CM_GetDeviceMode_Gen(handle, builder, 1024);
+            //}
+            //else if (connectedCameraType == 2)
+            //{
+            //    C_CM_GetDeviceMode_CV(handle, builder, 1024);
+            //}
+            return builder.ToString();
+        }
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetSN",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern void C_CM_GetSN_Gen(IntPtr handle, StringBuilder sn, int len);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_GetSN",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern void C_CM_GetSN_CV(IntPtr handle, StringBuilder sn, int len);
+
+        public static string CM_GetSN(IntPtr handle)
+        {
+            StringBuilder builder = new StringBuilder(50);
+            C_CM_GetSN_Gen(handle, builder, 50);
+            //if (connectedCameraType == 1)
+            //{
+            //    C_CM_GetSN_Gen(handle, builder, 50);
+            //}
+            //else if (connectedCameraType == 2)
+            //{
+            //    C_CM_GetSN_CV(handle, builder, 50);
+            //}
+
+            return builder.ToString();
+        }
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SplitData",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SplitData(UInt32 w, UInt32 h, UInt32 bpp, UInt32 channels, byte[] imgdata);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SplitDataEx",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SplitDataEx(int w, int h, int bpp, byte[] srcimgdata, byte[] dstX, byte[] dstY, byte[] dstZ);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetXYZxyuvCircle",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_GetXYZxyuvCircle(IntPtr handle, uint pX, uint pY, ref float X, ref float Y, ref float Z, ref float x, ref float y, ref float u, ref float v, double nRadius = 3);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetXYZxyuvEx",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_GetXYZxyuvEx(uint[] pX, uint[] pY, float[] X, float[] Y, float[] Z, float[] x, float[] y, float[] u, float[] v,
+            uint nLen, string fileName, double nRadius = 0.0);
+
+        public struct ChromaInfo
+        {
+            public float fX { set; get; }
+            public float fY { set; get; }
+            public float fZ { set; get; }
+            public float fx { set; get; }
+            public float fy { set; get; }
+            public float fu { set; get; }
+            public float fv { set; get; }
+            public float fCCT { set; get; }
+            public float fWave { set; get; }
+            public int nMidPointX { set; get; }
+            public int nMidPointY { set; get; }
+        };
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetMask",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_GetMask(IntPtr handle, int[] pX, int[] pY, uint nLen, ref ChromaInfo chromaInfo);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_MergeData",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_MergeData(UInt32 w, UInt32 h, UInt32 bpp, UInt32 channels, byte[] imgdata);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_MergeDataEx",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_MergeDataEx(UInt32 w, UInt32 h, UInt32 bpp, byte[] imgdata, byte[] srcX, byte[] srcY, byte[] srcZ);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetBGRBuffer",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_GetBGRBuffer(IntPtr handle, ref int w, ref int h, ref int bpp, ref int channels, byte[] imgdata);
+        public static void CM_GetFrame_TIFF(IntPtr handle, GetFrameParam param, bool isburst)
+        {
+            string json1 = Newtonsoft.Json.JsonConvert.SerializeObject(param);
+            Thread thread = new Thread(() => workTiffThread(handle, json1, isburst));
+            thread.Start();
+        }
+
+        private static void workTiffThread(IntPtr handle, Object json1, bool isburst)
+        {
+            StringBuilder json = new StringBuilder();
+            json.Append(json1);
+            string tifjson = json.ToString();
+            if (isburst)
+            {
+                C_CM_GetFrameEx_TIFF(handle, json);
+            }
+            else
+            {
+                C_CM_GetFrame_TIFF(handle, json);
+            }
+
+            event_ShowTiff?.Invoke(json.ToString());
+        }
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetFrameMemLength",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern UInt32 CM_GetFrameMemLength_Gen(IntPtr handle);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_GetFrameMemLength",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern UInt32 CM_GetFrameMemLength_CV(IntPtr handle);
+        public static UInt32 CM_GetFrameMemLength(IntPtr handle)
+        => CM_GetFrameMemLength_Gen(handle);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetFrameMaxMemLength",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern UInt64 CM_GetFrameMaxMemLength_Gen(IntPtr handle);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_GetFrameMaxMemLength",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern UInt64 CM_GetFrameMaxMemLength_CV(IntPtr handle);
+        public static UInt64 CM_GetFrameMaxMemLength(IntPtr handle)
+        => CM_GetFrameMaxMemLength_Gen(handle);
+
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetCfgToJson",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern void CM_GetCfgToJson(IntPtr handle, ConfigType eType, StringBuilder jsonCfg, int len, bool bDefault);
+
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "GetSysCfgJson",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern void GetSysCfgJson_Gen(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "GetSysCfgJson",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern void GetSysCfgJson_CV(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault);
+
+        public static string GetSysCfgJson(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault)
+        {
+            StringBuilder builder = new StringBuilder(10240);
+            GetSysCfgJson_Gen(handle, builder, 10240, bDefault);
+            //if (connectedCameraType == 1)
+            //{
+            //    GetSysCfgJson_Gen(handle, builder, 10240, bDefault);
+            //}
+            //else if (connectedCameraType == 2)
+            //{
+            //    GetSysCfgJson_CV(handle, builder, 10240, bDefault);
+            //}
+            //else
+            //{
+            //    return null;
+            //}
+            string json1 = builder.ToString();
+            return UnicodeToGB(json1);
+        }
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "GetDefaultSysCfgJson",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern void GetDefaultSysCfgJson_Gen(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "GetDefaultSysCfgJson",
+           CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern void GetDefaultSysCfgJson_CV(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault);
+
+        public static string GetDefaultSysCfgJson(IntPtr handle, bool bDefault)
+        {
+            StringBuilder builder = new StringBuilder(10240);
+            GetDefaultSysCfgJson_Gen(handle, builder, 10240, bDefault);
+            //if (connectedCameraType == 1)
+            //{
+            //    GetDefaultSysCfgJson_Gen(handle, builder, 10240, bDefault);
+            //}
+            //else if (connectedCameraType == 2)
+            //{
+            //    GetDefaultSysCfgJson_CV(handle, builder, 10240, bDefault);
+            //}
+            //else
+            //{
+            //    return null;
+            //}
+            string json1 = builder.ToString();
+            return UnicodeToGB(json1);
+        }
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "GetDefaultCameraCfgToJson",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern void GetDefaultCameraCfgToJson_Gen(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "GetDefaultCameraCfgToJson",
+           CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern void GetDefaultCameraCfgToJson_CV(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault);
+
+        public static string GetDefaultCameraCfgToJson(IntPtr handle, bool bDefault)
+        {
+            StringBuilder builder = new StringBuilder(10240);
+            CM_GetCfgToJson(handle, ConfigType.Cfg_Camera, builder, 10240, bDefault);
+            //GetDefaultCameraCfgToJson_Gen(handle, builder, 10240, bDefault);
+            //if (connectedCameraType == 1)
+            //{
+            //    GetDefaultCameraCfgToJson_Gen(handle, builder, 10240, bDefault);
+            //}
+            //else if (connectedCameraType == 2)
+            //{
+            //    GetDefaultCameraCfgToJson_CV(handle, builder, 10240, bDefault);
+            //}
+            //else
+            //{
+            //    return null;
+            //}
+            string json1 = builder.ToString();
+            return UnicodeToGB(json1);
+        }
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "GetDefaultExpTimeCfgToJson",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern void GetDefaultExpTimeCfgToJson_Gen(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "GetDefaultExpTimeCfgToJson",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern void GetDefaultExpTimeCfgToJson_CV(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault);
+
+        public static string GetDefaultExpTimeCfgToJson(IntPtr handle, bool bDefault)
+        {
+            StringBuilder builder = new StringBuilder(10240);
+            CM_GetCfgToJson(handle, ConfigType.Cfg_ExpTime, builder, 10240, bDefault);
+            //GetDefaultExpTimeCfgToJson_Gen(handle, builder, 10240, bDefault);
+            //if (connectedCameraType == 1)
+            //{
+            //    GetDefaultExpTimeCfgToJson_Gen(handle, builder, 10240, bDefault);
+            //}
+            //else if (connectedCameraType == 2)
+            //{
+            //    GetDefaultExpTimeCfgToJson_CV(handle, builder, 10240, bDefault);
+            //}
+            //else
+            //{
+            //    return null;
+            //}
+            string json1 = builder.ToString();
+            return UnicodeToGB(json1);
+        }
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "GetDefaultCaliLibCfgToJson",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern void GetDefaultCaliLibCfgToJson_Gen(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "GetDefaultCaliLibCfgToJson",
+           CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern void GetDefaultCaliLibCfgToJson_CV(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault);
+
+        public static string GetDefaultCaliLibCfgToJson(IntPtr handle, bool bDefault)
+        {
+            StringBuilder builder = new StringBuilder(10240);
+            CM_GetCfgToJson(handle, ConfigType.Cfg_Calibration, builder, 10240, bDefault);
+            string json1 = builder.ToString();
+            return UnicodeToGB(json1);
+        }
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "GetDefaultChannelsCfgToJson",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern void GetDefaultChannelsCfgToJson_Gen(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "GetDefaultChannelsCfgToJson",
+           CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern void GetDefaultChannelsCfgToJson_CV(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault);
+
+        public static string GetDefaultChannelsCfgToJson(IntPtr handle, bool bDefault)
+        {
+            StringBuilder builder = new StringBuilder(10240);
+            GetDefaultChannelsCfgToJson_Gen(handle, builder, 10240, bDefault);
+
+            string json1 = builder.ToString();
+            return UnicodeToGB(json1);
+        }
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "UpdateCaliLibCfgJson",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool UpdateCaliLibCfgJson_Gen(IntPtr handle, string jsonCfg);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "UpdateCaliLibCfgJson",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool UpdateCaliLibCfgJson_CV(IntPtr handle, string jsonCfg);
+
+        public static bool UpdateCaliLibCfgJson(IntPtr handle, string jsonCfg)
+        => UpdateCaliLibCfgJson_Gen(handle, jsonCfg);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "UpdateCameraCfgJson",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool UpdateCameraCfgJson_Gen(IntPtr handle, string jsonCfg);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "UpdateCameraCfgJson",
+           CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool UpdateCameraCfgJson_CV(IntPtr handle, string jsonCfg);
+        public static bool UpdateCameraCfgJson(IntPtr handle, string jsonCfg)
+        => UpdateCameraCfgJson_Gen(handle, jsonCfg);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "UpdateChannelCfgJson",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool UpdateChannelCfgJson_Gen(IntPtr handle, string jsonCfg);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "UpdateChannelCfgJson",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool UpdateChannelCfgJson_CV(IntPtr handle, string jsonCfg);
+        public static bool UpdateChannelCfgJson(IntPtr handle, string jsonCfg)
+        => UpdateChannelCfgJson_Gen(handle, jsonCfg);
+
+        //新的修改参数
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_UpdateCfgJson",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern void UpdateCfgJson(IntPtr handle, ConfigType eType, string jsonCfg);
+
+        public enum ConfigType : int
+        {
+            Cfg_Camera = 0,
+            Cfg_ExpTime = 1,
+            Cfg_Calibration = 2,
+            Cfg_Channels = 3,
+            Cfg_SYSTEM = 4,
+        };
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "UpdateExpTimeCfgJson",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool UpdateExpTimeCfgJson_Gen(IntPtr handle, string jsonCfg);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "UpdateExpTimeCfgJson",
+           CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool UpdateExpTimeCfgJson_CV(IntPtr handle, string jsonCfg);
+        public static bool UpdateExpTimeCfgJson(IntPtr handle, string jsonCfg)
+        => UpdateExpTimeCfgJson_Gen(handle, jsonCfg);
+
+        //[DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetAutoExpTime",
+        //    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        //public unsafe static extern bool CM_GetAutoExpTime(IntPtr handle, ref float result, ref float resultSaturation);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetAutoExpTime",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_GetAutoExpTime(IntPtr handle, float[] exp, float[] Saturat);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetSrcAutoExpTime",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_GetSrcAutoExpTime(IntPtr handle, float[] exp, float[] Saturat);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Close",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern void CM_Close_Gen(IntPtr handle);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_Close",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern void CM_Close_CV(IntPtr handle);
+        public static void CM_Close(IntPtr handle)
+        {
+            CM_Close_Gen(handle);
+            //if (connectedCameraType == 1)
+            //{
+            //    CM_Close_Gen(handle);
+            //}
+            //else if (connectedCameraType == 2)
+            //{
+            //    CM_Close_CV(handle);
+            //}
+        }
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_LiveClose",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern void CM_LiveClose_Gen(IntPtr handle);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_LiveClose",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern void CM_LiveClose_CV(IntPtr handle);
+        public static void CM_LiveClose(IntPtr handle)
+        {
+            CM_LiveClose_Gen(handle);
+            //if (connectedCameraType == 1)
+            //{
+            //    CM_LiveClose_Gen(handle);
+            //}
+            //else if (connectedCameraType == 2)
+            //{
+            //    CM_LiveClose_CV(handle);
+            //}
+        }
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "UpdateSysCfgJson",
+CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool UpdateSysCfgJson_Gen(IntPtr handle, string jsonPm);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "UpdateSysCfgJson",
+CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool UpdateSysCfgJson_CV(IntPtr handle, string jsonPm);
+        public static bool UpdateSysCfgJson(IntPtr handle, string jsonPm)
+        => UpdateSysCfgJson_Gen(handle, jsonPm);
+        //[DllImport(LIBRARY_CVCAMERA, EntryPoint = "UpdateCaliLibCfgJson",
+        //    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        //public unsafe static extern void UpdateCaliLibCfgJson_Gen(IntPtr handle, string jsonCfg);
+        //[DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "UpdateCaliLibCfgJson",
+        //    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        //public unsafe static extern void UpdateCaliLibCfgJson_CV(IntPtr handle, string jsonCfg);
+        //public static void UpdateCaliLibCfgJson(IntPtr handle, string jsonCfg)
+        //{
+        //    if (connectedCameraType == 1)
+        //    {
+        //        UpdateCaliLibCfgJson_Gen(handle, jsonCfg);
+        //    }
+        //    else if (connectedCameraType == 2)
+        //    {
+        //        UpdateCaliLibCfgJson_CV(handle, jsonCfg);
+        //    }
+        //    else
+        //    {
+        //        return;
+        //    }
+        //}
+
+        //[DllImport(LIBRARY_CVCAMERA, EntryPoint = "UpdateCameraCfgJson",
+        //    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        //public unsafe static extern void UpdateCameraCfgJson_Gen(IntPtr handle, string jsonCfg);
+        //[DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "UpdateCameraCfgJson",
+        //    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        //public unsafe static extern void UpdateCameraCfgJson_CV(IntPtr handle, string jsonCfg);
+        //public static void UpdateCameraCfgJson(IntPtr handle, string jsonCfg)
+        //{
+        //    if (connectedCameraType == 1)
+        //    {
+        //        UpdateCameraCfgJson_Gen(handle, jsonCfg);
+        //    }
+        //    else if (connectedCameraType == 2)
+        //    {
+        //        UpdateCameraCfgJson_CV(handle, jsonCfg);
+        //    }
+        //    else
+        //    {
+        //        return;
+        //    }
+        //}
+
+        //[DllImport(LIBRARY_CVCAMERA, EntryPoint = "UpdateChannelCfgJson",
+        //    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        //public unsafe static extern void UpdateChannelCfgJson_Gen(IntPtr handle, string jsonCfg);
+        //[DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "UpdateChannelCfgJson",
+        //    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        //public unsafe static extern void UpdateChannelCfgJson_CV(IntPtr handle, string jsonCfg);
+        //public static void UpdateChannelCfgJson(IntPtr handle, string jsonCfg)
+        //{
+        //    if (connectedCameraType == 1)
+        //    {
+        //        UpdateChannelCfgJson_Gen(handle, jsonCfg);
+        //    }
+        //    else if (connectedCameraType == 2)
+        //    {
+        //        UpdateChannelCfgJson_CV(handle, jsonCfg);
+        //    }
+        //    else
+        //    {
+        //        return;
+        //    }
+        //}
+
+        [DllImport(LIBRARY_CVCAMERA, CharSet = CharSet.Auto, EntryPoint = "CM_SetCallBack",
+            CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool SetCallBack_Gen(IntPtr handle, QHYCCDProcCallBack callback, IntPtr obj);
+        [DllImport(LIBRARY_CVCAMERA_CV, CharSet = CharSet.Auto, EntryPoint = "CM_SetCallBack",
+    CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool SetCallBack_CV(IntPtr handle, QHYCCDProcCallBack callback, IntPtr obj);
+        public static bool SetCallBack(IntPtr handle, QHYCCDProcCallBack callback, IntPtr obj)
+        => SetCallBack_Gen(handle, callback, obj);
+
+        [DllImport(LIBRARY_CVCAMERA, CharSet = CharSet.Auto, EntryPoint = "CM_UnregisterCallBack",
+            CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool UnregisterCallBack_Gen(IntPtr handle);
+        [DllImport(LIBRARY_CVCAMERA_CV, CharSet = CharSet.Auto, EntryPoint = "CM_UnregisterCallBack",
+    CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool UnregisterCallBack_CV(IntPtr handle);
+        public static bool UnregisterCallBack(IntPtr handle)
+        => UnregisterCallBack_Gen(handle);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetSrcFrame",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern bool CM_GetSrcFrame_Gen(IntPtr handle, ref UInt32 w, ref UInt32 h,
+           ref UInt32 bpp, ref UInt32 channels, byte[] rawArray);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_GetSrcFrame",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern bool CM_GetSrcFrame_CV(IntPtr handle, ref UInt32 w, ref UInt32 h,
+           ref UInt32 bpp, ref UInt32 channels, byte[] rawArray);
+        public static bool CM_GetSrcFrame(IntPtr handle, ref UInt32 w, ref UInt32 h,
+           ref UInt32 bpp, ref UInt32 channels, ref byte[] rawArray)
+        {
+            CM_GetSrcFrameInfo(handle, ref w, ref h, ref bpp, ref channels);
+            uint nbbpMen = bpp / 8;
+            rawArray = new byte[w * h * nbbpMen * channels];
+            return CM_GetSrcFrame_Gen(handle, ref w, ref h, ref bpp, ref channels, rawArray);
+            //if (connectedCameraType == 1)
+            //{
+            //    return CM_GetSrcFrame_Gen(handle, ref w, ref h, ref bpp, ref channels, rawArray);
+            //}
+            //else if (connectedCameraType == 2)
+            //{
+            //    return CM_GetSrcFrame_CV(handle, ref w, ref h, ref bpp, ref channels, rawArray);
+            //}
+            //else
+            //{
+            //    return false;
+            //}
+        }
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetSrcFrameEx",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern bool CM_GetSrcFrameEx_Gen(IntPtr handle, ref UInt32 w, ref UInt32 h,
+           ref UInt32 bpp, ref UInt32 channels, byte[] rawArray);
+        public static bool CM_GetSrcFrameEx(IntPtr handle, ref UInt32 w, ref UInt32 h,
+           ref UInt32 bpp, ref UInt32 channels, ref byte[] rawArray)
+        {
+            CM_GetSrcFrameInfo(handle, ref w, ref h, ref bpp, ref channels);
+            uint nbbpMen = bpp / 8;
+            rawArray = new byte[w * h * nbbpMen * channels];
+            return CM_GetSrcFrameEx_Gen(handle, ref w, ref h, ref bpp, ref channels, rawArray);
+        }
+
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetSrcFrameInfo",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern UInt32 CM_GetSrcFrameInfo_Gen(IntPtr handle, ref uint w, ref uint h, ref uint bpp, ref uint channels);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_GetSrcFrameInfo",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern UInt32 CM_GetSrcFrameInfo_CV(IntPtr handle, ref uint w, ref uint h, ref uint bpp, ref uint channels);
+        public static UInt32 CM_GetSrcFrameInfo(IntPtr handle, ref uint w, ref uint h, ref uint bpp, ref uint channels)
+        => CM_GetSrcFrameInfo_Gen(handle, ref w, ref h, ref bpp, ref channels);
+        //public static extern bool CM_GetSrcFrameEx_CV(IntPtr handle, ref UInt32 w, ref UInt32 h, ref UInt32 bpp, ref UInt32 channels, byte[] imgdata);
+        //public static bool CM_GetSrcFrameEx(IntPtr handle, ref UInt32 w, ref UInt32 h, ref UInt32 bpp, ref UInt32 channels, byte[] imgdata)
+        //{
+        //    if (connectedCameraType == 1)
+        //    {
+        //        return CM_GetSrcFrameEx_Gen(handle, ref w, ref h, ref bpp, ref channels, imgdata);
+        //    }
+        //    else if (connectedCameraType == 2)
+        //    {
+        //        return CM_GetSrcFrameEx_CV(handle, ref w, ref h, ref bpp, ref channels, imgdata);
+        //    }
+        //    else
+        //    {
+        //        return false;
+        //    }
+        //}
+
+        [DllImport(LIBRARY_CVCAMERA, CharSet = CharSet.Auto, EntryPoint = "CM_SetCfwport",
+CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool CM_SetCfwport_Gen(IntPtr handle, int nIndex, int nPort, ImageChannelType eImgChlType);
+        [DllImport(LIBRARY_CVCAMERA_CV, CharSet = CharSet.Auto, EntryPoint = "CM_SetCfwport",
+CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool CM_SetCfwport_CV(IntPtr handle, int nIndex, int nPort);
+        public static bool CM_SetCfwport(IntPtr handle, int nIndex, int nPort, ImageChannelType eImgChlType)
+        => CM_SetCfwport_Gen(handle, nIndex, nPort, eImgChlType);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetXYZxyuvRect",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_GetXYZxyuvRect(IntPtr handle, int pX, int pY, ref float X, ref float Y, ref float Z
+            , ref float x, ref float y, ref float u, ref float v, int nRw, int nRh);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetXYZCircle",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_GetXYZCircle(IntPtr handle, int nX, int nY, ref float dX, ref float dY, ref float dZ,
+            double nRadius = 0.0);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetXYZCircleEx",
+              CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_GetXYZCircleEx(IntPtr handle, int[] pX, int[] pY, float[] pdX, float[] pdY,
+             float[] pdZ, int nLen, string szFileName, double nRadius = 0.0);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetYCircle",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_GetYCircle(IntPtr handle, int nX, int nY, ref float dY, double nRadius = 0.0);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetYCircleEx",
+              CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_GetYCircleEx(IntPtr handle, int[] pX, int[] pY, float[] pdY, int nLen, string szFileName,
+            double nRadius = 0.0);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetYRect",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_GetYRect(IntPtr handle, int pX, int pY, ref float Y, int nRw, int nRh);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetYRectEx",
+           CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_GetYRectEx(IntPtr handle, int[] pX, int[] pY, float[] pdY, int nLen, string szFileName,
+            int nRw, int nRh);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetBufferXYZ",
+CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public static extern bool CM_SetBufferXYZ_Gen(IntPtr handle, UInt32 w, UInt32 h, UInt32 bpp, UInt32 channels, byte[] imgdata);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_SetBufferXYZ",
+CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public static extern bool CM_SetBufferXYZ_CV(UInt32 w, UInt32 h, UInt32 bpp, UInt32 channels, byte[] imgdata);
+        public static bool CM_SetBufferXYZ(IntPtr handle, UInt32 w, UInt32 h, UInt32 bpp, UInt32 channels, byte[] imgdata)
+        => CM_SetBufferXYZ_Gen(handle, w, h, bpp, channels, imgdata);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_InitXYZ",
+CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]//初始化XYZ用于执行校正
+        public static extern bool CM_InitXYZ(IntPtr handle);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CreateAOIDetector",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern IntPtr CreateAOIDetector_Gen();
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CreateAOIDetector",
+CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern IntPtr CreateAOIDetector_CV();
+        public static IntPtr CreateAOIDetector()
+        {
+            return CreateAOIDetector_Gen();
+            //if (connectedCameraType == 1)
+            //{
+            //    return CreateAOIDetector_Gen();
+            //}
+            //else if (connectedCameraType == 2)
+            //{
+            //    return CreateAOIDetector_CV();
+            //}
+            //else
+            //{
+            //    return new IntPtr();
+            //}
+        }
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "AOIDetectorSetParam",
+CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool C_AOIDetectorSetParam_Gen(IntPtr handle, C_AoiParam aoiParam);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "AOIDetectorSetParam",
+CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool C_AOIDetectorSetParam_CV(IntPtr handle, C_AoiParam aoiParam);
+        public static bool AOIDetectorSetParam(IntPtr handle, AoiParam aoiParam)
+        {
+            C_AoiParam c_AoiParam;
+            c_AoiParam.filter_by_area = aoiParam.filter_by_area;
+            c_AoiParam.max_area = aoiParam.max_area;
+            c_AoiParam.min_area = aoiParam.min_area;
+            c_AoiParam.filter_by_contrast = aoiParam.filter_by_contrast;
+            c_AoiParam.max_contrast = aoiParam.max_contrast;
+            c_AoiParam.min_contrast = aoiParam.min_contrast;
+            c_AoiParam.contrast_brightness = aoiParam.contrast_brightness;
+            c_AoiParam.contrast_darkness = aoiParam.contrast_darkness;
+            c_AoiParam.blur_size = aoiParam.blur_size;
+            c_AoiParam.min_contour_size = aoiParam.min_contour_size;
+            c_AoiParam.erode_size = aoiParam.erode_size;
+            c_AoiParam.dilate_size = aoiParam.dilate_size;
+            c_AoiParam.left = aoiParam.left;
+            c_AoiParam.right = aoiParam.right;
+            c_AoiParam.top = aoiParam.top;
+            c_AoiParam.bottom = aoiParam.bottom;
+            return C_AOIDetectorSetParam_Gen(handle, c_AoiParam);
+            //if (connectedCameraType == 1)
+            //{
+            //    return C_AOIDetectorSetParam_Gen(handle, c_AoiParam);
+            //}
+            //else if (connectedCameraType == 2)
+            //{
+            //    return C_AOIDetectorSetParam_CV(handle, c_AoiParam);
+            //}
+            //else
+            //{
+            //    return false;
+            //}
+
+
+        }
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "AOIDetectorInput",
+CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int AOIDetectorInput_Gen(IntPtr handle, int w, int h, int bpp, int channels, byte[] imgdata);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "AOIDetectorInput",
+CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int AOIDetectorInput_CV(IntPtr handle, int w, int h, int bpp, int channels, byte[] imgdata);
+        public static int AOIDetectorInput(IntPtr handle, int w, int h, int bpp, int channels, byte[] imgdata)
+        => AOIDetectorInput_Gen(handle, w, h, bpp, channels, imgdata);
+
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "GetAoiDetectorBlob",
+CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool GetAoiDetectorBlob_Gen(IntPtr handle, int nIndex, PartiCle tParticle);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "GetAoiDetectorBlob",
+CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool GetAoiDetectorBlob_CV(IntPtr handle, int nIndex, PartiCle tParticle);
+        public static bool GetAoiDetectorBlob(IntPtr handle, int nIndex, PartiCle tParticle)
+        => GetAoiDetectorBlob_Gen(handle, nIndex, tParticle);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "ImageRect",
+CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern void ImageRect_Gen(int w, int h, int bpp, int channels, byte[] imgdata, IRECT tIRECT, byte[] imgDstdata);
+        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "ImageRect",
+CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern void ImageRect_CV(int w, int h, int bpp, int channels, byte[] imgdata, IRECT tIRECT, byte[] imgDstdata);
+        public static void ImageRect(int w, int h, int bpp, int channels, byte[] imgdata, IRECT tIRECT, byte[] imgDstdata)
+        {
+            ImageRect_Gen(w, h, bpp, channels, imgdata, tIRECT, imgDstdata);
+            //if (connectedCameraType == 1)
+            //{
+            //    ImageRect_Gen(w, h, bpp, channels, imgdata, tIRECT, imgDstdata);
+            //}
+            //else if (connectedCameraType == 2)
+            //{
+            //    ImageRect_CV(w, h, bpp, channels, imgdata, tIRECT, imgDstdata);
+            //}
+        }
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "SkipTake",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern void SkipTake(byte[] psrcdata, byte[] pdstdata, int nPos, int nCount);
+
+        public static void SkipTake(byte[] psrcdata, ref byte[] pdstdata, int nPos, int nCount)
+        {
+            pdstdata = new byte[nCount];
+            SkipTake(psrcdata, pdstdata, nPos, nCount);
+        }
+        //[DllImport(LIBRARY_CVCAMERA, EntryPoint = "InitComVid",
+        //     CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        //public unsafe static extern bool InitComVid(string ComName, uint BaudRate);
+
+        //[DllImport(LIBRARY_CVCAMERA, EntryPoint = "ShutDownVid",
+        //     CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        //public unsafe static extern bool ShutDownVid();
+
+        //[DllImport(LIBRARY_CVCAMERA, EntryPoint = "GoHomeVid",
+        //     CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        //public unsafe static extern bool GoHomeVid();
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "IsOpenVid",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool IsOpenVid();
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetAutoFocusShowWnd",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SetAutoFocusShowWnd(IntPtr handle, IntPtr hWnd, CRECT rt);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetAutoFocusExposure",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SetAutoFocusExposure(IntPtr handle, int nFit, double[] arrX, double[] arrY, int nDataSize);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_CalcAutoFocus",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_CalcAutoFocus(IntPtr handle, AutoFocusCfg tAtFsCfg);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvCalArticulation",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern double cvCalArticulation(EvaFunc type, HImage iImg, int dx = 0, int dy = 1, int ksize = 5, double dRatio = 0.01);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetAutoFocus",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_GetAutoFocus(IntPtr handle, ref int nPos);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_AutoFocusCallBack",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_AutoFocusCallBack(IntPtr handle, AutoFocusCallBack CallBackFun, IntPtr usrData);
+
+        public delegate int AutoFocusCallBack(IntPtr usrData, int nW, int nH, int bpp, int channels, IntPtr pData, int Pos, double evalua);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CalDistanceEx",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CalDistanceEx(int nPos, ref double dDis);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "MovePostionVid",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool MovePostionVid(int nPosition, bool bdirection, uint dwTimeOut);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "GetPostionVid",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool GetPostionVid(ref int nPosition, uint dwTimeOut);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "InitComCanon",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool InitComCanon(string ComName, uint BaudRate);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "IsOpenCanon",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool IsOpenCanon();
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "ShutDownCanon",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool ShutDownCanon();
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "MovePostionCanon",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool MovePostionCanon(int nPosition, uint dwTimeOut);
+
+
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "GetPostionCanon",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool GetPostionCanon(ref int nPosition, uint dwTimeOut);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvDisplayImage",
+                 CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool cvDisplayImage(IntPtr hWnd, CRECT rt, HImage iImg);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvCalcFit",
+                 CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool cvCalcFit(int nFit, double[] arrX, double[] arrY, int nDataSize);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_CreateFit",
+         CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_CreateFit(int id, int nFit, double[] arrX, double[] arrY, int nDataSize);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvGetFitFy",
+                 CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool cvGetFitFy(double dXvalue, ref double dYvalue);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetFitFy",
+         CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_GetFitFy(int id, double dXvalue, ref double dYvalue);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvCalcFiveDot",
+                 CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool cvCalcFiveDot(HImage iImg, double[] x, double[] y, int nThreshold);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "getCirclePoint",
+                 CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool getCirclePoint(uint w, uint h, uint bpp, uint channels, byte[] imgData, int thresholdValue,
+            ref float x, ref float y);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "FovImgCentre",
+                 CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool FovImgCentre(HImage tImg, double Radio, double cameraDegrees, ref double fovDegrees, int thresholdValus, double dFovDist, FovPattern pattern, FovType type);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "SFRCalculation",
+                 CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int SFRCalculation(HImage tImg, CRECT rtROI, double gamma, float[] pdfrequency, float[] pdomainSamplingData, int nLen);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "getCirclePoint",
+                 CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool getCirclePoint(HImage matsrc, int thresholdValue, ref Point tPt);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "SetMachineVid",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern void SetMachineVid(int ucMachineNO);
+        //[DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_CreateFit",
+        //     CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        //public unsafe static extern int CM_CreateFit(int nId, double[] x, double[] y, int nLength);
+        //[DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetFitFy",
+        //     CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        //public unsafe static extern bool CM_GetFitFy(int nId, double x, ref double Y);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_ReleaseFit",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_ReleaseFit(int nId);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "MoveRelPostion",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool MovePostion(IntPtr handle, int nPosition, uint dwTimeOut);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "GetPosition",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool GetPosition(IntPtr handle, ref int nPosition, uint dwTimeOut);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "GoHome",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool GoHome(IntPtr handle);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "ShutDown",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool ShutDown(IntPtr handle);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "InitCom",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool InitCom(IntPtr handle, FOCUS_COMMUN eFOCUS_COMMUN, string ComName, uint BaudRate);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "IsOpen",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool IsOpen(IntPtr handle);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "MoveDiaphragm",
+             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool MoveDiaphragm(IntPtr handle, float dPosition, uint dwTimeOut);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "DistortionCheck",
+ CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int DistortionCheck(HImage tImg, SIZE iSize, BlobThreParams tBlobThreParams, float[] finalPointsX, float[] finalPointsY, ref double pointx, ref double pointy, ref double maxErrorRatio, ref double t, CornerType type /*= Circlepoint*/, SlopeType sType /*= CenterPoint*/, LayoutType lType /*= SlopeIN*/);
+
+        #endregion
+        //[DllImport(LIBRARY_CVCAMERA, EntryPoint = "GetDefaultExpTimeCfgToJson",
+        //    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        //private unsafe static extern void GetDefaultExpTimeCfgToJson(IntPtr handle, StringBuilder jsonCfg, int len);
+
+        //public static string GetDefaultExpTimeCfgToJson(IntPtr handle)
+        //{
+        //    StringBuilder builder = new StringBuilder(10240);
+        //    GetDefaultExpTimeCfgToJson(handle, builder, 10240);
+        //    string json1 = builder.ToString();
+        //    return UnicodeToGB(json1);
+        //}
+        #region qiankun
+        private const string LIBRARY_GetImage = "getImgData.dll";
+
+        [DllImport(LIBRARY_GetImage, EntryPoint = "getImgData",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern void getImgData(string fileName, ref uint w, ref uint h, ref uint channel, ref uint bpp, byte[] dat);
+
+        internal static void ImageRect(uint imgWid, uint imgHei, uint imgbpp, uint imgchannels, byte[] cam_rawArray, IRECT iRECT, byte[] cutData)
+        {
+            throw new NotImplementedException();
+        }
+        #endregion
+    }
+
+    //Aoi检测部分
+    public class AoiParam
+    {
+        public bool filter_by_area { set; get; }
+        public int max_area { set; get; }
+        public int min_area { set; get; }
+        public bool filter_by_contrast { set; get; }
+        public float max_contrast { set; get; }
+        public float min_contrast { set; get; }
+        public float contrast_brightness { set; get; }
+        public float contrast_darkness { set; get; }
+        public int blur_size { set; get; }
+        public int min_contour_size { set; get; }
+        public int erode_size { set; get; }
+        public int dilate_size { set; get; }
+        [CategoryAttribute("AoiRect")]
+        public int left { set; get; }
+        [CategoryAttribute("AoiRect")]
+        public int right { set; get; }
+        [CategoryAttribute("AoiRect")]
+        public int top { set; get; }
+        [CategoryAttribute("AoiRect")]
+        public int bottom { set; get; }
+    };
+    public struct C_AoiParam
+    {
+        public bool filter_by_area;
+        public int max_area;
+        public int min_area;
+        public bool filter_by_contrast;
+        public float max_contrast;
+        public float min_contrast;
+        public float contrast_brightness;
+        public float contrast_darkness;
+        public int blur_size;
+        public int min_contour_size;
+        public int erode_size;
+        public int dilate_size;
+
+        public int left;
+        public int right;
+        public int top;
+        public int bottom;
+    };
+
+    public struct PartiCle
+    {
+        public double contrast;
+        public int area;
+        public int x;
+        public int y;
+        public int color;
+    };
+
+    public struct IRECT
+    {
+        public int x;
+        public int y;
+        public int cx;
+        public int cy;
+    };
+
+    enum FovPattern
+    {
+        FovCircle = 0,
+        FovRectangle,
+    };
+    enum FovType
+    {
+        Horizontal = 0,
+        Vertical,
+        Leaning,
+    };
+
+
+    enum CVOLED_ERROR
+    {
+        CVOLED_SUCCESS = 0,
+        CVOLED_PARAM_E,   //参数错误
+        CVOLED_INPUT_E,   //输入错误
+        CVOLED_SCRREN_NOT_SUPPORT, //屏幕类型不支持 
+        CVOLED_INIT_E,     //初始化错误
+        SAVE_E,           //保存文件错误
+        OUT_OF_BOUNDRY,   //越界
+        ALGORITHM_E,      //算法错误
+        MORIE_E, //       摩尔纹
+    };
+    enum CVLED_COLOR
+    {
+        BLUE = 0,
+        GREEN = 1,
+        RED = 2,
+    };
+
+    class CvOledDLL
+    {
+        private const string LIBRARY_CVOLED = "cvOled.dll";
+        [DllImport(LIBRARY_CVOLED, EntryPoint = "CvOledInit",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern void CvOledInit();
+        [DllImport(LIBRARY_CVOLED, EntryPoint = "CvOledRealse",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern void CvOledRealse();
+
+        [DllImport(LIBRARY_CVOLED, EntryPoint = "CvLoadParam",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern CVOLED_ERROR CvLoadParam(string json);
+        [DllImport(LIBRARY_CVOLED, EntryPoint = "loadPictureMemLength",
+           CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern UInt64 loadPictureMemLength(string path);
+        [DllImport(LIBRARY_CVOLED, EntryPoint = "loadPicture",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int loadPicture(string path, ref int w, ref int h, byte[] imgdata);
+        [DllImport(LIBRARY_CVOLED, EntryPoint = "findDotsArray",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern CVOLED_ERROR findDotsArray(int w, int h, byte[] imgdata, int type, CVLED_COLOR color);
+        [DllImport(LIBRARY_CVOLED, EntryPoint = "rebuildPixels",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern CVOLED_ERROR rebuildPixels(int w, int h, byte[] imgdata, int type, CVLED_COLOR color, float exp, string path);
+        [DllImport(LIBRARY_CVOLED, EntryPoint = "morieFilter",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern CVOLED_ERROR morieFilter(int w, int h, byte[] imgdata, int type, string path);
+    }
+    class KBDLL
+    {
+        private const string LIBRARY_KB = "cvCameraKb.dll";
+        [DllImport(LIBRARY_KB, EntryPoint = "createResultCsv",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern void createResultCsv(string cfg_path, string rst_path);
+        [DllImport(LIBRARY_KB, EntryPoint = "processKeyborad",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern void processKeyborad(string img_path, string cfg_path, string rst_path, string setting_json, string serial_no, float exp, UInt32 w, UInt32 h, int PicPart, double correctData, string correctPath);
+        [DllImport(LIBRARY_KB, EntryPoint = "getPassFail",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern void getPassFail(StringBuilder pass);
+        [DllImport(LIBRARY_KB, EntryPoint = "calculateHalo",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern double calculateHalo(UInt32 w, UInt32 h, byte[] rawArray, int x, int y, int width, int height, int outMOVE);
+        [DllImport(LIBRARY_KB, EntryPoint = "InitResource",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern void InitResource();
+        [DllImport(LIBRARY_KB, EntryPoint = "CM_ExportToTIFF",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_ExportToTIFF(string fileName, UInt32 w, UInt32 h, byte[] rawArray, UInt64 buflen, bool iscolor, float img_rotate_angle);
+
+    }
+
+    public class GCSDLL
+    {
+        public struct COLOR_PARA
+        {
+            public float fx;        //色坐标
+            public float fy;
+            public float fu;
+            public float fv;
+
+            public float fCCT;      //相关色温(K)
+            public float dC;        //色差dC
+            public float fLd;       //主波长(nm)
+            public float fPur;      //色纯度(%)
+            public float fLp;       //峰值波长(nm)
+            public float fHW;       //半波宽(nm)
+            public float fLav;      //平均波长(nm)
+            public float fRa;       //显色性指数 Ra
+            public float fRR;       //红色比
+            public float fGR;       //绿色比
+            public float fBR;       //蓝色比
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 15)]
+            public float[] fRi;   //显色性指数 R1-R15
+
+            public float fIp;      //峰值AD
+
+            public float fPh;      //光度值
+            public float fPhe;     //辐射度值
+            public float fPlambda; //绝对光谱洗漱
+            public float fSpect1;  //起始波长
+            public float fSpect2;  //结束波长
+            public float fInterval; //波长间隔
+
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 10000)]
+            public float[] fPL;   //光谱数据
+
+            public float fRf;
+            public float fRg;
+        };
+
+        private const string LIBRARY_CVCAMERA = "cvCamera.dll";
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void DllcallBack(ref COLOR_PARA result, float intTime, int resultCode);
+
+        //连接光谱仪
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CV_Init",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int CV_Init();
+
+        //断开光谱仪
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "JK_Emission_Close",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int JK_Emission_Close();
+
+        //启动光谱仪软件的服务
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "JK_Start_Server",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int JK_Start_Server();
+
+        //关闭光谱仪软件的服务
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "JK_Close_Server",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int JK_Close_Server();
+
+        //暗点校正
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CV_Init_Dark",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int CV_Init_Dark(float fIntTime, int iAveNum);
+
+        //获取自动积分时间
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "JK_GetAutoTime",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int JK_GetAutoTime(ref float fIntTime, int iLimitTime, float fTimeB);
+
+        //单次测量
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CV_One_Test",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public static extern int CV_One_Test(DllcallBack callBack, float IntTime, int AveNum, bool bUseAutoIntTime, bool bUseAutoDark);
+    }
+
+    public class PassSx
+    {
+        private const string LIBRARY_CVCAMERA = "cvCamera.dll";
+        private static bool _isSourceV = true;
+
+        //打开
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvPss_Sx_OpenNetDevice",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int cvPss_Sx_OpenNetDevice(bool bNet, string devName);
+
+        //关闭
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvPss_Sx_CloseDevice",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool cvPss_Sx_CloseDevice(int nDevID);
+
+        //获取ID和长度
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvPss_Sx_GetIDN",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool cvPss_Sx_GetIDN(int nDevID, byte[] pszIdn, ref int strLen);
+
+        //设置电压参数等并点亮
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvMeasureData",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool cvMeasureData_Raw(int nDevID, double measureVal, double lmtVal, ref double rstV, ref double rstI);
+
+        public static bool cvMeasureData(int nDevID, double measureVal, double lmtVal, ref double rstV, ref double rstI)
+        {
+            if (_isSourceV) return cvMeasureData_Raw(nDevID, measureVal, lmtVal / 1000.0, ref rstV, ref rstI);
+            else return cvMeasureData_Raw(nDevID, measureVal / 1000.0, lmtVal, ref rstV, ref rstI);
+        }
+        //获取结果
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvGetMeasureResult",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool cvGetMeasureResult(int nDevID, ref double rstV, ref double rstI);
+        //设置单步电压参数等并点亮
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvStepMeasureData",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool cvStepMeasureData_Raw(int nDevID, double measureVal, double lmtVal, ref double rstV, ref double rstI);
+        public static bool cvStepMeasureData(int nDevID, double measureVal, double lmtVal, ref double rstV, ref double rstI)
+        {
+            if (_isSourceV) return cvStepMeasureData_Raw(nDevID, measureVal, lmtVal / 1000.0, ref rstV, ref rstI);
+            else return cvStepMeasureData_Raw(nDevID, measureVal / 1000.0, lmtVal, ref rstV, ref rstI);
+        }
+        //点亮后执行关闭
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvPss_Sx_SetOutput",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool cvPss_Sx_SetOutput(int nDevID);
+        //点亮后执行关闭
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvPss_Sx_SetSourceV",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool cvPss_Sx_SetSourceV_Raw(int nDevID, bool isSourceV);
+        public static bool cvPss_Sx_SetSourceV(int nDevID, bool isSourceV)
+        {
+            _isSourceV = isSourceV;
+            return cvPss_Sx_SetSourceV_Raw(nDevID, isSourceV);
+        }
+
+        //序列扫描 指定量程
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvSweepData",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool cvSweepData_Raw(int nDevID, double srcRng, double lmtRng, double lmtVal, double startVal, double stopVal, int points, double[] pVList, double[] pIList);
+        public static bool cvSweepData(int nDevID, double srcRng, double lmtRng, double lmtVal, double startVal, double stopVal, int points, double[] pVList, double[] pIList)
+        {
+            if (_isSourceV) return cvSweepData_Raw(nDevID, srcRng, lmtRng / 1000.0, lmtVal / 1000.0, startVal, stopVal, points, pVList, pIList);
+            else return cvSweepData_Raw(nDevID, srcRng / 1000.0, lmtRng, lmtVal, startVal / 1000.0, stopVal / 1000.0, points, pVList, pIList);
+        }
+    }
+    public enum PG_Type
+    {
+        GX09C_LCM = 0,
+        SKYCODE,
+    };
+
+    public enum Communicate_Type
+    {
+        Communicate_Tcp = 0,
+        Communicate_Serial,
+    };
+
+    public class PG
+    {
+        private const string LIBRARY_CVCAMERA = "cvCamera.dll";
+
+        //初始化PG句柄
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_InitPG",
+CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern IntPtr CM_InitPG(PG_Type ePg_Type, Communicate_Type eCOM_Type);
+
+        //释放PG句柄
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_UnInitPG",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_UnInitPG(IntPtr handle);
+
+        //连接至PG(TCP/IP)
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_ConnectToPG",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_ConnectToPG(IntPtr handle, string szIPAddress, uint nPort);
+
+        //连接至PG(COM口)
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_InitSerialPG",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_InitSerialPG(IntPtr handle, string szComName, ulong BaudRate);
+
+        //判断PG是否已连接
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_IsConnectedPG",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_IsConnectedPG(IntPtr handle);
+
+        //StartPG
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_StartPG",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_StartPG(IntPtr handle);
+
+        //StopPG
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_StopPG",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_StopPG(IntPtr handle);
+
+        //ReSetPG
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_ReSetPG",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_ReSetPG(IntPtr handle);
+
+        //CM_SwitchUpPG
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SwitchUpPG",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SwitchUpPG(IntPtr handle);
+
+        //CM_SwitchDownPG
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SwitchDownPG",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SwitchDownPG(IntPtr handle);
+
+        //CM_SwitchFramePG
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SwitchFramePG",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SwitchFramePG(IntPtr handle, int nIndex);
+    }
+
+    public struct ScannCodeData
+    {
+        public Communicate_Type communicate_Type;
+        public string szComName;
+        public ulong BaudRate;
+        public string szCmd;
+        public ulong dwTimeOut;
+        public int CmdType;
+    }
+
+    public struct TpCheckData
+    {
+        public Communicate_Type communicate_Type;
+        public string szIPAddress;
+        public uint nPort;
+        public string szPassWord;
+        public string szStart;
+        public string szFilePath;
+        public int findWaitTime;
+    }
+
+    public struct PGComData
+    {
+        public PG_Type pg_type;
+        public Communicate_Type communicate_Type;
+        public string szComName;
+        public ulong BaudRate;
+    }
+
+    public class SensorComm
+    {
+        private const string LIBRARY_CVCAMERA = "cvCamera.dll";
+
+        //初始化传感器
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_InitSensorComm",
+CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern IntPtr CM_InitSensorComm(Communicate_Type eCOM_Type);
+
+        //释放传感器
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_UnInitSensorComm",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_UnInitSensorComm(IntPtr handle);
+
+        //连接至传感器(TCP/IP)
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_ConnectToSensor",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_ConnectToSensor(IntPtr handle, string szIPAddress, uint nPort);
+
+        //连接至传感器(COM口)
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_InitSerialSensor",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_InitSerialSensor(IntPtr handle, string szComName, ulong BaudRate);
+
+        //判断传感器是否已连接
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SensorConnected",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SensorConnected(IntPtr handle);
+
+        //断开传感器的连接
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_DestroySensor",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_DestroySensor(IntPtr handle);
+
+        //发送TP指令
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SendCmdToSensor",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SendCmdToSensor(IntPtr handle, string szPassWord, string szStart, ref bool bRet);
+
+        //发送传感器指令
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SendCmdToSensorEx",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SendCmdToSensorEx(IntPtr handle, string szCmd, byte[] szResponses, ulong dwTimeOut);
+
+        //发送传感器指令2
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SendCmdToSensorEx2",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int CM_SendCmdToSensorEx2(IntPtr handle, byte[] szCmd, int nSendLen, byte[] szResponses, int nResLen, ulong dwTimeOut);
+
+        //判断TP指令的执行结果
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_FindFileNOK",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_FindFileNOK(string szFilePath, ref bool bRet);
+
+        //创建TCP服务
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_CreateTCPServer",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern IntPtr CM_CreateTCPServer(uint nPort);
+
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void ReceiveCallback(IntPtr data1, IntPtr data2, byte[] data3, int data4);
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void ListenCallback(IntPtr data1, IntPtr data2, bool data3);
+
+        //创建TCP服务
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_CreateTCPServer",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern IntPtr CM_CreateTCPServer(uint nPort, IntPtr hOperate);
+
+        //创建TCP服务
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_CreateTCPServer",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern IntPtr CM_CreateTCPServer(uint nPort, IntPtr hOperate, ReceiveCallback callBack);
+
+        //创建TCP服务
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_CreateTCPServer",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern IntPtr CM_CreateTCPServer(uint nPort, IntPtr hOperate, ReceiveCallback callBack, ListenCallback callback2);
+
+        //判断服务端的Socket是否已经打开
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Sv_IsSocketOpened",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_Sv_IsSocketOpened(IntPtr hServer);
+
+        //判断指定的客户端是否已经连接服务端
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Sv_IsConnected",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_Sv_IsConnected(IntPtr hServer, IntPtr hClient);
+
+        //向所有的客服端发送数据
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Sv_Send",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern ulong CM_Sv_Send(IntPtr hServer, byte[] lpBuffer, ulong dwLength);
+
+        //向单个客服端发送数据
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Sv_SendEx",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern ulong CM_Sv_SendEx(IntPtr hServer, IntPtr hClient, byte[] lpBuffer, ulong dwLength);
+
+        //获取客户端IP
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Sv_GetClientIP",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_Sv_GetClientIP(IntPtr hServer, IntPtr hClient, char[] szIPAddress, ref uint nPort);
+
+        //获取客户端的数量
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Sv_GetClientCount",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern long CM_Sv_GetClientCount(IntPtr hServer);
+
+        //获取客户端的数量
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Sv_GetClientHandle",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern long CM_Sv_GetClientHandle(IntPtr hServer, IntPtr[] phClient);
+
+        //获取客户端的数量
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Sv_GetClientHandleEx",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern IntPtr CM_Sv_GetClientHandleEx(IntPtr hServer, uint nIndex);
+    }
+}
+
+

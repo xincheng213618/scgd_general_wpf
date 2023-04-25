@@ -12,6 +12,7 @@
     <AssemblyOriginatorKeyFile>$(SolutionDir)ColorVision.snk</AssemblyOriginatorKeyFile>
     <ApplicationIcon>Image\ColorVision.ico</ApplicationIcon>
     <StartupObject>ColorVision.App</StartupObject>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

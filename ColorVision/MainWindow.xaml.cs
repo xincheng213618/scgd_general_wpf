@@ -1,4 +1,5 @@
 ﻿using ColorVision.Config;
+using ColorVision.Extension;
 using ColorVision.MVVM;
 using ColorVision.Util;
 using log4net;
@@ -135,6 +136,7 @@ namespace ColorVision
                 Point position = new Point(10, 10);
 
                 using DrawingContext dc = DrawingVisualGrid.RenderOpen();
+                #pragma warning disable CS0618
                 for (int i = 0; i < bitmapImage.Width; i += 40)
                 {
                     string text = i.ToString();
@@ -151,6 +153,7 @@ namespace ColorVision
                     dc.DrawLine(new Pen(Brushes.Blue, 1), new Point(0, j), new Point(bitmapImage.Width, j));
 
                 }
+                #pragma warning restore CS0618
             }
         }
 
@@ -328,8 +331,8 @@ namespace ColorVision
             }
         }
 
-        private bool EraseVisual = false;
-        
+        private bool EraseVisual;
+
 
         private void Button7_Click(object sender, RoutedEventArgs e)
         {
