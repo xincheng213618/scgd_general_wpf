@@ -21,16 +21,16 @@ namespace ColorVision
         {
             visuals.Add(visual);
 
-            AddVisualChild(visual);
-            AddLogicalChild(visual);
+            base.AddVisualChild(visual);
+            base.AddLogicalChild(visual);
         }
 
         public void DeleteVisual(Visual visual)
         {
             visuals.Remove(visual);
 
-            RemoveVisualChild(visual);
-            RemoveLogicalChild(visual);
+            base.RemoveVisualChild(visual);
+            base.RemoveLogicalChild(visual);
         }
         public DrawingVisual? GetVisual(Point point)
         {

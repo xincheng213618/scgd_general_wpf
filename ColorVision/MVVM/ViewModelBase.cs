@@ -2,7 +2,7 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace ColorVision
+namespace ColorVision.MVVM
 {
     /// <summary>
     /// 实例化一个Mode

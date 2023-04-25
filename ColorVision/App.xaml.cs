@@ -1,7 +1,6 @@
 ﻿using ColorVision.NativeMethods;
 using log4net;
 using log4net.Config;
-using Microsoft.VisualBasic.Logging;
 using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
@@ -29,7 +28,6 @@ namespace ColorVision
         [GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
         public static void Main(string[] args)
         {
-            log.Info("程序启动");
             Mutex mutex = new Mutex(true, "ElectronicNeedleTherapySystem", out bool ret);
             if (!ret)
             {

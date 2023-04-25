@@ -22,7 +22,7 @@ namespace ColorVision
         {
             if (x < 0 || x >= bitmapImage.PixelWidth || y < 0 || y >= bitmapImage.PixelHeight)
             {
-                throw new ArgumentOutOfRangeException("指定的坐标超出图像范围");
+                throw new ArgumentOutOfRangeException(nameof(bitmapImage));
             }
             Color color = Colors.Black;
             byte[] pixelData = new byte[4];

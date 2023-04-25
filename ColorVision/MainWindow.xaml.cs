@@ -1,4 +1,5 @@
-﻿using log4net;
+﻿using ColorVision.MVVM;
+using log4net;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -39,7 +40,7 @@ namespace ColorVision
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            using System.Windows.Forms.OpenFileDialog openFileDialog = new();
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
             openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png) | *.jpg; *.jpeg; *.png";
             openFileDialog.RestoreDirectory = true;
 
@@ -68,7 +69,7 @@ namespace ColorVision
                 for (int j = 0; j < 10; j++)
                 {
                     DrawingVisualCircle drawingVisualCircle = new DrawingVisualCircle();
-                    drawingVisualCircle.Attribute.Center = new(i * 50, j * 50);
+                    drawingVisualCircle.Attribute.Center = new Point(i * 50, j * 50);
                     drawingVisualCircle.Render();
                     dvList.Add(drawingVisualCircle);
                     ImageShow.AddVisual(drawingVisualCircle);
@@ -80,7 +81,7 @@ namespace ColorVision
                 for (int j = 0; j < 10; j++)
                 {
                     DrawingVisualRectangle drawingVisualCircle = new DrawingVisualRectangle();
-                    drawingVisualCircle.Attribute.Rect = new(i * 50, j * 50,10,10);
+                    drawingVisualCircle.Attribute.Rect = new Rect(i * 50, j * 50,10,10);
                     drawingVisualCircle.Render();
                     dv1List.Add(drawingVisualCircle);
                     ImageShow.AddVisual(drawingVisualCircle);
@@ -103,7 +104,7 @@ namespace ColorVision
                 if (dv is DrawingVisualCircle visualCircle)
                 {
                     visualCircle.Attribute.Brush = Brushes.Red;
-                    visualCircle.Attribute.Center = new() { X = visualCircle.Attribute.Center.X + 10, Y = visualCircle.Attribute.Center.Y + 10 };
+                    visualCircle.Attribute.Center = new Point() { X = visualCircle.Attribute.Center.X + 10, Y = visualCircle.Attribute.Center.Y + 10 };
                     visualCircle.Render();
                 }
             }

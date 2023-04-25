@@ -1,4 +1,6 @@
-﻿using Newtonsoft.Json;
+﻿#pragma warning disable CA2211,CS8603
+
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;

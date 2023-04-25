@@ -68,7 +68,6 @@ namespace ColorVision.NativeMethods
 
                     //StringBuilder sb = new StringBuilder(256);
                     //GetWindowText(hwnd, sb, sb.Capacity);
-
                     char[] chars = new char[1024];
                     int size = GetWindowText(hwnd, chars, chars.Length);
                     // 如果窗口标题包含“提示”等关键词，则进行闪烁

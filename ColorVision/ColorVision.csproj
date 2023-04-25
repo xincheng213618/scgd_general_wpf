@@ -11,6 +11,7 @@
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>$(SolutionDir)ColorVision.snk</AssemblyOriginatorKeyFile>
     <ApplicationIcon>Image\ColorVision.ico</ApplicationIcon>
+    <StartupObject>ColorVision.App</StartupObject>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -51,6 +52,7 @@
 
   <ItemGroup>
     <Folder Include="Config\" />
+    <Folder Include="Util\" />
   </ItemGroup>
 
   <ItemGroup>

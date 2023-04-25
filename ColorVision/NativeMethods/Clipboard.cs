@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Windows;
 
-namespace Global.Common.NativeMethods
+namespace ColorVision.NativeMethods
 {
 
     public static class Clipboard

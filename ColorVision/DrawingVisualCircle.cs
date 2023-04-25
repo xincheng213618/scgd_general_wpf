@@ -1,10 +1,12 @@
-﻿using System;
+﻿#pragma warning disable CA1711
+using System;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
+using ColorVision.MVVM;
 
 namespace ColorVision
 {
