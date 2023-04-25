@@ -39,6 +39,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="CsvHelper" Version="30.0.1" />
     <PackageReference Include="Gu.Wpf.Geometry" Version="2.2.8" />
     <PackageReference Include="log4net" Version="2.0.15" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
@@ -52,7 +53,6 @@
 
   <ItemGroup>
     <Folder Include="Config\" />
-    <Folder Include="Util\" />
   </ItemGroup>
 
   <ItemGroup>

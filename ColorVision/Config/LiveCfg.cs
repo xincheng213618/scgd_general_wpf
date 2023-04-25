@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,6 +14,7 @@ namespace ColorVision.Config
 {
     public class LiveCfg
     {
+
         [Category("视频窗口参数配置")]
         public int 窗口数 { set; get; }
         [Category("视频窗口参数配置")]

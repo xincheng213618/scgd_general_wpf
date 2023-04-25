@@ -17,6 +17,9 @@ namespace ColorVision
 
         protected override int VisualChildrenCount { get => visuals.Count; }
 
+        public bool ContainsVisual(Visual visual) => visuals.Contains(visual);
+
+
         public void AddVisual(Visual visual)
         {
             visuals.Add(visual);
@@ -25,7 +28,7 @@ namespace ColorVision
             base.AddLogicalChild(visual);
         }
 
-        public void DeleteVisual(Visual visual)
+        public void RemoveVisual(Visual visual)
         {
             visuals.Remove(visual);
 

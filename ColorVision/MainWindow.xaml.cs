@@ -1,4 +1,6 @@
-﻿using ColorVision.MVVM;
+﻿using ColorVision.Config;
+using ColorVision.MVVM;
+using ColorVision.Util;
 using log4net;
 using System;
 using System.Collections;
@@ -36,6 +38,7 @@ namespace ColorVision
             InitializeComponent();
             ImageInfoText.DataContext = ImageInfo;
             ImageShow.AddVisual(drawingVisual2);
+            ImageShow.AddVisual(DrawingVisualGrid);     
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -49,9 +52,7 @@ namespace ColorVision
                 log.Info(openFileDialog.FileName);
                 string filePath = openFileDialog.FileName;
                 ImageShow.Source = new BitmapImage(new Uri(filePath));
-
-
-
+                DrawGridImage();
                 // 在这里处理所选文件的逻辑。
             }
         }
@@ -106,6 +107,48 @@ namespace ColorVision
                     visualCircle.Attribute.Brush = Brushes.Red;
                     visualCircle.Attribute.Center = new Point() { X = visualCircle.Attribute.Center.X + 10, Y = visualCircle.Attribute.Center.Y + 10 };
                     visualCircle.Render();
+                }
+            }
+        }
+
+        private DrawingVisual DrawingVisualGrid = new DrawingVisual();
+
+        private void Button5_Click(object sender, RoutedEventArgs e)
+        {
+            if(!ImageShow.ContainsVisual(DrawingVisualGrid))
+                ImageShow.AddVisual(DrawingVisualGrid);
+        }
+        private void Button6_Click(object sender, RoutedEventArgs e)
+        {
+            if (ImageShow.ContainsVisual(DrawingVisualGrid))
+                ImageShow.RemoveVisual(DrawingVisualGrid);
+        }
+
+        private void DrawGridImage()
+        {
+            if (ImageShow.Source is BitmapImage bitmapImage)
+            {
+                Brush brush = Brushes.Black;
+                FontFamily fontFamily = new FontFamily("Arial");
+                double fontSize = 10;
+                Point position = new Point(10, 10);
+
+                using DrawingContext dc = DrawingVisualGrid.RenderOpen();
+                for (int i = 0; i < bitmapImage.Width; i += 40)
+                {
+                    string text = i.ToString();
+                    FormattedText formattedText = new FormattedText(text,System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight,new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize,brush);
+                    dc.DrawText(formattedText, new Point(i, -10));
+                    dc.DrawLine(new Pen(Brushes.Blue, 1), new Point(i, 0), new Point(i, bitmapImage.Height));
+                }
+
+                for (int j = 0; j < bitmapImage.Height; j += 40)
+                {
+                    string text = j.ToString();
+                    FormattedText formattedText = new FormattedText(text, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush);
+                    dc.DrawText(formattedText, new Point(-10, j));
+                    dc.DrawLine(new Pen(Brushes.Blue, 1), new Point(0, j), new Point(bitmapImage.Width, j));
+
                 }
             }
         }
@@ -243,6 +286,36 @@ namespace ColorVision
                 }
             }
         }
+
+        private void Button3_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("Aoi配置文件测试");
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
+            openFileDialog.Filter = "配置文件(*.cfg) | *.cfg";
+            openFileDialog.RestoreDirectory = true;
+
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                log.Info("打开AoiCfg:" +openFileDialog.FileName);
+                AoiCfg aoiCfg = CfgFile.LoadCfgFile<AoiCfg>(openFileDialog.FileName);
+                PropertyGrid2.SelectedObject = aoiCfg;
+            }
+
+
+        }
+
+        private void Button4_Click(object sender, RoutedEventArgs e)
+        {
+            if (PropertyGrid2.SelectedObject is AoiCfg aoiCfg)
+            {
+                using var saveFileDialog = new System.Windows.Forms.SaveFileDialog();
+                saveFileDialog.Filter = "Configuration file (*.cfg)|*.cfg";
+                saveFileDialog.FileName = "aoi.cfg";
+                if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                    CfgFile.SaveCfgFile(saveFileDialog.FileName, aoiCfg);
+            }
+        }
+
 
     }
 
