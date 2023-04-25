@@ -7,7 +7,7 @@
         xmlns:effects="http://gu.se/Geometry"
         xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         mc:Ignorable="d"
-        Title="MainWindow" Height="720" Width="1280">
+        Title="MainWindow" Height="1080" Width="1920">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
@@ -23,7 +23,7 @@
         </Grid>
         <Grid  Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="200"/>
+                <ColumnDefinition Width="300"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column="0">
@@ -55,14 +55,14 @@
                     </TextBlock>
                     <Rectangle Height="10" Fill="{Binding Color}"/>
                 </StackPanel>
-                <WindowsFormsHost x:Name="WindowsFormsHost1" Height="150">
+                <WindowsFormsHost x:Name="WindowsFormsHost1" Height="400">
                     <winf:PropertyGrid x:Name="PropertyGrid2">
                     </winf:PropertyGrid>
                 </WindowsFormsHost>
             </StackPanel>
             <Grid Grid.Column="1" Background="#c3c3c3">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="10*"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <effects:Zoombox Grid.Row="0">

@@ -34,6 +34,7 @@ namespace ColorVision
         {
             InitializeComponent();
             ImageInfoText.DataContext = ImageInfo;
+            ImageShow.AddVisual(drawingVisual2);
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -48,7 +49,8 @@ namespace ColorVision
                 string filePath = openFileDialog.FileName;
                 ImageShow.Source = new BitmapImage(new Uri(filePath));
 
-                ImageShow.AddVisual(drawingVisual2);
+
+
                 // 在这里处理所选文件的逻辑。
             }
         }
@@ -108,7 +110,7 @@ namespace ColorVision
         }
 
 
-        public DrawingVisual drawingVisual2 = new DrawingVisual();
+        private DrawingVisual drawingVisual2 = new DrawingVisual();
 
         private void DrawImage(Point actPoint, Point bitPoint)
         {
@@ -121,7 +123,6 @@ namespace ColorVision
 
                     using DrawingContext dc = drawingVisual2.RenderOpen();
                     dc.DrawImage(croppedBitmap, new Rect(new Point(actPoint.X, actPoint.Y+ 25), new Size(120, 90)));
-                    dc.DrawLine(new Pen(Brushes.Red, 10), new Point(1,0), new Point(1,1000));
 
                     dc.DrawLine(new Pen(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#00B1FF")), 3), new Point(actPoint.X + 59 , actPoint.Y + 25), new Point(actPoint.X + 59, actPoint.Y + 25 + 90));
                     dc.DrawLine(new Pen(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#00B1FF")), 3), new Point(actPoint.X, actPoint.Y + 25 +44), new Point(actPoint.X +120, actPoint.Y + 25 + 44));

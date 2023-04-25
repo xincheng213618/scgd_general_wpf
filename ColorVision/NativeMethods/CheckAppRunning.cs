@@ -3,10 +3,11 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using System.Windows.Media.Animation;
 
 namespace ColorVision.NativeMethods
 {
-    public static class CheckAppRuning
+    public static class CheckAppRunning
     {
         [DllImport("user32.dll")]
         private static extern bool FlashWindowEx(ref FLASHWINFO pwfi);
@@ -14,8 +15,9 @@ namespace ColorVision.NativeMethods
         [DllImport("user32.dll")]
         private static extern bool IsWindowVisible(IntPtr hWnd);
 
-        [DllImport("user32.dll")]
-        private static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        //private static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
+        private static extern int GetWindowText(IntPtr hWnd, char[] lpString, int nMaxCount);
 
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -64,11 +66,13 @@ namespace ColorVision.NativeMethods
                         continue;
                     }
 
-                    StringBuilder sb = new StringBuilder(256);
-                    GetWindowText(hwnd, sb, sb.Capacity);
+                    //StringBuilder sb = new StringBuilder(256);
+                    //GetWindowText(hwnd, sb, sb.Capacity);
 
+                    char[] chars = new char[1024];
+                    int size = GetWindowText(hwnd, chars, chars.Length);
                     // 如果窗口标题包含“提示”等关键词，则进行闪烁
-                    if (sb.ToString().Contains("MainWindow"))
+                    if (new string(chars, 0, size).Contains("MainWindow"))
                     {
                         SetForegroundWindow(hwnd);
                         FLASHWINFO fLASHWINFO = new FLASHWINFO

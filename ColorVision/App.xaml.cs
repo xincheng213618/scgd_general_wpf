@@ -34,7 +34,7 @@ namespace ColorVision
             if (!ret)
             {
                 //System.Windows.MessageBox.Show("程序已经运行！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
-                CheckAppRuning.Check();
+                CheckAppRunning.Check();
                 log.Info("程序已经打开");
                 Environment.Exit(0);
             }
