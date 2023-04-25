@@ -13,6 +13,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Ink;
@@ -202,41 +203,52 @@ namespace ColorVision
             if (sender is DrawCanvas drawCanvas)
             {
                 var point = e.GetPosition(drawCanvas);
-
-
-                if (drawCanvas.GetVisual(point) is DrawingVisualCircle drawingVisual)
+                if (EraseVisual)
                 {
-                    if (PropertyGrid2.SelectedObject is ViewModelBase viewModelBase)
+                    if (drawCanvas.GetVisual(point) is Visual DrawingVisual)
                     {
-                        viewModelBase.PropertyChanged -= (s, e) =>
+                        drawCanvas.RemoveVisual(DrawingVisual);
+                    }
+                }
+                else
+                {
+                    if (drawCanvas.GetVisual(point) is DrawingVisualCircle drawingVisual)
+                    {
+                        if (PropertyGrid2.SelectedObject is ViewModelBase viewModelBase)
+                        {
+                            viewModelBase.PropertyChanged -= (s, e) =>
+                            {
+                                PropertyGrid2.Refresh();
+                            };
+                        }
+
+                        PropertyGrid2.SelectedObject = drawingVisual.Attribute;
+                        drawingVisual.Attribute.PropertyChanged += (s, e) =>
                         {
                             PropertyGrid2.Refresh();
                         };
                     }
 
-                    PropertyGrid2.SelectedObject = drawingVisual.Attribute;
-                    drawingVisual.Attribute.PropertyChanged += (s, e) =>
+                    if (drawCanvas.GetVisual(point) is DrawingVisualRectangle drawingVisual1)
                     {
-                        PropertyGrid2.Refresh();
-                    };
-                }
+                        if (PropertyGrid2.SelectedObject is ViewModelBase viewModelBase)
+                        {
+                            viewModelBase.PropertyChanged -= (s, e) =>
+                            {
+                                PropertyGrid2.Refresh();
+                            };
+                        }
 
-                if (drawCanvas.GetVisual(point) is DrawingVisualRectangle drawingVisual1)
-                {
-                    if (PropertyGrid2.SelectedObject is ViewModelBase viewModelBase)
-                    {
-                        viewModelBase.PropertyChanged -= (s, e) =>
+                        PropertyGrid2.SelectedObject = drawingVisual1.Attribute;
+                        drawingVisual1.Attribute.PropertyChanged += (s, e) =>
                         {
                             PropertyGrid2.Refresh();
                         };
                     }
-
-                    PropertyGrid2.SelectedObject = drawingVisual1.Attribute;
-                    drawingVisual1.Attribute.PropertyChanged += (s, e) =>
-                    {
-                        PropertyGrid2.Refresh();
-                    };
                 }
+
+
+
             }
 
         }
@@ -316,7 +328,17 @@ namespace ColorVision
             }
         }
 
+        private bool EraseVisual = false;
+        
 
+        private void Button7_Click(object sender, RoutedEventArgs e)
+        {
+            if(sender is ToggleButton toggleButton)
+            {
+                EraseVisual = toggleButton.IsChecked == true;
+                MessageBox.Show(toggleButton.IsChecked.ToString());
+            }
+        }
     }
 
     public class ImageInfo : ViewModelBase

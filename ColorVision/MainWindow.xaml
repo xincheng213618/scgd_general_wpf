@@ -32,6 +32,7 @@
                 <Button Content="移动图形"  Click="Button2_Click"/>
                 <Button Content="绘制Grid"  Click="Button5_Click"/>
                 <Button Content="隐藏Grid"  Click="Button6_Click"/>
+                <ToggleButton Content="删除图形"  Click="Button7_Click"/>
 
                 <StackPanel x:Name="ImageInfoText">
                     <TextBlock >
