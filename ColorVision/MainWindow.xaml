@@ -15,8 +15,11 @@
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
         <Grid Grid.Row="0">
-            <Menu x:Name="Menu1" >
+            <Menu x:Name="Menu1">
                 <MenuItem Header="文件(_F)">
+
+                </MenuItem>
+                <MenuItem Header="MQTTDemo(_M)" Click="MenuItem_Click">
 
                 </MenuItem>
             </Menu>

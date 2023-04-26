@@ -391,6 +391,12 @@ namespace ColorVision
         {
             e.Handled = true;
         }
+
+        private void MenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            MQTTDemo mQTTDemo = new MQTTDemo();
+            mQTTDemo.Show();
+        }
     }
 
     public class ImageInfo : ViewModelBase
