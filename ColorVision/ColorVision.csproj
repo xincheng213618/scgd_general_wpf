@@ -44,6 +44,8 @@
     <PackageReference Include="Gu.Wpf.Geometry" Version="2.2.8" />
     <PackageReference Include="log4net" Version="2.0.15" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="OpenCvSharp4" Version="4.7.0.20230115" />
+    <PackageReference Include="ScottPlot.WPF" Version="4.1.63" />
   </ItemGroup>
 
   <ItemGroup>

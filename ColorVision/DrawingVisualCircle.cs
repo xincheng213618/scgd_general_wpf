@@ -47,6 +47,15 @@ namespace ColorVision
             Attribute.Radius = 30;
             Attribute.PropertyChanged += (s,e) => Render();
         }
+        public double CenterX { get => Attribute.Center.X; set => Attribute.Center = new Point(value, Attribute.Center.Y); }
+        public double CenterY { get => Attribute.Center.Y; set => Attribute.Center = new Point(Attribute.Center.X,value); }
+
+
+        public double Radius { get => Attribute.Radius; set => Attribute.Radius =value; }
+
+        public bool IsCheck { get; set; } = true;
+
+
 
         public void Render()
         {

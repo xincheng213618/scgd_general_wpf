@@ -6,6 +6,7 @@ using log4net;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using System.Reflection.Emit;
@@ -33,33 +34,33 @@ namespace ColorVision
     public partial class MainWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
-
         public ImageInfo ImageInfo { get; set; } = new ImageInfo();
         public MainWindow()
         {
             InitializeComponent();
             ImageInfoText.DataContext = ImageInfo;
-            ImageShow.AddVisual(drawingVisual2);
-            ImageShow.AddVisual(DrawingVisualGrid);     
+            ImageShow.AddVisual(DrawingVisualGrid);
+            ListView1.ItemsSource = DrawingVisualCircleLists;
+
+
         }
+        public ObservableCollection<DrawingVisualCircle> DrawingVisualCircleLists { get; set; } = new ObservableCollection<DrawingVisualCircle>();
+
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
             openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png) | *.jpg; *.jpeg; *.png";
             openFileDialog.RestoreDirectory = true;
-
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 log.Info(openFileDialog.FileName);
                 string filePath = openFileDialog.FileName;
                 ImageShow.Source = new BitmapImage(new Uri(filePath));
                 DrawGridImage();
-                // 在这里处理所选文件的逻辑。
+                Zoombox1.ZoomUniform();
             }
         }
-
-
 
         List<DrawingVisualCircle> dvList = new List<DrawingVisualCircle>();
         List<DrawingVisualRectangle> dv1List = new List<DrawingVisualRectangle>();
@@ -67,15 +68,18 @@ namespace ColorVision
 
         private void Button1_Click(object sender, RoutedEventArgs e)
         {
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 100; i++)
             {
-                for (int j = 0; j < 10; j++)
+                for (int j = 0; j < 100; j++)
                 {
                     DrawingVisualCircle drawingVisualCircle = new DrawingVisualCircle();
-                    drawingVisualCircle.Attribute.Center = new Point(i * 50, j * 50);
+                    drawingVisualCircle.Attribute.Center = new Point(i * 5, j * 5);
+                    drawingVisualCircle.Attribute.Radius = 1;
+
                     drawingVisualCircle.Render();
                     dvList.Add(drawingVisualCircle);
                     ImageShow.AddVisual(drawingVisualCircle);
+                    DrawingVisualCircleLists.Add(drawingVisualCircle);
                 }
             }
 
@@ -132,6 +136,7 @@ namespace ColorVision
             {
                 Brush brush = Brushes.Black;
                 FontFamily fontFamily = new FontFamily("Arial");
+                
                 double fontSize = 10;
                 Point position = new Point(10, 10);
 
@@ -170,6 +175,10 @@ namespace ColorVision
 
 
                     using DrawingContext dc = drawingVisual2.RenderOpen();
+
+                    var transform = new MatrixTransform(1/Zoombox1.ContentMatrix.M11, Zoombox1.ContentMatrix.M12, Zoombox1.ContentMatrix.M21, 1 / Zoombox1.ContentMatrix.M22, (1- 1/Zoombox1.ContentMatrix.M11)*actPoint.X, (1 - 1/Zoombox1.ContentMatrix.M22) * actPoint.Y);
+                    dc.PushTransform(transform);
+
                     dc.DrawImage(croppedBitmap, new Rect(new Point(actPoint.X, actPoint.Y+ 25), new Size(120, 90)));
 
                     dc.DrawLine(new Pen(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#00B1FF")), 3), new Point(actPoint.X + 59 , actPoint.Y + 25), new Point(actPoint.X + 59, actPoint.Y + 25 + 90));
@@ -183,21 +192,22 @@ namespace ColorVision
                     double height = 90;
 
 
-                    dc.DrawLine(new Pen(Brushes.Black, 0.5), new Point(x1,y1), new Point(x1,y1+height));
+                    dc.DrawLine(new Pen(Brushes.Black, 0.5), new Point(x1,y1-0.25), new Point(x1,y1+height+0.25));
                     dc.DrawLine(new Pen(Brushes.Black, 0.5), new Point(x1, y1), new Point(x1 + width, y1));
-                    dc.DrawLine(new Pen(Brushes.Black, 0.5), new Point(x1 + width, y1), new Point(x1 + width, y1 + height));
+                    dc.DrawLine(new Pen(Brushes.Black, 0.5), new Point(x1 + width, y1-0.25), new Point(x1 + width, y1 + height+0.25));
                     dc.DrawLine(new Pen(Brushes.Black, 0.5), new Point(x1, y1 + height),new Point(x1 + width, y1 + height));
 
-                    x1 = x1 +1;
+                    x1 = x1+1;
                     y1 = y1 + 1;
                     width -= 2;
                     height -= 2;
-                    dc.DrawLine(new Pen(Brushes.White, 1.5), new Point(x1, y1), new Point(x1, y1 + height));
+                    dc.DrawLine(new Pen(Brushes.White, 1.5), new Point(x1, y1-0.75), new Point(x1, y1 + height + 0.75));
                     dc.DrawLine(new Pen(Brushes.White, 1.5), new Point(x1, y1), new Point(x1 + width, y1));
-                    dc.DrawLine(new Pen(Brushes.White, 1.5), new Point(x1 + width, y1), new Point(x1 + width, y1 + height));
+                    dc.DrawLine(new Pen(Brushes.White, 1.5), new Point(x1 + width, y1- 0.75), new Point(x1 + width, y1 + height+ 0.75));
                     dc.DrawLine(new Pen(Brushes.White, 1.5), new Point(x1, y1 + height), new Point(x1 + width, y1 + height));
-
+                    dc.Pop();
                 }
+
             }
         }
 
@@ -341,6 +351,45 @@ namespace ColorVision
                 EraseVisual = toggleButton.IsChecked == true;
                 MessageBox.Show(toggleButton.IsChecked.ToString());
             }
+        }
+
+        private void ImageShow_MouseLeave(object sender, MouseEventArgs e)
+        {
+            if (sender is DrawCanvas drawCanvas && drawCanvas.ContainsVisual(drawingVisual2))
+            {
+                ImageShow.RemoveVisual(drawingVisual2);
+            }
+
+        }
+
+        private void ImageShow_MouseEnter(object sender, MouseEventArgs e)
+        {
+            if (sender is DrawCanvas drawCanvas && !drawCanvas.ContainsVisual(drawingVisual2))
+            {
+                ImageShow.AddVisual(drawingVisual2);
+            }
+        }
+
+        private void CheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is CheckBox checkBox&& checkBox.Tag is DrawingVisualCircle drawingVisualCircle)
+            {
+                if (checkBox.IsChecked ==true)
+                {
+                    if (!ImageShow.ContainsVisual(drawingVisualCircle))
+                        ImageShow.AddVisual(drawingVisualCircle);
+                }
+                else
+                {
+                    if (ImageShow.ContainsVisual(drawingVisualCircle))
+                        ImageShow.RemoveVisual(drawingVisualCircle);
+                }
+            }
+        }
+
+        private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)
+        {
+            e.Handled = true;
         }
     }
 

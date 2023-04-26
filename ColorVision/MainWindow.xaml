@@ -16,7 +16,7 @@
         </Grid.RowDefinitions>
         <Grid Grid.Row="0">
             <Menu x:Name="Menu1" >
-                <MenuItem Header="文件">
+                <MenuItem Header="文件(_F)">
 
                 </MenuItem>
             </Menu>
@@ -26,13 +26,18 @@
                 <ColumnDefinition Width="300"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="0">
-                <Button Content="打开测试图像"  Click="Button_Click"/>
-                <Button Content="绘制图形"  Click="Button1_Click"/>
-                <Button Content="移动图形"  Click="Button2_Click"/>
-                <Button Content="绘制Grid"  Click="Button5_Click"/>
-                <Button Content="隐藏Grid"  Click="Button6_Click"/>
-                <ToggleButton Content="删除图形"  Click="Button7_Click"/>
+            <StackPanel Grid.Column="0" >
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="打开测试图像"  Click="Button_Click"/>
+                    <Button Content="绘制图形"  Click="Button1_Click"/>
+                    <Button Content="移动图形"  Click="Button2_Click"/>
+   
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="绘制Grid"  Click="Button5_Click"/>
+                    <Button Content="隐藏Grid"  Click="Button6_Click"/>
+                    <ToggleButton Content="删除图形"  Click="Button7_Click"/>
+                </StackPanel>
 
                 <StackPanel x:Name="ImageInfoText">
                     <TextBlock >
@@ -59,21 +64,49 @@
                     </TextBlock>
                     <Rectangle Height="10" Fill="{Binding Color}"/>
                 </StackPanel>
-                <WindowsFormsHost x:Name="WindowsFormsHost1" Height="300" >
+                <WindowsFormsHost x:Name="WindowsFormsHost1" Height="200" >
                     <winf:PropertyGrid x:Name="PropertyGrid2">
                     </winf:PropertyGrid>
                 </WindowsFormsHost>
                 <Button Content="读取CFG测试"  Click="Button3_Click"/>
                 <Button Content="保存CFG测试"  Click="Button4_Click"/>
+                <ScrollViewer  Height="200" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                    <ListView  x:Name="ListView1"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" >
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Width="{Binding ElementName=ListView1,Path=ActualWidth}">
+                                    <GridViewColumn.CellTemplate  >
+                                        <DataTemplate >
+                                            <Border x:Name="border1"  Height="20" Margin="0,2,0,2" BorderThickness="0" Width="{Binding ElementName=ListView1,Path=ActualWidth}"   >
+                                                <Grid Margin="0,2,30,2" >
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="30"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel Grid.Column="1" Margin="2" Orientation="Horizontal">
+                                                        <CheckBox IsChecked="True" Click="CheckBox_Click" Tag="{Binding .}"/>
+                                                        <TextBlock Text="{Binding Path = CenterX }" />
+                                                        <TextBlock Text="{Binding Path = CenterY }" />
+                                                    </StackPanel>
+                                                </Grid>
 
+                                            </Border>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </ScrollViewer>
+                <WpfPlot Height="155"/>
             </StackPanel>
             <Grid Grid.Column="1" Background="#c3c3c3">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="10*"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <effects:Zoombox Grid.Row="0">
-                    <local:DrawCanvas x:Name="ImageShow"  MouseDown="ImageShow_MouseDown" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
+                <effects:Zoombox x:Name="Zoombox1"   Grid.Row="0">
+                    <local:DrawCanvas x:Name="ImageShow" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  MouseDown="ImageShow_MouseDown" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
                 </effects:Zoombox>
                 <local:InkVisual  Grid.Row="1" x:Name="InkVisual"/>
             </Grid>
