@@ -40,12 +40,13 @@ namespace ColorVision
             InitializeComponent();
             ImageInfoText.DataContext = ImageInfo;
             ImageShow.AddVisual(DrawingVisualGrid);
+            ImageShow.AddVisual(ImageRuler);
             ListView1.ItemsSource = DrawingVisualCircleLists;
-
 
         }
         public ObservableCollection<DrawingVisualCircle> DrawingVisualCircleLists { get; set; } = new ObservableCollection<DrawingVisualCircle>();
 
+        private DrawingVisual ImageRuler = new DrawingVisual();
 
         private async void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -68,41 +69,65 @@ namespace ColorVision
         AsyncUIContainer asyncUIContainer = new AsyncUIContainer();
         private async void Button1_Click(object sender, RoutedEventArgs e)
         {
-
-            await asyncUIContainer.UIDispatcher.InvokeAsync(() =>
-            {
-                for (int i = 0; i < 100; i++)
-                {
-                    for (int j = 0; j < 100; j++)
-                    {
-                        DrawingVisualCircle drawingVisualCircle = new DrawingVisualCircle();
-                        drawingVisualCircle.Attribute.Center = new Point(i * 20, j * 20);
-                        drawingVisualCircle.Attribute.Radius = 5;
-
-                        drawingVisualCircle.Render();
-                        dvList.Add(drawingVisualCircle);
-                        asyncUIContainer.Children.Add(drawingVisualCircle);
-                    }
-                }
-                for (int i = 10; i < 20; i++)
-                {
-                    for (int j = 0; j < 10; j++)
-                    {
-                        DrawingVisualRectangle drawingVisualCircle = new DrawingVisualRectangle();
-                        drawingVisualCircle.Attribute.Rect = new Rect(i * 50, j * 50, 10, 10);
-                        drawingVisualCircle.Render();
-                        dv1List.Add(drawingVisualCircle);
-                        asyncUIContainer.Children.Add(drawingVisualCircle);
-                    }
-                }
-            });
-
-            ImageShow.AddVisual(asyncUIContainer);
-
-            //foreach (var item in dv1List)
+            //await asyncUIContainer.UIDispatcher.InvokeAsync(() =>
             //{
-            //    ImageShow.AddVisual(item);
-            //}
+            //    for (int i = 0; i < 100; i++)
+            //    {
+            //        for (int j = 0; j < 100; j++)
+            //        {
+            //            DrawingVisualCircle drawingVisualCircle = new DrawingVisualCircle();
+            //            drawingVisualCircle.Attribute.Center = new Point(i * 20, j * 20);
+            //            drawingVisualCircle.Attribute.Radius = 5;
+
+            //            drawingVisualCircle.Render();
+            //            dvList.Add(drawingVisualCircle);
+            //            asyncUIContainer.Children.Add(drawingVisualCircle);
+            //        }
+            //    }
+            //    for (int i = 10; i < 20; i++)
+            //    {
+            //        for (int j = 0; j < 10; j++)
+            //        {
+            //            DrawingVisualRectangle drawingVisualCircle = new DrawingVisualRectangle();
+            //            drawingVisualCircle.Attribute.Rect = new Rect(i * 50, j * 50, 10, 10);
+            //            drawingVisualCircle.Render();
+            //            dv1List.Add(drawingVisualCircle);
+            //            asyncUIContainer.Children.Add(drawingVisualCircle);
+            //        }
+            //    }
+            //});
+            //ImageShow.AddVisual(asyncUIContainer);
+
+
+            for (int i = 0; i < 100; i++)
+            {
+                for (int j = 0; j < 100; j++)
+                {
+                    DrawingVisualCircle drawingVisualCircle = new DrawingVisualCircle();
+                    drawingVisualCircle.Attribute.Center = new Point(i * 20, j * 20);
+                    drawingVisualCircle.Attribute.Radius = 5;
+
+                    drawingVisualCircle.Render();
+                    dvList.Add(drawingVisualCircle);
+
+                }
+            }
+            for (int i = 10; i < 20; i++)
+            {
+                for (int j = 0; j < 10; j++)
+                {
+                    DrawingVisualRectangle drawingVisualCircle = new DrawingVisualRectangle();
+                    drawingVisualCircle.Attribute.Rect = new Rect(i * 50, j * 50, 10, 10);
+                    drawingVisualCircle.Render();
+                    dv1List.Add(drawingVisualCircle);
+                    ImageShow.AddVisual(drawingVisualCircle);
+                }
+            }
+            await Task.Delay(1000);
+            foreach (var item in dvList)
+            {
+                ImageShow.AddVisual(item);
+            }
 
 
             PropertyGrid2.SelectedObject = dvList[0].Attribute;
@@ -130,13 +155,24 @@ namespace ColorVision
 
         private void Button5_Click(object sender, RoutedEventArgs e)
         {
-            if(!ImageShow.ContainsVisual(DrawingVisualGrid))
-                ImageShow.AddVisual(DrawingVisualGrid);
+            if (sender is ToggleButton toggleButton)
+            {
+                if (!ImageShow.ContainsVisual(DrawingVisualGrid) && toggleButton.IsChecked==true)
+                    ImageShow.AddVisual(DrawingVisualGrid);
+                if (ImageShow.ContainsVisual(DrawingVisualGrid) && toggleButton.IsChecked == false)
+                    ImageShow.RemoveVisual(DrawingVisualGrid);
+            }
+
         }
         private void Button6_Click(object sender, RoutedEventArgs e)
         {
-            if (ImageShow.ContainsVisual(DrawingVisualGrid))
-                ImageShow.RemoveVisual(DrawingVisualGrid);
+            if (sender is ToggleButton toggleButton)
+            {
+                if (!ImageShow.ContainsVisual(ImageRuler) && toggleButton.IsChecked == true)
+                    ImageShow.AddVisual(ImageRuler);
+                if (ImageShow.ContainsVisual(ImageRuler) && toggleButton.IsChecked == false)
+                    ImageShow.RemoveVisual(ImageRuler);
+            }
         }
 
         private void DrawGridImage()
@@ -172,15 +208,47 @@ namespace ColorVision
         }
 
 
-        private DrawingVisual drawingVisual2 = new DrawingVisual();
-
-        private void DrawImage(Point actPoint, Point bitPoint)
+        private void DrawImageRuler(Point actPoint)
         {
             if (ImageShow.Source is BitmapImage bitmapImage)
             {
-                if (bitPoint.X > 60 && bitPoint.X < bitmapImage.PixelWidth - 60 && bitPoint.Y > 45 && bitPoint.Y < bitmapImage.PixelHeight - 45)
+                actPoint.X = 0;
+                actPoint.Y = 0;
+
+                using DrawingContext dc = ImageRuler.RenderOpen();
+                var transform = new MatrixTransform(1 / Zoombox1.ContentMatrix.M11, Zoombox1.ContentMatrix.M12, Zoombox1.ContentMatrix.M21, 1 / Zoombox1.ContentMatrix.M22, (1 - 1 / Zoombox1.ContentMatrix.M11) * actPoint.X, (1 - 1 / Zoombox1.ContentMatrix.M22) * actPoint.Y);
+                dc.PushTransform(transform);
+
+                dc.DrawLine(new Pen(Brushes.Red, 10), new Point(100, 50), new Point(200, 50));
+
+
+                Brush brush = Brushes.Red;
+                FontFamily fontFamily = new FontFamily("Arial");
+                double fontSize = 10;
+                FormattedText formattedText = new FormattedText((1 / Zoombox1.ContentMatrix.M11* bitmapImage.PixelWidth/100).ToString("F2") +"px", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush);
+                dc.DrawText(formattedText, new Point(100, 30));
+
+
+                double X = 1 / Zoombox1.ContentMatrix.M11 * bitmapImage.PixelWidth / 100;
+                double result = X < 10 ? 5 : X < 20 ? 10 : X < 50 ? 20 : X < 100 ? 50 : (X < 200 ? 100 : (X < 500 ? 200 : (X < 1000 ? 500 : (X < 2000 ? 1000 : 2000))));
+
+                dc.DrawLine(new Pen(Brushes.Red, 10), new Point(100, 100), new Point(100+ 100 * result/X, 100));
+                FormattedText formattedText1 = new FormattedText((result).ToString("F2") + "px", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush);
+                dc.DrawText(formattedText1, new Point(100, 80));
+
+            }
+        }
+
+
+        private DrawingVisual drawingVisual2 = new DrawingVisual();
+
+        private void DrawImage(Point actPoint, Point disPoint)
+        {
+            if (ImageShow.Source is BitmapImage bitmapImage)
+            {
+                if (disPoint.X > 60 && disPoint.X < bitmapImage.PixelWidth - 60 && disPoint.Y > 45 && disPoint.Y < bitmapImage.PixelHeight - 45)
                 {
-                    CroppedBitmap croppedBitmap = new CroppedBitmap(bitmapImage, new Int32Rect(bitPoint.X.ToInt32() - 60, bitPoint.Y.ToInt32() - 45, 120, 90));
+                    CroppedBitmap croppedBitmap = new CroppedBitmap(bitmapImage, new Int32Rect(disPoint.X.ToInt32() - 60, disPoint.Y.ToInt32() - 45, 120, 90));
 
 
                     using DrawingContext dc = drawingVisual2.RenderOpen();
@@ -237,15 +305,17 @@ namespace ColorVision
 
                     if (drawCanvas.GetVisual(point) is DrawingVisualCircle drawingVisual)
                     {
-                        if (PropertyGrid2.SelectedObject is ViewModelBase viewModelBase)
+                        if (PropertyGrid2.SelectedObject is CircleAttribute viewModelBase)
                         {
                             viewModelBase.PropertyChanged -= (s, e) =>
                             {
                                 PropertyGrid2.Refresh();
                             };
+                            viewModelBase.Pen = new Pen(Brushes.Black, 1);
                         }
 
                         PropertyGrid2.SelectedObject = drawingVisual.Attribute;
+                        drawingVisual.Attribute.Pen = new Pen(Brushes.Red, 1);
                         drawingVisual.Attribute.PropertyChanged += (s, e) =>
                         {
                             PropertyGrid2.Refresh();
@@ -275,6 +345,23 @@ namespace ColorVision
             }
 
         }
+        private void ImageShow_MouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (sender is DrawCanvas drawCanvas)
+            {
+                var point = e.GetPosition(drawCanvas);
+
+                if (drawCanvas.Source is BitmapImage bitmapImage)
+                {
+                    int imageWidth = bitmapImage.PixelWidth;
+                    int imageHeight = bitmapImage.PixelHeight;
+
+                    var actPoint = new Point(point.X, point.Y);
+                    DrawImageRuler(actPoint);
+                }
+            }
+
+        }
 
         private void ImageShow_MouseMove(object sender, MouseEventArgs e)
         {
@@ -300,7 +387,6 @@ namespace ColorVision
                     var bitPoint = new Point(point.X.ToInt32(), point.Y.ToInt32());
 
                     DrawImage(actPoint, bitPoint);
-
 
                     if (point.X.ToInt32() >=0 && point.X.ToInt32() < bitmapImage.PixelWidth && point.Y.ToInt32() >= 0 && point.Y.ToInt32() < bitmapImage.PixelHeight)
                     {
@@ -408,6 +494,8 @@ namespace ColorVision
             mQTTDemo.Owner = this;
             mQTTDemo.Show();
         }
+
+
     }
 
     public class ImageInfo : ViewModelBase

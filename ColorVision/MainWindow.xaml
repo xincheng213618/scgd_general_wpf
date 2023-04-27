@@ -34,11 +34,10 @@
                     <Button Content="打开测试图像"  Click="Button_Click"/>
                     <Button Content="绘制图形"  Click="Button1_Click"/>
                     <Button Content="移动图形"  Click="Button2_Click"/>
-   
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
-                    <Button Content="绘制Grid"  Click="Button5_Click"/>
-                    <Button Content="隐藏Grid"  Click="Button6_Click"/>
+                    <ToggleButton Content="网格" IsChecked="True" Click="Button5_Click"/>
+                    <ToggleButton Content="标尺" IsChecked="True"  Click="Button6_Click"/>
                     <ToggleButton Content="删除图形"  Click="Button7_Click"/>
                 </StackPanel>
 
@@ -109,7 +108,7 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <effects:Zoombox x:Name="Zoombox1"   Grid.Row="0">
-                    <local:DrawCanvas x:Name="ImageShow" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  MouseDown="ImageShow_MouseDown" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
+                    <local:DrawCanvas x:Name="ImageShow" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  MouseDown="ImageShow_MouseDown"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
                 </effects:Zoombox>
                 <local:InkVisual  Grid.Row="1" x:Name="InkVisual"/>
             </Grid>
