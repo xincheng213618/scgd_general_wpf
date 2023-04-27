@@ -1,5 +1,6 @@
 ﻿using ColorVision.Config;
 using ColorVision.Extension;
+using ColorVision.Info;
 using ColorVision.MVVM;
 using ColorVision.Util;
 using log4net;
@@ -35,6 +36,7 @@ namespace ColorVision
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
         public ImageInfo ImageInfo { get; set; } = new ImageInfo();
+        public PerformanceSetting performanceSetting { get; set; } = new PerformanceSetting();
         public MainWindow()
         {
             InitializeComponent();
@@ -42,6 +44,8 @@ namespace ColorVision
             ImageShow.AddVisual(DrawingVisualGrid);
             ImageShow.AddVisual(ImageRuler);
             ListView1.ItemsSource = DrawingVisualCircleLists;
+
+            StatusBar1.DataContext = performanceSetting;
 
         }
         public ObservableCollection<DrawingVisualCircle> DrawingVisualCircleLists { get; set; } = new ObservableCollection<DrawingVisualCircle>();
@@ -504,7 +508,29 @@ namespace ColorVision
             mQTTDemo.Show();
         }
 
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            Zoombox1.ZoomNone();
+            TextBlockZoom.Text = Zoombox1.ContentMatrix.M11.ToString("F2");
+        }
 
+        private void Button_Click_2(object sender, RoutedEventArgs e)
+        {
+            Zoombox1.Zoom(1.25);
+            TextBlockZoom.Text = Zoombox1.ContentMatrix.M11.ToString("F2");
+        }
+
+        private void Button_Click_3(object sender, RoutedEventArgs e)
+        {
+            Zoombox1.Zoom(0.8);
+            TextBlockZoom.Text = Zoombox1.ContentMatrix.M11.ToString("F2");    
+        }
+
+        private void Button_Click_4(object sender, RoutedEventArgs e)
+        {
+            Zoombox1.ZoomUniform();
+            TextBlockZoom.Text = Zoombox1.ContentMatrix.M11.ToString("F2");
+        }
     }
 
     public class ImageInfo : ViewModelBase
