@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net6.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
     <Platforms>AnyCPU;x64</Platforms>
@@ -13,6 +12,7 @@
     <ApplicationIcon>Image\ColorVision.ico</ApplicationIcon>
     <StartupObject>ColorVision.App</StartupObject>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <TargetFramework>net6.0-windows</TargetFramework>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

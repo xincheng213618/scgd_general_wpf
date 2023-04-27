@@ -99,9 +99,9 @@ namespace ColorVision
             //ImageShow.AddVisual(asyncUIContainer);
 
 
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < 200; i++)
             {
-                for (int j = 0; j < 100; j++)
+                for (int j = 0; j < 200; j++)
                 {
                     DrawingVisualCircle drawingVisualCircle = new DrawingVisualCircle();
                     drawingVisualCircle.Attribute.Center = new Point(i * 20, j * 20);
@@ -109,6 +109,7 @@ namespace ColorVision
 
                     drawingVisualCircle.Render();
                     dvList.Add(drawingVisualCircle);
+                    ImageShow.AddVisual(drawingVisualCircle);
 
                 }
             }
@@ -123,11 +124,19 @@ namespace ColorVision
                     ImageShow.AddVisual(drawingVisualCircle);
                 }
             }
-            await Task.Delay(1000);
-            foreach (var item in dvList)
-            {
-                ImageShow.AddVisual(item);
-            }
+            //await Task.Delay(100);
+            //int jjj = 1;
+            //foreach (var item in dvList)
+            //{
+            //    jjj++;
+            //    if (jjj == 1000)
+            //    {
+            //        jjj = 0;
+            //        await Task.Delay(100);
+            //    }
+            //    ImageShow.AddVisual(item);
+            //    //DrawingVisualCircleLists.Add(item);
+            //}
 
 
             PropertyGrid2.SelectedObject = dvList[0].Attribute;
