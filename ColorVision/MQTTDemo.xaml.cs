@@ -72,6 +72,11 @@ namespace ColorVision
         private void SendDemo_Click(object sender, RoutedEventArgs e)
         {
             mQTTHelper.PublishAsync_Client(TextBoxSubscribe1.Text, "CM_Open", CheckBoxRetained.IsChecked == true);
+
+
+        }
+        private void SendDemo1_Click(object sender, RoutedEventArgs e)
+        {
             mQTTHelper.PublishAsync_Client(TextBoxSubscribe1.Text, "CM_GetFrame", CheckBoxRetained.IsChecked == true);
 
 

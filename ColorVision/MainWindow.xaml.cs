@@ -47,10 +47,10 @@ namespace ColorVision
         public ObservableCollection<DrawingVisualCircle> DrawingVisualCircleLists { get; set; } = new ObservableCollection<DrawingVisualCircle>();
 
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private async void Button_Click(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png) | *.jpg; *.jpeg; *.png";
+            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png,*.tif) | *.jpg; *.jpeg; *.png;*.tif";
             openFileDialog.RestoreDirectory = true;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
@@ -65,35 +65,44 @@ namespace ColorVision
         List<DrawingVisualCircle> dvList = new List<DrawingVisualCircle>();
         List<DrawingVisualRectangle> dv1List = new List<DrawingVisualRectangle>();
 
-
-        private void Button1_Click(object sender, RoutedEventArgs e)
+        AsyncUIContainer asyncUIContainer = new AsyncUIContainer();
+        private async void Button1_Click(object sender, RoutedEventArgs e)
         {
-            for (int i = 0; i < 100; i++)
-            {
-                for (int j = 0; j < 100; j++)
-                {
-                    DrawingVisualCircle drawingVisualCircle = new DrawingVisualCircle();
-                    drawingVisualCircle.Attribute.Center = new Point(i * 5, j * 5);
-                    drawingVisualCircle.Attribute.Radius = 1;
 
-                    drawingVisualCircle.Render();
-                    dvList.Add(drawingVisualCircle);
-                    ImageShow.AddVisual(drawingVisualCircle);
-                    DrawingVisualCircleLists.Add(drawingVisualCircle);
-                }
-            }
-
-            for (int i = 10; i < 20; i++)
+            await asyncUIContainer.UIDispatcher.InvokeAsync(() =>
             {
-                for (int j = 0; j < 10; j++)
+                for (int i = 0; i < 100; i++)
                 {
-                    DrawingVisualRectangle drawingVisualCircle = new DrawingVisualRectangle();
-                    drawingVisualCircle.Attribute.Rect = new Rect(i * 50, j * 50,10,10);
-                    drawingVisualCircle.Render();
-                    dv1List.Add(drawingVisualCircle);
-                    ImageShow.AddVisual(drawingVisualCircle);
+                    for (int j = 0; j < 100; j++)
+                    {
+                        DrawingVisualCircle drawingVisualCircle = new DrawingVisualCircle();
+                        drawingVisualCircle.Attribute.Center = new Point(i * 20, j * 20);
+                        drawingVisualCircle.Attribute.Radius = 5;
+
+                        drawingVisualCircle.Render();
+                        dvList.Add(drawingVisualCircle);
+                        asyncUIContainer.Children.Add(drawingVisualCircle);
+                    }
                 }
-            }
+                for (int i = 10; i < 20; i++)
+                {
+                    for (int j = 0; j < 10; j++)
+                    {
+                        DrawingVisualRectangle drawingVisualCircle = new DrawingVisualRectangle();
+                        drawingVisualCircle.Attribute.Rect = new Rect(i * 50, j * 50, 10, 10);
+                        drawingVisualCircle.Render();
+                        dv1List.Add(drawingVisualCircle);
+                        asyncUIContainer.Children.Add(drawingVisualCircle);
+                    }
+                }
+            });
+
+            ImageShow.AddVisual(asyncUIContainer);
+
+            //foreach (var item in dv1List)
+            //{
+            //    ImageShow.AddVisual(item);
+            //}
 
 
             PropertyGrid2.SelectedObject = dvList[0].Attribute;
@@ -225,6 +234,7 @@ namespace ColorVision
                 }
                 else
                 {
+
                     if (drawCanvas.GetVisual(point) is DrawingVisualCircle drawingVisual)
                     {
                         if (PropertyGrid2.SelectedObject is ViewModelBase viewModelBase)
@@ -395,6 +405,7 @@ namespace ColorVision
         private void MenuItem_Click(object sender, RoutedEventArgs e)
         {
             MQTTDemo mQTTDemo = new MQTTDemo();
+            mQTTDemo.Owner = this;
             mQTTDemo.Show();
         }
     }
