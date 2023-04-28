@@ -3,6 +3,7 @@ using ColorVision.Extension;
 using ColorVision.Info;
 using ColorVision.MVVM;
 using ColorVision.Util;
+using Gu.Wpf.Geometry;
 using log4net;
 using System;
 using System.Collections;
@@ -22,6 +23,7 @@ using System.Windows.Documents;
 using System.Windows.Ink;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
@@ -103,17 +105,18 @@ namespace ColorVision
             //ImageShow.AddVisual(asyncUIContainer);
 
 
-            for (int i = 0; i < 200; i++)
+            for (int i = 0; i < 20; i++)
             {
-                for (int j = 0; j < 200; j++)
+                for (int j = 0; j < 20; j++)
                 {
                     DrawingVisualCircle drawingVisualCircle = new DrawingVisualCircle();
-                    drawingVisualCircle.Attribute.Center = new Point(i * 20, j * 20);
-                    drawingVisualCircle.Attribute.Radius = 5;
+                    drawingVisualCircle.Attribute.Center = new Point(i * 100, j * 100);
+                    drawingVisualCircle.Attribute.Radius = 50;
 
                     drawingVisualCircle.Render();
                     dvList.Add(drawingVisualCircle);
                     ImageShow.AddVisual(drawingVisualCircle);
+                    DrawingVisualCircleLists.Add(drawingVisualCircle);
 
                 }
             }
@@ -221,13 +224,11 @@ namespace ColorVision
         }
 
 
-        private void DrawImageRuler(Point actPoint)
+        private void DrawImageRuler()
         {
             if (ImageShow.Source is BitmapImage bitmapImage)
             {
-                actPoint.X = 0;
-                actPoint.Y = 0;
-
+                var actPoint = new Point();
                 using DrawingContext dc = ImageRuler.RenderOpen();
                 var transform = new MatrixTransform(1 / Zoombox1.ContentMatrix.M11, Zoombox1.ContentMatrix.M12, Zoombox1.ContentMatrix.M21, 1 / Zoombox1.ContentMatrix.M22, (1 - 1 / Zoombox1.ContentMatrix.M11) * actPoint.X, (1 - 1 / Zoombox1.ContentMatrix.M22) * actPoint.Y);
                 dc.PushTransform(transform);
@@ -255,7 +256,7 @@ namespace ColorVision
 
         private DrawingVisual drawingVisual2 = new DrawingVisual();
 
-        private void DrawImage(Point actPoint, Point disPoint)
+        private void DrawImage(Point actPoint, Point disPoint,ImageInfo imageInfo)
         {
             if (ImageShow.Source is BitmapImage bitmapImage)
             {
@@ -295,7 +296,21 @@ namespace ColorVision
                     dc.DrawLine(new Pen(Brushes.White, 1.5), new Point(x1, y1), new Point(x1 + width, y1));
                     dc.DrawLine(new Pen(Brushes.White, 1.5), new Point(x1 + width, y1- 0.75), new Point(x1 + width, y1 + height+ 0.75));
                     dc.DrawLine(new Pen(Brushes.White, 1.5), new Point(x1, y1 + height), new Point(x1 + width, y1 + height));
+
+                    dc.DrawRectangle(Brushes.Black,new Pen(Brushes.White, 0),new Rect(x1-1, y1 + height + 1, width+2, 35));
+
+                    Brush brush = Brushes.White;
+                    FontFamily fontFamily = new FontFamily("Arial");
+                    double fontSize = 10;
+                    FormattedText formattedText = new FormattedText($"R:{imageInfo.R}  G:{imageInfo.G}  B:{imageInfo.B}", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush);
+                    dc.DrawText(formattedText, new Point(x1+10, y1+ height+5));
+                    FormattedText formattedTex1 = new FormattedText($"({imageInfo.X},{imageInfo.Y})", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush);
+                    dc.DrawText(formattedTex1, new Point(x1 + 10, y1 + height + 20));
+
+
                     dc.Pop();
+                    drawingVisual2.Effect = new DropShadowEffect() { Opacity = 0.5 };
+
                 }
 
             }
@@ -370,7 +385,7 @@ namespace ColorVision
                     int imageHeight = bitmapImage.PixelHeight;
 
                     var actPoint = new Point(point.X, point.Y);
-                    DrawImageRuler(actPoint);
+                    DrawImageRuler();
                 }
             }
 
@@ -399,7 +414,6 @@ namespace ColorVision
 
                     var bitPoint = new Point(point.X.ToInt32(), point.Y.ToInt32());
 
-                    DrawImage(actPoint, bitPoint);
 
                     if (point.X.ToInt32() >=0 && point.X.ToInt32() < bitmapImage.PixelWidth && point.Y.ToInt32() >= 0 && point.Y.ToInt32() < bitmapImage.PixelHeight)
                     {
@@ -416,6 +430,9 @@ namespace ColorVision
                         ImageInfo.Color = new SolidColorBrush(color);
                         ImageInfo.Hex = color.ToHex();
                     }
+
+                    DrawImage(actPoint, bitPoint, ImageInfo);
+
 
                 }
             }
@@ -458,7 +475,7 @@ namespace ColorVision
             if(sender is ToggleButton toggleButton)
             {
                 EraseVisual = toggleButton.IsChecked == true;
-                MessageBox.Show(toggleButton.IsChecked.ToString());
+              
             }
         }
 
@@ -468,7 +485,6 @@ namespace ColorVision
             {
                 ImageShow.RemoveVisual(drawingVisual2);
             }
-
         }
 
         private void ImageShow_MouseEnter(object sender, MouseEventArgs e)
@@ -530,6 +546,11 @@ namespace ColorVision
         {
             Zoombox1.ZoomUniform();
             TextBlockZoom.Text = Zoombox1.ContentMatrix.M11.ToString("F2");
+        }
+
+        private void MenuItem_Click_1(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 

@@ -21,6 +21,9 @@
                 </MenuItem>
                 <MenuItem Header="MQTTDemo(_M)" Click="MenuItem_Click">
                 </MenuItem>
+                <MenuItem Header="帮助(_H)">
+                    <MenuItem Header="关于(_A)" Click="MenuItem_Click_1"/>
+                </MenuItem>
             </Menu>
         </Grid>
         <Grid  Grid.Row="1">
@@ -102,74 +105,46 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <ToolBar Grid.Row="0">
-                    <Button  Height="25" Width="25" Click="Button_Click_1">
-                        <Image Stretch="Uniform">
-                            <Image.Source>
-                                <DrawingImage >
-                                    <DrawingImage.Drawing>
-                                        <DrawingGroup ClipGeometry="M0,0 V1024 H1024 V0 H0 Z">
-                                            <GeometryDrawing Brush="#FF000000" Geometry="F1 M1024,1024z M0,0z M316,672L376,672C380.4,672,384,668.4,384,664L384,360C384,355.6,380.4,352,376,352L316,352C311.6,352,308,355.6,308,360L308,664C308,668.4,311.6,672,316,672z M512,622C534.1,622 552,604.1 552,583 552,559.9 534.1,542 512,542 489.9,542 472,559.9 472,583 472,604.1 489.9,622 512,622z M512,482C534.1,482 552,464.1 552,443 552,419.9 534.1,402 512,402 489.9,402 472,419.9 472,443 472,464.1 489.9,482 512,482z" />
-                                            <GeometryDrawing Brush="#FF000000" Geometry="F1 M1024,1024z M0,0z M880,112L144,112C126.3,112,112,126.3,112,144L112,880C112,897.7,126.3,912,144,912L880,912C897.7,912,912,897.7,912,880L912,144C912,126.3,897.7,112,880,112z M840,840L184,840 184,184 840,184 840,840z" />
-                                            <GeometryDrawing Brush="#FF000000" Geometry="F1 M1024,1024z M0,0z M648,672L708,672C712.4,672,716,668.4,716,664L716,360C716,355.6,712.4,352,708,352L648,352C643.6,352,640,355.6,640,360L640,664C640,668.4,643.6,672,648,672z" />
-                                        </DrawingGroup>
-                                    </DrawingImage.Drawing>
-                                </DrawingImage>
-                            </Image.Source>
-                        </Image>
+                    <ToolBar.Resources>
+                        <ResourceDictionary Source="/Theme/Icons.xaml"/>
+                    </ToolBar.Resources>
+                    <Button  >
+                        <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImage1_1}" />
                     </Button>
-                    <Button  Height="25" Width="25" Click="Button_Click_2">
-                        <Image Stretch="Uniform">
-                            <Image.Source>
-                                <DrawingImage>
-                                    <DrawingImage.Drawing>
-                                        <DrawingGroup ClipGeometry="M0,0 V1024 H1024 V0 H0 Z">
-                                            <GeometryDrawing Brush="#FF000000" Geometry="F1 M1024,1024z M0,0z M637,443L519,443 519,309C519,304.6,515.4,301,511,301L451,301C446.6,301,443,304.6,443,309L443,443 325,443C320.6,443,317,446.6,317,451L317,511C317,515.4,320.6,519,325,519L443,519 443,653C443,657.4,446.6,661,451,661L511,661C515.4,661,519,657.4,519,653L519,519 637,519C641.4,519,645,515.4,645,511L645,451C645,446.6,641.4,443,637,443z" />
-                                            <GeometryDrawing Brush="#FF000000" Geometry="F1 M1024,1024z M0,0z M921,867L775,721C897.1,572.1 888.6,351.5 749,212 601,63.9 360.6,63.9 212,212 63.9,360.6 63.9,601 212,749 351.5,888.6 572.1,897.1 721,775L867,921C870.2,923.8,875.3,923.8,878,921L921,878C923.8,875.3,923.8,870.2,921,867z M696,696C577.2,814.7 384.8,814.7 266,696 147.3,577.2 147.3,384.8 266,266 384.8,147.3 577.2,147.3 696,266 814.7,384.8 814.7,577.2 696,696z" />
-                                        </DrawingGroup>
-                                    </DrawingImage.Drawing>
-                                </DrawingImage>
-                            </Image.Source>
-                        </Image>
+                    <Button   Click="Button_Click_2">
+                        <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImagezoom_in}" />
                     </Button>
-                    <Button  Height="25" Width="25"  Click="Button_Click_3">
-                        <Image Stretch="Uniform">
-                            <Image.Source>
-                                <DrawingImage >
-                                    <DrawingImage.Drawing>
-                                        <DrawingGroup ClipGeometry="M0,0 V1024 H1024 V0 H0 Z">
-                                            <GeometryDrawing Brush="#FF000000" Geometry="F1 M1024,1024z M0,0z M637,443L325,443C320.6,443,317,446.6,317,451L317,511C317,515.4,320.6,519,325,519L637,519C641.4,519,645,515.4,645,511L645,451C645,446.6,641.4,443,637,443z" />
-                                            <GeometryDrawing Brush="#FF000000" Geometry="F1 M1024,1024z M0,0z M921,867L775,721C897.1,572.1 888.6,351.5 749,212 601,63.9 360.6,63.9 212,212 63.9,360.6 63.9,601 212,749 351.5,888.6 572.1,897.1 721,775L867,921C870.2,923.8,875.3,923.8,878,921L921,878C923.8,875.3,923.8,870.2,921,867z M696,696C577.2,814.7 384.8,814.7 266,696 147.3,577.2 147.3,384.8 266,266 384.8,147.3 577.2,147.3 696,266 814.7,384.8 814.7,577.2 696,696z" />
-                                        </DrawingGroup>
-                                    </DrawingImage.Drawing>
-                                </DrawingImage>
-                            </Image.Source>
-                        </Image>
+                    <Button    Click="Button_Click_3">
+                        <Image  Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImagezoom_out}" />
                     </Button>
-                    <Button Height="25" Width="25" Click="Button_Click_4">
-                        <Button.Content>
-                            <Image >
-                                <Image.Source>
-                                    <DrawingImage>
-                                        <DrawingImage.Drawing>
-                                            <DrawingGroup ClipGeometry="M0,0 V1024 H1024 V0 H0 Z">
-                                                <GeometryDrawing Brush="#FF000000" Geometry="F1 M1024,1024z M0,0z M342,88L120,88C102.3,88,88,102.3,88,120L88,344C88,352.8,95.2,360,104,360L152,360C160.8,360,168,352.8,168,344L168,168 342,168C350.8,168,358,160.8,358,152L358,104C358,95.2,350.8,88,342,88z M920,664L872,664C863.2,664,856,671.2,856,680L856,856 682,856C673.2,856,666,863.2,666,872L666,920C666,928.8,673.2,936,682,936L904,936C921.7,936,936,921.7,936,904L936,680C936,671.2,928.8,664,920,664z M342,856L168,856 168,680C168,671.2,160.8,664,152,664L104,664C95.2,664,88,671.2,88,680L88,904C88,921.7,102.3,936,120,936L342,936C350.8,936,358,928.8,358,920L358,872C358,863.2,350.8,856,342,856z M904,88L682,88C673.2,88,666,95.2,666,104L666,152C666,160.8,673.2,168,682,168L856,168 856,344C856,352.8,863.2,360,872,360L920,360C928.8,360,936,352.8,936,344L936,120C936,102.3,921.7,88,904,88z" />
-                                            </DrawingGroup>
-                                        </DrawingImage.Drawing>
-                                    </DrawingImage>
-                                </Image.Source>
-                            </Image>
-                        </Button.Content>
+                    <Button  Click="Button_Click_4">
+                        <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImageexpend}" />
                     </Button>
-
                     <TextBox x:Name="TextBlockZoom" Width="50" />
-                    <ToggleButton Content="网格" IsChecked="True" Click="Button5_Click"/>
-                    <ToggleButton Content="标尺" IsChecked="True"  Click="Button6_Click"/>
-                    <ToggleButton Content="删除图形"  Click="Button7_Click"/>
+                    <ToggleButton  IsChecked="True" Click="Button5_Click">
+                        <ToggleButton.Content>
+                            <Image  Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImagegridlines}"/>
+                        </ToggleButton.Content>
+                    </ToggleButton>
+                    <ToggleButton   IsChecked="True"  Click="Button6_Click">
+                        <ToggleButton.Content>
+                            <Image  Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImageruler}"/>
+                        </ToggleButton.Content>
+                    </ToggleButton> 
+                    <ToggleButton Click="Button7_Click">
+                        <ToggleButton.Content>
+                            <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImageeraser}"/>
+                        </ToggleButton.Content>
+                    </ToggleButton>
                 </ToolBar>
                 <Grid Grid.Row="1">
-                    <effects:Zoombox x:Name="Zoombox1"   Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="173*"/>
+                        <ColumnDefinition Width="807*"/>
+                    </Grid.ColumnDefinitions>
+                    <local:ZoomboxSub x:Name="Zoombox1"  Grid.Row="0" Grid.ColumnSpan="2">
                         <local:DrawCanvas x:Name="ImageShow" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  MouseDown="ImageShow_MouseDown"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
-                    </effects:Zoombox>
+                    </local:ZoomboxSub>
                 </Grid>
 
 
