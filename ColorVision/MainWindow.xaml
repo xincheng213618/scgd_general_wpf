@@ -136,14 +136,15 @@
                             <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImageeraser}"/>
                         </ToggleButton.Content>
                     </ToggleButton>
+                    <TextBlock    VerticalAlignment="Center" Text="按下Ctrl缩放和移动图像"/>
                 </ToolBar>
                 <Grid Grid.Row="1">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="173*"/>
                         <ColumnDefinition Width="807*"/>
                     </Grid.ColumnDefinitions>
-                    <local:ZoomboxSub x:Name="Zoombox1"  Grid.Row="0" Grid.ColumnSpan="2">
-                        <local:DrawCanvas x:Name="ImageShow" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  MouseDown="ImageShow_MouseDown"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
+                    <local:ZoomboxSub x:Name="Zoombox1"  MaxZoom="10" MinZoom="0.01" Grid.Row="0" Grid.ColumnSpan="2">
+                        <local:DrawCanvas x:Name="ImageShow" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  MouseDown="ImageShow_MouseDown"  MouseUp="ImageShow_MouseUp" MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
                     </local:ZoomboxSub>
                 </Grid>
 

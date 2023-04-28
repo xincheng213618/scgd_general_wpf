@@ -202,11 +202,10 @@ namespace ColorVision
                 Point position = new Point(10, 10);
 
                 using DrawingContext dc = DrawingVisualGrid.RenderOpen();
-                #pragma warning disable CS0618
                 for (int i = 0; i < bitmapImage.Width; i += 40)
                 {
                     string text = i.ToString();
-                    FormattedText formattedText = new FormattedText(text,System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight,new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize,brush);
+                    FormattedText formattedText = new FormattedText(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize,brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                     dc.DrawText(formattedText, new Point(i, -10));
                     dc.DrawLine(new Pen(Brushes.Blue, 1), new Point(i, 0), new Point(i, bitmapImage.Height));
                 }
@@ -214,12 +213,11 @@ namespace ColorVision
                 for (int j = 0; j < bitmapImage.Height; j += 40)
                 {
                     string text = j.ToString();
-                    FormattedText formattedText = new FormattedText(text, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush);
+                    FormattedText formattedText = new FormattedText(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                     dc.DrawText(formattedText, new Point(-10, j));
                     dc.DrawLine(new Pen(Brushes.Blue, 1), new Point(0, j), new Point(bitmapImage.Width, j));
 
                 }
-                #pragma warning restore CS0618
             }
         }
 
@@ -239,7 +237,7 @@ namespace ColorVision
                 Brush brush = Brushes.Red;
                 FontFamily fontFamily = new FontFamily("Arial");
                 double fontSize = 10;
-                FormattedText formattedText = new FormattedText((1 / Zoombox1.ContentMatrix.M11* bitmapImage.PixelWidth/100).ToString("F2") +"px", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush);
+                FormattedText formattedText = new FormattedText((1 / Zoombox1.ContentMatrix.M11* bitmapImage.PixelWidth/100).ToString("F2") +"px", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 dc.DrawText(formattedText, new Point(100, 30));
 
 
@@ -247,7 +245,7 @@ namespace ColorVision
                 double result = X < 10 ? 5 : X < 20 ? 10 : X < 50 ? 20 : X < 100 ? 50 : (X < 200 ? 100 : (X < 500 ? 200 : (X < 1000 ? 500 : (X < 2000 ? 1000 : 2000))));
 
                 dc.DrawLine(new Pen(Brushes.Red, 10), new Point(100, 100), new Point(100+ 100 * result/X, 100));
-                FormattedText formattedText1 = new FormattedText((result).ToString("F2") + "px", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush);
+                FormattedText formattedText1 = new FormattedText((result).ToString("F2") + "px", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 dc.DrawText(formattedText1, new Point(100, 80));
 
             }
@@ -263,7 +261,6 @@ namespace ColorVision
                 if (disPoint.X > 60 && disPoint.X < bitmapImage.PixelWidth - 60 && disPoint.Y > 45 && disPoint.Y < bitmapImage.PixelHeight - 45)
                 {
                     CroppedBitmap croppedBitmap = new CroppedBitmap(bitmapImage, new Int32Rect(disPoint.X.ToInt32() - 60, disPoint.Y.ToInt32() - 45, 120, 90));
-
 
                     using DrawingContext dc = drawingVisual2.RenderOpen();
 
@@ -302,9 +299,9 @@ namespace ColorVision
                     Brush brush = Brushes.White;
                     FontFamily fontFamily = new FontFamily("Arial");
                     double fontSize = 10;
-                    FormattedText formattedText = new FormattedText($"R:{imageInfo.R}  G:{imageInfo.G}  B:{imageInfo.B}", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush);
+                    FormattedText formattedText = new FormattedText($"R:{imageInfo.R}  G:{imageInfo.G}  B:{imageInfo.B}", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                     dc.DrawText(formattedText, new Point(x1+10, y1+ height+5));
-                    FormattedText formattedTex1 = new FormattedText($"({imageInfo.X},{imageInfo.Y})", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush);
+                    FormattedText formattedTex1 = new FormattedText($"({imageInfo.X},{imageInfo.Y})", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                     dc.DrawText(formattedTex1, new Point(x1 + 10, y1 + height + 20));
 
 
@@ -315,23 +312,26 @@ namespace ColorVision
 
             }
         }
-
+        
+        private Point MouseDownP;
+        private DrawingVisualCircle SelectDCircle;
         private void ImageShow_MouseDown(object sender, MouseButtonEventArgs e)
         {
             if (sender is DrawCanvas drawCanvas)
             {
-                var point = e.GetPosition(drawCanvas);
+                MouseDownP = e.GetPosition(drawCanvas);
+                //drawCanvas.CaptureMouse();
+
                 if (EraseVisual)
                 {
-                    if (drawCanvas.GetVisual(point) is Visual DrawingVisual)
+                    if (drawCanvas.GetVisual(MouseDownP) is Visual DrawingVisual)
                     {
                         drawCanvas.RemoveVisual(DrawingVisual);
                     }
                 }
                 else
                 {
-
-                    if (drawCanvas.GetVisual(point) is DrawingVisualCircle drawingVisual)
+                    if (drawCanvas.GetVisual(MouseDownP) is DrawingVisualCircle drawingVisual)
                     {
                         if (PropertyGrid2.SelectedObject is CircleAttribute viewModelBase)
                         {
@@ -343,14 +343,15 @@ namespace ColorVision
                         }
 
                         PropertyGrid2.SelectedObject = drawingVisual.Attribute;
-                        drawingVisual.Attribute.Pen = new Pen(Brushes.Red, 1);
+                        drawingVisual.Attribute.Pen = new Pen(Brushes.Red, 2);
                         drawingVisual.Attribute.PropertyChanged += (s, e) =>
                         {
                             PropertyGrid2.Refresh();
                         };
+                        SelectDCircle = drawingVisual;
                     }
 
-                    if (drawCanvas.GetVisual(point) is DrawingVisualRectangle drawingVisual1)
+                    if (drawCanvas.GetVisual(MouseDownP) is DrawingVisualRectangle drawingVisual1)
                     {
                         if (PropertyGrid2.SelectedObject is ViewModelBase viewModelBase)
                         {
@@ -367,8 +368,6 @@ namespace ColorVision
                         };
                     }
                 }
-
-
 
             }
 
@@ -391,6 +390,15 @@ namespace ColorVision
 
         }
 
+        private void ImageShow_MouseEnter(object sender, MouseEventArgs e)
+        {
+            
+            if (sender is DrawCanvas drawCanvas && !drawCanvas.ContainsVisual(drawingVisual2))
+            {
+                ImageShow.AddVisual(drawingVisual2);
+            }
+        }
+
         private void ImageShow_MouseMove(object sender, MouseEventArgs e)
         {
             if (sender is DrawCanvas drawCanvas)
@@ -400,10 +408,13 @@ namespace ColorVision
                 var controlWidth = drawCanvas.ActualWidth;
                 var controlHeight = drawCanvas.ActualHeight;
 
-
+                if (SelectDCircle is not null)
+                {
+                    SelectDCircle.Attribute.Center = point;
+                }
                 if (drawCanvas.Source is BitmapImage bitmapImage)
                 {
-                    int imageWidth =bitmapImage.PixelWidth;
+                    int imageWidth = bitmapImage.PixelWidth;
                     int imageHeight = bitmapImage.PixelHeight;
 
                     var actPoint = new Point(point.X, point.Y);
@@ -415,7 +426,7 @@ namespace ColorVision
                     var bitPoint = new Point(point.X.ToInt32(), point.Y.ToInt32());
 
 
-                    if (point.X.ToInt32() >=0 && point.X.ToInt32() < bitmapImage.PixelWidth && point.Y.ToInt32() >= 0 && point.Y.ToInt32() < bitmapImage.PixelHeight)
+                    if (point.X.ToInt32() >= 0 && point.X.ToInt32() < bitmapImage.PixelWidth && point.Y.ToInt32() >= 0 && point.Y.ToInt32() < bitmapImage.PixelHeight)
                     {
                         var color = bitmapImage.GetPixelColor(point.X.ToInt32(), point.Y.ToInt32());
                         ImageInfo.X = point.X.ToInt32();
@@ -435,6 +446,24 @@ namespace ColorVision
 
 
                 }
+            }
+        }
+        private void ImageShow_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is DrawCanvas drawCanvas)
+            {
+                //drawCanvas.ReleaseMouseCapture();
+                SelectDCircle = null;
+            }
+        }
+
+
+
+        private void ImageShow_MouseLeave(object sender, MouseEventArgs e)
+        {
+            if (sender is DrawCanvas drawCanvas && drawCanvas.ContainsVisual(drawingVisual2))
+            {
+                ImageShow.RemoveVisual(drawingVisual2);
             }
         }
 
@@ -479,21 +508,9 @@ namespace ColorVision
             }
         }
 
-        private void ImageShow_MouseLeave(object sender, MouseEventArgs e)
-        {
-            if (sender is DrawCanvas drawCanvas && drawCanvas.ContainsVisual(drawingVisual2))
-            {
-                ImageShow.RemoveVisual(drawingVisual2);
-            }
-        }
 
-        private void ImageShow_MouseEnter(object sender, MouseEventArgs e)
-        {
-            if (sender is DrawCanvas drawCanvas && !drawCanvas.ContainsVisual(drawingVisual2))
-            {
-                ImageShow.AddVisual(drawingVisual2);
-            }
-        }
+
+
 
         private void CheckBox_Click(object sender, RoutedEventArgs e)
         {
@@ -552,6 +569,8 @@ namespace ColorVision
         {
 
         }
+
+
     }
 
     public class ImageInfo : ViewModelBase
