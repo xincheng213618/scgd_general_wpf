@@ -28,6 +28,16 @@ namespace ColorVision
         [GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
         public static void Main(string[] args)
         {
+            if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
+            {
+                var fileAppender = (log4net.Appender.FileAppender)LogManager.GetRepository().GetAppenders().FirstOrDefault(a => a is log4net.Appender.FileAppender);
+                if (fileAppender != null)
+                {
+                    fileAppender.File = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "\\ColorVision\\";
+                    fileAppender.ActivateOptions();
+                }
+            }
+
             Mutex mutex = new Mutex(true, "ElectronicNeedleTherapySystem", out bool ret);
             if (!ret)
             {
@@ -54,6 +64,10 @@ namespace ColorVision
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
+
+
+
+
             //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en");
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("zh-Hans");
             MainWindow mainWindow = new MainWindow();

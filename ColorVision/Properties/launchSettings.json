@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ColorVision": {
+      "commandName": "Project",
+      "nativeDebugging": false
+    }
+  }
+}

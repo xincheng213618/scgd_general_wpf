@@ -5,8 +5,7 @@
     <AssemblyCompany>ColorVision Corp.</AssemblyCompany>
     <AssemblyCopyright>Copyright (C) 2023 ColorVision Corporation</AssemblyCopyright>
     <AssemblyProduct>ColorVision</AssemblyProduct>
-	<VersionPrefix>1.0.0.1</VersionPrefix>
-	<AssemblyVersion>1.0.0.2</AssemblyVersion>
+	<VersionPrefix>1.0.0.3</VersionPrefix>
     <Company>ColorVision</Company>
     <NeutralLanguage>zh-CN</NeutralLanguage>
     <Platforms>x64;ARM64</Platforms>

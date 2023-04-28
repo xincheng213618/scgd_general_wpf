@@ -108,35 +108,31 @@
                     <ToolBar.Resources>
                         <ResourceDictionary Source="/Theme/Icons.xaml"/>
                     </ToolBar.Resources>
-                    <Button  >
+                    <ToggleButton x:Name="ToggleButtonDrag" Click="ToggleButton_Click"  ToolTip="可以按下Ctrl缩放和移动图像">
+                        <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImagedrag}"/>
+                    </ToggleButton>
+                    <Button Click="Button_Click_1">
                         <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImage1_1}" />
                     </Button>
-                    <Button   Click="Button_Click_2">
+                    <Button  Click="Button_Click_2">
                         <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImagezoom_in}" />
                     </Button>
-                    <Button    Click="Button_Click_3">
+                    <Button  Click="Button_Click_3">
                         <Image  Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImagezoom_out}" />
                     </Button>
-                    <Button  Click="Button_Click_4">
+                    <Button Click="Button_Click_4">
                         <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImageexpend}" />
                     </Button>
                     <TextBox x:Name="TextBlockZoom" Width="50" />
                     <ToggleButton  IsChecked="True" Click="Button5_Click">
-                        <ToggleButton.Content>
-                            <Image  Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImagegridlines}"/>
-                        </ToggleButton.Content>
+                        <Image  Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImagegridlines}"/>
                     </ToggleButton>
                     <ToggleButton   IsChecked="True"  Click="Button6_Click">
-                        <ToggleButton.Content>
-                            <Image  Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImageruler}"/>
-                        </ToggleButton.Content>
-                    </ToggleButton> 
-                    <ToggleButton Click="Button7_Click">
-                        <ToggleButton.Content>
-                            <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImageeraser}"/>
-                        </ToggleButton.Content>
+                        <Image  Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImageruler}"/>
                     </ToggleButton>
-                    <TextBlock    VerticalAlignment="Center" Text="按下Ctrl缩放和移动图像"/>
+                    <ToggleButton Height="30" Width="30" Click="Button7_Click">
+                        <Image Height="22" Width="22" Stretch="Uniform" Source="{StaticResource DrawingImageeraser}"/>
+                    </ToggleButton>
                 </ToolBar>
                 <Grid Grid.Row="1">
                     <Grid.ColumnDefinitions>

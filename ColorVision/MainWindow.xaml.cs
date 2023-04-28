@@ -65,7 +65,12 @@ namespace ColorVision
                 string filePath = openFileDialog.FileName;
                 ImageShow.Source = new BitmapImage(new Uri(filePath));
                 DrawGridImage();
+                Zoombox1.PropertyChanged += (s, e) =>
+                {
+                    TextBlockZoom.Text = Zoombox1.ContentMatrix.M11.ToString("F2");
+                };
                 Zoombox1.ZoomUniform();
+
             }
         }
 
@@ -348,7 +353,9 @@ namespace ColorVision
                         {
                             PropertyGrid2.Refresh();
                         };
-                        SelectDCircle = drawingVisual;
+
+                        if (ToggleButtonDrag.IsChecked == true)
+                            SelectDCircle = drawingVisual;
                     }
 
                     if (drawCanvas.GetVisual(MouseDownP) is DrawingVisualRectangle drawingVisual1)
@@ -504,7 +511,6 @@ namespace ColorVision
             if(sender is ToggleButton toggleButton)
             {
                 EraseVisual = toggleButton.IsChecked == true;
-              
             }
         }
 
@@ -544,19 +550,16 @@ namespace ColorVision
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             Zoombox1.ZoomNone();
-            TextBlockZoom.Text = Zoombox1.ContentMatrix.M11.ToString("F2");
         }
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
             Zoombox1.Zoom(1.25);
-            TextBlockZoom.Text = Zoombox1.ContentMatrix.M11.ToString("F2");
         }
 
         private void Button_Click_3(object sender, RoutedEventArgs e)
         {
             Zoombox1.Zoom(0.8);
-            TextBlockZoom.Text = Zoombox1.ContentMatrix.M11.ToString("F2");    
         }
 
         private void Button_Click_4(object sender, RoutedEventArgs e)
@@ -570,7 +573,13 @@ namespace ColorVision
 
         }
 
-
+        private void ToggleButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is ToggleButton toggleButton)
+            {
+                Zoombox1.ActivateOn = toggleButton.IsChecked ==true? ModifierKeys.Control: ModifierKeys.None;
+            }
+        }
     }
 
     public class ImageInfo : ViewModelBase
