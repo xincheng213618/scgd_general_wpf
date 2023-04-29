@@ -11,7 +11,7 @@ using ColorVision.MVVM;
 namespace ColorVision
 {
 
-    public class CircleAttribute: ViewModelBase
+    public class CircleAttribute: DrawAttributeBase
     {
         private Brush _Brush;
 
@@ -25,7 +25,7 @@ namespace ColorVision
 
         private Point _Center;
 
-        [CategoryAttribute("DrawingVisualCircle"), DisplayName("点")]
+        [Category("DrawingVisualCircle"), DisplayName("点")]
         public Point Center { get=> _Center; set { _Center = value; NotifyPropertyChanged(); } }
 
         private double _Radius;
@@ -34,6 +34,31 @@ namespace ColorVision
         public double Radius { get=>_Radius; set { _Radius = value; NotifyPropertyChanged(); } }
     }
 
+    public class RectangleAttribute : DrawAttributeBase
+    {
+        private Brush _Brush;
+
+        [CategoryAttribute("RectangleAttribute"), DisplayName("颜色")]
+        public Brush Brush { get => _Brush; set { _Brush = value; NotifyPropertyChanged(); } }
+
+        private Pen _Pen;
+
+        [CategoryAttribute("RectangleAttribute"), DisplayName("笔刷")]
+        public Pen Pen { get => _Pen; set { _Pen = value; NotifyPropertyChanged(); } }
+
+        private Rect _Rect;
+
+        [CategoryAttribute("RectangleAttribute"), DisplayName("弧度")]
+        public Rect Rect { get => _Rect; set { _Rect = value; NotifyPropertyChanged(); } }
+    }
+
+    public partial class DrawAttributeBase : ViewModelBase 
+    {
+        private Point _Start;
+        public virtual Point Start { get => _Start; set { _Start = value; NotifyPropertyChanged(); } }
+
+        public bool IsCheck { get; set; } = true;
+    }
 
     public class DrawingVisualCircle: DrawingVisual
     {
@@ -53,7 +78,6 @@ namespace ColorVision
 
         public double Radius { get => Attribute.Radius; set => Attribute.Radius =value; }
 
-        public bool IsCheck { get; set; } = true;
 
 
 
@@ -64,26 +88,7 @@ namespace ColorVision
         }
     }
 
-    public class RectangleAttribute : ViewModelBase
-    {
-        private Brush _Brush;
 
-        [CategoryAttribute("RectangleAttribute"), DisplayName("颜色")]
-        public Brush Brush { get => _Brush; set { _Brush = value; NotifyPropertyChanged(); } }
-
-        private Pen _Pen;
-
-        [CategoryAttribute("RectangleAttribute"), DisplayName("笔刷")]
-        public Pen Pen { get => _Pen; set { _Pen = value; NotifyPropertyChanged(); } }
-
-
-        private Rect _Rect;
-
-        [CategoryAttribute("RectangleAttribute"), DisplayName("弧度")]
-        public Rect Rect { get => _Rect; set { _Rect = value; NotifyPropertyChanged(); } }
-
-
-    }
 
 
     public class DrawingVisualRectangle : DrawingVisual

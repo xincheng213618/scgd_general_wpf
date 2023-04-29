@@ -8,8 +8,8 @@
         xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         mc:Ignorable="d"
         DataContext="{Binding RelativeSource={RelativeSource Self}}"
-        Title="MainWindow" Height="720" Width="1280">
-    <Grid>
+        Title="视彩配置窗口" Height="720" Width="1280">
+    <Grid x:Name="Root">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="*"/>
@@ -26,7 +26,7 @@
                 </MenuItem>
             </Menu>
         </Grid>
-        <Grid  Grid.Row="1">
+        <Grid x:Name="ContentGrid" Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="300"/>
                 <ColumnDefinition Width="*"/>
@@ -34,35 +34,9 @@
             <StackPanel Grid.Column="0" >
                 <StackPanel Orientation="Horizontal">
                     <Button Content="打开测试图像"  Click="Button_Click"/>
-                    <Button Content="绘制图形"  Click="Button1_Click"/>
-                    <Button Content="移动图形"  Click="Button2_Click"/>
+                    <Button Content="绘制测试图形"  Click="Button1_Click"/>
                 </StackPanel>
 
-                <StackPanel x:Name="ImageInfoText">
-                    <TextBlock >
-                    <Run Text="R:"/>
-                    <Run Text="{Binding R}"/>
-                    <Run Text="G:"/>
-                    <Run Text="{Binding G}"/>
-                    <Run Text="B:"/>
-                    <Run Text="{Binding B}"/>
-                    </TextBlock>
-                    <TextBlock>
-                      <Run Text="X:"/>
-                    <Run Text="{Binding X}"/>
-                     <Run Text="Y:"/>
-                    <Run Text="{Binding Y}"/>
-                     <Run Text="X1:"/>
-                    <Run Text="{Binding X1}"/>
-                     <Run Text="Y1:"/>
-                    <Run Text="{Binding Y1}"/>
-                    </TextBlock>
-                    <TextBlock>
-                        <Run Text="Hex:"/>
-                        <Run Text="{Binding Hex}"/>
-                    </TextBlock>
-                    <Rectangle Height="10" Fill="{Binding Color}"/>
-                </StackPanel>
                 <WindowsFormsHost x:Name="WindowsFormsHost1" Height="200" >
                     <winf:PropertyGrid x:Name="PropertyGrid2">
                     </winf:PropertyGrid>
@@ -99,12 +73,12 @@
                 </ScrollViewer>
                 <WpfPlot Height="155"/>
             </StackPanel>
-            <Grid Grid.Column="1" Background="#c3c3c3">
+            <Grid x:Name="ZoomGrid"  Grid.Column="1" Background="#c3c3c3">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <ToolBar Grid.Row="0">
+                <ToolBar Grid.Row="0" Margin="0,2,4,0">
                     <ToolBar.Resources>
                         <ResourceDictionary Source="/Theme/Icons.xaml"/>
                     </ToolBar.Resources>
@@ -133,6 +107,9 @@
                     <ToggleButton Height="30" Width="30" Click="Button7_Click">
                         <Image Height="22" Width="22" Stretch="Uniform" Source="{StaticResource DrawingImageeraser}"/>
                     </ToggleButton>
+                    <ToggleButton Click="Button8_Click">
+                        <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImageMax}"/>
+                    </ToggleButton>
                 </ToolBar>
                 <Grid Grid.Row="1">
                     <Grid.ColumnDefinitions>
@@ -154,7 +131,7 @@
             <StatusBar x:Name="StatusBar1" DataContext="{Binding Path=performanceSetting}" >
                 <StatusBarItem >
                     <TextBlock>
-                        <Run Text="{Binding Path=MemorytThis}"/>
+                        <Run Text="{Binding Path=MemoryThis}"/>
                     </TextBlock>
                 </StatusBarItem>
                 <StatusBarItem HorizontalAlignment="Right" Content="{Binding Path=Time}">

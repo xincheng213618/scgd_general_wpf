@@ -1,12 +1,20 @@
-﻿using System;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using ColorVision.MVVM;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ColorVisionTests.MVVM
+namespace ColorVision.MVVM.Tests
 {
-    internal class ViewModelBaseTests
+    [TestClass()]
+    public class ViewModelBaseTests
     {
+        [TestMethod()]
+        public void NotifyPropertyChangedTest()
+        {
+            Assert.Fail();
+        }
     }
 }
