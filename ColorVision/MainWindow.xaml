@@ -78,48 +78,45 @@
                     <RowDefinition Height="auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <ToolBar Grid.Row="0" Margin="0,2,4,0">
-                    <ToolBar.Resources>
-                        <ResourceDictionary Source="/Theme/Icons.xaml"/>
-                    </ToolBar.Resources>
-                    <ToggleButton x:Name="ToggleButtonDrag" Click="ToggleButton_Click"  ToolTip="可以按下Ctrl缩放和移动图像">
-                        <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImagedrag}"/>
-                    </ToggleButton>
-                    <Button Click="Button_Click_1">
-                        <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImage1_1}" />
-                    </Button>
-                    <Button  Click="Button_Click_2">
-                        <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImagezoom_in}" />
-                    </Button>
-                    <Button  Click="Button_Click_3">
-                        <Image  Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImagezoom_out}" />
-                    </Button>
-                    <Button Click="Button_Click_4">
-                        <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImageexpend}" />
-                    </Button>
-                    <TextBox x:Name="TextBlockZoom" Width="50" />
-                    <ToggleButton  IsChecked="True" Click="Button5_Click">
-                        <Image  Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImagegridlines}"/>
-                    </ToggleButton>
-                    <ToggleButton   IsChecked="True"  Click="Button6_Click">
-                        <Image  Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImageruler}"/>
-                    </ToggleButton>
-                    <ToggleButton Height="30" Width="30" Click="Button7_Click">
-                        <Image Height="22" Width="22" Stretch="Uniform" Source="{StaticResource DrawingImageeraser}"/>
-                    </ToggleButton>
-                    <ToggleButton Click="Button8_Click">
-                        <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImageMax}"/>
-                    </ToggleButton>
-                </ToolBar>
-                <Grid Grid.Row="1">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="173*"/>
-                        <ColumnDefinition Width="807*"/>
-                    </Grid.ColumnDefinitions>
-                    <local:ZoomboxSub x:Name="Zoombox1"  MaxZoom="10" MinZoom="0.01" Grid.Row="0" Grid.ColumnSpan="2">
-                        <local:DrawCanvas x:Name="ImageShow" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  MouseDown="ImageShow_MouseDown"  MouseUp="ImageShow_MouseUp" MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
-                    </local:ZoomboxSub>
-                </Grid>
+
+                <local:ZoomboxSub x:Name="Zoombox1"  MaxZoom="10" MinZoom="0.01" Grid.Row="0" Grid.ColumnSpan="2">
+                    <local:DrawCanvas x:Name="ImageShow" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  MouseDown="ImageShow_MouseDown"  MouseUp="ImageShow_MouseUp" MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
+                </local:ZoomboxSub>
+                <StackPanel Grid.Row="0">
+                    <ToolBar  Margin="0,2,4,0">
+                        <ToolBar.Resources>
+                            <ResourceDictionary Source="/Theme/Icons.xaml"/>
+                        </ToolBar.Resources>
+                        <ToggleButton x:Name="ToggleButtonDrag" Click="ToggleButton_Click"  ToolTip="可以按下Ctrl缩放和移动图像">
+                            <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImagedrag}"/>
+                        </ToggleButton>
+                        <Button Click="Button_Click_1">
+                            <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImage1_1}" />
+                        </Button>
+                        <Button  Click="Button_Click_2">
+                            <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImagezoom_in}" />
+                        </Button>
+                        <Button  Click="Button_Click_3">
+                            <Image  Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImagezoom_out}" />
+                        </Button>
+                        <Button Click="Button_Click_4">
+                            <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImageexpend}" />
+                        </Button>
+                        <TextBox x:Name="TextBlockZoom" Width="50" />
+                        <ToggleButton  IsChecked="True" Click="Button5_Click">
+                            <Image  Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImagegridlines}"/>
+                        </ToggleButton>
+                        <ToggleButton   IsChecked="True"  Click="Button6_Click">
+                            <Image  Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImageruler}"/>
+                        </ToggleButton>
+                        <ToggleButton Height="30" Width="30" Click="Button7_Click">
+                            <Image Height="22" Width="22" Stretch="Uniform" Source="{StaticResource DrawingImageeraser}"/>
+                        </ToggleButton>
+                        <ToggleButton Click="Button8_Click">
+                            <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImageMax}"/>
+                        </ToggleButton>
+                    </ToolBar>
+                </StackPanel>
 
 
                 <local:InkVisual  Grid.Row="1"  Visibility="Hidden" x:Name="InkVisual"/>
