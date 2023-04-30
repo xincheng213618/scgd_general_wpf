@@ -80,10 +80,10 @@
                 </Grid.RowDefinitions>
 
                 <local:ZoomboxSub x:Name="Zoombox1"  MaxZoom="10" MinZoom="0.01" Grid.Row="0" Grid.ColumnSpan="2">
-                    <local:DrawCanvas x:Name="ImageShow" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  MouseDown="ImageShow_MouseDown"  MouseUp="ImageShow_MouseUp" MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
+                    <local:DrawCanvas x:Name="ImageShow" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  MouseDown="ImageShow_MouseDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
                 </local:ZoomboxSub>
                 <StackPanel Grid.Row="0">
-                    <ToolBar  Margin="0,2,4,0">
+                    <ToolBar  Margin="0,2,4,0" Background="#77FFFFFF" HorizontalAlignment="Center">
                         <ToolBar.Resources>
                             <ResourceDictionary Source="/Theme/Icons.xaml"/>
                         </ToolBar.Resources>
