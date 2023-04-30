@@ -1,13 +1,14 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Windows;
 
 namespace ColorVision.MVVM
 {
     /// <summary>
     /// 实例化一个Mode
     /// </summary>
-    public abstract class ViewModelBase : INotifyPropertyChanged
+    public abstract class ViewModelBase : DependencyObject,INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler? PropertyChanged;
         /// <summary>

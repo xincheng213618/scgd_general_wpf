@@ -41,9 +41,13 @@ namespace ColorVision
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
         public ImageInfo ImageInfo { get; set; } = new ImageInfo();
         public PerformanceSetting performanceSetting { get; set; } = new PerformanceSetting();
+
+        private ToolBarTop ToolBarTop { get; set; } 
         public MainWindow()
         {
             InitializeComponent();
+            ToolBarTop = new ToolBarTop(Zoombox1);
+            ToolBar1.DataContext = ToolBarTop;
             ImageShow.AddVisual(DrawingVisualGrid);
             ImageShow.AddVisual(ImageRuler);
             ListView1.ItemsSource = DrawingVisualCircleLists;
@@ -65,11 +69,6 @@ namespace ColorVision
 
                 ImageShow.Source = new BitmapImage(new Uri(filePath));
                 DrawGridImage(DrawingVisualGrid, bitmapImage);
-
-                Zoombox1.PropertyChanged += (s, e) =>
-                {
-                    TextBlockZoom.Text = Zoombox1.ContentMatrix.M11.ToString("F2");
-                };
                 Zoombox1.ZoomUniform();
             }
         }
@@ -263,7 +262,7 @@ namespace ColorVision
 
         private DrawingVisual SelectRect = new DrawingVisual();
 
-        private void DrawSelectRect(DrawingVisual drawingVisual, Rect rect)
+        private static void DrawSelectRect(DrawingVisual drawingVisual, Rect rect)
         {
             using DrawingContext dc = drawingVisual.RenderOpen();
             dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), rect);
@@ -497,26 +496,6 @@ namespace ColorVision
             mQTTDemo.Show();
         }
 
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            Zoombox1.ZoomNone();
-        }
-
-        private void Button_Click_2(object sender, RoutedEventArgs e)
-        {
-            Zoombox1.Zoom(1.25);
-        }
-
-        private void Button_Click_3(object sender, RoutedEventArgs e)
-        {
-            Zoombox1.Zoom(0.8);
-        }
-
-        private void Button_Click_4(object sender, RoutedEventArgs e)
-        {
-            Zoombox1.ZoomUniform();
-            TextBlockZoom.Text = Zoombox1.ContentMatrix.M11.ToString("F2");
-        }
 
         private void MenuItem_Click_1(object sender, RoutedEventArgs e)
         {
@@ -572,7 +551,26 @@ namespace ColorVision
 
 
         }
+
+        private void ToolBar1_Loaded(object sender, RoutedEventArgs e)
+        {
+            ToolBar toolBar = sender as ToolBar;
+            var overflowGrid = toolBar.Template.FindName("OverflowGrid", toolBar) as FrameworkElement;
+            if (overflowGrid != null)
+            {
+                overflowGrid.Visibility = Visibility.Collapsed;
+            }
+
+            var mainPanelBorder = toolBar.Template.FindName("MainPanelBorder", toolBar) as FrameworkElement;
+            if (mainPanelBorder != null)
+            {
+                mainPanelBorder.Margin = new Thickness(0);
+            }
+        }
     }
+
+
+
 
     public class ImageInfo : ViewModelBase
     {
@@ -601,8 +599,7 @@ namespace ColorVision
 
         private SolidColorBrush _Color;
         public SolidColorBrush Color { get => _Color; set { _Color = value; NotifyPropertyChanged(); } }
-        
-
+       
     }
 
 
