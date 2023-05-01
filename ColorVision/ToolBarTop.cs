@@ -15,11 +15,13 @@ namespace ColorVision
         public RelayCommand ZoomDecrease { get; set; }
         public RelayCommand ZoomNone { get; set; }
 
+
+
         private ZoomboxSub ZoomboxSub { get; set; }
 
-        public ToolBarTop(ZoomboxSub zoomboxSub)
+        public ToolBarTop(ZoomboxSub zombox)
         {
-            this.ZoomboxSub = zoomboxSub ?? throw new ArgumentNullException(nameof(zoomboxSub));
+            this.ZoomboxSub = zombox ?? throw new ArgumentNullException(nameof(zombox));
             ZoomUniformToFill = new RelayCommand(a => ZoomboxSub.ZoomUniformToFill());
             ZoomUniform = new RelayCommand(a => ZoomboxSub.ZoomUniform());
             ZoomIncrease = new RelayCommand(a => ZoomboxSub.Zoom(1.25));
@@ -27,7 +29,9 @@ namespace ColorVision
             ZoomNone = new RelayCommand(a => ZoomboxSub.ZoomNone());
         }
 
-
+        /// <summary>
+        /// 当前的缩放分辨率
+        /// </summary>
         public double ZoomRatio
         {
             get => ZoomboxSub.ContentMatrix.M11;

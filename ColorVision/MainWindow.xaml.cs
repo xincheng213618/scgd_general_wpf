@@ -48,8 +48,6 @@ namespace ColorVision
             InitializeComponent();
             ToolBarTop = new ToolBarTop(Zoombox1);
             ToolBar1.DataContext = ToolBarTop;
-            ImageShow.AddVisual(DrawingVisualGrid);
-            ImageShow.AddVisual(ImageRuler);
             ListView1.ItemsSource = DrawingVisualCircleLists;
             StatusBar1.DataContext = performanceSetting;
         }
@@ -554,17 +552,12 @@ namespace ColorVision
 
         private void ToolBar1_Loaded(object sender, RoutedEventArgs e)
         {
-            ToolBar toolBar = sender as ToolBar;
-            var overflowGrid = toolBar.Template.FindName("OverflowGrid", toolBar) as FrameworkElement;
-            if (overflowGrid != null)
+            if (sender is ToolBar toolBar)
             {
-                overflowGrid.Visibility = Visibility.Collapsed;
-            }
-
-            var mainPanelBorder = toolBar.Template.FindName("MainPanelBorder", toolBar) as FrameworkElement;
-            if (mainPanelBorder != null)
-            {
-                mainPanelBorder.Margin = new Thickness(0);
+                if (toolBar.Template.FindName("OverflowGrid", toolBar) is FrameworkElement overflowGrid )
+                    overflowGrid.Visibility = Visibility.Collapsed;
+                if (toolBar.Template.FindName("MainPanelBorder", toolBar) is FrameworkElement mainPanelBorder)
+                    mainPanelBorder.Margin = new Thickness(0);
             }
         }
     }

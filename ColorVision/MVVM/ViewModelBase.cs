@@ -31,8 +31,5 @@ namespace ColorVision.MVVM
             NotifyPropertyChanged(propertyName);
             return true;
         }
-        protected virtual void VerifyAccess()
-        {
-        }
     }
 }

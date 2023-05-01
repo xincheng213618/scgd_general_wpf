@@ -35,14 +35,11 @@
                 <StackPanel Orientation="Horizontal">
                     <Button Content="打开测试图像"  Click="Button_Click"/>
                     <Button Content="绘制测试图形"  Click="Button1_Click"/>
+                    <Button Content="读取CFG测试"  Click="Button3_Click"/>
+                    <Button Content="保存CFG测试"  Click="Button4_Click"/>
+                    <Button Content="打开相机"  Click="Button4_Click"/>
+                    <Button Content="拍摄图片"  Click="Button4_Click"/>
                 </StackPanel>
-
-                <WindowsFormsHost x:Name="WindowsFormsHost1" Height="200" >
-                    <winf:PropertyGrid x:Name="PropertyGrid2">
-                    </winf:PropertyGrid>
-                </WindowsFormsHost>
-                <Button Content="读取CFG测试"  Click="Button3_Click"/>
-                <Button Content="保存CFG测试"  Click="Button4_Click"/>
                 <ScrollViewer  Height="200" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                     <ListView  x:Name="ListView1"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" >
                         <ListView.View>
@@ -71,6 +68,12 @@
                         </ListView.View>
                     </ListView>
                 </ScrollViewer>
+
+                <WindowsFormsHost x:Name="WindowsFormsHost1" Height="200" >
+                    <winf:PropertyGrid x:Name="PropertyGrid2">
+                    </winf:PropertyGrid>
+                </WindowsFormsHost>
+
                 <WpfPlot Height="155"/>
             </StackPanel>
             <Grid x:Name="ZoomGrid"  Grid.Column="1" Background="#c3c3c3">
@@ -107,11 +110,11 @@
                         <Button Command="{Binding ZoomNone}">
                             <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImageexpend}" />
                         </Button>
-                        <TextBox  Width="50" Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:F2}}" />
-                        <ToggleButton  IsChecked="True" Click="Button5_Click">
+                        <TextBox  Background="Transparent"  Width="50" Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:F2}}" />
+                        <ToggleButton  Click="Button5_Click">
                             <Image  Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImagegridlines}"/>
                         </ToggleButton>
-                        <ToggleButton   IsChecked="True"  Click="Button6_Click">
+                        <ToggleButton  Click="Button6_Click">
                             <Image  Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImageruler}"/>
                         </ToggleButton>
                         <ToggleButton Height="30" Width="30" Click="Button7_Click">
