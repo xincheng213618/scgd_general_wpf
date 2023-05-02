@@ -92,10 +92,10 @@
                         <ToolBar.Resources>
                             <ResourceDictionary Source="/Theme/Icons.xaml"/>
                         </ToolBar.Resources>
-                        <ToggleButton x:Name="ToggleButtonMouse" Height="30" Width="30" Click="ToggleButton_Click"  ToolTip="可以按下Ctrl缩放和移动图像">
+                        <ToggleButton x:Name="ToggleButtonMouse" Height="30" Width="30" IsChecked="{Binding Path=Move}">
                             <Image Height="22" Width="22" Stretch="Uniform" Source="{StaticResource DrawingImageMouse}"/>
                         </ToggleButton>
-                        <ToggleButton x:Name="ToggleButtonDrag" Click="ToggleButton_Click"  ToolTip="可以按下Ctrl缩放和移动图像">
+                        <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding Activate}" ToolTip="可以按下Ctrl缩放和移动图像">
                             <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImagedrag}"/>
                         </ToggleButton>
                         <Button Command="{Binding ZoomUniform}">

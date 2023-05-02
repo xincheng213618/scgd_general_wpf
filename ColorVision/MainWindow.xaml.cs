@@ -46,7 +46,7 @@ namespace ColorVision
         public MainWindow()
         {
             InitializeComponent();
-            ToolBarTop = new ToolBarTop(Zoombox1);
+            ToolBarTop = new ToolBarTop(Zoombox1,ImageShow);
             ToolBar1.DataContext = ToolBarTop;
             ListView1.ItemsSource = DrawingVisualCircleLists;
             StatusBar1.DataContext = performanceSetting;
@@ -195,68 +195,6 @@ namespace ColorVision
             }
         }
 
-        private DrawingVisual drawingVisual2 = new DrawingVisual();
-
-        private void DrawImage(Point actPoint, Point disPoint,ImageInfo imageInfo)
-        {
-            if (ImageShow.Source is BitmapImage bitmapImage)
-            {
-                if (disPoint.X > 60 && disPoint.X < bitmapImage.PixelWidth - 60 && disPoint.Y > 45 && disPoint.Y < bitmapImage.PixelHeight - 45)
-                {
-                    CroppedBitmap croppedBitmap = new CroppedBitmap(bitmapImage, new Int32Rect(disPoint.X.ToInt32() - 60, disPoint.Y.ToInt32() - 45, 120, 90));
-
-                    using DrawingContext dc = drawingVisual2.RenderOpen();
-
-                    var transform = new MatrixTransform(1/Zoombox1.ContentMatrix.M11, Zoombox1.ContentMatrix.M12, Zoombox1.ContentMatrix.M21, 1 / Zoombox1.ContentMatrix.M22, (1- 1/Zoombox1.ContentMatrix.M11)*actPoint.X, (1 - 1/Zoombox1.ContentMatrix.M22) * actPoint.Y);
-                    dc.PushTransform(transform);
-
-                    dc.DrawImage(croppedBitmap, new Rect(new Point(actPoint.X, actPoint.Y+ 25), new Size(120, 90)));
-
-                    dc.DrawLine(new Pen(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#00B1FF")), 3), new Point(actPoint.X + 59 , actPoint.Y + 25), new Point(actPoint.X + 59, actPoint.Y + 25 + 90));
-                    dc.DrawLine(new Pen(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#00B1FF")), 3), new Point(actPoint.X, actPoint.Y + 25 +44), new Point(actPoint.X +120, actPoint.Y + 25 + 44));
-
-
-                    double x1 = actPoint.X;
-                    double y1 = actPoint.Y + 25;
-
-                    double width = 120;
-                    double height = 90;
-
-
-                    dc.DrawLine(new Pen(Brushes.Black, 0.5), new Point(x1,y1-0.25), new Point(x1,y1+height+0.25));
-                    dc.DrawLine(new Pen(Brushes.Black, 0.5), new Point(x1, y1), new Point(x1 + width, y1));
-                    dc.DrawLine(new Pen(Brushes.Black, 0.5), new Point(x1 + width, y1-0.25), new Point(x1 + width, y1 + height+0.25));
-                    dc.DrawLine(new Pen(Brushes.Black, 0.5), new Point(x1, y1 + height),new Point(x1 + width, y1 + height));
-
-                    x1 = x1+1;
-                    y1 = y1 + 1;
-                    width -= 2;
-                    height -= 2;
-                    dc.DrawLine(new Pen(Brushes.White, 1.5), new Point(x1, y1-0.75), new Point(x1, y1 + height + 0.75));
-                    dc.DrawLine(new Pen(Brushes.White, 1.5), new Point(x1, y1), new Point(x1 + width, y1));
-                    dc.DrawLine(new Pen(Brushes.White, 1.5), new Point(x1 + width, y1- 0.75), new Point(x1 + width, y1 + height+ 0.75));
-                    dc.DrawLine(new Pen(Brushes.White, 1.5), new Point(x1, y1 + height), new Point(x1 + width, y1 + height));
-
-                    dc.DrawRectangle(Brushes.Black,new Pen(Brushes.White, 0),new Rect(x1-1, y1 + height + 1, width+2, 45));
-
-                    Brush brush = Brushes.White;
-                    FontFamily fontFamily = new FontFamily("Arial");
-                    double fontSize = 10;
-                    FormattedText formattedText = new FormattedText($"R:{imageInfo.R}  G:{imageInfo.G}  B:{imageInfo.B}", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
-                    dc.DrawText(formattedText, new Point(x1+5, y1+ height+5));
-                    FormattedText formattedTex1 = new FormattedText($"({imageInfo.X},{imageInfo.Y})", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
-                    dc.DrawText(formattedTex1, new Point(x1 + 5, y1 + height + 31));
-
-                    FormattedText formattedTex3 = new FormattedText($"{imageInfo.Hex}", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
-                    dc.DrawText(formattedTex3, new Point(x1 + 5, y1 + height + 18));
-                    dc.Pop();
-                    if (drawingVisual2.Effect is not DropShadowEffect)
-                        drawingVisual2.Effect = new DropShadowEffect() { Opacity = 0.5 };
-
-                }
-
-            }
-        }
 
         private DrawingVisual SelectRect = new DrawingVisual();
 
@@ -327,7 +265,7 @@ namespace ColorVision
 
         private void ImageShow_MouseMove(object sender, MouseEventArgs e)
         {
-            if (sender is DrawCanvas drawCanvas&&!Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn))
+            if (sender is DrawCanvas drawCanvas&&( Zoombox1.ActivateOn ==ModifierKeys.None|| !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn)))
             {
                 var point = e.GetPosition(drawCanvas);
 
@@ -342,13 +280,14 @@ namespace ColorVision
                 {
                     SelectDCircle.Attribute.Center = point;
                 }
-                if (drawCanvas.Source is BitmapImage bitmapImage)
+
+
+                if (ToolBarTop.Move&&drawCanvas.Source is BitmapImage bitmapImage)
                 {
                     int imageWidth = bitmapImage.PixelWidth;
                     int imageHeight = bitmapImage.PixelHeight;
 
                     var actPoint = new Point(point.X, point.Y);
-
 
                     point.X = point.X / controlWidth * imageWidth;
                     point.Y = point.Y / controlHeight * imageHeight;
@@ -372,7 +311,7 @@ namespace ColorVision
                         ImageInfo.Hex = color.ToHex();
                     }
 
-                    DrawImage(actPoint, bitPoint, ImageInfo);
+                    ToolBarTop.DrawImage(actPoint, bitPoint, ImageInfo);
                 }
             }
         }
@@ -403,17 +342,11 @@ namespace ColorVision
 
         private void ImageShow_MouseEnter(object sender, MouseEventArgs e)
         {
-            if (sender is DrawCanvas drawCanvas && !drawCanvas.ContainsVisual(drawingVisual2))
-            {
-                ImageShow.AddVisual(drawingVisual2);
-            }
+            ToolBarTop.DrawVisualImageControl(true);
         }
         private void ImageShow_MouseLeave(object sender, MouseEventArgs e)
         {
-            if (sender is DrawCanvas drawCanvas && drawCanvas.ContainsVisual(drawingVisual2))
-            {
-                ImageShow.RemoveVisual(drawingVisual2);
-            }
+            ToolBarTop.DrawVisualImageControl(false);
         }
 
         private void Button3_Click(object sender, RoutedEventArgs e)
@@ -501,13 +434,6 @@ namespace ColorVision
             
         }
 
-        private void ToggleButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is ToggleButton toggleButton)
-            {
-                Zoombox1.ActivateOn = toggleButton.IsChecked ==true? ModifierKeys.Control: ModifierKeys.None;
-            }
-        }
 
         private void Button8_Click(object sender, RoutedEventArgs e)
         {
