@@ -18,14 +18,14 @@ namespace ColorVision.Extension
     /// <summary>
     // 扩展加载，没有特殊标记的丢在这里，反正会自动识别加载
     /// </summary>
-    public static class Extensions
+    internal static class Extensions
     {
         /// <summary>
         /// 对图标的扩展
         /// </summary>
         /// <param name="icon"></param>
         /// <returns></returns>
-        public static ImageSource ToImageSource(this Icon icon)
+        internal static ImageSource ToImageSource(this Icon icon)
         {
             ImageSource imageSource = Imaging.CreateBitmapSourceFromHIcon(
                 icon.Handle,
@@ -36,7 +36,7 @@ namespace ColorVision.Extension
         }
 
 
-        public static string Description(object obj)
+        internal static string Description(object obj)
         {
             Type type = obj.GetType();
             MemberInfo[] infos = type.GetMember(obj.ToString() ?? "");

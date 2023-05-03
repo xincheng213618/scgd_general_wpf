@@ -20,13 +20,9 @@ namespace ColorVision
         public RelayCommand ZoomDecrease { get; set; }
         public RelayCommand ZoomNone { get; set; }
 
-
-
         private ZoomboxSub ZoomboxSub { get; set; }
         private DrawCanvas DrawImageCanvas { get; set; }
-
         public DrawingVisual DrawVisualImage { get; set; }
-
 
         public ToolBarTop(ZoomboxSub zombox,DrawCanvas drawCanvas)
         {
@@ -38,8 +34,8 @@ namespace ColorVision
             ZoomDecrease = new RelayCommand(a => ZoomboxSub.Zoom(0.8));
             ZoomNone = new RelayCommand(a =>
             {
-                //ZoomboxSub.ZoomNone();
-                ZoomboxSub.Zoom(1/ZoomRatio);
+                ZoomboxSub.ZoomNone();
+                //ZoomboxSub.Zoom(1/ZoomRatio);
             });
 
             DrawVisualImage = new DrawingVisual();

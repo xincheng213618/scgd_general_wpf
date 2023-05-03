@@ -16,7 +16,7 @@ namespace ColorVision.Extension
     public static class BitmapExtensions
     {
 
-        public static int ToInt32(this double num) => Convert.ToInt32(num);
+        internal static int ToInt32(this double num) => Convert.ToInt32(num);
 
 
         public static Color GetPixelColor(this BitmapImage bitmapImage, int x, int y)
@@ -35,8 +35,8 @@ namespace ColorVision.Extension
 
         public static string ToHex(this Color color) => "#" + color.R.ToString("X2") + color.G.ToString("X2") + color.B.ToString("X2");
 
-        public static Color GetPixelColor(System.Drawing.Bitmap bitmap, int x, int y) => bitmap.GetPixel(x, y).ToMedia();
+        public static Color GetPixelColor(System.Drawing.Bitmap bitmap, int x, int y) => bitmap.GetPixel(x, y).ToMediaColor();
 
-        public static Color ToMedia(this System.Drawing.Color color) => Color.FromArgb(color.A, color.R, color.G, color.B);
+        public static Color ToMediaColor(this System.Drawing.Color color) => Color.FromArgb(color.A, color.R, color.G, color.B);
     }
 }
