@@ -60,6 +60,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\cvColorVision\cvColorVision.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Resource Include="Image\ColorVision.ico" />
   </ItemGroup>
 

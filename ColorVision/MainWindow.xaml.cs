@@ -68,6 +68,7 @@ namespace ColorVision
                 ImageShow.Source = new BitmapImage(new Uri(filePath));
                 DrawGridImage(DrawingVisualGrid, bitmapImage);
                 Zoombox1.ZoomUniform();
+                ToolBar1.Visibility = Visibility.Visible;
             }
         }
 
@@ -272,11 +273,10 @@ namespace ColorVision
                 {
                     DrawSelectRect(SelectRect, new Rect(MouseDownP,point)); ;
                 }
-                else if (SelectDCircle is not null)
+                else if (SelectDCircle != null)
                 {
                     SelectDCircle.Attribute.Center = point;
                 }
-
 
                 if (ToolBarTop.Move&&drawCanvas.Source is BitmapImage bitmapImage)
                 {
@@ -401,7 +401,10 @@ namespace ColorVision
                 if (checkBox.IsChecked ==true)
                 {
                     if (!ImageShow.ContainsVisual(drawingVisualCircle))
+                    {
                         ImageShow.AddVisual(drawingVisualCircle);
+                    }
+
                 }
                 else
                 {
@@ -505,6 +508,12 @@ namespace ColorVision
                 };
                 ImageShow.TopVisual(drawingVisual);
             }
+        }
+
+        private async void Window_Initialized(object sender, EventArgs e)
+        {
+            await Task.Delay(100);
+            ToolBar1.Visibility = Visibility.Collapsed;
         }
     }
 

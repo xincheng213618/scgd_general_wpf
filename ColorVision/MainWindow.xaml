@@ -8,7 +8,7 @@
         xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         mc:Ignorable="d"
         DataContext="{Binding RelativeSource={RelativeSource Self}}"
-        Title="视彩配置窗口" Height="720" Width="1280">
+        Title="配置" Height="720" Width="1280"  Initialized="Window_Initialized">
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -39,6 +39,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="300"/>
                 <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="300"/>
             </Grid.ColumnDefinitions>
             <Grid  Grid.Row="0">
                 <Grid.RowDefinitions>
@@ -51,15 +52,23 @@
                         <Button Content="绘制测试图形"  Click="Button1_Click"/>
                         <Button Content="读取CFG测试"  Click="Button3_Click"/>
                         <Button Content="保存CFG测试"  Click="Button4_Click"/>
-                        <Button Content="打开相机"  Click="Button4_Click"/>
-                        <Button Content="拍摄图片"  Click="Button4_Click"/>
                     </StackPanel>
-                    <WindowsFormsHost x:Name="WindowsFormsHost1" Visibility="Visible" Height="200" >
-                        <winf:PropertyGrid x:Name="PropertyGrid2">
-                        </winf:PropertyGrid>
-                    </WindowsFormsHost>
+                    <Button Content="打开相机"  Click="Button4_Click"/>
+                    <Button Content="拍摄图片"  Click="Button4_Click"/>
                 </StackPanel>
-                <DockPanel Grid.Row="1">
+            </Grid>
+
+
+            <Grid Grid.Column="2" >
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="200"/>
+                </Grid.RowDefinitions>
+                <WindowsFormsHost x:Name="WindowsFormsHost1" Grid.Row="1" Visibility="Visible"  >
+                    <winf:PropertyGrid x:Name="PropertyGrid2">
+                    </winf:PropertyGrid>
+                </WindowsFormsHost>
+                <DockPanel Grid.Row="0">
                     <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
                         <Grid Width="50">
                             <TextBlock  HorizontalAlignment="Center" VerticalAlignment="Center" Text="序号"  />
@@ -67,14 +76,14 @@
                         <Grid Width="50">
                             <TextBlock  HorizontalAlignment="Center" VerticalAlignment="Center" Text="选中"  />
                         </Grid>
-                        <Grid Width="50">
+                        <Grid Width="100">
                             <TextBlock  HorizontalAlignment="Center" VerticalAlignment="Center" Text="位置"  />
                         </Grid>
-                        <Button Content="添加" />
-                        <Button Content="删除" />
-                        <Button Content="清空"/>
+                        <Grid Width="50">
+                            <TextBlock  HorizontalAlignment="Center" VerticalAlignment="Center" Text="角度"  />
+                        </Grid>
                     </StackPanel>
-                    <ListView  x:Name="ListView1" ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged" >
+                    <ListView   x:Name="ListView1" ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged" >
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn Width="50">
@@ -91,39 +100,49 @@
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Width="400">
+                                <GridViewColumn Width="100">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate >
-                                            <StackPanel Grid.Column="1" Margin="2" Orientation="Horizontal">
-                                                <TextBlock  >
+                                            <TextBlock  >
                                                     <Run Text="("/>
                                                     <Run Text="{Binding Path = CenterX,StringFormat={}{0:F0}}"/>
                                                     <Run Text=","/>
                                                     <Run Text="{Binding Path = CenterY,StringFormat={}{0:F0}}"/>
                                                     <Run Text=")"/>
-                                                </TextBlock>
-                                            </StackPanel>
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Width="50">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate >
+                                            <TextBlock Text="{Binding Path=Radius}">
+                                            </TextBlock>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
                             </GridView>
                         </ListView.View>
                     </ListView>
+
                 </DockPanel>
+
+
             </Grid>
+
             <Grid x:Name="ZoomGrid"  Grid.Column="1" Background="#c3c3c3">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <Grid Grid.Row="0" Height="0.5" Background="#F0F0F0">
-                   
-                </Grid>
+                <Grid Grid.Row="0" Height="0.5" Background="#F0F0F0"/>
+
+
                 <local:ZoomboxSub x:Name="Zoombox1"  MaxZoom="10" MinZoom="0.01" Grid.Row="1" Grid.ColumnSpan="2">
                     <local:DrawCanvas x:Name="ImageShow" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  MouseDown="ImageShow_MouseDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
                 </local:ZoomboxSub>
                 <StackPanel Grid.Row="0" Grid.RowSpan="2" >
-                    <ToolBar x:Name="ToolBar1" DataContext="{Binding ToolBarTop}" Loaded="ToolBar1_Loaded" Margin="0,2,4,0" Background="#77FFFFFF" HorizontalAlignment="Center">
+                    <ToolBar x:Name="ToolBar1" DataContext="{Binding ToolBarTop}"   Loaded="ToolBar1_Loaded" Margin="0,2,4,0" Background="#77FFFFFF" HorizontalAlignment="Center">
                         <ToolBar.Resources>
                             <ResourceDictionary Source="/Theme/Icons.xaml"/>
                         </ToolBar.Resources>
@@ -164,6 +183,9 @@
             </Grid>
 
 
+
+            <GridSplitter Grid.Column="0"  Width="1" />
+            <GridSplitter  Grid.Column="2"  Width="1" HorizontalAlignment="Left" />
         </Grid>
         <Grid Grid.Row="2">
             <StatusBar x:Name="StatusBar1" DataContext="{Binding Path=performanceSetting}" >

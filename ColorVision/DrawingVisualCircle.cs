@@ -15,17 +15,17 @@ namespace ColorVision
     public class CircleAttribute: DrawAttributeBase
     {
         private int _ID;
-        [CategoryAttribute("DrawingVisualCircle"), DisplayName("序号")]
+        [Category("DrawingVisualCircle"), DisplayName("序号")]
         public int ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
 
         private Brush _Brush;
 
-        [CategoryAttribute("DrawingVisualCircle"), DisplayName("颜色")]
+        [Category("DrawingVisualCircle"), DisplayName("颜色")]
         public Brush Brush { get => _Brush; set { _Brush = value; NotifyPropertyChanged(); } }
 
         private Pen _Pen;
 
-        [CategoryAttribute("DrawingVisualCircle"), DisplayName("笔刷")]
+        [Category("DrawingVisualCircle"), DisplayName("笔刷")]
         public Pen Pen { get => _Pen; set { _Pen = value; NotifyPropertyChanged(); } }
 
         private Point _Center;
@@ -35,7 +35,7 @@ namespace ColorVision
 
         private double _Radius;
 
-        [CategoryAttribute("DrawingVisualCircle"), DisplayName("弧度")]   
+        [Category("DrawingVisualCircle"), DisplayName("弧度")]   
         public double Radius { get=>_Radius; set { _Radius = value; NotifyPropertyChanged(); } }
     }
 
@@ -43,17 +43,17 @@ namespace ColorVision
     {
         private Brush _Brush;
 
-        [CategoryAttribute("RectangleAttribute"), DisplayName("颜色")]
+        [Category("RectangleAttribute"), DisplayName("颜色")]
         public Brush Brush { get => _Brush; set { _Brush = value; NotifyPropertyChanged(); } }
 
         private Pen _Pen;
 
-        [CategoryAttribute("RectangleAttribute"), DisplayName("笔刷")]
+        [Category("RectangleAttribute"), DisplayName("笔刷")]
         public Pen Pen { get => _Pen; set { _Pen = value; NotifyPropertyChanged(); } }
 
         private Rect _Rect;
 
-        [CategoryAttribute("RectangleAttribute"), DisplayName("弧度")]
+        [Category("RectangleAttribute"), DisplayName("弧度")]
         public Rect Rect { get => _Rect; set { _Rect = value; NotifyPropertyChanged(); } }
     }
 
