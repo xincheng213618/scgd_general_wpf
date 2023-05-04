@@ -1,6 +1,7 @@
 ﻿using ColorVision.Config;
 using ColorVision.Extension;
 using ColorVision.Info;
+using ColorVision.MQTT;
 using ColorVision.MVVM;
 using ColorVision.Util;
 using Gu.Wpf.Geometry;

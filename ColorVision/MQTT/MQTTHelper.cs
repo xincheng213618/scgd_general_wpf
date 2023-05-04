@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8625,CS0618,CA1805,CA1707,CA1822
+﻿#pragma warning disable CS8625,CS0618,CA1805,CA1707,CA1822, CA1051
 using MQTTnet.Client;
 using MQTTnet.Packets;
 using MQTTnet.Server;
@@ -11,7 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ColorVision.Util
+namespace ColorVision.MQTT
 {
     /// <summary>
     /// MQTT通讯相关的工具类
@@ -327,7 +327,7 @@ namespace ColorVision.Util
             return Task.CompletedTask;
         }
 
-        public  ApplicationMessageNotConsumedEventArgs ApplicationMessageNotConsumedEventArgs { get; set; }
+        public ApplicationMessageNotConsumedEventArgs ApplicationMessageNotConsumedEventArgs { get; set; }
 
         /// <summary>
         /// 设置消息处理程序
@@ -349,7 +349,7 @@ namespace ColorVision.Util
         /// <summary>
         /// 客户端
         /// </summary>
-         public IMqttClient _MqttClient = null;
+        public IMqttClient _MqttClient = null;
 
         /// <summary>
         /// 创建MQTTClient并运行
@@ -411,7 +411,7 @@ namespace ColorVision.Util
         /// <param name="userPassword">认证用密码</param>
         /// <param name="callback">信息处理逻辑</param>
         /// <returns></returns>
-        public async Task<ResultDataMQTT> CreateMQTTClientAndStart(string mqttServerUrl, int port, string userName, string userPassword, Action<ResultDataMQTT> callback=null)
+        public async Task<ResultDataMQTT> CreateMQTTClientAndStart(string mqttServerUrl, int port, string userName, string userPassword, Action<ResultDataMQTT> callback = null)
         {
             ResultDataMQTT resultData_MQTT = new ResultDataMQTT();
 
@@ -577,7 +577,7 @@ namespace ColorVision.Util
             ResultDataMQTT resultData_MQTT = new ResultDataMQTT();
             try
             {
-                await MqttClientExtensions.UnsubscribeAsync(_MqttClient, topic, CancellationToken.None);
+                await _MqttClient.UnsubscribeAsync(topic, CancellationToken.None);
                 resultData_MQTT = new ResultDataMQTT()
                 {
                     ResultCode = 1,
