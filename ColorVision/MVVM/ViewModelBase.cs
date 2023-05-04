@@ -8,7 +8,7 @@ namespace ColorVision.MVVM
     /// <summary>
     /// 实例化一个Mode
     /// </summary>
-    public abstract class ViewModelBase : DependencyObject,INotifyPropertyChanged
+    public abstract class ViewModelBase :INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler? PropertyChanged;
         /// <summary>
@@ -24,7 +24,6 @@ namespace ColorVision.MVVM
         }
         protected virtual bool SetProperty1<T>(ref T storage, T value, [CallerMemberName] string propertyName = "")
         {
-            VerifyAccess();
             if (EqualityComparer<T>.Default.Equals(storage, value))
                 return false;
             storage = value;

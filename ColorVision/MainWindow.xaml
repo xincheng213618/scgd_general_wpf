@@ -9,6 +9,13 @@
         mc:Ignorable="d"
         DataContext="{Binding RelativeSource={RelativeSource Self}}"
         Title="视彩配置窗口" Height="720" Width="1280">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Theme/Listview.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
     <Grid x:Name="Root">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
@@ -21,6 +28,8 @@
                 </MenuItem>
                 <MenuItem Header="MQTTDemo(_M)" Click="MenuItem_Click">
                 </MenuItem>
+                <MenuItem Header="PlotTest(_M)" Click="MenuItem_Click">
+                </MenuItem>
                 <MenuItem Header="帮助(_H)">
                     <MenuItem Header="关于(_A)" Click="MenuItem_Click_1"/>
                 </MenuItem>
@@ -31,51 +40,77 @@
                 <ColumnDefinition Width="300"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="0" >
-                <StackPanel Orientation="Horizontal">
-                    <Button Content="打开测试图像"  Click="Button_Click"/>
-                    <Button Content="绘制测试图形"  Click="Button1_Click"/>
-                    <Button Content="读取CFG测试"  Click="Button3_Click"/>
-                    <Button Content="保存CFG测试"  Click="Button4_Click"/>
-                    <Button Content="打开相机"  Click="Button4_Click"/>
-                    <Button Content="拍摄图片"  Click="Button4_Click"/>
+            <Grid  Grid.Row="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Column="0" >
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="打开测试图像"  Click="Button_Click"/>
+                        <Button Content="绘制测试图形"  Click="Button1_Click"/>
+                        <Button Content="读取CFG测试"  Click="Button3_Click"/>
+                        <Button Content="保存CFG测试"  Click="Button4_Click"/>
+                        <Button Content="打开相机"  Click="Button4_Click"/>
+                        <Button Content="拍摄图片"  Click="Button4_Click"/>
+                    </StackPanel>
+                    <WindowsFormsHost x:Name="WindowsFormsHost1" Visibility="Visible" Height="200" >
+                        <winf:PropertyGrid x:Name="PropertyGrid2">
+                        </winf:PropertyGrid>
+                    </WindowsFormsHost>
                 </StackPanel>
-                <ScrollViewer  Height="200" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                    <ListView  x:Name="ListView1"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" >
+                <DockPanel Grid.Row="1">
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+                        <Grid Width="50">
+                            <TextBlock  HorizontalAlignment="Center" VerticalAlignment="Center" Text="序号"  />
+                        </Grid>
+                        <Grid Width="50">
+                            <TextBlock  HorizontalAlignment="Center" VerticalAlignment="Center" Text="选中"  />
+                        </Grid>
+                        <Grid Width="50">
+                            <TextBlock  HorizontalAlignment="Center" VerticalAlignment="Center" Text="位置"  />
+                        </Grid>
+                        <Button Content="添加" />
+                        <Button Content="删除" />
+                        <Button Content="清空"/>
+                    </StackPanel>
+                    <ListView  x:Name="ListView1" ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged" >
                         <ListView.View>
                             <GridView>
-                                <GridViewColumn Width="{Binding ElementName=ListView1,Path=ActualWidth}">
-                                    <GridViewColumn.CellTemplate  >
+                                <GridViewColumn Width="50">
+                                    <GridViewColumn.CellTemplate>
                                         <DataTemplate >
-                                            <Border x:Name="border1"  Height="20" Margin="0,2,0,2" BorderThickness="0" Width="{Binding ElementName=ListView1,Path=ActualWidth}"   >
-                                                <Grid Margin="0,2,30,2" >
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="30"/>
-                                                        <ColumnDefinition Width="*"/>
-                                                    </Grid.ColumnDefinitions>
-                                                    <StackPanel Grid.Column="1" Margin="2" Orientation="Horizontal">
-                                                        <CheckBox IsChecked="True" Click="CheckBox_Click" Tag="{Binding .}"/>
-                                                        <TextBlock Text="{Binding Path = CenterX }" />
-                                                        <TextBlock Text="{Binding Path = CenterY }" />
-                                                    </StackPanel>
-                                                </Grid>
-
-                                            </Border>
+                                            <TextBlock Text="{Binding Path=ID}" HorizontalAlignment="Center"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Width="50">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate >
+                                            <CheckBox IsChecked="True" Click="CheckBox_Click" Tag="{Binding .}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Width="400">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate >
+                                            <StackPanel Grid.Column="1" Margin="2" Orientation="Horizontal">
+                                                <TextBlock  >
+                                                    <Run Text="("/>
+                                                    <Run Text="{Binding Path = CenterX,StringFormat={}{0:F0}}"/>
+                                                    <Run Text=","/>
+                                                    <Run Text="{Binding Path = CenterY,StringFormat={}{0:F0}}"/>
+                                                    <Run Text=")"/>
+                                                </TextBlock>
+                                            </StackPanel>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
                             </GridView>
                         </ListView.View>
                     </ListView>
-                </ScrollViewer>
-
-                <WindowsFormsHost x:Name="WindowsFormsHost1" Height="200" >
-                    <winf:PropertyGrid x:Name="PropertyGrid2">
-                    </winf:PropertyGrid>
-                </WindowsFormsHost>
-
-                <WpfPlot Height="155"/>
-            </StackPanel>
+                </DockPanel>
+            </Grid>
             <Grid x:Name="ZoomGrid"  Grid.Column="1" Background="#c3c3c3">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="auto"/>
@@ -125,8 +160,6 @@
                         </ToggleButton>
                     </ToolBar>
                 </StackPanel>
-
-
                 <local:InkVisual  Grid.Row="1"  Visibility="Hidden" x:Name="InkVisual"/>
             </Grid>
 

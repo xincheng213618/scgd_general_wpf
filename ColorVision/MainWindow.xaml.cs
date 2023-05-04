@@ -71,24 +71,22 @@ namespace ColorVision
             }
         }
 
-        public List<DrawingVisualCircle> dctemp { get; set; } = new List<DrawingVisualCircle>();
         public ObservableCollection<DrawingVisualCircle> DrawingVisualCircleLists { get; set; } = new ObservableCollection<DrawingVisualCircle>();
 
 
         private void Button1_Click(object sender, RoutedEventArgs e)
         {
-            for (int i = 0; i < 200; i++)
+            for (int i = 0; i < 50; i++)
             {
-                for (int j = 0; j < 200; j++)
+                for (int j = 0; j < 50; j++)
                 {
                     DrawingVisualCircle drawingVisualCircle = new DrawingVisualCircle();
-                    drawingVisualCircle.Attribute.Center = new Point(i * 100, j * 100);
-                    drawingVisualCircle.Attribute.Radius = 50;
-
-                    drawingVisualCircle.Render();
+                    drawingVisualCircle.Attribute.Center = new Point(i * 50, j * 50);
+                    drawingVisualCircle.Attribute.Radius = 20;
+                    drawingVisualCircle.Attribute.ID = i*50+j;
+                   drawingVisualCircle.Render();
                     ImageShow.AddVisual(drawingVisualCircle);
-                    dctemp.Add(drawingVisualCircle);
-                    //DrawingVisualCircleLists.Add(drawingVisualCircle);
+                    DrawingVisualCircleLists.Add(drawingVisualCircle);
 
                 }
             }
@@ -101,11 +99,6 @@ namespace ColorVision
                     drawingVisualCircle.Render();
                     ImageShow.AddVisual(drawingVisualCircle);
                 }
-            }
-
-            for (int i = 0; i < (dctemp.Count<100? dctemp.Count: 100); i++)
-            {
-                DrawingVisualCircleLists.Add(dctemp[i]);
             }
             PropertyGrid2.SelectedObject = DrawingVisualCircleLists[0].Attribute;
             DrawingVisualCircleLists[0].Attribute.PropertyChanged += (s, e) =>
@@ -230,13 +223,16 @@ namespace ColorVision
                             };
                             viewModelBase.Pen = new Pen(Brushes.Black, 1);
                         }
-
                         PropertyGrid2.SelectedObject = drawingVisual.Attribute;
-                        drawingVisual.Attribute.Pen = new Pen(Brushes.Red, 2);
+                        drawingVisual.Attribute.Pen = new Pen(Brushes.Red, 3);
                         drawingVisual.Attribute.PropertyChanged += (s, e) =>
                         {
                             PropertyGrid2.Refresh();
                         };
+                        drawCanvas.TopVisual(drawingVisual);
+
+                        ListView1.ScrollIntoView(drawingVisual);
+                        ListView1.SelectedIndex = DrawingVisualCircleLists.IndexOf(drawingVisual);
 
                         if (ToggleButtonDrag.IsChecked == true)
                             SelectDCircle = drawingVisual;
@@ -484,6 +480,30 @@ namespace ColorVision
                     overflowGrid.Visibility = Visibility.Collapsed;
                 if (toolBar.Template.FindName("MainPanelBorder", toolBar) is FrameworkElement mainPanelBorder)
                     mainPanelBorder.Margin = new Thickness(0);
+            }
+        }
+
+
+        private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ListView listView && listView.SelectedIndex > -1 && DrawingVisualCircleLists[listView.SelectedIndex] is DrawingVisualCircle drawingVisual)
+            {
+                if (PropertyGrid2.SelectedObject is CircleAttribute viewModelBase)
+                {
+                    viewModelBase.PropertyChanged -= (s, e) =>
+                    {
+                        PropertyGrid2.Refresh();
+                    };
+                    viewModelBase.Pen = new Pen(Brushes.Black, 1);
+                }
+
+                PropertyGrid2.SelectedObject = drawingVisual.Attribute;
+                drawingVisual.Attribute.Pen = new Pen(Brushes.Red, 3);
+                drawingVisual.Attribute.PropertyChanged += (s, e) =>
+                {
+                    PropertyGrid2.Refresh();
+                };
+                ImageShow.TopVisual(drawingVisual);
             }
         }
     }

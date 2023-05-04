@@ -35,6 +35,16 @@ namespace ColorVision
             base.RemoveVisualChild(visual);
             base.RemoveLogicalChild(visual);
         }
+        public void TopVisual(Visual visual)
+        {
+            base.RemoveVisualChild(visual);
+            base.RemoveLogicalChild(visual);
+
+            base.AddVisualChild(visual);
+            base.AddLogicalChild(visual);
+        }
+
+
         public DrawingVisual? GetVisual(Point point)
         {
             HitTestResult hitResult = VisualTreeHelper.HitTest(this, point);

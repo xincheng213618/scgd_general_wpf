@@ -2,6 +2,7 @@
 using System;
 using System.ComponentModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -13,6 +14,10 @@ namespace ColorVision
 
     public class CircleAttribute: DrawAttributeBase
     {
+        private int _ID;
+        [CategoryAttribute("DrawingVisualCircle"), DisplayName("序号")]
+        public int ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
+
         private Brush _Brush;
 
         [CategoryAttribute("DrawingVisualCircle"), DisplayName("颜色")]
@@ -60,8 +65,12 @@ namespace ColorVision
         public bool IsCheck { get; set; } = true;
     }
 
-    public class DrawingVisualCircle: DrawingVisual
+    public class DrawingVisualCircle: DrawingVisual, INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler? PropertyChanged;
+        public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
+
         public CircleAttribute Attribute { get; set; } 
         public DrawingVisualCircle()
         {
@@ -70,14 +79,26 @@ namespace ColorVision
             Attribute.Pen = new Pen(Brushes.Black, 1);
             Attribute.Center = new Point(50, 50);
             Attribute.Radius = 30;
-            Attribute.PropertyChanged += (s,e) => Render();
+            Attribute.PropertyChanged += (s,e) => {
+                Render();
+                if (e.PropertyName == "Center")
+                {
+                    NotifyPropertyChanged(nameof(CenterX));
+                    NotifyPropertyChanged(nameof(CenterY));
+                }else if (e.PropertyName == "Radius")
+                {
+                    NotifyPropertyChanged(nameof(Radius));
+                }
+            };
+
+
         }
         public double CenterX { get => Attribute.Center.X; set => Attribute.Center = new Point(value, Attribute.Center.Y); }
         public double CenterY { get => Attribute.Center.Y; set => Attribute.Center = new Point(Attribute.Center.X,value); }
 
-
         public double Radius { get => Attribute.Radius; set => Attribute.Radius =value; }
 
+        public int ID { get => Attribute.ID; set => Attribute.ID = value; }
 
 
 
