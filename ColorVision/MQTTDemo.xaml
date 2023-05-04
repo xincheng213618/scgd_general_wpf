@@ -13,8 +13,8 @@
         </Grid.RowDefinitions>
         <StackPanel>
             <StackPanel Orientation="Horizontal">
-                <TextBox x:Name="TextBoxIP" TextWrapping="Wrap" Text="192.168.3.225" Width="120"/>
-                <TextBox x:Name="TextBoxPort" TextWrapping="Wrap" Text="1883" Width="120"/>
+                <TextBox x:Name="TextBoxIP" TextWrapping="Wrap" Text="{Binding IP}" Width="120"/>
+                <TextBox x:Name="TextBoxPort" TextWrapping="Wrap" Text="{Binding Port}" Width="120"/>
                 <Button  Content="启动" Click="Start_Click"/>
                 <Button  Content="关闭" Click="Close_Click"/>
             </StackPanel>
@@ -23,17 +23,12 @@
                 <Button  Content="订阅" Click="Subscribe_Click"/>
                 <Button  Content="退订" Click="UnSubscribe_Click"/>
             </StackPanel>
-           <StackPanel Orientation="Horizontal">
+            <StackPanel Orientation="Horizontal">
                 <TextBox x:Name="TextBoxSubscribe1" TextWrapping="Wrap" Text="topic1" Width="120"/>
                 <TextBox x:Name="TextBoxSend" TextWrapping="Wrap"   Text="topic1" Width="120"/>
                 <CheckBox x:Name="CheckBoxRetained" />
                 <Button  Content="发送" Click="Send_Click"/>
             </StackPanel>
-            <StackPanel Orientation="Horizontal">
-                <Button  Content="CM_Open" Click="SendDemo_Click"/>
-                <Button  Content="CM_GetFrame" Click="SendDemo1_Click"/>
-            </StackPanel>
-
         </StackPanel>
         <TextBox  Grid.Row="1" x:Name="TextBoxResult"  VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" />
 

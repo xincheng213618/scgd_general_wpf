@@ -515,6 +515,27 @@ namespace ColorVision
             await Task.Delay(100);
             ToolBar1.Visibility = Visibility.Collapsed;
         }
+
+        MQTTCamera mQTTCamera = MQTTCamera.GetInstance();
+
+        private void SendDemo_Click(object sender, RoutedEventArgs e)
+        {
+            mQTTCamera.InitCamere();
+        }
+        private void SendDemo1_Click(object sender, RoutedEventArgs e)
+        {
+            mQTTCamera.AddCalibration();
+        }
+
+        private void SendDemo2_Click(object sender, RoutedEventArgs e)
+        {
+            mQTTCamera.OpenCamera();
+        }
+
+        private void SendDemo3_Click(object sender, RoutedEventArgs e)
+        {
+            mQTTCamera.GetData();
+        }
     }
 
 

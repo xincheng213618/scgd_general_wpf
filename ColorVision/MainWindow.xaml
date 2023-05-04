@@ -53,8 +53,12 @@
                         <Button Content="读取CFG测试"  Click="Button3_Click"/>
                         <Button Content="保存CFG测试"  Click="Button4_Click"/>
                     </StackPanel>
-                    <Button Content="打开相机"  Click="Button4_Click"/>
-                    <Button Content="拍摄图片"  Click="Button4_Click"/>
+                    <StackPanel Orientation="Horizontal">
+                        <Button  Content="InitCamere" Click="SendDemo_Click"/>
+                        <Button  Content="AddCalibration" Click="SendDemo1_Click"/>
+                        <Button  Content="OpenCamere" Click="SendDemo2_Click"/>
+                        <Button  Content="GetData" Click="SendDemo3_Click"/>
+                    </StackPanel>
                 </StackPanel>
             </Grid>
 
