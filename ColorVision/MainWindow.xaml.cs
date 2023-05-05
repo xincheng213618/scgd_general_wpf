@@ -14,6 +14,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using System.Reflection.Emit;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -24,6 +25,7 @@ using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Ink;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
@@ -51,6 +53,22 @@ namespace ColorVision
             ToolBar1.DataContext = ToolBarTop;
             ListView1.ItemsSource = DrawingVisualCircleLists;
             StatusBar1.DataContext = performanceSetting;
+        }
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
+            IntPtr handle = new WindowInteropHelper(this).Handle;
+            HwndSource.FromHwnd(handle).AddHook(new HwndSourceHook(WndProc));
+        }
+        const uint WM_USER = 0x0400; // 用户自定义消息起始值
+
+        IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        {
+            if (msg == WM_USER+1)
+            {
+
+            }
+            return IntPtr.Zero;
         }
 
         private DrawingVisual ImageRuler = new DrawingVisual();
@@ -521,7 +539,7 @@ namespace ColorVision
 
         private void SendDemo_Click(object sender, RoutedEventArgs e)
         {
-            mQTTCamera.InitCamere();
+            mQTTCamera.InitCamera();
         }
         private void SendDemo1_Click(object sender, RoutedEventArgs e)
         {

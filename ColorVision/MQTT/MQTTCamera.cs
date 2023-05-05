@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS4014, CS0612
+﻿#pragma warning disable CS4014,CS0618
 using MQTTnet.Client;
 using System;
 using System.Text;
@@ -59,7 +59,7 @@ namespace ColorVision.MQTT
             return Task.CompletedTask;
         }
 
-        public bool InitCamere()
+        public bool InitCamera()
         {
             MQTTControl.PublishAsyncClient("topic1", "InitCamere", false);
             return true;
@@ -80,7 +80,7 @@ namespace ColorVision.MQTT
             MQTTControl.PublishAsyncClient("topic1", "GetData", false);
             return true;
         }
-
+          
         public void Dispose()
         {
             GC.SuppressFinalize(this);

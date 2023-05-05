@@ -9,6 +9,7 @@ namespace ColorVision.NativeMethods
 {
     public static class CheckAppRunning
     {
+
         [DllImport("user32.dll")]
         private static extern bool FlashWindowEx(ref FLASHWINFO pwfi);
 
@@ -49,17 +50,17 @@ namespace ColorVision.NativeMethods
 
 
 
-        public static void Check()
+        public static IntPtr Check(string WindowTitle)
         {
             var currentProcess = Process.GetCurrentProcess();
             var processList = Process.GetProcessesByName(currentProcess.ProcessName);
+            IntPtr hwnd;
             if (processList.Length > 1)
             {
                 // 遍历所有进程窗口，找到需要提示的窗口进行闪烁
                 foreach (var process in processList)
                 {
-                    IntPtr hwnd = process.MainWindowHandle;
-
+                    hwnd = process.MainWindowHandle;
                     // 如果窗口不可见，则继续遍历下一个窗口
                     if (!IsWindowVisible(hwnd))
                     {
@@ -71,7 +72,7 @@ namespace ColorVision.NativeMethods
                     char[] chars = new char[1024];
                     int size = GetWindowText(hwnd, chars, chars.Length);
                     // 如果窗口标题包含“提示”等关键词，则进行闪烁
-                    if (new string(chars, 0, size).Contains("MainWindow"))
+                    if (new string(chars, 0, size).Contains(WindowTitle))
                     {
                         SetForegroundWindow(hwnd);
                         FLASHWINFO fLASHWINFO = new FLASHWINFO
@@ -87,10 +88,11 @@ namespace ColorVision.NativeMethods
                         {
                             ShowWindowAsync(hwnd, SW_RESTORE);
                         }
-                        break;
+                        return hwnd;
                     }
                 }
             }
+            return IntPtr.Zero;
         }
 
     }
