@@ -1,12 +1,71 @@
 ﻿#pragma warning disable CS4014,CS0618
+using ColorVision.MVVM;
 using MQTTnet.Client;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using OpenCvSharp;
 using System;
+using System.ComponentModel;
+using System.Data;
 using System.Text;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.MQTT
 {
+
+    public class MQTTMsgReturn
+    {
+        public string Version { get; set; }
+        public string EventName { get; set; }
+        public bool Code { get; set; }
+        public string Msg { get; set; }
+
+        public dynamic data { get; set; }
+    }
+
+    public class MQTTMsg
+    {
+        public string Version { get; set; } = "1.0";
+        public string EventName { get; set; }
+        [JsonProperty("params")]
+        public dynamic Params { get; set; }
+    }
+
+    public enum CameraType 
+    {
+        [Description("CV_Q")]
+        CVQ,
+        [Description("LV_Q")]
+        LVQ,
+        [Description("BV_Q")]
+        BVQ,
+        [Description("MIL_CL")]
+        MILCL,
+        [Description("MIL_CXP")]
+        MILCXP,
+        [Description("BV_H")]
+        BVH,
+        [Description("LV_H")]
+        LVH,
+        [Description("HK_CXP")]
+        HKCXP,
+        [Description("LV_MIL_CL")]
+        LVMILCL,
+        [Description("MIL_CXP_VIDEO")]
+        MILCXPVIDEO,
+        [Description("CameraType_Total")]
+        CameraTypeTotal,
+    };
+
+
+
+
+    public delegate void MQTTCameraFileHandler(string? FilePath);
+
+
+
     public class MQTTCamera : IDisposable
     {
 
@@ -18,6 +77,10 @@ namespace ColorVision.MQTT
         private MQTTControl MQTTControl;
 
         private string SubscribeTopic;
+        private string SendTopic;
+
+
+        public event MQTTCameraFileHandler FileHandler;
 
         private MQTTCamera()
         {
@@ -29,55 +92,105 @@ namespace ColorVision.MQTT
         {
             if (!MQTTControl.IsConnect)
                 await MQTTControl.Connect();
-            SubscribeTopic = "topic2";
+            SendTopic = "Camera";
+            SubscribeTopic = "CameraReturn";
+
             MQTTControl.SubscribeAsyncClient(SubscribeTopic);
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
         }
+
 
         private Task MqttClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
         {
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {
                 string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.Payload);
-                if (Msg == "InitCamere")
+                try
                 {
-                    MessageBox.Show("InitCamere");
+
+                    MQTTMsgReturn json = JsonConvert.DeserializeObject<MQTTMsgReturn>(Msg);
+                    if (json == null)
+                        return Task.CompletedTask;
+                    IsRun = false;
+                    if (!json.Code)
+                    {
+                        if (json.EventName == "InitCamere")
+                        {
+                            MessageBox.Show("InitCamere");
+                        }
+                        else if (json.EventName == "AddCalibration")
+                        {
+                            MessageBox.Show("AddCalibration");
+                        }
+                        else if (json.EventName == "OpenCamere")
+                        {
+                            MessageBox.Show("OpenCamere");
+                        }
+                        else if (json.EventName == "GetData")
+                        {
+                            string Filepath = json.data.FilePath;
+                            App.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(Filepath));
+                        }
+                    }
                 }
-                else if (Msg == "AddCalibration")
+                catch 
                 {
-                    MessageBox.Show("AddCalibration");
-                }
-                else if (Msg == "OpenCamere")
-                {
-                    MessageBox.Show("OpenCamere");
-                }
-                else if (Msg == "GetData")
-                {
-                    MessageBox.Show("GetData");
+                    return Task.CompletedTask;
                 }
             }
+            IsRun = false;
             return Task.CompletedTask;
         }
 
-        public bool InitCamera()
+        public bool IsRun { get; set; }
+
+        public bool InitCamera(CameraType CameraType)
         {
-            MQTTControl.PublishAsyncClient("topic1", "InitCamere", false);
+            if (IsRun)
+            {
+                MessageBox.Show("正在运行中");
+                return false;
+            }
+
+            IsRun = false;
+            string json = "{\"Version\":\"1.0\",\"EventName\":\"InitCamere\",\"params\":{\"CameraType\":"+ ((int)CameraType).ToString()+ "}}";
+            MQTTControl.PublishAsyncClient(SendTopic, json, false);
             return true;
         }
         public bool AddCalibration()
         {
-            MQTTControl.PublishAsyncClient("topic1", "AddCalibration", false);
+            if (IsRun)
+            {
+                MessageBox.Show("正在运行中");
+                return false;
+            }
+            IsRun = false;
+            MQTTControl.PublishAsyncClient(SendTopic, "AddCalibration", false);
             return true;
         }
         public bool OpenCamera()
         {
-            MQTTControl.PublishAsyncClient("topic1", "OpenCamere", false);
+            if (IsRun)
+            {
+                MessageBox.Show("正在运行中");
+                return false;
+            }
+            IsRun = false;
+            string json = "{\"Version\":\"1.0\",\"EventName\":\"OpenCamere\",\"params\":{\"TakeImageMode\":0,\"CameraID\":\"1b8577498c208b1a8\",\"Bpp\":64}}";
+            MQTTControl.PublishAsyncClient(SendTopic, json, false);
             return true;
         }
 
         public bool GetData()
         {
-            MQTTControl.PublishAsyncClient("topic1", "GetData", false);
+            if (IsRun)
+            {
+                MessageBox.Show("正在运行中");
+                return false;
+            }
+            IsRun = false;
+            string json = "{\"Version\":\"1.0\",\"EventName\":\"GetData\",\"params\":{\"expTime\":1.4,\"gain\":1.6}}";
+            MQTTControl.PublishAsyncClient(SendTopic, json, false);
             return true;
         }
           

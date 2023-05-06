@@ -54,9 +54,11 @@ namespace ColorVision
             {
                 //System.Windows.MessageBox.Show("程序已经运行！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
                 IntPtr hWnd = CheckAppRunning.Check("ColorVision");
-                if (hWnd != IntPtr.Zero)
+
+                if (args.Length > 0 && hWnd != IntPtr.Zero)
                 {
-                    SendMessage(hWnd, WM_USER + 1, IntPtr.Zero, IntPtr.Zero);  // 发送消息
+                    ushort atom = GlobalAddAtom(args[0]);
+                    SendMessage(hWnd, WM_USER + 1, (IntPtr)atom, IntPtr.Zero);  // 发送消息
                 }
                 log.Info("程序已经打开");
                 Environment.Exit(0);
@@ -71,6 +73,11 @@ namespace ColorVision
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         private static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
         const uint WM_USER = 0x0400; // 用户自定义消息起始值
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern ushort GlobalAddAtom(string lpString);
+
+
 
 
         private App()

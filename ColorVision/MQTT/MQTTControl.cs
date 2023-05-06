@@ -2,6 +2,7 @@
 using MQTTnet.Client;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -41,7 +42,7 @@ namespace ColorVision.MQTT
         public string uPwd { get => _uPwd; set { _uPwd = value; NotifyPropertyChanged(); } }
 
         private bool _IsConnect;
-        public bool IsConnect { get => _IsConnect; }
+        public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; NotifyPropertyChanged(); } }
 
         public event Func<MqttApplicationMessageReceivedEventArgs, Task> ApplicationMessageReceivedAsync;
 
@@ -52,7 +53,14 @@ namespace ColorVision.MQTT
             {
                 ApplicationMessageReceivedAsync.Invoke(arg); return Task.CompletedTask;
             };
-            _IsConnect = true;
+            MQTTHelper._MqttClient.DisconnectedAsync += async (arg) =>
+            {
+                IsConnect = false;
+                await MQTTHelper.CreateMQTTClientAndStart(IP, Port, uName, uPwd, ShowLog);
+                IsConnect = true;
+            };
+            IsConnect = true;
+            SubscribeTopic = new ObservableCollection<string>();
             return IsConnect;
         }
 
@@ -65,9 +73,21 @@ namespace ColorVision.MQTT
 
         public async Task DisconnectAsyncClient() => await MQTTHelper.DisconnectAsync_Client();
 
-        public void SubscribeAsyncClient(string topic) => MQTTHelper.SubscribeAsync_Client(topic);
+        public ObservableCollection<string> SubscribeTopic { get; set; }
 
-        public void UnsubscribeAsyncClient(string topic) => MQTTHelper.UnsubscribeAsync_Client(topic);
+        public void SubscribeAsyncClient(string topic) 
+        {
+            MQTTHelper.SubscribeAsync_Client(topic);
+            if (!SubscribeTopic.Contains(topic))
+                SubscribeTopic.Add(topic);
+        }
+
+
+        public void UnsubscribeAsyncClient(string topic)
+        {
+            MQTTHelper.UnsubscribeAsync_Client(topic);
+            SubscribeTopic.Remove(topic);
+        }
 
         public async Task  PublishAsyncClient(string topic, string msg, bool retained) => await MQTTHelper.PublishAsync_Client(topic, msg, retained);
     }

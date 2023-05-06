@@ -12,15 +12,16 @@ using System.Windows;
 
 namespace ColorVision
 {
-    public partial class MQTTDemo : Window
+    public partial class MQTTLog : Window
     {
 
         MQTTControl mQTTControl;
-        public MQTTDemo()
+        public MQTTLog()
         {
             InitializeComponent();
             mQTTControl = MQTTControl.GetInstance();
-
+            mQTTControl.MQTTMsgChanged += ShowLog;
+            TopicListView.ItemsSource = mQTTControl.SubscribeTopic;
             this.DataContext = mQTTControl;
         }
 
@@ -29,14 +30,13 @@ namespace ColorVision
         {
             if (!mQTTControl.IsConnect)
                 await mQTTControl.Connect();
-            mQTTControl.MQTTMsgChanged += ShowLog;
         }
 
         private void ShowLog(ResultDataMQTT resultData_MQTT)
         {
             Application.Current.Dispatcher.BeginInvoke(new Action(() =>
             {
-                TextBoxResult.Text = $"\r\n返回结果：{resultData_MQTT.ResultCode}，返回信息：{resultData_MQTT.ResultMsg}" + TextBoxResult.Text;
+                TextBoxResult.Text = $"{resultData_MQTT.ResultMsg}\r\n" + TextBoxResult.Text;
             }));
         }
 

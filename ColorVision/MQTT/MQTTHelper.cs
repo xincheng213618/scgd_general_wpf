@@ -55,7 +55,7 @@ namespace ColorVision.MQTT
                     resultData_MQTT = new ResultDataMQTT()
                     {
                         ResultCode = 1,
-                        ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了开启MQTTServer_成功！"
+                        ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了开启MQTTServer_成功！"
                     };
                 }
                 else
@@ -63,7 +63,7 @@ namespace ColorVision.MQTT
                     resultData_MQTT = new ResultDataMQTT()
                     {
                         ResultCode = -1,
-                        ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了开启MQTTServer_失败！"
+                        ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了开启MQTTServer_失败！"
                     };
                 }
             }
@@ -72,7 +72,7 @@ namespace ColorVision.MQTT
                 resultData_MQTT = new ResultDataMQTT()
                 {
                     ResultCode = -1,
-                    ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了开启MQTTServer_失败！错误信息：" + ex.Message
+                    ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了开启MQTTServer_失败！错误信息：" + ex.Message
                 };
             }
 
@@ -129,7 +129,7 @@ namespace ColorVision.MQTT
                     resultData_MQTT = new ResultDataMQTT()
                     {
                         ResultCode = 1,
-                        ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了开启MQTTServer_成功！"
+                        ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了开启MQTTServer_成功！"
                     };
                 }
                 else
@@ -137,7 +137,7 @@ namespace ColorVision.MQTT
                     resultData_MQTT = new ResultDataMQTT()
                     {
                         ResultCode = -1,
-                        ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了开启MQTTServer_失败！"
+                        ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了开启MQTTServer_失败！"
                     };
                 }
             }
@@ -146,7 +146,7 @@ namespace ColorVision.MQTT
                 resultData_MQTT = new ResultDataMQTT()
                 {
                     ResultCode = -1,
-                    ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了开启MQTTServer_失败！错误信息：" + ex.Message
+                    ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了开启MQTTServer_失败！错误信息：" + ex.Message
                 };
             }
 
@@ -168,7 +168,7 @@ namespace ColorVision.MQTT
                     resultData_MQTT = new ResultDataMQTT()
                     {
                         ResultCode = -1,
-                        ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了关闭MQTTServer_出错！MQTTServer未在运行。"
+                        ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了关闭MQTTServer_出错！MQTTServer未在运行。"
                     };
                 }
                 else
@@ -183,7 +183,7 @@ namespace ColorVision.MQTT
                     resultData_MQTT = new ResultDataMQTT()
                     {
                         ResultCode = 1,
-                        ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了关闭MQTTServer_成功！"
+                        ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了关闭MQTTServer_成功！"
                     };
                 }
             }
@@ -192,7 +192,7 @@ namespace ColorVision.MQTT
                 resultData_MQTT = new ResultDataMQTT()
                 {
                     ResultCode = -1,
-                    ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了关闭MQTTServer_失败！错误信息：" + ex.Message
+                    ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了关闭MQTTServer_失败！错误信息：" + ex.Message
                 };
             }
 
@@ -237,7 +237,7 @@ namespace ColorVision.MQTT
             _Callback?.Invoke(new ResultDataMQTT()
             {
                 ResultCode = 1,
-                ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>MQTTServer已开启！"
+                ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "MQTTServer已开启！"
             });
             return Task.CompletedTask;
         }
@@ -250,7 +250,7 @@ namespace ColorVision.MQTT
             _Callback?.Invoke(new ResultDataMQTT()
             {
                 ResultCode = 1,
-                ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>MQTTServer已关闭！"
+                ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "MQTTServer已关闭！"
             });
             return Task.CompletedTask;
         }
@@ -265,7 +265,7 @@ namespace ColorVision.MQTT
             _Callback?.Invoke(new ResultDataMQTT()
             {
                 ResultCode = 1,
-                ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + $">>>客户端'{arg.ClientId}'已成功连接！当前客户端连接数：{clients?.Count}个。"
+                ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + $"客户端'{arg.ClientId}'已成功连接！当前客户端连接数：{clients?.Count}个。"
             });
             return Task.CompletedTask;
         }
@@ -279,7 +279,7 @@ namespace ColorVision.MQTT
             _Callback?.Invoke(new ResultDataMQTT()
             {
                 ResultCode = 1,
-                ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + $">>>客户端'{arg.ClientId}'已断开连接！当前客户端连接数：{clients?.Count}个。"
+                ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + $"客户端'{arg.ClientId}'已断开连接！当前客户端连接数：{clients?.Count}个。"
             });
 
             return Task.CompletedTask;
@@ -294,7 +294,7 @@ namespace ColorVision.MQTT
             _Callback?.Invoke(new ResultDataMQTT()
             {
                 ResultCode = 1,
-                ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + $">>>客户端'{arg.ClientId}'订阅了主题'{arg.TopicFilter.Topic}'，主题服务质量：'{arg.TopicFilter.QualityOfServiceLevel}'！"
+                ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + $"客户端'{arg.ClientId}'订阅了主题'{arg.TopicFilter.Topic}'，主题服务质量：'{arg.TopicFilter.QualityOfServiceLevel}'！"
             });
 
             return Task.CompletedTask;
@@ -308,7 +308,7 @@ namespace ColorVision.MQTT
             _Callback?.Invoke(new ResultDataMQTT()
             {
                 ResultCode = 1,
-                ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + $">>>客户端{arg.ClientId}退订了主题{arg.TopicFilter}！"
+                ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + $"客户端{arg.ClientId}退订了主题{arg.TopicFilter}！"
             });
 
             return Task.CompletedTask;
@@ -337,7 +337,7 @@ namespace ColorVision.MQTT
             _Callback?.Invoke(new ResultDataMQTT()
             {
                 ResultCode = -1,
-                ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + $">>>客户端：'{arg.SenderId}'发布了消息：主题：'{arg.ApplicationMessage.Topic}'！内容：'{Encoding.UTF8.GetString(arg.ApplicationMessage.Payload)}'；服务质量：{arg.ApplicationMessage.QualityOfServiceLevel}；保留：{arg.ApplicationMessage.Retain}"
+                ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + $"客户端：'{arg.SenderId}'发布了消息：主题：'{arg.ApplicationMessage.Topic}'！内容：'{Encoding.UTF8.GetString(arg.ApplicationMessage.Payload)}'；服务质量：{arg.ApplicationMessage.QualityOfServiceLevel}；保留：{arg.ApplicationMessage.Retain}"
             });
 
             return Task.CompletedTask;
@@ -377,7 +377,7 @@ namespace ColorVision.MQTT
                     resultData_MQTT = new ResultDataMQTT()
                     {
                         ResultCode = 1,
-                        ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了开启MQTTClient_成功！"
+                        ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了开启MQTTClient_成功！"
                     };
                 }
                 else
@@ -385,7 +385,7 @@ namespace ColorVision.MQTT
                     resultData_MQTT = new ResultDataMQTT()
                     {
                         ResultCode = -1,
-                        ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了开启MQTTClient_失败！"
+                        ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了开启MQTTClient_失败！"
                     };
                 }
             }
@@ -394,7 +394,7 @@ namespace ColorVision.MQTT
                 resultData_MQTT = new ResultDataMQTT()
                 {
                     ResultCode = -1,
-                    ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了开启MQTTClient_失败！错误信息：" + ex.Message
+                    ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了开启MQTTClient_失败！错误信息：" + ex.Message
                 };
             }
 
@@ -438,7 +438,7 @@ namespace ColorVision.MQTT
                     resultData_MQTT = new ResultDataMQTT()
                     {
                         ResultCode = 1,
-                        ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了开启MQTTClient_成功！"
+                        ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了开启MQTTClient_成功！"
                     };
                 }
                 else
@@ -446,7 +446,7 @@ namespace ColorVision.MQTT
                     resultData_MQTT = new ResultDataMQTT()
                     {
                         ResultCode = -1,
-                        ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了开启MQTTClient_失败！"
+                        ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了开启MQTTClient_失败！"
                     };
                 }
             }
@@ -455,7 +455,7 @@ namespace ColorVision.MQTT
                 resultData_MQTT = new ResultDataMQTT()
                 {
                     ResultCode = -1,
-                    ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了开启MQTTClient_失败！错误信息：" + ex.Message
+                    ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了开启MQTTClient_失败！错误信息：" + ex.Message
                 };
             }
             _Callback?.Invoke(resultData_MQTT);
@@ -479,7 +479,7 @@ namespace ColorVision.MQTT
                     resultData_MQTT = new ResultDataMQTT()
                     {
                         ResultCode = 1,
-                        ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了关闭MQTTClient_成功！"
+                        ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了关闭MQTTClient_成功！"
                     };
                 }
                 else
@@ -487,7 +487,7 @@ namespace ColorVision.MQTT
                     resultData_MQTT = new ResultDataMQTT()
                     {
                         ResultCode = -1,
-                        ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了关闭MQTTClient_失败！MQTTClient未开启连接！"
+                        ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了关闭MQTTClient_失败！MQTTClient未开启连接！"
                     };
                 }
             }
@@ -496,7 +496,7 @@ namespace ColorVision.MQTT
                 resultData_MQTT = new ResultDataMQTT()
                 {
                     ResultCode = -1,
-                    ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了关闭MQTTClient_失败！错误信息：" + ex.Message
+                    ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了关闭MQTTClient_失败！错误信息：" + ex.Message
                 };
             }
             _Callback?.Invoke(resultData_MQTT);
@@ -517,7 +517,7 @@ namespace ColorVision.MQTT
                     resultData_MQTT = new ResultDataMQTT()
                     {
                         ResultCode = 1,
-                        ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了MQTTClient重连_成功！"
+                        ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了MQTTClient重连_成功！"
                     };
                 }
                 else
@@ -525,7 +525,7 @@ namespace ColorVision.MQTT
                     resultData_MQTT = new ResultDataMQTT()
                     {
                         ResultCode = -1,
-                        ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了MQTTClient重连_失败！未设置MQTTClient连接！"
+                        ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了MQTTClient重连_失败！未设置MQTTClient连接！"
                     };
                 }
             }
@@ -534,7 +534,7 @@ namespace ColorVision.MQTT
                 resultData_MQTT = new ResultDataMQTT()
                 {
                     ResultCode = -1,
-                    ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了MQTTClient重连_失败！错误信息：" + ex.Message
+                    ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了MQTTClient重连_失败！错误信息：" + ex.Message
                 };
             }
             _Callback?.Invoke(resultData_MQTT);
@@ -555,7 +555,7 @@ namespace ColorVision.MQTT
                 resultData_MQTT = new ResultDataMQTT()
                 {
                     ResultCode = 1,
-                    ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + $">>>MQTTClient执行了订阅'{topic}'_成功！"
+                    ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + $"MQTTClient执行了订阅'{topic}'_成功！"
                 };
             }
             catch (Exception ex)
@@ -563,7 +563,7 @@ namespace ColorVision.MQTT
                 resultData_MQTT = new ResultDataMQTT()
                 {
                     ResultCode = -1,
-                    ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + $">>>MQTTClient执行了订阅'{topic}'_失败！错误信息：" + ex.Message
+                    ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + $"MQTTClient执行了订阅'{topic}'_失败！错误信息：" + ex.Message
                 };
             }
             _Callback?.Invoke(resultData_MQTT);
@@ -581,7 +581,7 @@ namespace ColorVision.MQTT
                 resultData_MQTT = new ResultDataMQTT()
                 {
                     ResultCode = 1,
-                    ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + $">>>MQTTClient执行了退订'{topic}'_成功！"
+                    ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + $"MQTTClient执行了退订'{topic}'_成功！"
                 };
             }
             catch (Exception ex)
@@ -589,7 +589,7 @@ namespace ColorVision.MQTT
                 resultData_MQTT = new ResultDataMQTT()
                 {
                     ResultCode = -1,
-                    ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + $">>>MQTTClient执行退订'{topic}'_失败！错误信息：" + ex.Message
+                    ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + $"MQTTClient执行退订'{topic}'_失败！错误信息：" + ex.Message
                 };
             }
             _Callback?.Invoke(resultData_MQTT);
@@ -622,7 +622,7 @@ namespace ColorVision.MQTT
                     resultData_MQTT = new ResultDataMQTT()
                     {
                         ResultCode = 1,
-                        ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + $">>>执行了发布信息_成功！主题:'{topic}'，信息:'{msg}'，是否保留:'{retained}'"
+                        ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + $"成功  主题:'{topic}'，信息:'{msg}'，是否保留:'{retained}'"
                     };
                 }
                 else
@@ -631,7 +631,7 @@ namespace ColorVision.MQTT
                     resultData_MQTT = new ResultDataMQTT()
                     {
                         ResultCode = -1,
-                        ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了发布信息_失败！MQTTClient未开启连接！"
+                        ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "失败 MQTTClient未开启连接！"
                     };
                 }
             }
@@ -640,7 +640,7 @@ namespace ColorVision.MQTT
                 resultData_MQTT = new ResultDataMQTT()
                 {
                     ResultCode = -1,
-                    ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了发布信息_失败！错误信息：" + ex.Message
+                    ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "失败！错误信息：" + ex.Message
                 };
             }
 
@@ -656,7 +656,7 @@ namespace ColorVision.MQTT
             _Callback?.Invoke(new ResultDataMQTT()
             {
                 ResultCode = 1,
-                ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>已连接到MQTT服务器！"
+                ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "已连接到MQTT服务器！"
             });
             return Task.CompletedTask;
         }
@@ -669,7 +669,7 @@ namespace ColorVision.MQTT
             _Callback?.Invoke(new ResultDataMQTT()
             {
                 ResultCode = 1,
-                ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + $">>>已断开与MQTT服务器连接！"
+                ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + $"已断开与MQTT服务器连接！"
             });
             return Task.CompletedTask;
         }
@@ -682,7 +682,7 @@ namespace ColorVision.MQTT
             _Callback?.Invoke(new ResultDataMQTT()
             {
                 ResultCode = 1,
-                ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + $">>>MQTTClient'{arg.ClientId}'内容：'{Encoding.UTF8.GetString(arg.ApplicationMessage.Payload)}'；主题：'{arg.ApplicationMessage.Topic}'，消息等级Qos：[{arg.ApplicationMessage.QualityOfServiceLevel}]，是否保留：[{arg.ApplicationMessage.Retain}]",
+                ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + $"MQTTClient'{arg.ClientId}'内容：'{Encoding.UTF8.GetString(arg.ApplicationMessage.Payload)}'；主题：'{arg.ApplicationMessage.Topic}'，消息等级Qos：[{arg.ApplicationMessage.QualityOfServiceLevel}]，是否保留：[{arg.ApplicationMessage.Retain}]",
                 ResultObject1 = arg.ApplicationMessage.Topic,
                 ResultObject2 = Encoding.UTF8.GetString(arg.ApplicationMessage.Payload)
             });

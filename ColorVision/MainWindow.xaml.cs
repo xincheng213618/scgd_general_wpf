@@ -6,12 +6,15 @@ using ColorVision.MVVM;
 using ColorVision.Util;
 using Gu.Wpf.Geometry;
 using log4net;
+using Newtonsoft.Json;
+using ScottPlot;
 using ScottPlot.Drawing.Colormaps;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
@@ -23,10 +26,13 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Documents;
+using System.Windows.Forms.Integration;
 using System.Windows.Ink;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Markup;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
@@ -46,13 +52,24 @@ namespace ColorVision
         public PerformanceSetting performanceSetting { get; set; } = new PerformanceSetting();
 
         private ToolBarTop ToolBarTop { get; set; } 
+
+        public MQTTControl MQTTControl { get; set; }
+
         public MainWindow()
         {
             InitializeComponent();
             ToolBarTop = new ToolBarTop(Zoombox1,ImageShow);
             ToolBar1.DataContext = ToolBarTop;
             ListView1.ItemsSource = DrawingVisualCircleLists;
-            StatusBar1.DataContext = performanceSetting;
+            StatusBarItem1.DataContext = performanceSetting;
+            StatusBarItem2.DataContext = performanceSetting;
+            MQTTControl = MQTTControl.GetInstance(); ;
+            MQTTStatusBarItem.DataContext = MQTTControl.GetInstance();
+            mQTTCamera.FileHandler += OpenImage;
+
+            ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()
+                                             select new KeyValuePair<CameraType, string>(e1, e1.ToDescription());
+            ComboxCameraType.SelectedIndex = 2;
         }
         protected override void OnSourceInitialized(EventArgs e)
         {
@@ -66,10 +83,29 @@ namespace ColorVision
         {
             if (msg == WM_USER+1)
             {
+                try
+                {
+                    char[] chars = new char[1024];
+                    int size = GlobalGetAtomName((ushort)wParam, chars, chars.Length);
+                    if (size > 0)
+                    {
 
+                        string result = new string(chars, 0, size);
+                        MessageBox.Show(result);
+                        GlobalDeleteAtom((short)wParam);
+                    }
+                }
+                catch (Exception ex){ MessageBox.Show(ex.Message);}
             }
             return IntPtr.Zero;
         }
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern int GlobalGetAtomName(ushort nAtom, char[] retVal, int size);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern short GlobalDeleteAtom(short nAtom);
+
 
         private DrawingVisual ImageRuler = new DrawingVisual();
 
@@ -80,8 +116,16 @@ namespace ColorVision
             openFileDialog.RestoreDirectory = true;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-                log.Info(openFileDialog.FileName);
                 string filePath = openFileDialog.FileName;
+                OpenImage(filePath);
+            }
+        }
+
+        public void OpenImage(string? filePath)
+        {
+            if (filePath!=null&&File.Exists(filePath))
+            {
+                log.Info(filePath);
                 BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
 
                 ImageShow.Source = new BitmapImage(new Uri(filePath));
@@ -90,6 +134,8 @@ namespace ColorVision
                 ToolBar1.Visibility = Visibility.Visible;
             }
         }
+
+
 
         public ObservableCollection<DrawingVisualCircle> DrawingVisualCircleLists { get; set; } = new ObservableCollection<DrawingVisualCircle>();
 
@@ -104,7 +150,7 @@ namespace ColorVision
                     drawingVisualCircle.Attribute.Center = new Point(i * 50, j * 50);
                     drawingVisualCircle.Attribute.Radius = 20;
                     drawingVisualCircle.Attribute.ID = i*50+j;
-                   drawingVisualCircle.Render();
+                    drawingVisualCircle.Render();
                     ImageShow.AddVisual(drawingVisualCircle);
                     DrawingVisualCircleLists.Add(drawingVisualCircle);
 
@@ -440,7 +486,7 @@ namespace ColorVision
 
         private void MenuItem_Click(object sender, RoutedEventArgs e)
         {
-            MQTTDemo mQTTDemo = new MQTTDemo();
+            MQTTLog mQTTDemo = new MQTTLog();
             mQTTDemo.Owner = this;
             mQTTDemo.Show();
         }
@@ -539,7 +585,10 @@ namespace ColorVision
 
         private void SendDemo_Click(object sender, RoutedEventArgs e)
         {
-            mQTTCamera.InitCamera();
+            if (ComboxCameraType.SelectedItem is KeyValuePair<CameraType, string> KeyValue && KeyValue.Key is CameraType cameraType)
+            {
+                mQTTCamera.InitCamera(cameraType);
+            }
         }
         private void SendDemo1_Click(object sender, RoutedEventArgs e)
         {
@@ -554,6 +603,17 @@ namespace ColorVision
         private void SendDemo3_Click(object sender, RoutedEventArgs e)
         {
             mQTTCamera.GetData();
+        }
+
+
+        private void MenuItem1_Click(object sender, RoutedEventArgs e)
+        {
+            double[] xs = { 1, 2, 3, 4, 5 };
+            double[] ys = { 1, 4, 9, 16, 25 };
+            var plt = new ScottPlot.Plot(400, 300);
+            plt.AddScatter(xs, ys);
+            new ScottPlot.WpfPlotViewer(plt).Show();
+            WindowsFormsHost2.Child = new System.Windows.Forms.TextBox() { Text = "123" };
         }
     }
 
