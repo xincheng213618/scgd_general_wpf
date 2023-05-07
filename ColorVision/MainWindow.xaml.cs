@@ -3,41 +3,26 @@ using ColorVision.Extension;
 using ColorVision.Info;
 using ColorVision.MQTT;
 using ColorVision.MVVM;
+using ColorVision.Template;
 using ColorVision.Util;
-using Gu.Wpf.Geometry;
 using log4net;
-using Newtonsoft.Json;
-using ScottPlot;
-using ScottPlot.Drawing.Colormaps;
+using OpenCvSharp.Internal;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Reflection.Emit;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Forms.Integration;
 using System.Windows.Ink;
 using System.Windows.Input;
 using System.Windows.Interop;
-using System.Windows.Markup;
 using System.Windows.Media;
-using System.Windows.Media.Animation;
-using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
-using System.Windows.Media.Media3D;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace ColorVision
 {
@@ -77,7 +62,28 @@ namespace ColorVision
             IntPtr handle = new WindowInteropHelper(this).Handle;
             HwndSource.FromHwnd(handle).AddHook(new HwndSourceHook(WndProc));
         }
+
+        private async void Window_Initialized(object sender, EventArgs e)
+        {
+            if (WindowConfig.IsExist)
+            {
+                this.Icon = WindowConfig.Icon ?? this.Icon;
+                this.Title = WindowConfig.Title ?? this.Title;
+            }
+            await Task.Delay(100);
+            ToolBar1.Visibility = Visibility.Collapsed;
+
+
+
+        }
+
         const uint WM_USER = 0x0400; // 用户自定义消息起始值
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern int GlobalGetAtomName(ushort nAtom, char[] retVal, int size);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern short GlobalDeleteAtom(short nAtom);
 
         IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
@@ -100,11 +106,7 @@ namespace ColorVision
             return IntPtr.Zero;
         }
 
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        private static extern int GlobalGetAtomName(ushort nAtom, char[] retVal, int size);
 
-        [DllImport("kernel32.dll", SetLastError = true)]
-        public static extern short GlobalDeleteAtom(short nAtom);
 
 
         private DrawingVisual ImageRuler = new DrawingVisual();
@@ -575,11 +577,7 @@ namespace ColorVision
             }
         }
 
-        private async void Window_Initialized(object sender, EventArgs e)
-        {
-            await Task.Delay(100);
-            ToolBar1.Visibility = Visibility.Collapsed;
-        }
+
 
         MQTTCamera mQTTCamera = MQTTCamera.GetInstance();
 
@@ -614,6 +612,12 @@ namespace ColorVision
             plt.AddScatter(xs, ys);
             new ScottPlot.WpfPlotViewer(plt).Show();
             WindowsFormsHost2.Child = new System.Windows.Forms.TextBox() { Text = "123" };
+        }
+
+        private void MenuItem_Click_2(object sender, RoutedEventArgs e)
+        {
+            WindowAOI windowAOI = new WindowAOI();
+            windowAOI.Show();
         }
     }
 

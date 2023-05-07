@@ -12,6 +12,7 @@ using System.IO;
 using System.Text.Json;
 using System.ComponentModel;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace ColorVision.Extension
 {
@@ -20,6 +21,10 @@ namespace ColorVision.Extension
     /// </summary>
     internal static class Extensions
     {
+
+        internal static bool IsNullOrEmpty(this string str) => string.IsNullOrEmpty(str);
+
+
         /// <summary>
         /// 对图标的扩展
         /// </summary>
