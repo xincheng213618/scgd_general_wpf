@@ -146,6 +146,9 @@ namespace ColorVision.MQTT
 
         public bool InitCamera(CameraType CameraType)
         {
+            if (!MQTTControl.IsConnect)
+                return false;
+
             if (IsRun)
             {
                 MessageBox.Show("正在运行中");
@@ -159,17 +162,27 @@ namespace ColorVision.MQTT
         }
         public bool AddCalibration()
         {
+            if (!MQTTControl.IsConnect)
+                return false;
+
+            if (!MQTTControl.IsConnect)
+                return false;
+
             if (IsRun)
             {
                 MessageBox.Show("正在运行中");
                 return false;
             }
             IsRun = false;
+
             MQTTControl.PublishAsyncClient(SendTopic, "AddCalibration", false);
             return true;
         }
         public bool OpenCamera()
         {
+            if (!MQTTControl.IsConnect)
+                return false;
+
             if (IsRun)
             {
                 MessageBox.Show("正在运行中");
@@ -183,6 +196,9 @@ namespace ColorVision.MQTT
 
         public bool GetData()
         {
+            if (!MQTTControl.IsConnect)
+                return false;
+
             if (IsRun)
             {
                 MessageBox.Show("正在运行中");
