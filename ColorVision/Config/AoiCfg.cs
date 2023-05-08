@@ -12,7 +12,7 @@ namespace ColorVision.Config
     class AoiCfg
     {
         [Category("AOI配置"), TypeConverter(typeof(ExpandableObjectConverter))]
-        public FindRoi findRoi { set; get; }
+        public FindRoi FindRoi { set; get; }
 
         [Category("AOI配置")]
         public float contrastBrightness { set; get; }
@@ -115,7 +115,7 @@ namespace ColorVision.Config
         public int min_core_size_pixels { set; get; }
         [Category("mura配置")]
         public int min_orient_angle { set; get; }
-        [Category("mura配置")]
+        [Category("mura配置"),DisplayName("颜色")]
         public int max_orient_angle { set; get; }
 
     }
