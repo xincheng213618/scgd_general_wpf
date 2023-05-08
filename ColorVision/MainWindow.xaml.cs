@@ -415,10 +415,8 @@ namespace ColorVision
         private void Button3_Click(object sender, RoutedEventArgs e)
         {
             MessageBox.Show("Aoi配置文件测试");
-            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = "配置文件(*.cfg) | *.cfg";
-            openFileDialog.RestoreDirectory = true;
 
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog() { Filter = "配置文件(*.cfg) | *.cfg", RestoreDirectory  =true};
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 log.Info("打开AoiCfg:" +openFileDialog.FileName);

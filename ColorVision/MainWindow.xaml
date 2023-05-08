@@ -10,14 +10,6 @@
         mc:Ignorable="d"
         DataContext="{Binding RelativeSource={RelativeSource Self}}"
         Title="ColorVision" Height="720" Width="1280"  Initialized="Window_Initialized">
-    <Window.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/Theme/Base.xaml"/>
-                <ResourceDictionary Source="/Theme/Listview.xaml"/>
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </Window.Resources>
     <Grid x:Name="Root">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
@@ -97,7 +89,6 @@
                         <Border Visibility="{Binding ElementName=ToggleButton4,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}"  Background="#E8E8E9" Margin="5,2" CornerRadius="5">
                             <StackPanel Margin="5">
                                 <DockPanel>
-                                    <Label Content="："/>
                                 </DockPanel>
                                 <UniformGrid >
 
@@ -140,42 +131,53 @@
                 <WindowsFormsHost x:Name="WindowsFormsHost2" UseLayoutRounding="True" TextOptions.TextFormattingMode="Display"   Grid.Row="1" Visibility="Visible" Margin="0,145,0,0"  >
 
                 </WindowsFormsHost>
-                <DockPanel Grid.Row="0">
-                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
-                        <Grid Width="50">
-                            <TextBlock  HorizontalAlignment="Center" VerticalAlignment="Center" Text="序号"  />
+                <DockPanel Grid.Row="0"  >
+                    <Grid DockPanel.Dock="Top">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="50*"/>
+                            <ColumnDefinition Width="50*"/>
+                            <ColumnDefinition Width="100*"/>
+                            <ColumnDefinition Width="50*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid x:Name="GridListHeader1" Grid.Column="0">
+                            <TextBlock  HorizontalAlignment="Left" VerticalAlignment="Center" Text="序号" Margin="10,0,0,0"/>
                         </Grid>
-                        <Grid Width="50">
-                            <TextBlock  HorizontalAlignment="Center" VerticalAlignment="Center" Text="选中"  />
+                        <GridSplitter Grid.Column="0" Width="2"  Background="AliceBlue"/>
+                        <Grid x:Name="GridListHeader2" Grid.Column="1">
+                            <TextBlock  HorizontalAlignment="Left" VerticalAlignment="Center" Text="选中" Margin="10,0,0,0" />
                         </Grid>
-                        <Grid Width="100">
-                            <TextBlock  HorizontalAlignment="Center" VerticalAlignment="Center" Text="位置"  />
+                        <GridSplitter Grid.Column="1" Width="2"  Background="AliceBlue"/>
+                        <Grid x:Name="GridListHeader3" Grid.Column="2">
+                            <TextBlock  HorizontalAlignment="Left" VerticalAlignment="Center" Text="位置"  Margin="10,0,0,0"/>
                         </Grid>
-                        <Grid Width="50">
-                            <TextBlock  HorizontalAlignment="Center" VerticalAlignment="Center" Text="角度"  />
+                        <GridSplitter Grid.Column="2" Width="2"  Background="AliceBlue"/>
+                        <Grid x:Name="GridListHeader4" Grid.Column="3">
+                            <TextBlock  HorizontalAlignment="Left" VerticalAlignment="Center" Text="角度"  Margin="10,0,0,0" />
                         </Grid>
-                    </StackPanel>
-                    <ListView   x:Name="ListView1" ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged" >
+                    </Grid>
+
+
+                    <ListView  x:Name="ListView1" ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged" >
                         <ListView.View>
                             <GridView>
-                                <GridViewColumn Width="50">
+                                <GridViewColumn Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate >
                                             <TextBlock Text="{Binding Path=ID}" HorizontalAlignment="Center"/>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Width="50">
+                                <GridViewColumn Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}">
                                     <GridViewColumn.CellTemplate>
-                                        <DataTemplate >
+                                        <DataTemplate>
                                             <CheckBox IsChecked="True" Click="CheckBox_Click" Tag="{Binding .}"/>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Width="100">
+                                <GridViewColumn Width="{Binding ElementName=GridListHeader3,Path=ActualWidth}">
                                     <GridViewColumn.CellTemplate>
-                                        <DataTemplate >
-                                            <TextBlock  >
+                                        <DataTemplate>
+                                            <TextBlock HorizontalAlignment="Center">
                                                     <Run Text="("/>
                                                     <Run Text="{Binding Path = CenterX,StringFormat={}{0:F0}}"/>
                                                     <Run Text=","/>
@@ -185,7 +187,7 @@
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Width="50">
+                                <GridViewColumn Width="{Binding ElementName=GridListHeader4,Path=ActualWidth}">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate >
                                             <TextBlock Text="{Binding Path=Radius}">
@@ -208,7 +210,6 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <Grid Grid.Row="0" Height="0.5" Background="#F0F0F0"/>
-
 
                 <local:ZoomboxSub x:Name="Zoombox1"  MaxZoom="10" MinZoom="0.01" Grid.Row="1" Grid.ColumnSpan="2">
                     <local:DrawCanvas x:Name="ImageShow" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  MouseDown="ImageShow_MouseDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
