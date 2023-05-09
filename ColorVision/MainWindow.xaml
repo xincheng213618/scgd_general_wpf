@@ -47,22 +47,61 @@
                             </StackPanel>
                         </Border>
                     </StackPanel>
-                    
-                    
 
-                    <StackPanel Margin="0,5">
+
+
+                    <StackPanel x:Name="StackPanelCamera" Margin="0,5"   Initialized="StackPanelCamera_Initialized">
                         <ToggleButton  x:Name="ToggleButton1"  Style="{StaticResource ButtonPageControl1}" Content="相机设置"  FontSize="15" Foreground="Black" IsChecked="false" />
                         <Border Visibility="{Binding ElementName=ToggleButton1,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}"  Background="#E8E8E9" Margin="5,2" CornerRadius="5">
                             <StackPanel Margin="5">
                                 <DockPanel>
                                     <Label Content="相机类型："/>
-                                    <ComboBox  x:Name="ComboxCameraType"  SelectedValuePath="Key" Height="20" DisplayMemberPath="Value"/>
+                                    <ComboBox  x:Name="ComboxCameraType"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20"/>
                                 </DockPanel>
-                                <UniformGrid >
-                                    <Button  Content="InitCamere" Click="SendDemo_Click"/>
+                                <Button  Content="初始化相机" Click="SendDemo_Click"/>
+                                <StackPanel x:Name="StackPanelOpen">
+                                    <DockPanel >
+                                        <Label Content="相机ID："/>
+                                        <ComboBox  x:Name="ComboxCameraID" Height="20" />
+                                    </DockPanel>
+
+                                    <DockPanel  >
+                                        <Label Content="通道数："/>
+                                        <ComboBox  x:Name="ComboxCameraChannel" SelectedIndex="1" Height="20">
+                                            <ComboBoxItem Content="1"/>
+                                            <ComboBoxItem Content="3"/>
+                                        </ComboBox>
+                                    </DockPanel>
+                                    <DockPanel >
+                                        <Label Content="取图模式："/>
+                                        <ComboBox  x:Name="ComboxCameraTakeImageMode" SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20" />
+                                    </DockPanel>
+                                    <DockPanel  >
+                                        <Label Content="取图模式："/>
+                                        <ComboBox  x:Name="ComboxCameraImageBpp" SelectedIndex="0" Height="20" >
+                                            <ComboBoxItem Content="8"/>
+                                            <ComboBoxItem Content="16"/>
+                                        </ComboBox>
+                                    </DockPanel>
+                                    <Button  Content="打开相机" Click="SendDemo2_Click"/>
+                                </StackPanel>
+
+                                <StackPanel x:Name="StackPanelImage">
+                                    <DockPanel>
+                                        <TextBlock  Width="50" Text="增益" VerticalAlignment="Center"  FontSize="14" HorizontalAlignment="Center" Padding="5,0" />
+                                        <Slider x:Name="SliderGain" Template="{ StaticResource LM_SliderControlTemplate2}" TickFrequency ="0.1"  SmallChange ="0.1" Value="1.6" Maximum="10"/>
+                                    </DockPanel>
+                                    <DockPanel>
+                                        <TextBlock  Width="50" Text="曝光" VerticalAlignment="Center"  FontSize="14" HorizontalAlignment="Center" Padding="5,0" />
+                                        <Slider x:Name="SliderexpTime"  Template="{ StaticResource LM_SliderControlTemplate2}" TickFrequency ="0.1"  SmallChange ="0.1" LargeChange="0.1"  Value="1.8" Maximum="6000"/>
+                                    </DockPanel>
+
+                                    <Button  Content="获取图像数据" Click="SendDemo3_Click"/>
+                                </StackPanel>
+
+
+                                <UniformGrid x:Name="UniformGrid1">
                                     <Button  Content="AddCalibration" Click="SendDemo1_Click"/>
-                                    <Button  Content="OpenCamere" Click="SendDemo2_Click"/>
-                                    <Button  Content="GetData" Click="SendDemo3_Click"/>
                                 </UniformGrid>
                             </StackPanel>
                         </Border>
@@ -158,6 +197,13 @@
 
 
                     <ListView  x:Name="ListView1" ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged" >
+                        <ListView.Resources>
+                            <ResourceDictionary>
+                                <ResourceDictionary.MergedDictionaries>
+                                    <ResourceDictionary Source="/Theme/Listview.xaml"/>
+                                </ResourceDictionary.MergedDictionaries>
+                            </ResourceDictionary>
+                        </ListView.Resources>
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}">

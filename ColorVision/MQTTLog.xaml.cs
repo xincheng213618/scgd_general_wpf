@@ -9,27 +9,28 @@ using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision
 {
     public partial class MQTTLog : Window
     {
 
-        MQTTControl mQTTControl;
+        MQTTControl MQTTControl;
         public MQTTLog()
         {
             InitializeComponent();
-            mQTTControl = MQTTControl.GetInstance();
-            mQTTControl.MQTTMsgChanged += ShowLog;
-            TopicListView.ItemsSource = mQTTControl.SubscribeTopic;
-            this.DataContext = mQTTControl;
+            MQTTControl = MQTTControl.GetInstance();
+            MQTTControl.MQTTMsgChanged += ShowLog;
+            TopicListView.ItemsSource = MQTTControl.SubscribeTopic;
+            this.DataContext = MQTTControl;
         }
 
 
         private async void Start_Click(object sender, RoutedEventArgs e)
         {
-            if (!mQTTControl.IsConnect)
-                await mQTTControl.Connect();
+            if (!MQTTControl.IsConnect)
+                await MQTTControl.Connect();
         }
 
         private void ShowLog(ResultDataMQTT resultData_MQTT)
@@ -42,23 +43,48 @@ namespace ColorVision
 
         private void Close_Click(object sender, RoutedEventArgs e)
         {
-            mQTTControl.DisconnectAsyncClient();
+            MQTTControl.DisconnectAsyncClient();
         }
 
         private void Subscribe_Click(object sender, RoutedEventArgs e)
         {
-            mQTTControl.SubscribeAsyncClient(TextBoxSubscribe.Text);
+            MQTTControl.SubscribeAsyncClient(TextBoxSubscribe.Text);
         }
 
         private void UnSubscribe_Click(object sender, RoutedEventArgs e)
         {
-            mQTTControl.UnsubscribeAsyncClient(TextBoxSubscribe.Text);
+            MQTTControl.UnsubscribeAsyncClient(TextBoxSubscribe.Text);
         }
 
         private void Send_Click(object sender, RoutedEventArgs e)
         {
-            mQTTControl.PublishAsyncClient(TextBoxSubscribe1.Text, TextBoxSend.Text, CheckBoxRetained.IsChecked==true);
+            MQTTControl.PublishAsyncClient(TextBoxSubscribe1.Text, TextBoxSend.Text, CheckBoxRetained.IsChecked==true);
         }
 
+        private void TopicListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ListView listView && listView.SelectedIndex > -1)
+            {
+                TextBoxSubscribe1.Text = MQTTControl.SubscribeTopic[listView.SelectedIndex];
+            }
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            string json = "{\"Code\":false,\"EventName\":\"InitCamere\",\"Msg\":\"\",\"data\":{\"CameraId\":\"{\\n\\t\\\"ID\\\" : \\n\\t[\\n\\t\\t\\\"566b2242984bc686b\\\"\\n\\t],\\n\\t\\\"number\\\" : 1\\n}\\n\"}}";
+            MQTTControl.PublishAsyncClient("CameraReturn", json, false);
+        }
+
+        private void Button1_Click(object sender, RoutedEventArgs e)
+        {
+            string json = "{\"Code\":false,\"EventName\":\"OpenCamere\",\"Msg\":\"\",\"data\":null}";
+            MQTTControl.PublishAsyncClient("CameraReturn", json, false);
+        }
+
+        private void Button2_Click(object sender, RoutedEventArgs e)
+        {
+            string json = "{\"Version\":\"1.0\",\"EventName\":\"GetData\",\"Code\":false,\"Msg\":\"\",\"data\":{\"FilePath\":\"D:\\\\1.tif\"}}";
+            MQTTControl.PublishAsyncClient("CameraReturn", json, false);
+        }
     }
 }

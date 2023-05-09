@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OpenCvSharp;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Text;
@@ -59,6 +60,26 @@ namespace ColorVision.MQTT
         CameraTypeTotal,
     };
 
+    public enum TakeImageMode
+    {
+        [Description("Measure_Normal")]
+        Normal = 0,
+        [Description("Live")]
+        Live,
+        [Description("Measure_Fast")]
+        Fast,
+        [Description("Measure_FastEx")]
+        FastExt
+    };
+
+
+    public class CameraId
+    {
+        [JsonProperty("number")]
+        public int Number { get; set; }
+        [JsonProperty("ID")]
+        public List<string> IDs { get; set; }
+    }
 
 
 
@@ -82,6 +103,10 @@ namespace ColorVision.MQTT
 
         public event MQTTCameraFileHandler FileHandler;
 
+        public event EventHandler InitCamereSucess;
+
+        public CameraId? CameraID { get; set; }
+
         private MQTTCamera()
         {
             MQTTControl = MQTTControl.GetInstance();
@@ -99,7 +124,6 @@ namespace ColorVision.MQTT
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
         }
 
-
         private Task MqttClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
         {
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
@@ -115,7 +139,9 @@ namespace ColorVision.MQTT
                     {
                         if (json.EventName == "InitCamere")
                         {
-                            MessageBox.Show("InitCamere");
+                            string CameraId = json.data.CameraId;
+                            CameraID = JsonConvert.DeserializeObject<CameraId>(CameraId);
+                            Application.Current.Dispatcher.Invoke(() => InitCamereSucess.Invoke(this, new EventArgs()));
                         }
                         else if (json.EventName == "AddCalibration")
                         {
@@ -128,7 +154,7 @@ namespace ColorVision.MQTT
                         else if (json.EventName == "GetData")
                         {
                             string Filepath = json.data.FilePath;
-                            App.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(Filepath));
+                            Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(Filepath));
                         }
                     }
                 }
@@ -177,7 +203,7 @@ namespace ColorVision.MQTT
             MQTTControl.PublishAsyncClient(SendTopic, "AddCalibration", false);
             return true;
         }
-        public bool OpenCamera()
+        public bool OpenCamera(string CameraID,TakeImageMode TakeImageMode,string ImageBpp)
         {
             if (!MQTTControl.IsConnect)
                 return false;
@@ -188,12 +214,12 @@ namespace ColorVision.MQTT
                 return false;
             }
             IsRun = false;
-            string json = "{\"Version\":\"1.0\",\"EventName\":\"OpenCamere\",\"params\":{\"TakeImageMode\":0,\"CameraID\":\"1b8577498c208b1a8\",\"Bpp\":64}}";
+            string json = "{\"Version\":\"1.0\",\"EventName\":\"OpenCamere\",\"params\":{\"TakeImageMode\":"+ (int)TakeImageMode + ",\"CameraID\":\""+ CameraID + "\",\"Bpp\":"+ ImageBpp + "}}";
             MQTTControl.PublishAsyncClient(SendTopic, json, false);
             return true;
         }
 
-        public bool GetData()
+        public bool GetData(double expTime,double gain)
         {
             if (!MQTTControl.IsConnect)
                 return false;
@@ -204,7 +230,7 @@ namespace ColorVision.MQTT
                 return false;
             }
             IsRun = false;
-            string json = "{\"Version\":\"1.0\",\"EventName\":\"GetData\",\"params\":{\"expTime\":1.4,\"gain\":1.6}}";
+            string json = "{\"Version\":\"1.0\",\"EventName\":\"GetData\",\"params\":{\"expTime\":"+ expTime+",\"gain\":"+ gain + "}}";
             MQTTControl.PublishAsyncClient(SendTopic, json, false);
             return true;
         }

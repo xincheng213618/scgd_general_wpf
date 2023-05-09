@@ -30,6 +30,13 @@
                     <CheckBox x:Name="CheckBoxRetained" />
                     <Button  Content="发送" Click="Send_Click"/>
                 </StackPanel>
+
+                <StackPanel>
+                    <Button Content="TestIniCamera"  Click="Button_Click" />
+                    <Button Content="TestOpenCamera"  Click="Button1_Click" />
+                    <Button Content="TestGetData"  Click="Button2_Click" />
+
+                </StackPanel>
             </StackPanel>
             <Grid  Margin="15,0">
                 <Grid.ColumnDefinitions>
@@ -37,7 +44,7 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="订阅列表" TextWrapping="WrapWithOverflow"  Width="15"/>
-                <ListView x:Name="TopicListView" Grid.Column="1" BorderThickness="0">
+                <ListView x:Name="TopicListView" Grid.Column="1" BorderThickness="0"  SelectionChanged="TopicListView_SelectionChanged">
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding}"   />

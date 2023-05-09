@@ -54,12 +54,11 @@ namespace ColorVision.Template
 
 
     /// <summary>
-    /// WindowAOI.xaml 的交互逻辑
+    /// WindowTemplate.xaml 的交互逻辑
     /// </summary>
-    public partial class WindowAOI : Window
+    public partial class WindowTemplate : Window
     {
-        
-        public WindowAOI()
+        public WindowTemplate()
         {
             InitializeComponent();
         }
@@ -69,7 +68,24 @@ namespace ColorVision.Template
         private void Window_Initialized(object sender, EventArgs e)
         {
             mapAoiParam= new Dictionary<string, AoiParam>();
-            mapAoiParam.Add("ssss", new AoiParam());
+            AoiParam aoiParam = new AoiParam();
+            aoiParam.filter_by_area = true;
+            aoiParam.max_area = 6000;
+            aoiParam.min_area = 10;
+            aoiParam.filter_by_contrast = true;
+            aoiParam.max_contrast = 1.7f;
+            aoiParam.min_contrast = 0.3f;
+            aoiParam.contrast_brightness = 1.0f;
+            aoiParam.contrast_darkness = 0.5f;
+            aoiParam.blur_size = 19;
+            aoiParam.min_contour_size = 5;
+            aoiParam.erode_size = 5;
+            aoiParam.dilate_size = 5;
+            aoiParam.left = 5;
+            aoiParam.right = 5;
+            aoiParam.top = 5;
+            aoiParam.bottom = 5;
+            mapAoiParam.Add("default", aoiParam);
             ListConfigs = new ObservableCollection<ListConfig>();
             int id = 1;
             foreach (var item in mapAoiParam)
@@ -99,6 +115,10 @@ namespace ColorVision.Template
                 ListConfigs.Add(new ListConfig() { ID = ListConfigs .Count+1,Name = TextBox1.Text,Value = new AoiParam()});
                 TextBox1.Text =string.Empty;
             }
+            else
+            {
+                MessageBox.Show("请输入模板名称", Application.Current.MainWindow.Title, MessageBoxButton.OK);
+            }
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
@@ -110,6 +130,11 @@ namespace ColorVision.Template
                     ListConfigs.RemoveAt(ListView1.SelectedIndex);
                 }
             }
+        }
+
+        private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)
+        {
+            e.Handled = true;
         }
     }
 }

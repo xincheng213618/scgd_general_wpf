@@ -50,11 +50,7 @@ namespace ColorVision
             StatusBarItem2.DataContext = performanceSetting;
             MQTTControl = MQTTControl.GetInstance(); ;
             MQTTStatusBarItem.DataContext = MQTTControl.GetInstance();
-            mQTTCamera.FileHandler += OpenImage;
 
-            ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()
-                                             select new KeyValuePair<CameraType, string>(e1, e1.ToDescription());
-            ComboxCameraType.SelectedIndex = 2;
         }
         protected override void OnSourceInitialized(EventArgs e)
         {
@@ -577,28 +573,62 @@ namespace ColorVision
 
 
 
-        MQTTCamera mQTTCamera = MQTTCamera.GetInstance();
+        private MQTTCamera MQTTCamera;
+        private void StackPanelCamera_Initialized(object sender, EventArgs e)
+        {
+
+            MQTTCamera = MQTTCamera.GetInstance();
+            MQTTCamera.FileHandler += OpenImage;
+
+            ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()
+                                           select new KeyValuePair<CameraType, string>(e1, e1.ToDescription());
+            ComboxCameraType.SelectedIndex = 2;
+
+
+            ComboxCameraTakeImageMode.ItemsSource = from e1 in Enum.GetValues(typeof(TakeImageMode)).Cast<TakeImageMode>()
+                                                    select new KeyValuePair<TakeImageMode, string>(e1, e1.ToDescription());
+            ComboxCameraTakeImageMode.SelectedIndex = 0;
+
+
+            StackPanelOpen.Visibility = Visibility.Collapsed;
+
+
+            MQTTCamera.InitCamereSucess += (s, e) =>
+            {
+                ComboxCameraID.ItemsSource = MQTTCamera.CameraID?.IDs;
+                ComboxCameraID.SelectedIndex = 0;
+                StackPanelOpen.Visibility = Visibility.Visible;
+            };
+        }
+        
+
 
         private void SendDemo_Click(object sender, RoutedEventArgs e)
         {
             if (ComboxCameraType.SelectedItem is KeyValuePair<CameraType, string> KeyValue && KeyValue.Key is CameraType cameraType)
             {
-                mQTTCamera.InitCamera(cameraType);
+                MQTTCamera.InitCamera(cameraType);
             }
         }
         private void SendDemo1_Click(object sender, RoutedEventArgs e)
         {
-            mQTTCamera.AddCalibration();
+            MQTTCamera.AddCalibration();
         }
 
         private void SendDemo2_Click(object sender, RoutedEventArgs e)
         {
-            mQTTCamera.OpenCamera();
+            if (ComboxCameraTakeImageMode.SelectedItem is KeyValuePair<TakeImageMode, string> KeyValue && KeyValue.Key is TakeImageMode takeImageMode)
+            {
+                MQTTCamera.OpenCamera(ComboxCameraID.Text.ToString(), takeImageMode, ComboxCameraImageBpp.Text);
+
+            }
+
+
         }
 
         private void SendDemo3_Click(object sender, RoutedEventArgs e)
         {
-            mQTTCamera.GetData();
+            MQTTCamera.GetData(SliderexpTime.Value, SliderGain.Value);
         }
 
 
@@ -614,9 +644,11 @@ namespace ColorVision
 
         private void MenuItem_Click_2(object sender, RoutedEventArgs e)
         {
-            WindowAOI windowAOI = new WindowAOI();
+            WindowTemplate windowAOI = new WindowTemplate();
             windowAOI.Show();
         }
+
+
     }
 
 
