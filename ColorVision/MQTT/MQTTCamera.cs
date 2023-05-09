@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS4014,CS0618
 using ColorVision.MVVM;
+using ColorVision.Template;
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -185,7 +186,7 @@ namespace ColorVision.MQTT
             MQTTControl.PublishAsyncClient(SendTopic, json, false);
             return true;
         }
-        public bool AddCalibration()
+        public bool AddCalibration(CalibrationParam calibrationParam)
         {
             if (!MQTTControl.IsConnect)
                 return false;
@@ -199,8 +200,12 @@ namespace ColorVision.MQTT
                 return false;
             }
             IsRun = false;
-
-            MQTTControl.PublishAsyncClient(SendTopic, "AddCalibration", false);
+            MQTTMsg mQTTMsg = new MQTTMsg();
+            mQTTMsg.EventName = "AddCalibration";
+            mQTTMsg.Params = new CalibrationParamMQTT(calibrationParam);
+            var jsonSetting = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
+            string json = JsonConvert.SerializeObject(mQTTMsg, Formatting.Indented, jsonSetting);
+            MQTTControl.PublishAsyncClient(SendTopic, json, false);
             return true;
         }
         public bool OpenCamera(string CameraID,TakeImageMode TakeImageMode,string ImageBpp)

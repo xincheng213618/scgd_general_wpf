@@ -110,10 +110,13 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <Border Grid.Row="1" Grid.Column="2" Background="#333333" Margin="2" CornerRadius="1" BorderThickness="1" BorderBrush="#767676" Padding="3,0">
+            <Border Grid.Row="1" Grid.Column="2" Margin="2" CornerRadius="1" BorderThickness="1"  Padding="3,0">
                 <DockPanel>
-                    <TextBox FlowDirection="RightToLeft" BorderThickness="0" Margin="-3,0,0,0" VerticalAlignment="Center" FontFamily="Arial" HorizontalContentAlignment="Center"  Background="#1e1e1e" CaretBrush="White" Foreground="White" PreviewKeyDown="NumberValidationTextBox" Text="{Binding ElementName=PART_Track,Path=Value,StringFormat=\{0:0.0#\},UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" />
-                    <TextBlock VerticalAlignment="Center" HorizontalAlignment="Left"  Padding="2,0">
+                    <Grid>
+                        <TextBox FlowDirection="RightToLeft"  Margin="-3,0,0,0" BorderThickness="0,0,0,1"  Background="#E8E8E9" VerticalAlignment="Center"  HorizontalContentAlignment="Center" PreviewKeyDown="NumberValidationTextBox" Text="{Binding ElementName=PART_Track,Path=Value,StringFormat=\{0:0.##\},UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" />
+                        <TextBox Visibility="Hidden" FlowDirection="RightToLeft"  Margin="-3,0,0,0" BorderThickness="0,0,0,1"  Background="#E8E8E9" VerticalAlignment="Center"  HorizontalContentAlignment="Center" PreviewKeyDown="NumberValidationTextBox" Text="{Binding ElementName=PART_Track,Path=Value,StringFormat=\{0:0.00\},UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" />
+                    </Grid>
+                    <TextBlock VerticalAlignment="Center" Foreground="Black" HorizontalAlignment="Left"  Padding="2,0">
                             <Run Text="/" />
                             <Run Text="{Binding  ElementName=PART_Track,Path=Maximum,StringFormat=\{0:0.##\}}"/>
                     </TextBlock>

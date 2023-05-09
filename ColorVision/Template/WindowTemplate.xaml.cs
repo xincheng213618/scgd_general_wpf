@@ -1,5 +1,8 @@
 ﻿#pragma warning disable CA1707
 using ColorVision.Extension;
+using ColorVision.Util;
+using cvColorVision;
+using OpenCvSharp.Detail;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -43,7 +46,6 @@ namespace ColorVision.Template
         public int bottom { set; get; }
     };
 
-
     public class ListConfig
     {
         public int ID { set; get; }
@@ -52,51 +54,55 @@ namespace ColorVision.Template
         public object Value { set; get; }
     }
 
+    public enum WindowTemplateType
+    {
+        AoiParam,
+        Calibration
+    }
+
+
+
+
 
     /// <summary>
     /// WindowTemplate.xaml 的交互逻辑
     /// </summary>
     public partial class WindowTemplate : Window
     {
-        public WindowTemplate()
+        WindowTemplateType WindowTemplateType { get; set; }
+
+        public WindowTemplate(WindowTemplateType windowTemplateType)
         {
+            WindowTemplateType = windowTemplateType;
             InitializeComponent();
         }
+        public UserControl  UserControl { get; set; }
+        public WindowTemplate(WindowTemplateType windowTemplateType,UserControl userControl)
+        {
+            WindowTemplateType = windowTemplateType;
+            InitializeComponent();
+            if (UserControl is Calibration calibration && ListConfigs[0].Value is CalibrationParam calibrationParam)
+            {
+                calibration.DataContext = calibrationParam;
+                calibration.CalibrationParam = calibrationParam;
+            }
 
-        private Dictionary<string, AoiParam> mapAoiParam;
-        private ObservableCollection<ListConfig> ListConfigs = new ObservableCollection<ListConfig>();
+            GridProperty.Children.Clear();
+            UserControl = userControl;
+            GridProperty.Children.Add(UserControl);
+        }
+
+        public new void Show()
+        {
+            base.Show();
+            ListView1.SelectedIndex = 0;
+        }
+
+
+        public ObservableCollection<ListConfig> ListConfigs = new ObservableCollection<ListConfig>();
         private void Window_Initialized(object sender, EventArgs e)
         {
-            mapAoiParam= new Dictionary<string, AoiParam>();
-            AoiParam aoiParam = new AoiParam();
-            aoiParam.filter_by_area = true;
-            aoiParam.max_area = 6000;
-            aoiParam.min_area = 10;
-            aoiParam.filter_by_contrast = true;
-            aoiParam.max_contrast = 1.7f;
-            aoiParam.min_contrast = 0.3f;
-            aoiParam.contrast_brightness = 1.0f;
-            aoiParam.contrast_darkness = 0.5f;
-            aoiParam.blur_size = 19;
-            aoiParam.min_contour_size = 5;
-            aoiParam.erode_size = 5;
-            aoiParam.dilate_size = 5;
-            aoiParam.left = 5;
-            aoiParam.right = 5;
-            aoiParam.top = 5;
-            aoiParam.bottom = 5;
-            mapAoiParam.Add("default", aoiParam);
             ListConfigs = new ObservableCollection<ListConfig>();
-            int id = 1;
-            foreach (var item in mapAoiParam)
-            {
-
-                ListConfig listConfig = new ListConfig();
-                listConfig.ID = id++;
-                listConfig.Name = item.Key;
-                listConfig.Value = item.Value;
-                ListConfigs.Add(listConfig);
-            }
             ListView1.ItemsSource = ListConfigs;
         }
 
@@ -104,7 +110,21 @@ namespace ColorVision.Template
         {
             if (sender is ListView listView && listView.SelectedIndex > -1)
             {
-                PropertyGrid1.SelectedObject = ListConfigs[listView.SelectedIndex].Value;
+                
+                switch (WindowTemplateType )
+                {
+                    case WindowTemplateType.AoiParam:
+                        PropertyGrid1.SelectedObject = ListConfigs[listView.SelectedIndex].Value;
+                        break;
+                    case WindowTemplateType.Calibration:
+                        if (UserControl is Calibration calibration && ListConfigs[listView.SelectedIndex].Value is CalibrationParam calibrationParam)
+                        {
+                            calibration.DataContext = calibrationParam;
+                            calibration.CalibrationParam = calibrationParam;
+                        }
+                        break;
+                }
+
             }
         }
 
@@ -112,7 +132,20 @@ namespace ColorVision.Template
         {
             if (!TextBox1.Text.IsNullOrEmpty())
             {
-                ListConfigs.Add(new ListConfig() { ID = ListConfigs .Count+1,Name = TextBox1.Text,Value = new AoiParam()});
+                switch (WindowTemplateType)
+                {
+                    case WindowTemplateType.AoiParam:
+                        var obj = new AoiParam();
+                        TemplateControl.GetInstance().AoiParams.Add(TextBox1.Text, obj);
+                        ListConfigs.Add(new ListConfig() { ID = ListConfigs.Count + 1, Name = TextBox1.Text, Value = obj });
+
+                        break;
+                    case WindowTemplateType.Calibration:
+                        var obj1 = new CalibrationParam();
+                        TemplateControl.GetInstance().CalibrationParams.Add(TextBox1.Text, obj1);
+                        ListConfigs.Add(new ListConfig() { ID = ListConfigs.Count + 1, Name = TextBox1.Text, Value = obj1 });
+                        break;
+                }
                 TextBox1.Text =string.Empty;
             }
             else
@@ -135,6 +168,12 @@ namespace ColorVision.Template
         private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)
         {
             e.Handled = true;
+        }
+
+        private void Button_Click_2(object sender, RoutedEventArgs e)
+        {
+            TemplateControl.GetInstance().Save(WindowTemplateType);
+            this.Close();
         }
     }
 }

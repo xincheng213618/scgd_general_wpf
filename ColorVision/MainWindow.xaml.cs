@@ -482,9 +482,9 @@ namespace ColorVision
 
         private void MenuItem_Click(object sender, RoutedEventArgs e)
         {
-            MQTTLog mQTTDemo = new MQTTLog();
-            mQTTDemo.Owner = this;
-            mQTTDemo.Show();
+            MQTTLog MQTTLog = new MQTTLog();
+            MQTTLog.Owner = this;
+            MQTTLog.Show();
         }
 
 
@@ -612,7 +612,7 @@ namespace ColorVision
         }
         private void SendDemo1_Click(object sender, RoutedEventArgs e)
         {
-            MQTTCamera.AddCalibration();
+            MQTTCamera.AddCalibration(Calibration1.CalibrationParam);
         }
 
         private void SendDemo2_Click(object sender, RoutedEventArgs e)
@@ -620,7 +620,6 @@ namespace ColorVision
             if (ComboxCameraTakeImageMode.SelectedItem is KeyValuePair<TakeImageMode, string> KeyValue && KeyValue.Key is TakeImageMode takeImageMode)
             {
                 MQTTCamera.OpenCamera(ComboxCameraID.Text.ToString(), takeImageMode, ComboxCameraImageBpp.Text);
-
             }
 
 
@@ -644,11 +643,51 @@ namespace ColorVision
 
         private void MenuItem_Click_2(object sender, RoutedEventArgs e)
         {
-            WindowTemplate windowAOI = new WindowTemplate();
-            windowAOI.Show();
+            WindowTemplate windowTemplate = new WindowTemplate(WindowTemplateType.AoiParam);
+
+            int id = 1;
+            foreach (var item in TemplateControl.GetInstance().AoiParams)
+            {
+                ListConfig listConfig = new ListConfig();
+                listConfig.ID = id++;
+                listConfig.Name = item.Key;
+                listConfig.Value = item.Value;
+                windowTemplate.ListConfigs.Add(listConfig);
+            }
+            windowTemplate.Show();
         }
 
+        private void MenuItem_Click_3(object sender, RoutedEventArgs e)
+        {
+            Calibration calibration = new Calibration();
+            WindowTemplate windowTemplate = new WindowTemplate(WindowTemplateType.Calibration, calibration);
 
+            int id = 1;
+            foreach (var item in TemplateControl.GetInstance().CalibrationParams)
+            {
+                ListConfig listConfig = new ListConfig();
+                listConfig.ID = id++;
+                listConfig.Name = item.Key;
+                listConfig.Value = item.Value;
+                windowTemplate.ListConfigs.Add(listConfig);
+            }
+            windowTemplate.Show();
+        }
+
+        private void StackPanelCalibration_Initialized(object sender, EventArgs e)
+        {
+            ComboxCalibrationTemplate.ItemsSource =TemplateControl.GetInstance().CalibrationParams;
+            ComboxCalibrationTemplate.SelectionChanged += (s, e) =>
+            {
+                if (ComboxCalibrationTemplate.SelectedItem is KeyValuePair<string, CalibrationParam> KeyValue && KeyValue.Value is CalibrationParam  calibrationParam)
+                {
+                    Calibration1.CalibrationParam = calibrationParam;
+                    Calibration1.DataContext = calibrationParam;
+                }
+
+
+            };
+        }
     }
 
 
