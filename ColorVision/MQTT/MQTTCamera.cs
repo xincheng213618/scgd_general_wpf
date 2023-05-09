@@ -104,7 +104,7 @@ namespace ColorVision.MQTT
 
         public event MQTTCameraFileHandler FileHandler;
 
-        public event EventHandler InitCamereSucess;
+        public event EventHandler InitCameraSucess;
 
         public CameraId? CameraID { get; set; }
 
@@ -142,7 +142,7 @@ namespace ColorVision.MQTT
                         {
                             string CameraId = json.data.CameraId;
                             CameraID = JsonConvert.DeserializeObject<CameraId>(CameraId);
-                            Application.Current.Dispatcher.Invoke(() => InitCamereSucess.Invoke(this, new EventArgs()));
+                            Application.Current.Dispatcher.Invoke(() => InitCameraSucess.Invoke(this, new EventArgs()));
                         }
                         else if (json.EventName == "AddCalibration")
                         {
@@ -182,6 +182,7 @@ namespace ColorVision.MQTT
             }
 
             IsRun = false;
+
             string json = "{\"Version\":\"1.0\",\"EventName\":\"InitCamere\",\"params\":{\"CameraType\":"+ ((int)CameraType).ToString()+ "}}";
             MQTTControl.PublishAsyncClient(SendTopic, json, false);
             return true;
@@ -235,6 +236,7 @@ namespace ColorVision.MQTT
                 return false;
             }
             IsRun = false;
+
             string json = "{\"Version\":\"1.0\",\"EventName\":\"GetData\",\"params\":{\"expTime\":"+ expTime+",\"gain\":"+ gain + "}}";
             MQTTControl.PublishAsyncClient(SendTopic, json, false);
             return true;

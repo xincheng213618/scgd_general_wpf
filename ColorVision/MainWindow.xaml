@@ -42,119 +42,124 @@
                 <ColumnDefinition Width="300"/>
             </Grid.ColumnDefinitions>
             <Grid  Grid.Row="0" Background="#F6F6F7">
-                <StackPanel >
-                    <StackPanel Margin="0,5">
-                        <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}" Content="PG"  FontSize="15" Foreground="Black" IsChecked="false" />
-                        <Border Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}"  Background="#E8E8E9" Margin="5,2" CornerRadius="5">
-                            <StackPanel Margin="5">
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
-
-                    <StackPanel x:Name="StackPanelCamera" Margin="0,5"   Initialized="StackPanelCamera_Initialized">
-                        <ToggleButton  x:Name="ToggleButton1"  Style="{StaticResource ButtonPageControl1}" Content="相机设置"  FontSize="15" Foreground="Black" IsChecked="false" />
-                        <Border Visibility="{Binding ElementName=ToggleButton1,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}"  Background="#E8E8E9" Margin="5,2" CornerRadius="5">
-                            <StackPanel Margin="5">
-                                <DockPanel>
-                                    <Label Content="相机类型："/>
-                                    <ComboBox  x:Name="ComboxCameraType"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20"/>
-                                </DockPanel>
-                                <Button  Content="初始化相机" Click="SendDemo_Click"/>
-                                <StackPanel x:Name="StackPanelOpen">
-                                    <DockPanel >
-                                        <Label Content="相机ID："/>
-                                        <ComboBox  x:Name="ComboxCameraID" Height="20" />
-                                    </DockPanel>
-
-                                    <DockPanel  >
-                                        <Label Content="通道数："/>
-                                        <ComboBox  x:Name="ComboxCameraChannel" SelectedIndex="1" Height="20">
-                                            <ComboBoxItem Content="1"/>
-                                            <ComboBoxItem Content="3"/>
-                                        </ComboBox>
-                                    </DockPanel>
-                                    <DockPanel >
-                                        <Label Content="取图模式："/>
-                                        <ComboBox  x:Name="ComboxCameraTakeImageMode" SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20" />
-                                    </DockPanel>
-                                    <DockPanel  >
-                                        <Label Content="取图模式："/>
-                                        <ComboBox  x:Name="ComboxCameraImageBpp" SelectedIndex="0" Height="20" >
-                                            <ComboBoxItem Content="8"/>
-                                            <ComboBoxItem Content="16"/>
-                                        </ComboBox>
-                                    </DockPanel>
-                                    <Button  Content="打开相机" Click="SendDemo2_Click"/>
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                    <StackPanel >
+                        <StackPanel Margin="0,5">
+                            <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}" Content="PG"  FontSize="15" Foreground="Black" IsChecked="false" />
+                            <Border Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}"  Background="#E8E8E9" Margin="5,2" CornerRadius="5">
+                                <StackPanel Margin="5">
                                 </StackPanel>
+                            </Border>
+                        </StackPanel>
 
-                                <StackPanel x:Name="StackPanelImage">
+                        <StackPanel x:Name="StackPanelCamera" Margin="0,5"   Initialized="StackPanelCamera_Initialized">
+                            <ToggleButton  x:Name="ToggleButton1"  Style="{StaticResource ButtonPageControl1}" Content="相机设置"  FontSize="15" Foreground="Black" IsChecked="false" />
+                            <Border Visibility="{Binding ElementName=ToggleButton1,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}"  Background="#E8E8E9" Margin="5,2" CornerRadius="5">
+                                <StackPanel Margin="5">
                                     <DockPanel>
-                                        <TextBlock  Text="增益" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0" />
-                                        <Slider x:Name="SliderGain" Template="{ StaticResource LM_SliderControlTemplate2}" TickFrequency ="0.1" IsSnapToTickEnabled="True"  SmallChange ="0.1" Value="1" Maximum="10"  ToolTip="{Binding ElementName=PART_Track,Path=Value,StringFormat=\{0:0.##\}dB}"/>
+                                        <Label Content="相机类型："/>
+                                        <ComboBox  x:Name="ComboxCameraType"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20" Margin="0,0,10,0"/>
                                     </DockPanel>
-                                    <DockPanel>
-                                        <TextBlock  Text="曝光" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
-                                        <Slider x:Name="SliderexpTime"  Template="{ StaticResource LM_SliderControlTemplate2}" TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="100" Maximum="6000" ToolTip="{Binding ElementName=PART_Track,Path=Value,StringFormat=\{0:0.##\}ms}"/>
-                                    </DockPanel>
+                                    <Button  Content="初始化相机" Click="SendDemo_Click"/>
+                                    <StackPanel x:Name="StackPanelOpen">
+                                        <DockPanel >
+                                            <Label Content="相机ID："/>
+                                            <ComboBox  x:Name="ComboxCameraID" Height="20" Margin="0,0,10,0"/>
+                                        </DockPanel>
 
-                                    <Button  Content="获取图像数据" Click="SendDemo3_Click"/>
+                                        <DockPanel  >
+                                            <Label Content="通道数："/>
+                                            <ComboBox  x:Name="ComboxCameraChannel" SelectedIndex="1" Height="20" Margin="0,0,10,0">
+                                                <ComboBoxItem Content="1"/>
+                                                <ComboBoxItem Content="3"/>
+                                            </ComboBox>
+                                        </DockPanel>
+                                        <DockPanel >
+                                            <Label Content="取图模式："/>
+                                            <ComboBox  x:Name="ComboxCameraTakeImageMode" SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20" Margin="0,0,10,0"/>
+                                        </DockPanel>
+                                        <DockPanel  >
+                                            <Label Content="取图模式："/>
+                                            <ComboBox  x:Name="ComboxCameraImageBpp" SelectedIndex="0" Height="20" Margin="0,0,10,0" >
+                                                <ComboBoxItem Content="8"/>
+                                                <ComboBoxItem Content="16"/>
+                                            </ComboBox>
+                                        </DockPanel>
+                                        <Button  Content="打开相机" Click="SendDemo2_Click"/>
+                                    </StackPanel>
+
+                                    <StackPanel x:Name="StackPanelImage">
+                                        <DockPanel>
+                                            <TextBlock  Text="增益" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0" />
+                                            <Slider x:Name="SliderGain" Template="{ StaticResource LM_SliderControlTemplate2}" TickFrequency ="0.1" IsSnapToTickEnabled="True"  SmallChange ="0.1" Value="1" Maximum="10"  ToolTip="{Binding ElementName=PART_Track,Path=Value,StringFormat=\{0:0.##\}dB}"/>
+                                        </DockPanel>
+                                        <DockPanel>
+                                            <TextBlock  Text="曝光" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                                            <Slider x:Name="SliderexpTime"  Template="{ StaticResource LM_SliderControlTemplate2}" TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="100" Maximum="6000" ToolTip="{Binding ElementName=PART_Track,Path=Value,StringFormat=\{0:0.##\}ms}"/>
+                                        </DockPanel>
+
+                                        <Button  Content="获取图像数据" Click="SendDemo3_Click"/>
+                                    </StackPanel>
                                 </StackPanel>
-                            </StackPanel>
-                        </Border>
+                            </Border>
+                        </StackPanel>
+
+                        <StackPanel Margin="0,5"  x:Name="StackPanelCalibration" Initialized="StackPanelCalibration_Initialized">
+                            <ToggleButton  x:Name="ToggleButton2"  Style="{StaticResource ButtonPageControl1}" Content="校正"  FontSize="15" Foreground="Black" IsChecked="false" />
+                            <Border Visibility="{Binding ElementName=ToggleButton2,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}"  Background="#E8E8E9" Margin="5,2" CornerRadius="5">
+                                <StackPanel Margin="5">
+                                    <DockPanel>
+                                        <Label Content="模板："/>
+                                        <ComboBox  x:Name="ComboxCalibrationTemplate"  SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,0,10,0"/>
+                                    </DockPanel>
+                                    <Template:Calibration x:Name="Calibration1" />
+                                    <Button  Content="应用校正模板" Click="SendDemo1_Click"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <StackPanel Margin="0,5">
+                            <ToggleButton  x:Name="ToggleButton3"  Style="{StaticResource ButtonPageControl1}" Content="光谱仪操作"  FontSize="15" Foreground="Black" IsChecked="false" />
+                            <Border Visibility="{Binding ElementName=ToggleButton3,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}"  Background="#E8E8E9" Margin="5,2" CornerRadius="5">
+                                <StackPanel Margin="5">
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <StackPanel Margin="0,5">
+                            <ToggleButton  x:Name="ToggleButton4"  Style="{StaticResource ButtonPageControl1}" Content="源表设置"  FontSize="15" Foreground="Black" IsChecked="false" />
+                            <Border Visibility="{Binding ElementName=ToggleButton4,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}"  Background="#E8E8E9" Margin="5,2" CornerRadius="5">
+                                <StackPanel Margin="5">
+                                    <DockPanel>
+                                    </DockPanel>
+                                    <UniformGrid >
+
+                                    </UniformGrid>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+
+                        <StackPanel Margin="0,5">
+                            <ToggleButton  x:Name="ToggleButton999"  Style="{StaticResource ButtonPageControl1}" Content="测试"  FontSize="15" Foreground="Black" IsChecked="false" />
+                            <Border Visibility="{Binding ElementName=ToggleButton999,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}"  Background="#E8E8E9" Margin="5,2" CornerRadius="5">
+                                <StackPanel Margin="5">
+                                    <UniformGrid >
+                                        <Button Content="打开测试图像"  Click="Button_Click"/>
+                                        <Button Content="绘制测试图形"  Click="Button1_Click"/>
+                                        <Button Content="读取CFG测试"  Click="Button3_Click"/>
+                                        <Button Content="保存CFG测试"  Click="Button4_Click"/>
+                                    </UniformGrid>
+
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+
+
                     </StackPanel>
 
-                    <StackPanel Margin="0,5"  x:Name="StackPanelCalibration" Initialized="StackPanelCalibration_Initialized">
-                        <ToggleButton  x:Name="ToggleButton2"  Style="{StaticResource ButtonPageControl1}" Content="校正"  FontSize="15" Foreground="Black" IsChecked="false" />
-                        <Border Visibility="{Binding ElementName=ToggleButton2,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}"  Background="#E8E8E9" Margin="5,2" CornerRadius="5">
-                            <StackPanel Margin="5">
-                                <ComboBox  x:Name="ComboxCalibrationTemplate"  SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20"/>
-                                <Template:Calibration x:Name="Calibration1" />
-                                <Button  Content="AddCalibration" Click="SendDemo1_Click"/>
-
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
-
-                    <StackPanel Margin="0,5">
-                        <ToggleButton  x:Name="ToggleButton3"  Style="{StaticResource ButtonPageControl1}" Content="光谱仪操作"  FontSize="15" Foreground="Black" IsChecked="false" />
-                        <Border Visibility="{Binding ElementName=ToggleButton3,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}"  Background="#E8E8E9" Margin="5,2" CornerRadius="5">
-                            <StackPanel Margin="5">
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
-
-                    <StackPanel Margin="0,5">
-                        <ToggleButton  x:Name="ToggleButton4"  Style="{StaticResource ButtonPageControl1}" Content="源表设置"  FontSize="15" Foreground="Black" IsChecked="false" />
-                        <Border Visibility="{Binding ElementName=ToggleButton4,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}"  Background="#E8E8E9" Margin="5,2" CornerRadius="5">
-                            <StackPanel Margin="5">
-                                <DockPanel>
-                                </DockPanel>
-                                <UniformGrid >
-
-                                </UniformGrid>
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
-
-
-                    <StackPanel Margin="0,5">
-                        <ToggleButton  x:Name="ToggleButton999"  Style="{StaticResource ButtonPageControl1}" Content="测试"  FontSize="15" Foreground="Black" IsChecked="false" />
-                        <Border Visibility="{Binding ElementName=ToggleButton999,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}"  Background="#E8E8E9" Margin="5,2" CornerRadius="5">
-                            <StackPanel Margin="5">
-                                <UniformGrid >
-                                    <Button Content="打开测试图像"  Click="Button_Click"/>
-                                    <Button Content="绘制测试图形"  Click="Button1_Click"/>
-                                    <Button Content="读取CFG测试"  Click="Button3_Click"/>
-                                    <Button Content="保存CFG测试"  Click="Button4_Click"/>
-                                </UniformGrid>
-
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
-
-
-    
-                </StackPanel>
+                </ScrollViewer>
             </Grid>
 
 

@@ -593,7 +593,7 @@ namespace ColorVision
             StackPanelOpen.Visibility = Visibility.Collapsed;
 
 
-            MQTTCamera.InitCamereSucess += (s, e) =>
+            MQTTCamera.InitCameraSucess += (s, e) =>
             {
                 ComboxCameraID.ItemsSource = MQTTCamera.CameraID?.IDs;
                 ComboxCameraID.SelectedIndex = 0;
@@ -644,7 +644,8 @@ namespace ColorVision
         private void MenuItem_Click_2(object sender, RoutedEventArgs e)
         {
             WindowTemplate windowTemplate = new WindowTemplate(WindowTemplateType.AoiParam);
-
+            windowTemplate.Owner = this;
+            
             int id = 1;
             foreach (var item in TemplateControl.GetInstance().AoiParams)
             {
@@ -661,7 +662,7 @@ namespace ColorVision
         {
             Calibration calibration = new Calibration();
             WindowTemplate windowTemplate = new WindowTemplate(WindowTemplateType.Calibration, calibration);
-
+            windowTemplate.Owner = this;
             int id = 1;
             foreach (var item in TemplateControl.GetInstance().CalibrationParams)
             {
@@ -684,9 +685,8 @@ namespace ColorVision
                     Calibration1.CalibrationParam = calibrationParam;
                     Calibration1.DataContext = calibrationParam;
                 }
-
-
             };
+            ComboxCalibrationTemplate.SelectedIndex = 0;
         }
     }
 

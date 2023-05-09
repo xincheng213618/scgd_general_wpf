@@ -7,7 +7,7 @@
         DataContext="{Binding RelativeSource={RelativeSource Self}}"
         xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         mc:Ignorable="d"
-        Title="WindowTemplate" Height="500" Width="600" Initialized="Window_Initialized">
+        Title="WindowTemplate" Height="500" Width="600" WindowStartupLocation="CenterOwner" Initialized="Window_Initialized">
     <Grid Margin="5">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="2*"/>
