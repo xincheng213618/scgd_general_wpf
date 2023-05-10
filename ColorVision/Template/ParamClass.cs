@@ -16,9 +16,12 @@ namespace ColorVision.Template
 
         [JsonProperty("enable")]
         [Category("_Setting"), DisplayName("是否启用")]
-        public bool IsEnable { get => _IsEnable; set { _IsEnable = value; 
+        public bool IsEnable { get => _IsEnable; set {
+                if (IsEnable == value) return;
+                _IsEnable = value; 
                 if (value == true) IsEnabledChanged?.Invoke(this, new EventArgs()); 
-                NotifyPropertyChanged(); } }
+                NotifyPropertyChanged(); } 
+        }
         private bool _IsEnable;
     }
 
