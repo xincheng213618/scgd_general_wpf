@@ -71,7 +71,7 @@ namespace ColorVision.Template
             };
         }
 
-        private static ObservableCollection<KeyValuePair<string, T>> IDefault<T>(string FileName ,T Default , ref bool IsOldParams)
+        private static ObservableCollection<KeyValuePair<string, T>> IDefault<T>(string FileName ,T Default , ref bool IsOldParams) where T : ParamBase
         {
             ObservableCollection<KeyValuePair<string, T>> Params = new ObservableCollection<KeyValuePair<string, T>>();
 
@@ -93,6 +93,32 @@ namespace ColorVision.Template
                     Params.Add(new KeyValuePair<string, T>("default", Default));
                 }
             }
+            foreach (var item in Params)
+            {
+                item.Value.IsEnabledChanged += (s, e) =>
+                {
+                    foreach (var item2 in Params)
+                    {
+                        if (item2.Key != item.Key)
+                            item2.Value.IsEnable = false;
+                    }
+                };
+            }
+            Params.CollectionChanged += (s, e) =>
+            {
+                if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add)
+                {
+                    Params[e.NewStartingIndex].Value.IsEnabledChanged += (s, e1) =>
+                    {
+                        foreach (var item2 in Params)
+                        {
+                            if (item2.Key != Params[e.NewStartingIndex].Key)
+                                item2.Value.IsEnable = false;
+                        }
+                    };
+                    
+                }
+            };
             return Params;
         }
 

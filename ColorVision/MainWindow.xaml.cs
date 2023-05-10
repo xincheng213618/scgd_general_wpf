@@ -681,7 +681,7 @@ namespace ColorVision
         {
             TemplateControl templateControl = TemplateControl.GetInstance();
             PG calibration = new PG(templateControl.PGParams[0].Value);
-            WindowTemplate windowTemplate = new WindowTemplate(WindowTemplateType.Calibration, calibration);
+            WindowTemplate windowTemplate = new WindowTemplate(WindowTemplateType.PGParam, calibration);
             windowTemplate.Owner = this;
             windowTemplate.Title = "PG通讯设置";
             int id = 1;

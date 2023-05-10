@@ -53,15 +53,16 @@ namespace ColorVision.Template
                 NativeMethods.Keyboard.PressKey(0x09);
             }
         }
+
+        private void CheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 
 #pragma warning disable CA1507
-    public class PGParam :ViewModelBase
+    public class PGParam : ParamBase
     {
-        [JsonProperty("enable")]
-        public bool Enable { get => _Enable; set { _Enable = value; NotifyPropertyChanged(); } }
-        private bool _Enable;
-
         //PG的类型-1为默认的TCPIP，2为广林达的dllPG
         [JsonProperty("PGtype")]
         public int PGtype { get => _PGtype; set { _PGtype = value; NotifyPropertyChanged(); } }

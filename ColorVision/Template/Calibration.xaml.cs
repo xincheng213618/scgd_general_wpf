@@ -9,9 +9,6 @@ using System.Windows.Input;
 
 namespace ColorVision.Template
 {
-
-
-
     /// <summary>
     /// Calibration.xaml 的交互逻辑
     /// </summary>
@@ -103,12 +100,8 @@ namespace ColorVision.Template
     }
 
 
-    public class CalibrationParam: ViewModelBase
+    public class CalibrationParam: ParamBase
     {
-        [JsonProperty("enable")]
-        public bool Enable { get => _Enable; set { _Enable = value; NotifyPropertyChanged(); } }
-        private bool _Enable;
-
         [JsonProperty("FileName_DarkNoise")]
         public string FileNameDarkNoise { get => _FileNameDarkNoise; set { _FileNameDarkNoise = value; NotifyPropertyChanged(); } }
         private string _FileNameDarkNoise;

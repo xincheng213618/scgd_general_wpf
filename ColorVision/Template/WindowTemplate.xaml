@@ -29,7 +29,7 @@
                     </Grid>
                 </Grid>
 
-                <ListView  x:Name="ListView1" DataContext="{Binding ListConfigs}"   ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged">
+                <ListView  x:Name="ListView1"  DataContext="{Binding ListConfigs}"   ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged">
                     <ListView.Resources>
                         <ResourceDictionary>
                             <ResourceDictionary.MergedDictionaries>

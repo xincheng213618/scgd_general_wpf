@@ -9,7 +9,6 @@
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
         <StackPanel>
-            <CheckBox Content="是否启用PG"  IsChecked="{Binding Enable}"/>
             <DockPanel>
                 <RadioButton Content="TCPIP通讯" Checked="RadioButton_Checked"/>
                 <RadioButton Content="Granda通讯" Checked="RadioButton_Checked1"/>
@@ -18,6 +17,7 @@
                 <TextBlock Text="PG画面指令"/>
                 <TextBox Text="{Binding PGPattenChangeComm1}" PreviewKeyDown="TextBox_PreviewKeyDown"/>
             </DockPanel>
+            <CheckBox Content="是否启用该PG模板"  IsChecked="{Binding IsEnable}" />
         </StackPanel>
             
     </Grid>

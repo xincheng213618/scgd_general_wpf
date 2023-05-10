@@ -23,29 +23,7 @@ using System.Windows.Shapes;
 namespace ColorVision.Template
 {
     //Aoi检测部分
-    public class AoiParam
-    {
-        public bool filter_by_area { set; get; }
-        public int max_area { set; get; }
-        public int min_area { set; get; }
-        public bool filter_by_contrast { set; get; }
-        public float max_contrast { set; get; }
-        public float min_contrast { set; get; }
-        public float contrast_brightness { set; get; }
-        public float contrast_darkness { set; get; }
-        public int blur_size { set; get; }
-        public int min_contour_size { set; get; }
-        public int erode_size { set; get; }
-        public int dilate_size { set; get; }
-        [CategoryAttribute("AoiRect")]
-        public int left { set; get; }
-        [CategoryAttribute("AoiRect")]
-        public int right { set; get; }
-        [CategoryAttribute("AoiRect")]
-        public int top { set; get; }
-        [CategoryAttribute("AoiRect")]
-        public int bottom { set; get; }
-    };
+
 
     public class ListConfig
     {
