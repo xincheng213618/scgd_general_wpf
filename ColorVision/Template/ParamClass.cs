@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1708,CA1507
-using ColorVision.MVVM;
+﻿using ColorVision.MVVM;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -131,67 +130,67 @@ namespace ColorVision.Template
 
         [Category("参数x判断配置"), DefaultValue(false), DisplayName("x启用检测")]
         [JsonProperty("x启用检测")]
-        public bool IszEnable { set; get; }
+        public bool IslxEnable { set; get; }
         [Category("参数x判断配置"), DefaultValue(0.2), DisplayName("x下限检测阈值百分比")]
         [JsonProperty("x下限检测阈值百分比")]
-        public float LLDetectionPx { set; get; }
+        public float LLDetectionPlx { set; get; }
         [Category("参数x判断配置"), DefaultValue(0), DisplayName("x下限检测阈值固定值")]
         [JsonProperty("x下限检测阈值固定值")]
-        public float LLDetectionFx { set; get; }
+        public float LLDetectionFlx { set; get; }
         [Category("参数x判断配置"), DefaultValue(1.8), DisplayName("x上限检测阈值百分比")]
         [JsonProperty("x上限检测阈值百分比")]
-        public float HLDetectionPx { set; get; }
+        public float HLDetectionPlx { set; get; }
         [Category("参数x判断配置"), DefaultValue(float.MaxValue), DisplayName("x上限检测阈值固定值")]
         [JsonProperty("x上限检测阈值固定值")]
-        public float HLDetectionFx { set; get; }
+        public float HLDetectionFlx { set; get; }
 
         [Category("参数y判断配置"), DefaultValue(false), DisplayName("y启用检测")]
         [JsonProperty("y启用检测")]
-        public bool IsyEnable { set; get; }
+        public bool IslyEnable { set; get; }
         [Category("参数y判断配置"), DefaultValue(0.2), DisplayName("y下限检测阈值百分比")]
         [JsonProperty("y下限检测阈值百分比")]
-        public float LLDetectionPy { set; get; }
+        public float LLDetectionPly { set; get; }
         [Category("参数y判断配置"), DefaultValue(0), DisplayName("y下限检测阈值固定值")]
         [JsonProperty("y下限检测阈值固定值")]
-        public float LLDetectionFy { set; get; }
+        public float LLDetectionFly { set; get; }
         [Category("参数y判断配置"), DefaultValue(1.8), DisplayName("y上限检测阈值百分比")]
         [JsonProperty("y上限检测阈值百分比")]
-        public float HLDetectionPy { set; get; }
+        public float HLDetectionPly { set; get; }
         [Category("参数y判断配置"), DefaultValue(float.MaxValue), DisplayName("y上限检测阈值固定值")]
         [JsonProperty("y上限检测阈值固定值")]
-        public float HLDetectionFy { set; get; }
+        public float HLDetectionFly { set; get; }
 
         [Category("参数u判断配置"), DefaultValue(false), DisplayName("u启用检测")]
         [JsonProperty("u启用检测")]
-        public bool IsuEnable { set; get; }
+        public bool IsluEnable { set; get; }
         [Category("参数u判断配置"), DefaultValue(0.2), DisplayName("u下限检测阈值百分比")]
         [JsonProperty("u下限检测阈值百分比")]
-        public float LLDetectionPu { set; get; }
+        public float LLDetectionPlu { set; get; }
         [Category("参数u判断配置"), DefaultValue(0), DisplayName("u下限检测阈值固定值")]
         [JsonProperty("u下限检测阈值固定值")]
-        public float LLDetectionFu { set; get; }
+        public float LLDetectionFlu { set; get; }
         [Category("参数u判断配置"), DefaultValue(1.8), DisplayName("u上限检测阈值百分比")]
         [JsonProperty("u上限检测阈值百分比")]
-        public float HLDetectionPu { set; get; }
+        public float HLDetectionPlu { set; get; }
         [Category("参数u判断配置"), DefaultValue(float.MaxValue), DisplayName("u上限检测阈值固定值")]
         [JsonProperty("u上限检测阈值固定值")]
-        public float HLDetectionFu { set; get; }
+        public float HLDetectionFlu { set; get; }
 
         [Category("参数v判断配置"), DefaultValue(false), DisplayName("v启用检测")]
         [JsonProperty("v启用检测")]
-        public bool IsvEnable { set; get; }
+        public bool IslvEnable { set; get; }
         [Category("参数v判断配置"), DefaultValue(0.2), DisplayName("v下限检测阈值百分比")]
         [JsonProperty("v下限检测阈值百分比")]
-        public float LLDetectionPv { set; get; }
+        public float LLDetectionPlv { set; get; }
         [Category("参数v判断配置"), DefaultValue(0), DisplayName("v下限检测阈值固定值")]
         [JsonProperty("v下限检测阈值固定值")]
-        public float LLDetectionFv { set; get; }
+        public float LLDetectionFlv { set; get; }
         [Category("参数v判断配置"), DefaultValue(1.8), DisplayName("v上限检测阈值百分比")]
         [JsonProperty("v上限检测阈值百分比")]
-        public float HLDetectionPv { set; get; }
+        public float HLDetectionPlv { set; get; }
         [Category("参数v判断配置"), DefaultValue(float.MaxValue), DisplayName("v上限检测阈值固定值")]
         [JsonProperty("v上限检测阈值固定值")]
-        public float HLDetectionFv { set; get; }
+        public float HLDetectionFlv { set; get; }
 
         [Category("参数CCT判断配置"), DefaultValue(false), DisplayName("CCT启用检测")]
         [JsonProperty("CCT启用检测")]
