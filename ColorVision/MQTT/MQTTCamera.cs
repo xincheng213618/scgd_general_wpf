@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.IO;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
@@ -17,23 +18,7 @@ using System.Windows;
 namespace ColorVision.MQTT
 {
 
-    public class MQTTMsgReturn
-    {
-        public string Version { get; set; }
-        public string EventName { get; set; }
-        public bool Code { get; set; }
-        public string Msg { get; set; }
 
-        public dynamic data { get; set; }
-    }
-
-    public class MQTTMsg
-    {
-        public string Version { get; set; } = "1.0";
-        public string EventName { get; set; }
-        [JsonProperty("params")]
-        public dynamic Params { get; set; }
-    }
 
     public enum CameraType 
     {
@@ -140,7 +125,7 @@ namespace ColorVision.MQTT
                     {
                         if (json.EventName == "InitCamere")
                         {
-                            string CameraId = json.data.CameraId;
+                            string CameraId = json.Data.CameraId;
                             CameraID = JsonConvert.DeserializeObject<CameraId>(CameraId);
                             Application.Current.Dispatcher.Invoke(() => InitCameraSucess.Invoke(this, new EventArgs()));
                         }
@@ -154,7 +139,7 @@ namespace ColorVision.MQTT
                         }
                         else if (json.EventName == "GetData")
                         {
-                            string Filepath = json.data.FilePath;
+                            string Filepath = json.Data.FilePath;
                             Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(Filepath));
                         }
                     }
@@ -246,5 +231,47 @@ namespace ColorVision.MQTT
         {
             GC.SuppressFinalize(this);
         }
+
+        public class CalibrationParamMQTT : ViewModelBase
+        {
+            public CalibrationParamMQTT(CalibrationParam calibrationParam)
+            {
+                this.Luminance = SetPath(calibrationParam.SelectedLuminance, calibrationParam.FileNameLuminance);
+                this.LumOneColor = SetPath(calibrationParam.SelectedColorOne, calibrationParam.FileNameColorOne);
+                this.LumFourColor = SetPath(calibrationParam.SelectedColorFour, calibrationParam.FileNameColorFour);
+                this.LumMultiColor = SetPath(calibrationParam.SelectedColorMulti, calibrationParam.FileNameColorMulti);
+                this.DarkNoise = SetPath(calibrationParam.SelectedDarkNoise, calibrationParam.FileNameDarkNoise);
+                this.DSNU = SetPath(calibrationParam.SelectedDSNU, calibrationParam.FileNameDSNU);
+                this.Distortion = SetPath(calibrationParam.SelectedDistortion, calibrationParam.FileNameDistortion);
+                this.DefectWPoint = SetPath(calibrationParam.SelectedDefectWPoint, calibrationParam.FileNameDefectWPoint);
+                this.DefectBPoint = SetPath(calibrationParam.SelectedDefectBPoint, calibrationParam.FileNameDefectBPoint);
+            }
+            private static string? SetPath(bool Check, string Name)
+            {
+                return Check && Name != null ? Path.IsPathRooted(Name) ? Name : Environment.CurrentDirectory + "\\" + Name : null;
+            }
+
+            public string? Luminance { get; set; }
+            [JsonProperty("Uniformity_X")]
+            public string? UniformityX { get; set; }
+            [JsonProperty("Uniformity_Y")]
+            public string? UniformityY { get; set; }
+            [JsonProperty("Uniformity_Z")]
+            public string? UniformityZ { get; set; }
+            public string? LumOneColor { get; set; }
+            public string? LumFourColor { get; set; }
+            public string? LumMultiColor { get; set; }
+            public string? DarkNoise { get; set; }
+            public string? DSNU { get; set; }
+            public string? Distortion { get; set; }
+            public string? DefectWPoint { get; set; }
+            public string? DefectBPoint { get; set; }
+
+
+
+
+        }
+
+
     }
 }

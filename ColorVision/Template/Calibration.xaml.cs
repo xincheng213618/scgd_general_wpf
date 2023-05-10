@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.IO;
 using System.Xml.Linq;
+using System.Windows.Input;
 
 namespace ColorVision.Template
 {
@@ -91,47 +92,16 @@ namespace ColorVision.Template
 
             }
         }
+
+        private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                NativeMethods.Keyboard.PressKey(0x09);
+            }
+        }
     }
 
-    public class CalibrationParamMQTT : ViewModelBase
-    {
-        public CalibrationParamMQTT(CalibrationParam calibrationParam)
-        {
-            this.Luminance = SetPath(calibrationParam.SelectedLuminance, calibrationParam.FileNameLuminance);
-            this.LumOneColor = SetPath(calibrationParam.SelectedColorOne, calibrationParam.FileNameColorOne);
-            this.LumFourColor = SetPath(calibrationParam.SelectedColorFour, calibrationParam.FileNameColorFour); 
-            this.LumMultiColor = SetPath(calibrationParam.SelectedColorMulti, calibrationParam.FileNameColorMulti);
-            this.DarkNoise = SetPath(calibrationParam.SelectedDarkNoise, calibrationParam.FileNameDarkNoise);
-            this.DSNU = SetPath(calibrationParam.SelectedDSNU, calibrationParam.FileNameDSNU);
-            this.Distortion = SetPath(calibrationParam.SelectedDistortion, calibrationParam.FileNameDistortion);
-            this.DefectWPoint = SetPath(calibrationParam.SelectedDefectWPoint, calibrationParam.FileNameDefectWPoint);
-            this.DefectBPoint = SetPath(calibrationParam.SelectedDefectBPoint, calibrationParam.FileNameDefectBPoint)  ;
-        }
-        private static string? SetPath(bool Check,string Name)
-        {
-            return Check && Name != null ? Path.IsPathRooted(Name) ? Name : Environment.CurrentDirectory + "\\" + Name : null;
-        }
-
-        public string? Luminance { get; set; }
-        [JsonProperty("Uniformity_X")]
-        public string? UniformityX { get; set; }
-        [JsonProperty("Uniformity_Y")]
-        public string? UniformityY { get; set; }
-        [JsonProperty("Uniformity_Z")]
-        public string? UniformityZ { get; set; }
-        public string? LumOneColor { get; set; }
-        public string? LumFourColor { get; set; }
-        public string? LumMultiColor { get; set; }
-        public string? DarkNoise { get; set; }
-        public string? DSNU { get; set; }
-        public string? Distortion { get; set; }
-        public string? DefectWPoint { get; set; }
-        public string? DefectBPoint { get; set; }
-
-
-
-
-    }
 
     public class CalibrationParam: ViewModelBase
     {

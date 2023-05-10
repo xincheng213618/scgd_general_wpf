@@ -3,6 +3,7 @@ using ColorVision.Extension;
 using ColorVision.Util;
 using cvColorVision;
 using OpenCvSharp.Detail;
+using ScottPlot.Styles;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -51,13 +52,14 @@ namespace ColorVision.Template
         public int ID { set; get; }
         public string Name { set; get; }
 
-        public object Value { set; get; }
+        public object? Value { set; get; }
     }
 
     public enum WindowTemplateType
     {
         AoiParam,
-        Calibration
+        Calibration,
+        PGParam
     }
 
 
@@ -81,11 +83,6 @@ namespace ColorVision.Template
         {
             WindowTemplateType = windowTemplateType;
             InitializeComponent();
-            if (UserControl is Calibration calibration && ListConfigs[0].Value is CalibrationParam calibrationParam)
-            {
-                calibration.DataContext = calibrationParam;
-                calibration.CalibrationParam = calibrationParam;
-            }
 
             GridProperty.Children.Clear();
             UserControl = userControl;
@@ -110,7 +107,6 @@ namespace ColorVision.Template
         {
             if (sender is ListView listView && listView.SelectedIndex > -1)
             {
-                
                 switch (WindowTemplateType )
                 {
                     case WindowTemplateType.AoiParam:
@@ -123,8 +119,14 @@ namespace ColorVision.Template
                             calibration.CalibrationParam = calibrationParam;
                         }
                         break;
+                    case WindowTemplateType.PGParam:
+                        if (UserControl is PG pg && ListConfigs[listView.SelectedIndex].Value is PGParam pGparam)
+                        {
+                            pg.DataContext = pGparam;
+                            pg.PGParam = pGparam;
+                        }
+                        break;
                 }
-
             }
         }
 
@@ -135,15 +137,13 @@ namespace ColorVision.Template
                 switch (WindowTemplateType)
                 {
                     case WindowTemplateType.AoiParam:
-                        var obj = new AoiParam();
-                        TemplateControl.GetInstance().AoiParams.Add( new KeyValuePair<string, AoiParam>( TextBox1.Text, obj));
-                        ListConfigs.Add(new ListConfig() { ID = ListConfigs.Count + 1, Name = TextBox1.Text, Value = obj });
-
+                        CreateNewTemplate(TemplateControl.GetInstance().AoiParams, new AoiParam());
                         break;
                     case WindowTemplateType.Calibration:
-                        var obj1 = new CalibrationParam();
-                        TemplateControl.GetInstance().CalibrationParams.Add( new KeyValuePair<string, CalibrationParam>(TextBox1.Text, obj1));
-                        ListConfigs.Add(new ListConfig() { ID = ListConfigs.Count + 1, Name = TextBox1.Text, Value = obj1 });
+                        CreateNewTemplate(TemplateControl.GetInstance().CalibrationParams, new CalibrationParam());
+                        break;
+                    case WindowTemplateType.PGParam:
+                        CreateNewTemplate(TemplateControl.GetInstance().PGParams,new PGParam());
                         break;
                 }
                 TextBox1.Text =string.Empty;
@@ -152,6 +152,12 @@ namespace ColorVision.Template
             {
                 MessageBox.Show("请输入模板名称", Application.Current.MainWindow.Title, MessageBoxButton.OK);
             }
+        }
+
+        private void CreateNewTemplate<T>(ObservableCollection<KeyValuePair<string, T>> keyValuePairs ,T t)
+        {
+            keyValuePairs.Add(new KeyValuePair<string, T>(TextBox1.Text, t));
+            ListConfigs.Add(new ListConfig() { ID = ListConfigs.Count + 1, Name = TextBox1.Text, Value = t });
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)

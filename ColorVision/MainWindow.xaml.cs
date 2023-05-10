@@ -645,7 +645,7 @@ namespace ColorVision
         {
             WindowTemplate windowTemplate = new WindowTemplate(WindowTemplateType.AoiParam);
             windowTemplate.Owner = this;
-            
+            windowTemplate.Title ="AOI参数设置";
             int id = 1;
             foreach (var item in TemplateControl.GetInstance().AoiParams)
             {
@@ -660,11 +660,13 @@ namespace ColorVision
 
         private void MenuItem_Click_3(object sender, RoutedEventArgs e)
         {
-            Calibration calibration = new Calibration();
+            TemplateControl templateControl = TemplateControl.GetInstance();
+            Calibration calibration = new Calibration(templateControl.CalibrationParams[0].Value);
             WindowTemplate windowTemplate = new WindowTemplate(WindowTemplateType.Calibration, calibration);
             windowTemplate.Owner = this;
+            windowTemplate.Title ="校正参数设置";
             int id = 1;
-            foreach (var item in TemplateControl.GetInstance().CalibrationParams)
+            foreach (var item in templateControl.CalibrationParams)
             {
                 ListConfig listConfig = new ListConfig();
                 listConfig.ID = id++;
@@ -674,6 +676,26 @@ namespace ColorVision
             }
             windowTemplate.Show();
         }
+
+        private void MenuItem_Click_4(object sender, RoutedEventArgs e)
+        {
+            TemplateControl templateControl = TemplateControl.GetInstance();
+            PG calibration = new PG(templateControl.PGParams[0].Value);
+            WindowTemplate windowTemplate = new WindowTemplate(WindowTemplateType.Calibration, calibration);
+            windowTemplate.Owner = this;
+            windowTemplate.Title = "PG通讯设置";
+            int id = 1;
+            foreach (var item in templateControl.PGParams)
+            {
+                ListConfig listConfig = new ListConfig();
+                listConfig.ID = id++;
+                listConfig.Name = item.Key;
+                listConfig.Value = item.Value;
+                windowTemplate.ListConfigs.Add(listConfig);
+            }
+            windowTemplate.Show();
+        }
+
 
         private void StackPanelCalibration_Initialized(object sender, EventArgs e)
         {
@@ -687,6 +709,20 @@ namespace ColorVision
                 }
             };
             ComboxCalibrationTemplate.SelectedIndex = 0;
+        }
+
+        private void StackPanelPG_Initialized(object sender, EventArgs e)
+        {
+            ComboxPGTemplate.ItemsSource = TemplateControl.GetInstance().PGParams;
+            ComboxPGTemplate.SelectionChanged += (s, e) =>
+            {
+                if (ComboxPGTemplate.SelectedItem is KeyValuePair<string, PGParam> KeyValue && KeyValue.Value is PGParam pGParam)
+                {
+                    PG1.PGParam = pGParam;
+                    PG1.DataContext = pGParam;
+                }
+            };
+            ComboxPGTemplate.SelectedIndex = 0;
         }
     }
 

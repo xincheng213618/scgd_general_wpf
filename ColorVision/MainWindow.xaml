@@ -22,9 +22,9 @@
                 <MenuItem Header="文件(_F)">
                 </MenuItem>
                 <MenuItem Header="模板(_T)">
-                    <MenuItem Header="_AOI参数"  Click="MenuItem_Click_2"/>
+                    <MenuItem Header="_AOI参数模板设置"  Click="MenuItem_Click_2"/>
                     <MenuItem Header="校正模板设置(_C)"  Click="MenuItem_Click_3"/>
-
+                    <MenuItem Header="_PG通讯模板设置"  Click="MenuItem_Click_4"/>
                 </MenuItem>
                 <MenuItem Header="MQTTLog(_M)" Click="MenuItem_Click">
                 </MenuItem>
@@ -44,10 +44,15 @@
             <Grid  Grid.Row="0" Background="#F6F6F7">
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                     <StackPanel >
-                        <StackPanel Margin="0,5">
+                        <StackPanel Margin="0,5" x:Name="StackPanelPG" Initialized="StackPanelPG_Initialized">
                             <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}" Content="PG"  FontSize="15" Foreground="Black" IsChecked="false" />
                             <Border Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}"  Background="#E8E8E9" Margin="5,2" CornerRadius="5">
                                 <StackPanel Margin="5">
+                                    <DockPanel>
+                                        <Label Content="模板："/>
+                                        <ComboBox  x:Name="ComboxPGTemplate"  SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,0,10,0"/>
+                                    </DockPanel>
+                                    <Template:PG x:Name="PG1" />
                                 </StackPanel>
                             </Border>
                         </StackPanel>

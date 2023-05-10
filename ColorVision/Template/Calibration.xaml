@@ -13,55 +13,55 @@
                 <TextBlock DockPanel.Dock="Left" Text="暗噪声" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="5,0,5,0" />
                 <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding SelectedDarkNoise}"   Margin="5,0"/>
                 <Button DockPanel.Dock="Right" Content="..." Click="Button_Click" Tag="DarkNoise" Width="40"  Margin="5,0"/>
-                <TextBox BorderThickness="0,0,0,1" Height="16"  Text="{Binding FileNameDarkNoise}" />
+                <TextBox BorderThickness="0,0,0,1" Height="16" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding FileNameDarkNoise}" />
             </DockPanel>
             <DockPanel Margin="0,1">
                 <TextBlock DockPanel.Dock="Left" Text="DSNU" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="5,0,5,0" />
                 <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding SelectedDSNU}"   Margin="5,0"/>
                 <Button DockPanel.Dock="Right" Content="..." Click="Button_Click" Tag="DSNU" Width="40"  Margin="5,0"/>
-                <TextBox BorderThickness="0,0,0,1" Height="16"  Text="{Binding FileNameDSNU}" />
+                <TextBox BorderThickness="0,0,0,1" Height="16" PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding FileNameDSNU}" />
             </DockPanel>
             <DockPanel Margin="0,1">
                 <TextBlock DockPanel.Dock="Left" Text="缺陷点(亮)" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="5,0,5,0" />
                 <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding SelectedDefectWPoint}"   Margin="5,0"/>
                 <Button DockPanel.Dock="Right" Content="..." Click="Button_Click" Tag="DefectWPoint" Width="40"  Margin="5,0"/>
-                <TextBox BorderThickness="0,0,0,1" Height="16" Text="{Binding FileNameDefectWPoint}" />
+                <TextBox BorderThickness="0,0,0,1" Height="16" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding FileNameDefectWPoint}" />
             </DockPanel>
             <DockPanel Margin="0,1">
                 <TextBlock DockPanel.Dock="Left" Text="缺陷点(暗)" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="5,0,5,0" />
                 <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding SelectedDefectBPoint}"   Margin="5,0"/>
                 <Button DockPanel.Dock="Right" Content="..." Click="Button_Click" Tag="DefectBPoint" Width="40"  Margin="5,0"/>
-                <TextBox BorderThickness="0,0,0,1" Height="16"  Text="{Binding FileNameDefectBPoint}" />
+                <TextBox BorderThickness="0,0,0,1" Height="16" PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding FileNameDefectBPoint}" />
             </DockPanel>
             <DockPanel Margin="0,1">
                 <TextBlock DockPanel.Dock="Left" Text="畸变" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="5,0,5,0" />
                 <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding SelectedDistortion}"   Margin="5,0"/>
                 <Button DockPanel.Dock="Right" Content="..." Click="Button_Click" Tag="Distortion" Width="40"  Margin="5,0"/>
-                <TextBox BorderThickness="0,0,0,1" Height="16"  Text="{Binding FileNameDistortion}" />
+                <TextBox BorderThickness="0,0,0,1" Height="16" PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding FileNameDistortion}" />
             </DockPanel>
             <DockPanel Margin="0,1">
                 <TextBlock DockPanel.Dock="Left" Text="亮度" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="5,0,5,0" />
                 <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding SelectedLuminance}"   Margin="5,0"/>
                 <Button DockPanel.Dock="Right" Content="..." Click="Button_Click" Tag="Luminance" Width="40"  Margin="5,0"/>
-                <TextBox BorderThickness="0,0,0,1" Height="16"  Text="{Binding FileNameLuminance}" />
+                <TextBox BorderThickness="0,0,0,1" Height="16" PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding FileNameLuminance}" />
             </DockPanel>
             <DockPanel Margin="0,1">
                 <TextBlock DockPanel.Dock="Left" Text="单色" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="5,0,5,0" />
                 <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding SelectedColorOne}"   Margin="5,0"/>
                 <Button DockPanel.Dock="Right" Content="..." Click="Button_Click" Tag="ColorOne" Width="40"  Margin="5,0"/>
-                <TextBox BorderThickness="0,0,0,1" Height="16"  Text="{Binding FileNameColorOne}" />
+                <TextBox BorderThickness="0,0,0,1" Height="16" PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding FileNameColorOne}" />
             </DockPanel>
             <DockPanel Margin="0,1">
                 <TextBlock DockPanel.Dock="Left" Text="四色" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="5,0,5,0" />
                 <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding SelectedColorFour}"   Margin="5,0"/>
                 <Button DockPanel.Dock="Right" Content="..." Click="Button_Click" Tag="ColorFour" Width="40"  Margin="5,0"/>
-                <TextBox BorderThickness="0,0,0,1" Height="16"  Text="{Binding FileNameColorFour}" />
+                <TextBox BorderThickness="0,0,0,1" Height="16" PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding FileNameColorFour}" />
             </DockPanel>
             <DockPanel Margin="0,1">
                 <TextBlock DockPanel.Dock="Left" Text="多色" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="5,0,5,0" />
                 <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding SelectedColorMulti }"   Margin="5,0"/>
                 <Button DockPanel.Dock="Right" Content="..." Click="Button_Click" Tag="ColorMulti" Width="40"  Margin="5,0"/>
-                <TextBox BorderThickness="0,0,0,1" Height="16"  Text="{Binding FileNameColorMulti}" />
+                <TextBox BorderThickness="0,0,0,1" Height="16" PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding FileNameColorMulti}" />
             </DockPanel>
             <GroupBox Header="均匀场校正">
                 <StackPanel>
@@ -69,24 +69,22 @@
                         <TextBlock DockPanel.Dock="Left" Text="Y(绿)" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="5,0,5,0" />
                         <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding SelectedUniformityY }"   Margin="5,0"/>
                         <Button DockPanel.Dock="Right" Content="..." Click="Button_Click" Tag="UniformityY" Width="40"  Margin="5,0"/>
-                        <TextBox BorderThickness="0,0,0,1" Height="16"  Text="{Binding FileNameUniformityY}" />
+                        <TextBox BorderThickness="0,0,0,1" Height="16"  PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding FileNameUniformityY}" />
                     </DockPanel>
                     <DockPanel Margin="0,1">
                         <TextBlock DockPanel.Dock="Left" Text="X(红)" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="5,0,5,0" />
                         <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding SelectedUniformityX }"   Margin="5,0"/>
                         <Button DockPanel.Dock="Right" Content="..." Click="Button_Click" Tag="UniformityX" Width="40"  Margin="5,0"/>
-                        <TextBox BorderThickness="0,0,0,1" Height="16"  Text="{Binding FileNameUniformityX}" />
+                        <TextBox BorderThickness="0,0,0,1" Height="16" PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding FileNameUniformityX}" />
                     </DockPanel>
                     <DockPanel >
                         <TextBlock DockPanel.Dock="Left" Text="Z(蓝)" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="5,0,5,0" />
                         <CheckBox VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding SelectedUniformityZ }"   Margin="5,0"/>
                         <Button DockPanel.Dock="Right" Content="..." Click="Button_Click" Tag="UniformityZ" Width="40"  Margin="5,0"/>
-                        <TextBox BorderThickness="0,0,0,1" Height="16"  Text="{Binding FileNameUniformityZ}" />
+                        <TextBox BorderThickness="0,0,0,1" Height="16" PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding FileNameUniformityZ}" />
                     </DockPanel>
                 </StackPanel>
-
             </GroupBox>
-
         </StackPanel>
     </Grid>
 </UserControl>
