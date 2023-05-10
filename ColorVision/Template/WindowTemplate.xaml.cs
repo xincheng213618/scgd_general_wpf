@@ -99,7 +99,7 @@ namespace ColorVision.Template
         }
 
 
-        public ObservableCollection<ListConfig> ListConfigs = new ObservableCollection<ListConfig>();
+        public ObservableCollection<ListConfig> ListConfigs { get; set; } = new ObservableCollection<ListConfig>();
         private void Window_Initialized(object sender, EventArgs e)
         {
             ListConfigs = new ObservableCollection<ListConfig>();
@@ -136,13 +136,13 @@ namespace ColorVision.Template
                 {
                     case WindowTemplateType.AoiParam:
                         var obj = new AoiParam();
-                        TemplateControl.GetInstance().AoiParams.Add(TextBox1.Text, obj);
+                        TemplateControl.GetInstance().AoiParams.Add( new KeyValuePair<string, AoiParam>( TextBox1.Text, obj));
                         ListConfigs.Add(new ListConfig() { ID = ListConfigs.Count + 1, Name = TextBox1.Text, Value = obj });
 
                         break;
                     case WindowTemplateType.Calibration:
                         var obj1 = new CalibrationParam();
-                        TemplateControl.GetInstance().CalibrationParams.Add(TextBox1.Text, obj1);
+                        TemplateControl.GetInstance().CalibrationParams.Add( new KeyValuePair<string, CalibrationParam>(TextBox1.Text, obj1));
                         ListConfigs.Add(new ListConfig() { ID = ListConfigs.Count + 1, Name = TextBox1.Text, Value = obj1 });
                         break;
                 }

@@ -695,46 +695,32 @@ namespace ColorVision
 
     public class ImageInfo : ViewModelBase
     {
-        private int _X;
         public int X { get => _X; set { _X = value; NotifyPropertyChanged(); } }
-        private int _Y;
+        private int _X;
+
         public int Y { get => _Y; set { _Y = value; NotifyPropertyChanged(); } }
+        private int _Y;
 
-        private double _X1;
         public double X1 { get => _X1 ; set { _X1 = value; NotifyPropertyChanged(); } }
-        private double _Y1;
+        private double _X1;
+
         public double Y1 { get => _Y1; set { _Y1 = value; NotifyPropertyChanged(); } }
+        private double _Y1;
 
-
-        private int _R;
         public int R { get => _R; set { _R = value; NotifyPropertyChanged(); } }
-        private int _G;
+        private int _R;
 
         public int G { get => _G; set { _G = value; NotifyPropertyChanged(); } }
+        private int _G;
 
-        private int _B;
         public int B { get => _B; set {  _B = value; NotifyPropertyChanged(); } }
+        private int _B;
 
-        private string _Hex;
         public string Hex { get => _Hex; set { _Hex = value; NotifyPropertyChanged(); } }
+        private string _Hex;
 
         private SolidColorBrush _Color;
-        public SolidColorBrush Color { get => _Color; set { _Color = value; NotifyPropertyChanged(); } }
-       
+        public SolidColorBrush Color { get => _Color; set { _Color = value; NotifyPropertyChanged(); } }    
     }
 
-
-    public class CustomStroke: Stroke
-    {
-        public CustomStroke(StylusPointCollection stylusPoints) : base(stylusPoints) 
-        {
-        }
-        public CustomStroke(StylusPointCollection stylusPoints, DrawingAttributes drawingAttributes) : base(stylusPoints, drawingAttributes)
-        { 
-        }
-        protected override void DrawCore(DrawingContext drawingContext, DrawingAttributes drawingAttributes)
-        {
-            base.DrawCore(drawingContext, drawingAttributes);
-        }
-    }
 }
