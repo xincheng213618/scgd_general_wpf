@@ -695,6 +695,22 @@ namespace ColorVision
             }
             windowTemplate.Show();
         }
+        private void MenuItem_Click_5(object sender, RoutedEventArgs e)
+        {
+            WindowTemplate windowTemplate = new WindowTemplate(WindowTemplateType.LedReuslt);
+            windowTemplate.Owner = this;
+            windowTemplate.Title = "数据判断模板设置";
+            int id = 1;
+            foreach (var item in TemplateControl.GetInstance().LedReusltParams)
+            {
+                ListConfig listConfig = new ListConfig();
+                listConfig.ID = id++;
+                listConfig.Name = item.Key;
+                listConfig.Value = item.Value;
+                windowTemplate.ListConfigs.Add(listConfig);
+            }
+            windowTemplate.Show();
+        }
 
 
         private void StackPanelCalibration_Initialized(object sender, EventArgs e)
@@ -724,6 +740,8 @@ namespace ColorVision
             };
             ComboxPGTemplate.SelectedIndex = 0;
         }
+
+
     }
 
 

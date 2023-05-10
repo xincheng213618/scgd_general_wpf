@@ -29,9 +29,13 @@ namespace ColorVision.Template
         private static string FileNameCalibrationParams = "cfg\\CalibrationSetup.cfg";
         private static string FileNamePGParams = "cfg\\PGParamSetup.cfg";
 
+        private string FileNameLedJudgeParams = "cfg\\LedJudgeSetup.cfg";
+
+
         private bool IsOldAoiParams;
         private bool IsOldCalibrationParams;
         private bool IsOldPGParams;
+        private bool IsOldLedJudgeParams;
 
 
         public TemplateControl()
@@ -41,27 +45,30 @@ namespace ColorVision.Template
 
             AoiParam param = new AoiParam
             {
-                filter_by_area = true,
-                max_area = 6000,
-                min_area = 10,
-                filter_by_contrast = true,
-                max_contrast = 1.7f,
-                min_contrast = 0.3f,
-                contrast_brightness = 1.0f,
-                contrast_darkness = 0.5f,
-                blur_size = 19,
-                min_contour_size = 5,
-                erode_size = 5,
-                dilate_size = 5,
-                left = 5,
-                right = 5,
-                top = 5,
-                bottom = 5
+                FilterByArea = true,
+                MaxArea = 6000,
+                MinArea = 10,
+                FilterByContrast = true,
+                MaxContrast = 1.7f,
+                MinContrast = 0.3f,
+                ContrastBrightness = 1.0f,
+                ContrastDarkness = 0.5f,
+                BlurSize = 19,
+                MinContourSize = 5,
+                ErodeSize = 5,
+                DilateSize = 5,
+                Left = 5,
+                Right = 5,
+                Top = 5,
+                Bottom = 5
             };
             AoiParams = IDefault(FileNameAoiParams, param, ref IsOldAoiParams);
             CalibrationParams = IDefault(FileNameCalibrationParams, new CalibrationParam(),ref IsOldCalibrationParams);
             PGParams = IDefault(FileNamePGParams, new PGParam(), ref IsOldPGParams);
 
+            LedReusltParams = IDefault(FileNameLedJudgeParams, new LedReusltParam(), ref IsOldLedJudgeParams);
+
+           
             Application.Current.MainWindow.Closed += (s, e) =>
             {
                 Save();
@@ -130,6 +137,7 @@ namespace ColorVision.Template
             SaveDefault(FileNameAoiParams, AoiParams,IsOldAoiParams);
             SaveDefault(FileNameCalibrationParams, CalibrationParams, IsOldCalibrationParams);
             SaveDefault(FileNamePGParams, PGParams, IsOldPGParams);
+            SaveDefault(FileNameLedJudgeParams, LedReusltParams, IsOldLedJudgeParams);
         }
 
 
@@ -145,6 +153,9 @@ namespace ColorVision.Template
                     break;
                 case WindowTemplateType.PGParam:
                     SaveDefault(FileNamePGParams, PGParams, IsOldPGParams);
+                    break;
+                case WindowTemplateType.LedReuslt:
+                    SaveDefault(FileNameLedJudgeParams, LedReusltParams, IsOldLedJudgeParams);
                     break;
                 default:
                     break;
@@ -175,6 +186,11 @@ namespace ColorVision.Template
 
         public ObservableCollection<KeyValuePair<string, CalibrationParam>> CalibrationParams { get; set; } 
         public ObservableCollection<KeyValuePair<string, PGParam>> PGParams { get; set; }
+
+
+        public ObservableCollection<KeyValuePair<string, LedReusltParam>> LedReusltParams { get; set; }
+
+        
 
 
 

@@ -37,7 +37,8 @@ namespace ColorVision.Template
     {
         AoiParam,
         Calibration,
-        PGParam
+        PGParam,
+        LedReuslt
     }
 
 
@@ -88,6 +89,7 @@ namespace ColorVision.Template
                 switch (WindowTemplateType )
                 {
                     case WindowTemplateType.AoiParam:
+                    case WindowTemplateType.LedReuslt:
                         PropertyGrid1.SelectedObject = ListConfigs[listView.SelectedIndex].Value;
                         break;
                     case WindowTemplateType.Calibration:
@@ -123,6 +125,9 @@ namespace ColorVision.Template
                     case WindowTemplateType.PGParam:
                         CreateNewTemplate(TemplateControl.GetInstance().PGParams,new PGParam());
                         break;
+                    case WindowTemplateType.LedReuslt:
+                        CreateNewTemplate(TemplateControl.GetInstance().LedReusltParams, new LedReusltParam());
+                        break;
                 }
                 TextBox1.Text =string.Empty;
             }
@@ -144,6 +149,21 @@ namespace ColorVision.Template
             {
                 if (MessageBox.Show($"是否删除模板{ListView1.SelectedIndex+1},删除后无法恢复!", Application.Current.MainWindow.Title, MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK)
                 {
+                    switch (WindowTemplateType)
+                    {
+                        case WindowTemplateType.AoiParam:
+                            TemplateControl.GetInstance().AoiParams.RemoveAt(ListView1.SelectedIndex);
+                            break;
+                        case WindowTemplateType.Calibration:
+                            TemplateControl.GetInstance().CalibrationParams.RemoveAt(ListView1.SelectedIndex);
+                            break;
+                        case WindowTemplateType.PGParam:
+                            TemplateControl.GetInstance().PGParams.RemoveAt(ListView1.SelectedIndex);
+                            break;
+                        case WindowTemplateType.LedReuslt:
+                            TemplateControl.GetInstance().LedReusltParams.RemoveAt(ListView1.SelectedIndex);
+                            break;
+                    }
                     ListConfigs.RemoveAt(ListView1.SelectedIndex);
                 }
             }

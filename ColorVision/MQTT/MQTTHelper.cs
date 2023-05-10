@@ -208,26 +208,6 @@ namespace ColorVision.MQTT
             return _MqttServer.GetClientsAsync().Result.ToList();
         }
 
-        /// <summary>
-        /// 发送消息-未写
-        /// </summary>
-        /// <param name="Topic">主题</param>
-        /// <param name="msg">消息</param>
-        /// <returns></returns>
-        public Task SedMessage(string Topic, string msg)
-        {
-            try
-            {
-                //var clients = _MqttServer.GetClientsAsync().Result;
-
-                //foreach (var client in clients)
-                //{
-
-                //}
-            }
-            catch { }
-            return Task.CompletedTask;
-        }
         #region 处理事件
         /// <summary>
         /// 开启Server的处理程序

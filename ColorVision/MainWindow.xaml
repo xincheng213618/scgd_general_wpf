@@ -25,6 +25,8 @@
                     <MenuItem Header="_AOI参数模板设置"  Click="MenuItem_Click_2"/>
                     <MenuItem Header="校正模板设置(_C)"  Click="MenuItem_Click_3"/>
                     <MenuItem Header="_PG通讯模板设置"  Click="MenuItem_Click_4"/>
+                    <MenuItem Header="数据判断模板设置(_J)"  Click="MenuItem_Click_5"/>
+
                 </MenuItem>
                 <MenuItem Header="MQTTLog(_M)" Click="MenuItem_Click">
                 </MenuItem>
