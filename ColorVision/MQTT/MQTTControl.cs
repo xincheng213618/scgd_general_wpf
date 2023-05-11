@@ -26,29 +26,29 @@ namespace ColorVision.MQTT
             IP = "192.168.3.225";
             Port = 1883;
             UName = "";
-            uPwd = "";
+            UPwd = "";
         }
 
-        private string _IP;
         public string IP { get => _IP; set { _IP = value; NotifyPropertyChanged(); } }
+        private string _IP;
 
-        private int _Port;
         public int Port { get => _Port; set { _Port = value; NotifyPropertyChanged(); } }
+        private int _Port;
 
-        private string _uName;
         public string UName { get => _uName; set { _uName = value; NotifyPropertyChanged(); } }
+        private string _uName;
 
+        public string UPwd { get => _uPwd; set { _uPwd = value; NotifyPropertyChanged(); } }
         private string _uPwd;
-        public string uPwd { get => _uPwd; set { _uPwd = value; NotifyPropertyChanged(); } }
 
-        private bool _IsConnect;
         public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; NotifyPropertyChanged(); } }
+        private bool _IsConnect;
 
         public event Func<MqttApplicationMessageReceivedEventArgs, Task> ApplicationMessageReceivedAsync;
 
         public async Task<bool> Connect()
         {
-            await MQTTHelper.CreateMQTTClientAndStart(IP, Port, UName, uPwd, ShowLog);
+            await MQTTHelper.CreateMQTTClientAndStart(IP, Port, UName, UPwd, ShowLog);
             MQTTHelper._MqttClient.ApplicationMessageReceivedAsync += (arg) =>
             {
                 ApplicationMessageReceivedAsync.Invoke(arg); return Task.CompletedTask;
@@ -56,7 +56,7 @@ namespace ColorVision.MQTT
             MQTTHelper._MqttClient.DisconnectedAsync += async (arg) =>
             {
                 IsConnect = false;
-                await MQTTHelper.CreateMQTTClientAndStart(IP, Port, UName, uPwd, ShowLog);
+                await MQTTHelper.CreateMQTTClientAndStart(IP, Port, UName, UPwd, ShowLog);
                 IsConnect = true;
             };
             IsConnect = true;

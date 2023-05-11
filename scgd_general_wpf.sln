@@ -16,7 +16,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "解决方案项", "解决�
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVisionTests", "ColorVisionTests\ColorVisionTests.csproj", "{8D0DF56B-E323-418E-A8B5-DE75A349DBD0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cvColorVision", "cvColorVision\cvColorVision.csproj", "{B0FCEFDD-8C2F-4CF4-BAA6-95CDB73A1694}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "cvColorVision", "cvColorVision\cvColorVision.csproj", "{B0FCEFDD-8C2F-4CF4-BAA6-95CDB73A1694}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CvOperator", "CvOperator\CvOperator.csproj", "{3F0EFA94-F77B-4EFD-BF84-789F339C0EFB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -64,6 +66,18 @@ Global
 		{B0FCEFDD-8C2F-4CF4-BAA6-95CDB73A1694}.Release|ARM64.Build.0 = Release|ARM64
 		{B0FCEFDD-8C2F-4CF4-BAA6-95CDB73A1694}.Release|x64.ActiveCfg = Release|x64
 		{B0FCEFDD-8C2F-4CF4-BAA6-95CDB73A1694}.Release|x64.Build.0 = Release|x64
+		{3F0EFA94-F77B-4EFD-BF84-789F339C0EFB}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{3F0EFA94-F77B-4EFD-BF84-789F339C0EFB}.Debug|Any CPU.Build.0 = Debug|x64
+		{3F0EFA94-F77B-4EFD-BF84-789F339C0EFB}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{3F0EFA94-F77B-4EFD-BF84-789F339C0EFB}.Debug|ARM64.Build.0 = Debug|ARM64
+		{3F0EFA94-F77B-4EFD-BF84-789F339C0EFB}.Debug|x64.ActiveCfg = Debug|x64
+		{3F0EFA94-F77B-4EFD-BF84-789F339C0EFB}.Debug|x64.Build.0 = Debug|x64
+		{3F0EFA94-F77B-4EFD-BF84-789F339C0EFB}.Release|Any CPU.ActiveCfg = Release|x64
+		{3F0EFA94-F77B-4EFD-BF84-789F339C0EFB}.Release|Any CPU.Build.0 = Release|x64
+		{3F0EFA94-F77B-4EFD-BF84-789F339C0EFB}.Release|ARM64.ActiveCfg = Release|ARM64
+		{3F0EFA94-F77B-4EFD-BF84-789F339C0EFB}.Release|ARM64.Build.0 = Release|ARM64
+		{3F0EFA94-F77B-4EFD-BF84-789F339C0EFB}.Release|x64.ActiveCfg = Release|x64
+		{3F0EFA94-F77B-4EFD-BF84-789F339C0EFB}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

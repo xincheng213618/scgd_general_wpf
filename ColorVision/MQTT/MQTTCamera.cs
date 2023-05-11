@@ -157,80 +157,106 @@ namespace ColorVision.MQTT
 
         public bool InitCamera(CameraType CameraType)
         {
-            if (!MQTTControl.IsConnect)
+            if (CheckIsRun())
                 return false;
-
-            if (IsRun)
+            MQTTMsg mQTTMsg = new MQTTMsg
             {
-                MessageBox.Show("正在运行中");
-                return false;
-            }
-
-            IsRun = false;
-
-            string json = "{\"Version\":\"1.0\",\"EventName\":\"InitCamere\",\"params\":{\"CameraType\":"+ ((int)CameraType).ToString()+ "}}";
-            MQTTControl.PublishAsyncClient(SendTopic, json, false);
+                EventName = "InitCamere",
+                Params = new InitCameraParamMQTT() { CameraType = (int)CameraType }
+            };
+            PublishAsyncClient(mQTTMsg);
             return true;
         }
         public bool AddCalibration(CalibrationParam calibrationParam)
         {
-            if (!MQTTControl.IsConnect)
+            if (CheckIsRun())
                 return false;
-
-            if (!MQTTControl.IsConnect)
-                return false;
-
-            if (IsRun)
-            {
-                MessageBox.Show("正在运行中");
-                return false;
-            }
             IsRun = false;
-            MQTTMsg mQTTMsg = new MQTTMsg();
-            mQTTMsg.EventName = "AddCalibration";
-            mQTTMsg.Params = new CalibrationParamMQTT(calibrationParam);
-            var jsonSetting = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
-            string json = JsonConvert.SerializeObject(mQTTMsg, Formatting.Indented, jsonSetting);
-            MQTTControl.PublishAsyncClient(SendTopic, json, false);
+            MQTTMsg mQTTMsg = new MQTTMsg
+            {
+                EventName = "AddCalibration",
+                Params = new CalibrationParamMQTT(calibrationParam)
+            };
+            PublishAsyncClient(mQTTMsg);
+
             return true;
         }
         public bool OpenCamera(string CameraID,TakeImageMode TakeImageMode,string ImageBpp)
         {
-            if (!MQTTControl.IsConnect)
+            if (CheckIsRun())
                 return false;
-
-            if (IsRun)
+            MQTTMsg mQTTMsg = new MQTTMsg
             {
-                MessageBox.Show("正在运行中");
-                return false;
-            }
-            IsRun = false;
-            string json = "{\"Version\":\"1.0\",\"EventName\":\"OpenCamere\",\"params\":{\"TakeImageMode\":"+ (int)TakeImageMode + ",\"CameraID\":\""+ CameraID + "\",\"Bpp\":"+ ImageBpp + "}}";
-            MQTTControl.PublishAsyncClient(SendTopic, json, false);
+                EventName = "OpenCamere",
+                Params = new OpenCameraParamMQTT() { TakeImageMode = (int)TakeImageMode, CameraID = CameraID, Bpp = ImageBpp }
+            };
+            PublishAsyncClient(mQTTMsg);
             return true;
         }
 
         public bool GetData(double expTime,double gain)
         {
-            if (!MQTTControl.IsConnect)
+            if (CheckIsRun())
                 return false;
+            MQTTMsg mQTTMsg = new MQTTMsg
+            {
+                EventName = "GetData",
+                Params = new CameraParamMQTT() { ExpTime = expTime.ToString(),Gain =gain.ToString()}
+            };
+            PublishAsyncClient(mQTTMsg);
+            return true;
+        }
+        private void PublishAsyncClient(MQTTMsg msg)
+        {
+            string json = JsonConvert.SerializeObject(msg, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+            MQTTControl.PublishAsyncClient(SendTopic, json, false);
+        }
+
+
+        private bool CheckIsRun()
+        {
+            if (!MQTTControl.IsConnect)
+                return true;
 
             if (IsRun)
             {
                 MessageBox.Show("正在运行中");
-                return false;
+                return true;
             }
             IsRun = false;
-
-            string json = "{\"Version\":\"1.0\",\"EventName\":\"GetData\",\"params\":{\"expTime\":"+ expTime+",\"gain\":"+ gain + "}}";
-            MQTTControl.PublishAsyncClient(SendTopic, json, false);
-            return true;
+            return IsRun;
         }
+
           
         public void Dispose()
         {
             GC.SuppressFinalize(this);
         }
+
+
+
+        private class InitCameraParamMQTT : ViewModelBase
+        {
+            public int CameraType { get; set; }
+        }
+
+        private class OpenCameraParamMQTT : ViewModelBase
+        {
+            public int TakeImageMode { get; set; }
+            public string CameraID { get; set; }
+            public string Bpp { get; set; }    
+        }
+
+
+        private class CameraParamMQTT : ViewModelBase
+        {
+            [JsonProperty("expTime")]
+            public string? ExpTime { get; set; }
+
+            [JsonProperty("gain")]
+            public string? Gain { get; set; }
+        }
+
 
         public class CalibrationParamMQTT : ViewModelBase
         {

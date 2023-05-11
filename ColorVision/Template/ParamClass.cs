@@ -51,11 +51,11 @@ namespace ColorVision.Template
         public int ErodeSize { set; get; }
         [JsonProperty("dilate_size")]
         public int DilateSize { set; get; }
-        [JsonProperty("contrast_brightness")]
         [Category("left")]
+        [JsonProperty("left")]
         public int Left { set; get; }
         [Category("AoiRect")]
-        [JsonProperty("contrast_brightness")]
+        [JsonProperty("right")]
         public int Right { set; get; }
         [Category("AoiRect")]
         [JsonProperty("top")]
