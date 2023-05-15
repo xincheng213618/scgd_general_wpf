@@ -93,16 +93,18 @@
                                             </ComboBox>
                                         </DockPanel>
                                         <Button  Content="打开相机" Click="SendDemo2_Click"/>
+                                        <Button  Content="关闭相机" Click="SendDemo4_Click"/>
+
                                     </StackPanel>
 
                                     <StackPanel x:Name="StackPanelImage">
                                         <DockPanel>
                                             <TextBlock  Text="增益" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0" />
-                                            <Slider x:Name="SliderGain" Template="{ StaticResource LM_SliderControlTemplate2}" TickFrequency ="0.1" IsSnapToTickEnabled="True"  SmallChange ="0.1" Value="1" Maximum="10"  ToolTip="{Binding ElementName=PART_Track,Path=Value,StringFormat=\{0:0.##\}dB}"/>
+                                            <Slider x:Name="SliderGain" Template="{ StaticResource LM_SliderControlTemplate2}" TickFrequency ="0.1" IsSnapToTickEnabled="True"  SmallChange ="0.1" Value="1" Maximum="10"  />
                                         </DockPanel>
                                         <DockPanel>
                                             <TextBlock  Text="曝光" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
-                                            <Slider x:Name="SliderexpTime"  Template="{ StaticResource LM_SliderControlTemplate2}" TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="100" Maximum="6000" ToolTip="{Binding ElementName=PART_Track,Path=Value,StringFormat=\{0:0.##\}ms}"/>
+                                            <Slider x:Name="SliderexpTime"  Template="{ StaticResource LM_SliderControlTemplate2}" TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="100" Maximum="6000"/>
                                         </DockPanel>
 
                                         <Button  Content="获取图像数据" Click="SendDemo3_Click"/>
@@ -112,7 +114,7 @@
                         </StackPanel>
 
                         <StackPanel Margin="0,5"  x:Name="StackPanelCalibration" Initialized="StackPanelCalibration_Initialized">
-                            <ToggleButton  x:Name="ToggleButton2"  Style="{StaticResource ButtonPageControl1}" Content="校正"  FontSize="15" Foreground="Black" IsChecked="false" />
+                            <ToggleButton  x:Name="ToggleButton2"  Style="{StaticResource ButtonPageControl1}" Content="校正"  FontSize="15" Foreground="Black" IsChecked="True" />
                             <Border Visibility="{Binding ElementName=ToggleButton2,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}"  Background="#E8E8E9" Margin="5,2" CornerRadius="5">
                                 <StackPanel Margin="5">
                                     <DockPanel>
@@ -125,10 +127,40 @@
                             </Border>
                         </StackPanel>
 
-                        <StackPanel Margin="0,5">
+                        <StackPanel Margin="0,5" x:Name="StackPanelSpectrum"  Initialized="StackPanelSpectrum_Initialized">
                             <ToggleButton  x:Name="ToggleButton3"  Style="{StaticResource ButtonPageControl1}" Content="光谱仪操作"  FontSize="15" Foreground="Black" IsChecked="false" />
                             <Border Visibility="{Binding ElementName=ToggleButton3,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}"  Background="#E8E8E9" Margin="5,2" CornerRadius="5">
                                 <StackPanel Margin="5">
+                                    <DockPanel>
+                                        <TextBlock  Text="AveNum" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                                        <Slider x:Name="SpectrumSliderAveNum"  Template="{ StaticResource LM_SliderControlTemplate2}" TickFrequency ="0.1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="1" Maximum="100"/>
+                                    </DockPanel>
+                                    <DockPanel>
+                                        <TextBlock  Text="积分时间" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                                        <Slider x:Name="SpectrumSliderIntTime"  Template="{ StaticResource LM_SliderControlTemplate2}" TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="100" Maximum="6000"/>
+                                    </DockPanel>
+
+                                    <GroupBox Header="DLL Test">
+                                        <StackPanel Visibility="Visible">
+                                            <Button Content="连接光谱仪" Click="SpectrumIni" />
+                                            <Button Content="单次校0" Click="Spectrum0" />
+                                            <Button Content="单次测试" Click="SpectrumSingleTest" />
+                                        </StackPanel>
+                                    </GroupBox>
+                                    <GroupBox Header="MQTT Test">
+                                        <StackPanel Visibility="Visible">
+                                            <Button  Content="初始化光谱仪" Click="Button_Click_1"/>
+                                            <Button  Content="打开光谱仪" Click="Button_Click_2"/>
+                                            <Button  Content="传递光谱仪参数" Click="Button_Click_3"/>
+                                            <Button  Content="获取光谱仪数据" Click="Button_Click_4"/>
+                                            <Button  Content="关闭光谱仪" Click="Button_Click_5"/>
+                                        </StackPanel>
+                                    </GroupBox>
+
+ 
+                                    
+                                    
+
                                 </StackPanel>
                             </Border>
                         </StackPanel>

@@ -68,9 +68,6 @@ namespace ColorVision
             }
             await Task.Delay(100);
             ToolBar1.Visibility = Visibility.Collapsed;
-
-
-
         }
 
         const uint WM_USER = 0x0400; // 用户自定义消息起始值
@@ -101,8 +98,6 @@ namespace ColorVision
             }
             return IntPtr.Zero;
         }
-
-
 
 
         private DrawingVisual ImageRuler = new DrawingVisual();
@@ -593,132 +588,20 @@ namespace ColorVision
             StackPanelOpen.Visibility = Visibility.Collapsed;
 
 
-            MQTTCamera.InitCameraSucess += (s, e) =>
+            MQTTCamera.InitCameraSuccess += (s, e) =>
             {
                 ComboxCameraID.ItemsSource = MQTTCamera.CameraID?.IDs;
                 ComboxCameraID.SelectedIndex = 0;
                 StackPanelOpen.Visibility = Visibility.Visible;
             };
         }
-        
-
-
-        private void SendDemo_Click(object sender, RoutedEventArgs e)
-        {
-            if (ComboxCameraType.SelectedItem is KeyValuePair<CameraType, string> KeyValue && KeyValue.Key is CameraType cameraType)
-            {
-                MQTTCamera.InitCamera(cameraType);
-            }
-        }
-        private void SendDemo1_Click(object sender, RoutedEventArgs e)
-        {
-            MQTTCamera.AddCalibration(Calibration1.CalibrationParam);
-        }
-
-        private void SendDemo2_Click(object sender, RoutedEventArgs e)
-        {
-            if (ComboxCameraTakeImageMode.SelectedItem is KeyValuePair<TakeImageMode, string> KeyValue && KeyValue.Key is TakeImageMode takeImageMode)
-            {
-                MQTTCamera.OpenCamera(ComboxCameraID.Text.ToString(), takeImageMode, ComboxCameraImageBpp.Text);
-            }
-
-
-        }
-
-        private void SendDemo3_Click(object sender, RoutedEventArgs e)
-        {
-            MQTTCamera.GetData(SliderexpTime.Value, SliderGain.Value);
-        }
-
-
-        private void MenuItem1_Click(object sender, RoutedEventArgs e)
-        {
-            double[] xs = { 1, 2, 3, 4, 5 };
-            double[] ys = { 1, 4, 9, 16, 25 };
-            var plt = new ScottPlot.Plot(400, 300);
-            plt.AddScatter(xs, ys);
-            new ScottPlot.WpfPlotViewer(plt).Show();
-            WindowsFormsHost2.Child = new System.Windows.Forms.TextBox() { Text = "123" };
-        }
-
-        private void MenuItem_Click_2(object sender, RoutedEventArgs e)
-        {
-            WindowTemplate windowTemplate = new WindowTemplate(WindowTemplateType.AoiParam);
-            windowTemplate.Owner = this;
-            windowTemplate.Title ="AOI参数设置";
-            int id = 1;
-            foreach (var item in TemplateControl.GetInstance().AoiParams)
-            {
-                ListConfig listConfig = new ListConfig();
-                listConfig.ID = id++;
-                listConfig.Name = item.Key;
-                listConfig.Value = item.Value;
-                windowTemplate.ListConfigs.Add(listConfig);
-            }
-            windowTemplate.Show();
-        }
-
-        private void MenuItem_Click_3(object sender, RoutedEventArgs e)
-        {
-            TemplateControl templateControl = TemplateControl.GetInstance();
-            Calibration calibration = new Calibration(templateControl.CalibrationParams[0].Value);
-            WindowTemplate windowTemplate = new WindowTemplate(WindowTemplateType.Calibration, calibration);
-            windowTemplate.Owner = this;
-            windowTemplate.Title ="校正参数设置";
-            int id = 1;
-            foreach (var item in templateControl.CalibrationParams)
-            {
-                ListConfig listConfig = new ListConfig();
-                listConfig.ID = id++;
-                listConfig.Name = item.Key;
-                listConfig.Value = item.Value;
-                windowTemplate.ListConfigs.Add(listConfig);
-            }
-            windowTemplate.Show();
-        }
-
-        private void MenuItem_Click_4(object sender, RoutedEventArgs e)
-        {
-            TemplateControl templateControl = TemplateControl.GetInstance();
-            PG calibration = new PG(templateControl.PGParams[0].Value);
-            WindowTemplate windowTemplate = new WindowTemplate(WindowTemplateType.PGParam, calibration);
-            windowTemplate.Owner = this;
-            windowTemplate.Title = "PG通讯设置";
-            int id = 1;
-            foreach (var item in templateControl.PGParams)
-            {
-                ListConfig listConfig = new ListConfig();
-                listConfig.ID = id++;
-                listConfig.Name = item.Key;
-                listConfig.Value = item.Value;
-                windowTemplate.ListConfigs.Add(listConfig);
-            }
-            windowTemplate.Show();
-        }
-        private void MenuItem_Click_5(object sender, RoutedEventArgs e)
-        {
-            WindowTemplate windowTemplate = new WindowTemplate(WindowTemplateType.LedReuslt);
-            windowTemplate.Owner = this;
-            windowTemplate.Title = "数据判断模板设置";
-            int id = 1;
-            foreach (var item in TemplateControl.GetInstance().LedReusltParams)
-            {
-                ListConfig listConfig = new ListConfig();
-                listConfig.ID = id++;
-                listConfig.Name = item.Key;
-                listConfig.Value = item.Value;
-                windowTemplate.ListConfigs.Add(listConfig);
-            }
-            windowTemplate.Show();
-        }
-
 
         private void StackPanelCalibration_Initialized(object sender, EventArgs e)
         {
-            ComboxCalibrationTemplate.ItemsSource =TemplateControl.GetInstance().CalibrationParams;
+            ComboxCalibrationTemplate.ItemsSource = TemplateControl.GetInstance().CalibrationParams;
             ComboxCalibrationTemplate.SelectionChanged += (s, e) =>
             {
-                if (ComboxCalibrationTemplate.SelectedItem is KeyValuePair<string, CalibrationParam> KeyValue && KeyValue.Value is CalibrationParam  calibrationParam)
+                if (ComboxCalibrationTemplate.SelectedItem is KeyValuePair<string, CalibrationParam> KeyValue && KeyValue.Value is CalibrationParam calibrationParam)
                 {
                     Calibration1.CalibrationParam = calibrationParam;
                     Calibration1.DataContext = calibrationParam;
@@ -740,6 +623,98 @@ namespace ColorVision
             };
             ComboxPGTemplate.SelectedIndex = 0;
         }
+
+
+
+        private void SendDemo_Click(object sender, RoutedEventArgs e)
+        {
+            if (ComboxCameraType.SelectedItem is KeyValuePair<CameraType, string> KeyValue && KeyValue.Key is CameraType cameraType)
+            {
+                MQTTCamera.Init(cameraType);
+            }
+        }
+        private void SendDemo1_Click(object sender, RoutedEventArgs e)
+        {
+            MQTTCamera.Calibration(Calibration1.CalibrationParam);
+        }
+
+        private void SendDemo2_Click(object sender, RoutedEventArgs e)
+        {
+            if (ComboxCameraTakeImageMode.SelectedItem is KeyValuePair<TakeImageMode, string> KeyValue && KeyValue.Key is TakeImageMode takeImageMode)
+            {
+                MQTTCamera.Open(ComboxCameraID.Text.ToString(), takeImageMode,int.Parse(ComboxCameraImageBpp.Text));
+            }
+
+
+        }
+
+        private void SendDemo3_Click(object sender, RoutedEventArgs e)
+        {
+            MQTTCamera.GetData(SliderexpTime.Value, SliderGain.Value);
+        }
+
+        private void SendDemo4_Click(object sender, RoutedEventArgs e)
+        {
+            MQTTCamera.Close();
+        }
+
+
+        private void MenuItem1_Click(object sender, RoutedEventArgs e)
+        {
+            double[] xs = { 1, 2, 3, 4, 5 };
+            double[] ys = { 1, 4, 9, 16, 25 };
+            var plt = new ScottPlot.Plot(400, 300);
+            plt.AddScatter(xs, ys);
+            new ScottPlot.WpfPlotViewer(plt).Show();
+        }
+
+        private void MenuItem_Click_2(object sender, RoutedEventArgs e)
+        {
+            WindowTemplate windowTemplate = new WindowTemplate(WindowTemplateType.AoiParam);
+            windowTemplate.Title ="AOI参数设置";
+            TemplateAbb(windowTemplate, TemplateControl.GetInstance().AoiParams);
+        }
+
+        private void MenuItem_Click_3(object sender, RoutedEventArgs e)
+        {
+            TemplateControl templateControl = TemplateControl.GetInstance();
+            Calibration calibration = new Calibration(templateControl.CalibrationParams[0].Value);
+            WindowTemplate windowTemplate = new WindowTemplate(WindowTemplateType.Calibration, calibration);
+            windowTemplate.Title ="校正参数设置";
+            TemplateAbb(windowTemplate, TemplateControl.GetInstance().CalibrationParams);
+
+        }
+
+        private void MenuItem_Click_4(object sender, RoutedEventArgs e)
+        {
+            TemplateControl templateControl = TemplateControl.GetInstance();
+            PG calibration = new PG(templateControl.PGParams[0].Value);
+            WindowTemplate windowTemplate = new WindowTemplate(WindowTemplateType.PGParam, calibration);
+            windowTemplate.Title = "PG通讯设置";
+            TemplateAbb(windowTemplate, TemplateControl.GetInstance().PGParams);
+        }
+        private void MenuItem_Click_5(object sender, RoutedEventArgs e)
+        {
+            WindowTemplate windowTemplate = new WindowTemplate(WindowTemplateType.LedReuslt);
+            windowTemplate.Title = "数据判断模板设置";
+            TemplateAbb(windowTemplate, TemplateControl.GetInstance().LedReusltParams);
+        }
+
+        private void TemplateAbb<T>(WindowTemplate windowTemplate, ObservableCollection<KeyValuePair<string, T>>  keyValuePairs)
+        {
+            windowTemplate.Owner = this;
+            int id = 1;
+            foreach (var item in keyValuePairs)
+            {
+                ListConfig listConfig = new ListConfig();
+                listConfig.ID = id++;
+                listConfig.Name = item.Key;
+                listConfig.Value = item.Value;
+                windowTemplate.ListConfigs.Add(listConfig);
+            }
+            windowTemplate.Show();
+        }
+
 
 
     }

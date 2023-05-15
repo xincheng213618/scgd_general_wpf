@@ -71,20 +71,20 @@ namespace ColorVision
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            string json = "{\"Code\":false,\"EventName\":\"InitCamere\",\"Msg\":\"\",\"data\":{\"CameraId\":\"{\\n\\t\\\"ID\\\" : \\n\\t[\\n\\t\\t\\\"566b2242984bc686b\\\"\\n\\t],\\n\\t\\\"number\\\" : 1\\n}\\n\"}}";
-            MQTTControl.PublishAsyncClient("CameraReturn", json, false);
+            string json = "{\"Code\":0,\"EventName\":\"InitCamera\",\"Msg\":\"\",\"data\":{\"CameraId\":\"{\\n\\t\\\"ID\\\" : \\n\\t[\\n\\t\\t\\\"566b2242984bc686b\\\"\\n\\t],\\n\\t\\\"number\\\" : 1\\n}\\n\"}}";
+            MQTTControl.PublishAsyncClient("CameraService", json, false);
         }
 
         private void Button1_Click(object sender, RoutedEventArgs e)
         {
-            string json = "{\"Code\":false,\"EventName\":\"OpenCamere\",\"Msg\":\"\",\"data\":null}";
-            MQTTControl.PublishAsyncClient("CameraReturn", json, false);
+            string json = "{\"Code\":0,\"EventName\":\"OpenCamera\",\"Msg\":\"\",\"data\":null}";
+            MQTTControl.PublishAsyncClient("CameraService", json, false);
         }
 
         private void Button2_Click(object sender, RoutedEventArgs e)
         {
-            string json = "{\"Version\":\"1.0\",\"EventName\":\"GetData\",\"Code\":false,\"Msg\":\"\",\"data\":{\"FilePath\":\"D:\\\\1.tif\"}}";
-            MQTTControl.PublishAsyncClient("CameraReturn", json, false);
+            string json = "{\"Version\":\"1.0\",\"EventName\":\"GetData\",\"Code\":0,\"Msg\":\"\",\"data\":{\"FilePath\":\"D:\\\\1.tif\"}}";
+            MQTTControl.PublishAsyncClient("CameraService", json, false);
         }
     }
 }

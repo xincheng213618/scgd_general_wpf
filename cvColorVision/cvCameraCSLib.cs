@@ -491,17 +491,6 @@ namespace cvColorVision
         public static int picbpp;
         public static int picchannels;
 
-        //public enum CameraType : int
-        //{
-        //    QHYCCD_CV = 0,
-        //    QHYCCD_LV,
-        //    QHYCCD_BV,
-        //    MIL_CL,
-        //    MIL_CXP,
-        //    MIL_CXP_VIDEO,
-        //    CameraType_Total,
-        //};
-
 
         private static string UnicodeToGB(string text)
         {
@@ -2089,86 +2078,6 @@ CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern bool CM_ExportToTIFF(string fileName, uint w, uint h, byte[] rawArray, ulong buflen, bool iscolor, float img_rotate_angle);
 
-    }
-
-    public class GCSDLL
-    {
-        public struct COLOR_PARA
-        {
-            public float fx;        //色坐标
-            public float fy;
-            public float fu;
-            public float fv;
-
-            public float fCCT;      //相关色温(K)
-            public float dC;        //色差dC
-            public float fLd;       //主波长(nm)
-            public float fPur;      //色纯度(%)
-            public float fLp;       //峰值波长(nm)
-            public float fHW;       //半波宽(nm)
-            public float fLav;      //平均波长(nm)
-            public float fRa;       //显色性指数 Ra
-            public float fRR;       //红色比
-            public float fGR;       //绿色比
-            public float fBR;       //蓝色比
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 15)]
-            public float[] fRi;   //显色性指数 R1-R15
-
-            public float fIp;      //峰值AD
-
-            public float fPh;      //光度值
-            public float fPhe;     //辐射度值
-            public float fPlambda; //绝对光谱洗漱
-            public float fSpect1;  //起始波长
-            public float fSpect2;  //结束波长
-            public float fInterval; //波长间隔
-
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 10000)]
-            public float[] fPL;   //光谱数据
-
-            public float fRf;
-            public float fRg;
-        };
-
-        private const string LIBRARY_CVCAMERA = "cvCamera.dll";
-
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void DllcallBack(ref COLOR_PARA result, float intTime, int resultCode);
-
-        //连接光谱仪
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CV_Init",
-            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern int CV_Init();
-
-        //断开光谱仪
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "JK_Emission_Close",
-    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern int JK_Emission_Close();
-
-        //启动光谱仪软件的服务
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "JK_Start_Server",
-    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern int JK_Start_Server();
-
-        //关闭光谱仪软件的服务
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "JK_Close_Server",
-    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern int JK_Close_Server();
-
-        //暗点校正
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CV_Init_Dark",
-    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern int CV_Init_Dark(float fIntTime, int iAveNum);
-
-        //获取自动积分时间
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "JK_GetAutoTime",
-    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern int JK_GetAutoTime(ref float fIntTime, int iLimitTime, float fTimeB);
-
-        //单次测量
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CV_One_Test",
-    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public static extern int CV_One_Test(DllcallBack callBack, float IntTime, int AveNum, bool bUseAutoIntTime, bool bUseAutoDark);
     }
 
     public class PassSx

@@ -8,16 +8,16 @@
              d:DataContext="{d:DesignInstance Type=local:PGParam}"
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
-        <StackPanel>
-            <DockPanel>
+        <StackPanel Margin="0,3">
+            <DockPanel Margin="0,5">
                 <RadioButton Content="TCPIP通讯" Checked="RadioButton_Checked"/>
                 <RadioButton Content="Granda通讯" Checked="RadioButton_Checked1"/>
             </DockPanel>
-            <DockPanel >
+            <DockPanel Margin="0,5">
                 <TextBlock Text="PG画面指令"/>
-                <TextBox Text="{Binding PGPattenChangeComm1}" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                <TextBox Text="{Binding PGPattenChangeComm1}" Height="16" BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"/>
             </DockPanel>
-            <CheckBox Content="是否启用该PG模板"  IsChecked="{Binding IsEnable}" />
+            <CheckBox Content="是否启用该PG模板"   IsChecked="{Binding IsEnable}" />
         </StackPanel>
             
     </Grid>

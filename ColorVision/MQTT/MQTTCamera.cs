@@ -71,8 +71,6 @@ namespace ColorVision.MQTT
 
     public delegate void MQTTCameraFileHandler(string? FilePath);
 
-
-
     public class MQTTCamera : IDisposable
     {
 
@@ -86,10 +84,12 @@ namespace ColorVision.MQTT
         private string SubscribeTopic;
         private string SendTopic;
 
+        private ulong ServiceID;
+
 
         public event MQTTCameraFileHandler FileHandler;
 
-        public event EventHandler InitCameraSucess;
+        public event EventHandler InitCameraSuccess;
 
         public CameraId? CameraID { get; set; }
 
@@ -103,8 +103,9 @@ namespace ColorVision.MQTT
         {
             if (!MQTTControl.IsConnect)
                 await MQTTControl.Connect();
+
             SendTopic = "Camera";
-            SubscribeTopic = "CameraReturn";
+            SubscribeTopic = "CameraService";
 
             MQTTControl.SubscribeAsyncClient(SubscribeTopic);
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
@@ -121,26 +122,35 @@ namespace ColorVision.MQTT
                     if (json == null)
                         return Task.CompletedTask;
                     IsRun = false;
-                    if (!json.Code)
+                    if (json.Code==0)
                     {
-                        if (json.EventName == "InitCamere")
+                        if (json.EventName == "Init")
                         {
                             string CameraId = json.Data.CameraId;
+                            ServiceID = json.ServiceID;
                             CameraID = JsonConvert.DeserializeObject<CameraId>(CameraId);
-                            Application.Current.Dispatcher.Invoke(() => InitCameraSucess.Invoke(this, new EventArgs()));
+                            Application.Current.Dispatcher.Invoke(() => InitCameraSuccess.Invoke(this, new EventArgs()));
                         }
-                        else if (json.EventName == "AddCalibration")
+                        else if (json.EventName == "SetParam")
                         {
-                            MessageBox.Show("AddCalibration");
+                            MessageBox.Show("SetParam");
                         }
-                        else if (json.EventName == "OpenCamere")
+                        else if (json.EventName == "Open")
                         {
-                            MessageBox.Show("OpenCamere");
+                            MessageBox.Show("OpenCamera");
                         }
-                        else if (json.EventName == "GetData")
+                        else if (json.EventName == "GatData")
                         {
                             string Filepath = json.Data.FilePath;
                             Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(Filepath));
+                        }
+                        else if (json.EventName == "Close")
+                        {
+                            MessageBox.Show("CloseCamera");
+                        }
+                        else if (json.EventName == "Uninit")
+                        {
+                            MessageBox.Show("Uninit");
                         }
                     }
                 }
@@ -155,45 +165,58 @@ namespace ColorVision.MQTT
 
         public bool IsRun { get; set; }
 
-        public bool InitCamera(CameraType CameraType)
+        public bool Init(CameraType CameraType)
         {
             if (CheckIsRun())
                 return false;
             MQTTMsg mQTTMsg = new MQTTMsg
             {
-                EventName = "InitCamere",
+                EventName = "Init",
                 Params = new InitCameraParamMQTT() { CameraType = (int)CameraType }
             };
             PublishAsyncClient(mQTTMsg);
             return true;
         }
-        public bool AddCalibration(CalibrationParam calibrationParam)
+
+        public bool UnInit()
+        {
+            if (CheckIsRun())
+                return false;
+            MQTTMsg mQTTMsg = new MQTTMsg
+            {
+                EventName = "UnInit",
+            };
+            PublishAsyncClient(mQTTMsg);
+            return true;
+        }
+
+        public bool Calibration(CalibrationParam calibrationParam)
         {
             if (CheckIsRun())
                 return false;
             IsRun = false;
             MQTTMsg mQTTMsg = new MQTTMsg
             {
-                EventName = "AddCalibration",
+                EventName = "SetParam",
                 Params = new CalibrationParamMQTT(calibrationParam)
             };
             PublishAsyncClient(mQTTMsg);
 
             return true;
         }
-        public bool OpenCamera(string CameraID,TakeImageMode TakeImageMode,string ImageBpp)
+        public bool Open(string CameraID,TakeImageMode TakeImageMode,int ImageBpp)
         {
             if (CheckIsRun())
                 return false;
             MQTTMsg mQTTMsg = new MQTTMsg
             {
-                EventName = "OpenCamere",
+                EventName = "Open",
                 Params = new OpenCameraParamMQTT() { TakeImageMode = (int)TakeImageMode, CameraID = CameraID, Bpp = ImageBpp }
             };
             PublishAsyncClient(mQTTMsg);
             return true;
         }
-
+         
         public bool GetData(double expTime,double gain)
         {
             if (CheckIsRun())
@@ -201,13 +224,35 @@ namespace ColorVision.MQTT
             MQTTMsg mQTTMsg = new MQTTMsg
             {
                 EventName = "GetData",
-                Params = new CameraParamMQTT() { ExpTime = expTime.ToString(),Gain =gain.ToString()}
+                Params = new CameraParamMQTT() { ExpTime = expTime,Gain =gain}
             };
             PublishAsyncClient(mQTTMsg);
             return true;
         }
+
+        public bool Close()
+        {
+            if (CheckIsRun())
+                return false;
+            MQTTMsg mQTTMsg = new MQTTMsg
+            {
+                EventName = "Close"
+            };
+            PublishAsyncClient(mQTTMsg);
+            return true;
+        }
+
+        private List<Guid> RunTimeUUID= new List<Guid> { Guid.NewGuid() };
+
         private void PublishAsyncClient(MQTTMsg msg)
         {
+            Guid guid = Guid.NewGuid();
+            RunTimeUUID.Add(guid);
+
+            msg.ServiceName = SendTopic;
+            msg.MsgID = guid;
+            msg.ServiceID = ServiceID;
+
             string json = JsonConvert.SerializeObject(msg, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
             MQTTControl.PublishAsyncClient(SendTopic, json, false);
         }
@@ -244,17 +289,17 @@ namespace ColorVision.MQTT
         {
             public int TakeImageMode { get; set; }
             public string CameraID { get; set; }
-            public string Bpp { get; set; }    
+            public int Bpp { get; set; }    
         }
 
 
         private class CameraParamMQTT : ViewModelBase
         {
             [JsonProperty("expTime")]
-            public string? ExpTime { get; set; }
+            public double ExpTime { get; set; }
 
             [JsonProperty("gain")]
-            public string? Gain { get; set; }
+            public double Gain { get; set; }
         }
 
 

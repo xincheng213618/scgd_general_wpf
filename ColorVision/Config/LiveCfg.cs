@@ -14,6 +14,8 @@ namespace ColorVision.Config
 {
     public class LiveCfg
     {
+        public static LiveCfg CfgLoadliveCfg(string fileName) => Util.CfgFile.LoadCfgFile<LiveCfg>($"{fileName}");
+
         [Category("视频窗口参数配置")]
         public int 窗口数 { set; get; }
         [Category("视频窗口参数配置")]
@@ -25,17 +27,7 @@ namespace ColorVision.Config
         [Category("视频窗口参数配置")]
         public int[] 视频窗口高H { set; get; }
 
-        public static LiveCfg cfgLoadliveCfg(string fileName)
-        {
-            LiveCfg cfg = new LiveCfg();
-            string json = File.ReadAllText(fileName);
-            JObject jsonObject = JObject.Parse(json);
-            cfg = JsonConvert.DeserializeObject<LiveCfg>(json);
-            return cfg;
-        }
 
-
-        public static LiveCfg liveCfg;
     }
 
 }

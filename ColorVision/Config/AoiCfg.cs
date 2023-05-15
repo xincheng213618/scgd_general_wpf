@@ -12,7 +12,7 @@ namespace ColorVision.Config
     class AoiCfg
     {
         [Category("AOI配置"), TypeConverter(typeof(ExpandableObjectConverter))]
-        public FindRoi FindRoi { set; get; }
+        public FindRoi FindRoi { set; get; } 
 
         [Category("AOI配置")]
         public float contrastBrightness { set; get; }
