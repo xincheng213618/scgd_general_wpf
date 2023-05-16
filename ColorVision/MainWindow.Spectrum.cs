@@ -23,11 +23,11 @@ namespace ColorVision
 {
     public partial class MainWindow
     {
-        MQTTSpectrum MQTTSpectrum;
+        private MQTTSpectrum MQTTSpectrum { get; set; }
         SpectrumResult spectrumResult = new SpectrumResult();
         private void StackPanelSpectrum_Initialized(object sender, EventArgs e)
         {
-            MQTTSpectrum = MQTTSpectrum.GetInstance();
+            MQTTSpectrum = new MQTTSpectrum();
             MQTTSpectrum.DataHandlerEvent += spectrumResult.SpectrumDrawPlot;
         }
 

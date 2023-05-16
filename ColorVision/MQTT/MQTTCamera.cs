@@ -71,13 +71,8 @@ namespace ColorVision.MQTT
 
     public delegate void MQTTCameraFileHandler(string? FilePath);
 
-    public class MQTTCamera : IDisposable
+    public class MQTTCamera 
     {
-
-        private static MQTTCamera _instance;
-        private static readonly object _locker = new();
-        public static MQTTCamera GetInstance() { lock (_locker) { return _instance ??= new MQTTCamera(); } }
-
 
         private MQTTControl MQTTControl;
 
@@ -93,22 +88,22 @@ namespace ColorVision.MQTT
 
         public CameraId? CameraID { get; set; }
 
-        private MQTTCamera()
+        public MQTTCamera()
         {
             MQTTControl = MQTTControl.GetInstance();
-            Task.Run(MQTTControlInit);
+            MQTTControl.Connected += (s, e) => MQTTControlInit();
+            MQTTControl.Connect();
         }
 
-        private async void MQTTControlInit()
+        private void MQTTControlInit()
         {
-            if (!MQTTControl.IsConnect)
-                await MQTTControl.Connect();
-
             SendTopic = "Camera";
             SubscribeTopic = "CameraService";
-
             MQTTControl.SubscribeAsyncClient(SubscribeTopic);
+            //如果之前绑定了，先移除在添加
+            MQTTControl.ApplicationMessageReceivedAsync -= MqttClient_ApplicationMessageReceivedAsync;
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
+            MQTTControl.Connected -= (s, e) => MQTTControlInit();
         }
 
         private Task MqttClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
@@ -180,6 +175,11 @@ namespace ColorVision.MQTT
 
         public bool UnInit()
         {
+            if (ServiceID == 0)
+            {
+                MessageBox.Show("请先初始化");
+                return false;
+            }
             if (CheckIsRun())
                 return false;
             MQTTMsg mQTTMsg = new MQTTMsg
@@ -192,6 +192,11 @@ namespace ColorVision.MQTT
 
         public bool Calibration(CalibrationParam calibrationParam)
         {
+            if (ServiceID == 0)
+            {
+                MessageBox.Show("请先初始化");
+                return false;
+            }
             if (CheckIsRun())
                 return false;
             IsRun = false;
@@ -206,6 +211,11 @@ namespace ColorVision.MQTT
         }
         public bool Open(string CameraID,TakeImageMode TakeImageMode,int ImageBpp)
         {
+            if (ServiceID == 0)
+            {
+                MessageBox.Show("请先初始化");
+                return false;
+            }
             if (CheckIsRun())
                 return false;
             MQTTMsg mQTTMsg = new MQTTMsg
@@ -219,6 +229,11 @@ namespace ColorVision.MQTT
          
         public bool GetData(double expTime,double gain)
         {
+            if (ServiceID == 0)
+            {
+                MessageBox.Show("请先初始化");
+                return false;
+            }
             if (CheckIsRun())
                 return false;
             MQTTMsg mQTTMsg = new MQTTMsg
@@ -232,6 +247,11 @@ namespace ColorVision.MQTT
 
         public bool Close()
         {
+            if (ServiceID == 0)
+            {
+                MessageBox.Show("请先初始化");
+                return false;
+            }
             if (CheckIsRun())
                 return false;
             MQTTMsg mQTTMsg = new MQTTMsg
@@ -273,13 +293,6 @@ namespace ColorVision.MQTT
         }
 
           
-        public void Dispose()
-        {
-            GC.SuppressFinalize(this);
-        }
-
-
-
         private class InitCameraParamMQTT : ViewModelBase
         {
             public int CameraType { get; set; }

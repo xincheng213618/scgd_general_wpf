@@ -13,24 +13,10 @@ using static cvColorVision.GCSDLL;
 
 namespace ColorVision.MQTT
 {
-
-    public interface IMQTT
-    {
-        bool Init();
-        bool Calibration();
-        bool Open();
-        bool GetData();
-        bool Close();
-    }
-
     public delegate void MQTTSpectrumDataHandler(ColorParam colorPara);
 
     public class MQTTSpectrum
     {
-        private static MQTTSpectrum _instance;
-        private static readonly object _locker = new();
-        public static MQTTSpectrum GetInstance() { lock (_locker) { return _instance ??= new MQTTSpectrum(); } }
-
         public event MQTTSpectrumDataHandler DataHandlerEvent;
 
         private string SubscribeTopic;
@@ -40,18 +26,22 @@ namespace ColorVision.MQTT
         public MQTTSpectrum()
         {
             MQTTControl = MQTTControl.GetInstance();
-            Task.Run(MQTTControlInit);
+            MQTTControl.Connected += (s, e) => MQTTControlInit();
+            MQTTControl.Connect();
         }
 
-        private async void MQTTControlInit()
-        {
-            await Task.Delay(1000);
+        private ulong ServiceID;
 
+
+        private void MQTTControlInit()
+        {
             SendTopic = "Spectrum";
             SubscribeTopic = "SpectrumService";
-
             MQTTControl.SubscribeAsyncClient(SubscribeTopic);
+            //如果之前绑定了，先移除在添加
+            MQTTControl.ApplicationMessageReceivedAsync -= MqttClient_ApplicationMessageReceivedAsync;
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
+            MQTTControl.Connected -= (s, e) => MQTTControlInit();
         }
 
         private Task MqttClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
@@ -68,6 +58,7 @@ namespace ColorVision.MQTT
                     {
                         if (json.EventName == "InitSpectrum")
                         {
+                            ServiceID = json.ServiceID;
                             MessageBox.Show("InitSpectrum");
                         }
                         else if (json.EventName == "CalibrationSpectrum")
@@ -99,14 +90,6 @@ namespace ColorVision.MQTT
             return Task.CompletedTask;
         }
 
-
-        private void PublishAsyncClient(MQTTMsg msg)
-        {
-            msg.ServiceName = SendTopic;
-            string json = JsonConvert.SerializeObject(msg, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-            MQTTControl.PublishAsyncClient(SendTopic, json, false);
-        }
-
         public bool Init()
         {
             MQTTMsg mQTTMsg = new MQTTMsg
@@ -119,6 +102,11 @@ namespace ColorVision.MQTT
 
         public bool UnInit()
         {
+            if (ServiceID == 0)
+            {
+                MessageBox.Show("请先初始化");
+                return false;
+            }
             MQTTMsg mQTTMsg = new MQTTMsg
             {
                 EventName = "UnInit",
@@ -130,6 +118,11 @@ namespace ColorVision.MQTT
 
         public bool SetParam()
         {
+            if (ServiceID == 0)
+            {
+                MessageBox.Show("请先初始化");
+                return false;
+            }
             MQTTMsg mQTTMsg = new MQTTMsg
             {
                 EventName = "SetParam"
@@ -140,6 +133,11 @@ namespace ColorVision.MQTT
 
         public bool Open()
         {
+            if (ServiceID == 0)
+            {
+                MessageBox.Show("请先初始化");
+                return false;
+            }
             MQTTMsg mQTTMsg = new MQTTMsg
             {
                 EventName = "Open"
@@ -150,6 +148,11 @@ namespace ColorVision.MQTT
 
         public bool GetData(float IntTime, int AveNum, bool bUseAutoIntTime =false, bool bUseAutoDark =false)
         {
+            if (ServiceID == 0)
+            {
+                MessageBox.Show("请先初始化");
+                return false;
+            }
             MQTTMsg mQTTMsg = new MQTTMsg
             {
                 EventName = "GetData",
@@ -167,12 +170,32 @@ namespace ColorVision.MQTT
 
         public bool Close()
         {
+            if (ServiceID == 0)
+            {
+                MessageBox.Show("请先初始化");
+                return false;
+            }
             MQTTMsg mQTTMsg = new MQTTMsg
             {
                 EventName = "Close"
             };
             PublishAsyncClient(mQTTMsg);
             return true;
+        }
+
+        private List<Guid> RunTimeUUID = new List<Guid> { Guid.NewGuid() };
+
+        private void PublishAsyncClient(MQTTMsg msg)
+        {
+            Guid guid = Guid.NewGuid();
+            RunTimeUUID.Add(guid);
+
+            msg.ServiceName = SendTopic;
+            msg.MsgID = guid;
+            msg.ServiceID = ServiceID;
+
+            string json = JsonConvert.SerializeObject(msg, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+            MQTTControl.PublishAsyncClient(SendTopic, json, false);
         }
 
         public class GetDataParamMQTT

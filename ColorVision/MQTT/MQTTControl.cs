@@ -5,7 +5,9 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Windows.Documents;
 
 namespace ColorVision.MQTT
 {
@@ -27,12 +29,30 @@ namespace ColorVision.MQTT
             Port = 1883;
             UName = "";
             UPwd = "";
+            Task.Run(() => Connect());
         }
 
-        public string IP { get => _IP; set { _IP = value; NotifyPropertyChanged(); } }
+        public string IP { get => _IP;
+            set
+            {
+                Regex reg = new Regex("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$");
+                if (reg.IsMatch(value))
+                {
+                    _IP = value; NotifyPropertyChanged();
+                }
+            }
+        }
         private string _IP;
 
-        public int Port { get => _Port; set { _Port = value; NotifyPropertyChanged(); } }
+        public int Port { get => _Port; 
+            set {
+                Regex reg = new Regex("([0-9]|[1-9]\\d{1,3}|[1-5]\\d{4}|6[0-4]\\d{3}|65[0-4]\\d{2}|655[0-2]\\d|6553[0-5])");
+                if (reg.IsMatch(value.ToString()))
+                {
+                    _Port = value; NotifyPropertyChanged();
+                }
+
+               } }
         private int _Port;
 
         public string UName { get => _uName; set { _uName = value; NotifyPropertyChanged(); } }
@@ -46,9 +66,24 @@ namespace ColorVision.MQTT
 
         public event Func<MqttApplicationMessageReceivedEventArgs, Task> ApplicationMessageReceivedAsync;
 
+        public event EventHandler Connected;
+
+
         public async Task<bool> Connect()
         {
-            await MQTTHelper.CreateMQTTClientAndStart(IP, Port, UName, UPwd, ShowLog);
+            if (IsConnect)
+            {
+                Connected?.Invoke(this, new EventArgs());
+                return true;
+            }
+
+            ResultDataMQTT resultDataMQTT = await MQTTHelper.CreateMQTTClientAndStart(IP, Port, UName, UPwd, ShowLog);
+            if (resultDataMQTT.ResultCode !=1)
+            {
+                IsConnect = false;
+                return false;
+            }
+
             MQTTHelper._MqttClient.ApplicationMessageReceivedAsync += (arg) =>
             {
                 ApplicationMessageReceivedAsync.Invoke(arg); return Task.CompletedTask;
@@ -61,6 +96,7 @@ namespace ColorVision.MQTT
             };
             IsConnect = true;
             SubscribeTopic = new ObservableCollection<string>();
+            Connected?.Invoke(this, new EventArgs());
             return IsConnect;
         }
 
@@ -85,8 +121,12 @@ namespace ColorVision.MQTT
 
         public void UnsubscribeAsyncClient(string topic)
         {
-            MQTTHelper.UnsubscribeAsync_Client(topic);
-            SubscribeTopic.Remove(topic);
+            if (IsConnect)
+            {
+                MQTTHelper.UnsubscribeAsync_Client(topic);
+                SubscribeTopic.Remove(topic);
+            }
+
         }
 
         public async Task  PublishAsyncClient(string topic, string msg, bool retained) => await MQTTHelper.PublishAsync_Client(topic, msg, retained);

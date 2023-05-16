@@ -568,11 +568,11 @@ namespace ColorVision
 
 
 
-        private MQTTCamera MQTTCamera;
+        private MQTTCamera MQTTCamera { get; set; }
         private void StackPanelCamera_Initialized(object sender, EventArgs e)
         {
 
-            MQTTCamera = MQTTCamera.GetInstance();
+            MQTTCamera = new MQTTCamera();
             MQTTCamera.FileHandler += OpenImage;
 
             ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()
