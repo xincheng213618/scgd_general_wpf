@@ -24,11 +24,11 @@ namespace ColorVision
     public partial class MainWindow
     {
         private MQTTSpectrum MQTTSpectrum { get; set; }
-        SpectrumResult spectrumResult = new SpectrumResult();
+
         private void StackPanelSpectrum_Initialized(object sender, EventArgs e)
         {
             MQTTSpectrum = new MQTTSpectrum();
-            MQTTSpectrum.DataHandlerEvent += spectrumResult.SpectrumDrawPlot;
+            MQTTSpectrum.DataHandlerEvent += WindowSpectrum.spectrumResult.SpectrumDrawPlot;
         }
 
         #region MQTT
@@ -117,17 +117,18 @@ namespace ColorVision
                 MessageBox.Show("校零失败");
 
         }
-
+        WindowSpectrum WindowSpectrum = new WindowSpectrum();
         private void SpectrumSingleTest(object sender, RoutedEventArgs e)
         {
             GCSDLL.CVOneTest(SpectrumData, (float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value, false, false);
+            WindowSpectrum.Show();
         }
 
-        public  void TestResult(ref ColorParam data, float intTime, int resultCode)
+        public void TestResult(ref ColorParam data, float intTime, int resultCode)
         {
             if (resultCode == 0)
             {
-                spectrumResult.SpectrumDrawPlot(data);
+                WindowSpectrum.spectrumResult.SpectrumDrawPlot(data);
             }
             else
             {

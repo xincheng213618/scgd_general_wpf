@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualBasic;
+using ScottPlot;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -11,6 +12,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Markup;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
@@ -61,7 +63,7 @@ namespace ColorVision.Template
 
         private List<List<string>> ListContents { get;  set; }  =new List<List<string>>() { };
 
-
+        public List<ColorParam> colorParams { get; set; }
 
         public void SpectrumDrawPlot(ColorParam colorParam)
         {
@@ -72,24 +74,20 @@ namespace ColorVision.Template
                 x[i] = ((double)colorParam.fSpect1 + Math.Round(colorParam.fInterval, 1) * i);
                 y[i] = colorParam.fPL[i];
             }
+            wpfplot1.Refresh();
+            wpfplot1.Plot.Title("相对光谱曲线");
+            wpfplot1.Plot.XLabel("波长[nm]");
+            wpfplot1.Plot.YLabel("相对光谱");
 
-            var plt = new ScottPlot.Plot(400, 300);
-            plt.Title("相对光谱曲线");
-            plt.XLabel("波长[nm]");
-            plt.YLabel("相对光谱");
+            wpfplot1.Plot.AddScatter(x, y, Color.DarkGoldenrod, 3, 3, 0);
+            wpfplot1.Plot.SetAxisLimitsX(380, 780);
+            wpfplot1.Plot.SetAxisLimitsY(0, 1);
+            wpfplot1.Plot.XAxis.SetBoundary(370, 810);
+            wpfplot1.Plot.YAxis.SetBoundary(0, 1);
+            wpfplot1.Refresh();
 
-            plt.AddScatter(x, y, Color.DarkGoldenrod, 3, 3, 0);
-            plt.SetAxisLimitsX(380, 780);
-            plt.SetAxisLimitsY(0, 1);
-            plt.XAxis.SetBoundary(370, 810);
-            plt.YAxis.SetBoundary(0, 1);
-
-            new ScottPlot.WpfPlotViewer(plt).Show();
-
-
-            ListView listView = new ListView();
             GridView gridView = new GridView();
-            listView.View = gridView;
+            listView1.View = gridView;
 
             List<string> headers = new List<string> { "序号", "测量时间", "IP", "亮度Lv(cd/m2)", "蓝光", "色度x", "色度y", "色度u", "色度v", "相关色温(K)", "主波长Ld(nm)", "色纯度(%)", "峰值波长Lp(nm)", "显色性指数Ra", "半波宽" };
 
@@ -139,14 +137,8 @@ namespace ColorVision.Template
 
 
             listViewItem.Content = Contents;
-            listView.Items.Add(listViewItem);
+            listView1.Items.Add(listViewItem);
 
-            StackPanel stackPanel = new StackPanel();
-            stackPanel.Children.Add(listView);
-
-            Window window = new Window();
-            window.Content = stackPanel;
-            window.Show();
         }
 
 

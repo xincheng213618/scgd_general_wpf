@@ -94,7 +94,6 @@
                                         </DockPanel>
                                         <Button  Content="打开相机" Click="SendDemo2_Click"/>
                                         <Button  Content="关闭相机" Click="SendDemo4_Click"/>
-
                                     </StackPanel>
 
                                     <StackPanel x:Name="StackPanelImage">
@@ -200,6 +199,8 @@
 
                 </ScrollViewer>
             </Grid>
+            
+
 
 
             <Grid Grid.Column="2" >
@@ -344,7 +345,6 @@
                 </StackPanel>
                 <local:InkVisual  Grid.Row="1"  Visibility="Hidden" x:Name="InkVisual"/>
             </Grid>
-
 
 
             <GridSplitter Grid.Column="0"  Width="1" />
