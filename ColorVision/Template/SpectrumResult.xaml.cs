@@ -28,12 +28,47 @@ namespace ColorVision.Template
         public SpectrumResult()
         {
             InitializeComponent();
+
+
+        }
+        private void UserControl_Initialized(object sender, EventArgs e)
+        {
+
+            wpfplot1.Plot.Title("相对光谱曲线");
+            wpfplot1.Plot.XLabel("波长[nm]");
+            wpfplot1.Plot.YLabel("相对光谱");
+            wpfplot1.Width = 800;
+            wpfplot1.Height = 600;
+
+
+
+            GridView gridView = new GridView();
+
+            List<string> headers = new List<string> { "序号", "测量时间", "IP", "亮度Lv(cd/m2)", "蓝光", "色度x", "色度y", "色度u", "色度v", "相关色温(K)", "主波长Ld(nm)", "色纯度(%)", "峰值波长Lp(nm)", "显色性指数Ra", "半波宽" };
+
+            GridViewColumn gridViewColumn = new GridViewColumn();
+            for (int i = 380; i < 781; i++)
+            {
+                headers.Add(i.ToString());
+            }
+            headers.Add("电压(V)");
+            headers.Add("电流(mA)");
+
+            for (int i = 0; i < headers.Count; i++)
+            {
+                gridView.Columns.Add(new GridViewColumn() { Header = headers[i], Width = 100, DisplayMemberBinding = new Binding(string.Format("[{0}]", i)) });
+            }
+            listView1.View = gridView;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             if (listView1.SelectedIndex < 0)
+            {
+                MessageBox.Show("您需要先选择数据");
                 return;
+            }
+
 
             using var dialog = new System.Windows.Forms.SaveFileDialog();
             dialog.Filter = "CSV files (*.csv) | *.csv";
@@ -63,9 +98,18 @@ namespace ColorVision.Template
 
         private List<List<string>> ListContents { get;  set; }  =new List<List<string>>() { };
 
-        public List<ColorParam> colorParams { get; set; }
+        public List<ColorParam> colorParams { get; set; } = new List<ColorParam>() { };
 
-        public void SpectrumDrawPlot(ColorParam colorParam)
+        private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ListView listview && listview.SelectedIndex>-1)
+            {
+                DrawPlot(colorParams[listview.SelectedIndex]);
+            }
+        }
+
+
+        private void DrawPlotCore(ColorParam colorParam, Color color, float lineWidth =3)
         {
             double[] x = new double[colorParam.fPL.Length];
             double[] y = new double[colorParam.fPL.Length];
@@ -74,47 +118,51 @@ namespace ColorVision.Template
                 x[i] = ((double)colorParam.fSpect1 + Math.Round(colorParam.fInterval, 1) * i);
                 y[i] = colorParam.fPL[i];
             }
-            wpfplot1.Refresh();
-            wpfplot1.Plot.Title("相对光谱曲线");
-            wpfplot1.Plot.XLabel("波长[nm]");
-            wpfplot1.Plot.YLabel("相对光谱");
+            wpfplot1.Plot.AddScatter(x, y, color, lineWidth, 3, 0);
+        }
 
-            wpfplot1.Plot.AddScatter(x, y, Color.DarkGoldenrod, 3, 3, 0);
-            wpfplot1.Plot.SetAxisLimitsX(380, 780);
+
+        bool MulComparison;
+
+        private void DrawPlot(ColorParam colorParam)
+        {
+            wpfplot1.Plot.Clear();
+            wpfplot1.Plot.SetAxisLimitsX(380, 810);
             wpfplot1.Plot.SetAxisLimitsY(0, 1);
-            wpfplot1.Plot.XAxis.SetBoundary(370, 810);
+            wpfplot1.Plot.XAxis.SetBoundary(370, 850);
             wpfplot1.Plot.YAxis.SetBoundary(0, 1);
+            if (MulComparison)
+            {
+                for (int i = 0; i < colorParams.Count; i++)
+                {
+                    if (i == listView1.SelectedIndex)
+                        continue;
+                    DrawPlotCore(colorParams[i], Color.DarkGoldenrod,1);
+                }
+                DrawPlotCore(colorParams[listView1.SelectedIndex], Color.Red);
+            }
+            else
+            {
+                DrawPlotCore(colorParam, Color.DarkGoldenrod);
+            }
             wpfplot1.Refresh();
+        }
 
-            GridView gridView = new GridView();
-            listView1.View = gridView;
 
-            List<string> headers = new List<string> { "序号", "测量时间", "IP", "亮度Lv(cd/m2)", "蓝光", "色度x", "色度y", "色度u", "色度v", "相关色温(K)", "主波长Ld(nm)", "色纯度(%)", "峰值波长Lp(nm)", "显色性指数Ra", "半波宽" };
+        public void SpectrumDrawPlot(ColorParam colorParam)
+        {
+            colorParams.Add(colorParam);
+            DrawPlot(colorParam);
 
-            GridViewColumn gridViewColumn = new GridViewColumn();
-            for (int i = 380; i < 781; i++)
-            {
-                headers.Add(i.ToString());
-            }
-            headers.Add("电压(V)");
-            headers.Add("电流(mA)");
-
-            for (int i = 0; i < headers.Count; i++)
-            {
-                gridView.Columns.Add(new GridViewColumn() { Header = headers[i], Width = 100, DisplayMemberBinding = new Binding(string.Format("[{0}]", i)) });
-            }
             ListViewItem listViewItem = new ListViewItem();
 
-
-            List<string> strings = new List<string>();
             double sum1 = 0, sum2 = 0;
             for (int i = 35; i <= 75; i++)
                 sum1 += colorParam.fPL[i * 10];
             for (int i = 20; i <= 120; i++)
                 sum2 += colorParam.fPL[i * 10];
 
-
-            List<string> Contents = new List<string>() { "1", DateTime.Now.ToString(), Math.Round(colorParam.fIp / 65535 * 100, 2).ToString() + "%", (colorParam.fPh / 1).ToString() };
+            List<string> Contents = new List<string>() { colorParams.Count.ToString(), DateTime.Now.ToString(), Math.Round(colorParam.fIp / 65535 * 100, 2).ToString() + "%", (colorParam.fPh / 1).ToString() };
             Contents.Add(Math.Round(sum1 / sum2 * 100, 2).ToString());
             Contents.Add(Convert.ToString(Math.Round(colorParam.fx, 4)));
             Contents.Add(Convert.ToString(Math.Round(colorParam.fy, 4)));
@@ -138,10 +186,27 @@ namespace ColorVision.Template
 
             listViewItem.Content = Contents;
             listView1.Items.Add(listViewItem);
+            listView1.SelectedIndex = colorParams.Count - 1;
 
         }
 
+        private void ToolBar1_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (sender is ToolBar toolBar)
+            {
+                if (toolBar.Template.FindName("OverflowGrid", toolBar) is FrameworkElement overflowGrid)
+                    overflowGrid.Visibility = Visibility.Collapsed;
+                if (toolBar.Template.FindName("MainPanelBorder", toolBar) is FrameworkElement mainPanelBorder)
+                    mainPanelBorder.Margin = new Thickness(0);
+            }
+        }
 
-
+        private void Button1_Click(object sender, RoutedEventArgs e)
+        {
+            MulComparison = !MulComparison;
+            if (listView1.SelectedIndex <= -1)
+                listView1.SelectedIndex = 0;
+            DrawPlot(colorParams[listView1.SelectedIndex]);
+        }
     }
 }

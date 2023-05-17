@@ -34,7 +34,7 @@ namespace ColorVision
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
         public ImageInfo ImageInfo { get; set; } = new ImageInfo();
-        public PerformanceSetting performanceSetting { get; set; } = new PerformanceSetting();
+        public PerformanceSetting PerformanceSetting { get; set; } = new PerformanceSetting();
 
         private ToolBarTop ToolBarTop { get; set; } 
 
@@ -46,8 +46,8 @@ namespace ColorVision
             ToolBarTop = new ToolBarTop(Zoombox1,ImageShow);
             ToolBar1.DataContext = ToolBarTop;
             ListView1.ItemsSource = DrawingVisualCircleLists;
-            StatusBarItem1.DataContext = performanceSetting;
-            StatusBarItem2.DataContext = performanceSetting;
+            StatusBarItem1.DataContext = PerformanceSetting;
+            StatusBarItem2.DataContext = PerformanceSetting;
             MQTTControl = MQTTControl.GetInstance(); ;
             MQTTStatusBarItem.DataContext = MQTTControl.GetInstance();
 

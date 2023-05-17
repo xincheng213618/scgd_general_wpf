@@ -29,6 +29,11 @@ namespace ColorVision
         {
             MQTTSpectrum = new MQTTSpectrum();
             MQTTSpectrum.DataHandlerEvent += WindowSpectrum.spectrumResult.SpectrumDrawPlot;
+
+            this.Closed += (s, e) =>
+            {
+                DisconnectSpectrum();
+            };
         }
 
         #region MQTT
@@ -61,32 +66,34 @@ namespace ColorVision
 
         private GCSDLL.DllcallBack SpectrumData;
 
-        private void ConnectSpectrum()
+        private bool ConnectSpectrum()
         {
             if (GCSDLL.JKStartServer() != 0)
             {
                 MessageBox.Show("启动光谱仪软件的服务失败");
-                return;
+                return false;
             }
             if (GCSDLL.CVInit() != 0)
             {
                 MessageBox.Show("连接光谱仪失败");
-                return;
+                return false;
             }
             SpectrumData += TestResult;
+            return true;
         }
-        private static void DisconnectSpectrum()
+        private static bool DisconnectSpectrum()
         {
             if (GCSDLL.JKEmissionClose() != 0)
             {
                 MessageBox.Show("断开光谱仪失败");
-                return;
+                return false;
             }
             if (GCSDLL.JKCloseServer() != 0)
             {
                 MessageBox.Show("断开光谱仪软件的服务失败");
-                return;
+                return false;
             }
+            return true;
         }
 
 
@@ -97,13 +104,13 @@ namespace ColorVision
             {
                 if (button.Content.ToString() == "连接光谱仪")
                 {
-                    await Task.Run(() => ConnectSpectrum());
-                    button.Content = "断开光谱仪";
+                    if (await Task.Run(() => ConnectSpectrum()))
+                        button.Content = "断开光谱仪";
                 }
                 else
                 {
-                    await Task.Run(() => DisconnectSpectrum());
-                    button.Content = "连接光谱仪";
+                    if (await Task.Run(() => DisconnectSpectrum()))
+                        button.Content = "连接光谱仪";
                 }
             }
         }
@@ -120,7 +127,9 @@ namespace ColorVision
         WindowSpectrum WindowSpectrum = new WindowSpectrum();
         private void SpectrumSingleTest(object sender, RoutedEventArgs e)
         {
+            
             GCSDLL.CVOneTest(SpectrumData, (float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value, false, false);
+            WindowSpectrum.Owner = this;
             WindowSpectrum.Show();
         }
 

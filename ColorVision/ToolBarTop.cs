@@ -130,8 +130,8 @@ namespace ColorVision
                 dc.DrawLine(new Pen(Brushes.Black, 0.5), new Point(x1 + width, y1 - 0.25), new Point(x1 + width, y1 + height + 0.25));
                 dc.DrawLine(new Pen(Brushes.Black, 0.5), new Point(x1, y1 + height), new Point(x1 + width, y1 + height));
 
-                x1 = x1 + 1;
-                y1 = y1 + 1;
+                x1++;
+                y1++;
                 width -= 2;
                 height -= 2;
                 dc.DrawLine(new Pen(Brushes.White, 1.5), new Point(x1, y1 - 0.75), new Point(x1, y1 + height + 0.75));
@@ -139,7 +139,7 @@ namespace ColorVision
                 dc.DrawLine(new Pen(Brushes.White, 1.5), new Point(x1 + width, y1 - 0.75), new Point(x1 + width, y1 + height + 0.75));
                 dc.DrawLine(new Pen(Brushes.White, 1.5), new Point(x1, y1 + height), new Point(x1 + width, y1 + height));
 
-                dc.DrawRectangle(Brushes.Black, new Pen(Brushes.White, 0), new Rect(x1 - 1, y1 + height + 1, width + 2, 45));
+                dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#AA000000")), new Pen(Brushes.White, 0), new Rect(x1 - 1, y1 + height + 1, width + 2, 45));
 
                 Brush brush = Brushes.White;
                 FontFamily fontFamily = new FontFamily("Arial");
