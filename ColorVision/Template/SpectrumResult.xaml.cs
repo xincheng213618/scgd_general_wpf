@@ -133,6 +133,7 @@ namespace ColorVision.Template
             wpfplot1.Plot.YAxis.SetBoundary(0, 1);
             if (MulComparison)
             {
+                listView1.SelectedIndex = listView1.Items.Count > 0 && listView1.SelectedIndex == -1? 0 : listView1.SelectedIndex;
                 for (int i = 0; i < colorParams.Count; i++)
                 {
                     if (i == listView1.SelectedIndex)
@@ -152,7 +153,6 @@ namespace ColorVision.Template
         public void SpectrumDrawPlot(ColorParam colorParam)
         {
             colorParams.Add(colorParam);
-            DrawPlot(colorParam);
 
             ListViewItem listViewItem = new ListViewItem();
 
@@ -187,6 +187,39 @@ namespace ColorVision.Template
             listViewItem.Content = Contents;
             listView1.Items.Add(listViewItem);
             listView1.SelectedIndex = colorParams.Count - 1;
+            DrawPlot(colorParam);
+
+        }
+
+
+
+        private void Button1_Click(object sender, RoutedEventArgs e)
+        {
+            MulComparison = !MulComparison;
+            if (listView1.SelectedIndex <= -1)
+                listView1.SelectedIndex = 0;
+            DrawPlot(colorParams[listView1.SelectedIndex]);
+        }
+
+        private void Button2_Click(object sender, RoutedEventArgs e)
+        {
+            if (listView1.SelectedIndex < 0|| colorParams.Count <= 0)
+            {
+                MessageBox.Show("您需要先选择数据");
+                return;
+            }
+            colorParams.RemoveAt(listView1.SelectedIndex);
+            listView1.Items.RemoveAt(listView1.SelectedIndex);
+            if (listView1.Items.Count >0)
+            {
+                listView1.SelectedIndex = 0;
+                DrawPlot(colorParams[listView1.SelectedIndex]);
+            }
+            else
+            {
+                wpfplot1.Plot.Clear();
+                wpfplot1.Refresh();
+            }
 
         }
 
@@ -199,14 +232,6 @@ namespace ColorVision.Template
                 if (toolBar.Template.FindName("MainPanelBorder", toolBar) is FrameworkElement mainPanelBorder)
                     mainPanelBorder.Margin = new Thickness(0);
             }
-        }
-
-        private void Button1_Click(object sender, RoutedEventArgs e)
-        {
-            MulComparison = !MulComparison;
-            if (listView1.SelectedIndex <= -1)
-                listView1.SelectedIndex = 0;
-            DrawPlot(colorParams[listView1.SelectedIndex]);
         }
     }
 }

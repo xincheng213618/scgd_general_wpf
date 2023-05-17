@@ -84,11 +84,19 @@
         </DrawingImage.Drawing>
     </DrawingImage>
 
-    <DrawingImage x:Key="SaveDrawingImage">
+    <DrawingImage x:Key="DrawingImageSave">
         <DrawingImage.Drawing>
             <DrawingGroup ClipGeometry="M0,0 V1024 H1024 V0 H0 Z">
                 <GeometryDrawing Brush="{StaticResource IconSolidColorBrush}" Geometry="F1 M1024,1024z M0,0z M893.3,293.3L730.7,130.7C723.2,123.2,714,117.7,704,114.7L704,112 144,112C126.3,112,112,126.3,112,144L112,880C112,897.7,126.3,912,144,912L880,912C897.7,912,912,897.7,912,880L912,338.5C912,321.5,905.3,305.3,893.3,293.3z M384,184L640,184 640,288 384,288 384,184z M840,840L184,840 184,184 320,184 320,320C320,337.7,334.3,352,352,352L672,352C689.7,352,704,337.7,704,320L704,205.8 840,341.8 840,840z" />
                 <GeometryDrawing Brush="{StaticResource IconSolidColorBrush}" Geometry="F1 M1024,1024z M0,0z M512,442C432.5,442 368,506.5 368,586 368,665.5 432.5,730 512,730 591.5,730 656,665.5 656,586 656,506.5 591.5,442 512,442z M512,666C467.8,666 432,630.2 432,586 432,541.8 467.8,506 512,506 556.2,506 592,541.8 592,586 592,630.2 556.2,666 512,666z" />
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+    <DrawingImage x:Key="DrawingImageDelete">
+        <DrawingImage.Drawing>
+            <DrawingGroup ClipGeometry="M0,0 V1024 H1024 V0 H0 Z">
+                <GeometryDrawing Brush="#FF030303" Geometry="F1 M1024,1024z M0,0z M360,184L352,184C356.4,184,360,180.4,360,176L360,184 664,184 664,176C664,180.4,667.6,184,672,184L664,184 664,256 736,256 736,176C736,140.7,707.3,112,672,112L352,112C316.7,112,288,140.7,288,176L288,256 360,256 360,184z" />
+                <GeometryDrawing Brush="#FF000000" Geometry="F1 M1024,1024z M0,0z M864,256L160,256C142.3,256,128,270.3,128,288L128,320C128,324.4,131.6,328,136,328L196.4,328 221.1,851C222.7,885.1,250.9,912,285,912L739,912C773.2,912,801.3,885.2,802.9,851L827.6,328 888,328C892.4,328,896,324.4,896,320L896,288C896,270.3,881.7,256,864,256z M731.3,840L292.7,840 268.5,328 755.5,328 731.3,840z" />
             </DrawingGroup>
         </DrawingImage.Drawing>
     </DrawingImage>
