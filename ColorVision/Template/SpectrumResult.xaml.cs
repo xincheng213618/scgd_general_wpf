@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualBasic;
+using OpenCvSharp.Flann;
 using ScottPlot;
 using System;
 using System.Collections.Generic;
@@ -28,9 +29,8 @@ namespace ColorVision.Template
         public SpectrumResult()
         {
             InitializeComponent();
-
-
         }
+        static int ResultNum ;
         private void UserControl_Initialized(object sender, EventArgs e)
         {
 
@@ -96,20 +96,21 @@ namespace ColorVision.Template
 
         }
 
-        private List<List<string>> ListContents { get;  set; }  =new List<List<string>>() { };
+        private List<List<string>> ListContents { get; set; } = new List<List<string>>() { };
+
 
         public List<ColorParam> colorParams { get; set; } = new List<ColorParam>() { };
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (sender is ListView listview && listview.SelectedIndex>-1)
+            if (sender is ListView listview && listview.SelectedIndex > -1)
             {
                 DrawPlot(colorParams[listview.SelectedIndex]);
             }
         }
 
 
-        private void DrawPlotCore(ColorParam colorParam, Color color, float lineWidth =3)
+        private void DrawPlotCore(ColorParam colorParam, Color color, float lineWidth = 3)
         {
             double[] x = new double[colorParam.fPL.Length];
             double[] y = new double[colorParam.fPL.Length];
@@ -133,12 +134,12 @@ namespace ColorVision.Template
             wpfplot1.Plot.YAxis.SetBoundary(0, 1);
             if (MulComparison)
             {
-                listView1.SelectedIndex = listView1.Items.Count > 0 && listView1.SelectedIndex == -1? 0 : listView1.SelectedIndex;
+                listView1.SelectedIndex = listView1.Items.Count > 0 && listView1.SelectedIndex == -1 ? 0 : listView1.SelectedIndex;
                 for (int i = 0; i < colorParams.Count; i++)
                 {
                     if (i == listView1.SelectedIndex)
                         continue;
-                    DrawPlotCore(colorParams[i], Color.DarkGoldenrod,1);
+                    DrawPlotCore(colorParams[i], Color.DarkGoldenrod, 1);
                 }
                 DrawPlotCore(colorParams[listView1.SelectedIndex], Color.Red);
             }
@@ -161,8 +162,8 @@ namespace ColorVision.Template
                 sum1 += colorParam.fPL[i * 10];
             for (int i = 20; i <= 120; i++)
                 sum2 += colorParam.fPL[i * 10];
-
-            List<string> Contents = new List<string>() { colorParams.Count.ToString(), DateTime.Now.ToString(), Math.Round(colorParam.fIp / 65535 * 100, 2).ToString() + "%", (colorParam.fPh / 1).ToString() };
+            ResultNum++;
+            List<string> Contents = new List<string>() { ResultNum.ToString(), DateTime.Now.ToString(), Math.Round(colorParam.fIp / 65535 * 100, 2).ToString() + "%", (colorParam.fPh / 1).ToString() };
             Contents.Add(Math.Round(sum1 / sum2 * 100, 2).ToString());
             Contents.Add(Convert.ToString(Math.Round(colorParam.fx, 4)));
             Contents.Add(Convert.ToString(Math.Round(colorParam.fy, 4)));
@@ -188,7 +189,7 @@ namespace ColorVision.Template
             listView1.Items.Add(listViewItem);
             listView1.SelectedIndex = colorParams.Count - 1;
             DrawPlot(colorParam);
-
+            listView1.ScrollIntoView(listViewItem);
         }
 
 
@@ -197,20 +198,41 @@ namespace ColorVision.Template
         {
             MulComparison = !MulComparison;
             if (listView1.SelectedIndex <= -1)
+            {
+                if (listView1.Items.Count == 0)
+                    return;
                 listView1.SelectedIndex = 0;
+            }
             DrawPlot(colorParams[listView1.SelectedIndex]);
         }
 
         private void Button2_Click(object sender, RoutedEventArgs e)
         {
-            if (listView1.SelectedIndex < 0|| colorParams.Count <= 0)
+            if (listView1.SelectedIndex < 0 || colorParams.Count <= 0)
             {
                 MessageBox.Show("您需要先选择数据");
                 return;
             }
-            colorParams.RemoveAt(listView1.SelectedIndex);
-            listView1.Items.RemoveAt(listView1.SelectedIndex);
-            if (listView1.Items.Count >0)
+            List<ListViewItem> lists = new List<ListViewItem>();
+            foreach (var item in listView1.Items)
+            {
+                if (item is ListViewItem listViewItem)
+                {
+                    lists.Add(listViewItem);
+                }
+            }
+            foreach (var item in lists)
+            {
+                if (item.IsSelected)
+                {
+                    int index = listView1.Items.IndexOf(item);
+                    colorParams.RemoveAt(index);
+                    listView1.Items.RemoveAt(index);
+                }
+            }
+
+
+            if (listView1.Items.Count > 0)
             {
                 listView1.SelectedIndex = 0;
                 DrawPlot(colorParams[listView1.SelectedIndex]);
@@ -232,6 +254,29 @@ namespace ColorVision.Template
                 if (toolBar.Template.FindName("MainPanelBorder", toolBar) is FrameworkElement mainPanelBorder)
                     mainPanelBorder.Margin = new Thickness(0);
             }
+        }
+
+        private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Delete&&listView1.SelectedIndex>-1)
+            {
+                int temp = listView1.SelectedIndex;
+                colorParams.RemoveAt(listView1.SelectedIndex);
+                listView1.Items.RemoveAt(listView1.SelectedIndex);
+
+
+                if (listView1.Items.Count > 0)
+                {
+                    listView1.SelectedIndex = temp - 1; ;
+                    DrawPlot(colorParams[listView1.SelectedIndex]);
+                }
+                else
+                {
+                    wpfplot1.Plot.Clear();
+                    wpfplot1.Refresh();
+                }
+            }
+
         }
     }
 }

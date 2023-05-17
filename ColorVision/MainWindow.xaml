@@ -9,7 +9,7 @@
         xmlns:Template ="clr-namespace:ColorVision.Template"
         xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         mc:Ignorable="d"
-        DataContext="{Binding RelativeSource={RelativeSource Self}}"
+        d:DataContext="{d:DesignInstance Type=local:MainWindow}"
         Title="ColorVision" Height="720" Width="1280"  Initialized="Window_Initialized">
     <Grid x:Name="Root">
         <Grid.RowDefinitions>
@@ -55,6 +55,15 @@
                                         <ComboBox  x:Name="ComboxPGTemplate"  SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,0,10,0"/>
                                     </DockPanel>
                                     <Template:PG x:Name="PG1" />
+                                    <GroupBox Header="MQTT Test">
+                                        <StackPanel Visibility="Visible">
+                                            <Button  Content="初始化PG" Click="Button_Click_1"/>
+                                            <Button  Content="打开PG" Click="Button_Click_2"/>
+                                            <Button  Content="传递PG参数" Click="Button_Click_3"/>
+                                            <Button  Content="获取PG数据" Click="Button_Click_4"/>
+                                            <Button  Content="关闭PG" Click="Button_Click_5"/>
+                                        </StackPanel>
+                                    </GroupBox>
                                 </StackPanel>
                             </Border>
                         </StackPanel>

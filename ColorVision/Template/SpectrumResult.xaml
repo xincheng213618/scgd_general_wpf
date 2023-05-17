@@ -28,11 +28,11 @@
             <Button Click="Button_Click" Margin="2,2,0,0" >
                 <Image  Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImageSave}" />
             </Button>
-            <Button Click="Button2_Click" Margin="2,2,0,0" >
+            <Button Click="Button2_Click" Margin="2,2,0,0" ToolTip="您可以全选后删除" >
                 <Image  Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImageDelete}" />
             </Button>
         </ToolBar>
 
-        <ListView  Grid.Row="2" x:Name="listView1" SelectionChanged="listView1_SelectionChanged" />
+        <ListView  Grid.Row="2" x:Name="listView1" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" />
     </Grid>
 </UserControl>
