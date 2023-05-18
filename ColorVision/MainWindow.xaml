@@ -165,9 +165,7 @@
                                         </StackPanel>
                                     </GroupBox>
 
- 
-                                    
-                                    
+
 
                                 </StackPanel>
                             </Border>
@@ -194,10 +192,7 @@
                                     <UniformGrid >
                                         <Button Content="打开测试图像"  Click="Button_Click"/>
                                         <Button Content="绘制测试图形"  Click="Button1_Click"/>
-                                        <Button Content="读取CFG测试"  Click="Button3_Click"/>
-                                        <Button Content="保存CFG测试"  Click="Button4_Click"/>
                                     </UniformGrid>
-
                                 </StackPanel>
                             </Border>
                         </StackPanel>
@@ -208,7 +203,7 @@
 
                 </ScrollViewer>
             </Grid>
-            
+
 
 
 
@@ -315,40 +310,80 @@
                     <local:DrawCanvas x:Name="ImageShow" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  MouseDown="ImageShow_MouseDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
                 </local:ZoomboxSub>
                 <StackPanel Grid.Row="0" Grid.RowSpan="2" >
-                    <ToolBar x:Name="ToolBar1" DataContext="{Binding ToolBarTop}"   Loaded="ToolBar1_Loaded" Margin="0,2,4,0" Background="#77FFFFFF" HorizontalAlignment="Center">
+                    <ToolBar x:Name="ToolBar1" DataContext="{Binding ToolBarTop}"   Loaded="ToolBar1_Loaded" Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" HorizontalAlignment="Center">
                         <ToolBar.Resources>
                             <ResourceDictionary Source="/Theme/Icons.xaml"/>
                         </ToolBar.Resources>
-                        <ToggleButton x:Name="ToggleButtonMouse" Height="30" Width="30" IsChecked="{Binding Path=Move}">
-                            <Image Height="22" Width="22" Stretch="Uniform" Source="{StaticResource DrawingImageMouse}"/>
+                        <ToggleButton x:Name="ToggleButtonMouse" Height="30" Width="30" Margin="4,0,0,0" IsChecked="{Binding Path=Move}">
+                            <Image Height="22" Width="22" Stretch="Uniform" Source="{StaticResource DrawingImageMouse}">
+                                <Image.Effect>
+                                    <DropShadowEffect   BlurRadius="5" Color="White" Opacity="0.5" ShadowDepth="0"/>
+                                </Image.Effect>
+                            </Image>
                         </ToggleButton>
                         <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding Activate}" ToolTip="可以按下Ctrl缩放和移动图像">
-                            <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImagedrag}"/>
+                            <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImagedrag}">
+                                <Image.Effect>
+                                    <DropShadowEffect   BlurRadius="5" Color="White" Opacity="0.5" ShadowDepth="0"/>
+                                </Image.Effect>
+                            </Image>
                         </ToggleButton>
                         <Button Command="{Binding ZoomUniform}">
-                            <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImage1_1}" />
+                            <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImage1_1}" >
+                                <Image.Effect>
+                                    <DropShadowEffect   BlurRadius="5" Color="White" Opacity="0.5" ShadowDepth="0"/>
+                                </Image.Effect>
+                            </Image>
                         </Button>
                         <Button Command="{Binding ZoomIncrease}">
-                            <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImagezoom_in}" />
+                            <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImagezoom_in}" >
+                                <Image.Effect>
+                                    <DropShadowEffect   BlurRadius="5" Color="White" Opacity="0.5" ShadowDepth="0"/>
+                                </Image.Effect>
+                            </Image>
                         </Button>
                         <Button  Command="{Binding ZoomDecrease}">
-                            <Image  Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImagezoom_out}" />
+                            <Image  Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImagezoom_out}" >
+                                <Image.Effect>
+                                    <DropShadowEffect   BlurRadius="5" Color="White" Opacity="0.5" ShadowDepth="0"/>
+                                </Image.Effect>
+                            </Image>
                         </Button>
                         <Button Command="{Binding ZoomNone}">
-                            <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImageexpend}" />
+                            <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImageexpend}">
+                                <Image.Effect>
+                                    <DropShadowEffect   BlurRadius="5" Color="White" Opacity="0.5" ShadowDepth="0"/>
+                                </Image.Effect>
+                            </Image>
                         </Button>
                         <TextBox  Background="Transparent"  Width="50" Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:F2}}" />
                         <ToggleButton  Click="Button5_Click">
-                            <Image  Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImagegridlines}"/>
+                            <Image  Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImagegridlines}">
+                                <Image.Effect>
+                                    <DropShadowEffect   BlurRadius="5" Color="White" Opacity="0.5" ShadowDepth="0"/>
+                                </Image.Effect>
+                            </Image>
                         </ToggleButton>
                         <ToggleButton  Click="Button6_Click">
-                            <Image  Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImageruler}"/>
+                            <Image  Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImageruler}">
+                                <Image.Effect>
+                                    <DropShadowEffect   BlurRadius="5" Color="White" Opacity="0.5" ShadowDepth="0"/>
+                                </Image.Effect>
+                            </Image>
                         </ToggleButton>
                         <ToggleButton Height="30" Width="30" Click="Button7_Click">
-                            <Image Height="22" Width="22" Stretch="Uniform" Source="{StaticResource DrawingImageeraser}"/>
+                            <Image Height="22" Width="22" Stretch="Uniform" Source="{StaticResource DrawingImageeraser}">
+                                <Image.Effect>
+                                    <DropShadowEffect   BlurRadius="5" Color="White" Opacity="0.5" ShadowDepth="0"/>
+                                </Image.Effect>
+                            </Image>
                         </ToggleButton>
                         <ToggleButton Click="Button8_Click">
-                            <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImageMax}"/>
+                            <Image Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImageMax}">
+                                <Image.Effect>
+                                    <DropShadowEffect   BlurRadius="5" Color="White" Opacity="0.5" ShadowDepth="0"/>
+                                </Image.Effect>
+                            </Image>
                         </ToggleButton>
                     </ToolBar>
                 </StackPanel>
@@ -360,7 +395,11 @@
             <GridSplitter  Grid.Column="2"  Width="1" HorizontalAlignment="Left" />
         </Grid>
         <Grid Grid.Row="2">
-            <StatusBar  DataContext="{Binding performanceSetting}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="107*"/>
+                <ColumnDefinition Width="1173*"/>
+            </Grid.ColumnDefinitions>
+            <StatusBar  DataContext="{Binding performanceSetting}" Grid.ColumnSpan="2">
                 <StatusBarItem   x:Name="StatusBarItem1"  >
                     <TextBlock>
                         <Run Text="{Binding Path=MemoryThis}"/>

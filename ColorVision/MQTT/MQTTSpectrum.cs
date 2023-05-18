@@ -1,10 +1,12 @@
 ﻿#pragma warning disable CS4014,CS0618
 using MQTTnet.Client;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Documents;
@@ -56,29 +58,32 @@ namespace ColorVision.MQTT
                         return Task.CompletedTask;
                     if (json.Code == 0)
                     {
-                        if (json.EventName == "InitSpectrum")
+                        if (json.EventName == "Init")
                         {
                             ServiceID = json.ServiceID;
-                            MessageBox.Show("InitSpectrum");
                         }
-                        else if (json.EventName == "CalibrationSpectrum")
+                        else if (json.EventName == "SetParam")
                         {
-                            MessageBox.Show("CalibrationSpectrum");
+                            MessageBox.Show("SetParam");
                         }
-                        else if (json.EventName == "OpenSpectrum")
+                        else if (json.EventName == "Open")
                         {
-                            MessageBox.Show("OpenSpectrum");
+                            MessageBox.Show("Open");
                         }
-                        else if (json.EventName == "GetDataSpectrum")
+                        else if (json.EventName == "GetData")
                         {
-                            string data = json.Data.COLOR_PARA;
-                            ColorParam colorParam = JsonConvert.DeserializeObject<ColorParam>(data);
+                            JObject data = json.Data.COLOR_PARA;
+                            ColorParam colorParam = JsonConvert.DeserializeObject<ColorParam>(JsonConvert.SerializeObject(data));
                             Application.Current.Dispatcher.Invoke(() => DataHandlerEvent?.Invoke(colorParam));
 
                         }
-                        else if (json.EventName == "CloseSpectrum")
+                        else if (json.EventName == "Close")
                         {
-                            MessageBox.Show("CloseSpectrum");
+                            MessageBox.Show("Close");
+                        }
+                        else if (json.EventName == "Uninit")
+                        {
+                            MessageBox.Show("Uninit");
                         }
                     }
                 }
@@ -148,11 +153,11 @@ namespace ColorVision.MQTT
 
         public bool GetData(float IntTime, int AveNum, bool bUseAutoIntTime =false, bool bUseAutoDark =false)
         {
-            if (ServiceID == 0)
-            {
-                MessageBox.Show("请先初始化");
-                return false;
-            }
+            //if (ServiceID == 0)
+            //{
+            //    MessageBox.Show("请先初始化");
+            //    return false;
+            //}
             MQTTMsg mQTTMsg = new MQTTMsg
             {
                 EventName = "GetData",

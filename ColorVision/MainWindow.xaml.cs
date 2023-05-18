@@ -36,7 +36,7 @@ namespace ColorVision
         public ImageInfo ImageInfo { get; set; } = new ImageInfo();
         public PerformanceSetting PerformanceSetting { get; set; } = new PerformanceSetting();
 
-        private ToolBarTop ToolBarTop { get; set; } 
+        public ToolBarTop ToolBarTop { get; set; } 
 
         public MQTTControl MQTTControl { get; set; }
 
@@ -50,6 +50,7 @@ namespace ColorVision
             StatusBarItem2.DataContext = PerformanceSetting;
             MQTTControl = MQTTControl.GetInstance(); ;
             MQTTStatusBarItem.DataContext = MQTTControl.GetInstance();
+            Application.Current.MainWindow = this;
 
         }
         protected override void OnSourceInitialized(EventArgs e)
@@ -403,33 +404,6 @@ namespace ColorVision
             ToolBarTop.DrawVisualImageControl(false);
         }
 
-        private void Button3_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("Aoi配置文件测试");
-
-            using var openFileDialog = new System.Windows.Forms.OpenFileDialog() { Filter = "配置文件(*.cfg) | *.cfg", RestoreDirectory  =true};
-            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                log.Info("打开AoiCfg:" +openFileDialog.FileName);
-                AoiCfg aoiCfg = CfgFile.LoadCfgFile<AoiCfg>(openFileDialog.FileName);
-                PropertyGrid2.SelectedObject = aoiCfg;
-            }
-
-
-        }
-
-        private void Button4_Click(object sender, RoutedEventArgs e)
-        {
-            if (PropertyGrid2.SelectedObject is AoiCfg aoiCfg)
-            {
-                using var saveFileDialog = new System.Windows.Forms.SaveFileDialog();
-                saveFileDialog.Filter = "Configuration file (*.cfg)|*.cfg";
-                saveFileDialog.FileName = "aoi.cfg";
-                if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                    CfgFile.SaveCfgFile(saveFileDialog.FileName, aoiCfg);
-            }
-        }
-
         private bool EraseVisual;
 
 
@@ -494,7 +468,7 @@ namespace ColorVision
         {
             if (sender is ToggleButton toggleButton)
             {
-                var mainWindow = Application.Current.MainWindow;
+                var mainWindow = this;
 
                 if (toggleButton.IsChecked == true)
                 {

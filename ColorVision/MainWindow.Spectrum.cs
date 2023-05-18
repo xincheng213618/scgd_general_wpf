@@ -28,7 +28,12 @@ namespace ColorVision
         private void StackPanelSpectrum_Initialized(object sender, EventArgs e)
         {
             MQTTSpectrum = new MQTTSpectrum();
-            MQTTSpectrum.DataHandlerEvent += WindowSpectrum.spectrumResult.SpectrumDrawPlot;
+            MQTTSpectrum.DataHandlerEvent += (e)=> 
+            {
+                WindowSpectrum.Owner = this;
+                WindowSpectrum.Show();
+                WindowSpectrum.spectrumResult.SpectrumDrawPlot(e);
+            };
 
             this.Closed += (s, e) =>
             {
