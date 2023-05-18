@@ -3,6 +3,7 @@ using MQTTnet.Client;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,14 +15,24 @@ using static cvColorVision.GCSDLL;
 namespace ColorVision.MQTT
 {
 
-    public class MQTTPG1: MQTTPG
-    {
-    }
-
-
-
     public class MQTTPG
     {
+        public enum PGType
+        {
+            [Description("GX09C_LCM")]
+            GX09CLCM,
+            [Description("SKYCODE")]
+            SKYCODE,
+        };
+
+        public enum CommunicateType
+        {
+            [Description("TCP")]
+            Tcp,
+            [Description("串口")]
+            Serial,
+        };
+
         private string SubscribeTopic;
         private string SendTopic;
         private MQTTControl MQTTControl;
@@ -74,7 +85,7 @@ namespace ColorVision.MQTT
                         }
                         else if (json.EventName == "GetData")
                         {
-                            string data = json.Data.COLOR_PARA;
+                            MessageBox.Show("GetData");
                         }
                         else if (json.EventName == "Close")
                         {
@@ -95,25 +106,37 @@ namespace ColorVision.MQTT
         }
 
 
-
-
-        public bool Init()
+        public bool Init(PGType pGType,CommunicateType communicateType)
         {
             MQTTMsg mQTTMsg = new MQTTMsg
             {
-                EventName = "Init"
+                EventName = "Init",
+                Params = new InitParamMQTT
+                {
+                    PGType = (int)pGType,
+                    CommunicateType = (int)communicateType,
+                }
             };
             PublishAsyncClient(mQTTMsg);
             return true;
         }
 
+        private class InitParamMQTT
+        {
+            [JsonProperty("ePg_Type")]
+            public int PGType { get; set; }
+            [JsonProperty("eCOM_Type")]
+            public int CommunicateType { get; set; }
+
+        }
+
         public bool UnInit()
         {
-            if (ServiceID == 0)
-            {
-                MessageBox.Show("请先初始化");
-                return false;
-            }
+            //if (ServiceID == 0)
+            //{
+            //    MessageBox.Show("请先初始化");
+            //    return false;
+            //}
             MQTTMsg mQTTMsg = new MQTTMsg
             {
                 EventName = "UnInit",
@@ -122,54 +145,100 @@ namespace ColorVision.MQTT
             return true;
         }
 
+        public void PGStartPG() => SetParam(new SetParamFunctionMQTT() { FunctionName = "CM_StartPG" });
+        public void PGStopPG() => SetParam(new SetParamFunctionMQTT() { FunctionName = "CM_StopPG" });
+        public void PGReSetPG() => SetParam(new SetParamFunctionMQTT() { FunctionName = "CM_ReSetPG" });
+        public void PGSwitchUpPG() => SetParam(new SetParamFunctionMQTT() { FunctionName = "CM_SwitchUpPG" });
+        public void PGSwitchDownPG() => SetParam(new SetParamFunctionMQTT() { FunctionName = "CM_SwitchDownPG" });
+        public void PGSwitchFramePG(int index) => SetParam(new SetParamFunctionSwitchMQTT() { FunctionName = "CM_SwitchFramePG",Index = index });
 
-        public bool SetParam()
+
+        public bool SetParam(SetParamFunctionMQTT setParamMQTT)
         {
-            if (ServiceID == 0)
-            {
-                MessageBox.Show("请先初始化");
-                return false;
-            }
+            //if (ServiceID == 0)
+            //{
+            //    MessageBox.Show("请先初始化");
+            //    return false;
+            //}
             MQTTMsg mQTTMsg = new MQTTMsg
             {
-                EventName = "SetParam"
+                EventName = "SetParam",
+                Params = setParamMQTT
             };
             PublishAsyncClient(mQTTMsg);
             return true;
         }
 
-        public bool Open()
+
+
+        public bool Open(CommunicateType communicateType,string value1,int value2)
         {
-            if (ServiceID == 0)
+            //if (ServiceID == 0)
+            //{
+            //    MessageBox.Show("请先初始化");
+            //    return false;
+            //}
+            MQTTMsg mQTTMsg;
+            if (communicateType == CommunicateType.Serial)
             {
-                MessageBox.Show("请先初始化");
-                return false;
+                 mQTTMsg = new MQTTMsg
+                {
+                    EventName = "Open",
+                    Params = new OpenParam1MQQT
+                    {
+                        CommunicateType = (int)communicateType,
+                        ComName = value1,
+                        BaudRate = value2,
+                    }
+                };
             }
-            MQTTMsg mQTTMsg = new MQTTMsg
+            else
             {
-                EventName = "Open"
-            };
+                 mQTTMsg = new MQTTMsg
+                {
+                    EventName = "Open",
+                    Params = new OpenParamMQQT
+                    {
+                        CommunicateType = (int)communicateType,
+                        IP = value1,
+                        Port = value2,
+                    }
+                };
+            }
+
             PublishAsyncClient(mQTTMsg);
             return true;
         }
 
-        public bool GetData(float IntTime, int AveNum, bool bUseAutoIntTime = false, bool bUseAutoDark = false)
+
+        private class OpenParamMQQT
         {
-            if (ServiceID == 0)
-            {
-                MessageBox.Show("请先初始化");
-                return false;
-            }
+            [JsonProperty("eCOM_Type")]
+            public int CommunicateType { get; set; }
+            [JsonProperty("szIPAddress")]
+            public string IP { get; set; }
+            [JsonProperty("nPort")]
+            public int Port { get; set; }
+        }
+        private class OpenParam1MQQT
+        {
+            [JsonProperty("eCOM_Type")]
+            public int CommunicateType { get; set; }
+            [JsonProperty("szComName")]
+            public string ComName { get; set; }
+            public int BaudRate { get; set; }
+        }
+
+        public bool GetData()
+        {
+            //if (ServiceID == 0)
+            //{
+            //    MessageBox.Show("请先初始化");
+            //    return false;
+            //}
             MQTTMsg mQTTMsg = new MQTTMsg
             {
                 EventName = "GetData",
-                Params = new GetDataParamMQTT()
-                {
-                    IntTime = IntTime,
-                    AveNum = AveNum,
-                    BUseAutoIntTime = bUseAutoIntTime,
-                    BUseAutoDark = bUseAutoDark
-                }
             };
             PublishAsyncClient(mQTTMsg);
             return true;
@@ -203,16 +272,15 @@ namespace ColorVision.MQTT
             string json = JsonConvert.SerializeObject(msg, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
             MQTTControl.PublishAsyncClient(SendTopic, json, false);
         }
-
-        public class GetDataParamMQTT
+        public class SetParamFunctionSwitchMQTT: SetParamFunctionMQTT
         {
-            public float IntTime { get; set; }
-            public int AveNum { get; set; }
+            [JsonProperty("nIndex")]
+            public int Index { get; set; }
+        }
 
-            [JsonProperty("bUseAutoIntTime")]
-            public bool BUseAutoIntTime { get; set; }
-            [JsonProperty("bUseAutoDark")]
-            public bool BUseAutoDark { get; set; }
+        public class SetParamFunctionMQTT
+        {
+            public string FunctionName { get; set; }
         }
 
 

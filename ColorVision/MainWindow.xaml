@@ -57,11 +57,30 @@
                                     <Template:PG x:Name="PG1" />
                                     <GroupBox Header="MQTT Test">
                                         <StackPanel Visibility="Visible">
-                                            <Button  Content="初始化PG" Click="Button_Click_1"/>
-                                            <Button  Content="打开PG" Click="Button_Click_2"/>
-                                            <Button  Content="传递PG参数" Click="Button_Click_3"/>
-                                            <Button  Content="获取PG数据" Click="Button_Click_4"/>
-                                            <Button  Content="关闭PG" Click="Button_Click_5"/>
+                                            <ComboBox  x:Name="ComboxPGType" SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,0,10,0"/>
+                                            <ComboBox  x:Name="ComboxPGCommunicateType"  SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,0,10,0"/>
+
+                                            <Button  Content="InitPG" Click="PGInit"/>
+                                            <Button  Content="UnInitPG" Click="PGUnInit"/>
+                                            <DockPanel>
+                                                <TextBlock  x:Name="TextBlockPGIP"   Text="IP:"/>
+                                                <TextBox  x:Name="TextBoxPGIP" Text="" />
+
+                                            </DockPanel>
+                                            <DockPanel>
+                                                <TextBlock  x:Name="TextBlockPGPort" Text="Port:"/>
+                                                <TextBox  x:Name="TextBoxPGPort" Text="" />
+                                            </DockPanel>
+
+                                            <Button  Content="打开PG" Click="PGOpen"/>
+                                            <Button  Content="关闭PG" Click="PGClose"/>
+                                            <Button  Content="StartPG" Click="PGStartPG"/>
+                                            <Button  Content="StopPG" Click="PGStopPG"/>
+                                            <Button  Content="ReSetPG" Click="PGReSetPG"/>
+                                            <Button  Content="SwitchUpPG" Click="PGSwitchUpPG"/>
+                                            <Button  Content="SwitchDownPG" Click="PGSwitchDownPG"/>
+                                            <TextBox  x:Name="PGFrameText" Text="0"/>
+                                            <Button  Content="SwitchFramePG" Click="PGSwitchFramePG"/>
                                         </StackPanel>
                                     </GroupBox>
                                 </StackPanel>

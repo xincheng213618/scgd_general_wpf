@@ -51,6 +51,10 @@ namespace ColorVision
             MQTTControl = MQTTControl.GetInstance(); ;
             MQTTStatusBarItem.DataContext = MQTTControl.GetInstance();
             Application.Current.MainWindow = this;
+            this.Closed += (s, e) =>
+            {
+                Environment.Exit(0);
+            };
 
         }
         protected override void OnSourceInitialized(EventArgs e)
@@ -584,19 +588,7 @@ namespace ColorVision
             ComboxCalibrationTemplate.SelectedIndex = 0;
         }
 
-        private void StackPanelPG_Initialized(object sender, EventArgs e)
-        {
-            ComboxPGTemplate.ItemsSource = TemplateControl.GetInstance().PGParams;
-            ComboxPGTemplate.SelectionChanged += (s, e) =>
-            {
-                if (ComboxPGTemplate.SelectedItem is KeyValuePair<string, PGParam> KeyValue && KeyValue.Value is PGParam pGParam)
-                {
-                    PG1.PGParam = pGParam;
-                    PG1.DataContext = pGParam;
-                }
-            };
-            ComboxPGTemplate.SelectedIndex = 0;
-        }
+
 
 
 

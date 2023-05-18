@@ -32,7 +32,7 @@ namespace ColorVision.MQTT
             MQTTControl.Connect();
         }
 
-        private ulong ServiceID;
+        public ulong ServiceID { get; set; }
 
 
         private void MQTTControlInit()
@@ -205,9 +205,10 @@ namespace ColorVision.MQTT
 
         public class GetDataParamMQTT
         {
+            [JsonProperty("fIntTime")]
             public float IntTime { get; set; }
+            [JsonProperty("iAveNum")]
             public int AveNum { get; set; }
-
             [JsonProperty("bUseAutoIntTime")]
             public bool BUseAutoIntTime { get; set; }
             [JsonProperty("bUseAutoDark")]

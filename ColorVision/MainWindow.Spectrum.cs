@@ -34,10 +34,13 @@ namespace ColorVision
                 WindowSpectrum.Show();
                 WindowSpectrum.spectrumResult.SpectrumDrawPlot(e);
             };
-
             this.Closed += (s, e) =>
             {
-                DisconnectSpectrum();
+                if (MQTTSpectrum.ServiceID != 0)
+                {
+                    MQTTSpectrum.Close();
+                    MQTTSpectrum.UnInit();
+                }
             };
         }
 
