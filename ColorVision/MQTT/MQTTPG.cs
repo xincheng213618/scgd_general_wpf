@@ -132,11 +132,11 @@ namespace ColorVision.MQTT
 
         public bool UnInit()
         {
-            //if (ServiceID == 0)
-            //{
-            //    MessageBox.Show("请先初始化");
-            //    return false;
-            //}
+            if (ServiceID == 0)
+            {
+                MessageBox.Show("请先初始化");
+                return false;
+            }
             MQTTMsg mQTTMsg = new MQTTMsg
             {
                 EventName = "UnInit",
@@ -155,11 +155,11 @@ namespace ColorVision.MQTT
 
         public bool SetParam(SetParamFunctionMQTT setParamMQTT)
         {
-            //if (ServiceID == 0)
-            //{
-            //    MessageBox.Show("请先初始化");
-            //    return false;
-            //}
+            if (ServiceID == 0)
+            {
+                MessageBox.Show("请先初始化");
+                return false;
+            }
             MQTTMsg mQTTMsg = new MQTTMsg
             {
                 EventName = "SetParam",
@@ -173,11 +173,11 @@ namespace ColorVision.MQTT
 
         public bool Open(CommunicateType communicateType,string value1,int value2)
         {
-            //if (ServiceID == 0)
-            //{
-            //    MessageBox.Show("请先初始化");
-            //    return false;
-            //}
+            if (ServiceID == 0)
+            {
+                MessageBox.Show("请先初始化");
+                return false;
+            }
             MQTTMsg mQTTMsg;
             if (communicateType == CommunicateType.Serial)
             {
@@ -231,11 +231,11 @@ namespace ColorVision.MQTT
 
         public bool GetData()
         {
-            //if (ServiceID == 0)
-            //{
-            //    MessageBox.Show("请先初始化");
-            //    return false;
-            //}
+            if (ServiceID == 0)
+            {
+                MessageBox.Show("请先初始化");
+                return false;
+            }
             MQTTMsg mQTTMsg = new MQTTMsg
             {
                 EventName = "GetData",

@@ -14,12 +14,6 @@
         <DockPanel  Grid.Row="0">
             <StackPanel Height="150">
                 <StackPanel Orientation="Horizontal">
-                    <TextBox x:Name="TextBoxIP" TextWrapping="Wrap" Text="{Binding IP}" Width="120"/>
-                    <TextBox x:Name="TextBoxPort" TextWrapping="Wrap" Text="{Binding Port}" Width="120"/>
-                    <Button  Content="启动" Click="Start_Click"/>
-                    <Button  Content="关闭" Click="Close_Click"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal">
                     <TextBox x:Name="TextBoxSubscribe" TextWrapping="Wrap" Text="topic1" Width="120"/>
                     <Button  Content="订阅" Click="Subscribe_Click"/>
                     <Button  Content="退订" Click="UnSubscribe_Click"/>

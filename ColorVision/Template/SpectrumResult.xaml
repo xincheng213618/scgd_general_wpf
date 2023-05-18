@@ -22,8 +22,8 @@
             <ToolBar.Resources>
                 <ResourceDictionary Source="/Theme/Icons.xaml"/>
             </ToolBar.Resources>
-            <ToggleButton Click="Button1_Click" Margin="2,2,0,0"  Content="多选">
-                
+            <ToggleButton Click="Button1_Click" Margin="2,2,0,0" >
+                <Image  Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImageSwitch}" />
             </ToggleButton>
             <Button Click="Button_Click" Margin="2,2,0,0" >
                 <Image  Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImageSave}" />
