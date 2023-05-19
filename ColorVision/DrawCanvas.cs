@@ -24,24 +24,24 @@ namespace ColorVision
         {
             visuals.Add(visual);
 
-            base.AddVisualChild(visual);
-            base.AddLogicalChild(visual);
+            AddVisualChild(visual);
+            AddLogicalChild(visual);
         }
 
         public void RemoveVisual(Visual visual)
         {
             visuals.Remove(visual);
 
-            base.RemoveVisualChild(visual);
-            base.RemoveLogicalChild(visual);
+            RemoveVisualChild(visual);
+            RemoveLogicalChild(visual);
         }
         public void TopVisual(Visual visual)
         {
-            base.RemoveVisualChild(visual);
-            base.RemoveLogicalChild(visual);
+            RemoveVisualChild(visual);
+            RemoveLogicalChild(visual);
 
-            base.AddVisualChild(visual);
-            base.AddLogicalChild(visual);
+            AddVisualChild(visual);
+            AddLogicalChild(visual);
         }
 
 

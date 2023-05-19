@@ -11,6 +11,9 @@ using static ColorVision.MQTT.MQTTPG;
 
 namespace ColorVision
 {
+    /// <summary>
+    /// PG操作
+    /// </summary>
     public partial class MainWindow
     {
         private MQTTPG MQTTPG { get; set; }

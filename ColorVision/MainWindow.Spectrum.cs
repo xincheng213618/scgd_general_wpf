@@ -21,6 +21,9 @@ using static cvColorVision.GCSDLL;
 
 namespace ColorVision
 {
+    /// <summary>
+    /// 光谱仪
+    /// </summary>
     public partial class MainWindow
     {
         private MQTTSpectrum MQTTSpectrum { get; set; }
