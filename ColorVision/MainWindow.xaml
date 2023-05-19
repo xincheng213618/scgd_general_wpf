@@ -63,13 +63,12 @@
                                             <Button  Content="InitPG" Click="PGInit"/>
                                             <Button  Content="UnInitPG" Click="PGUnInit"/>
                                             <DockPanel>
-                                                <TextBlock  x:Name="TextBlockPGIP"   Text="IP:"/>
-                                                <TextBox  x:Name="TextBoxPGIP" Text="" />
-
+                                                <TextBlock  x:Name="TextBlockPGIP"  Width="30" Text="IP:"/>
+                                                <TextBox  x:Name="TextBoxPGIP" Height="16" BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"/>
                                             </DockPanel>
-                                            <DockPanel>
-                                                <TextBlock  x:Name="TextBlockPGPort" Text="Port:"/>
-                                                <TextBox  x:Name="TextBoxPGPort" Text="" />
+                                            <DockPanel  >
+                                                <TextBlock  x:Name="TextBlockPGPort"  Width="30" Text="Port:"/>
+                                                <TextBox  x:Name="TextBoxPGPort" Height="16" BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"/>
                                             </DockPanel>
 
                                             <Button  Content="打开PG" Click="PGOpen"/>

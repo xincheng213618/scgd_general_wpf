@@ -23,6 +23,24 @@ namespace CvOperator
         public MainWindow()
         {
             InitializeComponent();
+            System.Windows.Forms.Screen screen = System.Windows.Forms.Screen.AllScreens[0];
+            InitializeComponent();
+            //工作区域
+            //Left = screen.WorkingArea.Left;
+            //Top = screen.WorkingArea.Top;
+            //Height = screen.WorkingArea.Height;
+            //Width = screen.WorkingArea.Width;
+            Left = screen.WorkingArea.Left;
+            Top = screen.WorkingArea.Top;
+            this.Width = System.Windows.SystemParameters.PrimaryScreenWidth;
+            this.Height = System.Windows.SystemParameters.PrimaryScreenHeight;
+            ResizeMode  =ResizeMode.NoResize;
+            WindowStyle = WindowStyle.None;
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            Environment.Exit(0);
         }
     }
 }

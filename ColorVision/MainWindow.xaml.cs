@@ -681,8 +681,13 @@ namespace ColorVision
             windowTemplate.Show();
         }
 
-
-
+        private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                NativeMethods.Keyboard.PressKey(0x09);
+            }
+        }
     }
 
 
