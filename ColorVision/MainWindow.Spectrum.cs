@@ -68,6 +68,7 @@ namespace ColorVision
         private void Button_Click_5(object sender, RoutedEventArgs e)
         {
             MQTTSpectrum.Close();
+            MQTTSpectrum.UnInit();
         }
         #endregion
         #region Spectrum

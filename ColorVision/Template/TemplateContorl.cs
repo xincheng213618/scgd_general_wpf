@@ -101,32 +101,6 @@ namespace ColorVision.Template
                     Params.Add(new KeyValuePair<string, T>("default", Default));
                 }
             }
-            foreach (var item in Params)
-            {
-                item.Value.IsEnabledChanged += (s, e) =>
-                {
-                    foreach (var item2 in Params)
-                    {
-                        if (item2.Key != item.Key)
-                            item2.Value.IsEnable = false;
-                    }
-                };
-            }
-            Params.CollectionChanged += (s, e) =>
-            {
-                if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add)
-                {
-                    Params[e.NewStartingIndex].Value.IsEnabledChanged += (s, e1) =>
-                    {
-                        foreach (var item2 in Params)
-                        {
-                            if (item2.Key != Params[e.NewStartingIndex].Key)
-                                item2.Value.IsEnable = false;
-                        }
-                    };
-                    
-                }
-            };
             return Params;
         }
 

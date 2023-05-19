@@ -85,7 +85,6 @@
                     </DockPanel>
                 </StackPanel>
             </GroupBox>
-            <CheckBox Content="是否启用该校正模板"  IsChecked="{Binding IsEnable}" />
         </StackPanel>
     </Grid>
 </UserControl>

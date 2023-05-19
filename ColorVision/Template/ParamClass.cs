@@ -12,17 +12,7 @@ namespace ColorVision.Template
 
     public class ParamBase:ViewModelBase
     {
-        public event EventHandler IsEnabledChanged;
 
-        [JsonProperty("enable")]
-        [Category("_Setting"), DisplayName("是否启用")]
-        public bool IsEnable { get => _IsEnable; set {
-                if (IsEnable == value) return;
-                _IsEnable = value; 
-                if (value == true) IsEnabledChanged?.Invoke(this, new EventArgs()); 
-                NotifyPropertyChanged(); } 
-        }
-        private bool _IsEnable;
     }
 
     public class AoiParam: ParamBase
