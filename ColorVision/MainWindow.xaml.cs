@@ -66,10 +66,10 @@ namespace ColorVision
 
         private async void Window_Initialized(object sender, EventArgs e)
         {
-            if (WindowConfig.IsExist)
+            if (MainWindowConfig.IsExist)
             {
-                this.Icon = WindowConfig.Icon ?? this.Icon;
-                this.Title = WindowConfig.Title ?? this.Title;
+                this.Icon = MainWindowConfig.Icon ?? this.Icon;
+                this.Title = MainWindowConfig.Title ?? this.Title;
             }
             await Task.Delay(100);
             ToolBar1.Visibility = Visibility.Collapsed;

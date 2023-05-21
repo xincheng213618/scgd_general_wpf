@@ -5,7 +5,7 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision
 {
-    public class WindowConfig
+    public class MainWindowConfig
     {
         private static string ConfigPath = Environment.CurrentDirectory + "/config/config.ini";
 
@@ -15,7 +15,7 @@ namespace ColorVision
         {
             get
             {
-                string iconPath = NativeMethods.IniFile.ReadStringFromIniFile(ConfigPath, nameof(WindowConfig), nameof(Icon), "");
+                string iconPath = NativeMethods.IniFile.ReadStringFromIniFile(ConfigPath, nameof(MainWindowConfig), nameof(Icon), "");
                 if (iconPath != null && File.Exists(iconPath))
                 {
                     if (Path.GetExtension(iconPath).Contains("ico"))
@@ -44,7 +44,7 @@ namespace ColorVision
         {
             get
             {
-                string Title = NativeMethods.IniFile.ReadStringFromIniFile(ConfigPath, nameof(WindowConfig), nameof(Title), string.Empty);
+                string Title = NativeMethods.IniFile.ReadStringFromIniFile(ConfigPath, nameof(MainWindowConfig), nameof(Title), string.Empty);
                 return Title == "" ? null : Title;
             }
         }
