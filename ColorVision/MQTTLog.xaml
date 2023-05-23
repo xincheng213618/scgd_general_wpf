@@ -19,8 +19,8 @@
                     <Button  Content="退订" Click="UnSubscribe_Click"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
-                    <TextBox x:Name="TextBoxSubscribe1" TextWrapping="Wrap" Text="topic1" Width="120"/>
-                    <TextBox x:Name="TextBoxSend" TextWrapping="Wrap"   Text="topic1" Width="120"/>
+                    <TextBox x:Name="TextBoxSubscribe1" TextWrapping="NoWrap" AcceptsReturn="True" Text="topic1" Width="120"/>
+                    <TextBox x:Name="TextBoxSend" TextWrapping="NoWrap" AcceptsReturn="True" Text="topic1" Width="120"/>
                     <CheckBox x:Name="CheckBoxRetained" />
                     <Button  Content="发送" Click="Send_Click"/>
                 </StackPanel>
@@ -48,7 +48,11 @@
 
             </Grid>
         </DockPanel>
-        <TextBox  Grid.Row="1" x:Name="TextBoxResult"  VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" />
+        <ScrollViewer  Grid.Row="1"  >
+            <StackPanel x:Name="StackPanelText">
+            </StackPanel>
+        </ScrollViewer>
+            
 
 
     </Grid>

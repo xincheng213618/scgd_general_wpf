@@ -8,12 +8,15 @@ using System.Windows;
 namespace ColorVision
 {
     /// <summary>
-    /// 滤色轮
+    /// 源表
     /// </summary>
     public partial class MainWindow
     {
 
+        private void Button_Click_6(object sender, RoutedEventArgs e)
+        {
 
+        }
 
     }
 }

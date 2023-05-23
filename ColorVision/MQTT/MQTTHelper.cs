@@ -602,7 +602,10 @@ namespace ColorVision.MQTT
                     resultData_MQTT = new ResultDataMQTT()
                     {
                         ResultCode = 1,
-                        ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + $"成功  主题:'{topic}'，信息:'{msg}'，是否保留:'{retained}'"
+                        ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + $"主题:'{topic}',信息:'{msg}'",
+                        Topic = topic,
+                        Payload = msg,
+
                     };
                 }
                 else
@@ -663,8 +666,8 @@ namespace ColorVision.MQTT
             {
                 ResultCode = 1,
                 ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + $"MQTTClient'{arg.ClientId}'内容：'{Encoding.UTF8.GetString(arg.ApplicationMessage.Payload)}'；主题：'{arg.ApplicationMessage.Topic}'，消息等级Qos：[{arg.ApplicationMessage.QualityOfServiceLevel}]，是否保留：[{arg.ApplicationMessage.Retain}]",
-                ResultObject1 = arg.ApplicationMessage.Topic,
-                ResultObject2 = Encoding.UTF8.GetString(arg.ApplicationMessage.Payload)
+                Topic = arg.ApplicationMessage.Topic,
+                Payload = Encoding.UTF8.GetString(arg.ApplicationMessage.Payload)
             });
             return Task.CompletedTask;
         }
@@ -691,11 +694,11 @@ namespace ColorVision.MQTT
         /// <summary>
         /// 扩展1
         /// </summary>
-        public object ResultObject1 { get; set; } = string.Empty;
+        public object Topic { get; set; } = string.Empty;
 
         /// <summary>
         /// 扩展2
         /// </summary>
-        public object ResultObject2 { get; set; } = string.Empty;
+        public object Payload { get; set; } = string.Empty;
     }
 }

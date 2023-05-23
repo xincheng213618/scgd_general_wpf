@@ -203,10 +203,10 @@
                             <ToggleButton  x:Name="ToggleButton4"  Style="{StaticResource ButtonPageControl1}" Content="源表设置"  FontSize="15" Foreground="Black" IsChecked="false" />
                             <Border Visibility="{Binding ElementName=ToggleButton4,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}"  Background="#E8E8E9" Margin="5,2" CornerRadius="5">
                                 <StackPanel Margin="5">
-                                    <DockPanel>
-                                    </DockPanel>
                                     <UniformGrid >
-
+                                        <Button Content="打开源表"  Click="Button_Click_3"/>
+                                        <Button Content="关闭源表"  Click="Button_Click_6"/>
+                                        <Button Content="读取参数"  Click="Button_Click_6"/>
                                     </UniformGrid>
                                 </StackPanel>
                             </Border>

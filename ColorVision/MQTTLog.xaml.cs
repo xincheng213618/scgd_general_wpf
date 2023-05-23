@@ -1,10 +1,13 @@
 ﻿#pragma warning disable CS4014
 using ColorVision.MQTT;
 using ColorVision.MVVM;
+using ColorVision.Util;
 using MQTTnet.Client;
 using MQTTnet.Server;
+using ScottPlot.Drawing.Colormaps;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 using System.Threading.Tasks;
@@ -37,7 +40,30 @@ namespace ColorVision
         {
             Application.Current.Dispatcher.BeginInvoke(new Action(() =>
             {
-                TextBoxResult.Text = $"{resultData_MQTT.ResultMsg}\r\n" + TextBoxResult.Text;
+                TextBox textBox = new TextBox() { BorderThickness = new Thickness(0),Text = resultData_MQTT.ResultMsg,Tag = resultData_MQTT };
+                ContextMenu contextMenu = new ContextMenu();
+                MenuItem menuItem2 = new MenuItem() { Header = "复制Payload" };
+                menuItem2.Click += (s, e) => { NativeMethods.Clipboard.SetText(resultData_MQTT.Payload.ToString() ?? string.Empty); };
+                contextMenu.Items.Add(menuItem2);
+                MenuItem menuItem = new MenuItem() { Header = "复制" };
+                menuItem.Click += (s, e) => { NativeMethods.Clipboard.SetText(textBox.Text); };
+                contextMenu.Items.Add(menuItem);
+                MenuItem menuItem1 = new MenuItem() { Header = "复制Topic" };
+                menuItem1.Click += (s, e) => { NativeMethods.Clipboard.SetText(resultData_MQTT.Topic.ToString()??string.Empty); };
+                contextMenu.Items.Add(menuItem1);
+                MenuItem menuItem3 = new MenuItem() { Header = "SaveToFile" };
+                menuItem3.Click += (s, e) => {
+                    System.Windows.Forms.SaveFileDialog saveFileDialog = new System.Windows.Forms.SaveFileDialog();
+                    saveFileDialog.Filter = "文本文件|*.txt";
+                    saveFileDialog.FileName = resultData_MQTT.Topic + DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss");
+                    if (saveFileDialog.ShowDialog()== System.Windows.Forms.DialogResult.OK)
+                    {
+                        File.WriteAllText(saveFileDialog.FileName, resultData_MQTT.Payload.ToString());
+                    };
+                };
+                contextMenu.Items.Add(menuItem3);
+                textBox.ContextMenu = contextMenu;
+                StackPanelText.Children.Insert(0,textBox);
             }));
         }
 
