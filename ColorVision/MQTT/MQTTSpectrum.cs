@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS4014,CS0618
-using MQTTnet.Client;
+﻿using MQTTnet.Client;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -17,23 +16,16 @@ namespace ColorVision.MQTT
 {
     public delegate void MQTTSpectrumDataHandler(ColorParam colorPara);
 
-    public class MQTTSpectrum
+    public class MQTTSpectrum: BaseService
     {
         public event MQTTSpectrumDataHandler DataHandlerEvent;
-
-        private string SubscribeTopic;
-        private string SendTopic;
-        private MQTTControl MQTTControl;
 
         public MQTTSpectrum()
         {
             MQTTControl = MQTTControl.GetInstance();
             MQTTControl.Connected += (s, e) => MQTTControlInit();
-            MQTTControl.Connect();
+            Task.Run(() => MQTTControl.Connect());
         }
-
-        public ulong ServiceID { get; set; }
-
 
         private void MQTTControlInit()
         {
@@ -50,7 +42,7 @@ namespace ColorVision.MQTT
         {
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {
-                string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.Payload);
+                string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
                 try
                 {
                     MQTTMsgReturn json = JsonConvert.DeserializeObject<MQTTMsgReturn>(Msg);
@@ -188,20 +180,6 @@ namespace ColorVision.MQTT
             return true;
         }
 
-        private List<Guid> RunTimeUUID = new List<Guid> { Guid.NewGuid() };
-
-        private void PublishAsyncClient(MQTTMsg msg)
-        {
-            Guid guid = Guid.NewGuid();
-            RunTimeUUID.Add(guid);
-
-            msg.ServiceName = SendTopic;
-            msg.MsgID = guid;
-            msg.ServiceID = ServiceID;
-
-            string json = JsonConvert.SerializeObject(msg, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-            MQTTControl.PublishAsyncClient(SendTopic, json, false);
-        }
 
         public class GetDataParamMQTT
         {

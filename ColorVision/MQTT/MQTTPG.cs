@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS4014,CS0618
-using MQTTnet.Client;
+﻿using MQTTnet.Client;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -15,7 +14,7 @@ using static cvColorVision.GCSDLL;
 namespace ColorVision.MQTT
 {
 
-    public class MQTTPG
+    public class MQTTPG: BaseService
     {
         public enum PGType
         {
@@ -33,17 +32,13 @@ namespace ColorVision.MQTT
             Serial,
         };
 
-        private string SubscribeTopic;
-        private string SendTopic;
-        private MQTTControl MQTTControl;
 
         public MQTTPG()
         {
             MQTTControl = MQTTControl.GetInstance();
             MQTTControl.Connected += (s, e) => MQTTControlInit();
-            MQTTControl.Connect();
+            Task.Run(() => MQTTControl.Connect());
         }
-        private ulong ServiceID;
 
 
         private void MQTTControlInit()
@@ -62,7 +57,7 @@ namespace ColorVision.MQTT
         {
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {
-                string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.Payload);
+                string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
                 try
                 {
                     MQTTMsgReturn json = JsonConvert.DeserializeObject<MQTTMsgReturn>(Msg);
@@ -259,19 +254,6 @@ namespace ColorVision.MQTT
             return true;
         }
         
-        private List<Guid> RunTimeUUID = new List<Guid> { Guid.NewGuid() };
-
-        private void PublishAsyncClient(MQTTMsg msg)
-        {
-            Guid guid = Guid.NewGuid();
-            RunTimeUUID.Add(guid);
-
-            msg.ServiceName = SendTopic;
-            msg.MsgID = guid;
-            msg.ServiceID = ServiceID;
-            string json = JsonConvert.SerializeObject(msg, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-            MQTTControl.PublishAsyncClient(SendTopic, json, false);
-        }
         public class SetParamFunctionSwitchMQTT: SetParamFunctionMQTT
         {
             [JsonProperty("nIndex")]

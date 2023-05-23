@@ -22,6 +22,8 @@ namespace ColorVision.MQTT
         private MQTTHelper _MQTTHelper;
         public MQTTHelper MQTTHelper { get => _MQTTHelper; set => _MQTTHelper = value; }
 
+        public event MQTTMsgHandler MQTTMsgChanged;
+
         private MQTTControl()
         {
             MQTTHelper = new MQTTHelper();
@@ -30,6 +32,7 @@ namespace ColorVision.MQTT
             UName = "";
             UPwd = "";
             Task.Run(() => Connect());
+            MQTTHelper.MsgHandle += (s) => { MQTTMsgChanged?.Invoke(s); };
         }
 
         public string IP { get => _IP;
@@ -77,21 +80,21 @@ namespace ColorVision.MQTT
                 return true;
             }
 
-            ResultDataMQTT resultDataMQTT = await MQTTHelper.CreateMQTTClientAndStart(IP, Port, UName, UPwd, ShowLog);
+            ResultDataMQTT resultDataMQTT = await MQTTHelper.CreateMQTTClientAndStart(IP, Port, UName, UPwd);
             if (resultDataMQTT.ResultCode !=1)
             {
                 IsConnect = false;
                 return false;
             }
 
-            MQTTHelper._MqttClient.ApplicationMessageReceivedAsync += (arg) =>
+            MQTTHelper.MqttClient.ApplicationMessageReceivedAsync += (arg) =>
             {
                 ApplicationMessageReceivedAsync.Invoke(arg); return Task.CompletedTask;
             };
-            MQTTHelper._MqttClient.DisconnectedAsync += async (arg) =>
+            MQTTHelper.MqttClient.DisconnectedAsync += async (arg) =>
             {
                 IsConnect = false;
-                await MQTTHelper.CreateMQTTClientAndStart(IP, Port, UName, UPwd, ShowLog);
+                await MQTTHelper.CreateMQTTClientAndStart(IP, Port, UName, UPwd);
                 IsConnect = true;
             };
             IsConnect = true;
@@ -100,20 +103,15 @@ namespace ColorVision.MQTT
             return IsConnect;
         }
 
-        public event MQTTMsgHandler MQTTMsgChanged;
 
-        private void ShowLog(ResultDataMQTT resultData_MQTT)
-        {
-            MQTTMsgChanged?.Invoke(resultData_MQTT);
-        }
 
-        public async Task DisconnectAsyncClient() => await MQTTHelper.DisconnectAsync_Client();
+        public async Task DisconnectAsyncClient() => await MQTTHelper.DisconnectAsyncClient();
 
         public ObservableCollection<string> SubscribeTopic { get; set; }
 
         public void SubscribeAsyncClient(string topic) 
         {
-            MQTTHelper.SubscribeAsync_Client(topic);
+            MQTTHelper.SubscribeAsyncClient(topic);
             if (!SubscribeTopic.Contains(topic))
                 SubscribeTopic.Add(topic);
         }
@@ -123,13 +121,12 @@ namespace ColorVision.MQTT
         {
             if (IsConnect)
             {
-                MQTTHelper.UnsubscribeAsync_Client(topic);
+                MQTTHelper.UnsubscribeAsyncClient(topic);
                 SubscribeTopic.Remove(topic);
             }
-
         }
            
-        public async Task  PublishAsyncClient(string topic, string msg, bool retained) => await MQTTHelper.PublishAsync_Client(topic, msg, retained);
+        public async Task  PublishAsyncClient(string topic, string msg, bool retained) => await MQTTHelper.PublishAsyncClient(topic, msg, retained);
     }
 
 

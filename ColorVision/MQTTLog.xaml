@@ -26,9 +26,6 @@
                 </StackPanel>
 
                 <StackPanel>
-                    <Button Content="TestIniCamera"  Click="Button_Click" />
-                    <Button Content="TestOpenCamera"  Click="Button1_Click" />
-                    <Button Content="TestGetData"  Click="Button2_Click" />
 
                 </StackPanel>
             </StackPanel>
@@ -48,10 +45,13 @@
 
             </Grid>
         </DockPanel>
-        <ScrollViewer  Grid.Row="1"  >
-            <StackPanel x:Name="StackPanelText">
-            </StackPanel>
-        </ScrollViewer>
+        <Border  Grid.Row="1" CornerRadius="5" Background="#f5f5f5">
+            <ScrollViewer  >
+                <StackPanel x:Name="StackPanelText">
+                </StackPanel>
+            </ScrollViewer>
+
+        </Border>
             
 
 

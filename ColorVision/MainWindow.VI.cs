@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ColorVision.MQTT;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,8 +13,20 @@ namespace ColorVision
     /// </summary>
     public partial class MainWindow
     {
+        public MQTTVISource MQTTVISource { get; set; } = new MQTTVISource();
 
+        private void MQTTVIOpen(object sender, RoutedEventArgs e)
+        {
+            MQTTVISource.Open();
+        }
+        private void MQTTVIClose(object sender, RoutedEventArgs e)
+        {
+            MQTTVISource.Close();
+        }
 
-
+        private void MQTTVIGetData(object sender, RoutedEventArgs e)
+        {
+            MQTTVISource.GetData();
+        }
     }
 }

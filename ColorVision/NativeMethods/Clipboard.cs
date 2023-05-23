@@ -5,6 +5,10 @@ using System.Windows;
 namespace ColorVision.NativeMethods
 {
 
+    /// <summary>
+    /// 粘贴板
+    /// </summary>
+    /// 解决粘贴板中的占用问题，参考：https://www.cnblogs.com/zhaoqingqing/p/11301873.html
     public static class Clipboard
     {
         [DllImport("User32")]

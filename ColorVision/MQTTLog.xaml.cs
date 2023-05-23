@@ -13,6 +13,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace ColorVision
 {
@@ -40,7 +41,7 @@ namespace ColorVision
         {
             Application.Current.Dispatcher.BeginInvoke(new Action(() =>
             {
-                TextBox textBox = new TextBox() { BorderThickness = new Thickness(0),Text = resultData_MQTT.ResultMsg,Tag = resultData_MQTT };
+                TextBox textBox = new TextBox() { BorderThickness = new Thickness(0),Text = resultData_MQTT.ResultMsg,Tag = resultData_MQTT,Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#f5f5f5")) };
                 ContextMenu contextMenu = new ContextMenu();
                 MenuItem menuItem2 = new MenuItem() { Header = "复制Payload" };
                 menuItem2.Click += (s, e) => { NativeMethods.Clipboard.SetText(resultData_MQTT.Payload.ToString() ?? string.Empty); };
@@ -93,24 +94,6 @@ namespace ColorVision
             {
                 TextBoxSubscribe1.Text = MQTTControl.SubscribeTopic[listView.SelectedIndex];
             }
-        }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            string json = "{\"Code\":0,\"EventName\":\"InitCamera\",\"Msg\":\"\",\"data\":{\"CameraId\":\"{\\n\\t\\\"ID\\\" : \\n\\t[\\n\\t\\t\\\"566b2242984bc686b\\\"\\n\\t],\\n\\t\\\"number\\\" : 1\\n}\\n\"}}";
-            MQTTControl.PublishAsyncClient("CameraService", json, false);
-        }
-
-        private void Button1_Click(object sender, RoutedEventArgs e)
-        {
-            string json = "{\"Code\":0,\"EventName\":\"OpenCamera\",\"Msg\":\"\",\"data\":null}";
-            MQTTControl.PublishAsyncClient("CameraService", json, false);
-        }
-
-        private void Button2_Click(object sender, RoutedEventArgs e)
-        {
-            string json = "{\"Version\":\"1.0\",\"EventName\":\"GetData\",\"Code\":0,\"Msg\":\"\",\"data\":{\"FilePath\":\"D:\\\\1.tif\"}}";
-            MQTTControl.PublishAsyncClient("CameraService", json, false);
         }
     }
 }

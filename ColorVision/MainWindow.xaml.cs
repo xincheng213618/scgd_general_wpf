@@ -625,15 +625,6 @@ namespace ColorVision
         }
 
 
-        private void MenuItem1_Click(object sender, RoutedEventArgs e)
-        {
-            double[] xs = { 1, 2, 3, 4, 5 };
-            double[] ys = { 1, 4, 9, 16, 25 };
-            var plt = new ScottPlot.Plot(400, 300);
-            plt.AddScatter(xs, ys);
-            new ScottPlot.WpfPlotViewer(plt).Show();
-        }
-
         private void MenuItem_Click_2(object sender, RoutedEventArgs e)
         {
             WindowTemplate windowTemplate = new WindowTemplate(WindowTemplateType.AoiParam);

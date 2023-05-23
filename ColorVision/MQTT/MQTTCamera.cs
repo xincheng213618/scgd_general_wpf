@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS4014,CS0618
-using ColorVision.MVVM;
+﻿using ColorVision.MVVM;
 using ColorVision.Template;
 using MQTTnet.Client;
 using Newtonsoft.Json;
@@ -17,9 +16,6 @@ using System.Windows;
 
 namespace ColorVision.MQTT
 {
-
-
-
     public enum CameraType 
     {
         [Description("CV_Q")]
@@ -71,16 +67,8 @@ namespace ColorVision.MQTT
 
     public delegate void MQTTCameraFileHandler(string? FilePath);
 
-    public class MQTTCamera 
+    public class MQTTCamera :BaseService
     {
-
-        private MQTTControl MQTTControl;
-
-        private string SubscribeTopic;
-        private string SendTopic;
-
-        private ulong ServiceID;
-
 
         public event MQTTCameraFileHandler FileHandler;
 
@@ -92,7 +80,7 @@ namespace ColorVision.MQTT
         {
             MQTTControl = MQTTControl.GetInstance();
             MQTTControl.Connected += (s, e) => MQTTControlInit();
-            MQTTControl.Connect();
+            Task.Run(() => MQTTControl.Connect());
         }
 
         private void MQTTControlInit()
@@ -110,7 +98,7 @@ namespace ColorVision.MQTT
         {
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {
-                string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.Payload);
+                string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
                 try
                 {
                     MQTTMsgReturn json = JsonConvert.DeserializeObject<MQTTMsgReturn>(Msg);
@@ -260,21 +248,6 @@ namespace ColorVision.MQTT
             };
             PublishAsyncClient(mQTTMsg);
             return true;
-        }
-
-        private List<Guid> RunTimeUUID= new List<Guid> { Guid.NewGuid() };
-
-        private void PublishAsyncClient(MQTTMsg msg)
-        {
-            Guid guid = Guid.NewGuid();
-            RunTimeUUID.Add(guid);
-
-            msg.ServiceName = SendTopic;
-            msg.MsgID = guid;
-            msg.ServiceID = ServiceID;
-
-            string json = JsonConvert.SerializeObject(msg, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-            MQTTControl.PublishAsyncClient(SendTopic, json, false);
         }
 
 

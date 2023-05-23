@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS4014,CS0618
-using MQTTnet.Client;
+﻿using MQTTnet.Client;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -15,21 +14,38 @@ using static cvColorVision.GCSDLL;
 
 namespace ColorVision.MQTT
 {
-
-    public class MQTTVISource
+    public class BaseService
     {
-        private string SubscribeTopic;
-        private string SendTopic;
-        private MQTTControl MQTTControl;
+        public string SubscribeTopic { get; set; }
+        public string SendTopic { get; set; }
+        public MQTTControl MQTTControl { get; set; }
+        public ulong ServiceID { get; set; }
 
+        internal List<Guid> RunTimeUUID = new List<Guid> { Guid.NewGuid() };
+
+        internal void PublishAsyncClient(MQTTMsg msg)
+        {
+            Guid guid = Guid.NewGuid();
+            RunTimeUUID.Add(guid);
+
+            msg.ServiceName = SendTopic;
+            msg.MsgID = guid;
+            msg.ServiceID = ServiceID;
+
+            string json = JsonConvert.SerializeObject(msg, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+            Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, json, false));
+        }
+    }
+
+
+    public class MQTTVISource: BaseService
+    {
         public MQTTVISource()
         {
             MQTTControl = MQTTControl.GetInstance();
             MQTTControl.Connected += (s, e) => MQTTControlInit();
-            MQTTControl.Connect();
+            Task.Run(() => MQTTControl.Connect());
         }
-
-        public ulong ServiceID { get; set; }
 
 
         private void MQTTControlInit()
@@ -47,7 +63,7 @@ namespace ColorVision.MQTT
         {
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {
-                string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.Payload);
+                string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
                 try
                 {
                     MQTTMsgReturn json = JsonConvert.DeserializeObject<MQTTMsgReturn>(Msg);
@@ -128,7 +144,7 @@ namespace ColorVision.MQTT
             PublishAsyncClient(mQTTMsg);
             return true;
         }
-
+        
         public bool Open()
         {
             if (ServiceID == 0)
@@ -144,7 +160,7 @@ namespace ColorVision.MQTT
             return true;
         }
 
-        public bool GetData(float IntTime, int AveNum, bool bUseAutoIntTime =false, bool bUseAutoDark =false)
+        public bool GetData()
         {
             MQTTMsg mQTTMsg = new MQTTMsg
             {
@@ -169,20 +185,7 @@ namespace ColorVision.MQTT
             return true;
         }
 
-        private List<Guid> RunTimeUUID = new List<Guid> { Guid.NewGuid() };
 
-        private void PublishAsyncClient(MQTTMsg msg)
-        {
-            Guid guid = Guid.NewGuid();
-            RunTimeUUID.Add(guid);
-
-            msg.ServiceName = SendTopic;
-            msg.MsgID = guid;
-            msg.ServiceID = ServiceID;
-
-            string json = JsonConvert.SerializeObject(msg, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-            MQTTControl.PublishAsyncClient(SendTopic, json, false);
-        }
 
     }
 }

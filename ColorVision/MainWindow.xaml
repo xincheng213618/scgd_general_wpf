@@ -26,11 +26,8 @@
                     <MenuItem Header="校正模板设置(_C)"  Click="MenuItem_Click_3"/>
                     <MenuItem Header="_PG通讯模板设置"  Click="MenuItem_Click_4"/>
                     <MenuItem Header="数据判断模板设置(_J)"  Click="MenuItem_Click_5"/>
-
                 </MenuItem>
                 <MenuItem Header="MQTTLog(_M)" Click="MenuItem_Click">
-                </MenuItem>
-                <MenuItem Header="PlotTest(_P)" Click="MenuItem1_Click">
                 </MenuItem>
                 <MenuItem Header="帮助(_H)">
                     <MenuItem Header="关于(_A)" Click="MenuItem_Click_1"/>
