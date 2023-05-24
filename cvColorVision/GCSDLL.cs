@@ -3,9 +3,14 @@ using System.Runtime.InteropServices;
 
 namespace cvColorVision
 {
-
+    /// <summary>
+    /// 连接光谱仪
+    /// </summary>
     public class GCSDLL
     {
+        /// <summary>
+        /// 光谱仪传递参数
+        /// </summary>
         public struct ColorParam
         {
             public float fx;       //色坐标
