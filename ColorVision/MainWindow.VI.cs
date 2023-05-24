@@ -13,7 +13,12 @@ namespace ColorVision
     /// </summary>
     public partial class MainWindow
     {
-        public MQTTVISource MQTTVISource { get; set; } = new MQTTVISource();
+        private MQTTVISource MQTTVISource { get; set; }
+        private void StackPanelVI_Initialized(object sender, EventArgs e)
+        {
+            MQTTVISource = new MQTTVISource();
+
+        }
 
         private void MQTTVIOpen(object sender, RoutedEventArgs e)
         {
