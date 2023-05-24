@@ -17,6 +17,7 @@
                 <TextBlock Text="PG画面指令"/>
                 <TextBox Text="{Binding PGPattenChangeComm1}" Height="16" BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"/>
             </DockPanel>
+            <CheckBox Content="启用模板"  IsChecked="{Binding IsEnable}" />
         </StackPanel>
             
     </Grid>

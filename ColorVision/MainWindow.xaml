@@ -26,6 +26,8 @@
                     <MenuItem Header="校正模板设置(_C)"  Click="MenuItem_Click_3"/>
                     <MenuItem Header="_PG通讯模板设置"  Click="MenuItem_Click_4"/>
                     <MenuItem Header="数据判断模板设置(_J)"  Click="MenuItem_Click_5"/>
+                    <MenuItem Header="源表模板设置(_J)"  Click="MenuItem_Click_6"/>
+
                 </MenuItem>
                 <MenuItem Header="MQTTLog(_M)" Click="MenuItem_Click">
                 </MenuItem>
@@ -199,12 +201,44 @@
                         <StackPanel Margin="0,5">
                             <ToggleButton  x:Name="ToggleButton4"  Style="{StaticResource ButtonPageControl1}" Content="源表设置"  FontSize="15" Foreground="Black" IsChecked="false" />
                             <Border Visibility="{Binding ElementName=ToggleButton4,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}"  Background="#E8E8E9" Margin="5,2" CornerRadius="5">
-                                <StackPanel Margin="5"  Initialized="StackPanelVI_Initialized">
-                                    <UniformGrid >
-                                        <Button Content="打开源表"  Click="Button_Click_3"/>
-                                        <Button Content="关闭源表"/>
-                                        <Button Content="读取参数" />
+                                <StackPanel  x:Name="StackPanelVI" Margin="5"  Initialized="StackPanelVI_Initialized" d:DataContext="{d:DesignInstance Type=Template:PassSxSource}" >
+                                    <DockPanel>
+                                        <CheckBox IsChecked="{Binding IsNet}" Content="网络" DockPanel.Dock="Right"/>
+                                        <Button x:Name="ButtonSourceMeter1"  DockPanel.Dock="Right" Content="打开" Width="100" Click="ButtonSourceMeter1_Click"/>
+                                        <TextBox x:Name="TextSourceMeterIP" Text="{Binding DevName}" BorderThickness="0,0,0,1"  />
+                                    </DockPanel>
+                                    <DockPanel >
+                                        <RadioButton Content="电压" IsChecked="{Binding IsSourceV}" />
+                                        <RadioButton Content="电流" IsChecked="{Binding IsSourceV,Converter={StaticResource inverseBooleanConverter}}"/>
+                                    </DockPanel>
+                                    <UniformGrid Columns="2">
+                                        <DockPanel>
+                                            <TextBlock Text="源值:"/>
+                                            <TextBlock DockPanel.Dock="Right"  Visibility="{Binding IsSourceV,Converter={StaticResource bool2VisibilityConverter}}" Text="V"/>
+                                            <TextBlock DockPanel.Dock="Right"  Visibility="{Binding IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="mA"/>
+                                            <TextBox Text="{Binding MeasureVal}"/>
+                                        </DockPanel>
+                                        <DockPanel >
+                                            <TextBlock Text="限值:"/>
+                                            <TextBlock DockPanel.Dock="Right"  Visibility="{Binding IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="V"/>
+                                            <TextBlock DockPanel.Dock="Right"  Visibility="{Binding IsSourceV,Converter={StaticResource bool2VisibilityConverter}}" Text="mA"/>                                            <TextBox Text="{Binding LmtVal}"/>
+                                        </DockPanel>
                                     </UniformGrid>
+
+                                         
+                                    <UniformGrid  Columns="3">
+                                        <Button Content="点亮" Click="MeasureData_Click"/>
+                                        <Button Content="设置" Click="StepMeasureData_Click"/>
+                                        <Button Content="关闭" Click="MeasureDataClose_Click"/>
+                                    </UniformGrid>
+                                    <DockPanel>
+                                        <TextBlock  Text="电压" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                                        <TextBox x:Name="TextSourceMeterV" Text="{Binding V,StringFormat={}{0}V}" BorderThickness="0,0,0,1"  />
+                                    </DockPanel>
+                                    <DockPanel>
+                                        <TextBlock  Text="电流" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                                        <TextBox x:Name="TextSourceMeterI" Text="{Binding I,StringFormat={}{0}mA}" BorderThickness="0,0,0,1"  />
+                                    </DockPanel>
                                 </StackPanel>
                             </Border>
                         </StackPanel>

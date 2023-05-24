@@ -30,12 +30,15 @@ namespace ColorVision.Template
         private static string FileNamePGParams = "cfg\\PGParamSetup.cfg";
 
         private string FileNameLedJudgeParams = "cfg\\LedJudgeSetup.cfg";
+        private string FileNameSxParms = "cfg\\SxParamSetup.cfg";
+
 
 
         private bool IsOldAoiParams;
         private bool IsOldCalibrationParams;
         private bool IsOldPGParams;
         private bool IsOldLedJudgeParams;
+        private bool IsOldSxParms;
 
 
         public TemplateControl()
@@ -68,7 +71,8 @@ namespace ColorVision.Template
 
             LedReusltParams = IDefault(FileNameLedJudgeParams, new LedReusltParam(), ref IsOldLedJudgeParams);
 
-           
+            SxParms = IDefault(FileNameSxParms, new SxParm(), ref IsOldSxParms);
+
             Application.Current.MainWindow.Closed += (s, e) =>
             {
                 Save();
@@ -101,6 +105,34 @@ namespace ColorVision.Template
                     Params.Add(new KeyValuePair<string, T>("default", Default));
                 }
             }
+
+            foreach (var item in Params)
+            {
+                item.Value.IsEnabledChanged += (s, e) =>
+                {
+                    foreach (var item2 in Params)
+                    {
+                        if (item2.Key != item.Key)
+                            item2.Value.IsEnable = false;
+                    }
+                };
+            }
+            Params.CollectionChanged += (s, e) =>
+            {
+                if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add)
+                {
+                    Params[e.NewStartingIndex].Value.IsEnabledChanged += (s, e1) =>
+                    {
+                        foreach (var item2 in Params)
+                        {
+                            if (item2.Key != Params[e.NewStartingIndex].Key)
+                                item2.Value.IsEnable = false;
+                        }
+                    };
+
+                }
+            };
+
             return Params;
         }
 
@@ -112,6 +144,8 @@ namespace ColorVision.Template
             SaveDefault(FileNameCalibrationParams, CalibrationParams, IsOldCalibrationParams);
             SaveDefault(FileNamePGParams, PGParams, IsOldPGParams);
             SaveDefault(FileNameLedJudgeParams, LedReusltParams, IsOldLedJudgeParams);
+            SaveDefault(FileNameSxParms, SxParms, IsOldPGParams);
+
         }
 
 
@@ -130,6 +164,9 @@ namespace ColorVision.Template
                     break;
                 case WindowTemplateType.LedReuslt:
                     SaveDefault(FileNameLedJudgeParams, LedReusltParams, IsOldLedJudgeParams);
+                    break;
+                case WindowTemplateType.SxParm:
+                    SaveDefault(FileNameSxParms, SxParms, IsOldSxParms);
                     break;
                 default:
                     break;
@@ -160,8 +197,9 @@ namespace ColorVision.Template
 
         public ObservableCollection<KeyValuePair<string, CalibrationParam>> CalibrationParams { get; set; } 
         public ObservableCollection<KeyValuePair<string, PGParam>> PGParams { get; set; }
+        public ObservableCollection<KeyValuePair<string, SxParm>> SxParms { get; set; }
 
-
+        
         public ObservableCollection<KeyValuePair<string, LedReusltParam>> LedReusltParams { get; set; }
 
         

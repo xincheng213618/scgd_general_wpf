@@ -12,7 +12,7 @@ using ColorVision.MVVM;
 namespace ColorVision
 {
 
-    public class CircleAttribute: DrawAttributeBase
+    public class CircleAttribute : DrawAttributeBase
     {
         private int _ID;
         [Category("DrawingVisualCircle"), DisplayName("序号")]
@@ -31,12 +31,12 @@ namespace ColorVision
         private Point _Center;
 
         [Category("DrawingVisualCircle"), DisplayName("点")]
-        public Point Center { get=> _Center; set { _Center = value; NotifyPropertyChanged(); } }
+        public Point Center { get => _Center; set { _Center = value; NotifyPropertyChanged(); } }
 
         private double _Radius;
 
-        [Category("DrawingVisualCircle"), DisplayName("弧度")]   
-        public double Radius { get=>_Radius; set { _Radius = value; NotifyPropertyChanged(); } }
+        [Category("DrawingVisualCircle"), DisplayName("弧度")]
+        public double Radius { get => _Radius; set { _Radius = value; NotifyPropertyChanged(); } }
     }
 
     public class RectangleAttribute : DrawAttributeBase
@@ -57,7 +57,7 @@ namespace ColorVision
         public Rect Rect { get => _Rect; set { _Rect = value; NotifyPropertyChanged(); } }
     }
 
-    public partial class DrawAttributeBase : ViewModelBase 
+    public partial class DrawAttributeBase : ViewModelBase
     {
         private Point _Start;
         public virtual Point Start { get => _Start; set { _Start = value; NotifyPropertyChanged(); } }
@@ -65,13 +65,13 @@ namespace ColorVision
         public bool IsCheck { get; set; } = true;
     }
 
-    public class DrawingVisualCircle: DrawingVisual, INotifyPropertyChanged
+    public class DrawingVisualCircle : DrawingVisual, INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler? PropertyChanged;
         public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
 
-        public CircleAttribute Attribute { get; set; } 
+        public CircleAttribute Attribute { get; set; }
         public DrawingVisualCircle()
         {
             Attribute = new CircleAttribute();
@@ -79,13 +79,15 @@ namespace ColorVision
             Attribute.Pen = new Pen(Brushes.Black, 1);
             Attribute.Center = new Point(50, 50);
             Attribute.Radius = 30;
-            Attribute.PropertyChanged += (s,e) => {
+            Attribute.PropertyChanged += (s, e) =>
+            {
                 Render();
                 if (e.PropertyName == "Center")
                 {
                     NotifyPropertyChanged(nameof(CenterX));
                     NotifyPropertyChanged(nameof(CenterY));
-                }else if (e.PropertyName == "Radius")
+                }
+                else if (e.PropertyName == "Radius")
                 {
                     NotifyPropertyChanged(nameof(Radius));
                 }
@@ -94,9 +96,9 @@ namespace ColorVision
 
         }
         public double CenterX { get => Attribute.Center.X; set => Attribute.Center = new Point(value, Attribute.Center.Y); }
-        public double CenterY { get => Attribute.Center.Y; set => Attribute.Center = new Point(Attribute.Center.X,value); }
+        public double CenterY { get => Attribute.Center.Y; set => Attribute.Center = new Point(Attribute.Center.X, value); }
 
-        public double Radius { get => Attribute.Radius; set => Attribute.Radius =value; }
+        public double Radius { get => Attribute.Radius; set => Attribute.Radius = value; }
 
         public int ID { get => Attribute.ID; set => Attribute.ID = value; }
 
@@ -104,7 +106,7 @@ namespace ColorVision
 
         public void Render()
         {
-            using DrawingContext dc = this.RenderOpen();
+            using DrawingContext dc = RenderOpen();
             dc.DrawEllipse(Attribute.Brush, Attribute.Pen, Attribute.Center, Attribute.Radius, Attribute.Radius);
         }
     }
@@ -120,13 +122,13 @@ namespace ColorVision
             Attribute = new RectangleAttribute();
             Attribute.Brush = Brushes.Blue;
             Attribute.Pen = new Pen(Brushes.Black, 1);
-            Attribute.Rect = new Rect (50, 50, 100, 100);
+            Attribute.Rect = new Rect(50, 50, 100, 100);
             Attribute.PropertyChanged += (s, e) => Render();
         }
 
         public void Render()
         {
-            using DrawingContext dc = this.RenderOpen();
+            using DrawingContext dc = RenderOpen();
             dc.DrawRectangle(Attribute.Brush, Attribute.Pen, Attribute.Rect);
         }
     }

@@ -11,7 +11,7 @@ using System.ComponentModel;
 
 namespace ColorVision
 {
-    public class ZoomboxSub:Zoombox, INotifyPropertyChanged
+    public class ZoomboxSub : Zoombox, INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler? PropertyChanged;
 

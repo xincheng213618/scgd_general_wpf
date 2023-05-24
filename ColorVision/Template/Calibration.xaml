@@ -85,6 +85,7 @@
                     </DockPanel>
                 </StackPanel>
             </GroupBox>
+            <CheckBox Content="启用模板"  IsChecked="{Binding IsEnable}" />
         </StackPanel>
     </Grid>
 </UserControl>

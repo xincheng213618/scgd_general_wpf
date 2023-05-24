@@ -38,7 +38,8 @@ namespace ColorVision.Template
         AoiParam,
         Calibration,
         PGParam,
-        LedReuslt
+        LedReuslt,
+        SxParm
     }
 
 
@@ -90,6 +91,7 @@ namespace ColorVision.Template
                 {
                     case WindowTemplateType.AoiParam:
                     case WindowTemplateType.LedReuslt:
+                    case WindowTemplateType.SxParm:
                         PropertyGrid1.SelectedObject = ListConfigs[listView.SelectedIndex].Value;
                         break;
                     case WindowTemplateType.Calibration:
@@ -128,6 +130,9 @@ namespace ColorVision.Template
                     case WindowTemplateType.LedReuslt:
                         CreateNewTemplate(TemplateControl.GetInstance().LedReusltParams, new LedReusltParam());
                         break;
+                    case WindowTemplateType.SxParm:
+                        CreateNewTemplate(TemplateControl.GetInstance().SxParms, new SxParm());
+                        break;
                 }
                 TextBox1.Text =string.Empty;
             }
@@ -162,6 +167,9 @@ namespace ColorVision.Template
                             break;
                         case WindowTemplateType.LedReuslt:
                             TemplateControl.GetInstance().LedReusltParams.RemoveAt(ListView1.SelectedIndex);
+                            break;
+                        case WindowTemplateType.SxParm:
+                            TemplateControl.GetInstance().SxParms.RemoveAt(ListView1.SelectedIndex);
                             break;
                     }
                     ListConfigs.RemoveAt(ListView1.SelectedIndex);

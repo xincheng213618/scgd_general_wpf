@@ -1,4 +1,6 @@
-﻿using System.Runtime.InteropServices;
+﻿#pragma warning disable  CA2101
+
+using System.Runtime.InteropServices;
 
 namespace cvColorVision
 {
@@ -8,10 +10,10 @@ namespace cvColorVision
         private static bool _isSourceV = true;
 
         //打开
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvPss_Sx_OpenNetDevice", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
-        private unsafe static extern int cvPssSxOpenNetDevice(bool bNet, string devName);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvPss_Sx_OpenNetDevice", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private unsafe static extern int cvPss_Sx_OpenNetDevice(bool bNet, string devName);
 
-        public static int OpenNetDevice(bool bNet, string devName)=> cvPssSxOpenNetDevice(bNet, devName);
+        public static int OpenNetDevice(bool bNet, string devName)=> cvPss_Sx_OpenNetDevice(bNet, devName);
 
         //关闭
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvPss_Sx_CloseDevice", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
@@ -20,7 +22,8 @@ namespace cvColorVision
 
         //获取ID和长度
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvPss_Sx_GetIDN", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        private unsafe static extern bool cvPssSxGetIDN(int nDevID, byte[] pszIdn, ref int strLen);
+        private unsafe static extern bool cvPss_Sx_GetIDN(int nDevID, byte[] pszIdn, ref int strLen);
+        public static bool cvPssSxGetIDN(int nDevID, byte[] pszIdn, ref int strLen) => cvPss_Sx_GetIDN(nDevID,pszIdn,ref strLen);
 
         //设置电压参数等并点亮
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvMeasureData", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
@@ -44,7 +47,9 @@ namespace cvColorVision
         }
         //点亮后执行关闭
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvPss_Sx_SetOutput", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        private unsafe static extern bool cvPssSxSetOutput(int nDevID);
+        private unsafe static extern bool cvPss_Sx_SetOutput(int nDevID);
+
+        public static bool CvPssSxSetOutput(int nDevID) => cvPss_Sx_SetOutput(nDevID);
         //点亮后执行关闭
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvPss_Sx_SetSourceV", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private unsafe static extern bool cvPssSxSetSourceVRaw(int nDevID, bool isSourceV);

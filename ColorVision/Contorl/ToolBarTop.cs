@@ -12,7 +12,7 @@ using System.Windows.Input;
 
 namespace ColorVision
 {
-    public class ToolBarTop: ViewModelBase
+    public class ToolBarTop : ViewModelBase
     {
         public RelayCommand ZoomUniformToFill { get; set; }
         public RelayCommand ZoomUniform { get; set; }
@@ -24,10 +24,10 @@ namespace ColorVision
         private DrawCanvas DrawImageCanvas { get; set; }
         public DrawingVisual DrawVisualImage { get; set; }
 
-        public ToolBarTop(ZoomboxSub zombox,DrawCanvas drawCanvas)
+        public ToolBarTop(ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
-            this.ZoomboxSub = zombox ?? throw new ArgumentNullException(nameof(zombox));
-            this.DrawImageCanvas = drawCanvas ?? throw new ArgumentNullException(nameof(drawCanvas));
+            ZoomboxSub = zombox ?? throw new ArgumentNullException(nameof(zombox));
+            DrawImageCanvas = drawCanvas ?? throw new ArgumentNullException(nameof(drawCanvas));
             ZoomUniformToFill = new RelayCommand(a => ZoomboxSub.ZoomUniformToFill());
             ZoomUniform = new RelayCommand(a => ZoomboxSub.ZoomUniform());
             ZoomIncrease = new RelayCommand(a => ZoomboxSub.Zoom(1.25));
@@ -51,19 +51,21 @@ namespace ColorVision
         }
 
         private bool _Move;
-        public bool Move { get =>_Move; set 
-            { 
+        public bool Move
+        {
+            get => _Move; set
+            {
                 if (_Move == value) return;
                 if (value) Activate = false;
                 _Move = value;
                 DrawVisualImageControl(_Move);
                 NotifyPropertyChanged();
-            } 
+            }
         }
 
         public void DrawVisualImageControl(bool Control)
         {
-            if (_Move&&Control)
+            if (_Move && Control)
             {
                 if (!DrawImageCanvas.ContainsVisual(DrawVisualImage))
                     //DrawVisualImage = new DrawingVisual();
@@ -99,7 +101,7 @@ namespace ColorVision
                 }
                 NotifyPropertyChanged();
             }
-        }       
+        }
 
         public void DrawImage(Point actPoint, Point disPoint, ImageInfo imageInfo)
         {
@@ -173,7 +175,7 @@ namespace ColorVision
                     NotifyPropertyChanged();
                 }
             }
-        }   
+        }
 
     }
 }

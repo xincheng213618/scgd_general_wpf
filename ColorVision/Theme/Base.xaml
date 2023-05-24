@@ -4,6 +4,7 @@
                     x:Class="ColorVision.Theme.BaseEvent"
                     >
     <BooleanToVisibilityConverter x:Key="bool2VisibilityConverter"/>
+    <converter:InverseBooleanConverter x:Key="inverseBooleanConverter"/>
     <converter:BooleanToVisibilityReConverter x:Key="bool2VisibilityConverter1"/>
 
     <Style x:Key="ButtonPageControl1" TargetType="{x:Type ToggleButton}">

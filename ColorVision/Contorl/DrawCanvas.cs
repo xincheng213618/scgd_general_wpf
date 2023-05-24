@@ -56,7 +56,7 @@ namespace ColorVision
         {
             hits.Clear();
             GeometryHitTestParameters parameters = new GeometryHitTestParameters(region);
-            HitTestResultCallback callback = new HitTestResultCallback(this.HitTestCallback);
+            HitTestResultCallback callback = new HitTestResultCallback(HitTestCallback);
             VisualTreeHelper.HitTest(this, null, callback, parameters);
             return hits;
         }

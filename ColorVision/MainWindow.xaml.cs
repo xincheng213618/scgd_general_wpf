@@ -656,6 +656,12 @@ namespace ColorVision
             windowTemplate.Title = "数据判断模板设置";
             TemplateAbb(windowTemplate, TemplateControl.GetInstance().LedReusltParams);
         }
+        private void MenuItem_Click_6(object sender, RoutedEventArgs e)
+        {
+            WindowTemplate windowTemplate = new WindowTemplate(WindowTemplateType.SxParm);
+            windowTemplate.Title = "源表模板设置";
+            TemplateAbb(windowTemplate, TemplateControl.GetInstance().SxParms);
+        }
 
         private void TemplateAbb<T>(WindowTemplate windowTemplate, ObservableCollection<KeyValuePair<string, T>>  keyValuePairs)
         {
