@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace cvColorVision
 {
+
     public class GCSDLL
     {
         public struct ColorParam

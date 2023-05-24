@@ -1402,55 +1402,6 @@ namespace cvColorVision
         Communicate_Serial,
     };
 
-    public class PG
-    {
-        private const string LIBRARY_CVCAMERA = "cvCamera.dll";
-
-        //初始化PG句柄
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_InitPG",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern IntPtr CM_InitPG(PG_Type ePg_Type, Communicate_Type eCOM_Type);
-
-        //释放PG句柄
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_UnInitPG", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_UnInitPG(IntPtr handle);
-
-        //连接至PG(TCP/IP)
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_ConnectToPG",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_ConnectToPG(IntPtr handle, string szIPAddress, uint nPort);
-
-        //连接至PG(COM口)
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_InitSerialPG", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_InitSerialPG(IntPtr handle, string szComName, ulong BaudRate);
-
-        //判断PG是否已连接
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_IsConnectedPG", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_IsConnectedPG(IntPtr handle);
-
-        //StartPG
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_StartPG", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_StartPG(IntPtr handle);
-
-        //StopPG
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_StopPG",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_StopPG(IntPtr handle);
-
-        //ReSetPG
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_ReSetPG",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_ReSetPG(IntPtr handle);
-
-        //CM_SwitchUpPG
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SwitchUpPG",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_SwitchUpPG(IntPtr handle);
-
-        //CM_SwitchDownPG
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SwitchDownPG", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_SwitchDownPG(IntPtr handle);
-
-        //CM_SwitchFramePG
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SwitchFramePG", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_SwitchFramePG(IntPtr handle, int nIndex);
-    }
-
     public struct ScannCodeData
     {
         public Communicate_Type communicate_Type;
