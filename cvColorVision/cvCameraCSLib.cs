@@ -16,7 +16,7 @@ namespace cvColorVision
     public delegate void LiveShowEvent(int w, int h, byte[] rawArray);
     public delegate void PartLiveShowEvent();
     public delegate void StopLiveShow();
-    enum CONTROL_ID
+    public enum CONTROL_ID
     {
         /*0*/
         CONTROL_BRIGHTNESS = 0, //!< image brightness
@@ -177,7 +177,7 @@ namespace cvColorVision
         CONTROL_MAX_ID
     };
 
-    class GetFrameParam
+    public class GetFrameParam
     {
         //滤色片数量
         public int channelCount;
@@ -273,18 +273,18 @@ namespace cvColorVision
         public int cx;
         public int cy;
     };
-    enum CornerType //角点提取方法
+    public enum CornerType //角点提取方法
     {
         Circlepoint = 0,    //圆点提取
         Checkerboard = 1,   //棋盘格角点提取
     };
-    enum SlopeType  //斜率计算方法
+    public enum SlopeType  //斜率计算方法
     {
         CenterPoint = 0,    //中心点九点取斜率
         lb_Variance = 1,        //去除方差较大的点后取斜率
     };
 
-    enum LayoutType //理想点布点方法
+    public enum LayoutType //理想点布点方法
     {
         SlopeIN = 0,    //采用斜率布点
         SlopeOUT = 1,   //不采用斜率布点
@@ -334,7 +334,7 @@ namespace cvColorVision
         public uint nBpp;
         public IntPtr pData;
     };
-    enum FOCUS_COMMUN
+    public enum FOCUS_COMMUN
     {
         VID_SERIAL,
         CANON_SERIAL,
@@ -399,7 +399,7 @@ namespace cvColorVision
         }
     }
 
-    class ChannelCalibration
+    public class ChannelCalibration
     {
         //暗噪声校正参数
         public CalibrationItem dsnuCheck;
@@ -411,7 +411,7 @@ namespace cvColorVision
         public CalibrationItem distortionCheck;
     }
 
-    class ChannelParam
+    public class ChannelParam
     {
         //曝光时间，单位毫秒
         public float exp;
@@ -461,7 +461,7 @@ namespace cvColorVision
         CameraType_Total,
     };
 
-    class cvCameraCSLib
+    public class cvCameraCSLib
     {
         public static TiffShowEvent event_ShowTiff;
         public static LiveShowEvent event_ShowLive;
@@ -1320,12 +1320,12 @@ namespace cvColorVision
         public int cy;
     };
 
-    enum FovPattern
+    public enum FovPattern
     {
         FovCircle = 0,
         FovRectangle,
     };
-    enum FovType
+    public enum FovType
     {
         Horizontal = 0,
         Vertical,

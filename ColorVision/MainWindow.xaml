@@ -27,8 +27,8 @@
                     <MenuItem Header="_PG通讯模板设置"  Click="MenuItem_Click_4"/>
                     <MenuItem Header="数据判断模板设置(_J)"  Click="MenuItem_Click_5"/>
                     <MenuItem Header="源表模板设置(_J)"  Click="MenuItem_Click_6"/>
-
                 </MenuItem>
+                <MenuItem Header="MySQLTest(_M)"  Click="MenuItem_Click_7"/>
                 <MenuItem Header="MQTTLog(_M)" Click="MenuItem_Click">
                 </MenuItem>
                 <MenuItem Header="帮助(_H)">
@@ -46,7 +46,7 @@
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                     <StackPanel >
                         <StackPanel Margin="0,5" x:Name="StackPanelPG" Initialized="StackPanelPG_Initialized">
-                            <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}" Content="PG"  FontSize="15" Foreground="Black" IsChecked="false" />
+                            <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}" Content="PG"  FontSize="15" Foreground="Black" IsChecked="True" />
                             <Border Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}"  Background="#E8E8E9" Margin="5,2" CornerRadius="5">
                                 <StackPanel Margin="5">
                                     <DockPanel>
@@ -125,6 +125,13 @@
                                         </DockPanel>
                                         <Button  Content="打开相机" Click="SendDemo2_Click"/>
                                         <Button  Content="关闭相机" Click="SendDemo4_Click"/>
+                                        <GroupBox Header="滤色轮">
+                                            <StackPanel>
+                                                <Button Content="打开"  Click="FilterWheelOpen_Click"/>
+                                                <Button Content="关闭"  Click="FilterWheelClose_Click"/>
+
+                                            </StackPanel>
+                                        </GroupBox>
                                     </StackPanel>
 
                                     <StackPanel x:Name="StackPanelImage">
@@ -158,7 +165,7 @@
                         </StackPanel>
 
                         <StackPanel Margin="0,5" x:Name="StackPanelSpectrum"  Initialized="StackPanelSpectrum_Initialized">
-                            <ToggleButton  x:Name="ToggleButton3"  Style="{StaticResource ButtonPageControl1}" Content="光谱仪操作"  FontSize="15" Foreground="Black" IsChecked="false" />
+                            <ToggleButton  x:Name="ToggleButton3"  Style="{StaticResource ButtonPageControl1}" Content="光谱仪操作"  FontSize="15" Foreground="Black" IsChecked="True" />
                             <Border Visibility="{Binding ElementName=ToggleButton3,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}"  Background="#E8E8E9" Margin="5,2" CornerRadius="5">
                                 <StackPanel Margin="5">
                                     <DockPanel>
@@ -239,6 +246,47 @@
                                         <TextBlock  Text="电流" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
                                         <TextBox x:Name="TextSourceMeterI" Text="{Binding I,StringFormat={}{0}mA}" BorderThickness="0,0,0,1"  />
                                     </DockPanel>
+
+                                    <DockPanel>
+                                        <Label Content="模板："/>
+                                        <ComboBox  x:Name="ComboxVITemplate"  SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,0,10,0"/>
+                                    </DockPanel>
+                                    <StackPanel x:Name="StackPanelVITemplate"  d:DataContext="{d:DesignInstance Type=Template:SxParm}">
+                                        <DockPanel >
+                                            <TextBlock Text="起始:"/>
+                                            <TextBlock DockPanel.Dock="Right"  Visibility="{Binding IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="V"/>
+                                            <TextBlock DockPanel.Dock="Right"  Visibility="{Binding IsSourceV,Converter={StaticResource bool2VisibilityConverter}}" Text="mA"/>
+                                            <TextBox Text="{Binding  StartMeasureVal}"/>
+                                        </DockPanel>
+                                        <DockPanel >
+                                            <TextBlock Text="结束:"/>
+                                            <TextBlock DockPanel.Dock="Right"  Visibility="{Binding IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="V"/>
+                                            <TextBlock DockPanel.Dock="Right"  Visibility="{Binding IsSourceV,Converter={StaticResource bool2VisibilityConverter}}" Text="mA"/>
+                                            <TextBox Text="{Binding  StopMeasureVal}"/>
+                                        </DockPanel>
+                                        <DockPanel >
+                                            <TextBlock Text="限值:"/>
+                                            <TextBlock DockPanel.Dock="Right"  Visibility="{Binding IsSourceV,Converter={StaticResource bool2VisibilityConverter}}" Text="V"/>
+                                            <TextBlock DockPanel.Dock="Right"  Visibility="{Binding IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="mA"/>
+                                            <TextBox Text="{Binding LmtVal}"/>
+                                        </DockPanel>
+                                        <DockPanel >
+                                            <TextBlock Text="点:"/>
+                                            <TextBox Text="{Binding Number}"/>
+                                        </DockPanel>
+                                        <Button Content="扫描" Click="VIScan_Click" />
+                                        <Button Content="导出"  Click="VIExport_Click" />
+                                    </StackPanel>
+
+                                    <GroupBox  Header="MQTTTest">
+                                        <StackPanel>
+                                            <Button Content="打开"  Click="MQTTVIOpen"/>
+                                            <Button Content="关闭"  Click="MQTTVIClose"/>
+                                            <Button Content="设置参数" Click="MQTTVISetParam"/>
+                                            <Button Content="获取数据" Click="MQTTVIGetData"/>
+                                        </StackPanel>
+                                        
+                                    </GroupBox>
                                 </StackPanel>
                             </Border>
                         </StackPanel>
@@ -462,14 +510,6 @@
                 <StatusBarItem   x:Name="StatusBarItem1"  >
                     <TextBlock>
                         <Run Text="{Binding Path=MemoryThis}"/>
-                    </TextBlock>
-                </StatusBarItem>
-
-
-                <StatusBarItem x:Name="MQTTStatusBarItem" DataContext="{Binding MQTTControl}">
-                    <TextBlock >
-                        <Run Text="MQTT："/>
-                        <Run Text="{Binding Path=IsConnect,Mode=OneWay}"/>
                     </TextBlock>
                 </StatusBarItem>
                 <StatusBarItem  x:Name="StatusBarItem2" DataContext="{Binding performanceSetting}" HorizontalAlignment="Right" Content="{Binding Path=Time}">

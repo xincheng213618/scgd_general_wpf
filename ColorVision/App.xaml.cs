@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Interop;
 
-[assembly: XmlConfigurator(ConfigFile = "ColorVision.dll.config", Watch = true)]
+[assembly: XmlConfigurator(ConfigFile = "log4net.config", Watch = true)]
 namespace ColorVision
 {
     [StructLayout(LayoutKind.Sequential)]
@@ -90,11 +90,7 @@ namespace ColorVision
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
-
-
-
-
-            //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en");
+           //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en");
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("zh-Hans");
             MainWindow mainWindow = new MainWindow();
             mainWindow.Show();

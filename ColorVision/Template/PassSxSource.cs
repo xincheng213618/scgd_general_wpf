@@ -14,9 +14,9 @@ namespace ColorVision.Template
 
     public class SxParm : ParamBase
     {
-        public double StartMeasureVal { get; set; }
-        public double StopMeasureVal { get; set; }
-        public int Number { get; set; }
+        public double StartMeasureVal { get; set; } 
+        public double StopMeasureVal { get; set; } = 3;
+        public int Number { get; set; } = 100;
         public double LmtVal { get; set; }
         [JsonProperty("isSourceV")]
         public bool IsSourceV { get; set; }
@@ -63,6 +63,7 @@ namespace ColorVision.Template
         public bool Open(bool isNet,string devName)
         {
             if (IsOpen) return true;
+            if (string.IsNullOrWhiteSpace(devName)) return false;
 
             DevID = PassSx.OpenNetDevice(isNet, devName);
             if (DevID >= 0)
@@ -123,6 +124,22 @@ namespace ColorVision.Template
 
         public void CloseOutput() => PassSx.CvPssSxSetOutput(DevID);
 
+
+
+
+        public double[] VList { get => pVList; }
+        public double[] IList { get => pIList; }
+
+
+        private double[] pVList;
+        private double[] pIList;
+        public void Scan(double startVal, double endVal, double lmtVal, int points )
+        {
+            pVList = new double[points];
+            pIList = new double[points];
+
+            PassSx.cvSweepData(DevID, endVal, lmtVal, lmtVal, startVal, endVal, points, pVList, pIList);
+        }
 
 
 

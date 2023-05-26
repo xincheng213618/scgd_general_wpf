@@ -33,6 +33,7 @@ namespace ColorVision
             MQTTSpectrum = new MQTTSpectrum();
             MQTTSpectrum.DataHandlerEvent += (e)=> 
             {
+                WindowSpectrum ??= new WindowSpectrum();
                 WindowSpectrum.Owner = this;
                 WindowSpectrum.Show();
                 WindowSpectrum.spectrumResult.SpectrumDrawPlot(e);
@@ -136,11 +137,11 @@ namespace ColorVision
                 MessageBox.Show("校零失败");
 
         }
-        WindowSpectrum WindowSpectrum = new WindowSpectrum();
+        WindowSpectrum WindowSpectrum;
         private void SpectrumSingleTest(object sender, RoutedEventArgs e)
         {
-            
             GCSDLL.CVOneTest(SpectrumData, (float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value, false, false);
+            WindowSpectrum ??= new WindowSpectrum();
             WindowSpectrum.Owner = this;
             WindowSpectrum.Show();
         }

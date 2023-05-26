@@ -49,7 +49,6 @@ namespace ColorVision
             StatusBarItem1.DataContext = PerformanceSetting;
             StatusBarItem2.DataContext = PerformanceSetting;
             MQTTControl = MQTTControl.GetInstance(); ;
-            MQTTStatusBarItem.DataContext = MQTTControl.GetInstance();
             Application.Current.MainWindow = this;
             this.Closed += (s, e) =>
             {
@@ -686,7 +685,30 @@ namespace ColorVision
             }
         }
 
+        private void MenuItem_Click_7(object sender, RoutedEventArgs e)
+        {
+            WindowORM windowORM = new WindowORM();
+            windowORM.Show();
+        }
 
+
+
+        private void FilterWheelOpen_Click(object sender, RoutedEventArgs e)
+        {
+            if (cvColorVision.cvCameraCSLib.CM_SetPort(m_hHandle, comB_ColorFilterWheel.SelectedIndex + 0x30))
+            {
+                MessageBox.Show("切换通道" + comB_ColorFilterWheel.SelectedIndex.ToString() + "成功");
+            }
+            else
+            {
+                MessageBox.Show("切换通道" + comB_ColorFilterWheel.SelectedIndex.ToString() + "失败");
+            }
+        }
+
+        private void FilterWheelClose_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 
 
