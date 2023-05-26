@@ -203,10 +203,6 @@ namespace ColorVision
             ComboxVITemplate.SelectedIndex = 0;
         }
 
-
-
-
-
         private void MQTTVIOpen(object sender, RoutedEventArgs e)
         {
             MQTTVISource.Open();

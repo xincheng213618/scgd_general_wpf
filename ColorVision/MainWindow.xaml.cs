@@ -556,10 +556,29 @@ namespace ColorVision
                                            select new KeyValuePair<CameraType, string>(e1, e1.ToDescription());
             ComboxCameraType.SelectedIndex = 2;
 
+            ComboxCameraType.SelectionChanged += (s, e) =>
+            {
+                if (ComboxCameraType.SelectedItem is KeyValuePair<CameraType, string> KeyValue)
+                {
+                    if (KeyValue.Key == CameraType.BVQ)
+                    {
+                        StackPanelFilterWheel.Visibility = Visibility.Visible;
+                    }
+                    else
+                    {
+                        if (StackPanelFilterWheel.Visibility == Visibility.Visible)
+                        {
+                            StackPanelFilterWheel.Visibility = Visibility.Collapsed;
+                        }
+                    }
+                }
+            };
+
 
             ComboxCameraTakeImageMode.ItemsSource = from e1 in Enum.GetValues(typeof(TakeImageMode)).Cast<TakeImageMode>()
                                                     select new KeyValuePair<TakeImageMode, string>(e1, e1.ToDescription());
             ComboxCameraTakeImageMode.SelectedIndex = 0;
+
 
 
             StackPanelOpen.Visibility = Visibility.Collapsed;
@@ -693,21 +712,26 @@ namespace ColorVision
 
 
 
-        private void FilterWheelOpen_Click(object sender, RoutedEventArgs e)
+        private void FilterWheelSetPort_Click(object sender, RoutedEventArgs e)
         {
-            if (cvColorVision.cvCameraCSLib.CM_SetPort(m_hHandle, comB_ColorFilterWheel.SelectedIndex + 0x30))
+            if (ComboxFilterWheelChannel.SelectedIndex > -1)
             {
-                MessageBox.Show("切换通道" + comB_ColorFilterWheel.SelectedIndex.ToString() + "成功");
-            }
-            else
-            {
-                MessageBox.Show("切换通道" + comB_ColorFilterWheel.SelectedIndex.ToString() + "失败");
+                MQTTCamera.FilterWheelSetPort(ComboxFilterWheelChannel.SelectedIndex + 0x30);
             }
         }
 
-        private void FilterWheelClose_Click(object sender, RoutedEventArgs e)
+        private void FilterWheelReset_Click(object sender, RoutedEventArgs e)
         {
+            MQTTCamera.FilterWheelSetPort(0x30);
+            ComboxFilterWheelChannel.SelectedIndex = 0;
+        }
 
+
+        private void StackPanelFilterWheel_Initialized(object sender, EventArgs e)
+        {
+            for (int i = 0; i < 10; i++)
+                ComboxFilterWheelChannel.Items.Add(new ComboBoxItem() { Content = i });
+            ComboxFilterWheelChannel.SelectedIndex = 0;
         }
     }
 

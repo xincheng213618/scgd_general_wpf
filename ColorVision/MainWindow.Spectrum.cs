@@ -77,7 +77,7 @@ namespace ColorVision
         #endregion
         #region Spectrum
 
-        private GCSDLL.DllcallBack SpectrumData;
+        private GCSDLL.ColorParamReturn SpectrumData;
 
         private bool ConnectSpectrum()
         {

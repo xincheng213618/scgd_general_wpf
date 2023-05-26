@@ -104,31 +104,6 @@ namespace ColorVision.MQTT
             return Task.CompletedTask;
         }
 
-        public bool Init()
-        {
-            MQTTMsg mQTTMsg = new MQTTMsg
-            {
-                EventName = "Init"
-            };
-            PublishAsyncClient(mQTTMsg);
-            return true;
-        }
-
-        public bool UnInit()
-        {
-            if (ServiceID == 0)
-            {
-                MessageBox.Show("请先初始化");
-                return false;
-            }
-            MQTTMsg mQTTMsg = new MQTTMsg
-            {
-                EventName = "UnInit",
-            };
-            PublishAsyncClient(mQTTMsg);
-            return true;
-        }
-
 
         public bool SetParam()
         {
@@ -147,11 +122,6 @@ namespace ColorVision.MQTT
         
         public bool Open()
         {
-            if (ServiceID == 0)
-            {
-                MessageBox.Show("请先初始化");
-                return false;
-            }
             MQTTMsg mQTTMsg = new MQTTMsg
             {
                 EventName = "Open"

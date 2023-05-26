@@ -51,7 +51,7 @@ namespace cvColorVision
         private const string LIBRARY_CVCAMERA = "cvCamera.dll";
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void DllcallBack(ref ColorParam result, float intTime, int resultCode);
+        public delegate void ColorParamReturn(ref ColorParam result, float intTime, int resultCode);
 
         //连接光谱仪
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CV_Init",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
@@ -88,8 +88,8 @@ namespace cvColorVision
 
         //单次测量
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CV_One_Test", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        private static extern int CV_One_Test(DllcallBack callBack, float IntTime, int AveNum, bool bUseAutoIntTime, bool bUseAutoDark);
-        public static int CVOneTest(DllcallBack callBack, float IntTime, int AveNum, bool bUseAutoIntTime, bool bUseAutoDark) => CV_One_Test(callBack, IntTime, AveNum, bUseAutoIntTime, bUseAutoDark);
+        private static extern int CV_One_Test(ColorParamReturn callBack, float IntTime, int AveNum, bool bUseAutoIntTime, bool bUseAutoDark);
+        public static int CVOneTest(ColorParamReturn callBack, float IntTime, int AveNum, bool bUseAutoIntTime, bool bUseAutoDark) => CV_One_Test(callBack, IntTime, AveNum, bUseAutoIntTime, bUseAutoDark);
 
     }
 }

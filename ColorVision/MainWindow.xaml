@@ -18,7 +18,7 @@
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
         <Grid Grid.Row="0">
-            <Menu x:Name="Menu1">
+            <Menu x:Name="Menu1" Height ="20">
                 <MenuItem Header="文件(_F)">
                 </MenuItem>
                 <MenuItem Header="模板(_T)">
@@ -29,7 +29,7 @@
                     <MenuItem Header="源表模板设置(_J)"  Click="MenuItem_Click_6"/>
                 </MenuItem>
                 <MenuItem Header="MySQLTest(_M)"  Click="MenuItem_Click_7"/>
-                <MenuItem Header="MQTTLog(_M)" Click="MenuItem_Click">
+                <MenuItem Header="MQTT日志(_M)" Click="MenuItem_Click">
                 </MenuItem>
                 <MenuItem Header="帮助(_H)">
                     <MenuItem Header="关于(_A)" Click="MenuItem_Click_1"/>
@@ -125,13 +125,7 @@
                                         </DockPanel>
                                         <Button  Content="打开相机" Click="SendDemo2_Click"/>
                                         <Button  Content="关闭相机" Click="SendDemo4_Click"/>
-                                        <GroupBox Header="滤色轮">
-                                            <StackPanel>
-                                                <Button Content="打开"  Click="FilterWheelOpen_Click"/>
-                                                <Button Content="关闭"  Click="FilterWheelClose_Click"/>
 
-                                            </StackPanel>
-                                        </GroupBox>
                                     </StackPanel>
 
                                     <StackPanel x:Name="StackPanelImage">
@@ -143,9 +137,20 @@
                                             <TextBlock  Text="曝光" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
                                             <Slider x:Name="SliderexpTime"  Template="{ StaticResource LM_SliderControlTemplate2}" TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="100" Maximum="6000"/>
                                         </DockPanel>
-
                                         <Button  Content="获取图像数据" Click="SendDemo3_Click"/>
                                     </StackPanel>
+                                    <StackPanel  x:Name="StackPanelFilterWheel"  Initialized="StackPanelFilterWheel_Initialized">
+                                        <GroupBox Header="滤色轮">
+                                            <StackPanel >
+                                                <ComboBox  x:Name="ComboxFilterWheelChannel"  Height="20" Margin="0,2,10,2">
+
+                                                </ComboBox>
+                                                <Button Content="切换通道"  Click="FilterWheelSetPort_Click"/>
+                                                <Button Content="重置"  Click="FilterWheelReset_Click"/>
+                                            </StackPanel>
+                                        </GroupBox>
+                                    </StackPanel>
+
                                 </StackPanel>
                             </Border>
                         </StackPanel>

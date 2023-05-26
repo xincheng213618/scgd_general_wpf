@@ -31,16 +31,14 @@ namespace ColorVision
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             string connStr = "server=192.168.3.250;uid=root;pwd=123456@cv;database=cv";
-            connStr = "server=127.0.0.1;uid=root;pwd=xincheng;database=color_vision";
+            //connStr = "server=127.0.0.1;uid=root;pwd=xincheng;database=color_vision";
 
             MySqlConnection conn = new MySqlConnection() { ConnectionString = connStr };
             conn.Open();
             MySqlCommand cmd;
            //将图像插入到数据库中
              byte[] imageData = File.ReadAllBytes("C:\\Users\\17917\\Desktop\\1.tif");
-            //cmd = new MySqlCommand("INSERT INTO image (image) VALUES (@image)", conn);
-            //cmd.Parameters.AddWithValue("@image", imageData);
-            //cmd.ExecuteNonQuery();
+
 
             //从数据库中检索图像并显示在Image控件中
             cmd = new MySqlCommand("SELECT * FROM image", conn);

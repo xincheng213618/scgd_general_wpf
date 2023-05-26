@@ -260,10 +260,7 @@ namespace ColorVision.MQTT
             public int Index { get; set; }
         }
 
-        public class SetParamFunctionMQTT
-        {
-            public string FunctionName { get; set; }
-        }
+
 
 
 

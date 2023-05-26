@@ -26,4 +26,9 @@ namespace ColorVision.MQTT
         [JsonProperty("data")]
         public dynamic Data { get; set; }
     }
+
+    public class SetParamFunctionMQTT
+    {
+        public string FunctionName { get; set; }
+    }
 }

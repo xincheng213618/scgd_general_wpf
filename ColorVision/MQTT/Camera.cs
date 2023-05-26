@@ -161,6 +161,7 @@ namespace ColorVision.MQTT
             return true;
         }
 
+
         public bool UnInit()
         {
             if (ServiceID == 0)
@@ -172,11 +173,28 @@ namespace ColorVision.MQTT
                 return false;
             MQTTMsg mQTTMsg = new MQTTMsg
             {
-                EventName = "UnInit",
+                EventName = "SetParam",
             };
             PublishAsyncClient(mQTTMsg);
             return true;
         }
+
+        public void FilterWheelSetPort(int port)
+        {
+            MQTTMsg mQTTMsg = new MQTTMsg
+            {
+                EventName = "SetParam",
+                Params = new SetParamSetPort() {FunctionName = "CM_SetPort", Port = port }
+            };
+            PublishAsyncClient(mQTTMsg);
+        }
+
+        private class SetParamSetPort : SetParamFunctionMQTT
+        {
+            [JsonProperty("port")]
+            public int Port { get; set; }
+        }
+
 
         public bool Calibration(CalibrationParam calibrationParam)
         {
@@ -227,7 +245,7 @@ namespace ColorVision.MQTT
             MQTTMsg mQTTMsg = new MQTTMsg
             {
                 EventName = "GetData",
-                Params = new CameraParamMQTT() { ExpTime = expTime,Gain =gain}
+                Params = new CameraParamMQTT() { ExpTime = expTime,Gain = gain}
             };
             PublishAsyncClient(mQTTMsg);
             return true;
