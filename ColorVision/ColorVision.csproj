@@ -40,7 +40,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Dapper" Version="2.0.123" />
     <PackageReference Include="Gu.Wpf.Geometry" Version="2.2.8" />
     <PackageReference Include="log4net" Version="2.0.15" />
     <PackageReference Include="MQTTnet" Version="4.2.0.706" />
@@ -75,9 +74,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="App.config">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </None>
     <None Update="log4net.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

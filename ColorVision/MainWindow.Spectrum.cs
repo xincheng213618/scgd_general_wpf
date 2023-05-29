@@ -135,7 +135,6 @@ namespace ColorVision
                 MessageBox.Show("校零成功");
             else
                 MessageBox.Show("校零失败");
-
         }
         WindowSpectrum WindowSpectrum;
         private void SpectrumSingleTest(object sender, RoutedEventArgs e)

@@ -168,6 +168,8 @@ namespace ColorVision
             {
                 PropertyGrid2.Refresh();
             };
+
+            ImageGroupGrid.Visibility = Visibility.Visible;
         }
 
         private DrawingVisual DrawingVisualGrid = new DrawingVisual();
@@ -485,7 +487,7 @@ namespace ColorVision
                         }
                     }
 
-                    ContentGrid.Children.Remove(ZoomGrid);
+                    ImageContentGrid.Children.Remove(ZoomGrid);
                     mainWindow.Content = ZoomGrid;
                 }
                 else
@@ -497,9 +499,7 @@ namespace ColorVision
                     mainWindow.ShowInTaskbar = true; // 如果之前设置了 ShowInTaskbar，现在取消
 
                     mainWindow.Content = Root;
-                    ContentGrid.Children.Add(ZoomGrid);
-
-
+                    ImageContentGrid.Children.Add(ZoomGrid);
                 }
 
             }
@@ -732,6 +732,13 @@ namespace ColorVision
             for (int i = 0; i < 10; i++)
                 ComboxFilterWheelChannel.Items.Add(new ComboBoxItem() { Content = i });
             ComboxFilterWheelChannel.SelectedIndex = 0;
+        }
+
+        private void MenuItem_Click8(object sender, RoutedEventArgs e)
+        {
+            WindowFourColorCalibration windowFourColorCalibration = new WindowFourColorCalibration();
+            windowFourColorCalibration.Owner = this;
+            windowFourColorCalibration.Show();
         }
     }
 

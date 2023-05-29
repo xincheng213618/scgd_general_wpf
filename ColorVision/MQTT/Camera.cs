@@ -63,8 +63,6 @@ namespace ColorVision.MQTT
         public List<string> IDs { get; set; }
     }
 
-
-
     public delegate void MQTTCameraFileHandler(string? FilePath);
 
     public class MQTTCamera :BaseService

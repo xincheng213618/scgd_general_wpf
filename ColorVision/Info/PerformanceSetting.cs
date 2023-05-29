@@ -3,6 +3,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace ColorVision.Info
 {
@@ -52,7 +53,7 @@ namespace ColorVision.Info
 
         public PerformanceSetting()
         {
-            new Thread(() => Run()) { IsBackground = true }.Start();
+            Task.Run(() => Run());
             timer = new Timer(TimeRun, null, 0, UpdateSpeed);
         }
 
