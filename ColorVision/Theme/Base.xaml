@@ -3,9 +3,23 @@
                     xmlns:converter ="clr-namespace:ColorVision.Converter"
                     x:Class="ColorVision.Theme.BaseEvent"
                     >
+    
+    
+    
+    
     <BooleanToVisibilityConverter x:Key="bool2VisibilityConverter"/>
     <converter:InverseBooleanConverter x:Key="inverseBooleanConverter"/>
     <converter:BooleanToVisibilityReConverter x:Key="bool2VisibilityConverter1"/>
+
+
+    <Style TargetType="{x:Type TextBox}">
+        <EventSetter  Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown"  >
+            
+        </EventSetter>
+    </Style>
+
+
+
 
     <Style x:Key="ButtonPageControl1" TargetType="{x:Type ToggleButton}">
         <Setter Property="Template">
@@ -136,9 +150,76 @@
             </Track>
         </Grid>
     </ControlTemplate>
-    
-    
 
+
+
+
+    <Style x:Key="RepeatButtonStyle" TargetType="{x:Type RepeatButton}">
+        <Setter Property="Focusable" Value="false" />
+        <Setter Property="IsTabStop" Value="false" />
+        <Setter Property="Width" Value="22"  />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type RepeatButton}">
+                    <Border x:Name="Border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" >
+                        <ContentPresenter  HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsPressed" Value="true">
+                            <Setter TargetName="Border" Property="Background" Value="#BEE6FD" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+
+    </Style>
+
+
+    <Style  x:Key="UpDownSlider" TargetType="{x:Type Slider}">
+        <Setter Property="Stylus.IsPressAndHoldEnabled" Value="false" />
+        <Setter Property="SmallChange" Value="1" />
+        <Setter Property="Foreground" Value="Black"/>
+        <Setter Property="Background" Value="#DDDDDD"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Slider}">
+                    <Border BorderBrush="White">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition  />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0"  Background="White" CornerRadius="3,0,0,3" BorderBrush="#DDDDDD" BorderThickness="2,2,0,2">
+                                <TextBox  Foreground="{TemplateBinding Foreground}" Margin="5,0" Background="Transparent" PreviewKeyDown="NumberValidationTextBox" BorderThickness="0,0,0,0" Height="Auto" VerticalAlignment="Stretch"  Text="{Binding Value, RelativeSource={RelativeSource Mode=TemplatedParent}, Mode=TwoWay}">
+                                    <TextBox.InputBindings>
+                                        <KeyBinding Gesture="Up" Command="{x:Static Slider.IncreaseSmall}" Key="Up" />
+                                        <KeyBinding Gesture="Down" Command="{x:Static Slider.DecreaseSmall}" />
+                                        <KeyBinding Gesture="PageUp" Command="{x:Static Slider.IncreaseLarge}" />
+                                        <KeyBinding Gesture="PageDown" Command="{x:Static Slider.DecreaseLarge}" />
+                                    </TextBox.InputBindings>
+                                </TextBox>
+                            </Border>
+                            <Border  Name="borderUp" Grid.Column="1"  CornerRadius="0,2,2,0" >
+                                <UniformGrid Columns="1">
+                                    <RepeatButton  Background="#DDDDDD" Command="{x:Static Slider.IncreaseSmall}"  Style="{StaticResource RepeatButtonStyle}" BorderThickness="0,0,0,0">
+                                        <Path Data="M0,2 L5,-4 10,2 "  Fill="Black"  Margin="0,4,0,0" />
+                                    </RepeatButton>
+                                    <RepeatButton  Background="#DDDDDD" Command="{x:Static Slider.DecreaseSmall}"  Style="{StaticResource RepeatButtonStyle}"  BorderThickness="0,00,0,0">
+                                        <Path Data="M0,-4 L5,2 10,-4 " Fill="Black" Margin="0,4,0,0"    />
+                                    </RepeatButton>
+                                </UniformGrid>
+                            </Border>
+                            <Border x:Name="TrackBackground" Visibility="Collapsed">
+                                <Rectangle x:Name="PART_SelectionRange" Visibility="Collapsed" />
+                            </Border>
+                            <Thumb x:Name="Thumb" Visibility="Collapsed" />
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 
 
 

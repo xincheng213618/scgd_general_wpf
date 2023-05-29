@@ -5,44 +5,69 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision"
         mc:Ignorable="d"
-        Title="四色标定" Height="450" Width="800">
+        Title="四色标定" Height="450" Width="800" Background="#F0F0F0">
+    <Window.Resources>
+        <ResourceDictionary Source="/Theme/Base.xaml"/>
+    </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition  Width="auto"/>
             <ColumnDefinition  Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <Border  Grid.Column="0" Width="200">
+        <Border  Grid.Column="0" Width="300">
             <StackPanel>
-                <DockPanel >
-                    <TextBlock Text="标定参数" DockPanel.Dock="Top" Margin="5" FontSize="16" FontWeight="Bold"/>
-                    <StackPanel Orientation="Horizontal" Margin="5">
-                        <TextBlock Text="曝光时间" Margin="5"/>
-                        <TextBox x:Name="TextBoxPointNum" Text="4" Width="50" Margin="5"/>
-                    </StackPanel>
-
-                </DockPanel>
-
-                <StackPanel Orientation="Horizontal" Margin="5,0">
-                    <TextBlock Text="增益" Margin="5"/>
-                    <TextBox  Text="4" Width="50" Margin="5"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="5,0">
-                    <TextBlock Text="时间" Margin="5"/>
-                    <TextBox  Text="4" Width="50" Margin="5"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="5,0">
-                    <TextBlock Text="X:" Margin="5"/>
-                    <TextBox  Text="4" Width="50" Margin="5"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="5,0">
-                    <TextBlock Text="Y:" Margin="5"/>
-                    <TextBox  Text="4" Width="50" Margin="5"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="5,0">
-                    <TextBlock Text="Z:" Margin="5"/>
-                    <TextBox  Text="4" Width="50" Margin="5"/>
-                </StackPanel>
+                <GroupBox Header="1.输入四色标定的描述" Margin="2">
+                    <TextBox  x:Name="TextBoxDescribe"  BorderThickness="0,0,0,1" Margin="3,4,2,1"/>
+                </GroupBox>
+                <GroupBox Header="2.曝光调整" Margin="2">
+                    <UniformGrid Columns="2" Margin="3">
+                        <DockPanel Margin="0,2" >
+                            <TextBlock Text="增益" Width="30" />
+                            <TextBlock DockPanel.Dock="Right" Text="dB" />
+                            <TextBox BorderThickness="0,0,0,1" Margin="4,0"/>
+                        </DockPanel>
+                        <Button Content="计算自动曝光" Height="20" Margin="5,0"/>
+                        <TextBlock Height="20" HorizontalAlignment="Center"  Text="时间"/>
+                        <TextBlock Height="20" HorizontalAlignment="Center" Text="饱和度"/>
+                        <DockPanel Margin="0,2" >
+                            <TextBlock  Text="x:" Margin="3,0" />
+                            <TextBlock DockPanel.Dock="Right" Text="ms" />
+                            <TextBox BorderThickness="0,0,0,1" Margin="4,0"/>
+                        </DockPanel>
+                        <DockPanel Margin="30,2" >
+                            <TextBlock  Text="x:" Margin="3,0" />
+                            <TextBox BorderThickness="0,0,0,1" Margin="4,0"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,2" >
+                            <TextBlock  Text="y:" Margin="3,0" />
+                            <TextBlock DockPanel.Dock="Right" Text="ms" />
+                            <TextBox BorderThickness="0,0,0,1" Margin="4,0"/>
+                        </DockPanel>
+                        <DockPanel Margin="30,2" >
+                            <TextBlock  Text="y:" Margin="3,0" />
+                            <TextBox BorderThickness="0,0,0,1" Margin="4,0"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,2" >
+                            <TextBlock  Text="z:" Margin="3,0" />
+                            <TextBlock DockPanel.Dock="Right" Text="ms" />
+                            <TextBox BorderThickness="0,0,0,1" Margin="4,0"/>
+                        </DockPanel>
+                        <DockPanel Margin="30,2" >
+                            <TextBlock  Text="z:" Margin="3,0" />
+                            <TextBox BorderThickness="0,0,0,1" Margin="4,0"/>
+                        </DockPanel>
+                    </UniformGrid>
+                </GroupBox>
+                <GroupBox Header="3.测量点坐标及区域" Margin="2">
+                    
+                </GroupBox>
+                <GroupBox Header="4.检测次数" Margin="2">
+                    <Slider Style="{StaticResource UpDownSlider}" Maximum="100" Minimum="1" />
+                </GroupBox>
+                <GroupBox Header="6.建立标定" Margin="2">
+                    <Button Content="创建新色度/亮度标定" Margin="3"/>
+                </GroupBox>
             </StackPanel>
         </Border>
 

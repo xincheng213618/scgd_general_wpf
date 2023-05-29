@@ -9,11 +9,24 @@ using System.Windows;
 using System.Collections;
 using System.ComponentModel;
 using System.Windows.Markup;
+using System.Windows.Controls;
 
 namespace ColorVision.Theme
 {
     public partial class BaseEvent : ResourceDictionary
     {
+
+        private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                NativeMethods.Keyboard.PressKey(0x09);
+                e.Handled = true;
+            }
+
+        }
+
+
         public void NumberValidationTextBox(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter || e.Key == Key.Back || e.Key == Key.Left || e.Key == Key.Right)
