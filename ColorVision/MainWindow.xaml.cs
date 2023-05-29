@@ -464,8 +464,10 @@ namespace ColorVision
 
         private void MenuItem_Click_1(object sender, RoutedEventArgs e)
         {
+            AboutMsgWindow aboutMsgWindow = new AboutMsgWindow();
+            aboutMsgWindow.Show();
 
-            
+
         }
 
 
@@ -739,6 +741,11 @@ namespace ColorVision
             WindowFourColorCalibration windowFourColorCalibration = new WindowFourColorCalibration();
             windowFourColorCalibration.Owner = this;
             windowFourColorCalibration.Show();
+        }
+
+        private void MenuItem_Click_8(object sender, RoutedEventArgs e)
+        {
+            Environment.Exit(0);
         }
     }
 
