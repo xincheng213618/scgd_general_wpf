@@ -26,8 +26,24 @@ namespace ColorVision
             {
                 if (!passSxSource.IsOpen)
                 {
-                    if (passSxSource.Open(passSxSource.IsNet, passSxSource.DevName))
-                        button.Content = "关闭";
+                    button.Content = "打开中";
+                    Task.Run(() =>
+                    {
+                        if (passSxSource.Open(passSxSource.IsNet, passSxSource.DevName))
+                        {
+                            Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+                            {
+                                button.Content = "关闭";
+                            }));
+                        }
+                        else
+                        {
+                            Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+                            {
+                                button.Content = "打开失败";
+                            }));
+                        }
+                    });
                 }
                 else
                 {

@@ -19,14 +19,11 @@ namespace ColorVision
             InitializeComponent();
         }
 
-
         private void Window_Initialized(object sender, EventArgs e)
         {
+            this.Topmost = true;
 
         }
-
-
-
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
@@ -36,8 +33,6 @@ namespace ColorVision
         private void Image_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
             Process.Start("explorer", "https://www.color-vision.com.cn/");
-
-
         }
     }
 

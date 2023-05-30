@@ -456,18 +456,13 @@ namespace ColorVision
 
         private void MenuItem_Click(object sender, RoutedEventArgs e)
         {
-            MQTTLog MQTTLog = new MQTTLog();
-            MQTTLog.Owner = this;
-            MQTTLog.Show();
+            new MQTTLog() { Owner = this }.Show();
         }
 
 
         private void MenuItem_Click_1(object sender, RoutedEventArgs e)
         {
-            AboutMsgWindow aboutMsgWindow = new AboutMsgWindow();
-            aboutMsgWindow.Show();
-
-
+            new AboutMsgWindow() { Owner = this ,WindowStartupLocation =WindowStartupLocation.CenterOwner}.ShowDialog();
         }
 
 
@@ -695,21 +690,14 @@ namespace ColorVision
                 listConfig.Value = item.Value;
                 windowTemplate.ListConfigs.Add(listConfig);
             }
-            windowTemplate.Show();
+            windowTemplate.ShowDialog();
         }
 
-        private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Enter)
-            {
-                NativeMethods.Keyboard.PressKey(0x09);
-            }
-        }
+        private void MenuItem_Click_7(object sender, RoutedEventArgs e) 
+        { 
 
-        private void MenuItem_Click_7(object sender, RoutedEventArgs e)
-        {
-            WindowORM windowORM = new WindowORM();
-            windowORM.Show();
+            new WindowORM().Show();
+
         }
 
 
@@ -738,14 +726,17 @@ namespace ColorVision
 
         private void MenuItem_Click8(object sender, RoutedEventArgs e)
         {
-            WindowFourColorCalibration windowFourColorCalibration = new WindowFourColorCalibration();
-            windowFourColorCalibration.Owner = this;
-            windowFourColorCalibration.Show();
+            new WindowFourColorCalibration() { Owner = this }.Show();
         }
 
         private void MenuItem_Click_8(object sender, RoutedEventArgs e)
         {
             Environment.Exit(0);
+        }
+
+        private void MenuItem_Click_9(object sender, RoutedEventArgs e)
+        {
+            new WindowFocusPoint() { Owner = this }.Show();
         }
     }
 

@@ -29,7 +29,9 @@
                     <MenuItem Header="校正模板设置(_C)"  Click="MenuItem_Click_3"/>
                     <MenuItem Header="_PG通讯模板设置"  Click="MenuItem_Click_4"/>
                     <MenuItem Header="数据判断模板设置(_J)"  Click="MenuItem_Click_5"/>
-                    <MenuItem Header="源表模板设置(_J)"  Click="MenuItem_Click_6"/>
+                    <MenuItem Header="源表模板设置(_V)"  Click="MenuItem_Click_6"/>
+                    <MenuItem Header="关注点模板设置(_A)"  Click="MenuItem_Click_9"/>
+
                 </MenuItem>
                 <MenuItem Header="MySQLTest(_M)"  Click="MenuItem_Click_7"/>
                 <MenuItem Header="MQTT日志(_L)" Click="MenuItem_Click"/>
@@ -70,11 +72,11 @@
                                             <UniformGrid>
                                                 <DockPanel Margin="2">
                                                     <TextBlock  x:Name="TextBlockPGIP"   Text="IP:"/>
-                                                    <TextBox  x:Name="TextBoxPGIP" Height="16" BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                                                    <TextBox  x:Name="TextBoxPGIP" Height="16" BorderThickness="0,0,0,1"/>
                                                 </DockPanel>
                                                 <DockPanel Margin="2"  >
                                                     <TextBlock  x:Name="TextBlockPGPort"  Text="Port:"/>
-                                                    <TextBox  x:Name="TextBoxPGPort" Height="16" BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                                                    <TextBox  x:Name="TextBoxPGPort" Height="16" BorderThickness="0,0,0,1"/>
                                                 </DockPanel>
                                                 <Button Margin="2"  Content="打开PG" Click="PGOpen"/>
                                                 <Button Margin="2" Content="关闭PG" Click="PGClose"/>
