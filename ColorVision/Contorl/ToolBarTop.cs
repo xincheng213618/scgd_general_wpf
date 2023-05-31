@@ -19,7 +19,6 @@ namespace ColorVision
         public RelayCommand ZoomIncrease { get; set; }
         public RelayCommand ZoomDecrease { get; set; }
         public RelayCommand ZoomNone { get; set; }
-
         private ZoomboxSub ZoomboxSub { get; set; }
         private DrawCanvas DrawImageCanvas { get; set; }
         public DrawingVisual DrawVisualImage { get; set; }

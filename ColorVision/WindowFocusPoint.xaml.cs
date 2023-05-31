@@ -1,7 +1,14 @@
-﻿using System;
+﻿using ColorVision.Extension;
+using ColorVision.MQTT;
+using log4net;
+using Microsoft.VisualBasic.Logging;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -19,9 +26,174 @@ namespace ColorVision
     /// </summary>
     public partial class WindowFocusPoint : Window
     {
+
+        public enum BorderType
+        {
+            [Description("绝对值")]
+            Absolute,
+            [Description("相对值")]
+            Relative
+        }
+
+        private static readonly ILog log = LogManager.GetLogger(typeof(WindowFocusPoint));
+
         public WindowFocusPoint()
         {
             InitializeComponent();
+        }
+
+        private void button1_Click(object sender, RoutedEventArgs e)
+        {
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
+            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png,*.tif) | *.jpg; *.jpeg; *.png;*.tif";
+            openFileDialog.RestoreDirectory = true;
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                string filePath = openFileDialog.FileName;
+                OpenImage(filePath);
+            }
+        }
+
+        public void OpenImage(string? filePath)
+        {
+            if (filePath != null && File.Exists(filePath))
+            {
+                log.Info(filePath);
+                BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
+
+                ImageShow.Source = new BitmapImage(new Uri(filePath));
+                Zoombox1.ZoomUniform();
+            }
+        }
+
+        private void ImageShow_MouseLeave(object sender, MouseEventArgs e)
+        {
+
+        }
+
+        private void ImageShow_MouseEnter(object sender, MouseEventArgs e)
+        {
+
+        }
+
+        private void ImageShow_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+
+        }
+
+        private void ImageShow_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+
+        }
+
+        private void ImageShow_MouseWheel(object sender, MouseWheelEventArgs e)
+        {
+
+        }
+
+        private void ImageShow_MouseMove(object sender, MouseEventArgs e)
+        {
+
+        }
+
+        private void button2_Click(object sender, RoutedEventArgs e)
+        {
+            if (!int.TryParse(tbX.Text, out int cols))
+                cols = 0;
+
+            if (!int.TryParse(tbY.Text, out int rows))
+                rows = 0;
+
+
+            if (rows < 1 || cols < 1)
+            {
+                MessageBox.Show("点阵数的行列不能小于1");
+                return;
+            }
+
+            if (ImageShow.Source is BitmapImage bitmapImage)
+            {
+                if (!double.TryParse(TextBoxUp.Text, out double startU))
+                    startU = 0;
+
+                if (!double.TryParse(TextBoxDown.Text, out double startD))
+                    startD = 0;
+
+                if (!double.TryParse(TextBoxLeft.Text, out double startL))
+                    startL = 0;
+                if (!double.TryParse(TextBoxRight.Text, out double startR))
+                    startR = 0;
+
+
+                if (ComboBoxBorderType.SelectedItem is KeyValuePair<BorderType, string> KeyValue && KeyValue.Key== BorderType.Relative)
+                {
+                    startU = bitmapImage.PixelHeight * startU / 100;
+                    startD = bitmapImage.PixelHeight * startD / 100;
+
+                    startL = bitmapImage.PixelWidth * startL / 100;
+                    startR = bitmapImage.PixelWidth * startR / 100;
+                }
+
+                double StepRow = (bitmapImage.PixelHeight - startD - startU) / (rows-1);
+                double StepCol= (bitmapImage.PixelWidth - startL - startR) / (cols-1);
+
+                for (int i = 0; i < rows; i++)
+                {
+                    for (int j = 0; j < cols; j++)
+                    {
+                        if (RadioButtonCircle.IsChecked==true)
+                        {
+                            DrawingVisualCircle drawingVisualCircle = new DrawingVisualCircle();
+                            drawingVisualCircle.Attribute.Center = new Point(startL + StepCol * j, startU + StepRow * i);
+                            drawingVisualCircle.Attribute.Radius = 100;
+                            drawingVisualCircle.Attribute.Brush = Brushes.Transparent;
+                            drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red, 10);
+                            drawingVisualCircle.Attribute.ID = i * 10 + j;
+                            drawingVisualCircle.Render();
+                            ImageShow.AddVisual(drawingVisualCircle);
+                        }
+                        else
+                        {
+                            DrawingVisualRectangle drawingVisualCircle = new  DrawingVisualRectangle();
+                            drawingVisualCircle.Attribute.Rect = new Rect(startL + StepCol * j, startU + StepRow * i,100,100);
+                            drawingVisualCircle.Attribute.Brush = Brushes.Transparent;
+                            drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red, 10);
+                            drawingVisualCircle.Render();
+                            ImageShow.AddVisual(drawingVisualCircle);
+                        }
+
+
+                    }
+                }
+
+            }
+
+
+
+
+        }
+
+        private void Window_Initialized(object sender, EventArgs e)
+        {
+            ComboBoxBorderType.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>()
+                                                                  select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
+            ComboBoxBorderType.SelectedIndex = 0;
+            ComboBoxBorderType.SelectionChanged += (s, e) =>
+            {
+                if (ComboBoxBorderType.SelectedItem is KeyValuePair<string, BorderType> KeyValue && KeyValue.Value is BorderType communicateType)
+                {
+                }
+            };
+        }
+
+        private void TextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            e.Handled = new Regex("[^0-9]+").IsMatch(e.Text);
+        }
+
+        private void button3_Click(object sender, RoutedEventArgs e)
+        {
+            ImageShow.Clear();
         }
     }
 }

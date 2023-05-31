@@ -33,7 +33,6 @@ namespace ColorVision.Template
         private string FileNameSxParms = "cfg\\SxParamSetup.cfg";
 
 
-
         private bool IsOldAoiParams;
         private bool IsOldCalibrationParams;
         private bool IsOldPGParams;

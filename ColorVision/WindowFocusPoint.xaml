@@ -5,8 +5,94 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision"
         mc:Ignorable="d"
-        Title="关注点编辑" Height="450" Width="800">
+        Title="关注点编辑" Background="#F0F0F0" Height="450" Width="800" Initialized="Window_Initialized">
     <Grid>
-        
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="300"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid Grid.Row="0">
+            <StackPanel>
+                <GroupBox Header="点阵数">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="行:"/>
+                        <TextBox x:Name="tbX" Width="50" Text="0" PreviewTextInput="TextBox_PreviewTextInput" />
+                        <TextBlock Text="列:"/>
+                        <TextBox x:Name="tbY" Width="50" Text="0" PreviewTextInput="TextBox_PreviewTextInput"/>
+                    </StackPanel>
+                </GroupBox>
+                <GroupBox Header="点形状">
+                    <StackPanel>
+                        <UniformGrid>
+                            <RadioButton x:Name="RadioButtonCircle"  GroupName="shape" IsChecked="True" Content="圆"/>
+                            <RadioButton x:Name="RadioButtonRect"  GroupName="shape" Content="矩形"/>
+                        </UniformGrid>
+                    </StackPanel>
+                </GroupBox>
+                <GroupBox Header="边框">
+                    <StackPanel>
+                        <ComboBox x:Name="ComboBoxBorderType" SelectedValuePath="Key"  DisplayMemberPath="Value" Height="20" Margin="0,0,10,0"/>
+                        <UniformGrid Columns="2">
+                            <DockPanel Margin="2">
+                                <TextBlock   Text="上:" Width="20"/>
+                                <TextBox  x:Name="TextBoxUp" Height="16" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
+                            </DockPanel>
+                            <DockPanel Margin="2"  >
+                                <TextBlock  Text="左:" Width="20"/>
+                                <TextBox  x:Name="TextBoxLeft" Height="16" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
+                            </DockPanel>
+                            <DockPanel Margin="2"  >
+                                <TextBlock   Text="下:" Width="20"/>
+                                <TextBox  x:Name="TextBoxDown" Height="16" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
+                            </DockPanel>
+                            <DockPanel Margin="2"  >
+                                <TextBlock  Text="右:" Width="20"/>
+                                <TextBox  x:Name="TextBoxRight" Height="16" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
+                            </DockPanel>
+                        </UniformGrid>
+                    </StackPanel>
+                    
+                </GroupBox>
+                <GroupBox Header="尺寸">
+
+                </GroupBox>
+                <GroupBox Header="发光区">
+                    <StackPanel>
+                        <RadioButton Content=""/>
+                    </StackPanel>
+                </GroupBox>
+                
+                
+                
+                
+                
+            </StackPanel>
+        </Grid>
+
+        <Grid Grid.Column="1"  Background="#c3c3c3">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="auto"/>
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <StackPanel Orientation="Horizontal">
+                    <Button x:Name="button1" Content="打开" Click="button1_Click"/>
+                    <Button x:Name="button2" Content="绘制行列图像" Click="button2_Click"/>
+                    <Button x:Name="button3" Content="清空" Click="button3_Click"/>
+
+                </StackPanel>
+                <local:ZoomboxSub x:Name="Zoombox1"  MaxZoom="10" MinZoom="0.01" Grid.Row="1" Grid.ColumnSpan="2">
+                    <local:DrawCanvas x:Name="ImageShow" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  MouseDown="ImageShow_MouseDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
+                </local:ZoomboxSub>
+            </Grid>
+            <Grid Grid.Row="1">
+                <ListView Height="100"/>
+            </Grid>
+
+        </Grid>
     </Grid>
 </Window>

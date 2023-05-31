@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Media3D;
 
 namespace ColorVision
 {
@@ -18,6 +19,17 @@ namespace ColorVision
         protected override int VisualChildrenCount { get => visuals.Count; }
 
         public bool ContainsVisual(Visual visual) => visuals.Contains(visual);
+
+
+        public void Clear()
+        {
+            foreach (var item in visuals)
+            {
+                RemoveVisualChild(item);
+                RemoveLogicalChild(item);
+            }
+            visuals.Clear();
+        }
 
 
         public void AddVisual(Visual visual)
