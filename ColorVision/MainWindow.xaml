@@ -35,6 +35,8 @@
                 </MenuItem>
                 <MenuItem Header="MySQLTest(_M)"  Click="MenuItem_Click_7"/>
                 <MenuItem Header="MQTT日志(_L)" Click="MenuItem_Click"/>
+                <MenuItem Header="流程引擎" Click="MenuItem9_Click"/>
+
                 <MenuItem Header="标定(_A)">
                     <MenuItem Header="四色校正" Click="MenuItem_Click8"/>
                 </MenuItem>
@@ -462,11 +464,17 @@
                             <ToggleButton  Click="Button6_Click">
                                 <Image  Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageruler}"/>
                             </ToggleButton>
-                            <ToggleButton Height="30" Width="30" Click="Button7_Click">
+                            <ToggleButton Height="30" Width="30" IsChecked="{Binding EraseVisual}" Click="Button7_Click">
                                 <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageeraser}"/>
                             </ToggleButton>
                             <ToggleButton Click="Button8_Click">
                                 <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageMax}"/>
+                            </ToggleButton>
+                            <ToggleButton IsChecked="{Binding DrawCircle}">
+                                <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageCircle}"/>
+                            </ToggleButton>
+                            <ToggleButton IsChecked="{Binding DrawRect}">
+                                <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageRect}"/>
                             </ToggleButton>
                         </ToolBar>
                     </StackPanel>

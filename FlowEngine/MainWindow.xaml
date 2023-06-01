@@ -1,0 +1,41 @@
+﻿<Window x:Class="FlowEngine.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:FlowEngine"
+        xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
+        xmlns:st ="clr-namespace:ST.Library.UI.NodeEditor;assembly=ST.Library.UI"
+        mc:Ignorable="d"
+        Title="流程引擎" Height="600" Width="800" Initialized="Window_Initialized">
+    <Grid  x:Name="Grid1">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="50"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions >
+                <ColumnDefinition Width="200"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid >
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="120"/>
+                </Grid.RowDefinitions>
+                <WindowsFormsHost Grid.Row="0">
+                    <st:STNodeTreeView x:Name="STNodeTreeView1" />
+                </WindowsFormsHost>
+                <WindowsFormsHost Grid.Row="1">
+                    <st:STNodePropertyGrid x:Name="STNodePropertyGrid1"/>
+                </WindowsFormsHost>
+            </Grid>
+
+            <WindowsFormsHost Grid.Column="110">
+                <st:STNodeEditor  x:Name="STNodeEditor1"/>
+            </WindowsFormsHost>
+        </Grid>
+        
+
+    </Grid>
+</Window>

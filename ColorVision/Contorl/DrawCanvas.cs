@@ -40,8 +40,9 @@ namespace ColorVision
             AddLogicalChild(visual);
         }
 
-        public void RemoveVisual(Visual visual)
+        public void RemoveVisual(Visual? visual)
         {
+            if (visual == null) return;
             visuals.Remove(visual);
 
             RemoveVisualChild(visual);

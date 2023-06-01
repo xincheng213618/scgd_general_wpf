@@ -31,7 +31,7 @@ namespace ColorVision
         private Point _Center;
 
         [Category("DrawingVisualCircle"), DisplayName("点")]
-        public Point Center { get => _Center; set { _Center = value; NotifyPropertyChanged(); } }
+        public Point Center { get => _Center; set { if (_Center.Equals(value)) return;  _Center = value; NotifyPropertyChanged(); } }
 
         private double _Radius;
 
@@ -70,8 +70,11 @@ namespace ColorVision
         public event PropertyChangedEventHandler? PropertyChanged;
         public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
-
         public CircleAttribute Attribute { get; set; }
+
+        public bool AutoAttributeChanged { get; set; } = true;
+
+
         public DrawingVisualCircle()
         {
             Attribute = new CircleAttribute();
@@ -81,7 +84,8 @@ namespace ColorVision
             Attribute.Radius = 30;
             Attribute.PropertyChanged += (s, e) =>
             {
-                Render();
+                if (AutoAttributeChanged)
+                    Render();
                 if (e.PropertyName == "Center")
                 {
                     NotifyPropertyChanged(nameof(CenterX));
@@ -92,9 +96,10 @@ namespace ColorVision
                     NotifyPropertyChanged(nameof(Radius));
                 }
             };
-
-
         }
+
+        public Point Center { get => Attribute.Center; set => Attribute.Center =value; }
+
         public double CenterX { get => Attribute.Center.X; set => Attribute.Center = new Point(value, Attribute.Center.Y); }
         public double CenterY { get => Attribute.Center.Y; set => Attribute.Center = new Point(Attribute.Center.X, value); }
 
@@ -117,13 +122,19 @@ namespace ColorVision
     public class DrawingVisualRectangle : DrawingVisual
     {
         public RectangleAttribute Attribute { get; set; }
+
+        public bool AutoAttributeChanged { get; set; } = true;
+
         public DrawingVisualRectangle()
         {
             Attribute = new RectangleAttribute();
             Attribute.Brush = Brushes.Blue;
             Attribute.Pen = new Pen(Brushes.Black, 1);
             Attribute.Rect = new Rect(50, 50, 100, 100);
-            Attribute.PropertyChanged += (s, e) => Render();
+            Attribute.PropertyChanged += (s, e) => 
+            {
+                if (AutoAttributeChanged) Render();
+            };
         }
 
         public void Render()

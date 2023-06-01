@@ -68,6 +68,8 @@ namespace ColorVision
             app = new App();
             app.InitializeComponent();
             app.Run();
+
+
         }
 
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
@@ -92,6 +94,10 @@ namespace ColorVision
         {
            //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en");
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("zh-Hans");
+
+            System.Windows.Forms.Application.EnableVisualStyles();
+            System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
+
             MainWindow mainWindow = new MainWindow();
             mainWindow.Show();
         }

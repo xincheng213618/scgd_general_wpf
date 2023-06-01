@@ -9,6 +9,7 @@ using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Windows.Input;
+using System.Collections.Generic;
 
 namespace ColorVision
 {
@@ -157,24 +158,60 @@ namespace ColorVision
                     DrawVisualImage.Effect = new DropShadowEffect() { Opacity = 0.5 };
 
             }
+        }
+        private bool _DrawCircle;
+        /// <summary>
+        /// 是否画圆形
+        /// </summary>
+        public bool DrawCircle {  get => _DrawCircle;
+            set
+            {
+                if (_DrawCircle == value) return;
+                _DrawCircle = value;
+                if (value)
+                {
+                    DrawRect = false;
+                    Activate = true;
+                }
 
+
+                NotifyPropertyChanged(); 
+            }
         }
 
+        private bool _DrawRect;
+        /// <summary>
+        /// 是否画圆形
+        /// </summary>
+        public bool DrawRect
+        {
+            get => _DrawRect;
+            set
+            {
+                if (_DrawRect == value) return;
+                _DrawRect = value;
+                if (value)
+                {
+                    DrawCircle = false;
+                    Activate = true;
+                }
+                NotifyPropertyChanged();
+            }
+        }
 
 
         private bool _EraseVisual;
-        public bool EraseVisual
-        {
-            get => _EraseVisual;
+        public bool EraseVisual {  get => _EraseVisual;
             set
             {
-                if (_EraseVisual != value)
-                {
+                if (_EraseVisual == value) return;
                     _EraseVisual = value;
                     NotifyPropertyChanged();
-                }
             }
         }
+
+
+
 
     }
 }

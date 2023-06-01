@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>True</UseWindowsForms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="FlowEngineLib">
+      <HintPath>..\DLL\FlowEngineLib.dll</HintPath>
+    </Reference>
+    <Reference Include="ST.Library.UI">
+      <HintPath>..\DLL\ST.Library.UI.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

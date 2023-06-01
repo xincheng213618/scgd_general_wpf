@@ -7,25 +7,19 @@ namespace ColorVision
 {
     public class RoiPointsCfg
     {
-        public static string cfgDefaultFile = "cfg\\RiPointSet.cfg";
+        private static string cfgDefaultFile = "cfg\\RiPointSet.cfg";
 
         public Dictionary<string, RiPoint> riPointDict;
         public RoiPointsCfg()
         {
-            riPointDict = Util.CfgFile.LoadCfgFile<Dictionary<string, RiPoint>>(cfgDefaultFile);
-
-            if(riPointDict == null)
-            {
-                riPointDict = new Dictionary<string, RiPoint>();
-                riPointDict.Add("default", new RiPoint("default", true));
-            }
+            riPointDict = Util.CfgFile.LoadCfgFile<Dictionary<string, RiPoint>>(cfgDefaultFile) ?? new Dictionary<string, RiPoint>() { { "default" , new RiPoint() } };
         }
         public bool Save()
         {
             return Util.CfgFile.SaveCfgFile(cfgDefaultFile, riPointDict);
         }
         
-        public RiPoint GetCurRiPoint()
+        public RiPoint? GetCurRiPoint()
         {
             foreach (var item in riPointDict)
             {
@@ -34,14 +28,12 @@ namespace ColorVision
                     return item.Value;
                 }
             }
-
-            return null;
+            return default;
         }
     }
 
     public class RiPoint
     {
-        public string title { set; get; }
         public List<RoiPointData> riPoints;
         public System.Drawing.Point[] LAPoints;
         public LedCheckCfg ledCheckCfg;
@@ -59,21 +51,7 @@ namespace ColorVision
             LAPoints = new System.Drawing.Point[4];
             ledCheckCfg = Util.CfgFile.LoadCfgFile<LedCheckCfg>("cfg\\LedCheck.cfg");
         }
-        public RiPoint(string title)
-        {
-            this.title = title;
-            riPoints = new List<RoiPointData>();
-            LAPoints = new System.Drawing.Point[4];
-            ledCheckCfg = Util.CfgFile.LoadCfgFile<LedCheckCfg>("cfg\\LedCheck.cfg");
-        }
-        public RiPoint(string title, bool bSelected)
-        {
-            this.title = title;
-            this.bSelected = bSelected;
-            riPoints = new List<RoiPointData>();
-            LAPoints = new System.Drawing.Point[4];
-            ledCheckCfg = Util.CfgFile.LoadCfgFile<LedCheckCfg>("cfg\\LedCheck.cfg");
-        }
+
 
         public void Reset()
         {
@@ -177,11 +155,6 @@ namespace ColorVision
         Mask=2
     }
 
-    public class RiPointTypeClass
-    {
-        public RiPointTypes ptType_id { set; get; }
-        public string ptType_name { set; get; }
-    }
 
     public class RoiPointData
     {
@@ -232,19 +205,9 @@ namespace ColorVision
 
             return bSelected;
         }
-        bool IsShow()
-        {
-            return bShow;
-        }
-        public bool IsPointInCircle(Point pos)
-        {
-            return ((Img_x - pos.X) * (Img_x - pos.X) + (Img_y - pos.Y) * (Img_y - pos.Y)) < w / 2 * h / 2;
-        }
 
-        public bool IsPointInRect(Point pos)
-        {
-            return Math.Sqrt((Img_x - pos.X) * (Img_x - pos.X) + (Img_y - pos.Y) * (Img_y - pos.Y)) <= w;
-        }
+        public bool IsPointInCircle(Point pos) => ((Img_x - pos.X) * (Img_x - pos.X) + (Img_y - pos.Y) * (Img_y - pos.Y)) < w / 2 * h / 2;
+        public bool IsPointInRect(Point pos) => Math.Sqrt((Img_x - pos.X) * (Img_x - pos.X) + (Img_y - pos.Y) * (Img_y - pos.Y)) <= w;
 
         public void HideData()
         {

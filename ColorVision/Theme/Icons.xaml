@@ -3,7 +3,6 @@
 
 
     <Style x:Key="ToolBarImage" TargetType="{x:Type Image}">
-        <Setter Property="Margin" Value="4,0,0,0"/>
         <Setter Property="Height" Value="22"/>
         <Setter Property="Width" Value="22"/>
         <Setter Property="Stretch" Value="Uniform"/>
@@ -118,6 +117,24 @@
         <DrawingImage.Drawing>
             <DrawingGroup ClipGeometry="M0,0 V1024 H1024 V0 H0 Z">
                 <GeometryDrawing Brush="{StaticResource IconSolidColorBrush}" Geometry="F1 M1024,1024z M0,0z M886.2,604.8L137.8,604.8C115.7,604.8 97.8,622.7 97.8,644.8 97.8,653.2 100.4,661 104.8,667.4 106.7,671.9 109.6,676.1 113.2,679.8L289.5,856C297.3,863.8 307.5,867.7 317.8,867.7 328.1,867.7 338.3,863.8 346.1,856 361.7,840.4 361.7,815.1 346.1,799.4L231.3,684.8 886.1,684.8C908.2,684.8 926.1,666.9 926.1,644.8 926.1,622.7 908.3,604.8 886.2,604.8z M137.8,419.2L886.2,419.2C908.3,419.2 926.2,401.3 926.2,379.2 926.2,370.8 923.6,363 919.2,356.6 917.8,353.3 915.8,350.1 913.4,347.1L769.2,170.9C755.2,153.8 730,151.3 712.9,165.3 695.8,179.3 693.3,204.5 707.3,221.6L803.6,339.2 137.8,339.2C115.7,339.2 97.8,357.1 97.8,379.2 97.8,401.3 115.7,419.2 137.8,419.2z" />
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+
+
+    <DrawingImage x:Key="DrawingImageCircle">
+        <DrawingImage.Drawing>
+            <DrawingGroup ClipGeometry="M0,0 V1024 H1024 V0 H0 Z">
+                <GeometryDrawing Brush="{StaticResource IconSolidColorBrush}" Geometry="F1 M1024,1024z M0,0z M512,928C282.624,928 96,741.376 96,512 96,282.624 282.624,96 512,96 741.376,96 928,282.624 928,512 928,741.376 741.376,928 512,928z M512,160C317.92,160 160,317.92 160,512 160,706.08 317.92,864 512,864 706.08,864 864,706.08 864,512 864,317.92 706.08,160 512,160z" />
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+
+
+    <DrawingImage x:Key="DrawingImageRect">
+        <DrawingImage.Drawing>
+            <DrawingGroup ClipGeometry="M0,0 V1024 H1024 V0 H0 Z">
+                <GeometryDrawing Brush="{StaticResource IconSolidColorBrush}" Geometry="F1 M1024,1024z M0,0z M898.8,199.6L898.8,824.4 125.2,824.4 125.2,199.6 898.8,199.6 M958.3,140.1L65.7,140.1 65.7,883.9 958.2,883.9 958.2,140.1 958.3,140.1z" />
             </DrawingGroup>
         </DrawingImage.Drawing>
     </DrawingImage>

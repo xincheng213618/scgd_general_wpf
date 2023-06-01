@@ -10,6 +10,7 @@ using OpenCvSharp.Internal;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -18,6 +19,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Forms.Integration;
 using System.Windows.Ink;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -146,6 +148,8 @@ namespace ColorVision
                     DrawingVisualCircle drawingVisualCircle = new DrawingVisualCircle();
                     drawingVisualCircle.Attribute.Center = new Point(i * 50, j * 50);
                     drawingVisualCircle.Attribute.Radius = 20;
+                    drawingVisualCircle.Attribute.Brush = Brushes.Transparent;
+                    drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red, 10);
                     drawingVisualCircle.Attribute.ID = i*50+j;
                     drawingVisualCircle.Render();
                     ImageShow.AddVisual(drawingVisualCircle);
@@ -221,9 +225,6 @@ namespace ColorVision
         }
 
 
-
-
-
         private void DrawImageRuler()
         {
             if (ImageShow.Source is BitmapImage bitmapImage)
@@ -234,7 +235,6 @@ namespace ColorVision
                 dc.PushTransform(transform);
 
                 dc.DrawLine(new Pen(Brushes.Red, 10), new Point(100, 50), new Point(200, 50));
-
 
                 Brush brush = Brushes.Red;
                 FontFamily fontFamily = new FontFamily("Arial");
@@ -253,7 +253,6 @@ namespace ColorVision
             }
         }
 
-
         private DrawingVisual SelectRect = new DrawingVisual();
 
         private static void DrawSelectRect(DrawingVisual drawingVisual, Rect rect)
@@ -262,19 +261,37 @@ namespace ColorVision
             dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), rect);
         }
 
+        private bool IsMouseDown;
         private Point MouseDownP;
         private DrawingVisualCircle? SelectDCircle;
+
+        private DrawingVisualCircle DrawCircleCache;
+        private DrawingVisualRectangle DrawingRectangleCache;
+
         private void ImageShow_MouseDown(object sender, MouseButtonEventArgs e)
         {
             if (sender is DrawCanvas drawCanvas && !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn))
             {
                 MouseDownP = e.GetPosition(drawCanvas);
+                IsMouseDown = true;
                 drawCanvas.CaptureMouse();
 
-                if (EraseVisual)
+                if (ToolBarTop.EraseVisual)
                 {
                     DrawSelectRect(SelectRect, new Rect(MouseDownP, MouseDownP)); ;
                     drawCanvas.AddVisual(SelectRect);
+                }
+                else if (ToolBarTop.DrawCircle)
+                {
+                    DrawCircleCache = new DrawingVisualCircle() { AutoAttributeChanged = false};
+                    DrawCircleCache.Attribute.Center = MouseDownP;
+                    drawCanvas.AddVisual(DrawCircleCache);
+                }
+                else if (ToolBarTop.DrawRect)
+                {
+                    DrawingRectangleCache = new DrawingVisualRectangle() { AutoAttributeChanged = false };
+                    DrawingRectangleCache.Attribute.Rect =  new Rect(MouseDownP,new Point(MouseDownP.X+30, MouseDownP.Y + 30));
+                    drawCanvas.AddVisual(DrawingRectangleCache);
                 }
                 else
                 {
@@ -333,14 +350,31 @@ namespace ColorVision
                 var controlWidth = drawCanvas.ActualWidth;
                 var controlHeight = drawCanvas.ActualHeight;
 
-                if (EraseVisual)
+                if (IsMouseDown)
                 {
-                    DrawSelectRect(SelectRect, new Rect(MouseDownP,point)); ;
+                    if (ToolBarTop.EraseVisual)
+                    {
+                        DrawSelectRect(SelectRect, new Rect(MouseDownP, point)); ;
+                    }
+                    else if (ToolBarTop.DrawCircle)
+                    {
+                        double Radius = Math.Sqrt((Math.Pow(point.X - MouseDownP.X, 2) + Math.Pow(point.Y - MouseDownP.Y, 2)));
+                        DrawCircleCache.Attribute.Radius = Radius;
+                        DrawCircleCache.Render();
+                    }
+                    else if (ToolBarTop.DrawRect)
+                    {
+                        DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, point);
+                        DrawingRectangleCache.Render();
+
+                    }
+                    else if (SelectDCircle != null)
+                    {
+                        SelectDCircle.Attribute.Center = point;
+                    }
                 }
-                else if (SelectDCircle != null)
-                {
-                    SelectDCircle.Attribute.Center = point;
-                }
+
+
 
                 if (ToolBarTop.Move&&drawCanvas.Source is BitmapImage bitmapImage)
                 {
@@ -379,15 +413,27 @@ namespace ColorVision
         {
             if (sender is DrawCanvas drawCanvas && !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn))
             {
+                IsMouseDown = false;
                 var MouseUpP = e.GetPosition(drawCanvas);
-                if (EraseVisual)
+                if (ToolBarTop.EraseVisual)
                 {
+                    drawCanvas.RemoveVisual(drawCanvas.GetVisual(MouseDownP));
+                    drawCanvas.RemoveVisual(drawCanvas.GetVisual(MouseUpP));
                     foreach (var item in drawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP))))
                     {
                         drawCanvas.RemoveVisual(item);
                     }
-                    ;
                     drawCanvas.RemoveVisual(SelectRect);
+                }
+                else if (ToolBarTop.DrawCircle)
+                {
+                    if (DrawCircleCache.Attribute.Radius == 30)
+                        DrawCircleCache.Render();
+                }else if (ToolBarTop.DrawRect)
+                {
+                    if (DrawingRectangleCache.Attribute.Rect.Width == 30 && DrawingRectangleCache.Attribute.Rect.Height==30)
+                        DrawingRectangleCache.Render();
+                    
                 }
 
                 drawCanvas.ReleaseMouseCapture();
@@ -409,15 +455,13 @@ namespace ColorVision
             ToolBarTop.DrawVisualImageControl(false);
         }
 
-        private bool EraseVisual;
 
 
         private void Button7_Click(object sender, RoutedEventArgs e)
         {
             if(sender is ToggleButton toggleButton)
             {
-                EraseVisual = toggleButton.IsChecked == true;
-                if (EraseVisual)
+                if (ToolBarTop.EraseVisual)
                 {
                     ToggleButtonDrag.IsChecked = true;
                     Zoombox1.ActivateOn = toggleButton.IsChecked == true ? ModifierKeys.Control : ModifierKeys.None;
@@ -737,6 +781,13 @@ namespace ColorVision
         private void MenuItem_Click_9(object sender, RoutedEventArgs e)
         {
             new WindowFocusPoint() { Owner = this }.Show();
+        }
+
+        private void MenuItem9_Click(object sender, RoutedEventArgs e)
+        {
+            FlowEngine.MainWindow mainWindow = new FlowEngine.MainWindow();
+            mainWindow.Owner = this;
+            mainWindow.Show();
         }
     }
 

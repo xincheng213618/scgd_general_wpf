@@ -14,7 +14,7 @@ namespace ColorVision.Template
     {
         public event EventHandler IsEnabledChanged;
 
-        [Category("_Setting"), DisplayName("是否启用")]
+        [Category("_Setting"), DisplayName("是否启用模板")]
         public bool IsEnable
         {
             get => _IsEnable; set

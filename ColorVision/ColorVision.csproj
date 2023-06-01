@@ -66,6 +66,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\cvColorVision\cvColorVision.csproj" />
+    <ProjectReference Include="..\FlowEngine\FlowEngine.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="FlowEngineLib">
+      <HintPath>..\DLL\FlowEngineLib.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>
