@@ -74,12 +74,13 @@ namespace ColorVision
 
         public bool AutoAttributeChanged { get; set; } = true;
 
-
+        private static int No;
         public DrawingVisualCircle()
         {
             Attribute = new CircleAttribute();
-            Attribute.Brush = Brushes.Blue;
-            Attribute.Pen = new Pen(Brushes.Black, 1);
+            Attribute.ID = No++;
+            Attribute.Brush = Brushes.Transparent;
+            Attribute.Pen = new Pen(Brushes.Red, 2);
             Attribute.Center = new Point(50, 50);
             Attribute.Radius = 30;
             Attribute.PropertyChanged += (s, e) =>
@@ -128,8 +129,8 @@ namespace ColorVision
         public DrawingVisualRectangle()
         {
             Attribute = new RectangleAttribute();
-            Attribute.Brush = Brushes.Blue;
-            Attribute.Pen = new Pen(Brushes.Black, 1);
+            Attribute.Brush = Brushes.Transparent;
+            Attribute.Pen = new Pen(Brushes.Red, 1);
             Attribute.Rect = new Rect(50, 50, 100, 100);
             Attribute.PropertyChanged += (s, e) => 
             {
@@ -140,8 +141,15 @@ namespace ColorVision
         public void Render()
         {
             using DrawingContext dc = RenderOpen();
+
+
+            //RotateTransform form = new RotateTransform(50, Attribute.Rect.Left, Attribute.Rect.Top);
+            //dc.PushTransform(form);
             dc.DrawRectangle(Attribute.Brush, Attribute.Pen, Attribute.Rect);
         }
+
+
+
     }
 
 

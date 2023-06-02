@@ -284,6 +284,7 @@ namespace ColorVision
                 else if (ToolBarTop.DrawCircle)
                 {
                     DrawCircleCache = new DrawingVisualCircle() { AutoAttributeChanged = false};
+                    DrawCircleCache.Attribute.Pen = new Pen(Brushes.Red, 1/ Zoombox1.ContentMatrix.M11);
                     DrawCircleCache.Attribute.Center = MouseDownP;
                     drawCanvas.AddVisual(DrawCircleCache);
                 }
@@ -291,6 +292,8 @@ namespace ColorVision
                 {
                     DrawingRectangleCache = new DrawingVisualRectangle() { AutoAttributeChanged = false };
                     DrawingRectangleCache.Attribute.Rect =  new Rect(MouseDownP,new Point(MouseDownP.X+30, MouseDownP.Y + 30));
+                    DrawingRectangleCache.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+
                     drawCanvas.AddVisual(DrawingRectangleCache);
                 }
                 else
@@ -359,6 +362,7 @@ namespace ColorVision
                     else if (ToolBarTop.DrawCircle)
                     {
                         double Radius = Math.Sqrt((Math.Pow(point.X - MouseDownP.X, 2) + Math.Pow(point.Y - MouseDownP.Y, 2)));
+                        DrawCircleCache.Attribute.ID = DrawingVisualCircleLists.Count();
                         DrawCircleCache.Attribute.Radius = Radius;
                         DrawCircleCache.Render();
                     }
@@ -404,7 +408,6 @@ namespace ColorVision
                         ImageInfo.Color = new SolidColorBrush(color);
                         ImageInfo.Hex = color.ToHex();
                     }
-
                     ToolBarTop.DrawImage(actPoint, bitPoint, ImageInfo);
                 }
             }
@@ -429,12 +432,50 @@ namespace ColorVision
                 {
                     if (DrawCircleCache.Attribute.Radius == 30)
                         DrawCircleCache.Render();
-                }else if (ToolBarTop.DrawRect)
+
+                    if (PropertyGrid2.SelectedObject is ViewModelBase viewModelBase)
+                    {
+                        viewModelBase.PropertyChanged -= (s, e) =>
+                        {
+                            PropertyGrid2.Refresh();
+                        };
+                    }
+
+                    PropertyGrid2.SelectedObject = DrawCircleCache.Attribute;
+                    DrawCircleCache.Attribute.PropertyChanged += (s, e) =>
+                    {
+                        PropertyGrid2.Refresh();
+                    };
+                    DrawCircleCache.AutoAttributeChanged = true;
+                    DrawingVisualCircleLists.Add(DrawCircleCache);
+
+                    ListView1.ScrollIntoView(DrawCircleCache);
+                    ListView1.SelectedIndex = DrawingVisualCircleLists.IndexOf(DrawCircleCache);
+
+                }
+                else if (ToolBarTop.DrawRect)
                 {
                     if (DrawingRectangleCache.Attribute.Rect.Width == 30 && DrawingRectangleCache.Attribute.Rect.Height==30)
                         DrawingRectangleCache.Render();
-                    
+
+                    if (PropertyGrid2.SelectedObject is ViewModelBase viewModelBase)
+                    {
+                        viewModelBase.PropertyChanged -= (s, e) =>
+                        {
+                            PropertyGrid2.Refresh();
+                        };
+                    }
+                    PropertyGrid2.SelectedObject = DrawingRectangleCache.Attribute;
+                    DrawingRectangleCache.AutoAttributeChanged = true;
+
+                    DrawingRectangleCache.Attribute.PropertyChanged += (s, e) =>
+                    {
+                        PropertyGrid2.Refresh();
+                    };
+
                 }
+
+
 
                 drawCanvas.ReleaseMouseCapture();
                 SelectDCircle = null;
@@ -571,11 +612,9 @@ namespace ColorVision
                     {
                         PropertyGrid2.Refresh();
                     };
-                    viewModelBase.Pen = new Pen(Brushes.Black, 1);
                 }
 
                 PropertyGrid2.SelectedObject = drawingVisual.Attribute;
-                drawingVisual.Attribute.Pen = new Pen(Brushes.Red, 3);
                 drawingVisual.Attribute.PropertyChanged += (s, e) =>
                 {
                     PropertyGrid2.Refresh();
@@ -785,7 +824,7 @@ namespace ColorVision
 
         private void MenuItem9_Click(object sender, RoutedEventArgs e)
         {
-            FlowEngine.MainWindow mainWindow = new FlowEngine.MainWindow();
+            FlowEngine.WindowFlowEngine mainWindow = new FlowEngine.WindowFlowEngine();
             mainWindow.Owner = this;
             mainWindow.Show();
         }

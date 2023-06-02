@@ -173,8 +173,6 @@ namespace ColorVision
                     DrawRect = false;
                     Activate = true;
                 }
-
-
                 NotifyPropertyChanged(); 
             }
         }
