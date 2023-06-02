@@ -53,7 +53,7 @@ namespace ColorVision
 
         private Rect _Rect;
 
-        [Category("RectangleAttribute"), DisplayName("弧度")]
+        [Category("RectangleAttribute"), DisplayName("矩形")]
         public Rect Rect { get => _Rect; set { _Rect = value; NotifyPropertyChanged(); } }
     }
 

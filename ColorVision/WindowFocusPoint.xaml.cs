@@ -184,6 +184,7 @@ namespace ColorVision
                 {
                 }
             };
+            WindowState = WindowState.Maximized;
         }
 
         private void TextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)

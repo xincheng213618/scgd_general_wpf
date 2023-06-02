@@ -38,10 +38,7 @@ namespace FlowEngine
             STNodeEditor1.LoadAssembly("FlowEngineLib.dll");
             STNodeEditor1.ActiveChanged += (s, e) => STNodePropertyGrid1.SetNode(STNodeEditor1.ActiveNode);
             STNodeEditor1.NodeAdded += StNodeEditor1_NodeAdded;
-
-
             softNumerical = new HslCommunication.BasicFramework.SoftNumericalOrder("CV", "yyyyMMddHH", 5, Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory) + "\\softNumerical.txt");
-
         }
 
         private void StNodeEditor1_NodeAdded(object sender, STNodeEditorEventArgs e)

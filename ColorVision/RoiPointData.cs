@@ -304,12 +304,6 @@ namespace ColorVision
                 {
                     ypos += 10;
                     graphics.DrawString(string.Format("平均值:{0:0.0000}", mean), font, brush, new PointF(n_x, ypos));
-                    /*
-                    ypos += 10;
-                    graphics.DrawString(string.Format("最大值:{0:0.0000}", max), font, brush, new PointF(n_x, ypos));
-                    ypos += 10;
-                    graphics.DrawString(string.Format("最小值:{0:0.0000}", min), font, brush, new PointF(n_x, ypos));
-                    */
                 }
             }
         }
