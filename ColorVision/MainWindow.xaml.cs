@@ -362,7 +362,7 @@ namespace ColorVision
                     else if (ToolBarTop.DrawCircle)
                     {
                         double Radius = Math.Sqrt((Math.Pow(point.X - MouseDownP.X, 2) + Math.Pow(point.Y - MouseDownP.Y, 2)));
-                        DrawCircleCache.Attribute.ID = DrawingVisualCircleLists.Count();
+                        DrawCircleCache.Attribute.ID = DrawingVisualCircleLists.Count;
                         DrawCircleCache.Attribute.Radius = Radius;
                         DrawCircleCache.Render();
                     }
@@ -370,15 +370,12 @@ namespace ColorVision
                     {
                         DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, point);
                         DrawingRectangleCache.Render();
-
                     }
                     else if (SelectDCircle != null)
                     {
                         SelectDCircle.Attribute.Center = point;
                     }
                 }
-
-
 
                 if (ToolBarTop.Move&&drawCanvas.Source is BitmapImage bitmapImage)
                 {

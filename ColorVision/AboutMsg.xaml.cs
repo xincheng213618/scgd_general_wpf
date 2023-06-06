@@ -23,6 +23,8 @@ namespace ColorVision
         {
             this.Topmost = true;
 
+            CloseButton.Focus();
+
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
