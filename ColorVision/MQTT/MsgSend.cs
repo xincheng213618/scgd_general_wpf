@@ -3,7 +3,7 @@ using System;
 
 namespace ColorVision.MQTT
 {
-    public class MQTTMsg
+    public class MsgSend
     {
         public string Version { get; set; } = "1.0";
         public string EventName { get; set; }
@@ -14,7 +14,7 @@ namespace ColorVision.MQTT
         public dynamic Params { get; set; }
     }
 
-    public class MQTTMsgReturn
+    public class MsgReturn
     {
         public string Version { get; set; }
         public string EventName { get; set; }
@@ -27,8 +27,10 @@ namespace ColorVision.MQTT
         public dynamic Data { get; set; }
     }
 
-    public class SetParamFunctionMQTT
+    public class ParamFunction
     {
-        public string FunctionName { get; set; }
+        public string Name { get; set; }
+        [JsonProperty("params")]
+        public dynamic Params { get; set; }
     }
 }

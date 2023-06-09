@@ -432,7 +432,7 @@
                     </Grid.RowDefinitions>
                     <Grid Grid.Row="0" Height="0.5" Background="#F0F0F0"/>
                     <local:ZoomboxSub x:Name="Zoombox1"  MaxZoom="10" MinZoom="0.01" Grid.Row="1" Grid.ColumnSpan="2">
-                        <local:DrawCanvas x:Name="ImageShow" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  MouseDown="ImageShow_MouseDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
+                        <local:DrawCanvas x:Name="ImageShow"  Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  MouseDown="ImageShow_MouseDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
                     </local:ZoomboxSub>
                     <StackPanel Grid.Row="0" Grid.RowSpan="2" >
                         <ToolBar x:Name="ToolBar1" DataContext="{Binding ToolBarTop}"   Loaded="ToolBar1_Loaded" Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" HorizontalAlignment="Center">
@@ -475,6 +475,9 @@
                             </ToggleButton>
                             <ToggleButton IsChecked="{Binding DrawRect}">
                                 <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageRect}"/>
+                            </ToggleButton>
+                            <ToggleButton IsChecked="{Binding DrawPolygon}">
+                                <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImagePolygon}"/>
                             </ToggleButton>
                         </ToolBar>
                     </StackPanel>

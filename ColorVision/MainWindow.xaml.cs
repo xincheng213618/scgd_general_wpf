@@ -38,14 +38,14 @@ namespace ColorVision
         public ImageInfo ImageInfo { get; set; } = new ImageInfo();
         public PerformanceSetting PerformanceSetting { get; set; } = new PerformanceSetting();
 
-        public ToolBarTop ToolBarTop { get; set; } 
+        public ToolBarTop ToolBarTop { get; set; }
 
         public MQTTControl MQTTControl { get; set; }
 
         public MainWindow()
         {
             InitializeComponent();
-            ToolBarTop = new ToolBarTop(Zoombox1,ImageShow);
+            ToolBarTop = new ToolBarTop(Zoombox1, ImageShow);
             ToolBar1.DataContext = ToolBarTop;
             ListView1.ItemsSource = DrawingVisualCircleLists;
             StatusBarItem1.DataContext = PerformanceSetting;
@@ -86,7 +86,7 @@ namespace ColorVision
 
         IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
-            if (msg == WM_USER+1)
+            if (msg == WM_USER + 1)
             {
                 try
                 {
@@ -100,7 +100,7 @@ namespace ColorVision
                         GlobalDeleteAtom((short)wParam);
                     }
                 }
-                catch (Exception ex){ MessageBox.Show(ex.Message);}
+                catch (Exception ex) { MessageBox.Show(ex.Message); }
             }
             return IntPtr.Zero;
         }
@@ -108,7 +108,7 @@ namespace ColorVision
 
         private DrawingVisual ImageRuler = new DrawingVisual();
 
-        private  void Button_Click(object sender, RoutedEventArgs e)
+        private void Button_Click(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
             openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png,*.tif) | *.jpg; *.jpeg; *.png;*.tif";
@@ -122,7 +122,7 @@ namespace ColorVision
 
         public void OpenImage(string? filePath)
         {
-            if (filePath!=null&&File.Exists(filePath))
+            if (filePath != null && File.Exists(filePath))
             {
                 log.Info(filePath);
                 BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
@@ -150,7 +150,7 @@ namespace ColorVision
                     drawingVisualCircle.Attribute.Radius = 20;
                     drawingVisualCircle.Attribute.Brush = Brushes.Transparent;
                     drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red, 10);
-                    drawingVisualCircle.Attribute.ID = i*50+j;
+                    drawingVisualCircle.Attribute.ID = i * 50 + j;
                     drawingVisualCircle.Render();
                     ImageShow.AddVisual(drawingVisualCircle);
                     DrawingVisualCircleLists.Add(drawingVisualCircle);
@@ -182,7 +182,7 @@ namespace ColorVision
         {
             if (sender is ToggleButton toggleButton)
             {
-                if (!ImageShow.ContainsVisual(DrawingVisualGrid) && toggleButton.IsChecked==true)
+                if (!ImageShow.ContainsVisual(DrawingVisualGrid) && toggleButton.IsChecked == true)
                     ImageShow.AddVisual(DrawingVisualGrid);
                 if (ImageShow.ContainsVisual(DrawingVisualGrid) && toggleButton.IsChecked == false)
                     ImageShow.RemoveVisual(DrawingVisualGrid);
@@ -239,14 +239,14 @@ namespace ColorVision
                 Brush brush = Brushes.Red;
                 FontFamily fontFamily = new FontFamily("Arial");
                 double fontSize = 10;
-                FormattedText formattedText = new FormattedText((1 / Zoombox1.ContentMatrix.M11* bitmapImage.PixelWidth/100).ToString("F2") +"px", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                FormattedText formattedText = new FormattedText((1 / Zoombox1.ContentMatrix.M11 * bitmapImage.PixelWidth / 100).ToString("F2") + "px", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 dc.DrawText(formattedText, new Point(100, 30));
 
 
                 double X = 1 / Zoombox1.ContentMatrix.M11 * bitmapImage.PixelWidth / 100;
                 double result = X < 10 ? 5 : X < 20 ? 10 : X < 50 ? 20 : X < 100 ? 50 : (X < 200 ? 100 : (X < 500 ? 200 : (X < 1000 ? 500 : (X < 2000 ? 1000 : 2000))));
 
-                dc.DrawLine(new Pen(Brushes.Red, 10), new Point(100, 100), new Point(100+ 100 * result/X, 100));
+                dc.DrawLine(new Pen(Brushes.Red, 10), new Point(100, 100), new Point(100 + 100 * result / X, 100));
                 FormattedText formattedText1 = new FormattedText((result).ToString("F2") + "px", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 dc.DrawText(formattedText1, new Point(100, 80));
 
@@ -267,6 +267,13 @@ namespace ColorVision
 
         private DrawingVisualCircle DrawCircleCache;
         private DrawingVisualRectangle DrawingRectangleCache;
+        private DrawingVisualPolygon? DrawingVisualPolygonCache;
+
+
+        private void ImageShow_Initialized(object sender, EventArgs e)
+        {
+
+        }
 
         private void ImageShow_MouseDown(object sender, MouseButtonEventArgs e)
         {
@@ -283,18 +290,33 @@ namespace ColorVision
                 }
                 else if (ToolBarTop.DrawCircle)
                 {
-                    DrawCircleCache = new DrawingVisualCircle() { AutoAttributeChanged = false};
-                    DrawCircleCache.Attribute.Pen = new Pen(Brushes.Red, 1/ Zoombox1.ContentMatrix.M11);
+                    DrawCircleCache = new DrawingVisualCircle() { AutoAttributeChanged = false };
+                    DrawCircleCache.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
                     DrawCircleCache.Attribute.Center = MouseDownP;
                     drawCanvas.AddVisual(DrawCircleCache);
                 }
                 else if (ToolBarTop.DrawRect)
                 {
                     DrawingRectangleCache = new DrawingVisualRectangle() { AutoAttributeChanged = false };
-                    DrawingRectangleCache.Attribute.Rect =  new Rect(MouseDownP,new Point(MouseDownP.X+30, MouseDownP.Y + 30));
+                    DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, new Point(MouseDownP.X + 30, MouseDownP.Y + 30));
                     DrawingRectangleCache.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
 
                     drawCanvas.AddVisual(DrawingRectangleCache);
+                }
+                else if (ToolBarTop.DrawPolygon)
+                {
+                    if (DrawingVisualPolygonCache == null)
+                    {
+                        DrawingVisualPolygonCache = new DrawingVisualPolygon() { AutoAttributeChanged = false };
+                        DrawingVisualPolygonCache.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                        DrawingVisualPolygonCache.Attribute.Points.Add(MouseDownP);
+                        drawCanvas.AddVisual(DrawingVisualPolygonCache);
+                    }
+                    else
+                    {
+                        DrawingVisualPolygonCache.Attribute.Points.Add(MouseDownP);
+                    }
+                    this.KeyDown += DrawingVisualPolygonKeyDown;
                 }
                 else
                 {
@@ -344,9 +366,23 @@ namespace ColorVision
             }
         }
 
+
+        public void DrawingVisualPolygonKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter&& e.Key == Key.Escape)
+            {
+                DrawingVisualPolygonCache.Attribute.Points.Add(MouseDownP);
+                DrawingVisualPolygonCache.IsDrawing = false;
+                DrawingVisualPolygonCache.Render();
+                DrawingVisualPolygonCache.AutoAttributeChanged = true;
+                DrawingVisualPolygonCache = null;
+                this.KeyDown-= DrawingVisualPolygonKeyDown;
+            }
+        }
+
         private void ImageShow_MouseMove(object sender, MouseEventArgs e)
         {
-            if (sender is DrawCanvas drawCanvas&&( Zoombox1.ActivateOn ==ModifierKeys.None|| !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn)))
+            if (sender is DrawCanvas drawCanvas && (Zoombox1.ActivateOn == ModifierKeys.None || !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn)))
             {
                 var point = e.GetPosition(drawCanvas);
 
@@ -371,13 +407,18 @@ namespace ColorVision
                         DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, point);
                         DrawingRectangleCache.Render();
                     }
+                    else if (ToolBarTop.DrawPolygon)
+                    {
+                        DrawingVisualPolygonCache.Attribute.Points[^1]=point;
+                        DrawingVisualPolygonCache.Render();
+                    }
                     else if (SelectDCircle != null)
                     {
                         SelectDCircle.Attribute.Center = point;
                     }
                 }
 
-                if (ToolBarTop.Move&&drawCanvas.Source is BitmapImage bitmapImage)
+                if (ToolBarTop.Move && drawCanvas.Source is BitmapImage bitmapImage)
                 {
                     int imageWidth = bitmapImage.PixelWidth;
                     int imageHeight = bitmapImage.PixelHeight;
@@ -452,7 +493,7 @@ namespace ColorVision
                 }
                 else if (ToolBarTop.DrawRect)
                 {
-                    if (DrawingRectangleCache.Attribute.Rect.Width == 30 && DrawingRectangleCache.Attribute.Rect.Height==30)
+                    if (DrawingRectangleCache.Attribute.Rect.Width == 30 && DrawingRectangleCache.Attribute.Rect.Height == 30)
                         DrawingRectangleCache.Render();
 
                     if (PropertyGrid2.SelectedObject is ViewModelBase viewModelBase)
@@ -497,7 +538,7 @@ namespace ColorVision
 
         private void Button7_Click(object sender, RoutedEventArgs e)
         {
-            if(sender is ToggleButton toggleButton)
+            if (sender is ToggleButton toggleButton)
             {
                 if (ToolBarTop.EraseVisual)
                 {
@@ -513,9 +554,9 @@ namespace ColorVision
 
         private void CheckBox_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is CheckBox checkBox&& checkBox.Tag is DrawingVisualCircle drawingVisualCircle)
+            if (sender is CheckBox checkBox && checkBox.Tag is DrawingVisualCircle drawingVisualCircle)
             {
-                if (checkBox.IsChecked ==true)
+                if (checkBox.IsChecked == true)
                 {
                     if (!ImageShow.ContainsVisual(drawingVisualCircle))
                     {
@@ -544,7 +585,7 @@ namespace ColorVision
 
         private void MenuItem_Click_1(object sender, RoutedEventArgs e)
         {
-            new AboutMsgWindow() { Owner = this ,WindowStartupLocation =WindowStartupLocation.CenterOwner}.ShowDialog();
+            new AboutMsgWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
 
@@ -591,7 +632,7 @@ namespace ColorVision
         {
             if (sender is ToolBar toolBar)
             {
-                if (toolBar.Template.FindName("OverflowGrid", toolBar) is FrameworkElement overflowGrid )
+                if (toolBar.Template.FindName("OverflowGrid", toolBar) is FrameworkElement overflowGrid)
                     overflowGrid.Visibility = Visibility.Collapsed;
                 if (toolBar.Template.FindName("MainPanelBorder", toolBar) is FrameworkElement mainPanelBorder)
                     mainPanelBorder.Margin = new Thickness(0);
@@ -703,7 +744,7 @@ namespace ColorVision
         {
             if (ComboxCameraTakeImageMode.SelectedItem is KeyValuePair<TakeImageMode, string> KeyValue && KeyValue.Key is TakeImageMode takeImageMode)
             {
-                MQTTCamera.Open(ComboxCameraID.Text.ToString(), takeImageMode,int.Parse(ComboxCameraImageBpp.Text));
+                MQTTCamera.Open(ComboxCameraID.Text.ToString(), takeImageMode, int.Parse(ComboxCameraImageBpp.Text));
             }
 
 
@@ -723,7 +764,7 @@ namespace ColorVision
         private void MenuItem_Click_2(object sender, RoutedEventArgs e)
         {
             WindowTemplate windowTemplate = new WindowTemplate(WindowTemplateType.AoiParam);
-            windowTemplate.Title ="AOI参数设置";
+            windowTemplate.Title = "AOI参数设置";
             TemplateAbb(windowTemplate, TemplateControl.GetInstance().AoiParams);
         }
 
@@ -732,7 +773,7 @@ namespace ColorVision
             TemplateControl templateControl = TemplateControl.GetInstance();
             Calibration calibration = new Calibration(templateControl.CalibrationParams[0].Value);
             WindowTemplate windowTemplate = new WindowTemplate(WindowTemplateType.Calibration, calibration);
-            windowTemplate.Title ="校正参数设置";
+            windowTemplate.Title = "校正参数设置";
             TemplateAbb(windowTemplate, TemplateControl.GetInstance().CalibrationParams);
 
         }
@@ -758,7 +799,7 @@ namespace ColorVision
             TemplateAbb(windowTemplate, TemplateControl.GetInstance().SxParms);
         }
 
-        private void TemplateAbb<T>(WindowTemplate windowTemplate, ObservableCollection<KeyValuePair<string, T>>  keyValuePairs)
+        private void TemplateAbb<T>(WindowTemplate windowTemplate, ObservableCollection<KeyValuePair<string, T>> keyValuePairs)
         {
             windowTemplate.Owner = this;
             int id = 1;
@@ -773,8 +814,8 @@ namespace ColorVision
             windowTemplate.ShowDialog();
         }
 
-        private void MenuItem_Click_7(object sender, RoutedEventArgs e) 
-        { 
+        private void MenuItem_Click_7(object sender, RoutedEventArgs e)
+        {
 
             new WindowORM().Show();
 
@@ -786,13 +827,13 @@ namespace ColorVision
         {
             if (ComboxFilterWheelChannel.SelectedIndex > -1)
             {
-                MQTTCamera.FilterWheelSetPort(ComboxFilterWheelChannel.SelectedIndex + 0x30);
+                MQTTCamera.FilterWheelSetPort(0,ComboxFilterWheelChannel.SelectedIndex + 0x30,(int)MQTTCamera.CurrentCameraType);
             }
         }
 
         private void FilterWheelReset_Click(object sender, RoutedEventArgs e)
         {
-            MQTTCamera.FilterWheelSetPort(0x30);
+            MQTTCamera.FilterWheelSetPort(0,0x30,(int)MQTTCamera.CurrentCameraType);
             ComboxFilterWheelChannel.SelectedIndex = 0;
         }
 
@@ -825,6 +866,13 @@ namespace ColorVision
             mainWindow.Owner = this;
             mainWindow.Show();
         }
+
+        private void Zoombox1_Initialized(object sender, EventArgs e)
+        {
+
+        }
+
+
     }
 
 
@@ -838,7 +886,7 @@ namespace ColorVision
         public int Y { get => _Y; set { _Y = value; NotifyPropertyChanged(); } }
         private int _Y;
 
-        public double X1 { get => _X1 ; set { _X1 = value; NotifyPropertyChanged(); } }
+        public double X1 { get => _X1; set { _X1 = value; NotifyPropertyChanged(); } }
         private double _X1;
 
         public double Y1 { get => _Y1; set { _Y1 = value; NotifyPropertyChanged(); } }
@@ -850,14 +898,14 @@ namespace ColorVision
         public int G { get => _G; set { _G = value; NotifyPropertyChanged(); } }
         private int _G;
 
-        public int B { get => _B; set {  _B = value; NotifyPropertyChanged(); } }
+        public int B { get => _B; set { _B = value; NotifyPropertyChanged(); } }
         private int _B;
 
         public string Hex { get => _Hex; set { _Hex = value; NotifyPropertyChanged(); } }
         private string _Hex;
 
         private SolidColorBrush _Color;
-        public SolidColorBrush Color { get => _Color; set { _Color = value; NotifyPropertyChanged(); } }    
+        public SolidColorBrush Color { get => _Color; set { _Color = value; NotifyPropertyChanged(); } }
     }
 
 }

@@ -4,6 +4,7 @@ using MQTTnet.Client;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OpenCvSharp;
+using ScottPlot.Drawing.Colormaps;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -99,7 +100,7 @@ namespace ColorVision.MQTT
                 string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
                 try
                 {
-                    MQTTMsgReturn json = JsonConvert.DeserializeObject<MQTTMsgReturn>(Msg);
+                    MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg);
                     if (json == null)
                         return Task.CompletedTask;
                     IsRun = false;
@@ -146,16 +147,20 @@ namespace ColorVision.MQTT
 
         public bool IsRun { get; set; }
 
+
+        public CameraType CurrentCameraType { get; set; }
         public bool Init(CameraType CameraType)
         {
             if (CheckIsRun())
                 return false;
-            MQTTMsg mQTTMsg = new MQTTMsg
+            CurrentCameraType = CameraType;
+
+            MsgSend msg = new MsgSend
             {
                 EventName = "Init",
-                Params = new InitCameraParamMQTT() { CameraType = (int)CameraType }
+                Params = new Dictionary<string, object>() { { "CameraType", (int)CameraType } }
             };
-            PublishAsyncClient(mQTTMsg);
+            PublishAsyncClient(msg);
             return true;
         }
 
@@ -169,30 +174,30 @@ namespace ColorVision.MQTT
             }
             if (CheckIsRun())
                 return false;
-            MQTTMsg mQTTMsg = new MQTTMsg
+            MsgSend msg = new MsgSend
             {
-                EventName = "SetParam",
+                EventName = "UnInit",
             };
-            PublishAsyncClient(mQTTMsg);
+            PublishAsyncClient(msg);
             return true;
         }
 
-        public void FilterWheelSetPort(int port)
+        public void FilterWheelSetPort(int nIndex, int nPort, int eImgChlType)
         {
-            MQTTMsg mQTTMsg = new MQTTMsg
+            MsgSend msg = new MsgSend
             {
                 EventName = "SetParam",
-                Params = new SetParamSetPort() {FunctionName = "CM_SetPort", Port = port }
+                Params = new Dictionary<string, object>() { { "Func",new List<ParamFunction> (){
+                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", nIndex }, { "nPort", nPort },{ "eImgChlType" , eImgChlType } }  } } } } 
             };
-            PublishAsyncClient(mQTTMsg);
+            PublishAsyncClient(msg);
         }
-
-        private class SetParamSetPort : SetParamFunctionMQTT
+        public enum ImageChannelType
         {
-            [JsonProperty("port")]
-            public int Port { get; set; }
-        }
-
+            X = 0,
+            Y = 1,
+            Z = 2
+        };
 
         public bool Calibration(CalibrationParam calibrationParam)
         {
@@ -204,71 +209,56 @@ namespace ColorVision.MQTT
             if (CheckIsRun())
                 return false;
             IsRun = false;
-            MQTTMsg mQTTMsg = new MQTTMsg
+            MsgSend msg = new MsgSend
             {
                 EventName = "SetParam",
-                Params = new CalibrationParamMQTT(calibrationParam)
+                Params =  new CalibrationParamMQTT(calibrationParam)
             };
-            PublishAsyncClient(mQTTMsg);
+            PublishAsyncClient(msg);
 
             return true;
         }
         public bool Open(string CameraID,TakeImageMode TakeImageMode,int ImageBpp)
         {
-            if (ServiceID == 0)
-            {
-                MessageBox.Show("请先初始化");
-                return false;
-            }
-            if (CheckIsRun())
-                return false;
-            MQTTMsg mQTTMsg = new MQTTMsg
+            MsgSend msg = new MsgSend
             {
                 EventName = "Open",
-                Params = new OpenCameraParamMQTT() { TakeImageMode = (int)TakeImageMode, CameraID = CameraID, Bpp = ImageBpp }
+                Params = new Dictionary<string, object>() { { "TakeImageMode", (int)TakeImageMode }, { "CameraID", CameraID }, { "Bpp", ImageBpp } }
             };
-            PublishAsyncClient(mQTTMsg);
+            PublishAsyncClient(msg);
             return true;
         }
          
         public bool GetData(double expTime,double gain)
         {
-            if (ServiceID == 0)
-            {
-                MessageBox.Show("请先初始化");
-                return false;
-            }
-            if (CheckIsRun())
-                return false;
-            MQTTMsg mQTTMsg = new MQTTMsg
+            MsgSend msg = new MsgSend
             {
                 EventName = "GetData",
-                Params = new CameraParamMQTT() { ExpTime = expTime,Gain = gain}
+                Params = new Dictionary<string, object>() { { "expTime", expTime }, { "gain", gain } }
             };
-            PublishAsyncClient(mQTTMsg);
+            PublishAsyncClient(msg);
             return true;
         }
 
         public bool Close()
         {
-            if (ServiceID == 0)
-            {
-                MessageBox.Show("请先初始化");
-                return false;
-            }
-            if (CheckIsRun())
-                return false;
-            MQTTMsg mQTTMsg = new MQTTMsg
+            MsgSend msg = new MsgSend
             {
                 EventName = "Close"
             };
-            PublishAsyncClient(mQTTMsg);
+            PublishAsyncClient(msg);
             return true;
         }
 
 
         private bool CheckIsRun()
         {
+            if (ServiceID == 0)
+            {
+                MessageBox.Show("请先初始化");
+                return false;
+            }
+
             if (!MQTTControl.IsConnect)
                 return true;
 
@@ -281,11 +271,7 @@ namespace ColorVision.MQTT
             return IsRun;
         }
 
-          
-        private class InitCameraParamMQTT : ViewModelBase
-        {
-            public int CameraType { get; set; }
-        }
+         
 
         private class OpenCameraParamMQTT : ViewModelBase
         {
@@ -294,15 +280,6 @@ namespace ColorVision.MQTT
             public int Bpp { get; set; }    
         }
 
-
-        private class CameraParamMQTT : ViewModelBase
-        {
-            [JsonProperty("expTime")]
-            public double ExpTime { get; set; }
-
-            [JsonProperty("gain")]
-            public double Gain { get; set; }
-        }
 
 
         public class CalibrationParamMQTT : ViewModelBase

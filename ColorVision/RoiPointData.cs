@@ -10,10 +10,12 @@ namespace ColorVision
         private static string cfgDefaultFile = "cfg\\RiPointSet.cfg";
 
         public Dictionary<string, RiPoint> riPointDict;
+
         public RoiPointsCfg()
         {
             riPointDict = Util.CfgFile.LoadCfgFile<Dictionary<string, RiPoint>>(cfgDefaultFile) ?? new Dictionary<string, RiPoint>() { { "default" , new RiPoint() } };
         }
+
         public bool Save()
         {
             return Util.CfgFile.SaveCfgFile(cfgDefaultFile, riPointDict);

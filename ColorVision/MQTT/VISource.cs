@@ -17,7 +17,7 @@ namespace ColorVision.MQTT
 
         internal List<Guid> RunTimeUUID = new List<Guid> { Guid.NewGuid() };
 
-        internal void PublishAsyncClient(MQTTMsg msg)
+        internal void PublishAsyncClient(MsgSend msg)
         {
             Guid guid = Guid.NewGuid();
             RunTimeUUID.Add(guid);
@@ -60,7 +60,7 @@ namespace ColorVision.MQTT
                 string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
                 try
                 {
-                    MQTTMsgReturn json = JsonConvert.DeserializeObject<MQTTMsgReturn>(Msg);
+                    MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg);
                     if (json == null)
                         return Task.CompletedTask;
                     if (json.Code == 0)
@@ -106,31 +106,31 @@ namespace ColorVision.MQTT
                 MessageBox.Show("请先初始化");
                 return false;
             }
-            MQTTMsg mQTTMsg = new MQTTMsg
+            MsgSend msg = new MsgSend
             {
                 EventName = "SetParam"
             };
-            PublishAsyncClient(mQTTMsg);
+            PublishAsyncClient(msg);
             return true;
         }
         
         public bool Open()
         {
-            MQTTMsg mQTTMsg = new MQTTMsg
+            MsgSend msg = new MsgSend
             {
                 EventName = "Open"
             };
-            PublishAsyncClient(mQTTMsg);
+            PublishAsyncClient(msg);
             return true;
         }
 
         public bool GetData()
         {
-            MQTTMsg mQTTMsg = new MQTTMsg
+            MsgSend msg = new MsgSend
             {
                 EventName = "GetData",
             };
-            PublishAsyncClient(mQTTMsg);
+            PublishAsyncClient(msg);
             return true;
         }
 
@@ -141,11 +141,11 @@ namespace ColorVision.MQTT
                 MessageBox.Show("请先初始化");
                 return false;
             }
-            MQTTMsg mQTTMsg = new MQTTMsg
+            MsgSend msg = new MsgSend
             {
                 EventName = "Close"
             };
-            PublishAsyncClient(mQTTMsg);
+            PublishAsyncClient(msg);
             return true;
         }
 

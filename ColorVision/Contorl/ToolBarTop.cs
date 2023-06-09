@@ -171,6 +171,7 @@ namespace ColorVision
                 if (value)
                 {
                     DrawRect = false;
+                    DrawPolygon = false;
                     Activate = true;
                 }
                 NotifyPropertyChanged(); 
@@ -191,12 +192,30 @@ namespace ColorVision
                 if (value)
                 {
                     DrawCircle = false;
+                    DrawPolygon = false;
                     Activate = true;
                 }
                 NotifyPropertyChanged();
             }
         }
+        private bool _DrawPolygon;
 
+        public bool DrawPolygon
+        {
+            get => _DrawPolygon;
+            set
+            {
+                if (_DrawPolygon == value) return;
+                _DrawPolygon = value;
+                if (value)
+                {
+                    DrawCircle = false;
+                    DrawRect = false;
+                    Activate = true;
+                }
+                NotifyPropertyChanged();
+            }
+        }
 
         private bool _EraseVisual;
         public bool EraseVisual {  get => _EraseVisual;

@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1711
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -116,6 +117,61 @@ namespace ColorVision
             dc.DrawEllipse(Attribute.Brush, Attribute.Pen, Attribute.Center, Attribute.Radius, Attribute.Radius);
         }
     }
+
+    public class PolygonAttribute : DrawAttributeBase
+    {
+        private Brush _Brush;
+
+        [Category("RectangleAttribute"), DisplayName("颜色")]
+        public Brush Brush { get => _Brush; set { _Brush = value; NotifyPropertyChanged(); } }
+
+        private Pen _Pen;
+
+        [Category("RectangleAttribute"), DisplayName("笔刷")]
+        public Pen Pen { get => _Pen; set { _Pen = value; NotifyPropertyChanged(); } }
+
+        private List<Point> _Points;
+        public  List<Point> Points { get => _Points; set { _Points = value; NotifyPropertyChanged(); } }
+    }
+
+    public class DrawingVisualPolygon: DrawingVisual
+    {
+        public PolygonAttribute Attribute { get; set; }
+        public bool AutoAttributeChanged { get; set; } = true;
+        
+        public bool IsDrawing { get; set; } = true;
+
+        public DrawingVisualPolygon()
+        {
+            Attribute = new PolygonAttribute();
+            Attribute.Brush = Brushes.Transparent;
+            Attribute.Pen = new Pen(Brushes.Red, 2);
+            Attribute.Points = new List<Point>();
+            Attribute.PropertyChanged += (s, e) =>
+            {
+                if (AutoAttributeChanged)
+                    Render();
+            };
+        }
+
+        public void Render()
+        {
+            using DrawingContext dc = RenderOpen();
+
+            if (Attribute.Points.Count > 1)
+            {
+                for (int i = 0; i < Attribute.Points.Count-1; i++)
+                {
+                    dc.DrawLine(Attribute.Pen, Attribute.Points[i], Attribute.Points[i+1]);
+                }
+                if (!IsDrawing)
+                    dc.DrawLine(Attribute.Pen, Attribute.Points[Attribute.Points.Count-1], Attribute.Points[0]);
+            }
+        }
+
+
+    }
+
 
 
 

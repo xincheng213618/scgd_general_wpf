@@ -81,9 +81,10 @@ namespace ColorVision
             if (ComboxPGCommunicateType.SelectedItem is KeyValuePair<string, MQTTPG.CommunicateType> KeyValue1 && KeyValue1.Value is MQTTPG.CommunicateType communicateType)
             {
                 int port;
-                if (int.TryParse(TextBoxPGPort.Text,out port))
+                if (!int.TryParse(TextBoxPGPort.Text,out port))
                 {
-
+                    MessageBox.Show("端口配置错误");
+                    return;
                 }
                 
                 MQTTPG.Open(communicateType, TextBoxPGIP.Text, port);

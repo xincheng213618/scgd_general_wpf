@@ -35,7 +35,6 @@ namespace ColorVision.MQTT
             MQTTControl.Connected -= (s, e) => MQTTControlInit();
         }
 
-
         private Task MqttClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
         {
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
@@ -43,7 +42,7 @@ namespace ColorVision.MQTT
                 string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
                 try
                 {
-                    MQTTMsgReturn json = JsonConvert.DeserializeObject<MQTTMsgReturn>(Msg);
+                    MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg);
                     if (json == null)
                         return Task.CompletedTask;
                     if (json.Code == 0)
@@ -85,11 +84,11 @@ namespace ColorVision.MQTT
 
         public bool Init(CameraType CameraType)
         {
-            MQTTMsg mQTTMsg = new MQTTMsg
+            MsgSend msg = new MsgSend
             {
                 EventName = "Init",
             };
-            PublishAsyncClient(mQTTMsg);
+            PublishAsyncClient(msg);
             return true;
         }
 
@@ -101,17 +100,12 @@ namespace ColorVision.MQTT
                 return false;
             }
 
-            MQTTMsg mQTTMsg = new MQTTMsg
+            MsgSend msg = new MsgSend
             {
                 EventName = "UnInit",
             };
-            PublishAsyncClient(mQTTMsg);
+            PublishAsyncClient(msg);
             return true;
         }
-
-
-
-
-
     }
 }

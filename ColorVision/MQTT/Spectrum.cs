@@ -45,7 +45,7 @@ namespace ColorVision.MQTT
                 string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
                 try
                 {
-                    MQTTMsgReturn json = JsonConvert.DeserializeObject<MQTTMsgReturn>(Msg);
+                    MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg);
                     if (json == null)
                         return Task.CompletedTask;
                     if (json.Code == 0)
@@ -89,11 +89,11 @@ namespace ColorVision.MQTT
 
         public bool Init()
         {
-            MQTTMsg mQTTMsg = new MQTTMsg
+            MsgSend msg = new MsgSend
             {
                 EventName = "Init"
             };
-            PublishAsyncClient(mQTTMsg);
+            PublishAsyncClient(msg);
             return true;
         }
 
@@ -104,11 +104,11 @@ namespace ColorVision.MQTT
                 MessageBox.Show("请先初始化");
                 return false;
             }
-            MQTTMsg mQTTMsg = new MQTTMsg
+            MsgSend msg = new MsgSend
             {
                 EventName = "UnInit",
             };
-            PublishAsyncClient(mQTTMsg);
+            PublishAsyncClient(msg);
             return true;
         }
 
@@ -120,11 +120,11 @@ namespace ColorVision.MQTT
                 MessageBox.Show("请先初始化");
                 return false;
             }
-            MQTTMsg mQTTMsg = new MQTTMsg
+            MsgSend msg = new MsgSend
             {
                 EventName = "SetParam"
             };
-            PublishAsyncClient(mQTTMsg);
+            PublishAsyncClient(msg);
             return true;
         }
 
@@ -135,11 +135,11 @@ namespace ColorVision.MQTT
                 MessageBox.Show("请先初始化");
                 return false;
             }
-            MQTTMsg mQTTMsg = new MQTTMsg
+            MsgSend msg = new MsgSend
             {
                 EventName = "Open"
             };
-            PublishAsyncClient(mQTTMsg);
+            PublishAsyncClient(msg);
             return true;
         }
 
@@ -150,7 +150,7 @@ namespace ColorVision.MQTT
             //    MessageBox.Show("请先初始化");
             //    return false;
             //}
-            MQTTMsg mQTTMsg = new MQTTMsg
+            MsgSend msg = new MsgSend
             {
                 EventName = "GetData",
                 Params = new GetDataParamMQTT()
@@ -161,7 +161,7 @@ namespace ColorVision.MQTT
                     BUseAutoDark = bUseAutoDark
                 }
             };
-            PublishAsyncClient(mQTTMsg);
+            PublishAsyncClient(msg);
             return true;
         }
 
@@ -172,11 +172,11 @@ namespace ColorVision.MQTT
                 MessageBox.Show("请先初始化");
                 return false;
             }
-            MQTTMsg mQTTMsg = new MQTTMsg
+            MsgSend msg = new MsgSend
             {
                 EventName = "Close"
             };
-            PublishAsyncClient(mQTTMsg);
+            PublishAsyncClient(msg);
             return true;
         }
 

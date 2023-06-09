@@ -139,4 +139,16 @@
         </DrawingImage.Drawing>
     </DrawingImage>
 
+    <DrawingImage x:Key="DrawingImagePolygon">
+        <DrawingImage.Drawing>
+            <DrawingGroup ClipGeometry="M0,0 V1024 H1024 V0 H0 Z">
+                <GeometryDrawing Brush="{StaticResource IconSolidColorBrush}" Geometry="F1 M1024,1024z M0,0z M990.13,966.9L74.35,798.35 74.35,148.16 735.46,56.55 990.13,966.9z M154.35,731.73L878.56,865.02 677.24,145.38 154.35,217.84 154.35,731.73z" />
+                <GeometryDrawing Brush="{StaticResource IconSolidColorBrush}" Geometry="F1 M1024,1024z M0,0z M86.96,775.58 M0.809999999999988,775.58A86.15,86.15,0,1,0,173.11,775.58A86.15,86.15,0,1,0,0.810000000000002,775.58z" />
+                <GeometryDrawing Brush="{StaticResource IconSolidColorBrush}" Geometry="F1 M1024,1024z M0,0z M86.96,153.58 M0.809999999999988,153.58A86.15,86.15,0,1,0,173.11,153.58A86.15,86.15,0,1,0,0.810000000000002,153.58z" />
+                <GeometryDrawing Brush="{StaticResource IconSolidColorBrush}" Geometry="F1 M1024,1024z M0,0z M705.96,86.58 M619.81,86.58A86.15,86.15,0,1,0,792.11,86.58A86.15,86.15,0,1,0,619.81,86.58z" />
+                <GeometryDrawing Brush="{StaticResource IconSolidColorBrush}" Geometry="F1 M1024,1024z M0,0z M937.96,937.58 M851.81,937.58A86.15,86.15,0,1,0,1024.11,937.58A86.15,86.15,0,1,0,851.81,937.58z" />
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+
 </ResourceDictionary>
