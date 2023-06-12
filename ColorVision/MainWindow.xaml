@@ -40,6 +40,9 @@
                 <MenuItem Header="标定(_A)">
                     <MenuItem Header="四色校正" Click="MenuItem_Click8"/>
                 </MenuItem>
+                <MenuItem Header="调试(_D)">
+                    <MenuItem Header="新版电机" Click="MenuItem_Click10"/>
+                </MenuItem>
 
                 <MenuItem Header="帮助(_H)">
                     <MenuItem Header="关于(_A)" Click="MenuItem_Click_1"/>

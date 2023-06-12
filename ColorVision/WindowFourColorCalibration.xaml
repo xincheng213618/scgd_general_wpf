@@ -91,21 +91,21 @@
                 </ListView.Resources>
                 <ListView.View>
                     <GridView>
-                        <GridViewColumn Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}">
+                        <GridViewColumn >
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate >
                                     <TextBlock Text="{Binding Path=ID}" HorizontalAlignment="Center"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}">
+                        <GridViewColumn >
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <CheckBox IsChecked="True" Click="CheckBox_Click" Tag="{Binding .}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Width="{Binding ElementName=GridListHeader3,Path=ActualWidth}">
+                        <GridViewColumn >
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock HorizontalAlignment="Center">
@@ -118,7 +118,7 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Width="{Binding ElementName=GridListHeader4,Path=ActualWidth}">
+                        <GridViewColumn >
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate >
                                     <TextBlock Text="{Binding Path=Radius}">

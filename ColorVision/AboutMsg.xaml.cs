@@ -22,7 +22,7 @@ namespace ColorVision
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.Topmost = true;
-
+            this.Icon = null;
             CloseButton.Focus();
 
         }

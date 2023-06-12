@@ -3,6 +3,7 @@ using ColorVision.Extension;
 using ColorVision.Info;
 using ColorVision.MQTT;
 using ColorVision.MVVM;
+using ColorVision.Serial;
 using ColorVision.Template;
 using ColorVision.Util;
 using log4net;
@@ -872,7 +873,26 @@ namespace ColorVision
 
         }
 
+        private void MenuItem_Click10(object sender, RoutedEventArgs e)
+        {
+            bool isHave =true;
+            foreach (var item in Application.Current.Windows)
+            {
+                if (item is MotorControlWindow motorControlWindow)
+                {
+                    motorControlWindow.Activate();
+                    isHave = true;
+                }
+            }
+            if (isHave)
+            {
+                MotorControlWindow motorControlWindow = new MotorControlWindow();
+                motorControlWindow.Owner = this;
+                motorControlWindow.Show();
 
+            }
+
+        }
     }
 
 
