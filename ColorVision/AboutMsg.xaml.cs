@@ -35,14 +35,7 @@ namespace ColorVision
         private void Image_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
             Process.Start("explorer", "https://www.color-vision.com.cn/");
+            this.Close();
         }
-    }
-
-
-    public class ProduceInfo
-    {
-        public string Name { get; set; }
-        public string Version { get; set; }
-        public string Description { get; set; }
     }
 }

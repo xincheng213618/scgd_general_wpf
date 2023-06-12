@@ -265,15 +265,36 @@ namespace ColorVision
         private bool IsMouseDown;
         private Point MouseDownP;
         private DrawingVisualCircle? SelectDCircle;
+        private DrawingVisualRectangle? SelectDRectangle;
 
         private DrawingVisualCircle DrawCircleCache;
         private DrawingVisualRectangle DrawingRectangleCache;
-        private DrawingVisualPolygon? DrawingVisualPolygonCache;
+        private DrawingVisualPolygon DrawingVisualPolygonCache;
 
 
         private void ImageShow_Initialized(object sender, EventArgs e)
         {
+            this.ContextMenuOpening += MainWindow_ContextMenuOpening;
+        }
 
+        private void MainWindow_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            var Point = Mouse.GetPosition(ImageShow);
+            var DrawingVisual = ImageShow.GetVisual(Point);
+
+            var ContextMenu = new ContextMenu();
+            MenuItem menuItem = new MenuItem() { Header = "上移一层" };
+            MenuItem menuItem1 = new MenuItem() { Header = "下移一层" };
+            MenuItem menuIte2 = new MenuItem() { Header = "删除" };
+            menuIte2.Click += (s, e) =>
+            {
+                ImageShow.RemoveVisual(DrawingVisual);
+            };
+
+            ContextMenu.Items.Add(menuItem);
+            ContextMenu.Items.Add(menuItem1);
+            ContextMenu.Items.Add(menuIte2);
+            this.ContextMenu = ContextMenu;
         }
 
         private void ImageShow_MouseDown(object sender, MouseButtonEventArgs e)
@@ -329,20 +350,17 @@ namespace ColorVision
                             {
                                 PropertyGrid2.Refresh();
                             };
-                            viewModelBase.Pen = new Pen(Brushes.Black, 1);
                         }
                         PropertyGrid2.SelectedObject = drawingVisual.Attribute;
-                        drawingVisual.Attribute.Pen = new Pen(Brushes.Red, 3);
                         drawingVisual.Attribute.PropertyChanged += (s, e) =>
                         {
                             PropertyGrid2.Refresh();
                         };
-                        drawCanvas.TopVisual(drawingVisual);
 
                         ListView1.ScrollIntoView(drawingVisual);
                         ListView1.SelectedIndex = DrawingVisualCircleLists.IndexOf(drawingVisual);
 
-                        if (ToggleButtonDrag.IsChecked == true)
+                        if (ToolBarTop.Activate == true)
                             SelectDCircle = drawingVisual;
                     }
 
@@ -355,12 +373,16 @@ namespace ColorVision
                                 PropertyGrid2.Refresh();
                             };
                         }
+                        ListView1.ScrollIntoView(drawingVisual1);
 
                         PropertyGrid2.SelectedObject = drawingVisual1.Attribute;
                         drawingVisual1.Attribute.PropertyChanged += (s, e) =>
                         {
                             PropertyGrid2.Refresh();
                         };
+                        if (ToolBarTop.Activate == true)
+                            SelectDRectangle = drawingVisual1;
+                        
                     }
                 }
 
@@ -372,15 +394,18 @@ namespace ColorVision
         {
             if (e.Key == Key.Enter&& e.Key == Key.Escape)
             {
-                DrawingVisualPolygonCache.Attribute.Points.Add(MouseDownP);
-                DrawingVisualPolygonCache.IsDrawing = false;
-                DrawingVisualPolygonCache.Render();
-                DrawingVisualPolygonCache.AutoAttributeChanged = true;
-                DrawingVisualPolygonCache = null;
+                if (DrawingVisualPolygonCache != null)
+                {
+                    DrawingVisualPolygonCache.Attribute.Points.Add(MouseDownP);
+                    DrawingVisualPolygonCache.IsDrawing = false;
+                    DrawingVisualPolygonCache.Render();
+                    DrawingVisualPolygonCache.AutoAttributeChanged = true;
+                }
                 this.KeyDown-= DrawingVisualPolygonKeyDown;
             }
         }
 
+        Point LastMouseMove;
         private void ImageShow_MouseMove(object sender, MouseEventArgs e)
         {
             if (sender is DrawCanvas drawCanvas && (Zoombox1.ActivateOn == ModifierKeys.None || !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn)))
@@ -410,12 +435,18 @@ namespace ColorVision
                     }
                     else if (ToolBarTop.DrawPolygon)
                     {
-                        DrawingVisualPolygonCache.Attribute.Points[^1]=point;
+                        DrawingVisualPolygonCache.Attribute.Points[^1] = point;
                         DrawingVisualPolygonCache.Render();
                     }
                     else if (SelectDCircle != null)
                     {
-                        SelectDCircle.Attribute.Center = point;
+                        SelectDCircle.Attribute.Center += point - LastMouseMove;
+                    } 
+                    else if (SelectDRectangle !=null)
+                    {
+                        var OldRect = SelectDRectangle.Attribute.Rect;
+                        SelectDRectangle.Attribute.Rect = new Rect(OldRect.X + point.X - LastMouseMove.X, OldRect.Y +  point.Y - LastMouseMove.Y, OldRect.Width,OldRect.Height);
+
                     }
                 }
 
@@ -449,6 +480,7 @@ namespace ColorVision
                     }
                     ToolBarTop.DrawImage(actPoint, bitPoint, ImageInfo);
                 }
+                LastMouseMove = point;
             }
         }
         private void ImageShow_MouseUp(object sender, MouseButtonEventArgs e)
