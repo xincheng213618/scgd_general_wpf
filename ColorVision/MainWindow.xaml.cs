@@ -290,7 +290,6 @@ namespace ColorVision
             {
                 ImageShow.RemoveVisual(DrawingVisual);
             };
-
             ContextMenu.Items.Add(menuItem);
             ContextMenu.Items.Add(menuItem1);
             ContextMenu.Items.Add(menuIte2);
