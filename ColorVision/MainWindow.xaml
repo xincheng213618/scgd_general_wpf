@@ -18,7 +18,7 @@
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
         <Grid Grid.Row="0">
-            <Menu x:Name="Menu1" Height ="20">
+            <Menu x:Name="Menu1" Height ="19" Background="#F3F3F3" >
                 <MenuItem Header="文件(_F)">
                     <MenuItem Header="打开(_O)"/>
                     <MenuItem Header="工程(_F)"/>
@@ -54,12 +54,38 @@
                 <ColumnDefinition Width="300"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <Grid  Grid.Row="0" Background="#F6F6F7">
+            <Grid  Grid.Row="0" Background="#F9F9F9">
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                     <StackPanel >
+                        <StackPanel.Resources>
+                            <Style x:Key="BorderModuleArea" TargetType="{x:Type Border}">
+                                <Setter Property="Background" Value="#F3F3F3"/>
+                                <Setter Property="BorderBrush" Value="#EAEAEA"/>
+                                <Setter Property="BorderThickness" Value="1"/>
+                                <Setter Property="Margin" Value="5,2"/>
+                                <Setter Property="CornerRadius" Value="5"/>
+                            </Style>
+
+                            <Style  TargetType="{x:Type Button}">
+                                <Setter Property="Background" Value="#FBFBFB"/>
+                                <Setter Property="BorderBrush" Value="#E5E5E5"/>
+                                <Setter Property="BorderThickness" Value="1,1,1,1.5"/>
+                                <Setter Property="Template" >
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="{x:Type Button}">
+                                            <Border Background="{TemplateBinding Background}" CornerRadius="5" Padding="2" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                                
+                            </Style>
+                        </StackPanel.Resources>
+
                         <StackPanel Margin="0,5" x:Name="StackPanelPG" Initialized="StackPanelPG_Initialized">
-                            <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}" Content="PG"  FontSize="15" Foreground="Black" IsChecked="True" />
-                            <Border Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}"  Background="#E8E8E9" Margin="5,2" CornerRadius="5">
+                            <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Background="#F9F9F9"  Content="PG"  FontSize="15" Foreground="Black" IsChecked="False" />
+                            <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
                                 <StackPanel Margin="5">
                                     <DockPanel>
                                         <Label Content="模板："/>
@@ -103,8 +129,8 @@
                         </StackPanel>
 
                         <StackPanel x:Name="StackPanelCamera" Margin="0,5"   Initialized="StackPanelCamera_Initialized">
-                            <ToggleButton  x:Name="ToggleButton1"  Style="{StaticResource ButtonPageControl1}" Content="相机设置"  FontSize="15" Foreground="Black" IsChecked="True" />
-                            <Border Visibility="{Binding ElementName=ToggleButton1,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}"  Background="#E8E8E9" Margin="5,2" CornerRadius="5">
+                            <ToggleButton  x:Name="ToggleButton1"  Style="{StaticResource ButtonPageControl1}" Background="#F9F9F9" Content="相机设置"  FontSize="15" Foreground="Black" IsChecked="True" />
+                            <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton1,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
                                 <StackPanel Margin="5">
                                     <DockPanel>
                                         <Label Content="相机类型："/>
@@ -158,7 +184,8 @@
 
                                                 </ComboBox>
                                                 <Button Content="切换通道"  Click="FilterWheelSetPort_Click"/>
-                                                <Button Content="重置"  Click="FilterWheelReset_Click"/>
+                                                <Button Content="重置"   Margin="2" Click="FilterWheelReset_Click">
+                                                </Button>
                                             </StackPanel>
                                         </GroupBox>
                                     </StackPanel>
@@ -168,8 +195,8 @@
                         </StackPanel>
 
                         <StackPanel Margin="0,5"  x:Name="StackPanelCalibration" Initialized="StackPanelCalibration_Initialized">
-                            <ToggleButton  x:Name="ToggleButton2"  Style="{StaticResource ButtonPageControl1}" Content="校正"  FontSize="15" Foreground="Black" IsChecked="True" />
-                            <Border Visibility="{Binding ElementName=ToggleButton2,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}"  Background="#E8E8E9" Margin="5,2" CornerRadius="5">
+                            <ToggleButton  x:Name="ToggleButton2"  Style="{StaticResource ButtonPageControl1}" Content="校正" Background="#F9F9F9"  FontSize="15" Foreground="Black" IsChecked="False" />
+                            <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton2,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
                                 <StackPanel Margin="5">
                                     <DockPanel>
                                         <Label Content="模板："/>
@@ -182,8 +209,8 @@
                         </StackPanel>
 
                         <StackPanel Margin="0,5" x:Name="StackPanelSpectrum"  Initialized="StackPanelSpectrum_Initialized">
-                            <ToggleButton  x:Name="ToggleButton3"  Style="{StaticResource ButtonPageControl1}" Content="光谱仪操作"  FontSize="15" Foreground="Black" IsChecked="True" />
-                            <Border Visibility="{Binding ElementName=ToggleButton3,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}"  Background="#E8E8E9" Margin="5,2" CornerRadius="5">
+                            <ToggleButton  x:Name="ToggleButton3"  Style="{StaticResource ButtonPageControl1}" Background="#F9F9F9"  Content="光谱仪操作"  FontSize="15" Foreground="Black" IsChecked="False" />
+                            <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton3,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
                                 <StackPanel Margin="5">
                                     <DockPanel>
                                         <TextBlock  Text="AveNum" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
@@ -223,8 +250,8 @@
                         </StackPanel>
 
                         <StackPanel Margin="0,5">
-                            <ToggleButton  x:Name="ToggleButton4"  Style="{StaticResource ButtonPageControl1}" Content="源表设置"  FontSize="15" Foreground="Black" IsChecked="false" />
-                            <Border Visibility="{Binding ElementName=ToggleButton4,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}"  Background="#E8E8E9" Margin="5,2" CornerRadius="5">
+                            <ToggleButton  x:Name="ToggleButton4"  Style="{StaticResource ButtonPageControl1}" Background="#F9F9F9"  Content="源表设置"  FontSize="15" Foreground="Black" IsChecked="False" />
+                            <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton4,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
                                 <StackPanel  x:Name="StackPanelVI" Margin="5"  Initialized="StackPanelVI_Initialized" d:DataContext="{d:DesignInstance Type=Template:PassSxSource}" >
                                     <DockPanel Margin="2">
                                         <CheckBox IsChecked="{Binding IsNet}" Content="网络" DockPanel.Dock="Right"/>
@@ -237,16 +264,16 @@
                                     </DockPanel>
                                     <UniformGrid Columns="2" Margin="2">
                                         <DockPanel Margin="2">
-                                            <TextBlock Text="源值:" />
+                                            <TextBlock Text="源值:"  Width="40"/>
                                             <TextBlock DockPanel.Dock="Right"  Visibility="{Binding IsSourceV,Converter={StaticResource bool2VisibilityConverter}}" Text="V"/>
                                             <TextBlock DockPanel.Dock="Right"  Visibility="{Binding IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="mA"/>
-                                            <TextBox Text="{Binding MeasureVal}"/>
+                                            <TextBox Text="{Binding MeasureVal}" BorderThickness="0,0,0,1" />
                                         </DockPanel>
-                                        <DockPanel Margin="2" >
-                                            <TextBlock Text="限值:"/>
+                                        <DockPanel Margin="10,2,2,2" >
+                                            <TextBlock Text="限值:" Width="40"/>
                                             <TextBlock DockPanel.Dock="Right"  Visibility="{Binding IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="V"/>
                                             <TextBlock DockPanel.Dock="Right"  Visibility="{Binding IsSourceV,Converter={StaticResource bool2VisibilityConverter}}" Text="mA"/>
-                                            <TextBox Text="{Binding LmtVal}"/>
+                                            <TextBox Text="{Binding LmtVal}" BorderThickness="0,0,0,1"/>
                                         </DockPanel>
                                     </UniformGrid>
 
@@ -314,10 +341,9 @@
                             </Border>
                         </StackPanel>
 
-
                         <StackPanel Margin="0,5">
-                            <ToggleButton  x:Name="ToggleButton999"  Style="{StaticResource ButtonPageControl1}" Content="测试"  FontSize="15" Foreground="Black" IsChecked="false" />
-                            <Border Visibility="{Binding ElementName=ToggleButton999,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}"  Background="#E8E8E9" Margin="5,2" CornerRadius="5">
+                            <ToggleButton  x:Name="ToggleButton999"  Style="{StaticResource ButtonPageControl1}" Background="#F9F9F9"  Content="测试"  FontSize="15" Foreground="Black" IsChecked="True" />
+                            <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton999,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
                                 <StackPanel Margin="5">
                                     <UniformGrid >
                                         <Button Content="打开测试图像"  Click="Button_Click"/>
@@ -326,11 +352,7 @@
                                 </StackPanel>
                             </Border>
                         </StackPanel>
-
-
-
                     </StackPanel>
-
                 </ScrollViewer>
             </Grid>
 
@@ -435,7 +457,7 @@
                     </Grid.RowDefinitions>
                     <Grid Grid.Row="0" Height="0.5" Background="#F0F0F0"/>
                     <local:ZoomboxSub x:Name="Zoombox1"  MaxZoom="10"  MinZoom="0.01" Grid.Row="1" Grid.ColumnSpan="2">
-                        <local:DrawCanvas x:Name="ImageShow"  Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  MouseDown="ImageShow_MouseDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
+                        <local:DrawCanvas x:Name="ImageShow"  Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  MouseDown="ImageShow_MouseDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
                     </local:ZoomboxSub>
                     <StackPanel Grid.Row="0" Grid.RowSpan="2" >
                         <ToolBar x:Name="ToolBar1" DataContext="{Binding ToolBarTop}"   Loaded="ToolBar1_Loaded" Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" HorizontalAlignment="Center">

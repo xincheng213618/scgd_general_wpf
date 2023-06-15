@@ -17,7 +17,22 @@
             <Button Grid.Row="0" HorizontalAlignment="Right" Content="X" FontSize="50" Background="#EFF4F9" BorderThickness="0" Width="100" Margin="10" Click="Button_Click" VerticalAlignment="Top"/>
         </Grid>
         <Grid Grid.Row="1">
-            <Button Height="100" Width="400" Content="开始检测" FontSize="30"  />
+            <Button Height="100" Width="100" Content="开始检测" FontSize="17" FontWeight="Bold" Foreground="White" >
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border CornerRadius="50" Background="#9BF1F7">
+                            <Border x:Name="border2" CornerRadius="50" Background="Red" Margin="5">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border2" Property="Background"  Value="#9BF1F7"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
         </Grid>
     </Grid>
 </Window>

@@ -20,7 +20,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CvOperator", "CvOperator\Cv
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlowEngineDesign", "FlowEngineDesign\FlowEngineDesign.csproj", "{ABAD2F4F-B6DA-490A-9AB4-D2F43D37C07A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlowEngine", "FlowEngine\FlowEngine.csproj", "{A4AF6A4B-8461-4512-AB4E-20D7B8F78664}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FlowEngine", "FlowEngine\FlowEngine.csproj", "{A4AF6A4B-8461-4512-AB4E-20D7B8F78664}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "C++", "C++", "{55F5939D-C4F5-498D-97B0-8117E84F0FB1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

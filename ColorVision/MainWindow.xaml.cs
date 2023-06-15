@@ -128,14 +128,12 @@ namespace ColorVision
                 log.Info(filePath);
                 BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
 
-                ImageShow.Source = new BitmapImage(new Uri(filePath));
+                ImageShow.Source = bitmapImage;
                 DrawGridImage(DrawingVisualGrid, bitmapImage);
                 Zoombox1.ZoomUniform();
                 ToolBar1.Visibility = Visibility.Visible;
             }
         }
-
-
 
         public ObservableCollection<DrawingVisualCircle> DrawingVisualCircleLists { get; set; } = new ObservableCollection<DrawingVisualCircle>();
 

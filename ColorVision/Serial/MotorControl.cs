@@ -87,6 +87,7 @@ namespace ColorVision.Serial
                 return -2;
             }
         }
+        public event EventHandler? MotorStopHandler;
 
         private void SerialPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
@@ -104,6 +105,7 @@ namespace ColorVision.Serial
                         if (buff[0] == 161)
                         {
                             IsMove = false;
+                            MotorStopHandler?.Invoke(this, new EventArgs());
                             ReadMotorState();
                         }
                         if (buff[0] == 177)
@@ -132,6 +134,7 @@ namespace ColorVision.Serial
                         {
                             Array.Copy(buff, 1, buff1, 0, buff1.Length);
                             IsMove = false;
+                            MotorStopHandler?.Invoke(this,new EventArgs());
                             ReadMotorState();
                         }
                         else if (buff[16] == 161)
@@ -151,6 +154,8 @@ namespace ColorVision.Serial
             }
             catch { }
         }
+
+
 
 
         public MotorState MotorState { get; set; } = new MotorState();
@@ -190,6 +195,31 @@ namespace ColorVision.Serial
             byte[] data = new byte[14] { 0x01, 0x65, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
             SendMsg(Crc16.CRC16(data));
         }
+
+
+
+        public async Task<bool> MoveAsync(int length = 1000, float spe = 30, int DelayTime = 60000)
+        {
+
+            TaskCompletionSource<bool> _tcs = new TaskCompletionSource<bool>();
+            MotorStopHandler += MotorStop;
+            var completedTask = await Task.WhenAny(_tcs.Task, Task.Delay(DelayTime));
+            if (completedTask == _tcs.Task)
+            {
+                MotorStopHandler -= MotorStop;
+                return true;
+            }
+            else
+            {
+                MotorStopHandler-= MotorStop;
+                return false;
+            }
+            void MotorStop(object? sender, EventArgs e)
+            {
+                _tcs.SetResult(true);
+            }
+        }
+
 
 
         public void Move(int length = 1000, float spe = 30)
