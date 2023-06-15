@@ -61,6 +61,8 @@ namespace ColorVision
         public DrawingVisual? GetVisual(Point point)
         {
             HitTestResult hitResult = VisualTreeHelper.HitTest(this, point);
+            if (hitResult.VisualHit == null)
+                return null;
             return hitResult.VisualHit as DrawingVisual;
         }
 

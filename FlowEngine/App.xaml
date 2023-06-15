@@ -4,6 +4,5 @@
              xmlns:local="clr-namespace:FlowEngine"
              StartupUri="WindowFlowEngine.xaml">
     <Application.Resources>
-         
     </Application.Resources>
 </Application>

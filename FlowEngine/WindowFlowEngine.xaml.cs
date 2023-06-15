@@ -45,6 +45,8 @@ namespace FlowEngine
         {
             STNode node = (STNode)e.Node;
             node.Tag = "223";
+            node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
+            node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => STNodeEditor1.Nodes.Remove(node));
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
