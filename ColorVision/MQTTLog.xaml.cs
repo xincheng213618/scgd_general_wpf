@@ -42,28 +42,37 @@ namespace ColorVision
             Application.Current.Dispatcher.BeginInvoke(new Action(() =>
             {
                 TextBox textBox = new TextBox() { BorderThickness = new Thickness(0),Text = resultData_MQTT.ResultMsg,Tag = resultData_MQTT,Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#f5f5f5")) };
-                ContextMenu contextMenu = new ContextMenu();
-                MenuItem menuItem2 = new MenuItem() { Header = "复制Payload" };
-                menuItem2.Click += (s, e) => { NativeMethods.Clipboard.SetText(resultData_MQTT.Payload.ToString() ?? string.Empty); };
-                contextMenu.Items.Add(menuItem2);
-                MenuItem menuItem = new MenuItem() { Header = "复制" };
-                menuItem.Click += (s, e) => { NativeMethods.Clipboard.SetText(textBox.Text); };
-                contextMenu.Items.Add(menuItem);
-                MenuItem menuItem1 = new MenuItem() { Header = "复制Topic" };
-                menuItem1.Click += (s, e) => { NativeMethods.Clipboard.SetText(resultData_MQTT.Topic.ToString()??string.Empty); };
-                contextMenu.Items.Add(menuItem1);
-                MenuItem menuItem3 = new MenuItem() { Header = "SaveToFile" };
-                menuItem3.Click += (s, e) => {
-                    System.Windows.Forms.SaveFileDialog saveFileDialog = new System.Windows.Forms.SaveFileDialog();
-                    saveFileDialog.Filter = "文本文件|*.txt";
-                    saveFileDialog.FileName = resultData_MQTT.Topic + DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss");
-                    if (saveFileDialog.ShowDialog()== System.Windows.Forms.DialogResult.OK)
+                
+                if (!string.IsNullOrWhiteSpace(resultData_MQTT.Payload.ToString()))
+                {
+                    ContextMenu contextMenu = new ContextMenu();
+                    MenuItem menuItem2 = new MenuItem() { Header = "复制Payload" };
+                    menuItem2.Click += (s, e) => { NativeMethods.Clipboard.SetText(resultData_MQTT.Payload.ToString() ?? string.Empty); };
+                    contextMenu.Items.Add(menuItem2);
+                    MenuItem menuItem = new MenuItem() { Header = "复制" };
+                    menuItem.Click += (s, e) => { NativeMethods.Clipboard.SetText(textBox.Text); };
+                    contextMenu.Items.Add(menuItem);
+                    MenuItem menuItem1 = new MenuItem() { Header = "复制Topic" };
+                    menuItem1.Click += (s, e) => { NativeMethods.Clipboard.SetText(resultData_MQTT.Topic.ToString() ?? string.Empty); };
+                    contextMenu.Items.Add(menuItem1);
+                    MenuItem menuItem3 = new MenuItem() { Header = "SaveToFile" };
+                    menuItem3.Click += (s, e) =>
                     {
-                        File.WriteAllText(saveFileDialog.FileName, resultData_MQTT.Payload.ToString());
+                        System.Windows.Forms.SaveFileDialog saveFileDialog = new System.Windows.Forms.SaveFileDialog();
+                        saveFileDialog.Filter = "文本文件|*.txt";
+                        saveFileDialog.FileName = resultData_MQTT.Topic + DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss");
+                        if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                        {
+                            File.WriteAllText(saveFileDialog.FileName, resultData_MQTT.Payload.ToString());
+                        };
                     };
-                };
-                contextMenu.Items.Add(menuItem3);
-                textBox.ContextMenu = contextMenu;
+                    contextMenu.Items.Add(menuItem3);
+                    textBox.ContextMenu = contextMenu;
+                }
+                else
+                {
+                    textBox.ContextMenu = null;
+                }
                 StackPanelText.Children.Insert(0,textBox);
             }));
         }

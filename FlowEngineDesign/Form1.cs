@@ -3,6 +3,7 @@ using HslCommunication.BasicFramework;
 using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 using System;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -14,13 +15,11 @@ namespace FlowEngineDesign
         private MQTTHelper _MQTTSever = new MQTTHelper();
         private HslCommunication.BasicFramework.SoftNumericalOrder softNumerical;
         private string svrName;
+        public string loadedFileName;
+        
         public Form1()
         {
             InitializeComponent();
-        }
-        protected override void OnLoad(EventArgs e)
-        {
-            base.OnLoad(e);
 
             stNodePropertyGrid1.Text = "Node_Property";
 
@@ -32,8 +31,8 @@ namespace FlowEngineDesign
             stNodeEditor1.NodeAdded += StNodeEditor1_NodeAdded;
             stNodeEditor1.NodeAdded += (s, ea) => ea.Node.ContextMenuStrip = contextMenuStrip1;
 
-            //stNodePropertyGrid1.SetInfoKey("Author", "Mail", "Link", "Show Help");
-            //stNodeTreeView1.PropertyGrid.SetInfoKey("Author", "Mail", "Link", "Show Help");
+            stNodePropertyGrid1.SetInfoKey("Author", "Mail", "Link", "Show Help");
+            stNodeTreeView1.PropertyGrid.SetInfoKey("Author", "Mail", "Link", "Show Help");
 
             stNodeEditor1.Anchor = AnchorStyles.Left | AnchorStyles.Top | AnchorStyles.Right | AnchorStyles.Bottom;
 
@@ -44,11 +43,15 @@ namespace FlowEngineDesign
                 "CV",              // "ABC201711090000001" 中的ABC前缀，代码中仍然可以更改ABC
                 "yyyyMMddHH",         // "ABC201711090000001" 中的20171109，可以格式化时间，也可以为""，也可以设置为"yyyyMMddHHmmss";
                 5,                  // "ABC201711090000001" 中的0000001，总位数为7，然后不停的累加，即使日期时间变了，也不停的累加，最好长度设置大一些
-Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory)+ "\\softNumerical.txt"
-);
+                Application.StartupPath + @"\numericalOrder.txt"  // 该生成器会自动存储当前值到文件去，实例化时从文件加载，自动实现数据同步
+                );
 
             tb_sn.Text = softNumerical.GetNumericalOrder();
             svrName = "";
+        }
+        protected override void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
         }
 
         private void StNodeEditor1_NodeAdded(object sender, STNodeEditorEventArgs e)
@@ -59,8 +62,8 @@ Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory)+ "\\softNu
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            string iPStr = "192.168.3.225";
-            //string iPStr = "127.0.0.1";
+            //string iPStr = "192.168.3.225";
+            string iPStr = "127.0.0.1";
             string portStr = "1883";
             string uName = "";// txt用户名.Text.Trim();
             string uPwd = "";// txt密码.Text.Trim();
@@ -69,7 +72,7 @@ Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory)+ "\\softNu
 
             MQTTHelper.SetDefaultCfg(iPStr, port, uName, uPwd);
 
-            if("127.0.0.1".Equals(iPStr))startMQTTSever(iPStr, port);
+            //if ("127.0.0.1".Equals(iPStr)) startMQTTSever(iPStr, port);
 
             Action<ResultData_MQTT> callback = ShowLog;
             Task task = _MQTTHelper.CreateMQTTClientAndStart(iPStr, port, uName, uPwd, callback);
@@ -77,7 +80,16 @@ Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory)+ "\\softNu
             //panel1.SetAutoScrollMargin(this.stNodeEditor1.Width, this.stNodeEditor1.Height);
             //panel1.AutoScrollMinSize.Width = this.stNodeEditor1.Width;
             //this.stNodeEditor1.Height;
-            this.Text = "未命名*";
+            if (!string.IsNullOrEmpty(loadedFileName))
+            {
+                stNodeEditor1.LoadCanvas(loadedFileName);
+
+                this.Text = loadedFileName;
+            }
+            else
+            {
+                this.Text = "未命名*";
+            }
         }
 
         private void startMQTTSever(string iPStr, int port)
@@ -106,7 +118,7 @@ Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory)+ "\\softNu
                 txt_log.Text += $"\r\n返回结果：{resultData_MQTT.ResultCode}，返回信息：{resultData_MQTT.ResultMsg}";
                 if (resultData_MQTT.ResultCode == 1 && resultData_MQTT.EventType == FlowEngineLib.MQTT.EventTypeEnum.MsgRecv && "SYS.MANUAL".Equals(resultData_MQTT.ResultObject1.ToString()))
                 {
-                    if(MessageBox.Show("下一步")==DialogResult.OK)
+                    if (MessageBox.Show("下一步") == DialogResult.OK)
                     {
                         _MQTTHelper.PublishAsync_Client("SYS.CMD", resultData_MQTT.ResultObject2.ToString(), false);
                     }
@@ -117,15 +129,32 @@ Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory)+ "\\softNu
 
         private void btn_save_Click(object sender, EventArgs e)
         {
+            if (!string.IsNullOrEmpty(loadedFileName))
+            {
+                stNodeEditor1.SaveCanvas(loadedFileName);
+                this.Text = loadedFileName;
+            }
+            else
+            {
+                saveFile();
+            }
+        }
+
+        private bool saveFile()
+        {
             SaveFileDialog sfd = new SaveFileDialog();
             sfd.Filter = "*.stn|*.stn";
-            if (sfd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-            stNodeEditor1.SaveCanvas(sfd.FileName);
-            this.Text = sfd.FileName;
+            if (sfd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return false;
+            loadedFileName = sfd.FileName;
+            stNodeEditor1.SaveCanvas(loadedFileName);
+            this.Text = loadedFileName;
+            return true;
         }
 
         private void btn_load_Click(object sender, EventArgs e)
         {
+            isModify();
+
             OpenFileDialog ofd = new OpenFileDialog();
             ofd.Filter = "*.stn|*.stn";
             if (ofd.ShowDialog() != DialogResult.OK) return;
@@ -133,6 +162,7 @@ Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory)+ "\\softNu
             stNodeEditor1.LoadCanvas(ofd.FileName);
 
             this.Text = ofd.FileName;
+            loadedFileName = this.Text;
         }
 
         private void btn_subscribe_Click(object sender, EventArgs e)
@@ -144,7 +174,7 @@ Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory)+ "\\softNu
                 return;
             }
             string[] topics = new string[] { "SYS.MANUAL", "SYS.STATUS", "SMU.STATUS", "CAMERA.STATUS", "POI.STATUS", "PG.STATUS", "SPECTRO.STATUS" };
-            for(int i = 0; i < topics.Length; i++)
+            for (int i = 0; i < topics.Length; i++)
             {
                 _MQTTHelper.SubscribeAsync_Client(topics[i]);
             }
@@ -170,15 +200,28 @@ Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory)+ "\\softNu
 
         private void btn_start_Click(object sender, EventArgs e)
         {
-            if(checkBox1.Checked) tb_sn.Text = softNumerical.GetNumericalOrder();
+            if (checkBox1.Checked) tb_sn.Text = softNumerical.GetNumericalOrder();
             CVBaseDataFlow baseEvent = new CVBaseDataFlow(svrName, "Start", tb_sn.Text);
             _MQTTHelper.PublishAsync_Client("SYS.CMD." + textBox1.Text, JsonConvert.SerializeObject(baseEvent), false);
         }
 
+        private void isModify()
+        {
+            if (!this.Text.Equals(loadedFileName) && !string.IsNullOrEmpty(loadedFileName))
+            {
+                if (MessageBox.Show("当前文件已被修改，是否保存", "保存", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                {
+                    stNodeEditor1.SaveCanvas(loadedFileName);
+                }
+            }
+        }
+
         private void btn_new_Click(object sender, EventArgs e)
         {
+            isModify();
             stNodeEditor1.Nodes.Clear();
             this.Text = "未命名*";
+            this.loadedFileName = "";
         }
 
         private void btn_pause_Click(object sender, EventArgs e)
@@ -202,19 +245,27 @@ Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory)+ "\\softNu
         {
         }
 
-        private void stNodePropertyGrid1_Click(object sender, EventArgs e)
+        private void stNodeEditor1_NodeAdded_1(object sender, STNodeEditorEventArgs e)
         {
-
+            if(!string.IsNullOrEmpty(loadedFileName))
+                this.Text = loadedFileName + "*";
         }
 
-        private void splitContainer2_Panel1_Paint(object sender, PaintEventArgs e)
+        private void stNodeEditor1_NodeRemoved(object sender, STNodeEditorEventArgs e)
         {
-
+            if (!string.IsNullOrEmpty(loadedFileName))
+                this.Text = loadedFileName + "*";
         }
 
-        private void textBox1_TextChanged(object sender, EventArgs e)
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
+            stNodeEditor1.Nodes.Clear();
+            stNodeEditor1.Dispose();
+        }
 
+        private void button_save_as_Click(object sender, EventArgs e)
+        {
+            saveFile();
         }
     }
 }

@@ -2,20 +2,9 @@
 using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Forms.Integration;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace FlowEngine
 {
@@ -30,6 +19,7 @@ namespace FlowEngine
         {
             InitializeComponent();
         }
+        private FlowEngineLib.MQTTHelper _MQTTHelper = new FlowEngineLib.MQTTHelper();
 
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -39,6 +29,25 @@ namespace FlowEngine
             STNodeEditor1.ActiveChanged += (s, e) => STNodePropertyGrid1.SetNode(STNodeEditor1.ActiveNode);
             STNodeEditor1.NodeAdded += StNodeEditor1_NodeAdded;
             softNumerical = new HslCommunication.BasicFramework.SoftNumericalOrder("CV", "yyyyMMddHH", 5, Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory) + "\\softNumerical.txt");
+            TextBoxsn.Text = softNumerical.GetNumericalOrder();
+
+            string iPStr = "192.168.3.225";
+            string portStr = "1883";
+            string uName = "";// txt用户名.Text.Trim();
+            string uPwd = "";// txt密码.Text.Trim();
+
+            int port = Convert.ToInt32(portStr);
+
+            FlowEngineLib.MQTTHelper.SetDefaultCfg(iPStr, port, uName, uPwd);
+
+            Task task = _MQTTHelper.CreateMQTTClientAndStart(iPStr, port, uName, uPwd, ShowLog);
+        }
+        /// 处理逻辑-展示Log
+        /// </summary>
+        /// <param name="obj"></param>
+        private void ShowLog(FlowEngineLib.ResultData_MQTT resultData_MQTT)
+        {
+
         }
 
         private void StNodeEditor1_NodeAdded(object sender, STNodeEditorEventArgs e)
@@ -53,6 +62,7 @@ namespace FlowEngine
         {
             STNodeEditor1.Nodes.Clear();
         }
+        private string svrName;
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
@@ -61,6 +71,7 @@ namespace FlowEngine
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
             STNodeEditor1.Nodes.Clear();
             STNodeEditor1.LoadCanvas(ofd.FileName);
+            svrName = "";
         }
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
@@ -73,17 +84,43 @@ namespace FlowEngine
 
         private void Button_Click_3(object sender, RoutedEventArgs e)
         {
-
             TextBoxsn.Text = softNumerical.GetNumericalOrder();
-
         }
 
         private void Button_Click_4(object sender, RoutedEventArgs e)
         {
-            CVBaseDataFlow baseEvent = new CVBaseDataFlow("PG", "Start", softNumerical.GetNumericalOrder());
+            if (sender is Button button)
+            {
+                if (button.Content.ToString() == "开始流程")
+                {
+                    svrName = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+                    FlowEngineLib.CVBaseDataFlow baseEvent = new FlowEngineLib.CVBaseDataFlow(svrName, "Start", TextBoxsn.Text);
+                    _MQTTHelper.PublishAsync_Client("SYS.CMD." + TextBox1.Text, JsonConvert.SerializeObject(baseEvent), false);
+                    button.Content = "停止流程";
+                    ButtonFlowPause.IsEnabled = true;
+                    ButtonFlowPause.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    CVBaseDataFlow baseEvent = new CVBaseDataFlow(svrName, "Stop", TextBoxsn.Text);
+                    _MQTTHelper.PublishAsync_Client("SYS.CMD." + TextBox1.Text, JsonConvert.SerializeObject(baseEvent), false);
+                    button.Content = "开始流程";
+                    ButtonFlowPause.IsEnabled = false;
+                    ButtonFlowPause.Visibility = Visibility.Collapsed;
+
+                }
+
+            }
+
         }
 
         private void Button_Click_5(object sender, RoutedEventArgs e)
+        {
+            CVBaseDataFlow baseEvent = new CVBaseDataFlow(svrName, "Pause", TextBoxsn.Text);
+            _MQTTHelper.PublishAsync_Client("SYS.CMD." + TextBox1.Text, JsonConvert.SerializeObject(baseEvent), false);
+        }
+
+        private void Button_Click_6(object sender, RoutedEventArgs e)
         {
 
         }

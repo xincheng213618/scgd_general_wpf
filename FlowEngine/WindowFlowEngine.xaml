@@ -10,31 +10,34 @@
         Title="流程引擎" Height="600" Width="800" Initialized="Window_Initialized">
     <Grid  x:Name="Grid1">
         <Grid.RowDefinitions>
-            <RowDefinition Height="50"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
+        <Border  Grid.Row="0"  Background="#F3F3F3" BorderBrush="#EAEAEA" BorderThickness="1" >
+            <Grid  Margin="5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="200"/>
+                </Grid.ColumnDefinitions>
+                <UniformGrid Columns="3">
+                    <Button Content="加载" Click="Button_Click_1" Width="60" />
+                    <Button Content="新建" Click="Button_Click"  Width="60" />
+                    <Button Content="保存" Click="Button_Click_2" Width="60" />
+                </UniformGrid>
+                <UniformGrid Grid.Column="2" Columns="2">
+                    <Button x:Name="ButtonFlowOpen" Content="开始流程" Click="Button_Click_4" Width="80"/>
+                    <Button x:Name="ButtonFlowPause" Content="暂停流程" IsEnabled="False" Visibility="Collapsed" Click="Button_Click_5" Width="80"/>
+                </UniformGrid>
+                <DockPanel Grid.Column="1"  Width="300" HorizontalAlignment="Right">
+                    <Button Content="生成流水号" Click="Button_Click_3" Width="80"/>
+                    <TextBox  x:Name="TextBoxsn" Margin="5,0" BorderThickness="0,0,0,1"   Text="" Width="130" VerticalAlignment="Center"  />
+                    <TextBox  x:Name="TextBox1" BorderThickness="0,0,0,1"  Text="1" HorizontalAlignment="Stretch" VerticalAlignment="Center"  />
+                </DockPanel>
 
-        <Grid >
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-            <StackPanel Orientation="Horizontal">
-                <Button Content="新建" Click="Button_Click" />
-                <Button Content="加载" Click="Button_Click_1" />
-                <Button Content="保存" Click="Button_Click_2" />
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" Grid.Row="1">
-                <Button Content="生成流水号" Click="Button_Click_3"/>
-                <TextBox  x:Name="TextBoxsn"  Text="TextBoxsn"  VerticalAlignment="Center"  />
-                <TextBox  x:Name="TextBoxsn1"  Text="TextBoxsn"  VerticalAlignment="Center"  />
-                <Button Content="开始流程" Click="Button_Click_4"/>
-                <Button Content="停止流程" Click="Button_Click_5"/>
 
-            </StackPanel>
-            
-            
-        </Grid>
+            </Grid>
+        </Border>
 
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions >

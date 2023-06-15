@@ -1,15 +1,12 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:converter ="clr-namespace:ColorVision.Converter"
-                    x:Class="ColorVision.Theme.BaseEvent"
+                    x:Class="FlowEngine.Theme.BaseEvent"
                     >
-    
-    
-  
-    
+
+
+
+
     <BooleanToVisibilityConverter x:Key="bool2VisibilityConverter"/>
-    <converter:InverseBooleanConverter x:Key="inverseBooleanConverter"/>
-    <converter:BooleanToVisibilityReConverter x:Key="bool2VisibilityConverter1"/>
 
 
     <Style TargetType="{x:Type TextBox}">

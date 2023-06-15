@@ -46,18 +46,7 @@ namespace ColorVision
         public MainWindow()
         {
             InitializeComponent();
-            ToolBarTop = new ToolBarTop(Zoombox1, ImageShow);
-            ToolBar1.DataContext = ToolBarTop;
-            ListView1.ItemsSource = DrawingVisualCircleLists;
-            StatusBarItem1.DataContext = PerformanceSetting;
-            StatusBarItem2.DataContext = PerformanceSetting;
-            MQTTControl = MQTTControl.GetInstance(); ;
-            Application.Current.MainWindow = this;
-            this.Closed += (s, e) =>
-            {
-                Environment.Exit(0);
-            };
-
+            this.Closed += (s, e) => Environment.Exit(0);
         }
         protected override void OnSourceInitialized(EventArgs e)
         {
@@ -75,6 +64,15 @@ namespace ColorVision
             }
             await Task.Delay(100);
             ToolBar1.Visibility = Visibility.Collapsed;
+
+            ToolBarTop = new ToolBarTop(Zoombox1, ImageShow);
+            ToolBar1.DataContext = ToolBarTop;
+            ListView1.ItemsSource = DrawingVisualCircleLists;
+            StatusBarItem1.DataContext = PerformanceSetting;
+            StatusBarItem2.DataContext = PerformanceSetting;
+            MQTTControl = MQTTControl.GetInstance(); ;
+            Application.Current.MainWindow = this;
+
         }
 
         const uint WM_USER = 0x0400; // 用户自定义消息起始值

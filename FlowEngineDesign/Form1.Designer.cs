@@ -49,6 +49,7 @@
             this.txt主题 = new System.Windows.Forms.TextBox();
             this.btn_subscribe = new System.Windows.Forms.Button();
             this.btn_load = new System.Windows.Forms.Button();
+            this.button_save_as = new System.Windows.Forms.Button();
             this.btn_save = new System.Windows.Forms.Button();
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.delToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -78,7 +79,7 @@
             this.stNodeTreeView1.ItemBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(45)))));
             this.stNodeTreeView1.ItemHoverColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(125)))), ((int)(((byte)(125)))), ((int)(((byte)(125)))));
             this.stNodeTreeView1.Location = new System.Drawing.Point(0, 0);
-            this.stNodeTreeView1.Margin = new System.Windows.Forms.Padding(4);
+            this.stNodeTreeView1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.stNodeTreeView1.MinimumSize = new System.Drawing.Size(150, 90);
             this.stNodeTreeView1.Name = "stNodeTreeView1";
             this.stNodeTreeView1.ShowFolderCount = true;
@@ -93,22 +94,24 @@
             this.stNodeEditor1.AllowDrop = true;
             this.stNodeEditor1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(34)))), ((int)(((byte)(34)))), ((int)(((byte)(34)))));
             this.stNodeEditor1.Curvature = 0.3F;
-            this.stNodeEditor1.Location = new System.Drawing.Point(0, -2);
+            this.stNodeEditor1.Location = new System.Drawing.Point(0, 205);
             this.stNodeEditor1.LocationBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(120)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.stNodeEditor1.Margin = new System.Windows.Forms.Padding(4);
+            this.stNodeEditor1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.stNodeEditor1.MarkBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             this.stNodeEditor1.MarkForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             this.stNodeEditor1.MinimumSize = new System.Drawing.Size(150, 150);
             this.stNodeEditor1.Name = "stNodeEditor1";
-            this.stNodeEditor1.Size = new System.Drawing.Size(6000, 5400);
+            this.stNodeEditor1.Size = new System.Drawing.Size(6000, 5193);
             this.stNodeEditor1.TabIndex = 1;
             this.stNodeEditor1.Text = "stNodeEditor1";
+            this.stNodeEditor1.NodeAdded += new ST.Library.UI.NodeEditor.STNodeEditorEventHandler(this.stNodeEditor1_NodeAdded_1);
+            this.stNodeEditor1.NodeRemoved += new ST.Library.UI.NodeEditor.STNodeEditorEventHandler(this.stNodeEditor1_NodeRemoved);
             // 
             // splitContainer1
             // 
             this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitContainer1.Location = new System.Drawing.Point(0, 0);
-            this.splitContainer1.Margin = new System.Windows.Forms.Padding(4);
+            this.splitContainer1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.splitContainer1.Name = "splitContainer1";
             // 
             // splitContainer1.Panel1
@@ -119,7 +122,7 @@
             // splitContainer1.Panel2
             // 
             this.splitContainer1.Panel2.Controls.Add(this.panel1);
-            this.splitContainer1.Size = new System.Drawing.Size(1131, 801);
+            this.splitContainer1.Size = new System.Drawing.Size(1131, 841);
             this.splitContainer1.SplitterDistance = 252;
             this.splitContainer1.SplitterWidth = 6;
             this.splitContainer1.TabIndex = 2;
@@ -128,7 +131,7 @@
             // 
             this.splitContainer3.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitContainer3.Location = new System.Drawing.Point(0, 537);
-            this.splitContainer3.Margin = new System.Windows.Forms.Padding(4);
+            this.splitContainer3.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.splitContainer3.Name = "splitContainer3";
             this.splitContainer3.Orientation = System.Windows.Forms.Orientation.Horizontal;
             // 
@@ -139,8 +142,8 @@
             // splitContainer3.Panel2
             // 
             this.splitContainer3.Panel2.Controls.Add(this.txt_log);
-            this.splitContainer3.Size = new System.Drawing.Size(252, 264);
-            this.splitContainer3.SplitterDistance = 121;
+            this.splitContainer3.Size = new System.Drawing.Size(252, 304);
+            this.splitContainer3.SplitterDistance = 139;
             this.splitContainer3.SplitterWidth = 6;
             this.splitContainer3.TabIndex = 2;
             // 
@@ -154,25 +157,24 @@
             this.stNodePropertyGrid1.ItemHoverColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(125)))), ((int)(((byte)(125)))), ((int)(((byte)(125)))));
             this.stNodePropertyGrid1.ItemValueBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(80)))));
             this.stNodePropertyGrid1.Location = new System.Drawing.Point(0, 0);
-            this.stNodePropertyGrid1.Margin = new System.Windows.Forms.Padding(4);
+            this.stNodePropertyGrid1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.stNodePropertyGrid1.MinimumSize = new System.Drawing.Size(180, 75);
             this.stNodePropertyGrid1.Name = "stNodePropertyGrid1";
             this.stNodePropertyGrid1.ShowTitle = true;
-            this.stNodePropertyGrid1.Size = new System.Drawing.Size(252, 121);
+            this.stNodePropertyGrid1.Size = new System.Drawing.Size(252, 139);
             this.stNodePropertyGrid1.TabIndex = 1;
             this.stNodePropertyGrid1.Text = "stNodePropertyGrid1";
             this.stNodePropertyGrid1.TitleColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.stNodePropertyGrid1.Click += new System.EventHandler(this.stNodePropertyGrid1_Click);
             // 
             // txt_log
             // 
             this.txt_log.Dock = System.Windows.Forms.DockStyle.Fill;
             this.txt_log.Location = new System.Drawing.Point(0, 0);
-            this.txt_log.Margin = new System.Windows.Forms.Padding(4);
+            this.txt_log.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.txt_log.Multiline = true;
             this.txt_log.Name = "txt_log";
             this.txt_log.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.txt_log.Size = new System.Drawing.Size(252, 137);
+            this.txt_log.Size = new System.Drawing.Size(252, 159);
             this.txt_log.TabIndex = 0;
             this.txt_log.WordWrap = false;
             // 
@@ -184,9 +186,9 @@
             this.panel1.Controls.Add(this.stNodeEditor1);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel1.Location = new System.Drawing.Point(0, 0);
-            this.panel1.Margin = new System.Windows.Forms.Padding(4);
+            this.panel1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(873, 801);
+            this.panel1.Size = new System.Drawing.Size(873, 841);
             this.panel1.TabIndex = 2;
             // 
             // splitContainer2
@@ -195,7 +197,7 @@
             this.splitContainer2.FixedPanel = System.Windows.Forms.FixedPanel.Panel1;
             this.splitContainer2.IsSplitterFixed = true;
             this.splitContainer2.Location = new System.Drawing.Point(0, 0);
-            this.splitContainer2.Margin = new System.Windows.Forms.Padding(4);
+            this.splitContainer2.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.splitContainer2.Name = "splitContainer2";
             this.splitContainer2.Orientation = System.Windows.Forms.Orientation.Horizontal;
             // 
@@ -213,14 +215,14 @@
             this.splitContainer2.Panel1.Controls.Add(this.txt主题);
             this.splitContainer2.Panel1.Controls.Add(this.btn_subscribe);
             this.splitContainer2.Panel1.Controls.Add(this.btn_load);
+            this.splitContainer2.Panel1.Controls.Add(this.button_save_as);
             this.splitContainer2.Panel1.Controls.Add(this.btn_save);
-            this.splitContainer2.Panel1.Paint += new System.Windows.Forms.PaintEventHandler(this.splitContainer2_Panel1_Paint);
             // 
             // splitContainer2.Panel2
             // 
             this.splitContainer2.Panel2.Controls.Add(this.splitContainer1);
             this.splitContainer2.Size = new System.Drawing.Size(1131, 927);
-            this.splitContainer2.SplitterDistance = 120;
+            this.splitContainer2.SplitterDistance = 80;
             this.splitContainer2.SplitterWidth = 6;
             this.splitContainer2.TabIndex = 3;
             // 
@@ -231,7 +233,6 @@
             this.textBox1.Size = new System.Drawing.Size(76, 28);
             this.textBox1.TabIndex = 17;
             this.textBox1.Text = "1";
-            this.textBox1.TextChanged += new System.EventHandler(this.textBox1_TextChanged);
             // 
             // checkBox1
             // 
@@ -239,7 +240,7 @@
             this.checkBox1.Checked = true;
             this.checkBox1.CheckState = System.Windows.Forms.CheckState.Checked;
             this.checkBox1.Location = new System.Drawing.Point(714, 75);
-            this.checkBox1.Margin = new System.Windows.Forms.Padding(4);
+            this.checkBox1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.checkBox1.Name = "checkBox1";
             this.checkBox1.Size = new System.Drawing.Size(160, 22);
             this.checkBox1.TabIndex = 16;
@@ -249,7 +250,7 @@
             // btn_pause
             // 
             this.btn_pause.Location = new System.Drawing.Point(714, 70);
-            this.btn_pause.Margin = new System.Windows.Forms.Padding(4);
+            this.btn_pause.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.btn_pause.Name = "btn_pause";
             this.btn_pause.Size = new System.Drawing.Size(112, 34);
             this.btn_pause.TabIndex = 15;
@@ -261,7 +262,7 @@
             // btn_new
             // 
             this.btn_new.Location = new System.Drawing.Point(18, 15);
-            this.btn_new.Margin = new System.Windows.Forms.Padding(4);
+            this.btn_new.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.btn_new.Name = "btn_new";
             this.btn_new.Size = new System.Drawing.Size(112, 34);
             this.btn_new.TabIndex = 14;
@@ -272,7 +273,7 @@
             // btn_stop
             // 
             this.btn_stop.Location = new System.Drawing.Point(592, 70);
-            this.btn_stop.Margin = new System.Windows.Forms.Padding(4);
+            this.btn_stop.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.btn_stop.Name = "btn_stop";
             this.btn_stop.Size = new System.Drawing.Size(112, 34);
             this.btn_stop.TabIndex = 13;
@@ -283,7 +284,7 @@
             // btn_start
             // 
             this.btn_start.Location = new System.Drawing.Point(471, 70);
-            this.btn_start.Margin = new System.Windows.Forms.Padding(4);
+            this.btn_start.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.btn_start.Name = "btn_start";
             this.btn_start.Size = new System.Drawing.Size(112, 34);
             this.btn_start.TabIndex = 13;
@@ -294,7 +295,7 @@
             // btn_id_gen
             // 
             this.btn_id_gen.Location = new System.Drawing.Point(12, 68);
-            this.btn_id_gen.Margin = new System.Windows.Forms.Padding(4);
+            this.btn_id_gen.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.btn_id_gen.Name = "btn_id_gen";
             this.btn_id_gen.Size = new System.Drawing.Size(112, 34);
             this.btn_id_gen.TabIndex = 12;
@@ -304,8 +305,8 @@
             // 
             // btn_unsubscribe
             // 
-            this.btn_unsubscribe.Location = new System.Drawing.Point(675, 15);
-            this.btn_unsubscribe.Margin = new System.Windows.Forms.Padding(4);
+            this.btn_unsubscribe.Location = new System.Drawing.Point(783, 15);
+            this.btn_unsubscribe.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.btn_unsubscribe.Name = "btn_unsubscribe";
             this.btn_unsubscribe.Size = new System.Drawing.Size(112, 34);
             this.btn_unsubscribe.TabIndex = 12;
@@ -316,15 +317,15 @@
             // tb_sn
             // 
             this.tb_sn.Location = new System.Drawing.Point(134, 70);
-            this.tb_sn.Margin = new System.Windows.Forms.Padding(4);
+            this.tb_sn.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.tb_sn.Name = "tb_sn";
             this.tb_sn.Size = new System.Drawing.Size(240, 28);
             this.tb_sn.TabIndex = 11;
             // 
             // txt主题
             // 
-            this.txt主题.Location = new System.Drawing.Point(404, 16);
-            this.txt主题.Margin = new System.Windows.Forms.Padding(4);
+            this.txt主题.Location = new System.Drawing.Point(512, 16);
+            this.txt主题.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.txt主题.Name = "txt主题";
             this.txt主题.Size = new System.Drawing.Size(128, 28);
             this.txt主题.TabIndex = 11;
@@ -332,8 +333,8 @@
             // 
             // btn_subscribe
             // 
-            this.btn_subscribe.Location = new System.Drawing.Point(554, 15);
-            this.btn_subscribe.Margin = new System.Windows.Forms.Padding(4);
+            this.btn_subscribe.Location = new System.Drawing.Point(662, 15);
+            this.btn_subscribe.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.btn_subscribe.Name = "btn_subscribe";
             this.btn_subscribe.Size = new System.Drawing.Size(112, 34);
             this.btn_subscribe.TabIndex = 10;
@@ -344,7 +345,7 @@
             // btn_load
             // 
             this.btn_load.Location = new System.Drawing.Point(134, 15);
-            this.btn_load.Margin = new System.Windows.Forms.Padding(4);
+            this.btn_load.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.btn_load.Name = "btn_load";
             this.btn_load.Size = new System.Drawing.Size(112, 34);
             this.btn_load.TabIndex = 0;
@@ -352,10 +353,21 @@
             this.btn_load.UseVisualStyleBackColor = true;
             this.btn_load.Click += new System.EventHandler(this.btn_load_Click);
             // 
+            // button_save_as
+            // 
+            this.button_save_as.Location = new System.Drawing.Point(368, 15);
+            this.button_save_as.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.button_save_as.Name = "button_save_as";
+            this.button_save_as.Size = new System.Drawing.Size(112, 34);
+            this.button_save_as.TabIndex = 0;
+            this.button_save_as.Text = "另存为";
+            this.button_save_as.UseVisualStyleBackColor = true;
+            this.button_save_as.Click += new System.EventHandler(this.button_save_as_Click);
+            // 
             // btn_save
             // 
             this.btn_save.Location = new System.Drawing.Point(249, 15);
-            this.btn_save.Margin = new System.Windows.Forms.Padding(4);
+            this.btn_save.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.btn_save.Name = "btn_save";
             this.btn_save.Size = new System.Drawing.Size(112, 34);
             this.btn_save.TabIndex = 0;
@@ -384,9 +396,10 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1131, 927);
             this.Controls.Add(this.splitContainer2);
-            this.Margin = new System.Windows.Forms.Padding(4);
+            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.Name = "Form1";
             this.Text = "Form1";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
             this.SizeChanged += new System.EventHandler(this.Form1_SizeChanged);
             this.splitContainer1.Panel1.ResumeLayout(false);
@@ -435,6 +448,7 @@
         private System.Windows.Forms.CheckBox checkBox1;
         private System.Windows.Forms.TextBox textBox1;
         private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.Button button_save_as;
     }
 }
 
