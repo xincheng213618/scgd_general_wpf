@@ -19,6 +19,59 @@
     </Style>
 
 
+    <Style TargetType="{x:Type ToolTip}">
+        <Setter Property="OverridesDefaultStyle" Value="true" />
+        <Setter Property="HasDropShadow" Value="True" />
+        <Setter Property="ToolTipService.Placement" Value="MousePoint"/>
+        <Setter Property="ToolTipService.VerticalOffset" Value="-30"/>
+
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToolTip">
+                    <Border Name="Border" Background="#F9F9F9" Padding="5,3" BorderBrush="#CACACA" BorderThickness="1" Opacity="0.9"  Width="{TemplateBinding Width}" Height="{TemplateBinding Height}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="HasDropShadow"  Value="true">
+                            <Setter TargetName="Border"  Property="CornerRadius" Value="4" />
+                            <Setter TargetName="Border"  Property="SnapsToDevicePixels" Value="true" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style  TargetType="{x:Type Button}">
+        <Setter Property="Background" Value="#FBFBFB"/>
+        <Setter Property="BorderBrush" Value="#E5E5E5"/>
+        <Setter Property="BorderThickness" Value="1,1,1,1.5"/>
+        <Setter Property="Template" >
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border Background="{TemplateBinding Background}" CornerRadius="4"  BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                        <ContentPresenter Margin="8,2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="true">
+                            <Setter Property="Background" Value="#F6F6F6"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="true">
+                            <Setter Property="Background" Value="#F5F5F5"/>
+                            <Setter Property="Foreground" Value="#878787"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="false">
+                            <Setter Property="Foreground" Value="#F5F5F5"/>
+                            <Setter Property="Background" Value="#9D9D9D"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+
+
+
 
 
     <Style x:Key="ButtonPageControl1" TargetType="{x:Type ToggleButton}">
