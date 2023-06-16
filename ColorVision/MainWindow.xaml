@@ -467,7 +467,7 @@
                             <Button Command="{Binding ZoomNone}">
                                 <Image  Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageexpend}"/>
                             </Button>
-                            <TextBox  Background="Transparent"  BorderBrush="Black" HorizontalContentAlignment="Center" Width="50" Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:F2}}" />
+                            <TextBox  Background="Transparent"  BorderBrush="Black"  BorderThickness="0"  HorizontalContentAlignment="Center" Width="50" Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:F2}}" />
                             <ToggleButton  Click="Button5_Click">
                                 <Image  Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImagegridlines}"/>
                             </ToggleButton>

@@ -21,9 +21,9 @@
                     <ColumnDefinition Width="200"/>
                 </Grid.ColumnDefinitions>
                 <UniformGrid Columns="3">
-                    <Button Content="加载" Click="Button_Click_1" Width="60" />
-                    <Button Content="新建" Click="Button_Click"  Width="60" />
-                    <Button Content="保存" Click="Button_Click_2" Width="60" />
+                    <Button Content="加载" Click="Button_Click_Open" Width="60" />
+                    <Button Content="新建" Click="Button_Click_New"  Width="60" />
+                    <Button Content="保存" Click="Button_Click_Save" Width="60" />
                 </UniformGrid>
                 <UniformGrid Grid.Column="2" Columns="2">
                     <Button x:Name="ButtonFlowOpen" Content="开始流程" Click="Button_Click_4" Width="80"/>

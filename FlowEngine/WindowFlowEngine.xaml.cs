@@ -58,13 +58,13 @@ namespace FlowEngine
             node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => STNodeEditor1.Nodes.Remove(node));
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private void Button_Click_New(object sender, RoutedEventArgs e)
         {
             STNodeEditor1.Nodes.Clear();
         }
         private string svrName;
 
-        private void Button_Click_1(object sender, RoutedEventArgs e)
+        private void Button_Click_Open(object sender, RoutedEventArgs e)
         {
             System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
             ofd.Filter = "*.stn|*.stn";
@@ -74,7 +74,7 @@ namespace FlowEngine
             svrName = "";
         }
 
-        private void Button_Click_2(object sender, RoutedEventArgs e)
+        private void Button_Click_Save(object sender, RoutedEventArgs e)
         {
             System.Windows.Forms.SaveFileDialog sfd = new System.Windows.Forms.SaveFileDialog();
             sfd.Filter = "*.stn|*.stn";
@@ -99,6 +99,7 @@ namespace FlowEngine
                     button.Content = "停止流程";
                     ButtonFlowPause.IsEnabled = true;
                     ButtonFlowPause.Visibility = Visibility.Visible;
+                    ButtonFlowPause.Content = "暂停流程";
                 }
                 else
                 {
@@ -116,8 +117,21 @@ namespace FlowEngine
 
         private void Button_Click_5(object sender, RoutedEventArgs e)
         {
-            CVBaseDataFlow baseEvent = new CVBaseDataFlow(svrName, "Pause", TextBoxsn.Text);
-            _MQTTHelper.PublishAsync_Client("SYS.CMD." + TextBox1.Text, JsonConvert.SerializeObject(baseEvent), false);
+            if (sender is Button button)
+            {
+                if (button.Content.ToString() == "暂停流程")
+                {
+                    CVBaseDataFlow baseEvent = new CVBaseDataFlow(svrName, "Pause", TextBoxsn.Text);
+                    _MQTTHelper.PublishAsync_Client("SYS.CMD." + TextBox1.Text, JsonConvert.SerializeObject(baseEvent), false);
+                    button.Content = "恢复流程";
+                }
+                else
+                {
+                    CVBaseDataFlow baseEvent = new CVBaseDataFlow(svrName, "Start", TextBoxsn.Text);
+                    _MQTTHelper.PublishAsync_Client("SYS.CMD." + TextBox1.Text, JsonConvert.SerializeObject(baseEvent), false);
+                    button.Content = "暂停流程";
+                }
+            }
         }
 
         private void Button_Click_6(object sender, RoutedEventArgs e)

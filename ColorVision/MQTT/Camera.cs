@@ -119,7 +119,7 @@ namespace ColorVision.MQTT
                         }
                         else if (json.EventName == "Open")
                         {
-                            MessageBox.Show("OpenCamera");
+                            MessageBox.Show("Open");
                         }
                         else if (json.EventName == "GatData")
                         {
@@ -146,8 +146,6 @@ namespace ColorVision.MQTT
         }
 
         public bool IsRun { get; set; }
-
-
         public CameraType CurrentCameraType { get; set; }
         public bool Init(CameraType CameraType)
         {
