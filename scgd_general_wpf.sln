@@ -18,8 +18,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "cvColorVision", "cvColorVis
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CvOperator", "CvOperator\CvOperator.csproj", "{3F0EFA94-F77B-4EFD-BF84-789F339C0EFB}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FlowEngine", "FlowEngine\FlowEngine.csproj", "{A4AF6A4B-8461-4512-AB4E-20D7B8F78664}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "C++", "C++", "{55F5939D-C4F5-498D-97B0-8117E84F0FB1}"
 EndProject
 Global
@@ -54,14 +52,6 @@ Global
 		{3F0EFA94-F77B-4EFD-BF84-789F339C0EFB}.Release|Any CPU.Build.0 = Release|x64
 		{3F0EFA94-F77B-4EFD-BF84-789F339C0EFB}.Release|x64.ActiveCfg = Release|x64
 		{3F0EFA94-F77B-4EFD-BF84-789F339C0EFB}.Release|x64.Build.0 = Release|x64
-		{A4AF6A4B-8461-4512-AB4E-20D7B8F78664}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{A4AF6A4B-8461-4512-AB4E-20D7B8F78664}.Debug|Any CPU.Build.0 = Debug|x64
-		{A4AF6A4B-8461-4512-AB4E-20D7B8F78664}.Debug|x64.ActiveCfg = Debug|x64
-		{A4AF6A4B-8461-4512-AB4E-20D7B8F78664}.Debug|x64.Build.0 = Debug|x64
-		{A4AF6A4B-8461-4512-AB4E-20D7B8F78664}.Release|Any CPU.ActiveCfg = Release|x64
-		{A4AF6A4B-8461-4512-AB4E-20D7B8F78664}.Release|Any CPU.Build.0 = Release|x64
-		{A4AF6A4B-8461-4512-AB4E-20D7B8F78664}.Release|x64.ActiveCfg = Release|x64
-		{A4AF6A4B-8461-4512-AB4E-20D7B8F78664}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

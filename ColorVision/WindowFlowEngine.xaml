@@ -7,7 +7,7 @@
         xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         xmlns:st ="clr-namespace:ST.Library.UI.NodeEditor;assembly=ST.Library.UI"
         mc:Ignorable="d"
-        Title="流程引擎" Height="600" Width="800" Initialized="Window_Initialized">
+        Title="流程引擎调试窗口" Height="600" Width="1000" Initialized="Window_Initialized">
     <Grid  x:Name="Grid1">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -49,19 +49,27 @@
             <Grid >
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
-                    <RowDefinition Height="120"/>
+                    <RowDefinition Height="150"/>
                 </Grid.RowDefinitions>
-                <WindowsFormsHost Grid.Row="0">
-                    <st:STNodeTreeView x:Name="STNodeTreeView1" />
-                </WindowsFormsHost>
-                <WindowsFormsHost Grid.Row="1">
-                    <st:STNodePropertyGrid x:Name="STNodePropertyGrid1"/>
-                </WindowsFormsHost>
-            </Grid>
+                <ScrollViewer Grid.Row="0"  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                    <WindowsFormsHost Grid.Row="0">
+                        <st:STNodeTreeView x:Name="STNodeTreeView1"  />
+                    </WindowsFormsHost>
+                </ScrollViewer>
 
-            <WindowsFormsHost Grid.Column="110">
-                <st:STNodeEditor  x:Name="STNodeEditor1"/>
-            </WindowsFormsHost>
+                <ScrollViewer Grid.Row="1"  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                    <WindowsFormsHost>
+                        <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
+                    </WindowsFormsHost>
+                </ScrollViewer>
+            </Grid>
+           
+            <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                <WindowsFormsHost >
+                    <st:STNodeEditor  x:Name="STNodeEditor1"  />
+                </WindowsFormsHost>
+            </ScrollViewer>
+
         </Grid>
         
 

@@ -65,12 +65,17 @@
 
   <ItemGroup>
     <ProjectReference Include="..\cvColorVision\cvColorVision.csproj" />
-    <ProjectReference Include="..\FlowEngine\FlowEngine.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Reference Include="FlowEngineLib">
       <HintPath>..\DLL\FlowEngineLib.dll</HintPath>
+    </Reference>
+    <Reference Include="HslCommunication">
+      <HintPath>..\DLL\HslCommunication.dll</HintPath>
+    </Reference>
+    <Reference Include="ST.Library.UI">
+      <HintPath>..\DLL\ST.Library.UI.dll</HintPath>
     </Reference>
   </ItemGroup>
 

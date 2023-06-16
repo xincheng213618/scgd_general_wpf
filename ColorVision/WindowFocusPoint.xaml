@@ -5,21 +5,26 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision"
         mc:Ignorable="d"
-        Title="关注点编辑" Background="#F0F0F0" Height="450" Width="800" Initialized="Window_Initialized">
+        Title="关注点编辑" Background="#F9F9F9" Height="450" Width="800" Initialized="Window_Initialized">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="300"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         <Grid Grid.Row="0">
-            <StackPanel>
-                <GroupBox Header="点阵数">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="行:"/>
-                        <TextBox x:Name="tbX" Width="50" Text="3" PreviewTextInput="TextBox_PreviewTextInput" />
-                        <TextBlock Text="列:"/>
-                        <TextBox x:Name="tbY" Width="50" Text="3" PreviewTextInput="TextBox_PreviewTextInput"/>
-                    </StackPanel>
+            <StackPanel Margin="5">
+                <GroupBox Header="点阵数" Margin="0,5">
+                    <UniformGrid  Columns="2" Margin="5">
+                        <DockPanel>
+                            <TextBlock Text="行:"/>
+                            <TextBox x:Name="tbX" Margin="15,0,30,0" Text="3" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput" />
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBlock Text="列:"/>
+                            <TextBox x:Name="tbY" Margin="15,0,30,0"  Text="3" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                        </DockPanel>
+
+                    </UniformGrid>
                 </GroupBox>
                 <GroupBox Header="点形状">
                     <StackPanel>
@@ -74,21 +79,14 @@
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="auto"/>
             </Grid.RowDefinitions>
-            <Grid Grid.Row="0">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                <StackPanel Orientation="Horizontal">
-                    <Button x:Name="button1" Content="打开" Click="button1_Click"/>
-                    <Button x:Name="button2" Content="绘制行列图像" Click="button2_Click"/>
-                    <Button x:Name="button3" Content="清空" Click="button3_Click"/>
-
-                </StackPanel>
-                <local:ZoomboxSub x:Name="Zoombox1"  MaxZoom="10" MinZoom="0.01" Grid.Row="1" Grid.ColumnSpan="2">
-                    <local:DrawCanvas x:Name="ImageShow" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  MouseDown="ImageShow_MouseDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
-                </local:ZoomboxSub>
-            </Grid>
+            <local:ZoomboxSub x:Name="Zoombox1"  MaxZoom="10" MinZoom="0.01">
+                <local:DrawCanvas x:Name="ImageShow" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  MouseDown="ImageShow_MouseDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
+            </local:ZoomboxSub>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Top">
+                <Button x:Name="button1" Content="打开" Click="button1_Click"/>
+                <Button x:Name="button2" Content="绘制行列图像" Click="button2_Click"/>
+                <Button x:Name="button3" Content="清空" Click="button3_Click"/>
+            </StackPanel>
             <Grid Grid.Row="1">
                 <ListView Height="100"/>
             </Grid>

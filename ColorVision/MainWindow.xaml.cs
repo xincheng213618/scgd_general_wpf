@@ -859,6 +859,19 @@ namespace ColorVision
             }
         }
 
+
+        private void FilterWheelSet_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                MQTTCamera.FilterWheelSetPort(ComboxFilterWheelChannel1.SelectedIndex + 1, ComboxFilterWheelChannel2.SelectedIndex + 1, (int)MQTTCamera.CurrentCameraType);
+            }
+            catch
+            {
+
+            }
+        }
+
         private void FilterWheelReset_Click(object sender, RoutedEventArgs e)
         {
             MQTTCamera.FilterWheelSetPort(0,0x30,(int)MQTTCamera.CurrentCameraType);
@@ -887,12 +900,12 @@ namespace ColorVision
         {
             new WindowFocusPoint() { Owner = this }.Show();
         }
-
+        FlowEngine.WindowFlowEngine windowFlowEngine;
         private void MenuItem9_Click(object sender, RoutedEventArgs e)
         {
-            FlowEngine.WindowFlowEngine mainWindow = new FlowEngine.WindowFlowEngine();
-            mainWindow.Owner = this;
-            mainWindow.Show();
+            windowFlowEngine ??= new FlowEngine.WindowFlowEngine();
+            windowFlowEngine.Owner = this;
+            windowFlowEngine.Show();
         }
 
         private void Zoombox1_Initialized(object sender, EventArgs e)
@@ -919,6 +932,24 @@ namespace ColorVision
 
             }
 
+        }
+
+        private void MenuStatusBar_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem)
+            {
+                menuItem.IsChecked = !menuItem.IsChecked;
+            }
+        }
+
+        private void Button2_Click(object sender, RoutedEventArgs e)
+        {
+            System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
+            ofd.Filter = "*.stn|*.stn";
+            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            windowFlowEngine = new FlowEngine.WindowFlowEngine(ofd.FileName);
+            windowFlowEngine.Owner = this;
+            windowFlowEngine.Show();
         }
     }
 

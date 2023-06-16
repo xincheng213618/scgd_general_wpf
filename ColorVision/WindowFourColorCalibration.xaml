@@ -17,11 +17,11 @@
 
         <Border  Grid.Column="0" Width="300">
             <StackPanel>
-                <GroupBox Header="1.输入四色标定的描述" Margin="2">
+                <GroupBox Header="1.输入四色标定的描述" Margin="5">
                     <TextBox  x:Name="TextBoxDescribe"  BorderThickness="0,0,0,1" Margin="3,4,2,1"/>
                 </GroupBox>
-                <GroupBox Header="2.曝光调整" Margin="2">
-                    <UniformGrid Columns="2" Margin="3">
+                <GroupBox Header="2.曝光调整" Margin="5">
+                    <UniformGrid Columns="2" Margin="5">
                         <DockPanel Margin="0,2" >
                             <TextBlock Text="增益" Width="30" />
                             <TextBlock DockPanel.Dock="Right" Text="dB" />
@@ -59,14 +59,17 @@
                         </DockPanel>
                     </UniformGrid>
                 </GroupBox>
-                <GroupBox Header="3.测量点坐标及区域" Margin="2">
+                <GroupBox Header="3.测量点坐标及区域" Margin="5">
                     
                 </GroupBox>
-                <GroupBox Header="4.检测次数" Margin="2">
-                    <Slider Style="{StaticResource UpDownSlider}" Maximum="100" Minimum="1" />
+                <GroupBox Header="4.检测次数" Margin="5">
+                    <Grid Margin="5">
+                        <Slider Style="{StaticResource UpDownSlider}" Maximum="100" Minimum="1" />
+
+                    </Grid>
                 </GroupBox>
-                <GroupBox Header="6.建立标定" Margin="2">
-                    <Button Content="创建新色度/亮度标定" Margin="3"/>
+                <GroupBox Header="6.建立标定" Margin="5">
+                    <Button Content="创建新色度/亮度标定" Margin="5" Width="180"/>
                 </GroupBox>
             </StackPanel>
         </Border>

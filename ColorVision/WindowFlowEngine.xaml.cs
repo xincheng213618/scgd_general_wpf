@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 using System;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -19,6 +20,13 @@ namespace FlowEngine
         {
             InitializeComponent();
         }
+        public WindowFlowEngine(string FileName)
+        {
+            InitializeComponent();
+            OpenFlow(FileName);
+        }
+
+
         private FlowEngineLib.MQTTHelper _MQTTHelper = new FlowEngineLib.MQTTHelper();
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -69,10 +77,17 @@ namespace FlowEngine
             System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
             ofd.Filter = "*.stn|*.stn";
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            OpenFlow(ofd.FileName);
+        }
+        private void OpenFlow(string flowName)
+        {
             STNodeEditor1.Nodes.Clear();
-            STNodeEditor1.LoadCanvas(ofd.FileName);
+            STNodeEditor1.LoadCanvas(flowName);
             svrName = "";
         }
+
+
+
 
         private void Button_Click_Save(object sender, RoutedEventArgs e)
         {

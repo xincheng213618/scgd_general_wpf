@@ -33,9 +33,12 @@
                     <MenuItem Header="关注点模板设置(_A)"  Click="MenuItem_Click_9"/>
 
                 </MenuItem>
-                <MenuItem Header="MySQLTest(_M)"  Click="MenuItem_Click_7"/>
-                <MenuItem Header="MQTT日志(_L)" Click="MenuItem_Click"/>
-                <MenuItem Header="流程引擎" Click="MenuItem9_Click"/>
+                <MenuItem Header="视图(_V)">
+                    <MenuItem Header="MQTT日志(_L)" Click="MenuItem_Click"/>
+                    <MenuItem Header="流程引擎(_F)" Click="MenuItem9_Click"/>
+                    <MenuItem Header="数据库(_M)"  Click="MenuItem_Click_7"/>
+                    <MenuItem Header="状态栏" x:Name="MenuStatusBar"  IsChecked="True"  Click="MenuStatusBar_Click" />
+                </MenuItem>
 
                 <MenuItem Header="标定(_A)">
                     <MenuItem Header="四色校正" Click="MenuItem_Click8"/>
@@ -69,7 +72,7 @@
                         </StackPanel.Resources>
 
                         <StackPanel Margin="0,5" x:Name="StackPanelPG" Initialized="StackPanelPG_Initialized">
-                            <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Background="#F9F9F9"  Content="PG"  FontSize="15" Foreground="Black" IsChecked="True" />
+                            <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Background="#F9F9F9"  Content="PG"  FontSize="15" Foreground="Black" IsChecked="False" />
                             <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
                                 <StackPanel Margin="5">
                                     <DockPanel>
@@ -123,31 +126,36 @@
                                     </DockPanel>
                                     <Button  Content="初始化相机" Click="SendDemo_Click"/>
                                     <StackPanel x:Name="StackPanelOpen">
-                                        <DockPanel >
-                                            <Label Content="相机ID："/>
-                                            <ComboBox  x:Name="ComboxCameraID" Height="20" Margin="0,0,10,0"/>
-                                        </DockPanel>
+                                        <UniformGrid Columns="2">
+                                            <DockPanel >
+                                                <Label Content="相机ID："/>
+                                                <ComboBox  x:Name="ComboxCameraID" Height="20" Margin="0,0,10,0"/>
+                                            </DockPanel>
 
-                                        <DockPanel  >
-                                            <Label Content="通道数："/>
-                                            <ComboBox  x:Name="ComboxCameraChannel" SelectedIndex="1" Height="20" Margin="0,0,10,0">
-                                                <ComboBoxItem Content="1"/>
-                                                <ComboBoxItem Content="3"/>
-                                            </ComboBox>
-                                        </DockPanel>
-                                        <DockPanel >
-                                            <Label Content="取图模式："/>
-                                            <ComboBox  x:Name="ComboxCameraTakeImageMode" SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20" Margin="0,0,10,0"/>
-                                        </DockPanel>
-                                        <DockPanel  >
-                                            <Label Content="取图模式："/>
-                                            <ComboBox  x:Name="ComboxCameraImageBpp" SelectedIndex="0" Height="20" Margin="0,0,10,0" >
-                                                <ComboBoxItem Content="8"/>
-                                                <ComboBoxItem Content="16"/>
-                                            </ComboBox>
-                                        </DockPanel>
-                                        <Button  Content="打开相机" Click="SendDemo2_Click"/>
-                                        <Button  Content="关闭相机" Click="SendDemo4_Click"/>
+                                            <DockPanel  >
+                                                <Label Content="通道数："/>
+                                                <ComboBox  x:Name="ComboxCameraChannel" SelectedIndex="1" Height="20" Margin="0,0,10,0">
+                                                    <ComboBoxItem Content="1"/>
+                                                    <ComboBoxItem Content="3"/>
+                                                </ComboBox>
+                                            </DockPanel>
+
+                                            <DockPanel >
+                                                <Label Content="取图模式："/>
+                                                <ComboBox  x:Name="ComboxCameraTakeImageMode" SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20" Margin="0,0,10,0"/>
+                                            </DockPanel>
+                                            <DockPanel  >
+                                                <Label Content="取图模式："/>
+                                                <ComboBox  x:Name="ComboxCameraImageBpp" SelectedIndex="0" Height="20" Margin="0,0,10,0" >
+                                                    <ComboBoxItem Content="8"/>
+                                                    <ComboBoxItem Content="16"/>
+                                                </ComboBox>
+                                            </DockPanel>
+                                        </UniformGrid>
+                                        <UniformGrid Columns="2" >
+                                            <Button  Content="打开相机" Click="SendDemo2_Click"  Width="80"/>
+                                            <Button  Content="关闭相机" Click="SendDemo4_Click" Width="80"/>
+                                        </UniformGrid>
 
                                     </StackPanel>
 
@@ -160,25 +168,51 @@
                                             <TextBlock  Text="曝光" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
                                             <Slider x:Name="SliderexpTime"  Template="{ StaticResource LM_SliderControlTemplate2}" TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="100" Maximum="6000"/>
                                         </DockPanel>
-                                        <Button  Content="获取图像数据" Click="SendDemo3_Click"/>
+                                        <Button Content="获取图像数据" Click="SendDemo3_Click"/>
                                     </StackPanel>
                                     <StackPanel  x:Name="StackPanelFilterWheel"  Initialized="StackPanelFilterWheel_Initialized">
                                         <GroupBox Header="滤色轮">
                                             <StackPanel >
-                                                <ComboBox  x:Name="ComboxFilterWheelChannel"  Height="20" Margin="0,2,10,2">
-
-                                                </ComboBox>
-                                                <Button Content="切换通道"   Margin="2" Click="FilterWheelSetPort_Click"/>
-                                                <Button Content="重置"   Margin="2" Click="FilterWheelReset_Click" ToolTip="重置滤色轮">
-                                                </Button>
+                                                <ComboBox x:Name="ComboxFilterWheelChannel" Height="20" Margin="0,2,10,2"/>
+                                                <Button Content="切换通道" Margin="2" Click="FilterWheelSetPort_Click"/>
+                                                <Button Content="重置" Margin="2" Click="FilterWheelReset_Click" ToolTip="重置滤色轮"/>
+                                                <UniformGrid>
+                                                    <DockPanel>
+                                                        <Label Content="Index:"/>
+                                                        <ComboBox x:Name="ComboxFilterWheelChannel1" SelectedIndex="0" Height="20" Margin="0,2,10,2">
+                                                            <ComboBoxItem Content="1"/>
+                                                            <ComboBoxItem Content="2"/>
+                                                            <ComboBoxItem Content="3"/>
+                                                            <ComboBoxItem Content="4"/>
+                                                            <ComboBoxItem Content="5"/>
+                                                            <ComboBoxItem Content="6"/>
+                                                            <ComboBoxItem Content="7"/>
+                                                            <ComboBoxItem Content="8"/>
+                                                            <ComboBoxItem Content="9"/>
+                                                        </ComboBox>
+                                                    </DockPanel>
+                                                    <DockPanel>
+                                                        <Label Content="通道:"/>
+                                                        <ComboBox x:Name="ComboxFilterWheelChannel2" SelectedIndex="0" Height="20" Margin="0,2,10,2">
+                                                            <ComboBoxItem Content="1"/>
+                                                            <ComboBoxItem Content="2"/>
+                                                            <ComboBoxItem Content="3"/>
+                                                            <ComboBoxItem Content="4"/>
+                                                            <ComboBoxItem Content="5"/>
+                                                            <ComboBoxItem Content="6"/>
+                                                            <ComboBoxItem Content="7"/>
+                                                            <ComboBoxItem Content="8"/>
+                                                            <ComboBoxItem Content="9"/>
+                                                        </ComboBox>
+                                                    </DockPanel>
+                                                    <Button Content="设置"   Margin="2" Click="FilterWheelSet_Click" ToolTip="根据通道设置滤色轮"/>
+                                                </UniformGrid>
                                             </StackPanel>
                                         </GroupBox>
                                     </StackPanel>
-
                                 </StackPanel>
                             </Border>
                         </StackPanel>
-
                         <StackPanel Margin="0,5"  x:Name="StackPanelCalibration" Initialized="StackPanelCalibration_Initialized">
                             <ToggleButton  x:Name="ToggleButton2"  Style="{StaticResource ButtonPageControl1}" Content="校正" Background="#F9F9F9"  FontSize="15" Foreground="Black" IsChecked="False" />
                             <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton2,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
@@ -227,9 +261,6 @@
 
                                         </StackPanel>
                                     </GroupBox>
-
-
-
                                 </StackPanel>
                             </Border>
                         </StackPanel>
@@ -333,6 +364,8 @@
                                     <UniformGrid >
                                         <Button Content="打开测试图像"  Margin="10,0" Click="Button_Click"/>
                                         <Button Content="绘制测试图形"  Margin="10,0"  Click="Button1_Click"/>
+                                        <Button Content="执行流程引擎测试"  Margin="10,0"  Click="Button2_Click"/>
+
                                     </UniformGrid>
                                 </StackPanel>
                             </Border>
@@ -497,19 +530,10 @@
             <GridSplitter Grid.Column="0"  Width="1" />
             <GridSplitter  Grid.Column="2"  Width="1" HorizontalAlignment="Left" />
         </Grid>
-        <Grid Grid.Row="2">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="107*"/>
-                <ColumnDefinition Width="1173*"/>
-            </Grid.ColumnDefinitions>
+        <Grid Grid.Row="2" x:Name="StatusBarGrid" Visibility="{Binding ElementName=MenuStatusBar,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
             <StatusBar  DataContext="{Binding performanceSetting}" Grid.ColumnSpan="2">
-                <StatusBarItem   x:Name="StatusBarItem1"  >
-                    <TextBlock>
-                        <Run Text="{Binding Path=MemoryThis}"/>
-                    </TextBlock>
-                </StatusBarItem>
-                <StatusBarItem  x:Name="StatusBarItem2" DataContext="{Binding performanceSetting}" HorizontalAlignment="Right" Content="{Binding Path=Time}">
-                </StatusBarItem>
+                <StatusBarItem   x:Name="StatusBarItem1"  Content="{Binding Path=MemoryThis}" />
+                <StatusBarItem  x:Name="StatusBarItem2" DataContext="{Binding performanceSetting}" HorizontalAlignment="Right" Content="{Binding Path=Time}"/>
             </StatusBar>
         </Grid>
     </Grid>
