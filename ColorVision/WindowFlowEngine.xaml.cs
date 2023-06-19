@@ -1,4 +1,5 @@
-﻿using FlowEngineLib;
+﻿using ColorVision.MQTT;
+using FlowEngineLib;
 using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 using System;
@@ -26,7 +27,6 @@ namespace FlowEngine
             OpenFlow(FileName);
         }
 
-
         private FlowEngineLib.MQTTHelper _MQTTHelper = new FlowEngineLib.MQTTHelper();
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -41,11 +41,10 @@ namespace FlowEngine
 
             string iPStr = "192.168.3.225";
             string portStr = "1883";
-            string uName = "";// txt用户名.Text.Trim();
-            string uPwd = "";// txt密码.Text.Trim();
+            string uName = "";
+            string uPwd = "";
 
             int port = Convert.ToInt32(portStr);
-
             FlowEngineLib.MQTTHelper.SetDefaultCfg(iPStr, port, uName, uPwd);
 
             Task task = _MQTTHelper.CreateMQTTClientAndStart(iPStr, port, uName, uPwd, ShowLog);
@@ -102,7 +101,7 @@ namespace FlowEngine
             TextBoxsn.Text = softNumerical.GetNumericalOrder();
         }
 
-        private void Button_Click_4(object sender, RoutedEventArgs e)
+        private async void Button_Click_4(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
             {
@@ -110,7 +109,8 @@ namespace FlowEngine
                 {
                     svrName = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
                     FlowEngineLib.CVBaseDataFlow baseEvent = new FlowEngineLib.CVBaseDataFlow(svrName, "Start", TextBoxsn.Text);
-                    _MQTTHelper.PublishAsync_Client("SYS.CMD." + TextBox1.Text, JsonConvert.SerializeObject(baseEvent), false);
+                    await MQTTControl.GetInstance().PublishAsyncClient("SYS.CMD." + TextBox1.Text, JsonConvert.SerializeObject(baseEvent), false);
+                    
                     button.Content = "停止流程";
                     ButtonFlowPause.IsEnabled = true;
                     ButtonFlowPause.Visibility = Visibility.Visible;
@@ -119,7 +119,7 @@ namespace FlowEngine
                 else
                 {
                     CVBaseDataFlow baseEvent = new CVBaseDataFlow(svrName, "Stop", TextBoxsn.Text);
-                    _MQTTHelper.PublishAsync_Client("SYS.CMD." + TextBox1.Text, JsonConvert.SerializeObject(baseEvent), false);
+                    await MQTTControl.GetInstance().PublishAsyncClient("SYS.CMD." + TextBox1.Text, JsonConvert.SerializeObject(baseEvent), false);
                     button.Content = "开始流程";
                     ButtonFlowPause.IsEnabled = false;
                     ButtonFlowPause.Visibility = Visibility.Collapsed;
@@ -130,20 +130,20 @@ namespace FlowEngine
 
         }
 
-        private void Button_Click_5(object sender, RoutedEventArgs e)
+        private async void Button_Click_5(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
             {
                 if (button.Content.ToString() == "暂停流程")
                 {
                     CVBaseDataFlow baseEvent = new CVBaseDataFlow(svrName, "Pause", TextBoxsn.Text);
-                    _MQTTHelper.PublishAsync_Client("SYS.CMD." + TextBox1.Text, JsonConvert.SerializeObject(baseEvent), false);
+                    await MQTTControl.GetInstance().PublishAsyncClient("SYS.CMD." + TextBox1.Text, JsonConvert.SerializeObject(baseEvent), false);
                     button.Content = "恢复流程";
                 }
                 else
                 {
                     CVBaseDataFlow baseEvent = new CVBaseDataFlow(svrName, "Start", TextBoxsn.Text);
-                    _MQTTHelper.PublishAsync_Client("SYS.CMD." + TextBox1.Text, JsonConvert.SerializeObject(baseEvent), false);
+                    await MQTTControl.GetInstance().PublishAsyncClient("SYS.CMD." + TextBox1.Text, JsonConvert.SerializeObject(baseEvent), false);
                     button.Content = "暂停流程";
                 }
             }
@@ -153,5 +153,6 @@ namespace FlowEngine
         {
 
         }
+
     }
 }

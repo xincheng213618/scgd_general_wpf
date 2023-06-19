@@ -18,7 +18,7 @@
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
         <Grid Grid.Row="0">
-            <Menu x:Name="Menu1" Height ="19" Background="#F3F3F3" >
+            <Menu x:Name="Menu1" Height ="24" Background="#F3F3F3" >
                 <MenuItem Header="文件(_F)">
                     <MenuItem Header="打开(_O)"/>
                     <MenuItem Header="工程(_F)"/>

@@ -270,7 +270,7 @@ namespace ColorVision
 
         private void ImageShow_Initialized(object sender, EventArgs e)
         {
-            this.ContextMenuOpening += MainWindow_ContextMenuOpening;
+            ImageShow.ContextMenuOpening += MainWindow_ContextMenuOpening;
         }
 
         private void MainWindow_ContextMenuOpening(object sender, ContextMenuEventArgs e)
@@ -900,10 +900,10 @@ namespace ColorVision
         {
             new WindowFocusPoint() { Owner = this }.Show();
         }
-        FlowEngine.WindowFlowEngine windowFlowEngine;
         private void MenuItem9_Click(object sender, RoutedEventArgs e)
         {
-            windowFlowEngine ??= new FlowEngine.WindowFlowEngine();
+            FlowEngine.WindowFlowEngine windowFlowEngine;
+            windowFlowEngine = new FlowEngine.WindowFlowEngine();
             windowFlowEngine.Owner = this;
             windowFlowEngine.Show();
         }
@@ -947,7 +947,7 @@ namespace ColorVision
             System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
             ofd.Filter = "*.stn|*.stn";
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-            windowFlowEngine = new FlowEngine.WindowFlowEngine(ofd.FileName);
+            FlowEngine.WindowFlowEngine windowFlowEngine = new FlowEngine.WindowFlowEngine(ofd.FileName);
             windowFlowEngine.Owner = this;
             windowFlowEngine.Show();
         }
