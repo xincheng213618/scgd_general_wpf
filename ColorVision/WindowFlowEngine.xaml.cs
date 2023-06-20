@@ -79,7 +79,6 @@ namespace FlowEngine
         private void StNodeEditor1_NodeAdded(object sender, STNodeEditorEventArgs e)
         {
             STNode node = (STNode)e.Node;
-            node.Tag = "223";
             node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
             node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => STNodeEditor1.Nodes.Remove(node));
         }
@@ -110,10 +109,8 @@ namespace FlowEngine
                 ButtonFlowPause.IsEnabled = false;
                 ButtonFlowPause.Visibility = Visibility.Collapsed;
             };
+            OperateGrid.Visibility = Visibility.Visible;
         }
-
-
-
 
         private void Button_Click_Save(object sender, RoutedEventArgs e)
         {

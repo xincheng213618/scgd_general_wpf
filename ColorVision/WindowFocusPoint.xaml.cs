@@ -4,6 +4,7 @@ using log4net;
 using Microsoft.VisualBasic.Logging;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
@@ -34,12 +35,13 @@ namespace ColorVision
             [Description("相对值")]
             Relative
         }
+        public ObservableCollection<DrawingVisualCircle> DrawingVisualCircleLists { get; set; } = new ObservableCollection<DrawingVisualCircle>();
 
-        private static readonly ILog log = LogManager.GetLogger(typeof(WindowFocusPoint));
 
         public WindowFocusPoint()
         {
             InitializeComponent();
+            ListView1.ItemsSource = DrawingVisualCircleLists;
         }
 
         private void button1_Click(object sender, RoutedEventArgs e)
@@ -58,14 +60,37 @@ namespace ColorVision
         {
             if (filePath != null && File.Exists(filePath))
             {
-                log.Info(filePath);
                 BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
 
                 ImageShow.Source = new BitmapImage(new Uri(filePath));
                 Zoombox1.ZoomUniform();
             }
         }
+        private void ImageShow_Initialized(object sender, EventArgs e)
+        {
+            ImageShow.ContextMenuOpening += MainWindow_ContextMenuOpening;
+        }
+        private void MainWindow_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            var Point = Mouse.GetPosition(ImageShow);
+            var DrawingVisual = ImageShow.GetVisual(Point);
+            if (DrawingVisual != null)
+            {
+                var ContextMenu = new ContextMenu();
+                MenuItem menuIte2 = new MenuItem() { Header = "删除" };
+                menuIte2.Click += (s, e) =>
+                {
+                    ImageShow.RemoveVisual(DrawingVisual);
+                };
+                ContextMenu.Items.Add(menuIte2);
+                this.ContextMenu = ContextMenu;
+            }
+            else
+            {
+                this.ContextMenu = null;
+            }
 
+        }
         private void ImageShow_MouseLeave(object sender, MouseEventArgs e)
         {
 
@@ -78,7 +103,25 @@ namespace ColorVision
 
         private void ImageShow_MouseDown(object sender, MouseButtonEventArgs e)
         {
-
+            if (sender is DrawCanvas drawCanvas)
+            {
+                var MouseDownP = e.GetPosition(drawCanvas);
+                if (drawCanvas.GetVisual(MouseDownP) is DrawingVisualCircle drawingVisual)
+                {
+                    if (PropertyGrid2.SelectedObject is CircleAttribute viewModelBase)
+                    {
+                        viewModelBase.PropertyChanged -= (s, e) =>
+                        {
+                            PropertyGrid2.Refresh();
+                        };
+                    }
+                    PropertyGrid2.SelectedObject = drawingVisual.Attribute;
+                    drawingVisual.Attribute.PropertyChanged += (s, e) =>
+                    {
+                        PropertyGrid2.Refresh();
+                    };
+                }
+            }
         }
 
         private void ImageShow_MouseUp(object sender, MouseButtonEventArgs e)
@@ -148,9 +191,10 @@ namespace ColorVision
                             drawingVisualCircle.Attribute.Radius = 100;
                             drawingVisualCircle.Attribute.Brush = Brushes.Transparent;
                             drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red, 10);
-                            drawingVisualCircle.Attribute.ID = i * 10 + j;
+                            drawingVisualCircle.Attribute.ID = i * cols + j +1;
                             drawingVisualCircle.Render();
                             ImageShow.AddVisual(drawingVisualCircle);
+                            DrawingVisualCircleLists.Add(drawingVisualCircle);
                         }
                         else
                         {
@@ -195,6 +239,54 @@ namespace ColorVision
         private void button3_Click(object sender, RoutedEventArgs e)
         {
             ImageShow.Clear();
+            DrawingVisualCircleLists.Clear();
+            PropertyGrid2.SelectedObject = null;
+        }
+
+        private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)
+        {
+            e.Handled = true;
+        }
+
+        private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ListView listView && listView.SelectedIndex > -1 && DrawingVisualCircleLists[listView.SelectedIndex] is DrawingVisualCircle drawingVisual)
+            {
+                if (PropertyGrid2.SelectedObject is CircleAttribute viewModelBase)
+                {
+                    viewModelBase.PropertyChanged -= (s, e) =>
+                    {
+                        PropertyGrid2.Refresh();
+                    };
+                }
+
+                PropertyGrid2.SelectedObject = drawingVisual.Attribute;
+                drawingVisual.Attribute.PropertyChanged += (s, e) =>
+                {
+                    PropertyGrid2.Refresh();
+                };
+                ImageShow.TopVisual(drawingVisual);
+            }
+        }
+
+        private void CheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is CheckBox checkBox && checkBox.Tag is DrawingVisualCircle drawingVisualCircle)
+            {
+                if (checkBox.IsChecked == true)
+                {
+                    if (!ImageShow.ContainsVisual(drawingVisualCircle))
+                    {
+                        ImageShow.AddVisual(drawingVisualCircle);
+                    }
+
+                }
+                else
+                {
+                    if (ImageShow.ContainsVisual(drawingVisualCircle))
+                        ImageShow.RemoveVisual(drawingVisualCircle);
+                }
+            }
         }
     }
 }

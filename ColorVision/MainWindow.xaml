@@ -389,9 +389,6 @@
                         <winf:PropertyGrid x:Name="PropertyGrid2" Height="200"   >
                         </winf:PropertyGrid>
                     </WindowsFormsHost>
-                    <WindowsFormsHost x:Name="WindowsFormsHost2" UseLayoutRounding="True" TextOptions.TextFormattingMode="Display"   Grid.Row="1" Visibility="Visible" Margin="0,145,0,0"  >
-
-                    </WindowsFormsHost>
                     <DockPanel Grid.Row="0"  >
                         <Grid DockPanel.Dock="Top">
                             <Grid.ColumnDefinitions>
