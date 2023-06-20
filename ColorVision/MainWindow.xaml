@@ -43,10 +43,7 @@
                 <MenuItem Header="标定(_A)">
                     <MenuItem Header="四色校正" Click="MenuItem_Click8"/>
                 </MenuItem>
-                <MenuItem Header="调试(_D)">
-                    <MenuItem Header="新版电机" Click="MenuItem_Click10"/>
-                </MenuItem>
-
+                
                 <MenuItem Header="帮助(_H)">
                     <MenuItem Header="关于(_A)" Click="MenuItem_Click_1"/>
                 </MenuItem>
@@ -124,7 +121,7 @@
                                         <Label Content="相机类型："/>
                                         <ComboBox  x:Name="ComboxCameraType"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20" Margin="0,0,10,0"/>
                                     </DockPanel>
-                                    <Button  Content="初始化相机" Click="SendDemo_Click"/>
+                                    <Button  x:Name="CamerInitButton" Content="初始化" Click="MQTTCamera_Init_Click"/>
                                     <StackPanel x:Name="StackPanelOpen">
                                         <UniformGrid Columns="2">
                                             <DockPanel >
@@ -152,10 +149,10 @@
                                                 </ComboBox>
                                             </DockPanel>
                                         </UniformGrid>
-                                        <UniformGrid Columns="2" >
-                                            <Button  Content="打开相机" Click="SendDemo2_Click"  Width="80"/>
-                                            <Button  Content="关闭相机" Click="SendDemo4_Click" Width="80"/>
-                                        </UniformGrid>
+                                        <Grid>
+                                            <Button x:Name="CameraOpenButton" Content="打开相机" Click="SendDemo2_Click" />
+                                            <Button x:Name="CameraCloseButton"  Content="关闭相机" Click="SendDemo4_Click" />
+                                        </Grid>
 
                                     </StackPanel>
 
@@ -168,9 +165,13 @@
                                             <TextBlock  Text="曝光" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
                                             <Slider x:Name="SliderexpTime"  Template="{ StaticResource LM_SliderControlTemplate2}" TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="100" Maximum="6000"/>
                                         </DockPanel>
-                                        <Button Content="获取图像数据" Click="SendDemo3_Click"/>
+                                        <Button Content="取图" Click="SendDemo3_Click"/>
+                                        <DockPanel>
+                                            <Button Content="存图" Click="SendDemo3_Click" Width="80"/>
+                                            <TextBox x:Name="TextFilePath" BorderThickness="0,0,0,1"  Margin="5"/>
+                                        </DockPanel>
                                     </StackPanel>
-                                    <StackPanel  x:Name="StackPanelFilterWheel"  Initialized="StackPanelFilterWheel_Initialized">
+                                    <StackPanel  x:Name="StackPanelFilterWheel" Initialized="StackPanelFilterWheel_Initialized">
                                         <GroupBox Header="滤色轮">
                                             <StackPanel >
                                                 <ComboBox x:Name="ComboxFilterWheelChannel" Height="20" Margin="0,2,10,2"/>
@@ -319,24 +320,24 @@
                                             <TextBlock Text="起始:" Width="40" />
                                             <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"   Visibility="{Binding IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="V"/>
                                             <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"   Visibility="{Binding IsSourceV,Converter={StaticResource bool2VisibilityConverter}}" Text="mA"/>
-                                            <TextBox Text="{Binding  StartMeasureVal}"/>
+                                            <TextBox Text="{Binding  StartMeasureVal}"  BorderThickness="0,0,0,1"/>
                                         </DockPanel>
                                         <DockPanel Margin="2">
                                             <TextBlock Text="结束:"  Width="40"/>
                                             <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"  Visibility="{Binding IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="V"/>
                                             <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"  Visibility="{Binding IsSourceV,Converter={StaticResource bool2VisibilityConverter}}" Text="mA"/>
-                                            <TextBox Text="{Binding  StopMeasureVal}"/>
+                                            <TextBox Text="{Binding  StopMeasureVal}" BorderThickness="0,0,0,1"/>
                                         </DockPanel>
                                         <DockPanel Margin="2">
                                             <TextBlock Text="限值:"  Width="40"/>
                                             <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"   Visibility="{Binding IsSourceV,Converter={StaticResource bool2VisibilityConverter}}" Text="V"/>
                                             <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"  Visibility="{Binding IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="mA"/>
-                                            <TextBox Text="{Binding LmtVal}"/>
+                                            <TextBox Text="{Binding LmtVal}" BorderThickness="0,0,0,1"/>
                                         </DockPanel>
                                         <DockPanel Margin="2">
                                             <TextBlock Text="点:"  Width="40"/>
                                             <TextBlock DockPanel.Dock="Right" Width="30"   Text=""/>
-                                            <TextBox Text="{Binding Number}"/>
+                                            <TextBox Text="{Binding Number}" BorderThickness="0,0,0,1"/>
                                         </DockPanel>
                                         <UniformGrid Columns="2">
                                             <Button Content="扫描" Click="VIScan_Click" Margin="2" />

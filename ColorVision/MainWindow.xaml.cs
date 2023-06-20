@@ -35,7 +35,6 @@ namespace ColorVision
     /// 
     public partial class MainWindow : Window
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
         public ImageInfo ImageInfo { get; set; } = new ImageInfo();
         public PerformanceSetting PerformanceSetting { get; set; } = new PerformanceSetting();
 
@@ -48,6 +47,7 @@ namespace ColorVision
             InitializeComponent();
             this.Closed += (s, e) => Environment.Exit(0);
         }
+
         protected override void OnSourceInitialized(EventArgs e)
         {
             base.OnSourceInitialized(e);
@@ -123,7 +123,7 @@ namespace ColorVision
         {
             if (filePath != null && File.Exists(filePath))
             {
-                log.Info(filePath);
+                Log.LogWrite(filePath);
                 BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
 
                 ImageShow.Source = bitmapImage;
@@ -277,19 +277,26 @@ namespace ColorVision
         {
             var Point = Mouse.GetPosition(ImageShow);
             var DrawingVisual = ImageShow.GetVisual(Point);
-
-            var ContextMenu = new ContextMenu();
-            MenuItem menuItem = new MenuItem() { Header = "上移一层" };
-            MenuItem menuItem1 = new MenuItem() { Header = "下移一层" };
-            MenuItem menuIte2 = new MenuItem() { Header = "删除" };
-            menuIte2.Click += (s, e) =>
+            if (DrawingVisual != null)
             {
-                ImageShow.RemoveVisual(DrawingVisual);
-            };
-            ContextMenu.Items.Add(menuItem);
-            ContextMenu.Items.Add(menuItem1);
-            ContextMenu.Items.Add(menuIte2);
-            this.ContextMenu = ContextMenu;
+                var ContextMenu = new ContextMenu();
+                MenuItem menuItem = new MenuItem() { Header = "上移一层" };
+                MenuItem menuItem1 = new MenuItem() { Header = "下移一层" };
+                MenuItem menuIte2 = new MenuItem() { Header = "删除" };
+                menuIte2.Click += (s, e) =>
+                {
+                    ImageShow.RemoveVisual(DrawingVisual);
+                };
+                ContextMenu.Items.Add(menuItem);
+                ContextMenu.Items.Add(menuItem1);
+                ContextMenu.Items.Add(menuIte2);
+                this.ContextMenu = ContextMenu;
+            }
+            else
+            {
+                this.ContextMenu = null;
+            }
+
         }
 
         private void ImageShow_MouseDown(object sender, MouseButtonEventArgs e)
@@ -728,13 +735,28 @@ namespace ColorVision
 
 
             StackPanelOpen.Visibility = Visibility.Collapsed;
-
+            StackPanelImage.Visibility = Visibility.Collapsed;
+            CameraCloseButton.Visibility = Visibility.Collapsed;
+            CameraOpenButton.Visibility = Visibility.Collapsed;
 
             MQTTCamera.InitCameraSuccess += (s, e) =>
             {
                 ComboxCameraID.ItemsSource = MQTTCamera.CameraID?.IDs;
                 ComboxCameraID.SelectedIndex = 0;
                 StackPanelOpen.Visibility = Visibility.Visible;
+                StackPanelImage.Visibility = Visibility.Visible;
+                CameraOpenButton.Visibility = Visibility.Visible;
+                CamerInitButton.Content = "断开初始化";
+            };
+            MQTTCamera.OpenCameraSuccess += (s, e) =>
+            {
+                CameraCloseButton.Visibility = Visibility.Visible;
+                CameraOpenButton.Visibility = Visibility.Collapsed;
+            };
+            MQTTCamera.CloseCameraSuccess += (s, e) =>
+            {
+                CameraCloseButton.Visibility = Visibility.Collapsed;
+                CameraOpenButton.Visibility = Visibility.Visible;
             };
         }
 
@@ -756,11 +778,21 @@ namespace ColorVision
 
 
 
-        private void SendDemo_Click(object sender, RoutedEventArgs e)
+        private void MQTTCamera_Init_Click(object sender, RoutedEventArgs e)
         {
-            if (ComboxCameraType.SelectedItem is KeyValuePair<CameraType, string> KeyValue && KeyValue.Key is CameraType cameraType)
+            if(sender is Button button)
             {
-                MQTTCamera.Init(cameraType);
+                if (button.Content.ToString() == "初始化")
+                {
+                    if (ComboxCameraType.SelectedItem is KeyValuePair<CameraType, string> KeyValue && KeyValue.Key is CameraType cameraType)
+                    {
+                        MQTTCamera.Init(cameraType);
+                    }
+                }
+                else
+                {
+                    MQTTCamera.Close();
+                }
             }
         }
         private void SendDemo1_Click(object sender, RoutedEventArgs e)
@@ -913,27 +945,6 @@ namespace ColorVision
 
         }
 
-        private void MenuItem_Click10(object sender, RoutedEventArgs e)
-        {
-            bool isHave =true;
-            foreach (var item in Application.Current.Windows)
-            {
-                if (item is MotorControlWindow motorControlWindow)
-                {
-                    motorControlWindow.Activate();
-                    isHave = true;
-                }
-            }
-            if (isHave)
-            {
-                MotorControlWindow motorControlWindow = new MotorControlWindow();
-                motorControlWindow.Owner = this;
-                motorControlWindow.Show();
-
-            }
-
-        }
-
         private void MenuStatusBar_Click(object sender, RoutedEventArgs e)
         {
             if (sender is MenuItem menuItem)
@@ -947,9 +958,18 @@ namespace ColorVision
             System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
             ofd.Filter = "*.stn|*.stn";
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+
+
+
             FlowEngine.WindowFlowEngine windowFlowEngine = new FlowEngine.WindowFlowEngine(ofd.FileName);
             windowFlowEngine.Owner = this;
             windowFlowEngine.Show();
+
+
+
+
+
+
         }
     }
 

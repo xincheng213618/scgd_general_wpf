@@ -12,6 +12,13 @@ using System.Windows.Documents;
 namespace ColorVision.MQTT
 {
     public delegate void MQTTMsgHandler(ResultDataMQTT resultDataMQTT);
+    public class MQTTConfig
+    {
+        public string IP { get; set; }
+        public int Port { get; set; }
+        public string UName { get; set; }
+        public string UPwd { get; set; }
+    }
 
     public class MQTTControl : ViewModelBase
     {
@@ -23,46 +30,50 @@ namespace ColorVision.MQTT
         public MQTTHelper MQTTHelper { get => _MQTTHelper; set => _MQTTHelper = value; }
 
         public event MQTTMsgHandler MQTTMsgChanged;
+        MQTTConfig MQTTConfig = new MQTTConfig();
 
         private MQTTControl()
         {
             MQTTHelper = new MQTTHelper();
-            IP = "192.168.3.225";
-            Port = 1883;
-            UName = "";
-            UPwd = "";
+            MQTTConfig.IP = "192.168.3.225";
+            MQTTConfig.Port = 1883;
+            MQTTConfig.UName = "";
+            MQTTConfig.UPwd = "";
             Task.Run(() => Connect());
             MQTTHelper.MsgHandle += (s) => { MQTTMsgChanged?.Invoke(s); };
         }
 
-        public string IP { get => _IP;
+
+
+
+
+        public string IP { get => MQTTConfig.IP;
             set
             {
                 Regex reg = new Regex("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$");
                 if (reg.IsMatch(value))
                 {
-                    _IP = value; NotifyPropertyChanged();
+                    MQTTConfig.IP = value; NotifyPropertyChanged();
                 }
             }
         }
-        private string _IP;
 
-        public int Port { get => _Port; 
+        public int Port 
+        {
+            get => MQTTConfig.Port;
             set {
                 Regex reg = new Regex("([0-9]|[1-9]\\d{1,3}|[1-5]\\d{4}|6[0-4]\\d{3}|65[0-4]\\d{2}|655[0-2]\\d|6553[0-5])");
                 if (reg.IsMatch(value.ToString()))
                 {
-                    _Port = value; NotifyPropertyChanged();
+                    MQTTConfig.Port = value; NotifyPropertyChanged();
                 }
+               }
+        }
 
-               } }
-        private int _Port;
+        public string UName { get => MQTTConfig.UName; set { MQTTConfig.UName = value; NotifyPropertyChanged(); } }
 
-        public string UName { get => _uName; set { _uName = value; NotifyPropertyChanged(); } }
-        private string _uName;
+        public string UPwd { get => MQTTConfig.UName; set { MQTTConfig.UName = value; NotifyPropertyChanged(); } }
 
-        public string UPwd { get => _uPwd; set { _uPwd = value; NotifyPropertyChanged(); } }
-        private string _uPwd;
 
         public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; NotifyPropertyChanged(); } }
         private bool _IsConnect;

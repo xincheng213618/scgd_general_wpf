@@ -48,6 +48,5 @@ namespace ColorVision
                 return Title == "" ? null : Title;
             }
         }
-
     }
 }

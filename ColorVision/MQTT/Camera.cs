@@ -72,6 +72,9 @@ namespace ColorVision.MQTT
         public event MQTTCameraFileHandler FileHandler;
 
         public event EventHandler InitCameraSuccess;
+        public event EventHandler OpenCameraSuccess;
+        public event EventHandler CloseCameraSuccess;
+
 
         public CameraId? CameraID { get; set; }
 
@@ -119,7 +122,7 @@ namespace ColorVision.MQTT
                         }
                         else if (json.EventName == "Open")
                         {
-                            MessageBox.Show("Open");
+                            Application.Current.Dispatcher.Invoke(() => OpenCameraSuccess.Invoke(this, new EventArgs()));
                         }
                         else if (json.EventName == "GatData")
                         {
@@ -128,7 +131,7 @@ namespace ColorVision.MQTT
                         }
                         else if (json.EventName == "Close")
                         {
-                            MessageBox.Show("CloseCamera");
+                            Application.Current.Dispatcher.Invoke(() => CloseCameraSuccess.Invoke(this, new EventArgs()));
                         }
                         else if (json.EventName == "Uninit")
                         {
@@ -149,10 +152,8 @@ namespace ColorVision.MQTT
         public CameraType CurrentCameraType { get; set; }
         public bool Init(CameraType CameraType)
         {
-            if (CheckIsRun())
-                return false;
-            CurrentCameraType = CameraType;
 
+            CurrentCameraType = CameraType;
             MsgSend msg = new MsgSend
             {
                 EventName = "Init",
@@ -227,12 +228,12 @@ namespace ColorVision.MQTT
             return true;
         }
          
-        public bool GetData(double expTime,double gain)
+        public bool GetData(double expTime,double gain,string saveFileName = "")
         {
             MsgSend msg = new MsgSend
             {
                 EventName = "GetData",
-                Params = new Dictionary<string, object>() { { "expTime", expTime }, { "gain", gain } }
+                Params = new Dictionary<string, object>() { { "expTime", expTime }, { "gain", gain }, { "saveFileName", saveFileName } }
             };
             PublishAsyncClient(msg);
             return true;
