@@ -289,9 +289,10 @@ namespace ColorVision
             if (DrawingVisual != null)
             {
                 var ContextMenu = new ContextMenu();
-                MenuItem menuItem = new MenuItem() { Header = "上移一层" };
-                MenuItem menuItem1 = new MenuItem() { Header = "下移一层" };
-                MenuItem menuIte2 = new MenuItem() { Header = "删除" };
+                MenuItem menuItem = new MenuItem() { Header = "上移一层(_F)" };
+                MenuItem menuItem1 = new MenuItem() { Header = "下移一层(_B)" };
+                
+                MenuItem menuIte2 = new MenuItem() { Header = "删除(_D)" };
                 menuIte2.Click += (s, e) =>
                 {
                     ImageShow.RemoveVisual(DrawingVisual);
@@ -986,13 +987,21 @@ namespace ColorVision
         private void Button3_Click(object sender, RoutedEventArgs e)
         {
             window = new Window() { Width = 400, Height = 400, Title = "流程返回信息", Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            TextBox textBox = new TextBox() { IsReadOnly = true, TextWrapping = TextWrapping.Wrap, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
-            window.Content = textBox;
+            TextBox textBox = new TextBox() { IsReadOnly = true,Background =Brushes.Black, Foreground =Brushes.White, TextWrapping = TextWrapping.Wrap, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+
+            Grid grid = new Grid(); 
+            grid.Children.Add(textBox);
+
+            grid.Children.Add(new Controls.ProgressRing() {  });
+
+            window.Content = grid;
+            
+
             flowControl.FlowMsg += (s, e) =>
             {
                 if (s is string msg)
                 {
-                    textBox.Text += msg;
+                    textBox.Text = msg + textBox.Text;
                 }
             };
             flowControl.FlowCompleted += FlowControl_FlowCompleted;
@@ -1003,10 +1012,15 @@ namespace ColorVision
         private void FlowControl_FlowCompleted(object? sender, EventArgs e)
         {
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
-            MessageBox.Show("流程执行完成");
+            //MessageBox.Show("流程执行完成");
             window.Close();
         }
 
+        private void MenuItem_Click_10(object sender, RoutedEventArgs e)
+        {
+            WindowLedCheck windowLedCheck = new WindowLedCheck();
+            windowLedCheck.Show();
+        }
     }
 
 

@@ -31,6 +31,7 @@
                     <MenuItem Header="数据判断模板设置(_J)"  Click="MenuItem_Click_5"/>
                     <MenuItem Header="源表模板设置(_V)"  Click="MenuItem_Click_6"/>
                     <MenuItem Header="关注点模板设置(_A)"  Click="MenuItem_Click_9"/>
+                    <MenuItem Header="灯珠检测模板(_L)"  Click="MenuItem_Click_10"/>
 
                 </MenuItem>
                 <MenuItem Header="视图(_V)">
