@@ -138,16 +138,9 @@ namespace ColorVision
                 {
                     if (PropertyGrid2.SelectedObject is CircleAttribute viewModelBase)
                     {
-                        viewModelBase.PropertyChanged -= (s, e) =>
-                        {
-                            PropertyGrid2.Refresh();
-                        };
+
                     }
                     PropertyGrid2.SelectedObject = drawingVisual.Attribute;
-                    drawingVisual.Attribute.PropertyChanged += (s, e) =>
-                    {
-                        PropertyGrid2.Refresh();
-                    };
 
 
                     ListView1.ScrollIntoView(drawingVisual);
@@ -292,14 +285,13 @@ namespace ColorVision
                 {
                     viewModelBase.PropertyChanged -= (s, e) =>
                     {
-                        PropertyGrid2.Refresh();
                     };
                 }
 
                 PropertyGrid2.SelectedObject = drawingVisual.Attribute;
                 drawingVisual.Attribute.PropertyChanged += (s, e) =>
                 {
-                    PropertyGrid2.Refresh();
+
                 };
                 ImageShow.TopVisual(drawingVisual);
             }

@@ -962,7 +962,7 @@ namespace ColorVision
         }
         private FlowEngineLib.STNodeLoader loader;
 
-        public FlowControl flowControl;
+        private FlowControl flowControl;
 
         private void Button2_Click(object sender, RoutedEventArgs e)
         {

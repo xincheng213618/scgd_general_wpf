@@ -28,7 +28,7 @@ namespace ColorVision
 
         private Pen _Pen;
 
-        [Category("DrawingVisualCircle"), DisplayName("笔刷")]
+        [Category("DrawingVisualCircle"), DisplayName("笔刷"), BrowsableAttribute(false)]
         public Pen Pen { get => _Pen; set { _Pen = value; NotifyPropertyChanged(); } }
 
         private Point _Center;
@@ -38,7 +38,7 @@ namespace ColorVision
 
         private double _Radius;
 
-        [Category("DrawingVisualCircle"), DisplayName("弧度")]
+        [Category("DrawingVisualCircle"), DisplayName("半径")]
         public double Radius { get => _Radius; set { _Radius = value; NotifyPropertyChanged(); } }
     }
 
@@ -50,8 +50,7 @@ namespace ColorVision
         public Brush Brush { get => _Brush; set { _Brush = value; NotifyPropertyChanged(); } }
 
         private Pen _Pen;
-
-        [Category("RectangleAttribute"), DisplayName("笔刷")]
+        [Category("DrawingVisualCircle"), DisplayName("笔刷"), BrowsableAttribute(false)]
         public Pen Pen { get => _Pen; set { _Pen = value; NotifyPropertyChanged(); } }
 
         private Rect _Rect;

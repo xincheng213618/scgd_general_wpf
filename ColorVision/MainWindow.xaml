@@ -494,7 +494,7 @@
                                 <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImagezoom_in}" />
                             </Button>
                             <Button  Command="{Binding ZoomDecrease}">
-                                <Image  Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImagezoom_out}" />
+                                <Image  Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImagezoom_out}"/>
                             </Button>
                             <Button Command="{Binding ZoomNone}">
                                 <Image  Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageexpend}"/>
