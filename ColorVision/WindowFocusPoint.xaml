@@ -79,14 +79,52 @@
                     
                 </Border>
 
-                <GroupBox Header="尺寸">
 
-                </GroupBox>
-                <GroupBox Header="发光区">
-                    <StackPanel>
-                        <RadioButton Content=""/>
+                <Border Margin="5" Style="{StaticResource BorderModuleArea}">
+                    <GroupBox Header="尺寸" Margin="5">
+                        <StackPanel Margin="5">
+                            <CheckBox Content="使用实际尺寸" />
+                            <DockPanel  Margin="2">
+                                <TextBlock Text="w:" Width="20"/>
+                                <TextBox  Margin="15,0,30,0"  Text="3" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                            </DockPanel>
+                            <DockPanel Margin="2" >
+                                <TextBlock Text="h:" Width="20"/>
+                                <TextBox  Margin="15,0,30,0"  Text="3" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </GroupBox>
+                </Border>
+
+                <Border Margin="5" Style="{StaticResource BorderModuleArea}">
+                    <GroupBox Header="发光区" Margin="5">
+                        <StackPanel Margin="5">
+                            <UniformGrid Columns="2">
+                                <CheckBox Content="使用发光区" />
+                                <Button Content="计算发光区"/>
+                                <CheckBox Content="显示发光区" />
+                                <DockPanel Margin="2" >
+                                    <TextBlock Text="阈值:" Width="30"/>
+                                    <TextBox   Text="3" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                </DockPanel>
+                            </UniformGrid>
+
+                        </StackPanel>
+                    </GroupBox>
+                </Border>
+                <Border Margin="5" Style="{StaticResource BorderModuleArea}">
+                    <StackPanel  Margin="5">
+                        <UniformGrid Columns="2">
+                            <Button x:Name="button2" Content="绘制行列图像" Click="button2_Click"/>
+                            <Button x:Name="button3" Content="清空" Click="button3_Click"/>
+                            <Button x:Name="button4" Content="生成" Click="button3_Click"/>
+                            <Button x:Name="button5" Content="导出" Click="button3_Click"/>
+
+                        </UniformGrid>
                     </StackPanel>
-                </GroupBox>
+                   
+                </Border>
+
 
 
 
@@ -108,9 +146,9 @@
                 <local:DrawCanvas x:Name="ImageShow" Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_MouseDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
             </local:ZoomboxSub>
             <StackPanel Orientation="Horizontal" VerticalAlignment="Top">
-                <Button x:Name="button1" Content="打开" Click="button1_Click"/>
-                <Button x:Name="button2" Content="绘制行列图像" Click="button2_Click"/>
-                <Button x:Name="button3" Content="清空" Click="button3_Click"/>
+                <Button x:Name="button1" Content="打开图像" Click="button1_Click"/>
+                <Button x:Name="button2" Content="打开视频" Click="button1_Click"/>
+
             </StackPanel>
             <Grid Grid.Row="1" Height="200">
                 <DockPanel Grid.Row="0"  >

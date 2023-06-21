@@ -75,21 +75,21 @@ namespace ColorVision
                 };
 
 
-                ImageShow.VisualsAdd += (s, e) =>
-                {
-                    if (s is Visual visual && visual is DrawingVisualCircle drawingVisualCircle)
-                    {
-                        DrawingVisualCircleLists.Add(drawingVisualCircle);
-                    }
-                };
+                //ImageShow.VisualsAdd += (s, e) =>
+                //{
+                //    if (s is Visual visual && visual is DrawingVisualCircle drawingVisualCircle)
+                //    {
+                //        DrawingVisualCircleLists.Add(drawingVisualCircle);
+                //    }
+                //};
 
-                ImageShow.VisualsRemove += (s, e) =>
-                {
-                    if (s is Visual visual && visual is DrawingVisualCircle drawingVisualCircle)
-                    {
-                        DrawingVisualCircleLists.Remove(drawingVisualCircle);
-                    }
-                };
+                //ImageShow.VisualsRemove += (s, e) =>
+                //{
+                //    if (s is Visual visual && visual is DrawingVisualCircle drawingVisualCircle)
+                //    {
+                //        DrawingVisualCircleLists.Remove(drawingVisualCircle);
+                //    }
+                //};
             }
         }
         private void ImageShow_Initialized(object sender, EventArgs e)
