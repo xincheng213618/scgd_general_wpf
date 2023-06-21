@@ -365,7 +365,8 @@
                                     <UniformGrid >
                                         <Button Content="打开测试图像"  Margin="10,0" Click="Button_Click"/>
                                         <Button Content="绘制测试图形"  Margin="10,0"  Click="Button1_Click"/>
-                                        <Button Content="执行流程引擎测试"  Margin="10,0"  Click="Button2_Click"/>
+                                        <Button Content="加载流程引擎"  Margin="10,0"  Click="Button2_Click"/>
+                                        <Button Content="执行测试"  Margin="10,0"   Click="Button3_Click"/>
 
                                     </UniformGrid>
                                 </StackPanel>

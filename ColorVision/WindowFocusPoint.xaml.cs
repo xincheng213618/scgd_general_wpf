@@ -1,5 +1,6 @@
 ﻿using ColorVision.Extension;
 using ColorVision.MQTT;
+using Gu.Wpf.Geometry;
 using log4net;
 using Microsoft.VisualBasic.Logging;
 using System;
@@ -64,6 +65,31 @@ namespace ColorVision
 
                 ImageShow.Source = new BitmapImage(new Uri(filePath));
                 Zoombox1.ZoomUniform();
+
+                Zoombox1.LayoutUpdated += (s, e) =>
+                {
+                    foreach (var item in DrawingVisualCircleLists)
+                    {
+                        item.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                    }
+                };
+
+
+                ImageShow.VisualsAdd += (s, e) =>
+                {
+                    if (s is Visual visual && visual is DrawingVisualCircle drawingVisualCircle)
+                    {
+                        DrawingVisualCircleLists.Add(drawingVisualCircle);
+                    }
+                };
+
+                ImageShow.VisualsRemove += (s, e) =>
+                {
+                    if (s is Visual visual && visual is DrawingVisualCircle drawingVisualCircle)
+                    {
+                        DrawingVisualCircleLists.Remove(drawingVisualCircle);
+                    }
+                };
             }
         }
         private void ImageShow_Initialized(object sender, EventArgs e)
@@ -81,6 +107,8 @@ namespace ColorVision
                 menuIte2.Click += (s, e) =>
                 {
                     ImageShow.RemoveVisual(DrawingVisual);
+
+
                 };
                 ContextMenu.Items.Add(menuIte2);
                 this.ContextMenu = ContextMenu;
@@ -120,6 +148,10 @@ namespace ColorVision
                     {
                         PropertyGrid2.Refresh();
                     };
+
+
+                    ListView1.ScrollIntoView(drawingVisual);
+                    ListView1.SelectedIndex = DrawingVisualCircleLists.IndexOf(drawingVisual);
                 }
             }
         }
@@ -180,18 +212,21 @@ namespace ColorVision
                 double StepRow = (bitmapImage.PixelHeight - startD - startU) / (rows-1);
                 double StepCol= (bitmapImage.PixelWidth - startL - startR) / (cols-1);
 
+
+
+                int start = DrawingVisualCircleLists.Count;
                 for (int i = 0; i < rows; i++)
                 {
                     for (int j = 0; j < cols; j++)
                     {
                         if (RadioButtonCircle.IsChecked==true)
                         {
-                            DrawingVisualCircle drawingVisualCircle = new DrawingVisualCircle();
+                            DrawingVisualCircle drawingVisualCircle = new DrawingVisualCircleWord();
                             drawingVisualCircle.Attribute.Center = new Point(startL + StepCol * j, startU + StepRow * i);
                             drawingVisualCircle.Attribute.Radius = 100;
                             drawingVisualCircle.Attribute.Brush = Brushes.Transparent;
                             drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red, 10);
-                            drawingVisualCircle.Attribute.ID = i * cols + j +1;
+                            drawingVisualCircle.Attribute.ID = start + i * cols + j +1;
                             drawingVisualCircle.Render();
                             ImageShow.AddVisual(drawingVisualCircle);
                             DrawingVisualCircleLists.Add(drawingVisualCircle);
@@ -226,6 +261,7 @@ namespace ColorVision
             {
                 if (ComboBoxBorderType.SelectedItem is KeyValuePair<string, BorderType> KeyValue && KeyValue.Value is BorderType communicateType)
                 {
+
                 }
             };
             WindowState = WindowState.Maximized;

@@ -68,8 +68,6 @@ namespace ColorVision
             app = new App();
             app.InitializeComponent();
             app.Run();
-
-
         }
 
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
@@ -78,9 +76,6 @@ namespace ColorVision
 
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         private static extern ushort GlobalAddAtom(string lpString);
-
-
-
 
         private App()
         {

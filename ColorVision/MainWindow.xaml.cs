@@ -1,17 +1,11 @@
-﻿using ColorVision.Config;
-using ColorVision.Extension;
+﻿using ColorVision.Extension;
 using ColorVision.Info;
 using ColorVision.MQTT;
 using ColorVision.MVVM;
-using ColorVision.Serial;
 using ColorVision.Template;
-using ColorVision.Util;
-using log4net;
-using OpenCvSharp.Internal;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -20,8 +14,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Windows.Forms.Integration;
-using System.Windows.Ink;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -57,10 +49,13 @@ namespace ColorVision
 
         private async void Window_Initialized(object sender, EventArgs e)
         {
-            if (MainWindowConfig.IsExist)
+
+            
+
+            if (WindowConfig.IsExist)
             {
-                this.Icon = MainWindowConfig.Icon ?? this.Icon;
-                this.Title = MainWindowConfig.Title ?? this.Title;
+                this.Icon = WindowConfig.Icon ?? this.Icon;
+                this.Title = WindowConfig.Title ?? this.Title;
             }
             await Task.Delay(100);
             ToolBar1.Visibility = Visibility.Collapsed;
@@ -130,6 +125,22 @@ namespace ColorVision
                 DrawGridImage(DrawingVisualGrid, bitmapImage);
                 Zoombox1.ZoomUniform();
                 ToolBar1.Visibility = Visibility.Visible;
+
+                ImageShow.VisualsAdd += (s, e) =>
+                {
+                    if (s is Visual visual && visual is DrawingVisualCircle drawingVisualCircle)
+                    {
+                        DrawingVisualCircleLists.Add(drawingVisualCircle);
+                    }
+                };
+
+                ImageShow.VisualsRemove += (s, e) =>
+                {
+                    if (s is Visual visual && visual is DrawingVisualCircle drawingVisualCircle)
+                    {
+                        DrawingVisualCircleLists.Remove(drawingVisualCircle);
+                    }
+                };
             }
         }
 
@@ -150,8 +161,6 @@ namespace ColorVision
                     drawingVisualCircle.Attribute.ID = i * 50 + j;
                     drawingVisualCircle.Render();
                     ImageShow.AddVisual(drawingVisualCircle);
-                    DrawingVisualCircleLists.Add(drawingVisualCircle);
-
                 }
             }
             for (int i = 10; i < 20; i++)
@@ -290,11 +299,11 @@ namespace ColorVision
                 ContextMenu.Items.Add(menuItem);
                 ContextMenu.Items.Add(menuItem1);
                 ContextMenu.Items.Add(menuIte2);
-                this.ContextMenu = ContextMenu;
+                ImageShow.ContextMenu = ContextMenu;
             }
             else
             {
-                this.ContextMenu = null;
+                ImageShow.ContextMenu = null;
             }
 
         }
@@ -520,7 +529,6 @@ namespace ColorVision
                         PropertyGrid2.Refresh();
                     };
                     DrawCircleCache.AutoAttributeChanged = true;
-                    DrawingVisualCircleLists.Add(DrawCircleCache);
 
                     ListView1.ScrollIntoView(DrawCircleCache);
                     ListView1.SelectedIndex = DrawingVisualCircleLists.IndexOf(DrawCircleCache);
@@ -952,25 +960,53 @@ namespace ColorVision
                 menuItem.IsChecked = !menuItem.IsChecked;
             }
         }
+        private FlowEngineLib.STNodeLoader loader;
+
+        public FlowControl flowControl;
 
         private void Button2_Click(object sender, RoutedEventArgs e)
         {
+            string iPStr = "192.168.3.225";
+            int port = 1883;
+            string uName = "";
+            string uPwd = "";
+            FlowEngineLib.MQTTHelper.SetDefaultCfg(iPStr, port, uName, uPwd);
+
+
             System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
             ofd.Filter = "*.stn|*.stn";
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
+            loader = new FlowEngineLib.STNodeLoader("FlowEngineLib.dll");
+            loader.Load(ofd.FileName);
 
-
-            FlowEngine.WindowFlowEngine windowFlowEngine = new FlowEngine.WindowFlowEngine(ofd.FileName);
-            windowFlowEngine.Owner = this;
-            windowFlowEngine.Show();
-
-
-
-
-
-
+            flowControl = new FlowControl(MQTTControl.GetInstance(), loader.GetStartNodeName());
         }
+        Window window;
+        private void Button3_Click(object sender, RoutedEventArgs e)
+        {
+            window = new Window() { Width = 400, Height = 400, Title = "流程返回信息", Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            TextBox textBox = new TextBox() { IsReadOnly = true, TextWrapping = TextWrapping.Wrap, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+            window.Content = textBox;
+            flowControl.FlowMsg += (s, e) =>
+            {
+                if (s is string msg)
+                {
+                    textBox.Text += msg;
+                }
+            };
+            flowControl.FlowCompleted += FlowControl_FlowCompleted;
+            flowControl.Start();
+            window.Show();
+        }
+
+        private void FlowControl_FlowCompleted(object? sender, EventArgs e)
+        {
+            flowControl.FlowCompleted -= FlowControl_FlowCompleted;
+            MessageBox.Show("流程执行完成");
+            window.Close();
+        }
+
     }
 
 

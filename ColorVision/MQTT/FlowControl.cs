@@ -60,13 +60,18 @@ namespace ColorVision.MQTT
 
         public void Start()
         {
-            string json = JsonConvert.SerializeObject("!", Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-            Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, json, false));
+            string svrName = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            FlowEngineLib.CVBaseDataFlow baseEvent = new FlowEngineLib.CVBaseDataFlow(svrName, "Start", "CV202306211100006");
+
+            string Msg = JsonConvert.SerializeObject(baseEvent);
+            Application.Current.Dispatcher.Invoke(() => FlowMsg?.Invoke(Msg, new EventArgs()));
+            Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, Msg, false));
         }
 
 
 
         public event EventHandler FlowCompleted;
+        public event EventHandler FlowMsg;
 
 
 
@@ -75,6 +80,7 @@ namespace ColorVision.MQTT
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {
                 string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
+                Application.Current.Dispatcher.Invoke(() => FlowMsg?.Invoke(Msg, new EventArgs()));
                 try
                 {
                     FlowControlData json = JsonConvert.DeserializeObject<FlowControlData>(Msg);
@@ -84,9 +90,8 @@ namespace ColorVision.MQTT
 
                     if (FlowControlData.EventName == "Completed")
                     {
-                        Application.Current.Dispatcher.Invoke(() => FlowCompleted.Invoke(this, new EventArgs()));
+                        Application.Current.Dispatcher.Invoke(() => FlowCompleted?.Invoke(FlowControlData, new EventArgs()));
                     }
-
                     return Task.CompletedTask;
                 }
                 catch (Exception ex)

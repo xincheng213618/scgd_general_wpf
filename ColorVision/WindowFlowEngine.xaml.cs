@@ -27,7 +27,6 @@ namespace FlowEngine
             OpenFlow(FileName);
         }
 
-        private FlowEngineLib.MQTTHelper _MQTTHelper = new FlowEngineLib.MQTTHelper();
 
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -53,28 +52,13 @@ namespace FlowEngine
             TextBoxsn.Text = softNumerical.GetNumericalOrder();
 
             string iPStr = "192.168.3.225";
-            string portStr = "1883";
+            int port = 1883;
             string uName = "";
             string uPwd = "";
 
-            int port = Convert.ToInt32(portStr);
             FlowEngineLib.MQTTHelper.SetDefaultCfg(iPStr, port, uName, uPwd);
-
-            Task task = _MQTTHelper.CreateMQTTClientAndStart(iPStr, port, uName, uPwd, ShowLog);
         }
 
-        private void STNodeEditor1_TextChanged(object? sender, EventArgs e)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// 处理逻辑-展示Log
-        /// </summary>
-        /// <param name="obj"></param>
-        private void ShowLog(FlowEngineLib.ResultData_MQTT resultData_MQTT)
-        {
-
-        }
 
         private void StNodeEditor1_NodeAdded(object sender, STNodeEditorEventArgs e)
         {
@@ -131,7 +115,6 @@ namespace FlowEngine
             {
                 if (button.Content.ToString() == "开始流程")
                 {
-                    
                     svrName = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
                     FlowEngineLib.CVBaseDataFlow baseEvent = new FlowEngineLib.CVBaseDataFlow(svrName, "Start", TextBoxsn.Text);
                     await MQTTControl.GetInstance().PublishAsyncClient("SYS.CMD." + TextBox1.Text, JsonConvert.SerializeObject(baseEvent), false);

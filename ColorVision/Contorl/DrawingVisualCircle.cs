@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -61,10 +62,7 @@ namespace ColorVision
 
     public partial class DrawAttributeBase : ViewModelBase
     {
-        private Point _Start;
-        public virtual Point Start { get => _Start; set { _Start = value; NotifyPropertyChanged(); } }
 
-        public bool IsCheck { get; set; } = true;
     }
 
     public class DrawingVisualCircle : DrawingVisual, INotifyPropertyChanged
@@ -112,12 +110,28 @@ namespace ColorVision
 
 
 
-        public void Render()
+        public virtual void Render()
         {
             using DrawingContext dc = RenderOpen();
             dc.DrawEllipse(Attribute.Brush, Attribute.Pen, Attribute.Center, Attribute.Radius, Attribute.Radius);
         }
     }
+
+    public class DrawingVisualCircleWord: DrawingVisualCircle
+    {
+        public override void Render()
+        {
+            Brush brush = Brushes.Red;
+            FontFamily fontFamily = new FontFamily("Arial");
+            double fontSize = Attribute.Pen.Thickness * 10;
+            using DrawingContext dc = RenderOpen();
+            FormattedText formattedText = new FormattedText("Point_"+ID.ToString(), CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+            dc.DrawText(formattedText,new Point(Attribute.Center.X - Attribute.Radius, Attribute.Center.Y - fontSize));
+            dc.DrawEllipse(Attribute.Brush, Attribute.Pen, Attribute.Center, Attribute.Radius, Attribute.Radius);
+        }
+    }
+
+
 
     public class PolygonAttribute : DrawAttributeBase
     {

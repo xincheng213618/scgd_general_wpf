@@ -21,6 +21,16 @@ namespace ColorVision
         public bool ContainsVisual(Visual visual) => visuals.Contains(visual);
 
 
+
+
+        public event EventHandler? VisualsChanged;
+
+        public event EventHandler? VisualsAdd;
+        public event EventHandler? VisualsRemove;
+
+
+
+
         public void Clear()
         {
             foreach (var item in visuals)
@@ -38,6 +48,7 @@ namespace ColorVision
 
             AddVisualChild(visual);
             AddLogicalChild(visual);
+            VisualsAdd?.Invoke(visual, EventArgs.Empty);
         }
 
         public void RemoveVisual(Visual? visual)
@@ -47,6 +58,7 @@ namespace ColorVision
 
             RemoveVisualChild(visual);
             RemoveLogicalChild(visual);
+            VisualsRemove?.Invoke(visual, EventArgs.Empty);
         }
         public void TopVisual(Visual visual)
         {
