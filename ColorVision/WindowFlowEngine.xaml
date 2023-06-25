@@ -24,7 +24,7 @@
                     <Button Content="新建" Click="Button_Click_New"  Width="60" />
                     <Button Content="保存" Click="Button_Click_Save" Width="60" />
                 </UniformGrid>
-                <Grid  x:Name="OperateGrid" Grid.Column="1">
+                <Grid  x:Name="OperateGrid" Grid.Column="1"  Visibility="Collapsed">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="200"/>
@@ -36,7 +36,6 @@
                     <DockPanel Grid.Column="0"  Width="300" HorizontalAlignment="Right">
                         <Button Content="生成流水号" Click="Button_Click_3" Width="80"/>
                         <TextBox  x:Name="TextBoxsn" Margin="5,0" BorderThickness="0,0,0,1"   Text="" Width="130" VerticalAlignment="Center"  />
-                        <TextBox  x:Name="TextBox1" BorderThickness="0,0,0,1"  Text="1" HorizontalAlignment="Stretch" VerticalAlignment="Center"  />
                     </DockPanel>
                 </Grid>
 
@@ -50,8 +49,6 @@
                 <ColumnDefinition Width="200"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-
-            
             <Grid >
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>

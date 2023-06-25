@@ -181,68 +181,8 @@ namespace ColorVision
 
             if (ImageShow.Source is BitmapImage bitmapImage)
             {
-                if (!double.TryParse(TextBoxUp.Text, out double startU))
-                    startU = 0;
-
-                if (!double.TryParse(TextBoxDown.Text, out double startD))
-                    startD = 0;
-
-                if (!double.TryParse(TextBoxLeft.Text, out double startL))
-                    startL = 0;
-                if (!double.TryParse(TextBoxRight.Text, out double startR))
-                    startR = 0;
-
-
-                if (ComboBoxBorderType.SelectedItem is KeyValuePair<BorderType, string> KeyValue && KeyValue.Key== BorderType.Relative)
-                {
-                    startU = bitmapImage.PixelHeight * startU / 100;
-                    startD = bitmapImage.PixelHeight * startD / 100;
-
-                    startL = bitmapImage.PixelWidth * startL / 100;
-                    startR = bitmapImage.PixelWidth * startR / 100;
-                }
-
-                double StepRow = (bitmapImage.PixelHeight - startD - startU) / (rows-1);
-                double StepCol= (bitmapImage.PixelWidth - startL - startR) / (cols-1);
-
-
-
-                int start = DrawingVisualCircleLists.Count;
-                for (int i = 0; i < rows; i++)
-                {
-                    for (int j = 0; j < cols; j++)
-                    {
-                        if (RadioButtonCircle.IsChecked==true)
-                        {
-                            DrawingVisualCircle drawingVisualCircle = new DrawingVisualCircleWord();
-                            drawingVisualCircle.Attribute.Center = new Point(startL + StepCol * j, startU + StepRow * i);
-                            drawingVisualCircle.Attribute.Radius = 100;
-                            drawingVisualCircle.Attribute.Brush = Brushes.Transparent;
-                            drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red, 10);
-                            drawingVisualCircle.Attribute.ID = start + i * cols + j +1;
-                            drawingVisualCircle.Render();
-                            ImageShow.AddVisual(drawingVisualCircle);
-                            DrawingVisualCircleLists.Add(drawingVisualCircle);
-                        }
-                        else
-                        {
-                            DrawingVisualRectangle drawingVisualCircle = new  DrawingVisualRectangle();
-                            drawingVisualCircle.Attribute.Rect = new Rect(startL + StepCol * j, startU + StepRow * i,100,100);
-                            drawingVisualCircle.Attribute.Brush = Brushes.Transparent;
-                            drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red, 10);
-                            drawingVisualCircle.Render();
-                            ImageShow.AddVisual(drawingVisualCircle);
-                        }
-
-
-                    }
-                }
 
             }
-
-
-
-
         }
 
         private void Window_Initialized(object sender, EventArgs e)

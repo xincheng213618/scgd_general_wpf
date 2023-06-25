@@ -783,10 +783,6 @@ namespace ColorVision
             ComboxCalibrationTemplate.SelectedIndex = 0;
         }
 
-
-
-
-
         private void MQTTCamera_Init_Click(object sender, RoutedEventArgs e)
         {
             if(sender is Button button)

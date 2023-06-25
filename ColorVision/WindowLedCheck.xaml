@@ -52,24 +52,6 @@
                         </GroupBox>
                         <GroupBox Header="边框" Margin="5">
                             <StackPanel Margin="5">
-                                <UniformGrid Columns="2" Margin="0,5">
-                                    <DockPanel Margin="2">
-                                        <TextBlock VerticalAlignment="Center"  Text="上:" Width="20"/>
-                                        <TextBox  x:Name="TextBoxUp" Height="16" Text="10" Margin="5,0" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="2"  >
-                                        <TextBlock  VerticalAlignment="Center"  Text="左:" Width="20"/>
-                                        <TextBox  x:Name="TextBoxLeft" Height="16" Text="10" Margin="5,0" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="2"  >
-                                        <TextBlock  VerticalAlignment="Center"  Text="下:" Width="20"/>
-                                        <TextBox  x:Name="TextBoxDown" Height="16" Text="10" Margin="5,0" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="2"  >
-                                        <TextBlock VerticalAlignment="Center"  Text="右:" Width="20"/>
-                                        <TextBox  x:Name="TextBoxRight" Height="16" Text="10" Margin="5,0" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
-                                    </DockPanel>
-                                </UniformGrid>
                                 <ComboBox x:Name="ComboBoxBorderType"   SelectedValuePath="Key"  DisplayMemberPath="Value" Height="20" Margin="0,0,6,0"/>
                             </StackPanel>
 

@@ -7,69 +7,85 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800" Initialized="Window_Initialized" Closed="Window_Closed">
     <Grid>
-        <StackPanel>
-            <StackPanel Orientation="Horizontal">
-                <Button Content="打开电机" HorizontalAlignment="Left"  Click="Button_Click"/>
-                <Button Content="获取电机状态" HorizontalAlignment="Left"  Click="Button1_Click"/>
-                <Button Content="清零相对位置" HorizontalAlignment="Left"  Click="Button4_Click"/>
-            </StackPanel>
-            <DockPanel >
-                <TextBlock Text="电机位移速度："/>
-                <TextBlock DockPanel.Dock="Right" Text="RPM"/>
-                <TextBox  x:Name="TextboxMotorSpeed" Text="30"/>
-            </DockPanel>
-            <DockPanel >
-                <TextBlock Text="电机位移间距："/>
-                <TextBlock DockPanel.Dock="Right" Text="角度"/>
-                <TextBox  x:Name="TextboxMotorLen" Text="360"/>
-            </DockPanel>
-            <StackPanel Orientation="Horizontal">
-                <Button Content="电机正转" HorizontalAlignment="Left"  Click="Button2_Click"/>
-                <Button Content="电机负转" HorizontalAlignment="Left"  Click="Button3_Click"/>
-            </StackPanel>
-            <DockPanel >
-                <TextBlock Text="电机位移间距："/>
-                <TextBlock DockPanel.Dock="Right" Text="num"/>
-                <TextBox x:Name="TextboxMotorLenght" Text="360"/>
-            </DockPanel>
-            <StackPanel Orientation="Horizontal">
-                <Button Content="电机正转" HorizontalAlignment="Left"  Click="Button5_Click"/>
-                <Button Content="电机负转" HorizontalAlignment="Left"  Click="Button6_Click"/>
-            </StackPanel>
-            <DockPanel >
-                <TextBlock Text="绝对位置："/>
-                <TextBlock DockPanel.Dock="Right" Text="num"/>
-                <TextBox x:Name="TextboxMotorAb" Text="360"/>
-            </DockPanel>
-            <Button Content="移动到" HorizontalAlignment="Left"  Click="Button7_Click"/>
-            <Button Content="返回原点" HorizontalAlignment="Left"  Click="Button8_Click"/>
-            <Button Content="校0" HorizontalAlignment="Left"  Click="Button9_Click"/>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="300"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <StackPanel Grid.Column="0">
+            <GroupBox Header="位移台控制" Margin="2">
+                <StackPanel Margin="5">
+                    <UniformGrid Columns="5" Margin="0,5">
+                        <Button Content="打开" HorizontalAlignment="Left"  Click="Button_Click"/>
+                        <Button Content="状态" HorizontalAlignment="Left"  Click="Button1_Click"/>
+                        <Button Content="清零" HorizontalAlignment="Left"  Click="Button4_Click"/>
+                        <Button Content="原点" HorizontalAlignment="Left"  Click="Button8_Click"/>
+                        <Button Content="校0" HorizontalAlignment="Left"  Click="Button9_Click"/>
+                    </UniformGrid>
+                    <DockPanel Margin="0,2" >
+                        <TextBlock Text="位移速度：" VerticalAlignment="Center"/>
+                        <TextBlock DockPanel.Dock="Right" Block.TextAlignment="Center" Text="RPM" Width="40"/>
+
+                        <TextBox  x:Name="TextboxMotorSpeed" Text="30"  HorizontalContentAlignment="Center" BorderThickness="0,0,0,1"/>
+                    </DockPanel>
+                    <DockPanel  Margin="0,2" >
+                        <TextBlock Text="位移间距：" VerticalAlignment="Center"/>
+                        <TextBlock DockPanel.Dock="Right" Block.TextAlignment="Center" Text="°" Width="40"/>
+
+                        <TextBox  x:Name="TextboxMotorLen" Text="360"  HorizontalContentAlignment="Center" BorderThickness="0,0,0,1"/>
+                    </DockPanel>
+                    <UniformGrid Columns="2" Margin="0,5,0,5" >
+                        <Button Content="负转" Margin="15,0" Click="Button3_Click"/>
+                        <Button Content="正转"  Margin="15,0"  Click="Button2_Click"/>
+                    </UniformGrid>
+                    <DockPanel  Margin="0,5" >
+                        <TextBlock Text="位移间距：" VerticalAlignment="Center"/>
+                        <TextBlock DockPanel.Dock="Right" Block.TextAlignment="Center" Text="" Width="40"/>
+
+                        <TextBox x:Name="TextboxMotorLenght" Text="360"  HorizontalContentAlignment="Center" BorderThickness="0,0,0,1"/>
+                    </DockPanel>
+                    <UniformGrid Columns="2" Margin="0,2,0,5" >
+                        <Button Content="负转" Margin="15,0" Click="Button6_Click"/>
+                        <Button Content="正转"  Margin="15,0"  Click="Button5_Click"/>
+                    </UniformGrid>
+                    <DockPanel Margin="0,5" >
+                        <Button Content="移动到" HorizontalAlignment="Left"  Click="Button7_Click" Margin="5,0"/>
+                        <TextBlock Text="位置：" VerticalAlignment="Center"/>
+                        <TextBlock DockPanel.Dock="Right" Block.TextAlignment="Center" Text="" Width="40"/>
+                        <TextBox x:Name="TextboxMotorAb" Text="3600"  HorizontalContentAlignment="Center" BorderThickness="0,0,0,1"/>
+                    </DockPanel>
 
 
-            <StackPanel x:Name="StackPanelMotorState"  d:DataContext="{d:DesignInstance Type=local:MotorState}">
-                <DockPanel>
-                    <TextBlock Text="地址："/>
-                    <TextBlock Text="{Binding Address}"/>
-                </DockPanel>
+                    <GroupBox Header="电机状态" Margin="0,5">
+                        <StackPanel x:Name="StackPanelMotorState"  d:DataContext="{d:DesignInstance Type=local:MotorState}" Margin="5">
+                            <DockPanel>
+                                <TextBlock Text="地址："  Width="70"/>
+                                <TextBlock Text="{Binding Address}"/>
+                            </DockPanel>
 
-                <DockPanel>
-                    <TextBlock Text="电机状态："/>
-                    <TextBlock Text="{Binding  State}"/>
-                </DockPanel>
+                            <DockPanel>
+                                <TextBlock Text="电机状态：" Width="70"/>
+                                <TextBlock Text="{Binding  State}"/>
+                            </DockPanel>
 
-                <DockPanel>
-                    <TextBlock Text="绝对位置："/>
-                    <TextBlock Text="{Binding  AbsolutePosition}"/>
-                </DockPanel>
-                <DockPanel>
-                    <TextBlock Text="相对位置："/>
-                    <TextBlock Text="{Binding  RelativePosition}"/>
-                </DockPanel>
-                <DockPanel>
-                    <TextBlock Text="驱动频率："/>
-                    <TextBlock Text="{Binding  DriveFrequency}"/>
-                </DockPanel>
-            </StackPanel>
+                            <DockPanel>
+                                <TextBlock Text="绝对位置：" Width="70"/>
+                                <TextBlock Text="{Binding  AbsolutePosition}"/>
+                            </DockPanel>
+                            <DockPanel>
+                                <TextBlock Text="相对位置：" Width="70"/>
+                                <TextBlock Text="{Binding  RelativePosition}"/>
+                            </DockPanel>
+                            <DockPanel>
+                                <TextBlock Text="驱动频率：" Width="70"/>
+                                <TextBlock Text="{Binding  DriveFrequency}"/>
+                            </DockPanel>
+                        </StackPanel>
+
+                    </GroupBox>
+
+                    <Button Content="异步运动测试" HorizontalAlignment="Left"  Click="Button11_Click"/>
+                </StackPanel>
+            </GroupBox>
 
         </StackPanel>
 

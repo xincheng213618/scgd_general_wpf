@@ -125,6 +125,16 @@ namespace ColorVision.Serial
             await MotorControl.CalibrationZero();
         }
 
-
+        private async void Button11_Click(object sender, RoutedEventArgs e)
+        {
+            int speed;
+            if (!int.TryParse(TextboxMotorSpeed.Text, out speed))
+                speed = 30;
+            int length;
+            if (!int.TryParse(TextboxMotorLenght.Text, out length))
+                length = 360;
+            bool a = await MotorControl.MoveAsync(length, speed, 2000);
+            MessageBox.Show("Test:" + a.ToString());
+        }
     }
 }

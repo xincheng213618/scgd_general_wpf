@@ -203,6 +203,7 @@ namespace ColorVision.Serial
 
             TaskCompletionSource<bool> _tcs = new TaskCompletionSource<bool>();
             MotorStopHandler += MotorStop;
+            Move(length, spe);
             var completedTask = await Task.WhenAny(_tcs.Task, Task.Delay(DelayTime));
             if (completedTask == _tcs.Task)
             {

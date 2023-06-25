@@ -86,6 +86,7 @@ namespace FlowEngine
             STNodeEditor1.Nodes.Clear();
             STNodeEditor1.LoadCanvas(flowName);
             svrName = "";
+           
             flowControl = new FlowControl(MQTTControl.GetInstance(), "1");
             flowControl.FlowCompleted += (s, e) =>
             {
@@ -117,7 +118,7 @@ namespace FlowEngine
                 {
                     svrName = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
                     FlowEngineLib.CVBaseDataFlow baseEvent = new FlowEngineLib.CVBaseDataFlow(svrName, "Start", TextBoxsn.Text);
-                    await MQTTControl.GetInstance().PublishAsyncClient("SYS.CMD." + TextBox1.Text, JsonConvert.SerializeObject(baseEvent), false);
+                    await MQTTControl.GetInstance().PublishAsyncClient("SYS.CMD.1", JsonConvert.SerializeObject(baseEvent), false);
                     
                     button.Content = "停止流程";
                     ButtonFlowPause.IsEnabled = true;
@@ -127,7 +128,7 @@ namespace FlowEngine
                 else
                 {
                     CVBaseDataFlow baseEvent = new CVBaseDataFlow(svrName, "Stop", TextBoxsn.Text);
-                    await MQTTControl.GetInstance().PublishAsyncClient("SYS.CMD." + TextBox1.Text, JsonConvert.SerializeObject(baseEvent), false);
+                    await MQTTControl.GetInstance().PublishAsyncClient("SYS.CMD.1", JsonConvert.SerializeObject(baseEvent), false);
                     button.Content = "开始流程";
                     ButtonFlowPause.IsEnabled = false;
                     ButtonFlowPause.Visibility = Visibility.Collapsed;
@@ -145,21 +146,16 @@ namespace FlowEngine
                 if (button.Content.ToString() == "暂停流程")
                 {
                     CVBaseDataFlow baseEvent = new CVBaseDataFlow(svrName, "Pause", TextBoxsn.Text);
-                    await MQTTControl.GetInstance().PublishAsyncClient("SYS.CMD." + TextBox1.Text, JsonConvert.SerializeObject(baseEvent), false);
+                    await MQTTControl.GetInstance().PublishAsyncClient("SYS.CMD.1", JsonConvert.SerializeObject(baseEvent), false);
                     button.Content = "恢复流程";
                 }
                 else
                 {
                     CVBaseDataFlow baseEvent = new CVBaseDataFlow(svrName, "Start", TextBoxsn.Text);
-                    await MQTTControl.GetInstance().PublishAsyncClient("SYS.CMD." + TextBox1.Text, JsonConvert.SerializeObject(baseEvent), false);
+                    await MQTTControl.GetInstance().PublishAsyncClient("SYS.CMD.1", JsonConvert.SerializeObject(baseEvent), false);
                     button.Content = "暂停流程";
                 }
             }
-        }
-
-        private void Button_Click_6(object sender, RoutedEventArgs e)
-        {
-
         }
 
     }
