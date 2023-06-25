@@ -422,7 +422,7 @@
                                 <DataTemplate x:Key="DrawingVisualCircleTemplate" DataType="{x:Type local:DrawingVisualCircle}" >
                                     <StackPanel  Orientation="Horizontal">
                                         <TextBlock Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}" Text="{Binding Attribute.ID}" HorizontalAlignment="Center"/>
-                                        <CheckBox Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}" IsChecked="True"  Checked="CheckBox_Click" Tag="{Binding .}"/>
+                                        <CheckBox Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}" IsChecked="True"  Click="CheckBox_Click" Tag="{Binding .}"/>
                                         <TextBlock Width="{Binding ElementName=GridListHeader3,Path=ActualWidth}" HorizontalAlignment="Center">
                                                     <Run Text="("/>
                                                     <Run Text="{Binding Path = CenterX,StringFormat={}{0:F0}}"/>
@@ -436,7 +436,7 @@
                                 <DataTemplate x:Key="DrawingVisualRectangleTemplate"  DataType="{x:Type local:DrawingVisualRectangle}">
                                     <StackPanel  Orientation="Horizontal">
                                         <TextBlock Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}" Text="{Binding Attribute.ID}" HorizontalAlignment="Center"/>
-                                        <CheckBox Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}" IsChecked="True" Checked="CheckBox_Click" Tag="{Binding .}"/>
+                                        <CheckBox Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}" IsChecked="True" Click="CheckBox_Click" Tag="{Binding .}"/>
                                         <TextBlock  Width="{Binding ElementName=GridListHeader4,Path=ActualWidth}" Text="{Binding Attribute.Rect}" />
                                     </StackPanel>
                                 </DataTemplate>
