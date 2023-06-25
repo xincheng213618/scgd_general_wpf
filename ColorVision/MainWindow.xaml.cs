@@ -961,22 +961,22 @@ namespace ColorVision
         Window window;
         private void Button3_Click(object sender, RoutedEventArgs e)
         {
-            window = new Window() { Width = 400, Height = 400, Title = "流程返回信息", Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            window = new Window() { Width = 400, Height = 400, Title = "流程返回信息", Owner = this,ResizeMode =ResizeMode.NoResize , WindowStyle =WindowStyle.None, WindowStartupLocation = WindowStartupLocation.CenterOwner };
             TextBox textBox = new TextBox() { IsReadOnly = true,Background =Brushes.Black, Foreground =Brushes.White, TextWrapping = TextWrapping.Wrap, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
 
             Grid grid = new Grid(); 
             grid.Children.Add(textBox);
 
-            grid.Children.Add(new Controls.ProgressRing() {  });
+            grid.Children.Add(new Controls.ProgressRing() { Margin =  new Thickness(100,100,100,100)});
 
             window.Content = grid;
-            
 
-            flowControl.FlowMsg += (s, e) =>
+            textBox.Text = "TTL:" + "0";
+            flowControl.FlowData += (s, e) =>
             {
-                if (s is string msg)
+                if (s is FlowControlData msg)
                 {
-                    textBox.Text = msg + textBox.Text;
+                    textBox.Text = "TTL:" + msg.Params.TTL.ToString();
                 }
             };
             flowControl.FlowCompleted += FlowControl_FlowCompleted;

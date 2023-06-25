@@ -72,6 +72,7 @@ namespace ColorVision.MQTT
 
         public event EventHandler FlowCompleted;
         public event EventHandler FlowMsg;
+        public event EventHandler FlowData;
 
 
 
@@ -87,7 +88,7 @@ namespace ColorVision.MQTT
                     if (json == null)
                         return Task.CompletedTask;
                     FlowControlData = json;
-
+                    Application.Current.Dispatcher.Invoke(() => FlowData?.Invoke(FlowControlData, new EventArgs()));
                     if (FlowControlData.EventName == "Completed")
                     {
                         Application.Current.Dispatcher.Invoke(() => FlowCompleted?.Invoke(FlowControlData, new EventArgs()));
