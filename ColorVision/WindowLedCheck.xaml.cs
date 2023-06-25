@@ -29,21 +29,14 @@ namespace ColorVision
     public partial class WindowLedCheck : Window
     {
 
-        public enum BorderType
-        {
-            [Description("绝对值")]
-            Absolute,
-            [Description("相对值")]
-            Relative
-        }
         public ObservableCollection<DrawingVisualCircle> DrawingVisualCircleLists { get; set; } = new ObservableCollection<DrawingVisualCircle>();
-
 
         public WindowLedCheck()
         {
             InitializeComponent();
             ListView1.ItemsSource = DrawingVisualCircleLists;
         }
+        private bool IsOpenImage;
 
         private void button1_Click(object sender, RoutedEventArgs e)
         {
@@ -79,7 +72,7 @@ namespace ColorVision
                 //{
                 //    if (s is Visual visual && visual is DrawingVisualCircle drawingVisualCircle)
                 //    {
-                //        DrawingVisualCircleLists.Add(drawingVisualCircle);
+                //        DrawingVisualLists.Add(drawingVisualCircle);
                 //    }
                 //};
 
@@ -87,9 +80,11 @@ namespace ColorVision
                 //{
                 //    if (s is Visual visual && visual is DrawingVisualCircle drawingVisualCircle)
                 //    {
-                //        DrawingVisualCircleLists.Remove(drawingVisualCircle);
+                //        DrawingVisualLists.Remove(drawingVisualCircle);
                 //    }
                 //};
+
+                IsOpenImage = true;
             }
         }
         private void ImageShow_Initialized(object sender, EventArgs e)
@@ -166,37 +161,34 @@ namespace ColorVision
 
         private void button2_Click(object sender, RoutedEventArgs e)
         {
-            if (!int.TryParse(tbX.Text, out int cols))
-                cols = 0;
-
-            if (!int.TryParse(tbY.Text, out int rows))
-                rows = 0;
-
-
-            if (rows < 1 || cols < 1)
+            if (IsOpenImage)
             {
-                MessageBox.Show("点阵数的行列不能小于1");
-                return;
+                for (int i = 0; i < 10; i++)
+                {
+                    for (int j = 0; j < 10; j++)
+                    {
+                        DrawingVisualCircle drawingVisualCircle = new DrawingVisualCircle();
+                        drawingVisualCircle.Attribute.Center = new Point(i * 50, j * 50);
+                        drawingVisualCircle.Attribute.Radius = 20;
+                        drawingVisualCircle.Attribute.Brush = Brushes.Transparent;
+                        drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red, 10);
+                        drawingVisualCircle.Attribute.ID = i * 50 + j;
+                        drawingVisualCircle.Render();
+                        ImageShow.AddVisual(drawingVisualCircle);
+                    }
+                }
+                PropertyGrid2.SelectedObject = DrawingVisualCircleLists[0].Attribute;
+            }
+            else
+            {
+                MessageBox.Show("请先打开图像或者视频");
             }
 
-            if (ImageShow.Source is BitmapImage bitmapImage)
-            {
-
-            }
         }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            ComboBoxBorderType.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>()
-                                                                  select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
-            ComboBoxBorderType.SelectedIndex = 0;
-            ComboBoxBorderType.SelectionChanged += (s, e) =>
-            {
-                if (ComboBoxBorderType.SelectedItem is KeyValuePair<string, BorderType> KeyValue && KeyValue.Value is BorderType communicateType)
-                {
 
-                }
-            };
             WindowState = WindowState.Maximized;
         }
 

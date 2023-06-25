@@ -79,7 +79,7 @@ namespace ColorVision
                 //{
                 //    if (s is Visual visual && visual is DrawingVisualCircle drawingVisualCircle)
                 //    {
-                //        DrawingVisualCircleLists.Add(drawingVisualCircle);
+                //        DrawingVisualLists.Add(drawingVisualCircle);
                 //    }
                 //};
 
@@ -87,7 +87,7 @@ namespace ColorVision
                 //{
                 //    if (s is Visual visual && visual is DrawingVisualCircle drawingVisualCircle)
                 //    {
-                //        DrawingVisualCircleLists.Remove(drawingVisualCircle);
+                //        DrawingVisualLists.Remove(drawingVisualCircle);
                 //    }
                 //};
             }

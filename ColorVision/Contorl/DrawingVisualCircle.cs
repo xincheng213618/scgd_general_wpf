@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1711
+﻿#pragma warning disable CA1711,CA2211
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -15,12 +15,31 @@ using ColorVision.MVVM;
 namespace ColorVision
 {
 
-    public class CircleAttribute : DrawAttributeBase
+    public class DrawingVisualBase : DrawingVisual, INotifyPropertyChanged
+    {
+        public event PropertyChangedEventHandler? PropertyChanged;
+        public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
+        public static int No = 1;
+    }
+
+    public class DrawAttributeBase : ViewModelBase
     {
         private int _ID;
-        [Category("DrawingVisualCircle"), DisplayName("序号")]
+        [Category("DrawingVisual"), DisplayName("序号")]
         public int ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
+    }
 
+
+
+    public interface IDrawingVisual
+    {
+        public abstract DrawAttributeBase GetAttribute();
+    }
+
+
+    public class CircleAttribute : DrawAttributeBase
+    {
         private Brush _Brush;
 
         [Category("DrawingVisualCircle"), DisplayName("颜色")]
@@ -59,21 +78,15 @@ namespace ColorVision
         public Rect Rect { get => _Rect; set { _Rect = value; NotifyPropertyChanged(); } }
     }
 
-    public partial class DrawAttributeBase : ViewModelBase
+
+
+    public class DrawingVisualCircle : DrawingVisualBase,IDrawingVisual
     {
-
-    }
-
-    public class DrawingVisualCircle : DrawingVisual, INotifyPropertyChanged
-    {
-        public event PropertyChangedEventHandler? PropertyChanged;
-        public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-
         public CircleAttribute Attribute { get; set; }
+        public DrawAttributeBase GetAttribute() => Attribute;
 
         public bool AutoAttributeChanged { get; set; } = true;
 
-        private static int No;
         public DrawingVisualCircle()
         {
             Attribute = new CircleAttribute();
@@ -114,6 +127,8 @@ namespace ColorVision
             using DrawingContext dc = RenderOpen();
             dc.DrawEllipse(Attribute.Brush, Attribute.Pen, Attribute.Center, Attribute.Radius, Attribute.Radius);
         }
+
+
     }
 
     public class DrawingVisualCircleWord: DrawingVisualCircle
@@ -148,9 +163,14 @@ namespace ColorVision
         public  List<Point> Points { get => _Points; set { _Points = value; NotifyPropertyChanged(); } }
     }
 
-    public class DrawingVisualPolygon: DrawingVisual
+
+
+    public class DrawingVisualPolygon: DrawingVisualBase, IDrawingVisual
     {
         public PolygonAttribute Attribute { get; set; }
+
+        public DrawAttributeBase GetAttribute() => Attribute;
+
         public bool AutoAttributeChanged { get; set; } = true;
         
         public bool IsDrawing { get; set; } = true;
@@ -158,6 +178,7 @@ namespace ColorVision
         public DrawingVisualPolygon()
         {
             Attribute = new PolygonAttribute();
+            Attribute.ID = No++;
             Attribute.Brush = Brushes.Transparent;
             Attribute.Pen = new Pen(Brushes.Red, 2);
             Attribute.Points = new List<Point>();
@@ -167,6 +188,7 @@ namespace ColorVision
                     Render();
             };
         }
+        public int ID { get => Attribute.ID; set => Attribute.ID = value; }
 
         public void Render()
         {
@@ -190,15 +212,18 @@ namespace ColorVision
 
 
 
-    public class DrawingVisualRectangle : DrawingVisual
+    public class DrawingVisualRectangle : DrawingVisualBase, IDrawingVisual
     {
         public RectangleAttribute Attribute { get; set; }
+        public DrawAttributeBase GetAttribute() => Attribute;
+
 
         public bool AutoAttributeChanged { get; set; } = true;
 
         public DrawingVisualRectangle()
         {
             Attribute = new RectangleAttribute();
+            Attribute.ID = No++;
             Attribute.Brush = Brushes.Transparent;
             Attribute.Pen = new Pen(Brushes.Red, 1);
             Attribute.Rect = new Rect(50, 50, 100, 100);
@@ -207,6 +232,9 @@ namespace ColorVision
                 if (AutoAttributeChanged) Render();
             };
         }
+        public int ID { get => Attribute.ID; set => Attribute.ID = value; }
+
+
 
         public void Render()
         {

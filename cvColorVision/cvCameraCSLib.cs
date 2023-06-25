@@ -340,6 +340,8 @@ namespace cvColorVision
         CANON_SERIAL,
         NED_SERIAL,
     };
+
+
     public struct AutoFocusCfg
     {
         public double forwardparam { set; get; }        //步径摆动范围

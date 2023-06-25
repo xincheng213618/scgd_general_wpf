@@ -39,6 +39,20 @@ namespace ColorVision
         [GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
         public static void Main(string[] args)
         {
+
+            bool IsCheck =true;
+            if (args.Count()>0)
+            {
+                for (int i = 0; i < args.Count(); i++)
+                {
+                    if (args[i] == "-r")
+                    {
+                        IsCheck = false;
+                    }
+                }
+            }
+
+
             if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
             {
                 var fileAppender = (log4net.Appender.FileAppender)LogManager.GetRepository().GetAppenders().FirstOrDefault(a => a is log4net.Appender.FileAppender);
@@ -50,7 +64,7 @@ namespace ColorVision
             }
 
             Mutex mutex = new Mutex(true, "ElectronicNeedleTherapySystem", out bool ret);
-            if (!ret)
+            if (IsCheck &&!ret)
             {
                 //System.Windows.MessageBox.Show("程序已经运行！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
                 IntPtr hWnd = CheckAppRunning.Check("ColorVision");
@@ -63,6 +77,8 @@ namespace ColorVision
                 log.Info("程序已经打开");
                 Environment.Exit(0);
             }
+
+
             log.Info("程序打开");
             App app;
             app = new App();

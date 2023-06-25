@@ -62,7 +62,7 @@ namespace ColorVision
 
             ToolBarTop = new ToolBarTop(Zoombox1, ImageShow);
             ToolBar1.DataContext = ToolBarTop;
-            ListView1.ItemsSource = DrawingVisualCircleLists;
+            ListView1.ItemsSource = DrawingVisualLists;
             StatusBarItem1.DataContext = PerformanceSetting;
             StatusBarItem2.DataContext = PerformanceSetting;
             MQTTControl = MQTTControl.GetInstance(); ;
@@ -128,23 +128,32 @@ namespace ColorVision
 
                 ImageShow.VisualsAdd += (s, e) =>
                 {
-                    if (s is Visual visual && visual is DrawingVisualCircle drawingVisualCircle)
+                    if (s is Visual visual)
                     {
-                        DrawingVisualCircleLists.Add(drawingVisualCircle);
+                        if (visual is DrawingVisualCircle drawingVisualCircle)
+                        {
+                            DrawingVisualLists.Add(drawingVisualCircle);
+                        }
+                        else if (visual is DrawingVisualRectangle drawingVisualRectangle)
+                        {
+                            DrawingVisualLists.Add(drawingVisualRectangle);
+                        }
                     }
+
+
                 };
 
                 ImageShow.VisualsRemove += (s, e) =>
                 {
                     if (s is Visual visual && visual is DrawingVisualCircle drawingVisualCircle)
                     {
-                        DrawingVisualCircleLists.Remove(drawingVisualCircle);
+                        DrawingVisualLists.Remove(drawingVisualCircle);
                     }
                 };
             }
         }
 
-        public ObservableCollection<DrawingVisualCircle> DrawingVisualCircleLists { get; set; } = new ObservableCollection<DrawingVisualCircle>();
+        public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
 
 
         private void Button1_Click(object sender, RoutedEventArgs e)
@@ -163,18 +172,8 @@ namespace ColorVision
                     ImageShow.AddVisual(drawingVisualCircle);
                 }
             }
-            for (int i = 10; i < 20; i++)
-            {
-                for (int j = 0; j < 10; j++)
-                {
-                    DrawingVisualRectangle drawingVisualCircle = new DrawingVisualRectangle();
-                    drawingVisualCircle.Attribute.Rect = new Rect(i * 50, j * 50, 10, 10);
-                    drawingVisualCircle.Render();
-                    ImageShow.AddVisual(drawingVisualCircle);
-                }
-            }
-            PropertyGrid2.SelectedObject = DrawingVisualCircleLists[0].Attribute;
-            DrawingVisualCircleLists[0].Attribute.PropertyChanged += (s, e) =>
+            PropertyGrid2.SelectedObject = DrawingVisualLists[0].GetAttribute();
+            DrawingVisualLists[0].GetAttribute().PropertyChanged += (s, e) =>
             {
                 PropertyGrid2.Refresh();
             };
@@ -370,7 +369,7 @@ namespace ColorVision
                         };
 
                         ListView1.ScrollIntoView(drawingVisual);
-                        ListView1.SelectedIndex = DrawingVisualCircleLists.IndexOf(drawingVisual);
+                        ListView1.SelectedIndex = DrawingVisualLists.IndexOf(drawingVisual);
 
                         if (ToolBarTop.Activate == true)
                             SelectDCircle = drawingVisual;
@@ -436,7 +435,7 @@ namespace ColorVision
                     else if (ToolBarTop.DrawCircle)
                     {
                         double Radius = Math.Sqrt((Math.Pow(point.X - MouseDownP.X, 2) + Math.Pow(point.Y - MouseDownP.Y, 2)));
-                        DrawCircleCache.Attribute.ID = DrawingVisualCircleLists.Count;
+                        DrawCircleCache.Attribute.ID = DrawingVisualLists.Count;
                         DrawCircleCache.Attribute.Radius = Radius;
                         DrawCircleCache.Render();
                     }
@@ -532,7 +531,7 @@ namespace ColorVision
                     DrawCircleCache.AutoAttributeChanged = true;
 
                     ListView1.ScrollIntoView(DrawCircleCache);
-                    ListView1.SelectedIndex = DrawingVisualCircleLists.IndexOf(DrawCircleCache);
+                    ListView1.SelectedIndex = DrawingVisualLists.IndexOf(DrawCircleCache);
 
                 }
                 else if (ToolBarTop.DrawRect)
@@ -686,7 +685,7 @@ namespace ColorVision
 
         private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (sender is ListView listView && listView.SelectedIndex > -1 && DrawingVisualCircleLists[listView.SelectedIndex] is DrawingVisualCircle drawingVisual)
+            if (sender is ListView listView && listView.SelectedIndex > -1 && DrawingVisualLists[listView.SelectedIndex] is IDrawingVisual drawingVisual && DrawingVisualLists[listView.SelectedIndex] is Visual visual)
             {
                 if (PropertyGrid2.SelectedObject is CircleAttribute viewModelBase)
                 {
@@ -696,12 +695,12 @@ namespace ColorVision
                     };
                 }
 
-                PropertyGrid2.SelectedObject = drawingVisual.Attribute;
-                drawingVisual.Attribute.PropertyChanged += (s, e) =>
+                PropertyGrid2.SelectedObject = drawingVisual.GetAttribute();
+                drawingVisual.GetAttribute().PropertyChanged += (s, e) =>
                 {
                     PropertyGrid2.Refresh();
                 };
-                ImageShow.TopVisual(drawingVisual);
+                ImageShow.TopVisual(visual);
             }
         }
 

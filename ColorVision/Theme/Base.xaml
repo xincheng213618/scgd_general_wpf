@@ -12,6 +12,7 @@
     <converter:BooleanToVisibilityReConverter x:Key="bool2VisibilityConverter1"/>
 
 
+
     <Style TargetType="{x:Type TextBox}">
         <EventSetter  Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown"  >
             
