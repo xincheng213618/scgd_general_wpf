@@ -48,16 +48,16 @@ namespace ColorVision
         }
 
         private async void Window_Initialized(object sender, EventArgs e)
-        {
-
-            
-
+        {     
             if (WindowConfig.IsExist)
             {
                 this.Icon = WindowConfig.Icon ?? this.Icon;
                 this.Title = WindowConfig.Title ?? this.Title;
             }
-            await Task.Delay(100);
+            Application.Current.MainWindow = this;
+            TemplateControl = TemplateControl.GetInstance();
+
+            await Task.Delay(30);
             ToolBar1.Visibility = Visibility.Collapsed;
 
             ToolBarTop = new ToolBarTop(Zoombox1, ImageShow);
@@ -65,9 +65,7 @@ namespace ColorVision
             ListView1.ItemsSource = DrawingVisualLists;
             StatusBarItem1.DataContext = PerformanceSetting;
             StatusBarItem2.DataContext = PerformanceSetting;
-            MQTTControl = MQTTControl.GetInstance(); ;
-            Application.Current.MainWindow = this;
-
+            MQTTControl = MQTTControl.GetInstance();
         }
 
         const uint WM_USER = 0x0400; // 用户自定义消息起始值
@@ -805,65 +803,7 @@ namespace ColorVision
         }
 
 
-        private void MenuItem_Click_2(object sender, RoutedEventArgs e)
-        {
-            WindowTemplate windowTemplate = new WindowTemplate(WindowTemplateType.AoiParam);
-            windowTemplate.Title = "AOI参数设置";
-            TemplateAbb(windowTemplate, TemplateControl.GetInstance().AoiParams);
-        }
 
-        private void MenuItem_Click_3(object sender, RoutedEventArgs e)
-        {
-            TemplateControl templateControl = TemplateControl.GetInstance();
-            Calibration calibration = new Calibration(templateControl.CalibrationParams[0].Value);
-            WindowTemplate windowTemplate = new WindowTemplate(WindowTemplateType.Calibration, calibration);
-            windowTemplate.Title = "校正参数设置";
-            TemplateAbb(windowTemplate, TemplateControl.GetInstance().CalibrationParams);
-
-        }
-
-        private void MenuItem_Click_4(object sender, RoutedEventArgs e)
-        {
-            TemplateControl templateControl = TemplateControl.GetInstance();
-            PG calibration = new PG(templateControl.PGParams[0].Value);
-            WindowTemplate windowTemplate = new WindowTemplate(WindowTemplateType.PGParam, calibration);
-            windowTemplate.Title = "PG通讯设置";
-            TemplateAbb(windowTemplate, TemplateControl.GetInstance().PGParams);
-        }
-        private void MenuItem_Click_5(object sender, RoutedEventArgs e)
-        {
-            WindowTemplate windowTemplate = new WindowTemplate(WindowTemplateType.LedReuslt);
-            windowTemplate.Title = "数据判断模板设置";
-            TemplateAbb(windowTemplate, TemplateControl.GetInstance().LedReusltParams);
-        }
-        private void MenuItem_Click_6(object sender, RoutedEventArgs e)
-        {
-            WindowTemplate windowTemplate = new WindowTemplate(WindowTemplateType.SxParm);
-            windowTemplate.Title = "源表模板设置";
-            TemplateAbb(windowTemplate, TemplateControl.GetInstance().SxParms);
-        }
-
-        private void TemplateAbb<T>(WindowTemplate windowTemplate, ObservableCollection<KeyValuePair<string, T>> keyValuePairs)
-        {
-            windowTemplate.Owner = this;
-            int id = 1;
-            foreach (var item in keyValuePairs)
-            {
-                ListConfig listConfig = new ListConfig();
-                listConfig.ID = id++;
-                listConfig.Name = item.Key;
-                listConfig.Value = item.Value;
-                windowTemplate.ListConfigs.Add(listConfig);
-            }
-            windowTemplate.ShowDialog();
-        }
-
-        private void MenuItem_Click_7(object sender, RoutedEventArgs e)
-        {
-
-            new WindowORM().Show();
-
-        }
 
 
 
@@ -902,27 +842,9 @@ namespace ColorVision
             ComboxFilterWheelChannel.SelectedIndex = 0;
         }
 
-        private void MenuItem_Click8(object sender, RoutedEventArgs e)
-        {
-            new WindowFourColorCalibration() { Owner = this }.Show();
-        }
 
-        private void MenuItem_Click_8(object sender, RoutedEventArgs e)
-        {
-            Environment.Exit(0);
-        }
 
-        private void MenuItem_Click_9(object sender, RoutedEventArgs e)
-        {
-            new WindowFocusPoint() { Owner = this }.Show();
-        }
-        private void MenuItem9_Click(object sender, RoutedEventArgs e)
-        {
-            FlowEngine.WindowFlowEngine windowFlowEngine;
-            windowFlowEngine = new FlowEngine.WindowFlowEngine();
-            windowFlowEngine.Owner = this;
-            windowFlowEngine.Show();
-        }
+
 
         private void Zoombox1_Initialized(object sender, EventArgs e)
         {

@@ -23,17 +23,16 @@
                 <MenuItem Header="文件(_F)">
                     <MenuItem Header="打开(_O)"/>
                     <MenuItem Header="工程(_F)"/>
-                    <MenuItem Header="退出(_X)" InputGestureText="Alt + F4" Click="MenuItem_Click_8"/>
+                    <MenuItem Header="退出(_X)" InputGestureText="Alt + F4" Click="MenuItem_Exit"/>
                 </MenuItem>
                 <MenuItem Header="模板(_T)">
-                    <MenuItem Header="_AOI参数模板设置"  Click="MenuItem_Click_2"/>
-                    <MenuItem Header="校正模板设置(_C)"  Click="MenuItem_Click_3"/>
-                    <MenuItem Header="_PG通讯模板设置"  Click="MenuItem_Click_4"/>
-                    <MenuItem Header="数据判断模板设置(_J)"  Click="MenuItem_Click_5"/>
-                    <MenuItem Header="源表模板设置(_V)"  Click="MenuItem_Click_6"/>
+                    <MenuItem Header="_AOI参数模板设置" Tag="AOI参数设置" Click="MenuItem_Template"/>
+                    <MenuItem Header="校正模板设置(_C)" Tag="校正参数设置"  Click="MenuItem_Template"/>
+                    <MenuItem Header="_PG通讯模板设置" Tag="PG通讯设置"  Click="MenuItem_Template"/>
+                    <MenuItem Header="数据判断模板设置(_J)" Tag="数据判断模板设置"  Click="MenuItem_Template"/>
+                    <MenuItem Header="源表模板设置(_V)"  Tag="源表模板设置" Click="MenuItem_Template"/>
                     <MenuItem Header="关注点模板设置(_A)"  Click="MenuItem_Click_9"/>
                     <MenuItem Header="灯珠检测模板(_L)"  Click="MenuItem_Click_10"/>
-
                 </MenuItem>
                 <MenuItem Header="视图(_V)">
                     <MenuItem Header="MQTT日志(_L)" Click="MenuItem_Click"/>

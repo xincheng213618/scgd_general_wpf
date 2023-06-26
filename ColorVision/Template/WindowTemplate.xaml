@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:ColorVision.Template"
         DataContext="{Binding RelativeSource={RelativeSource Self}}"
         xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
+        xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         mc:Ignorable="d"
         Title="WindowTemplate" Height="500" Width="600"  MinWidth="600" WindowStartupLocation="CenterOwner" Initialized="Window_Initialized">
     <Grid Margin="5">
@@ -71,9 +72,12 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <Grid Grid.Row="0"  x:Name="GridProperty">
-                <WindowsFormsHost>
+                <!--<WindowsFormsHost>
                     <winf:PropertyGrid x:Name="PropertyGrid1"/>
-                </WindowsFormsHost>
+                </WindowsFormsHost>-->
+                <xctk:PropertyGrid   x:Name="PropertyGrid1" >
+
+                </xctk:PropertyGrid>
             </Grid>
 
             <StackPanel Grid.Row="1" Margin="0">
