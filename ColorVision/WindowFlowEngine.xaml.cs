@@ -48,7 +48,7 @@ namespace FlowEngine
                     }
                 }
             };
-            softNumerical = new HslCommunication.BasicFramework.SoftNumericalOrder("CV", "yyyyMMddHH", 5, Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory) + "\\softNumerical.txt");
+            softNumerical = new HslCommunication.BasicFramework.SoftNumericalOrder("CV", "yyyyMMddHH", 5, Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\softNumerical.txt");
             TextBoxsn.Text = softNumerical.GetNumericalOrder();
 
             string iPStr = "192.168.3.225";

@@ -21,13 +21,13 @@
                     <TextBox  x:Name="TextBoxDescribe"  BorderThickness="0,0,0,1" Margin="3,4,2,1"/>
                 </GroupBox>
                 <GroupBox Header="2.曝光调整" Margin="5">
-                    <UniformGrid Columns="2" Margin="5">
-                        <DockPanel Margin="0,2" >
+                    <UniformGrid Columns="2" Margin="5" >
+                        <DockPanel Margin="0,4" >
                             <TextBlock Text="增益" Width="30" />
                             <TextBlock DockPanel.Dock="Right" Text="dB" />
                             <TextBox BorderThickness="0,0,0,1" Margin="4,0"/>
                         </DockPanel>
-                        <Button Content="计算自动曝光" Height="20" Margin="5,0"/>
+                        <Button Content="计算自动曝光" Height="20" Margin="5,2"/>
                         <TextBlock Height="20" HorizontalAlignment="Center"  Text="时间"/>
                         <TextBlock Height="20" HorizontalAlignment="Center" Text="饱和度"/>
                         <DockPanel Margin="0,2" >

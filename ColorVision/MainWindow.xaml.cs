@@ -28,6 +28,7 @@ namespace ColorVision
     public partial class MainWindow : Window
     {
         public ImageInfo ImageInfo { get; set; } = new ImageInfo();
+
         public PerformanceSetting PerformanceSetting { get; set; } = new PerformanceSetting();
 
         public ToolBarTop ToolBarTop { get; set; }
@@ -40,12 +41,6 @@ namespace ColorVision
             this.Closed += (s, e) => Environment.Exit(0);
         }
 
-        protected override void OnSourceInitialized(EventArgs e)
-        {
-            base.OnSourceInitialized(e);
-            IntPtr handle = new WindowInteropHelper(this).Handle;
-            HwndSource.FromHwnd(handle).AddHook(new HwndSourceHook(WndProc));
-        }
 
         private async void Window_Initialized(object sender, EventArgs e)
         {     
@@ -68,38 +63,10 @@ namespace ColorVision
             MQTTControl = MQTTControl.GetInstance();
         }
 
-        const uint WM_USER = 0x0400; // 用户自定义消息起始值
 
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        private static extern int GlobalGetAtomName(ushort nAtom, char[] retVal, int size);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern short GlobalDeleteAtom(short nAtom);
-
-        IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
-        {
-            if (msg == WM_USER + 1)
-            {
-                try
-                {
-                    char[] chars = new char[1024];
-                    int size = GlobalGetAtomName((ushort)wParam, chars, chars.Length);
-                    if (size > 0)
-                    {
-
-                        string result = new string(chars, 0, size);
-                        MessageBox.Show(result);
-                        GlobalDeleteAtom((short)wParam);
-                    }
-                }
-                catch (Exception ex) { MessageBox.Show(ex.Message); }
-            }
-            return IntPtr.Zero;
-        }
 
 
         private DrawingVisual ImageRuler = new DrawingVisual();
-
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
@@ -644,9 +611,6 @@ namespace ColorVision
                 }
 
             }
-
-
-
         }
 
         private void ToolBar1_Loaded(object sender, RoutedEventArgs e)
@@ -681,8 +645,6 @@ namespace ColorVision
                 ImageShow.TopVisual(visual);
             }
         }
-
-
 
         private MQTTCamera MQTTCamera { get; set; }
         private void StackPanelCamera_Initialized(object sender, EventArgs e)
@@ -788,8 +750,6 @@ namespace ColorVision
             {
                 MQTTCamera.Open(ComboxCameraID.Text.ToString(), takeImageMode, int.Parse(ComboxCameraImageBpp.Text));
             }
-
-
         }
 
         private void SendDemo3_Click(object sender, RoutedEventArgs e)
@@ -913,11 +873,7 @@ namespace ColorVision
             window.Close();
         }
 
-        private void MenuItem_Click_10(object sender, RoutedEventArgs e)
-        {
-            WindowLedCheck windowLedCheck = new WindowLedCheck();
-            windowLedCheck.Show();
-        }
+
     }
 
 
