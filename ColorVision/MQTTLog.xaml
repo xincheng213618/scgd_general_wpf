@@ -6,6 +6,8 @@
         xmlns:local="clr-namespace:ColorVision"
         mc:Ignorable="d"
         Title="MQTTLog" Height="450" Width="800">
+    <Window.Resources>
+    </Window.Resources>
     <Grid Background="#F9F9F9">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
@@ -58,7 +60,7 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="订阅列表" TextWrapping="WrapWithOverflow"  Width="15"/>
-                <ListView x:Name="TopicListView" Grid.Column="1" BorderThickness="0"  SelectionChanged="TopicListView_SelectionChanged">
+                <ListView x:Name="TopicListView"  Background="#F3F3F3" Grid.Column="1" BorderThickness="0"  SelectionChanged="TopicListView_SelectionChanged">
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding}"   />

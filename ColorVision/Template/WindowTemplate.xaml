@@ -14,9 +14,13 @@
             <ColumnDefinition Width="2*"/>
             <ColumnDefinition Width="3*"/>
         </Grid.ColumnDefinitions>
-        <GroupBox  Header="模板"  BorderThickness="2" Margin="10,5">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <GroupBox x:Name="TemplateGrid"  Grid.Row="0" Grid.Column="0" Grid.RowSpan="2" Header="模板"  BorderThickness="2" Margin="10,5">
             <DockPanel Grid.Row="0"  >
-                <Grid DockPanel.Dock="Top">
+                <Grid DockPanel.Dock="Top" Margin="0,5,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="20*"/>
                         <ColumnDefinition Width="50*"/>
@@ -66,36 +70,25 @@
 
         </GroupBox>
 
-        <Grid Grid.Column="1">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-            <Grid Grid.Row="0"  x:Name="GridProperty">
-                <!--<WindowsFormsHost>
-                    <winf:PropertyGrid x:Name="PropertyGrid1"/>
-                </WindowsFormsHost>-->
-                <xctk:PropertyGrid   x:Name="PropertyGrid1" >
+        <Grid Grid.Row="0" Grid.Column="1"  x:Name="GridProperty" Margin="0,15,0,5">
+            <xctk:PropertyGrid   x:Name="PropertyGrid1" >
 
-                </xctk:PropertyGrid>
-            </Grid>
-
-            <StackPanel Grid.Row="1" Margin="0">
-                <DockPanel>
-                    <Label Content="模板名称："/>
-                    <TextBox x:Name="TextBox1" Margin="3"/>
-                </DockPanel>
-                <UniformGrid Columns="3" Margin="0,5"  Width="300"  HorizontalAlignment="Right">
-                    <Button Content="新建模板" Width="80"  Click="Button_Click"/>
-                    <Button Content="删除模板" Width="80"   Click="Button_Click_1"/>
-                    <Button Content="保存" Width="80"   Click="Button_Click_2" />
-                </UniformGrid>
-            </StackPanel>
-                
-                
+            </xctk:PropertyGrid>
         </Grid>
 
-        
-       
+        <StackPanel x:Name="CreateGrid"  Grid.Column="1" Grid.Row="1" Width="330" HorizontalAlignment="Center">
+            <DockPanel>
+                <Label Content="模板名称："/>
+                <TextBox x:Name="TextBox1" Margin="3"/>
+            </DockPanel>
+            <UniformGrid Columns="3" Margin="0,5"  Width="300"  HorizontalAlignment="Center">
+                <Button Content="新建模板" Width="80"  Click="Button_Click"/>
+                <Button Content="删除模板" Width="80"   Click="Button_Click_1"/>
+                <Button Content="保存" Width="80"   Click="Button_Click_2" />
+            </UniformGrid>
+        </StackPanel>
+
+
+
     </Grid>
 </Window>

@@ -26,13 +26,15 @@
                     <MenuItem Header="退出(_X)" InputGestureText="Alt + F4" Click="MenuItem_Exit"/>
                 </MenuItem>
                 <MenuItem Header="模板(_T)">
-                    <MenuItem Header="_AOI参数模板设置" Tag="AOI参数设置" Click="MenuItem_Template"/>
-                    <MenuItem Header="校正模板设置(_C)" Tag="校正参数设置"  Click="MenuItem_Template"/>
-                    <MenuItem Header="_PG通讯模板设置" Tag="PG通讯设置"  Click="MenuItem_Template"/>
-                    <MenuItem Header="数据判断模板设置(_J)" Tag="数据判断模板设置"  Click="MenuItem_Template"/>
-                    <MenuItem Header="源表模板设置(_V)"  Tag="源表模板设置" Click="MenuItem_Template"/>
-                    <MenuItem Header="关注点模板设置(_A)"  Click="MenuItem_Click_9"/>
-                    <MenuItem Header="灯珠检测模板(_L)"  Click="MenuItem_Click_10"/>
+                    <MenuItem Header="_AOI参数模板设置" Tag="AoiParam" Click="MenuItem_Template"/>
+                    <MenuItem Header="校正模板设置(_C)" Tag="Calibration"  Click="MenuItem_Template"/>
+                    <MenuItem Header="_PG通讯模板设置" Tag="PGParam"  Click="MenuItem_Template"/>
+                    <MenuItem Header="数据判断模板设置(_J)" Tag="LedReusltParams"  Click="MenuItem_Template"/>
+                    <MenuItem Header="源表模板设置(_V)"  Tag="SxParms" Click="MenuItem_Template"/>
+                    <MenuItem Header="关注点模板设置(_A)" Tag="FocusParm" Click="MenuItem_Template"/>
+                    <MenuItem Header="灯珠检测模板(_L)"  Tag="LedParam"  Click="MenuItem_Template"/>
+                    <MenuItem Header="流程引擎模板(_F)" Tag="FlowParam"  Click="MenuItem_Template"/>
+
                 </MenuItem>
                 <MenuItem Header="视图(_V)">
                     <MenuItem Header="MQTT日志(_L)" Click="MenuItem_Click"/>

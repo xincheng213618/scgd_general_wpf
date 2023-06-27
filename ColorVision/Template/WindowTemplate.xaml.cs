@@ -39,7 +39,10 @@ namespace ColorVision.Template
         Calibration,
         PGParam,
         LedReuslt,
-        SxParm
+        SxParm,
+        FocusParm,
+        LedParam,
+        FlowParam
     }
 
 
@@ -51,20 +54,46 @@ namespace ColorVision.Template
     /// </summary>
     public partial class WindowTemplate : Window
     {
-        WindowTemplateType WindowTemplateType { get; set; }
+        WindowTemplateType TemplateType { get; set; }
 
         public WindowTemplate(WindowTemplateType windowTemplateType)
         {
-            WindowTemplateType = windowTemplateType;
+            TemplateType = windowTemplateType;
             InitializeComponent();
+
+
+            switch (TemplateType)
+            {
+                case WindowTemplateType.LedParam:
+                case WindowTemplateType.FlowParam:
+                case WindowTemplateType.FocusParm:
+
+                    GridProperty.Visibility = Visibility.Collapsed;
+                    Grid.SetColumnSpan(TemplateGrid, 2);
+                    Grid.SetRowSpan(TemplateGrid, 1);
+
+                    Grid.SetColumnSpan(CreateGrid, 2);
+                    Grid.SetColumn(CreateGrid, 0);
+
+
+                    this.MinWidth = 400;
+                    this.Width = 400;
+                    break;
+                default:
+                    break;
+            }
+
+
         }
         public UserControl  UserControl { get; set; }
         public WindowTemplate(WindowTemplateType windowTemplateType,UserControl userControl)
         {
-            WindowTemplateType = windowTemplateType;
+            TemplateType = windowTemplateType;
             InitializeComponent();
 
             GridProperty.Children.Clear();
+
+
             UserControl = userControl;
             GridProperty.Children.Add(UserControl);
         }
@@ -72,7 +101,32 @@ namespace ColorVision.Template
         public new void Show()
         {
             base.Show();
-            ListView1.SelectedIndex = 0;
+            switch (TemplateType)
+            {
+                case WindowTemplateType.LedParam:
+                case WindowTemplateType.FocusParm:
+                case WindowTemplateType.FlowParam:
+                    break;
+                default:
+                    ListView1.SelectedIndex = 0;
+                    break;
+            }
+        }
+
+        public new void ShowDialog()
+        {
+            switch (TemplateType)
+            {
+                case WindowTemplateType.LedParam:
+                case WindowTemplateType.FocusParm:
+                case WindowTemplateType.FlowParam:
+                    break;
+                default:
+                    ListView1.SelectedIndex = 0;
+                    break;
+            }
+            base.ShowDialog();
+
         }
 
 
@@ -87,7 +141,7 @@ namespace ColorVision.Template
         {
             if (sender is ListView listView && listView.SelectedIndex > -1)
             {
-                switch (WindowTemplateType )
+                switch (TemplateType)
                 {
                     case WindowTemplateType.AoiParam:
                     case WindowTemplateType.LedReuslt:
@@ -108,6 +162,15 @@ namespace ColorVision.Template
                             pg.PGParam = pGparam;
                         }
                         break;
+                    case WindowTemplateType.FocusParm:
+                       new WindowFocusPoint() { Owner = Application.Current.MainWindow}.Show();
+                        break;
+                    case WindowTemplateType.LedParam:
+                        new WindowLedCheck() { Owner = Application.Current.MainWindow }.Show();
+                        break;
+                    case WindowTemplateType.FlowParam:
+                        new FlowEngine.WindowFlowEngine() { Owner = Application.Current.MainWindow }.Show();
+                        break;
                 }
             }
         }
@@ -116,7 +179,7 @@ namespace ColorVision.Template
         {
             if (!TextBox1.Text.IsNullOrEmpty())
             {
-                switch (WindowTemplateType)
+                switch (TemplateType)
                 {
                     case WindowTemplateType.AoiParam:
                         CreateNewTemplate(TemplateControl.GetInstance().AoiParams, new AoiParam());
@@ -133,6 +196,16 @@ namespace ColorVision.Template
                     case WindowTemplateType.SxParm:
                         CreateNewTemplate(TemplateControl.GetInstance().SxParms, new SxParm());
                         break;
+                    case WindowTemplateType.FocusParm:
+                        CreateNewTemplate(TemplateControl.GetInstance().FocusParms, new FocusParam());
+                        break;
+                    case WindowTemplateType.LedParam:
+                        CreateNewTemplate(TemplateControl.GetInstance().LedParams, new LedParam());
+                        break;
+                    case WindowTemplateType.FlowParam:
+                        CreateNewTemplate(TemplateControl.GetInstance().FlowParams, new FlowParam());
+                        break;
+
                 }
                 TextBox1.Text =string.Empty;
             }
@@ -154,7 +227,7 @@ namespace ColorVision.Template
             {
                 if (MessageBox.Show($"是否删除模板{ListView1.SelectedIndex+1},删除后无法恢复!", Application.Current.MainWindow.Title, MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK)
                 {
-                    switch (WindowTemplateType)
+                    switch (TemplateType)
                     {
                         case WindowTemplateType.AoiParam:
                             TemplateControl.GetInstance().AoiParams.RemoveAt(ListView1.SelectedIndex);
@@ -171,6 +244,12 @@ namespace ColorVision.Template
                         case WindowTemplateType.SxParm:
                             TemplateControl.GetInstance().SxParms.RemoveAt(ListView1.SelectedIndex);
                             break;
+                        case WindowTemplateType.FocusParm:
+                            TemplateControl.GetInstance().FocusParms.RemoveAt(ListView1.SelectedIndex);
+                            break;
+                        case WindowTemplateType.FlowParam:
+                            TemplateControl.GetInstance().FlowParams.RemoveAt(ListView1.SelectedIndex);
+                            break;
                     }
                     ListConfigs.RemoveAt(ListView1.SelectedIndex);
                 }
@@ -184,7 +263,7 @@ namespace ColorVision.Template
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
-            TemplateControl.GetInstance().Save(WindowTemplateType);
+            TemplateControl.GetInstance().Save(TemplateType);
             this.Close();
         }
     }

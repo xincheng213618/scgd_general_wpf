@@ -25,27 +25,39 @@ namespace ColorVision
                 WindowTemplate windowTemplate;
                 switch (menuItem.Tag.ToString())
                 {
-                    case "AOI参数设置":
+                    case "AoiParam":
                         windowTemplate = new WindowTemplate(WindowTemplateType.AoiParam) { Title = "AOI参数设置" };
                         TemplateAbb(windowTemplate, TemplateControl.AoiParams);
                         break;
-                    case "校正参数设置":
+                    case "Calibration":
                         Calibration calibration = new Calibration(TemplateControl.CalibrationParams[0].Value);
                         windowTemplate = new WindowTemplate(WindowTemplateType.Calibration, calibration) { Title = "校正参数设置" };
                         TemplateAbb(windowTemplate, TemplateControl.CalibrationParams);
                         break;
-                    case "通讯设置":
+                    case "PGParam":
                         PG pg = new PG(TemplateControl.PGParams[0].Value);
                         windowTemplate = new WindowTemplate(WindowTemplateType.PGParam, pg) { Title = "PG通讯设置" };
                         TemplateAbb(windowTemplate, TemplateControl.PGParams);
                         break;
-                    case "数据判断模板设置":
+                    case "LedReusltParams":
                         windowTemplate = new WindowTemplate(WindowTemplateType.LedReuslt) { Title = "数据判断模板设置" };
                         TemplateAbb(windowTemplate, TemplateControl.LedReusltParams);
                         break;
-                    case "源表模板设置":
+                    case "SxParms":
                         windowTemplate = new WindowTemplate(WindowTemplateType.SxParm) { Title = "源表模板设置" };
                         TemplateAbb(windowTemplate, TemplateControl.SxParms);
+                        break;
+                    case "FocusParm":
+                        windowTemplate = new WindowTemplate(WindowTemplateType.FocusParm) { Title = "关注点设置" };
+                        TemplateAbb(windowTemplate, TemplateControl.FocusParms);
+                        break;
+                    case "LedParam":
+                        windowTemplate = new WindowTemplate(WindowTemplateType.LedParam) { Title = "灯珠检测模板" };
+                        TemplateAbb(windowTemplate, TemplateControl.LedParams);
+                        break;
+                    case "FlowParam":
+                        windowTemplate = new WindowTemplate(WindowTemplateType.FlowParam) { Title = "流程引擎" };
+                        TemplateAbb(windowTemplate, TemplateControl.FlowParams);
                         break;
                     default:
                         break;
@@ -66,7 +78,6 @@ namespace ColorVision
                 listConfig.Value = item.Value;
                 windowTemplate.ListConfigs.Add(listConfig);
             }
-            windowTemplate.ListView1.SelectedIndex = 0;
             windowTemplate.ShowDialog();
         }
 
@@ -75,33 +86,15 @@ namespace ColorVision
             new WindowORM().Show();
         }
 
-
         private void MenuItem_Click8(object sender, RoutedEventArgs e)
         {
             new WindowFourColorCalibration() {Owner = this}.Show();
         }
 
-        private void MenuItem_Click_9(object sender, RoutedEventArgs e)
-        {
-            new WindowFocusPoint() { Owner = this }.Show();
-        }
-
         private void MenuItem9_Click(object sender, RoutedEventArgs e)
         {
-            FlowEngine.WindowFlowEngine windowFlowEngine;
-            windowFlowEngine = new FlowEngine.WindowFlowEngine();
-            windowFlowEngine.Owner = this;
-            windowFlowEngine.Show();
+            new FlowEngine.WindowFlowEngine() { Owner = this }.Show();
         }
-
-
-
-        private void MenuItem_Click_10(object sender, RoutedEventArgs e)
-        {
-            WindowLedCheck windowLedCheck = new WindowLedCheck();
-            windowLedCheck.Show();
-        }
-
 
         private void MenuItem_Exit(object sender, RoutedEventArgs e)
         {

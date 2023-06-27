@@ -29,15 +29,24 @@ namespace ColorVision.Template
         private static string FileNameCalibrationParams = "cfg\\CalibrationSetup.cfg";
         private static string FileNamePGParams = "cfg\\PGParamSetup.cfg";
 
-        private string FileNameLedJudgeParams = "cfg\\LedJudgeSetup.cfg";
-        private string FileNameSxParms = "cfg\\SxParamSetup.cfg";
+        private static string FileNameLedJudgeParams = "cfg\\LedJudgeSetup.cfg";
+        private static string FileNameSxParms = "cfg\\SxParamSetup.cfg";
+        private static string FileNameFocusParms = "cfg\\FocusParmSetup.cfg";
+        private static string FileNameLedParms = "cfg\\LedParmSetup.cfg";
+        private static string FileNameFlowParms = "cfg\\FlowParmSetup.cfg";
 
 
         private bool IsOldAoiParams;
         private bool IsOldCalibrationParams;
         private bool IsOldPGParams;
         private bool IsOldLedJudgeParams;
-        private bool IsOldSxParms;
+        private bool IsOldSxParams;
+        private bool IsOldFocusParams;
+        private bool IsOldLedParams;
+        private bool IsOldFlowParams;
+
+        
+
 
 
         public TemplateControl()
@@ -70,8 +79,12 @@ namespace ColorVision.Template
 
             LedReusltParams = IDefault(FileNameLedJudgeParams, new LedReusltParam(), ref IsOldLedJudgeParams);
 
-            SxParms = IDefault(FileNameSxParms, new SxParm(), ref IsOldSxParms);
+            SxParms = IDefault(FileNameSxParms, new SxParm(), ref IsOldSxParams);
 
+            FocusParms = IDefault(FileNameFocusParms, new FocusParam(), ref IsOldFocusParams);
+
+            LedParams = IDefault(FileNameLedParms, new LedParam(), ref IsOldLedParams);
+            FlowParams = IDefault(FileNameFlowParms, new FlowParam(), ref IsOldFlowParams);
             Application.Current.MainWindow.Closed += (s, e) =>
             {
                 Save();
@@ -131,7 +144,6 @@ namespace ColorVision.Template
 
                 }
             };
-
             return Params;
         }
 
@@ -143,8 +155,10 @@ namespace ColorVision.Template
             SaveDefault(FileNameCalibrationParams, CalibrationParams, IsOldCalibrationParams);
             SaveDefault(FileNamePGParams, PGParams, IsOldPGParams);
             SaveDefault(FileNameLedJudgeParams, LedReusltParams, IsOldLedJudgeParams);
-            SaveDefault(FileNameSxParms, SxParms, IsOldPGParams);
-
+            SaveDefault(FileNameSxParms, SxParms, IsOldSxParams);
+            SaveDefault(FileNameFocusParms, FocusParms, IsOldFocusParams);
+            SaveDefault(FileNameLedParms, LedParams, IsOldLedParams);
+            SaveDefault(FileNameFlowParms, FlowParams, IsOldFlowParams);
         }
 
 
@@ -165,7 +179,16 @@ namespace ColorVision.Template
                     SaveDefault(FileNameLedJudgeParams, LedReusltParams, IsOldLedJudgeParams);
                     break;
                 case WindowTemplateType.SxParm:
-                    SaveDefault(FileNameSxParms, SxParms, IsOldSxParms);
+                    SaveDefault(FileNameSxParms, SxParms, IsOldSxParams);
+                    break;
+                case WindowTemplateType.FocusParm:
+                    SaveDefault(FileNameFocusParms, FocusParms, IsOldFocusParams);
+                    break;
+                case WindowTemplateType.LedParam:
+                    SaveDefault(FileNameLedParms, LedParams, IsOldLedParams);
+                    break;
+                case WindowTemplateType.FlowParam:
+                    SaveDefault(FileNameFlowParms, FlowParams, IsOldFlowParams);
                     break;
                 default:
                     break;
@@ -201,7 +224,13 @@ namespace ColorVision.Template
         
         public ObservableCollection<KeyValuePair<string, LedReusltParam>> LedReusltParams { get; set; }
 
-        
+        public ObservableCollection<KeyValuePair<string, FocusParam>> FocusParms { get; set;}
+
+        public ObservableCollection<KeyValuePair<string, LedParam>> LedParams { get; set; }        
+        public ObservableCollection<KeyValuePair<string, FlowParam>> FlowParams { get; set; }
+
+
+
 
 
 

@@ -12,6 +12,10 @@ using System.Windows.Media.TextFormatting;
 namespace ColorVision.Template
 {
 
+
+
+
+
     public class SxParm : ParamBase
     {
         public double StartMeasureVal { get; set; } 

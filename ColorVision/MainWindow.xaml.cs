@@ -873,7 +873,10 @@ namespace ColorVision
             window.Close();
         }
 
+        private void MenuItem_Click_10(object sender, RoutedEventArgs e)
+        {
 
+        }
     }
 
 

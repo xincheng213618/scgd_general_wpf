@@ -28,6 +28,31 @@ namespace ColorVision.Template
         private bool _IsEnable;
     }
 
+
+    /// <summary>
+    /// 关注点模板
+    /// </summary>
+    public class FocusParam : ParamBase
+    {
+
+    }
+    /// <summary>
+    /// 关注点模板
+    /// </summary>
+    public class LedParam : ParamBase
+    {
+
+    }
+    /// <summary>
+    /// 流程引擎模板
+    /// </summary>
+    public class FlowParam : ParamBase
+    {
+
+    }
+
+
+
     public class AoiParam: ParamBase
     {
         public bool FilterByArea { set; get; }
