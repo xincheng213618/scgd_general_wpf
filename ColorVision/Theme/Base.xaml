@@ -21,7 +21,6 @@
 
     <Style TargetType="{x:Type TextBox}">
         <EventSetter  Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown" />
-        <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate  TargetType="{x:Type TextBoxBase}">

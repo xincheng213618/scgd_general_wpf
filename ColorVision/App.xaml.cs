@@ -1,4 +1,5 @@
 ﻿using ColorVision.NativeMethods;
+using ColorVision.SettingUp;
 using log4net;
 using log4net.Config;
 using System;
@@ -51,8 +52,6 @@ namespace ColorVision
                     }
                 }
             }
-
-
             if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
             {
                 var fileAppender = (log4net.Appender.FileAppender)LogManager.GetRepository().GetAppenders().FirstOrDefault(a => a is log4net.Appender.FileAppender);
@@ -78,7 +77,6 @@ namespace ColorVision
                 Environment.Exit(0);
             }
 
-
             log.Info("程序打开");
             App app;
             app = new App();
@@ -103,7 +101,10 @@ namespace ColorVision
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
-           //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en");
+            GlobalSetting.GetInstance();
+
+
+            //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en");
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("zh-Hans");
 
             System.Windows.Forms.Application.EnableVisualStyles();

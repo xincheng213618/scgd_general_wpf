@@ -1,5 +1,4 @@
 ﻿using ColorVision.Extension;
-using ColorVision.Info;
 using ColorVision.MQTT;
 using ColorVision.MVVM;
 using ColorVision.Template;
@@ -60,6 +59,7 @@ namespace ColorVision
             ListView1.ItemsSource = DrawingVisualLists;
             StatusBarItem1.DataContext = PerformanceSetting;
             StatusBarItem2.DataContext = PerformanceSetting;
+            StatusBarMqtt.DataContext = MQTT.MQTTControl.GetInstance();
             MQTTControl = MQTTControl.GetInstance();
         }
 

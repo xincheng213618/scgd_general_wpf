@@ -5,7 +5,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ColorVision.Info
+namespace ColorVision
 {
     public class PerformanceSetting : ViewModelBase, IDisposable
     {

@@ -8,6 +8,7 @@
         xmlns:ScottPlot="clr-namespace:ScottPlot;assembly=ScottPlot.WPF"
         xmlns:Template ="clr-namespace:ColorVision.Template"
         xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
+        xmlns:mqtt ="clr-namespace:ColorVision.MQTT"
         xmlns:converter="clr-namespace:ColorVision.Converter"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:MainWindow}"
@@ -524,8 +525,20 @@
         </Grid>
         <Grid Grid.Row="2" x:Name="StatusBarGrid" Visibility="{Binding ElementName=MenuStatusBar,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
             <StatusBar  DataContext="{Binding performanceSetting}" Grid.ColumnSpan="2">
-                <StatusBarItem   x:Name="StatusBarItem1"  Content="{Binding Path=MemoryThis}" />
-                <StatusBarItem  x:Name="StatusBarItem2" DataContext="{Binding performanceSetting}" HorizontalAlignment="Right" Content="{Binding Path=Time}"/>
+                <DockPanel  x:Name="StatusBarItem1">
+                    <StatusBarItem    Content="{Binding Path=MemoryThis}"/>
+                </DockPanel>
+
+                
+                
+                <DockPanel >
+                    <StatusBarItem  x:Name="StatusBarMqtt" d:DataContext="{d:DesignInstance mqtt:MQTTControl}" HorizontalAlignment="Right">
+                        <TextBlock Text="{Binding ConnectSign,StringFormat='MQTT：{0}'}"  />
+                    </StatusBarItem>
+                    <StatusBarItem  x:Name="StatusBarItem2" d:DataContext="{d:DesignInstance  local:PerformanceSetting}" HorizontalAlignment="Right" Content="{Binding Time}"/>
+                </DockPanel>
+
+
             </StatusBar>
         </Grid>
     </Grid>
