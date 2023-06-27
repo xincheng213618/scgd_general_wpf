@@ -16,13 +16,15 @@
         <Border  Grid.Row="0"  Background="#F3F3F3" BorderBrush="#EAEAEA" BorderThickness="1" >
             <Grid  Margin="5">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition Width="auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <UniformGrid Columns="3">
-                    <Button Content="加载" Click="Button_Click_Open" Width="60" />
-                    <Button Content="新建" Click="Button_Click_New"  Width="60" />
-                    <Button Content="保存" Click="Button_Click_Save" Width="60" />
+                <UniformGrid Columns="4">
+                    <Button x:Name="ButtonOpen"  Content="加载" Click="Button_Click_Open" Width="60" />
+                    <Button x:Name="ButtonNew"  Content="新建" Click="Button_Click_New"  Width="60" />
+                    <Button x:Name="ButtonClear"  Content="清空" Click="Button_Click_Clear"  Width="60" />
+
+                    <Button x:Name="ButtonSave"  Content="保存" Click="Button_Click_Save" Width="60" />
                 </UniformGrid>
                 <Grid  x:Name="OperateGrid" Grid.Column="1"  Visibility="Collapsed">
                     <Grid.ColumnDefinitions>

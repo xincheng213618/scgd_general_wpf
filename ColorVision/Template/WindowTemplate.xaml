@@ -30,11 +30,11 @@
                     </Grid>
                     <GridSplitter Grid.Column="0" Width="2"  Background="AliceBlue"/>
                     <Grid x:Name="GridListHeader2" Grid.Column="1">
-                        <TextBlock  HorizontalAlignment="Left" VerticalAlignment="Center" Text="模板名称" Margin="10,0,0,0" />
+                        <TextBlock  HorizontalAlignment="Left" VerticalAlignment="Center" Text="{Binding ElementName=TemplateGrid,Path=Header,StringFormat='{}{0}名称'}" Margin="10,0,0,0" />
                     </Grid>
                 </Grid>
 
-                <ListView  x:Name="ListView1"  DataContext="{Binding ListConfigs}"   ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged">
+                <ListView  x:Name="ListView1"  DataContext="{Binding ListConfigs}"   ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" PreviewMouseDoubleClick="ListView1_PreviewMouseDoubleClick" SelectionChanged="ListView1_SelectionChanged">
                     <ListView.Resources>
                         <ResourceDictionary>
                             <ResourceDictionary.MergedDictionaries>
@@ -76,14 +76,18 @@
             </xctk:PropertyGrid>
         </Grid>
 
-        <StackPanel x:Name="CreateGrid"  Grid.Column="1" Grid.Row="1" Width="330" HorizontalAlignment="Center">
-            <DockPanel>
+        <StackPanel x:Name="CreateGrid"  Grid.Column="1" Grid.Row="1" HorizontalAlignment="Center">
+            <DockPanel Width="330" >
                 <Label Content="模板名称："/>
                 <TextBox x:Name="TextBox1" Margin="3"/>
             </DockPanel>
-            <UniformGrid Columns="3" Margin="0,5"  Width="300"  HorizontalAlignment="Center">
-                <Button Content="新建模板" Width="80"  Click="Button_Click"/>
-                <Button Content="删除模板" Width="80"   Click="Button_Click_1"/>
+            <UniformGrid x:Name="FunctionGrid" Columns="3" Margin="0,5"  Width="300"  HorizontalAlignment="Center">
+                <Button Width="80"  Click="Button_Click">
+                    <TextBlock Text="{Binding ElementName=TemplateGrid,Path=Header,StringFormat='新建{0}'}"/>
+                </Button>
+                <Button  Width="80"   Click="Button_Click_1">
+                    <TextBlock Text="{Binding ElementName=TemplateGrid,Path=Header,StringFormat='删除{0}'}"/>
+                </Button>
                 <Button Content="保存" Width="80"   Click="Button_Click_2" />
             </UniformGrid>
         </StackPanel>

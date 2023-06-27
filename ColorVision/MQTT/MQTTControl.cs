@@ -122,17 +122,20 @@ namespace ColorVision.MQTT
 
         public void SubscribeAsyncClient(string topic) 
         {
-            MQTTHelper.SubscribeAsyncClient(topic);
-            if (!SubscribeTopic.Contains(topic))
-                SubscribeTopic.Add(topic);
+            if (IsConnect)
+            {
+                MQTTHelper.SubscribeAsyncClient(topic);
+                if (!SubscribeTopic.Contains(topic))
+                    SubscribeTopic.Add(topic);
+            }
         }
-
 
         public void UnsubscribeAsyncClient(string topic)
         {
             if (IsConnect)
             {
                 MQTTHelper.UnsubscribeAsyncClient(topic);
+                if (SubscribeTopic == null) return;
                 SubscribeTopic.Remove(topic);
             }
         }

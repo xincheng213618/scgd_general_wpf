@@ -1,8 +1,12 @@
 ﻿using ColorVision.MQTT;
+using ColorVision.Template;
 using FlowEngineLib;
 using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 using System;
+using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Windows;
@@ -15,17 +19,55 @@ namespace FlowEngine
     /// </summary>
     public partial class WindowFlowEngine : Window
     {
-        HslCommunication.BasicFramework.SoftNumericalOrder softNumerical;
+        public bool IsSave { get; set; } = true;
 
+        HslCommunication.BasicFramework.SoftNumericalOrder softNumerical;
         public WindowFlowEngine()
         {
             InitializeComponent();
+            ButtonSave.Visibility = Visibility.Collapsed;
+            ButtonClear.Visibility = Visibility.Collapsed;
         }
         public WindowFlowEngine(string FileName)
         {
             InitializeComponent();
-            OpenFlow(FileName);
+            if (File.Exists(FileName))
+            {
+                OpenFlow(FileName);
+                ButtonOpen.Visibility = Visibility.Collapsed;
+                ButtonNew.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                this.FileName = FileName;
+                ButtonOpen.Visibility = Visibility.Collapsed;
+                ButtonNew.Visibility = Visibility.Collapsed;
+                IsSave = false;
+            }
         }
+        FlowParam FlowParam { get; set; }
+        public WindowFlowEngine(FlowParam flowParam)
+        {
+            FlowParam = flowParam;
+            InitializeComponent();
+
+
+            if (File.Exists(flowParam.FileName))
+            {
+                OpenFlow(flowParam.FileName);
+                ButtonOpen.Visibility = Visibility.Collapsed;
+                ButtonNew.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                this.FileName = flowParam.FileName;
+                ButtonOpen.Visibility = Visibility.Collapsed;
+                ButtonNew.Visibility = Visibility.Collapsed;
+                IsSave = false;
+            }
+        }
+
+
 
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -57,6 +99,33 @@ namespace FlowEngine
             string uPwd = "";
 
             FlowEngineLib.MQTTHelper.SetDefaultCfg(iPStr, port, uName, uPwd);
+
+            this.Closed +=(s,e)=>
+            {
+                if (IsSave)
+                {
+                    //SaveFlow(FileName);
+                }
+                else
+                {
+                    if (MessageBox.Show("您是否保存", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                    {
+                        System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
+                        ofd.Filter = "*.stn|*.stn";
+                        ofd.FileName = FileName;
+                        if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+                        if (FlowParam != null)
+                        {
+                            FlowParam.FileName = ofd.FileName;
+                        }
+                        SaveFlow(ofd.FileName, true);
+                    }
+                    else
+                    {
+                        
+                    }
+                }
+            };
         }
 
 
@@ -69,8 +138,49 @@ namespace FlowEngine
 
         private void Button_Click_New(object sender, RoutedEventArgs e)
         {
+            System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
+            ofd.Filter = "*.stn|*.stn";
+            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+
+            SaveFlow(FileName);
             STNodeEditor1.Nodes.Clear();
         }
+
+        private void Button_Click_Save(object sender, RoutedEventArgs e)
+        {
+            if (File.Exists(FileName))
+            {
+                IsSave = true;
+                SaveFlow(FileName);
+            }
+            else if (!IsSave)
+            {
+
+
+                System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
+                ofd.Filter = "*.stn|*.stn";
+                ofd.FileName = FileName;
+                if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+                if (FlowParam != null)
+                {
+                    FlowParam.FileName = ofd.FileName;
+                }
+                SaveFlow(ofd.FileName,true);
+                IsSave = true;
+            }
+            else
+            {
+                MessageBox.Show("请先创建流程");
+            }
+        }
+        private void Button_Click_Clear(object sender, RoutedEventArgs e)
+        {
+            if (MessageBox.Show("您是否清空已经创建流程\n\r清空后自动保存关闭", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                STNodeEditor1.Nodes.Clear();
+        }
+
+        string FileName { get; set; }
+
         private string svrName;
 
         private void Button_Click_Open(object sender, RoutedEventArgs e)
@@ -78,11 +188,15 @@ namespace FlowEngine
             System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
             ofd.Filter = "*.stn|*.stn";
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+
+            ButtonSave.Visibility = Visibility.Visible;
             OpenFlow(ofd.FileName);
         }
         FlowControl flowControl;
+
         private void OpenFlow(string flowName)
         {
+            FileName = flowName;
             STNodeEditor1.Nodes.Clear();
             STNodeEditor1.LoadCanvas(flowName);
             svrName = "";
@@ -95,15 +209,19 @@ namespace FlowEngine
                 ButtonFlowPause.Visibility = Visibility.Collapsed;
             };
             OperateGrid.Visibility = Visibility.Visible;
+            this.Title = "流程编辑器 - " + new FileInfo(flowName).Name;
         }
 
-        private void Button_Click_Save(object sender, RoutedEventArgs e)
+        private void SaveFlow(string flowName,bool IsForceSave =false)
         {
-            System.Windows.Forms.SaveFileDialog sfd = new System.Windows.Forms.SaveFileDialog();
-            sfd.Filter = "*.stn|*.stn";
-            if (sfd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-            STNodeEditor1.SaveCanvas(sfd.FileName);
+
+            if (File.Exists(flowName)|| IsForceSave)
+            {
+                STNodeEditor1.SaveCanvas(flowName);
+            }
         }
+
+
 
         private void Button_Click_3(object sender, RoutedEventArgs e)
         {
@@ -157,6 +275,7 @@ namespace FlowEngine
                 }
             }
         }
+
 
     }
 }

@@ -48,7 +48,8 @@ namespace ColorVision.Template
     /// </summary>
     public class FlowParam : ParamBase
     {
-
+        [Category("检测判断配置"), DefaultValue(true), DisplayName("是否下限检测")]
+        public string FileName { set; get; }
     }
 
 
