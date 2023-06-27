@@ -57,6 +57,7 @@ namespace ColorVision.Info
             timer = new Timer(TimeRun, null, 0, UpdateSpeed);
         }
 
+
         private void TimeRun(object? state)
         {
             if (PerformanceCounterIsOpen)

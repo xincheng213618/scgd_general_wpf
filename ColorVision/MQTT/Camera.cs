@@ -270,16 +270,7 @@ namespace ColorVision.MQTT
             return IsRun;
         }
 
-         
-
-        private class OpenCameraParamMQTT : ViewModelBase
-        {
-            public int TakeImageMode { get; set; }
-            public string CameraID { get; set; }
-            public int Bpp { get; set; }    
-        }
-
-
+        
 
         public class CalibrationParamMQTT : ViewModelBase
         {

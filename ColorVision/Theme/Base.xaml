@@ -11,13 +11,40 @@
     <converter:InverseBooleanConverter x:Key="inverseBooleanConverter"/>
     <converter:BooleanToVisibilityReConverter x:Key="bool2VisibilityConverter1"/>
 
+    <SolidColorBrush x:Key="TextBox.MouseOver.Border" Color="#FF7EB4EA"/>
+    <SolidColorBrush x:Key="TextBox.Focus.Border" Color="#FF569DE5"/>
+    <Style TargetType="{x:Type TextBlock}">
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
 
 
     <Style TargetType="{x:Type TextBox}">
-        <EventSetter  Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown"  >
-            
-        </EventSetter>
+        <EventSetter  Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown" />
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate  TargetType="{x:Type TextBoxBase}">
+                    <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="3,3,2,2" Padding="2,2,2,1" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" SnapsToDevicePixels="True">
+                        <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="false">
+                            <Setter Property="Opacity" TargetName="border" Value="0.56"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="true">
+                            <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource TextBox.MouseOver.Border}"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="true">
+                            <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource TextBox.Focus.Border}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+
     </Style>
+
 
 
     <Style TargetType="{x:Type ToolTip}">
