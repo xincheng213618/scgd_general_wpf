@@ -16,7 +16,7 @@ namespace ColorVision.Template
 
 
 
-    public class SxParm : ParamBase
+    public class SxParam : ParamBase
     {
         public double StartMeasureVal { get; set; } 
         public double StopMeasureVal { get; set; } = 3;

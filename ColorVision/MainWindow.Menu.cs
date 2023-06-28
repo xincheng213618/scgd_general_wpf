@@ -45,11 +45,11 @@ namespace ColorVision
                         break;
                     case "SxParms":
                         windowTemplate = new WindowTemplate(WindowTemplateType.SxParm) { Title = "源表模板设置" };
-                        TemplateAbb(windowTemplate, TemplateControl.SxParms);
+                        TemplateAbb(windowTemplate, TemplateControl.SxParams);
                         break;
                     case "FocusParm":
-                        windowTemplate = new WindowTemplate(WindowTemplateType.FocusParm) { Title = "关注点设置" };
-                        TemplateAbb(windowTemplate, TemplateControl.FocusParms);
+                        windowTemplate = new WindowTemplate(WindowTemplateType.PoiParam) { Title = "关注点设置" };
+                        TemplateAbb(windowTemplate, TemplateControl.PoiParams);
                         break;
                     case "LedParam":
                         windowTemplate = new WindowTemplate(WindowTemplateType.LedParam) { Title = "灯珠检测模板" };

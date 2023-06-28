@@ -73,7 +73,7 @@ namespace ColorVision
         {
             if (sender is Button button)
             {
-                if (ComboxVITemplate.SelectedItem is KeyValuePair<string, SxParm> KeyValue && KeyValue.Value is SxParm SxParm)
+                if (ComboxVITemplate.SelectedItem is KeyValuePair<string, SxParam> KeyValue && KeyValue.Value is SxParam SxParm)
                 {
                     button.Content = "扫描中";
                     passSxSource.SetSource(SxParm.IsSourceV);
@@ -208,10 +208,10 @@ namespace ColorVision
             StackPanelVI.DataContext = passSxSource;
 
 
-            ComboxVITemplate.ItemsSource = TemplateControl.GetInstance().SxParms;
+            ComboxVITemplate.ItemsSource = TemplateControl.GetInstance().SxParams;
             ComboxVITemplate.SelectionChanged += (s, e) =>
             {
-                if (ComboxVITemplate.SelectedItem is KeyValuePair<string, SxParm> KeyValue && KeyValue.Value is SxParm SxParm)
+                if (ComboxVITemplate.SelectedItem is KeyValuePair<string, SxParam> KeyValue && KeyValue.Value is SxParam SxParm)
                 {
                     StackPanelVITemplate.DataContext = SxParm;
                 }

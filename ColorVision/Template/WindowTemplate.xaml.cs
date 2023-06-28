@@ -40,7 +40,7 @@ namespace ColorVision.Template
         PGParam,
         LedReuslt,
         SxParm,
-        FocusParm,
+        PoiParam,
         LedParam,
         FlowParam
     }
@@ -66,7 +66,7 @@ namespace ColorVision.Template
             {
                 case WindowTemplateType.LedParam:
                 case WindowTemplateType.FlowParam:
-                case WindowTemplateType.FocusParm:
+                case WindowTemplateType.PoiParam:
 
                     GridProperty.Visibility = Visibility.Collapsed;
                     Grid.SetColumnSpan(TemplateGrid, 2);
@@ -103,7 +103,7 @@ namespace ColorVision.Template
             switch (TemplateType)
             {
                 case WindowTemplateType.LedParam:
-                case WindowTemplateType.FocusParm:
+                case WindowTemplateType.PoiParam:
                     break;
                 case WindowTemplateType.FlowParam:
                     TemplateGrid.Header = "流程";
@@ -142,7 +142,7 @@ namespace ColorVision.Template
             {
                 switch (TemplateType)
                 {
-                    case WindowTemplateType.FocusParm:
+                    case WindowTemplateType.PoiParam:
                         new WindowFocusPoint() { Owner = Application.Current.MainWindow }.Show();
                         break;
                     case WindowTemplateType.LedParam:
@@ -210,10 +210,10 @@ namespace ColorVision.Template
                         CreateNewTemplate(TemplateControl.GetInstance().LedReusltParams, TextBox1.Text, new LedReusltParam());
                         break;
                     case WindowTemplateType.SxParm:
-                        CreateNewTemplate(TemplateControl.GetInstance().SxParms, TextBox1.Text, new SxParm());
+                        CreateNewTemplate(TemplateControl.GetInstance().SxParams, TextBox1.Text, new SxParam());
                         break;
-                    case WindowTemplateType.FocusParm:
-                        CreateNewTemplate(TemplateControl.GetInstance().FocusParms, TextBox1.Text, new FocusParam());
+                    case WindowTemplateType.PoiParam:
+                        CreateNewTemplate(TemplateControl.GetInstance().PoiParams, TextBox1.Text, new PoiParam());
                         break;
                     case WindowTemplateType.LedParam:
                         CreateNewTemplate(TemplateControl.GetInstance().LedParams, TextBox1.Text, new LedParam());
@@ -258,9 +258,9 @@ namespace ColorVision.Template
                             TemplateControl.GetInstance().LedReusltParams.RemoveAt(ListView1.SelectedIndex);
                             break;
                         case WindowTemplateType.SxParm:
-                            TemplateControl.GetInstance().SxParms.RemoveAt(ListView1.SelectedIndex);
+                            TemplateControl.GetInstance().SxParams.RemoveAt(ListView1.SelectedIndex);
                             break;
-                        case WindowTemplateType.FocusParm:
+                        case WindowTemplateType.PoiParam:
                             TemplateControl.GetInstance().FocusParms.RemoveAt(ListView1.SelectedIndex);
                             break;
                         case WindowTemplateType.FlowParam:

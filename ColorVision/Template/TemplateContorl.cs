@@ -80,9 +80,9 @@ namespace ColorVision.Template
 
             LedReusltParams = IDefault(FileNameLedJudgeParams, new LedReusltParam(), ref IsOldLedJudgeParams);
 
-            SxParms = IDefault(FileNameSxParms, new SxParm(), ref IsOldSxParams);
+            SxParams = IDefault(FileNameSxParms, new SxParam(), ref IsOldSxParams);
 
-            PoiParms = IDefault(FileNameFocusParms, new PoiParam(), ref IsOldFocusParams);
+            PoiParams = IDefault(FileNameFocusParms, new PoiParam(), ref IsOldFocusParams);
 
             LedParams = IDefault(FileNameLedParms, new LedParam(), ref IsOldLedParams);
             FlowParams = IDefault(FileNameFlowParms, new FlowParam(), ref IsOldFlowParams);
@@ -158,8 +158,8 @@ namespace ColorVision.Template
             SaveDefault(FileNameCalibrationParams, CalibrationParams, IsOldCalibrationParams);
             SaveDefault(FileNamePGParams, PGParams, IsOldPGParams);
             SaveDefault(FileNameLedJudgeParams, LedReusltParams, IsOldLedJudgeParams);
-            SaveDefault(FileNameSxParms, SxParms, IsOldSxParams);
-            SaveDefault(FileNameFocusParms, PoiParms, IsOldFocusParams);
+            SaveDefault(FileNameSxParms, SxParams, IsOldSxParams);
+            SaveDefault(FileNameFocusParms, PoiParams, IsOldFocusParams);
             SaveDefault(FileNameLedParms, LedParams, IsOldLedParams);
             SaveDefault(FileNameFlowParms, FlowParams, IsOldFlowParams);
         }
@@ -182,10 +182,10 @@ namespace ColorVision.Template
                     SaveDefault(FileNameLedJudgeParams, LedReusltParams, IsOldLedJudgeParams);
                     break;
                 case WindowTemplateType.SxParm:
-                    SaveDefault(FileNameSxParms, SxParms, IsOldSxParams);
+                    SaveDefault(FileNameSxParms, SxParams, IsOldSxParams);
                     break;
-                case WindowTemplateType.FocusParm:
-                    SaveDefault(FileNameFocusParms, PoiParms, IsOldFocusParams);
+                case WindowTemplateType.PoiParam:
+                    SaveDefault(FileNameFocusParms, PoiParams, IsOldFocusParams);
                     break;
                 case WindowTemplateType.LedParam:
                     SaveDefault(FileNameLedParms, LedParams, IsOldLedParams);
@@ -220,9 +220,9 @@ namespace ColorVision.Template
         public ObservableCollection<KeyValuePair<string, AoiParam>> AoiParams { get; set; }
         public ObservableCollection<KeyValuePair<string, CalibrationParam>> CalibrationParams { get; set; } 
         public ObservableCollection<KeyValuePair<string, PGParam>> PGParams { get; set; }
-        public ObservableCollection<KeyValuePair<string, SxParm>> SxParms { get; set; }
+        public ObservableCollection<KeyValuePair<string, SxParam>> SxParams { get; set; }
         public ObservableCollection<KeyValuePair<string, LedReusltParam>> LedReusltParams { get; set; }
-        public ObservableCollection<KeyValuePair<string, PoiParam>> PoiParms { get; set;}
+        public ObservableCollection<KeyValuePair<string, PoiParam>> PoiParams { get; set;}
         public ObservableCollection<KeyValuePair<string, LedParam>> LedParams { get; set; }        
         public ObservableCollection<KeyValuePair<string, FlowParam>> FlowParams { get; set; }
     }
