@@ -23,6 +23,18 @@ using System.Windows.Shapes;
 
 namespace ColorVision
 {
+
+    public class CADPoints
+    {
+        public Point X1 { get; set; } = new Point() { X=100, Y=100 };
+        public Point X2 { get; set; } = new Point() { X = 300, Y = 100 };
+        public Point X3 { get; set; } = new Point() { X = 300, Y = 300 };
+        public Point X4 { get; set; } = new Point() { X = 100, Y = 300 };
+
+        public Point Center { get; set; } = new Point() { X = 200, Y = 200 };
+
+    }
+
     /// <summary>
     /// WindowFocusPoint.xaml 的交互逻辑
     /// </summary>
@@ -39,10 +51,15 @@ namespace ColorVision
         public ObservableCollection<DrawingVisualCircle> DrawingVisualCircleLists { get; set; } = new ObservableCollection<DrawingVisualCircle>();
 
 
+        CADPoints CADPoints { get; set; } = new CADPoints();
+
         public WindowFocusPoint()
         {
             InitializeComponent();
             ListView1.ItemsSource = DrawingVisualCircleLists;
+
+            StackPanelCADPoints.DataContext = CADPoints;
+
         }
 
         private void button1_Click(object sender, RoutedEventArgs e)
@@ -57,12 +74,146 @@ namespace ColorVision
             }
         }
 
+        private void OpenCAD_Click(object sender, RoutedEventArgs e)
+        {
+            if (!int.TryParse(TextBoxCADW.Text, out int width))
+                width = 400;
+            if (!int.TryParse(TextBoxCADH.Text, out int height))
+                height = 300;
+
+            BitmapImage bitmapImage = CreateSolidColorBitmap(width,height, System.Windows.Media.Colors.White);
+            ImageShow.Source = bitmapImage;
+            Zoombox1.ZoomUniform();
+
+            Zoombox1.LayoutUpdated += (s, e) =>
+            {
+                foreach (var item in DrawingVisualCircleLists)
+                {
+                    item.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                }
+            };
+        }
+
+        public static BitmapImage CreateSolidColorBitmap(int width, int height, System.Windows.Media.Color color)
+        {
+            // 创建一个 WriteableBitmap，用于绘制纯色图像
+            WriteableBitmap writeableBitmap = new WriteableBitmap(width, height, 96, 96, PixelFormats.Pbgra32, null);
+
+            // 将所有像素设置为指定的颜色
+           
+            writeableBitmap.Lock();
+            unsafe
+            {
+                byte* pBackBuffer = (byte*)writeableBitmap.BackBuffer;
+                int stride = writeableBitmap.BackBufferStride;
+
+                for (int y = 0; y < writeableBitmap.PixelHeight; y++)
+                {
+                    for (int x = 0; x < writeableBitmap.PixelWidth; x++)
+                    {
+                        pBackBuffer[y * stride + 4 * x] = color.B;     // 蓝色通道
+                        pBackBuffer[y * stride + 4 * x + 1] = color.G; // 绿色通道
+                        pBackBuffer[y * stride + 4 * x + 2] = color.R; // 红色通道
+                        pBackBuffer[y * stride + 4 * x + 3] = color.A; // 透明度通道
+                    }
+                }
+            }
+
+
+            writeableBitmap.Unlock();
+
+            BitmapImage bitmapImage = new BitmapImage();
+            using (var stream = new System.IO.MemoryStream())
+            {
+                BitmapEncoder encoder = new PngBitmapEncoder();
+                encoder.Frames.Add(BitmapFrame.Create(writeableBitmap));
+                encoder.Save(stream);
+                stream.Position = 0;
+
+                bitmapImage.BeginInit();
+                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                bitmapImage.StreamSource = stream;
+                bitmapImage.EndInit();
+            }
+            return bitmapImage;
+        }
+
+
+
+        DrawingVisualCircle drawingVisualCirclex1;
+        DrawingVisualCircle drawingVisualCirclex2;
+        DrawingVisualCircle drawingVisualCirclex3;
+        DrawingVisualCircle drawingVisualCirclex4;
+        DrawingVisualCircle drawingVisualCirclecenter;
+
+
+        private void SetDeafult_Click(object sender, RoutedEventArgs e)
+        {
+            drawingVisualCirclex1 = new DrawingVisualCircleWord();
+            drawingVisualCirclex1.Attribute.Center = new Point(CADPoints.X1.X, CADPoints.X1.Y);
+            drawingVisualCirclex1.Attribute.Radius = 5;
+            drawingVisualCirclex1.Attribute.Brush = Brushes.Transparent;
+            drawingVisualCirclex1.Attribute.Pen = new Pen(Brushes.Red, 2);
+            drawingVisualCirclex1.Attribute.ID = 0;
+            drawingVisualCirclex1.Render();
+
+
+            drawingVisualCirclex2 = new DrawingVisualCircleWord();
+            drawingVisualCirclex2.Attribute.Center = new Point(CADPoints.X2.X, CADPoints.X2.Y);
+            drawingVisualCirclex2.Attribute.Radius = 5;
+            drawingVisualCirclex2.Attribute.Brush = Brushes.Transparent;
+            drawingVisualCirclex2.Attribute.Pen = new Pen(Brushes.Red, 2);
+            drawingVisualCirclex2.Attribute.ID = 0;
+            drawingVisualCirclex2.Render();
+
+            drawingVisualCirclex3 = new DrawingVisualCircleWord();
+            drawingVisualCirclex3.Attribute.Center = new Point(CADPoints.X3.X, CADPoints.X3.Y);
+            drawingVisualCirclex3.Attribute.Radius = 5;
+            drawingVisualCirclex3.Attribute.Brush = Brushes.Transparent;
+            drawingVisualCirclex3.Attribute.Pen = new Pen(Brushes.Red, 2);
+            drawingVisualCirclex3.Attribute.ID = 0;
+            drawingVisualCirclex3.Render();
+
+            drawingVisualCirclex4 = new DrawingVisualCircleWord();
+            drawingVisualCirclex4.Attribute.Center = new Point(CADPoints.X4.X, CADPoints.X4.Y);
+            drawingVisualCirclex4.Attribute.Radius = 5;
+            drawingVisualCirclex4.Attribute.Brush = Brushes.Transparent;
+            drawingVisualCirclex4.Attribute.Pen = new Pen(Brushes.Red, 2);
+            drawingVisualCirclex4.Attribute.ID = 0;
+            drawingVisualCirclex4.Render();
+
+           drawingVisualCirclecenter = new DrawingVisualCircleWord();
+           drawingVisualCirclecenter.Attribute.Center = new Point(CADPoints.Center.X, CADPoints.Center.Y);
+           drawingVisualCirclecenter.Attribute.Radius = 5;
+           drawingVisualCirclecenter.Attribute.Brush = Brushes.Transparent;
+           drawingVisualCirclecenter.Attribute.Pen = new Pen(Brushes.Red, 2);
+           drawingVisualCirclecenter.Attribute.ID = 0;
+            drawingVisualCirclecenter.Render();
+
+
+
+
+
+            ImageShow.AddVisual(drawingVisualCirclex1);
+            ImageShow.AddVisual(drawingVisualCirclex2);
+            ImageShow.AddVisual(drawingVisualCirclex3);
+            ImageShow.AddVisual(drawingVisualCirclex4);
+            ImageShow.AddVisual(drawingVisualCirclecenter);
+
+
+
+            DrawingVisualCircleLists.Add(drawingVisualCirclex1);
+            DrawingVisualCircleLists.Add(drawingVisualCirclex2);
+            DrawingVisualCircleLists.Add(drawingVisualCirclex3);
+            DrawingVisualCircleLists.Add(drawingVisualCirclex4);
+            DrawingVisualCircleLists.Add(drawingVisualCirclecenter);
+        }
+
         public void OpenImage(string? filePath)
         {
             if (filePath != null && File.Exists(filePath))
             {
                 BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
-
                 ImageShow.Source = new BitmapImage(new Uri(filePath));
                 Zoombox1.ZoomUniform();
 
@@ -316,5 +467,7 @@ namespace ColorVision
                 }
             }
         }
+
+
     }
 }
