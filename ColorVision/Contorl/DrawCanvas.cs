@@ -43,12 +43,20 @@ namespace ColorVision
 
         public void AddVisual(Visual visual)
         {
-            visuals.Add(visual);
+            try
+            {
+                visuals.Add(visual);
 
-            AddVisualChild(visual);
-            AddLogicalChild(visual);
-            VisualsAdd?.Invoke(visual, EventArgs.Empty);
-            VisualsChanged?.Invoke(visual, EventArgs.Empty);
+                AddVisualChild(visual);
+                AddLogicalChild(visual);
+                VisualsAdd?.Invoke(visual, EventArgs.Empty);
+                VisualsChanged?.Invoke(visual, EventArgs.Empty);
+            }
+            catch
+            {
+
+            }
+
         }
 
         public void RemoveVisual(Visual? visual)

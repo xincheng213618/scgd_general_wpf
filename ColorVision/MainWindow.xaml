@@ -428,7 +428,7 @@
                                     <StackPanel  Orientation="Horizontal">
                                         <TextBlock Width="{Binding ElementName=GridListHeader0,Path=ActualWidth}" Text="圆形" HorizontalAlignment="Center"/>
                                         <TextBlock Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}" Text="{Binding Attribute.ID}" HorizontalAlignment="Center"/>
-                                        <CheckBox Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}" IsChecked="True"  Click="CheckBox_Click" Tag="{Binding .}"/>
+                                        <CheckBox Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}" IsChecked="{Binding Attribute.IsShow}"  Click="CheckBox_Click" Tag="{Binding .}"/>
                                         <TextBlock Width="{Binding ElementName=GridListHeader3,Path=ActualWidth}" HorizontalAlignment="Center">
                                                     <Run Text="{Binding Path = CenterX,StringFormat={}{0:F0}}"/>
                                                     <Run Text=","/>
@@ -443,13 +443,12 @@
                                     <StackPanel  Orientation="Horizontal">
                                         <TextBlock Width="{Binding ElementName=GridListHeader0,Path=ActualWidth}" Text="矩形" HorizontalAlignment="Center"/>
                                         <TextBlock Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}" Text="{Binding Attribute.ID}" HorizontalAlignment="Center"/>
-                                        <CheckBox Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}" IsChecked="True" Click="CheckBox_Click" Tag="{Binding .}"/>
-                                        <TextBlock  >
+                                        <CheckBox Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}" IsChecked="{Binding Attribute.IsShow}" Click="CheckBox_Click" Tag="{Binding .}"/>
+                                        <TextBlock>
                                             <Run Text="{Binding Attribute.Rect.X,StringFormat={}{0:F0}}"/>
-                                            <Run Text="{Binding Attribute.Rect.X,StringFormat={}{0:F0}}"/>
-                                            <Run Text="{Binding Attribute.Rect.X,StringFormat={}{0:F0}}"/>
-                                            <Run Text="{Binding Attribute.Rect.X,StringFormat={}{0:F0}}"/>
-                                            <Run Text="{Binding Attribute.Rect.X,StringFormat={}{0:F0}}"/>
+                                            <Run Text="{Binding Attribute.Rect.Y,StringFormat={}{0:F0}}"/>
+                                            <Run Text="{Binding Attribute.Rect.Width,StringFormat={}{0:F0}}"/>
+                                            <Run Text="{Binding Attribute.Rect.Height,StringFormat={}{0:F0}}"/>
 \                                        </TextBlock>
                                     </StackPanel>
                                 </DataTemplate>

@@ -550,6 +550,8 @@ namespace ColorVision
         {
             if (sender is CheckBox checkBox && checkBox.Tag is Visual visual && visual is IDrawingVisual iDdrawingVisual)
             {
+                ListView1.ScrollIntoView(iDdrawingVisual);
+                ListView1.SelectedIndex = DrawingVisualLists.IndexOf(iDdrawingVisual);
                 if (checkBox.IsChecked == true)
                 {
                     if (!ImageShow.ContainsVisual(visual))
@@ -639,7 +641,7 @@ namespace ColorVision
         {
             if (sender is ListView listView && listView.SelectedIndex > -1 && DrawingVisualLists[listView.SelectedIndex] is IDrawingVisual drawingVisual && DrawingVisualLists[listView.SelectedIndex] is Visual visual)
             {
-                if (PropertyGrid2.SelectedObject is CircleAttribute viewModelBase)
+                if (PropertyGrid2.SelectedObject is ViewModelBase viewModelBase)
                 {
                     viewModelBase.PropertyChanged -= (s, e) =>
                     {

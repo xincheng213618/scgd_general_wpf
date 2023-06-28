@@ -1,5 +1,6 @@
 ﻿using ColorVision.Extension;
 using ColorVision.MQTT;
+using ColorVision.Util;
 using Gu.Wpf.Geometry;
 using log4net;
 using Microsoft.VisualBasic.Logging;
@@ -9,6 +10,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -30,7 +32,6 @@ namespace ColorVision
         public Point X2 { get; set; } = new Point() { X = 300, Y = 100 };
         public Point X3 { get; set; } = new Point() { X = 300, Y = 300 };
         public Point X4 { get; set; } = new Point() { X = 100, Y = 300 };
-
         public Point Center { get; set; } = new Point() { X = 200, Y = 200 };
 
     }
@@ -48,7 +49,7 @@ namespace ColorVision
             [Description("相对值")]
             Relative
         }
-        public ObservableCollection<DrawingVisualCircle> DrawingVisualCircleLists { get; set; } = new ObservableCollection<DrawingVisualCircle>();
+        public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
 
 
         CADPoints CADPoints { get; set; } = new CADPoints();
@@ -56,10 +57,42 @@ namespace ColorVision
         public WindowFocusPoint()
         {
             InitializeComponent();
-            ListView1.ItemsSource = DrawingVisualCircleLists;
-
+            ListView1.ItemsSource = DrawingVisualLists;
             StackPanelCADPoints.DataContext = CADPoints;
+        }
 
+        private void Window_Initialized(object sender, EventArgs e)
+        {
+            ComboBoxBorderType.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>()
+                                             select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
+            ComboBoxBorderType.SelectedIndex = 0;
+            ComboBoxBorderType.SelectionChanged += (s, e) =>
+            {
+                if (ComboBoxBorderType.SelectedItem is KeyValuePair<string, BorderType> KeyValue && KeyValue.Value is BorderType communicateType)
+                {
+
+                }
+            };
+            WindowState = WindowState.Maximized;
+
+
+            ImageShow.VisualsAdd += (s, e) =>
+            {
+                if (s is IDrawingVisual visual && !DrawingVisualLists.Contains(visual))
+                {
+                    DrawingVisualLists.Add(visual);
+                }
+            };
+
+            //如果是不显示
+            ImageShow.VisualsRemove += (s, e) =>
+            {
+                if (s is IDrawingVisual visual)
+                {
+                    if (visual.GetAttribute().IsShow)
+                        DrawingVisualLists.Remove(visual);
+                }
+            };
         }
 
         private void button1_Click(object sender, RoutedEventArgs e)
@@ -81,132 +114,62 @@ namespace ColorVision
             if (!int.TryParse(TextBoxCADH.Text, out int height))
                 height = 300;
 
-            BitmapImage bitmapImage = CreateSolidColorBitmap(width,height, System.Windows.Media.Colors.White);
+            BitmapImage bitmapImage = ImageUtil.CreateSolidColorBitmap(width,height, System.Windows.Media.Colors.White);
             ImageShow.Source = bitmapImage;
             Zoombox1.ZoomUniform();
 
             Zoombox1.LayoutUpdated += (s, e) =>
             {
-                foreach (var item in DrawingVisualCircleLists)
+                foreach (var item in DrawingVisualLists)
                 {
-                    item.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                    DrawAttributeBase drawAttributeBase = item.GetAttribute();
+                    if (drawAttributeBase is CircleAttribute circleAttribute)
+                    {
+                        circleAttribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                    }
+                    else if (drawAttributeBase is RectangleAttribute rectangleAttribute)
+                    {
+                        rectangleAttribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                    }
                 }
             };
         }
 
-        public static BitmapImage CreateSolidColorBitmap(int width, int height, System.Windows.Media.Color color)
-        {
-            // 创建一个 WriteableBitmap，用于绘制纯色图像
-            WriteableBitmap writeableBitmap = new WriteableBitmap(width, height, 96, 96, PixelFormats.Pbgra32, null);
-
-            // 将所有像素设置为指定的颜色
-           
-            writeableBitmap.Lock();
-            unsafe
-            {
-                byte* pBackBuffer = (byte*)writeableBitmap.BackBuffer;
-                int stride = writeableBitmap.BackBufferStride;
-
-                for (int y = 0; y < writeableBitmap.PixelHeight; y++)
-                {
-                    for (int x = 0; x < writeableBitmap.PixelWidth; x++)
-                    {
-                        pBackBuffer[y * stride + 4 * x] = color.B;     // 蓝色通道
-                        pBackBuffer[y * stride + 4 * x + 1] = color.G; // 绿色通道
-                        pBackBuffer[y * stride + 4 * x + 2] = color.R; // 红色通道
-                        pBackBuffer[y * stride + 4 * x + 3] = color.A; // 透明度通道
-                    }
-                }
-            }
-
-
-            writeableBitmap.Unlock();
-
-            BitmapImage bitmapImage = new BitmapImage();
-            using (var stream = new System.IO.MemoryStream())
-            {
-                BitmapEncoder encoder = new PngBitmapEncoder();
-                encoder.Frames.Add(BitmapFrame.Create(writeableBitmap));
-                encoder.Save(stream);
-                stream.Position = 0;
-
-                bitmapImage.BeginInit();
-                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                bitmapImage.StreamSource = stream;
-                bitmapImage.EndInit();
-            }
-            return bitmapImage;
-        }
-
-
-
-        DrawingVisualCircle drawingVisualCirclex1;
-        DrawingVisualCircle drawingVisualCirclex2;
-        DrawingVisualCircle drawingVisualCirclex3;
-        DrawingVisualCircle drawingVisualCirclex4;
-        DrawingVisualCircle drawingVisualCirclecenter;
-
+        public List<DrawingVisualCircle> DefaultPoint { get; set; } = new List<DrawingVisualCircle>();
 
         private void SetDeafult_Click(object sender, RoutedEventArgs e)
         {
-            drawingVisualCirclex1 = new DrawingVisualCircleWord();
-            drawingVisualCirclex1.Attribute.Center = new Point(CADPoints.X1.X, CADPoints.X1.Y);
-            drawingVisualCirclex1.Attribute.Radius = 5;
-            drawingVisualCirclex1.Attribute.Brush = Brushes.Transparent;
-            drawingVisualCirclex1.Attribute.Pen = new Pen(Brushes.Red, 2);
-            drawingVisualCirclex1.Attribute.ID = 0;
-            drawingVisualCirclex1.Render();
+            List<Point> Points = new List<Point>()
+            {
+                new Point(CADPoints.X1.X, CADPoints.X1.Y),
+                new Point(CADPoints.X2.X, CADPoints.X2.Y),
+                new Point(CADPoints.X3.X, CADPoints.X3.Y),
+                new Point(CADPoints.X4.X, CADPoints.X4.Y),
+                new Point(CADPoints.Center.X, CADPoints.Center.Y),
+            };
 
 
-            drawingVisualCirclex2 = new DrawingVisualCircleWord();
-            drawingVisualCirclex2.Attribute.Center = new Point(CADPoints.X2.X, CADPoints.X2.Y);
-            drawingVisualCirclex2.Attribute.Radius = 5;
-            drawingVisualCirclex2.Attribute.Brush = Brushes.Transparent;
-            drawingVisualCirclex2.Attribute.Pen = new Pen(Brushes.Red, 2);
-            drawingVisualCirclex2.Attribute.ID = 0;
-            drawingVisualCirclex2.Render();
+            foreach (var item in DefaultPoint)
+            {
+                ImageShow.RemoveVisual(item);
+                DrawingVisualLists.Remove(item);
 
-            drawingVisualCirclex3 = new DrawingVisualCircleWord();
-            drawingVisualCirclex3.Attribute.Center = new Point(CADPoints.X3.X, CADPoints.X3.Y);
-            drawingVisualCirclex3.Attribute.Radius = 5;
-            drawingVisualCirclex3.Attribute.Brush = Brushes.Transparent;
-            drawingVisualCirclex3.Attribute.Pen = new Pen(Brushes.Red, 2);
-            drawingVisualCirclex3.Attribute.ID = 0;
-            drawingVisualCirclex3.Render();
+            }
+            DefaultPoint.Clear();
 
-            drawingVisualCirclex4 = new DrawingVisualCircleWord();
-            drawingVisualCirclex4.Attribute.Center = new Point(CADPoints.X4.X, CADPoints.X4.Y);
-            drawingVisualCirclex4.Attribute.Radius = 5;
-            drawingVisualCirclex4.Attribute.Brush = Brushes.Transparent;
-            drawingVisualCirclex4.Attribute.Pen = new Pen(Brushes.Red, 2);
-            drawingVisualCirclex4.Attribute.ID = 0;
-            drawingVisualCirclex4.Render();
+            for (int i = 0; i < Points.Count; i++)
+            {
 
-           drawingVisualCirclecenter = new DrawingVisualCircleWord();
-           drawingVisualCirclecenter.Attribute.Center = new Point(CADPoints.Center.X, CADPoints.Center.Y);
-           drawingVisualCirclecenter.Attribute.Radius = 5;
-           drawingVisualCirclecenter.Attribute.Brush = Brushes.Transparent;
-           drawingVisualCirclecenter.Attribute.Pen = new Pen(Brushes.Red, 2);
-           drawingVisualCirclecenter.Attribute.ID = 0;
-            drawingVisualCirclecenter.Render();
-
-
-
-
-
-            ImageShow.AddVisual(drawingVisualCirclex1);
-            ImageShow.AddVisual(drawingVisualCirclex2);
-            ImageShow.AddVisual(drawingVisualCirclex3);
-            ImageShow.AddVisual(drawingVisualCirclex4);
-            ImageShow.AddVisual(drawingVisualCirclecenter);
-
-
-
-            DrawingVisualCircleLists.Add(drawingVisualCirclex1);
-            DrawingVisualCircleLists.Add(drawingVisualCirclex2);
-            DrawingVisualCircleLists.Add(drawingVisualCirclex3);
-            DrawingVisualCircleLists.Add(drawingVisualCirclex4);
-            DrawingVisualCircleLists.Add(drawingVisualCirclecenter);
+                DrawingVisualCircleWord drawingVisualCircle = new DrawingVisualCircleWord();
+                drawingVisualCircle.Attribute.Center = Points[i];
+                drawingVisualCircle.Attribute.Radius = 5;
+                drawingVisualCircle.Attribute.Brush = Brushes.Transparent;
+                drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red, 2);
+                drawingVisualCircle.Attribute.ID = i+1;
+                drawingVisualCircle.Render();
+                DefaultPoint.Add(drawingVisualCircle);
+                ImageShow.AddVisual(drawingVisualCircle);
+            }
         }
 
         public void OpenImage(string? filePath)
@@ -219,28 +182,19 @@ namespace ColorVision
 
                 Zoombox1.LayoutUpdated += (s, e) =>
                 {
-                    foreach (var item in DrawingVisualCircleLists)
+                    foreach (var item in DrawingVisualLists)
                     {
-                        item.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                        DrawAttributeBase drawAttributeBase = item.GetAttribute();
+                        if (drawAttributeBase is CircleAttribute circleAttribute)
+                        {
+                            circleAttribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                        }
+                        else if (drawAttributeBase is RectangleAttribute rectangleAttribute)
+                        {
+                            rectangleAttribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                        }
                     }
                 };
-
-
-                //ImageShow.VisualsAdd += (s, e) =>
-                //{
-                //    if (s is Visual visual && visual is DrawingVisualCircle drawingVisualCircle)
-                //    {
-                //        DrawingVisualLists.Add(drawingVisualCircle);
-                //    }
-                //};
-
-                //ImageShow.VisualsRemove += (s, e) =>
-                //{
-                //    if (s is Visual visual && visual is DrawingVisualCircle drawingVisualCircle)
-                //    {
-                //        DrawingVisualLists.Remove(drawingVisualCircle);
-                //    }
-                //};
             }
         }
         private void ImageShow_Initialized(object sender, EventArgs e)
@@ -258,8 +212,6 @@ namespace ColorVision
                 menuIte2.Click += (s, e) =>
                 {
                     ImageShow.RemoveVisual(DrawingVisual);
-
-
                 };
                 ContextMenu.Items.Add(menuIte2);
                 this.ContextMenu = ContextMenu;
@@ -285,17 +237,13 @@ namespace ColorVision
             if (sender is DrawCanvas drawCanvas)
             {
                 var MouseDownP = e.GetPosition(drawCanvas);
-                if (drawCanvas.GetVisual(MouseDownP) is DrawingVisualCircle drawingVisual)
+
+                if (drawCanvas.GetVisual(MouseDownP) is IDrawingVisual drawingVisual)
                 {
-                    if (PropertyGrid2.SelectedObject is CircleAttribute viewModelBase)
-                    {
-
-                    }
-                    PropertyGrid2.SelectedObject = drawingVisual.Attribute;
-
+                    PropertyGrid2.SelectedObject = drawingVisual.GetAttribute();
 
                     ListView1.ScrollIntoView(drawingVisual);
-                    ListView1.SelectedIndex = DrawingVisualCircleLists.IndexOf(drawingVisual);
+                    ListView1.SelectedIndex = DrawingVisualLists.IndexOf(drawingVisual);
                 }
             }
         }
@@ -358,7 +306,7 @@ namespace ColorVision
 
 
 
-                int start = DrawingVisualCircleLists.Count;
+                int start = DrawingVisualLists.Count;
                 for (int i = 0; i < rows; i++)
                 {
                     for (int j = 0; j < cols; j++)
@@ -373,7 +321,6 @@ namespace ColorVision
                             drawingVisualCircle.Attribute.ID = start + i * cols + j +1;
                             drawingVisualCircle.Render();
                             ImageShow.AddVisual(drawingVisualCircle);
-                            DrawingVisualCircleLists.Add(drawingVisualCircle);
                         }
                         else
                         {
@@ -396,20 +343,7 @@ namespace ColorVision
 
         }
 
-        private void Window_Initialized(object sender, EventArgs e)
-        {
-            ComboBoxBorderType.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>()
-                                                                  select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
-            ComboBoxBorderType.SelectedIndex = 0;
-            ComboBoxBorderType.SelectionChanged += (s, e) =>
-            {
-                if (ComboBoxBorderType.SelectedItem is KeyValuePair<string, BorderType> KeyValue && KeyValue.Value is BorderType communicateType)
-                {
 
-                }
-            };
-            WindowState = WindowState.Maximized;
-        }
 
         private void TextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
@@ -419,7 +353,7 @@ namespace ColorVision
         private void button3_Click(object sender, RoutedEventArgs e)
         {
             ImageShow.Clear();
-            DrawingVisualCircleLists.Clear();
+            DrawingVisualLists.Clear();
             PropertyGrid2.SelectedObject = null;
         }
 
@@ -430,40 +364,37 @@ namespace ColorVision
 
         private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (sender is ListView listView && listView.SelectedIndex > -1 && DrawingVisualCircleLists[listView.SelectedIndex] is DrawingVisualCircle drawingVisual)
+            if (sender is ListView listView && listView.SelectedIndex > -1 && DrawingVisualLists[listView.SelectedIndex] is IDrawingVisual drawingVisual && drawingVisual is Visual visual)
             {
-                if (PropertyGrid2.SelectedObject is CircleAttribute viewModelBase)
-                {
-                    viewModelBase.PropertyChanged -= (s, e) =>
-                    {
-                    };
-                }
 
-                PropertyGrid2.SelectedObject = drawingVisual.Attribute;
-                drawingVisual.Attribute.PropertyChanged += (s, e) =>
-                {
-
-                };
-                ImageShow.TopVisual(drawingVisual);
+                PropertyGrid2.SelectedObject = drawingVisual.GetAttribute();
+                ImageShow.TopVisual(visual);
             }
         }
 
         private void CheckBox_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is CheckBox checkBox && checkBox.Tag is DrawingVisualCircle drawingVisualCircle)
+            if (sender is CheckBox checkBox && checkBox.Tag is Visual visual && visual is IDrawingVisual iDdrawingVisual)
             {
+
+                ListView1.ScrollIntoView(iDdrawingVisual);
+                ListView1.SelectedIndex = DrawingVisualLists.IndexOf(iDdrawingVisual);
                 if (checkBox.IsChecked == true)
                 {
-                    if (!ImageShow.ContainsVisual(drawingVisualCircle))
+                    if (!ImageShow.ContainsVisual(visual))
                     {
-                        ImageShow.AddVisual(drawingVisualCircle);
+                        iDdrawingVisual.GetAttribute().IsShow = true;
+                        ImageShow.AddVisual(visual);
                     }
 
                 }
                 else
                 {
-                    if (ImageShow.ContainsVisual(drawingVisualCircle))
-                        ImageShow.RemoveVisual(drawingVisualCircle);
+                    if (ImageShow.ContainsVisual(visual))
+                    {
+                        iDdrawingVisual.GetAttribute().IsShow = false;
+                        ImageShow.RemoveVisual(visual);
+                    }
                 }
             }
         }

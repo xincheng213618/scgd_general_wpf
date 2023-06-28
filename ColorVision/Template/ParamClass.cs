@@ -34,7 +34,10 @@ namespace ColorVision.Template
     /// </summary>
     public class PoiParam : ParamBase
     {
-        public List<PoiParamData> points;
+        /// <summary>
+        /// 关注点列表
+        /// </summary>
+        public List<PoiParamData> PoiPoints { get; set; }
     }
 
     public class PoiParamData

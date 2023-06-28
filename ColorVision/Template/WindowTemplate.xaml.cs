@@ -261,7 +261,7 @@ namespace ColorVision.Template
                             TemplateControl.GetInstance().SxParams.RemoveAt(ListView1.SelectedIndex);
                             break;
                         case WindowTemplateType.PoiParam:
-                            TemplateControl.GetInstance().FocusParms.RemoveAt(ListView1.SelectedIndex);
+                            TemplateControl.GetInstance().PoiParams.RemoveAt(ListView1.SelectedIndex);
                             break;
                         case WindowTemplateType.FlowParam:
                             TemplateControl.GetInstance().FlowParams.RemoveAt(ListView1.SelectedIndex);
