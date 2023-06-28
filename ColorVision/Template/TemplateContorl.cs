@@ -82,7 +82,7 @@ namespace ColorVision.Template
 
             SxParms = IDefault(FileNameSxParms, new SxParm(), ref IsOldSxParams);
 
-            FocusParms = IDefault(FileNameFocusParms, new FocusParam(), ref IsOldFocusParams);
+            PoiParms = IDefault(FileNameFocusParms, new PoiParam(), ref IsOldFocusParams);
 
             LedParams = IDefault(FileNameLedParms, new LedParam(), ref IsOldLedParams);
             FlowParams = IDefault(FileNameFlowParms, new FlowParam(), ref IsOldFlowParams);
@@ -159,7 +159,7 @@ namespace ColorVision.Template
             SaveDefault(FileNamePGParams, PGParams, IsOldPGParams);
             SaveDefault(FileNameLedJudgeParams, LedReusltParams, IsOldLedJudgeParams);
             SaveDefault(FileNameSxParms, SxParms, IsOldSxParams);
-            SaveDefault(FileNameFocusParms, FocusParms, IsOldFocusParams);
+            SaveDefault(FileNameFocusParms, PoiParms, IsOldFocusParams);
             SaveDefault(FileNameLedParms, LedParams, IsOldLedParams);
             SaveDefault(FileNameFlowParms, FlowParams, IsOldFlowParams);
         }
@@ -185,7 +185,7 @@ namespace ColorVision.Template
                     SaveDefault(FileNameSxParms, SxParms, IsOldSxParams);
                     break;
                 case WindowTemplateType.FocusParm:
-                    SaveDefault(FileNameFocusParms, FocusParms, IsOldFocusParams);
+                    SaveDefault(FileNameFocusParms, PoiParms, IsOldFocusParams);
                     break;
                 case WindowTemplateType.LedParam:
                     SaveDefault(FileNameLedParms, LedParams, IsOldLedParams);
@@ -218,24 +218,12 @@ namespace ColorVision.Template
         }
 
         public ObservableCollection<KeyValuePair<string, AoiParam>> AoiParams { get; set; }
-
         public ObservableCollection<KeyValuePair<string, CalibrationParam>> CalibrationParams { get; set; } 
         public ObservableCollection<KeyValuePair<string, PGParam>> PGParams { get; set; }
         public ObservableCollection<KeyValuePair<string, SxParm>> SxParms { get; set; }
-
-        
         public ObservableCollection<KeyValuePair<string, LedReusltParam>> LedReusltParams { get; set; }
-
-        public ObservableCollection<KeyValuePair<string, FocusParam>> FocusParms { get; set;}
-
+        public ObservableCollection<KeyValuePair<string, PoiParam>> PoiParms { get; set;}
         public ObservableCollection<KeyValuePair<string, LedParam>> LedParams { get; set; }        
         public ObservableCollection<KeyValuePair<string, FlowParam>> FlowParams { get; set; }
-
-
-
-
-
-
-
     }
 }
