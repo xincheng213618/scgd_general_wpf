@@ -8,13 +8,14 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Diagnostics;
+using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Interop;
+using System.Windows.Resources;
 
 [assembly: XmlConfigurator(ConfigFile = "log4net.config", Watch = true)]
 namespace ColorVision
@@ -91,6 +92,7 @@ namespace ColorVision
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         private static extern ushort GlobalAddAtom(string lpString);
 
+
         private App()
         {
             Startup += (s, e) => Application_Startup(s, e);
@@ -102,7 +104,6 @@ namespace ColorVision
         private void Application_Startup(object sender, StartupEventArgs e)
         {
             GlobalSetting.GetInstance();
-
 
             //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en");
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("zh-Hans");

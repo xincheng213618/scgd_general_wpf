@@ -12,7 +12,7 @@ namespace ColorVision.Util
 {
     public static class CfgFile
     {
-        public static bool SaveCfgFile<T>(string cfgFile, T cfg)
+        public static bool Save<T>(string cfgFile, T cfg)
         {
             try
             {
@@ -33,7 +33,7 @@ namespace ColorVision.Util
         /// <typeparam name="T"></typeparam>
         /// <param name="cfgFile"></param>
         /// <returns></returns>
-        public static T? LoadCfgFile<T>(string cfgFile)
+        public static T? Load<T>(string cfgFile)
         {
             if (File.Exists(cfgFile))
             {

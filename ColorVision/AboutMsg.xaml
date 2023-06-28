@@ -4,7 +4,8 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Height="400" Width="500" Title="关于视彩" ResizeMode="NoResize" Initialized="Window_Initialized" >
+        ShowInTaskbar="False"
+        Height="400" Width="500" Title="关于" ResizeMode="NoResize" Initialized="Window_Initialized" >
 
     <Grid >
         <Grid Margin="20,10,10,10">

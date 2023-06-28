@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.SettingUp
 {
-    public class MySQLConfig: ViewModelBase
+    public class MySqlConfig: ViewModelBase
     {
         /// <summary>
         /// IP地址
@@ -19,7 +19,7 @@ namespace ColorVision.SettingUp
         /// 端口地址
         /// </summary>
         public int Port { get => _Port; set { _Port = value; NotifyPropertyChanged(); } }
-        private int _Port = 1883;
+        private int _Port = 3306;
 
         /// <summary>
         /// 账号

@@ -1,6 +1,7 @@
 ﻿using ColorVision.Extension;
 using ColorVision.MQTT;
 using ColorVision.MVVM;
+using ColorVision.SettingUp;
 using ColorVision.Template;
 using System;
 using System.Collections.Generic;
@@ -40,9 +41,9 @@ namespace ColorVision
             this.Closed += (s, e) => Environment.Exit(0);
         }
 
-
         private async void Window_Initialized(object sender, EventArgs e)
-        {     
+        {
+            //this.Icon = new BitmapImage(new Uri("/ColorVision;Component/Image/ColorVision1.ico", UriKind.Relative));
             if (WindowConfig.IsExist)
             {
                 this.Icon = WindowConfig.Icon ?? this.Icon;
@@ -61,6 +62,9 @@ namespace ColorVision
             StatusBarItem2.DataContext = PerformanceSetting;
             StatusBarMqtt.DataContext = MQTT.MQTTControl.GetInstance();
             MQTTControl = MQTTControl.GetInstance();
+
+
+
         }
 
 
@@ -93,17 +97,19 @@ namespace ColorVision
 
                 ImageShow.VisualsAdd += (s, e) =>
                 {
-                    if (s is IDrawingVisual visual)
+                    if (s is IDrawingVisual visual && !DrawingVisualLists.Contains(visual))
                     {
                         DrawingVisualLists.Add(visual);
                     }
                 };
 
+                //如果是不显示
                 ImageShow.VisualsRemove += (s, e) =>
                 {
                     if (s is IDrawingVisual visual)
                     {
-                        DrawingVisualLists.Remove(visual);
+                        if (visual.GetAttribute().IsShow)
+                            DrawingVisualLists.Remove(visual);
                     }
                 };
             }
@@ -542,20 +548,24 @@ namespace ColorVision
 
         private void CheckBox_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is CheckBox checkBox && checkBox.Tag is DrawingVisualCircle drawingVisualCircle)
+            if (sender is CheckBox checkBox && checkBox.Tag is Visual visual && visual is IDrawingVisual iDdrawingVisual)
             {
                 if (checkBox.IsChecked == true)
                 {
-                    if (!ImageShow.ContainsVisual(drawingVisualCircle))
+                    if (!ImageShow.ContainsVisual(visual))
                     {
-                        ImageShow.AddVisual(drawingVisualCircle);
+                        iDdrawingVisual.GetAttribute().IsShow = true;
+                        ImageShow.AddVisual(visual);
                     }
 
                 }
                 else
                 {
-                    if (ImageShow.ContainsVisual(drawingVisualCircle))
-                        ImageShow.RemoveVisual(drawingVisualCircle);
+                    if (ImageShow.ContainsVisual(visual))
+                    {
+                        iDdrawingVisual.GetAttribute().IsShow = false;
+                        ImageShow.RemoveVisual(visual);
+                    }
                 }
             }
         }
@@ -824,8 +834,10 @@ namespace ColorVision
 
         private void Button2_Click(object sender, RoutedEventArgs e)
         {
-            string iPStr = "192.168.3.225";
-            int port = 1883;
+
+            MQTTConfig MQTTConfig = GlobalSetting.GetInstance().SoftwareConfig.MQTTConfig;
+            string iPStr = MQTTConfig.Host;
+            int port = MQTTConfig.Port;
             string uName = "";
             string uPwd = "";
             FlowEngineLib.MQTTHelper.SetDefaultCfg(iPStr, port, uName, uPwd);
@@ -871,11 +883,6 @@ namespace ColorVision
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             //MessageBox.Show("流程执行完成");
             window.Close();
-        }
-
-        private void MenuItem_Click_10(object sender, RoutedEventArgs e)
-        {
-
         }
     }
 

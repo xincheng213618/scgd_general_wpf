@@ -36,6 +36,7 @@ namespace ColorVision.Template
     {
 
     }
+
     /// <summary>
     /// 关注点模板
     /// </summary>
@@ -43,13 +44,18 @@ namespace ColorVision.Template
     {
 
     }
+
+
     /// <summary>
     /// 流程引擎模板
     /// </summary>
     public class FlowParam : ParamBase
     {
-        [Category("检测判断配置"), DefaultValue(true), DisplayName("是否下限检测")]
+        /// <summary>
+        /// 流程文件名称
+        /// </summary>
         public string FileName { set; get; }
+
     }
 
 

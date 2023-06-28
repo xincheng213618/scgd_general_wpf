@@ -30,6 +30,11 @@
                 </StackPanel.Resources>
                 <Border Margin="5" Style="{StaticResource BorderModuleArea}">
                     <StackPanel>
+
+                        <GroupBox Header="模式" Margin="5">
+
+                        </GroupBox>
+                        
                         <GroupBox Header="点阵数" Margin="5">
                             <UniformGrid  Columns="2" Margin="5">
                                 <DockPanel>

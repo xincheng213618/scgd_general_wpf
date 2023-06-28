@@ -56,6 +56,7 @@ namespace ColorVision
                     menuItem1.Click += (s, e) => { NativeMethods.Clipboard.SetText(resultData_MQTT.Topic.ToString() ?? string.Empty); };
                     contextMenu.Items.Add(menuItem1);
                     MenuItem menuItem3 = new MenuItem() { Header = "SaveToFile" };
+
                     menuItem3.Click += (s, e) =>
                     {
                         System.Windows.Forms.SaveFileDialog saveFileDialog = new System.Windows.Forms.SaveFileDialog();

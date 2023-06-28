@@ -8,6 +8,7 @@
         xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         mc:Ignorable="d"
+        ShowInTaskbar="False"
         Title="WindowTemplate" Height="500" Width="600"  MinWidth="600" WindowStartupLocation="CenterOwner" Initialized="Window_Initialized">
     <Grid Margin="5">
         <Grid.ColumnDefinitions>

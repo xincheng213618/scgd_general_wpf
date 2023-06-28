@@ -29,7 +29,7 @@ namespace ColorVision.MQTT
 
         private MQTTControl()
         {
-            MQTTConfig =GlobalSetting.GetInstance().SoftwareConfig.MQTTSetting;
+            MQTTConfig =GlobalSetting.GetInstance().SoftwareConfig.MQTTConfig;
             MQTTHelper = new MQTTHelper();
             Task.Run(() => Connect());
             MQTTHelper.MsgHandle += (s) => { MQTTMsgChanged?.Invoke(s); };

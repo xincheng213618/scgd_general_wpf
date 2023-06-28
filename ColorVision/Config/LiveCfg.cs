@@ -14,7 +14,7 @@ namespace ColorVision.Config
 {
     public class LiveCfg
     {
-        public static LiveCfg CfgLoadliveCfg(string fileName) => Util.CfgFile.LoadCfgFile<LiveCfg>($"{fileName}");
+        public static LiveCfg CfgLoadliveCfg(string fileName) => Util.CfgFile.Load<LiveCfg>($"{fileName}");
 
         [Category("视频窗口参数配置")]
         public int 窗口数 { set; get; }

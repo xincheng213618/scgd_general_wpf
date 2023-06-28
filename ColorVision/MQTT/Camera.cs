@@ -107,6 +107,7 @@ namespace ColorVision.MQTT
                     if (json == null)
                         return Task.CompletedTask;
                     IsRun = false;
+                    
                     if (json.Code==0)
                     {
                         if (json.EventName == "Init")

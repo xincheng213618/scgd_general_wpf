@@ -73,6 +73,7 @@ namespace ColorVision.Template
                 Top = 5,
                 Bottom = 5
             };
+
             AoiParams = IDefault(FileNameAoiParams, param, ref IsOldAoiParams);
             CalibrationParams = IDefault(FileNameCalibrationParams, new CalibrationParam(),ref IsOldCalibrationParams);
             PGParams = IDefault(FileNamePGParams, new PGParam(), ref IsOldPGParams);
@@ -85,6 +86,8 @@ namespace ColorVision.Template
 
             LedParams = IDefault(FileNameLedParms, new LedParam(), ref IsOldLedParams);
             FlowParams = IDefault(FileNameFlowParms, new FlowParam(), ref IsOldFlowParams);
+
+
             Application.Current.MainWindow.Closed += (s, e) =>
             {
                 Save();
@@ -99,7 +102,7 @@ namespace ColorVision.Template
         {
             ObservableCollection<KeyValuePair<string, T>> Params = new ObservableCollection<KeyValuePair<string, T>>();
 
-            Dictionary<string, T> ParamsOld = CfgFile.LoadCfgFile<Dictionary<string, T>>(FileName) ?? new Dictionary<string, T>();
+            Dictionary<string, T> ParamsOld = CfgFile.Load<Dictionary<string, T>>(FileName) ?? new Dictionary<string, T>();
             if (ParamsOld.Count != 0)
             {
                 IsOldParams = true;
@@ -111,7 +114,7 @@ namespace ColorVision.Template
             }
             else
             {
-                Params = CfgFile.LoadCfgFile<ObservableCollection<KeyValuePair<string, T>>>(FileName) ?? new ObservableCollection<KeyValuePair<string, T>>();
+                Params = CfgFile.Load<ObservableCollection<KeyValuePair<string, T>>>(FileName) ?? new ObservableCollection<KeyValuePair<string, T>>();
                 if (Params.Count == 0)
                 {
                     Params.Add(new KeyValuePair<string, T>("default", Default));
@@ -199,10 +202,9 @@ namespace ColorVision.Template
         private static void SaveDefault<T>(string FileNameParams, ObservableCollection<KeyValuePair<string, T>> t, bool IsOldParams)
         {
             if (IsOldParams)
-                CfgFile.SaveCfgFile(FileNameParams, ObservableCollectionToDictionary(t));
+                CfgFile.Save(FileNameParams, ObservableCollectionToDictionary(t));
             else
-                CfgFile.SaveCfgFile(FileNameParams, t);
-
+                CfgFile.Save(FileNameParams, t);
         }
 
         private static Dictionary<string,T> ObservableCollectionToDictionary<T>(ObservableCollection<KeyValuePair<string, T>> keyValues)

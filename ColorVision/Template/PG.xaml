@@ -10,12 +10,12 @@
     <Grid>
         <StackPanel Margin="0,3">
             <DockPanel Margin="0,5">
-                <RadioButton Content="TCPIP通讯" Checked="RadioButton_Checked"/>
-                <RadioButton Content="Granda通讯" Checked="RadioButton_Checked1"/>
+                <RadioButton Content="TCPIP通讯"  Margin="0,0,5,0" Checked="RadioButton_Checked"/>
+                <RadioButton Content="Granda通讯" Margin="0,0,5,0" Checked="RadioButton_Checked1"/>
             </DockPanel>
             <DockPanel Margin="0,5">
                 <TextBlock Text="PG画面指令"/>
-                <TextBox Text="{Binding PGPattenChangeComm1}" Height="16" BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                <TextBox Text="{Binding PGPattenChangeComm1}"  BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"/>
             </DockPanel>
             <CheckBox Content="启用模板"  IsChecked="{Binding IsEnable}" />
         </StackPanel>

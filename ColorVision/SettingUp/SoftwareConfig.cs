@@ -13,8 +13,8 @@ namespace ColorVision.SettingUp
     {
         public SoftwareConfig()
         {
-            MQTTSetting = new MQTTConfig();
-            MySQLConfig = new MySQLConfig();
+            MQTTConfig = new MQTTConfig();
+            MySqlConfig = new MySqlConfig();
         }
 
         public string Version { get; set; } = "0.0";
@@ -22,12 +22,12 @@ namespace ColorVision.SettingUp
         /// <summary>
         /// MQTT配置
         /// </summary>
-        public MQTTConfig MQTTSetting { get; set; }
+        public MQTTConfig MQTTConfig { get; set; }
 
         /// <summary>
         /// MySQL配置
         /// </summary>
-        public MySQLConfig MySQLConfig { get; set; }
+        public MySqlConfig MySqlConfig { get; set; }
 
 
     }

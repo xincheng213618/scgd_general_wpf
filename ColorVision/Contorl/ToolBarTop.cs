@@ -35,7 +35,6 @@ namespace ColorVision
             ZoomNone = new RelayCommand(a =>
             {
                 ZoomboxSub.ZoomNone();
-                //ZoomboxSub.Zoom(1/ZoomRatio);
             });
 
             DrawVisualImage = new DrawingVisual();

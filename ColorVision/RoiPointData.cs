@@ -16,12 +16,12 @@ namespace ColorVision
 
         public RoiPointsCfg()
         {
-            riPointDict = Util.CfgFile.LoadCfgFile<Dictionary<string, RiPoint>>(cfgDefaultFile) ?? new Dictionary<string, RiPoint>() { { "default", new RiPoint() } };
+            riPointDict = Util.CfgFile.Load<Dictionary<string, RiPoint>>(cfgDefaultFile) ?? new Dictionary<string, RiPoint>() { { "default", new RiPoint() } };
         }
 
         public bool Save()
         {
-            return Util.CfgFile.SaveCfgFile(cfgDefaultFile, riPointDict);
+            return Util.CfgFile.Save(cfgDefaultFile, riPointDict);
         }
 
         public RiPoint? GetCurRiPoint()
@@ -54,7 +54,7 @@ namespace ColorVision
         {
             riPoints = new List<RoiPointData>();
             LAPoints = new System.Drawing.Point[4];
-            ledCheckCfg = Util.CfgFile.LoadCfgFile<LedCheckCfg>("cfg\\LedCheck.cfg");
+            ledCheckCfg = Util.CfgFile.Load<LedCheckCfg>("cfg\\LedCheck.cfg");
         }
 
 
