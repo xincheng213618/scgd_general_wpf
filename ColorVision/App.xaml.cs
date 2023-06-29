@@ -1,5 +1,6 @@
 ﻿using ColorVision.NativeMethods;
 using ColorVision.SettingUp;
+using HslCommunication.Profinet.MegMeet;
 using log4net;
 using log4net.Config;
 using System;
@@ -36,23 +37,26 @@ namespace ColorVision
     public partial class App : Application
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(App));
+
+        private static Mutex mutex;
         [STAThread]
         [DebuggerNonUserCode]
         [GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
         public static void Main(string[] args)
         {
-
-            bool IsCheck =true;
+            bool IsDebug = Debugger.IsAttached;
             if (args.Count()>0)
             {
                 for (int i = 0; i < args.Count(); i++)
                 {
-                    if (args[i] == "-r")
+                    if (args[i].ToLower() == "-d" || args[i].ToLower() == "-debug")
                     {
-                        IsCheck = false;
+                        IsDebug = true;
                     }
                 }
             }
+
+
             if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
             {
                 var fileAppender = (log4net.Appender.FileAppender)LogManager.GetRepository().GetAppenders().FirstOrDefault(a => a is log4net.Appender.FileAppender);
@@ -63,19 +67,22 @@ namespace ColorVision
                 }
             }
 
-            Mutex mutex = new Mutex(true, "ElectronicNeedleTherapySystem", out bool ret);
-            if (IsCheck &&!ret)
+            mutex = new Mutex(true, "ElectronicNeedleTherapySystem", out bool ret);
+            if (!IsDebug &&!ret)
             {
-                //System.Windows.MessageBox.Show("程序已经运行！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
                 IntPtr hWnd = CheckAppRunning.Check("ColorVision");
-
-                if (args.Length > 0 && hWnd != IntPtr.Zero)
+                if (hWnd != IntPtr.Zero)
                 {
-                    ushort atom = GlobalAddAtom(args[0]);
-                    SendMessage(hWnd, WM_USER + 1, (IntPtr)atom, IntPtr.Zero);  // 发送消息
+                    if (args.Length > 0)
+                    {
+                        ushort atom = GlobalAddAtom(args[0]);
+                        SendMessage(hWnd, WM_USER + 1, (IntPtr)atom, IntPtr.Zero);  // 发送消息
+                    }
+                    log.Info("程序已经打开");
+                    Environment.Exit(0);
                 }
-                log.Info("程序已经打开");
-                Environment.Exit(0);
+
+
             }
 
             log.Info("程序打开");

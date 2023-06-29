@@ -423,9 +423,13 @@
                         </Grid>
                         <Grid>
                             <Grid.Resources>
-
                                 <DataTemplate x:Key="DrawingVisualCircleTemplate" DataType="{x:Type local:DrawingVisualCircle}" >
                                     <StackPanel  Orientation="Horizontal">
+                                        <StackPanel.ContextMenu>
+                                            <ContextMenu>
+                                                <MenuItem Header="删除" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
+                                            </ContextMenu>
+                                        </StackPanel.ContextMenu>
                                         <TextBlock Width="{Binding ElementName=GridListHeader0,Path=ActualWidth}" Text="圆形" HorizontalAlignment="Center"/>
                                         <TextBlock Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}" Text="{Binding Attribute.ID}" HorizontalAlignment="Center"/>
                                         <CheckBox Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}" IsChecked="{Binding Attribute.IsShow}"  Click="CheckBox_Click" Tag="{Binding .}"/>
@@ -437,10 +441,13 @@
                                         <TextBlock  Width="{Binding ElementName=GridListHeader4,Path=ActualWidth}" Text="{Binding Path=Radius}" />
                                     </StackPanel>
                                 </DataTemplate>
-                               
-                                
                                 <DataTemplate x:Key="DrawingVisualRectangleTemplate"  DataType="{x:Type local:DrawingVisualRectangle}">
                                     <StackPanel  Orientation="Horizontal">
+                                        <StackPanel.ContextMenu>
+                                            <ContextMenu>
+                                                <MenuItem Header="删除" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
+                                            </ContextMenu>
+                                        </StackPanel.ContextMenu>
                                         <TextBlock Width="{Binding ElementName=GridListHeader0,Path=ActualWidth}" Text="矩形" HorizontalAlignment="Center"/>
                                         <TextBlock Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}" Text="{Binding Attribute.ID}" HorizontalAlignment="Center"/>
                                         <CheckBox Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}" IsChecked="{Binding Attribute.IsShow}" Click="CheckBox_Click" Tag="{Binding .}"/>
@@ -454,7 +461,7 @@
                                 </DataTemplate>
                                 <converter:DrawCanvasTemplateSelector x:Key="DrawCanvasTemplateSelector"  DrawingVisualRectangleTemplate ="{StaticResource DrawingVisualRectangleTemplate}"  DrawingVisualCircleTemplate ="{StaticResource DrawingVisualCircleTemplate}" />
                             </Grid.Resources>
-                            <ListView  x:Name="ListView1" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ItemTemplateSelector="{StaticResource  DrawCanvasTemplateSelector}" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged" >
+                            <ListView  x:Name="ListView1" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ItemTemplateSelector="{StaticResource  DrawCanvasTemplateSelector}" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" PreviewKeyDown="ListView1_PreviewKeyDown"  SelectionChanged="ListView1_SelectionChanged" >
                             
                             </ListView>
 
@@ -532,17 +539,12 @@
                 <DockPanel  x:Name="StatusBarItem1">
                     <StatusBarItem    Content="{Binding Path=MemoryThis}"/>
                 </DockPanel>
-
-                
-                
                 <DockPanel >
                     <StatusBarItem  x:Name="StatusBarMqtt" d:DataContext="{d:DesignInstance mqtt:MQTTControl}" HorizontalAlignment="Right">
                         <TextBlock Text="{Binding ConnectSign,StringFormat='MQTT：{0}'}"  />
                     </StatusBarItem>
                     <StatusBarItem  x:Name="StatusBarItem2" d:DataContext="{d:DesignInstance  local:PerformanceSetting}" HorizontalAlignment="Right" Content="{Binding Time}"/>
                 </DockPanel>
-
-
             </StatusBar>
         </Grid>
     </Grid>

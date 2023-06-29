@@ -18,6 +18,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Media.Media3D;
 
 namespace ColorVision
 {
@@ -97,9 +98,32 @@ namespace ColorVision
 
                 ImageShow.VisualsAdd += (s, e) =>
                 {
-                    if (s is IDrawingVisual visual && !DrawingVisualLists.Contains(visual))
+                    if (s is IDrawingVisual visual && !DrawingVisualLists.Contains(visual) && s is Visual visual1)
                     {
                         DrawingVisualLists.Add(visual);
+                        visual.GetAttribute().PropertyChanged += (s1, e1) =>
+                        {
+                            if (e1.PropertyName == "IsShow")
+                            {
+                                ListView1.ScrollIntoView(visual);
+                                ListView1.SelectedIndex = DrawingVisualLists.IndexOf(visual);
+                                if (visual.GetAttribute().IsShow == true)
+                                {
+                                    if (!ImageShow.ContainsVisual(visual1))
+                                    {
+                                        ImageShow.AddVisual(visual1);
+                                    }
+                                }
+                                else
+                                {
+                                    if (ImageShow.ContainsVisual(visual1))
+                                    {
+                                        ImageShow.RemoveVisual(visual1);
+                                    }
+                                }
+                            }
+                        };
+
                     }
                 };
 
@@ -246,19 +270,24 @@ namespace ColorVision
         {
             var Point = Mouse.GetPosition(ImageShow);
             var DrawingVisual = ImageShow.GetVisual(Point);
-            if (DrawingVisual != null)
+
+            if (DrawingVisual != null && DrawingVisual is IDrawingVisual drawing)
             {
                 var ContextMenu = new ContextMenu();
-                MenuItem menuItem = new MenuItem() { Header = "上移一层(_F)" };
-                MenuItem menuItem1 = new MenuItem() { Header = "下移一层(_B)" };
-                
+
+                MenuItem menuItem = new MenuItem() { Header = "隐藏(_H)" };
+                menuItem.Click += (s, e) =>
+                {
+                    drawing.GetAttribute().IsShow = false;
+                };
                 MenuItem menuIte2 = new MenuItem() { Header = "删除(_D)" };
+
                 menuIte2.Click += (s, e) =>
                 {
                     ImageShow.RemoveVisual(DrawingVisual);
+                    PropertyGrid2.SelectedObject = null;
                 };
                 ContextMenu.Items.Add(menuItem);
-                ContextMenu.Items.Add(menuItem1);
                 ContextMenu.Items.Add(menuIte2);
                 ImageShow.ContextMenu = ContextMenu;
             }
@@ -268,6 +297,27 @@ namespace ColorVision
             }
 
         }
+        private void ListView1_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Delete)
+            {
+                if (sender is ListView listView && listView.SelectedIndex > -1 && DrawingVisualLists[ListView1.SelectedIndex] is Visual visual)
+                {
+                    ImageShow.RemoveVisual(visual);
+                    PropertyGrid2.SelectedObject = null;
+                }
+            }
+        }
+
+        private void MenuItem_DrawingVisual_Delete(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Tag is Visual visual)
+            {
+                PropertyGrid2.SelectedObject = null;
+                ImageShow.RemoveVisual(visual);
+            }
+        }
+
 
         private void ImageShow_MouseDown(object sender, MouseButtonEventArgs e)
         {
@@ -550,25 +600,7 @@ namespace ColorVision
         {
             if (sender is CheckBox checkBox && checkBox.Tag is Visual visual && visual is IDrawingVisual iDdrawingVisual)
             {
-                ListView1.ScrollIntoView(iDdrawingVisual);
-                ListView1.SelectedIndex = DrawingVisualLists.IndexOf(iDdrawingVisual);
-                if (checkBox.IsChecked == true)
-                {
-                    if (!ImageShow.ContainsVisual(visual))
-                    {
-                        iDdrawingVisual.GetAttribute().IsShow = true;
-                        ImageShow.AddVisual(visual);
-                    }
 
-                }
-                else
-                {
-                    if (ImageShow.ContainsVisual(visual))
-                    {
-                        iDdrawingVisual.GetAttribute().IsShow = false;
-                        ImageShow.RemoveVisual(visual);
-                    }
-                }
             }
         }
 
@@ -886,6 +918,8 @@ namespace ColorVision
             //MessageBox.Show("流程执行完成");
             window.Close();
         }
+
+
     }
 
 

@@ -55,6 +55,10 @@ namespace ColorVision.SettingUp
 
         private static void WriteConfig<T>(string fileName, T? t)
         {
+            string DirectoryName = Path.GetDirectoryName(fileName);
+            if (DirectoryName != null && !Directory.Exists(DirectoryName))
+                Directory.CreateDirectory(DirectoryName);
+
             string jsonString = JsonSerializer.Serialize(t, new JsonSerializerOptions());
             File.WriteAllText(fileName, jsonString);
         }
