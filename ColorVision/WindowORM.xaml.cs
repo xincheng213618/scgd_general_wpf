@@ -56,6 +56,7 @@ namespace ColorVision
         private void Window_Initialized(object sender, EventArgs e)
         {
             connection = MySqlControl.GetInstance().MySqlConnection;
+            MySqlControl = MySqlControl.GetInstance();
         }
 
 
@@ -178,15 +179,15 @@ namespace ColorVision
             int rowsAffected = command.ExecuteNonQuery();
             return rowsAffected;
         }
-        public int Delete(int dd_id)
+        public int Delete(int ddid)
         {
             string deleteQuery = "DELETE FROM t_scgd_sys_dictionary_mod_master WHERE dd_id = @ddId";
             using MySqlCommand command = new MySqlCommand(deleteQuery, connection);
-            command.Parameters.AddWithValue("@ddId", dd_id);
+            command.Parameters.AddWithValue("@ddId", ddid);
             int rowsAffected = command.ExecuteNonQuery();
             return rowsAffected;
         }
-        DataSet dataSet = new DataSet();
+        public DataSet dataSet { get; set; } = new DataSet();
         private void Button_Click_4(object sender, RoutedEventArgs e)
         {
             List<Dictionary<string, object>> myList = new List<Dictionary<string, object>>();
@@ -208,24 +209,6 @@ namespace ColorVision
 
                     items =DataSetToList(dataSet);
                 }
-            }
-        }
-
-        public static void FillDataTable<T>(DataTable dt, List<T> items)
-        {
-            var propList = typeof(T).GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-
-            foreach (T t in items)
-            {
-                var row = dt.NewRow();
-                foreach (MemberInfo info in propList)
-                {
-                    if (info is PropertyInfo)
-                        row[info.Name] = (info as PropertyInfo).GetValue(t, null);
-                    else if (info is FieldInfo)
-                        row[info.Name] = (info as FieldInfo).GetValue(t);
-                }
-                dt.Rows.Add(row);
             }
         }
     }

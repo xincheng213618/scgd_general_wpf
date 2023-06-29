@@ -37,10 +37,8 @@ namespace ColorVision
         {
             foreach (object attribute in assembly.GetCustomAttributes(false))
             {
-                if (attribute is DebuggableAttribute)
+                if (attribute is DebuggableAttribute _attribute)
                 {
-                    DebuggableAttribute _attribute = attribute as DebuggableAttribute;
-
                     return _attribute.IsJITTrackingEnabled;
                 }
             }

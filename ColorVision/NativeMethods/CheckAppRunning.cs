@@ -74,9 +74,9 @@ namespace ColorVision.NativeMethods
                     // 如果窗口标题包含“提示”等关键词，则进行闪烁
                     if (new string(chars, 0, size).Contains(WindowTitle))
                     {
-
-                        var fvi = FileVersionInfo.GetVersionInfo(process.MainModule.FileName);
-                        Version versionrun = new Version(fvi.FileVersion);
+                        string FilenName = process.MainModule?.FileName;
+                        var fvi = FileVersionInfo.GetVersionInfo(FilenName ?? "");
+                        Version versionrun = new Version(fvi?.FileVersion ?? "");
                         Version version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
                         if (version != versionrun)
                         {
