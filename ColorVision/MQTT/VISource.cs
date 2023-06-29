@@ -37,21 +37,12 @@ namespace ColorVision.MQTT
         public MQTTVISource()
         {
             MQTTControl = MQTTControl.GetInstance();
-            MQTTControl.Connected += (s, e) => MQTTControlInit();
-            Task.Run(() => MQTTControl.Connect());
-        }
-
-
-        private void MQTTControlInit()
-        {
             SendTopic = "VISource";
             SubscribeTopic = "VISourceService";
-            MQTTControl.SubscribeAsyncClient(SubscribeTopic);
-            //如果之前绑定了，先移除在添加
-            MQTTControl.ApplicationMessageReceivedAsync -= MqttClient_ApplicationMessageReceivedAsync;
+            MQTTControl.ConnectEx(SubscribeTopic);
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
-            MQTTControl.Connected -= (s, e) => MQTTControlInit();
         }
+
 
         private Task MqttClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
         {

@@ -64,6 +64,7 @@ namespace ColorVision
             StatusBarMqtt.DataContext = MQTT.MQTTControl.GetInstance();
             MQTTControl = MQTTControl.GetInstance();
 
+           
 
 
         }
@@ -920,6 +921,11 @@ namespace ColorVision
         }
 
 
+        private void TextBlock_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            MQTTConnect mQTTConnect = new MQTTConnect() { Owner =this,WindowStartupLocation =WindowStartupLocation.CenterOwner};
+            mQTTConnect.ShowDialog();
+        }
     }
 
 

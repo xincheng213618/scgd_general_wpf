@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using ColorVision.SettingUp;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
@@ -31,4 +32,5 @@ namespace ColorVision.MVVM
             return true;
         }
     }
+
 }

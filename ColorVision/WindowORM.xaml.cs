@@ -55,8 +55,12 @@ namespace ColorVision
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            connection = MySqlControl.GetInstance().MySqlConnection;
             MySqlControl = MySqlControl.GetInstance();
+
+            if (!MySqlControl.Open())
+                MessageBox.Show("数据库连接失败");
+            connection = MySqlControl.GetInstance().MySqlConnection;
+
         }
 
 

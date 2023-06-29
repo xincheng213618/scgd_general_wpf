@@ -20,9 +20,28 @@ namespace ColorVision.MySql
         public MySqlControl()
         {
             MySqlConfig = GlobalSetting.GetInstance().SoftwareConfig.MySqlConfig;
+        }
+
+        public bool Open()
+        {
             string connStr = $"server={MySqlConfig.Host};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database}";
-            MySqlConnection = new MySqlConnection() { ConnectionString = connStr };
-            MySqlConnection.Open();
+            try
+            {
+                Log.LogWrite($"数据库连接信息:{connStr}");
+                MySqlConnection = new MySqlConnection() { ConnectionString = connStr };
+                MySqlConnection.Open();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.LogException(ex);
+                return false;
+            }
+        }
+
+        public void Close()
+        {
+            MySqlConnection.Close();
         }
 
     }

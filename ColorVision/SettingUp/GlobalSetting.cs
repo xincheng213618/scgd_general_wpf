@@ -29,14 +29,20 @@ namespace ColorVision.SettingUp
 
             AppDomain.CurrentDomain.ProcessExit += (s, e) =>
             {
-                WriteConfig(GlobalConst.SoftwareConfigFileName, SoftwareConfig);
+                SaveSoftwareConfig();
             };
         }
+
+
         readonly Lazy<SoftwareConfig> SoftwareConfigLazy;
 
         public SoftwareConfig SoftwareConfig { get => SoftwareConfigLazy.Value; }
 
 
+        public void SaveSoftwareConfig()
+        {
+            WriteConfig(GlobalConst.SoftwareConfigFileName, SoftwareConfig);
+        }
 
 
 

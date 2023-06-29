@@ -541,7 +541,7 @@
                 </DockPanel>
                 <DockPanel >
                     <StatusBarItem  x:Name="StatusBarMqtt" d:DataContext="{d:DesignInstance mqtt:MQTTControl}" HorizontalAlignment="Right">
-                        <TextBlock Text="{Binding ConnectSign,StringFormat='MQTT：{0}'}"  />
+                        <TextBlock Text="{Binding ConnectSign,StringFormat='MQTT：{0}'}"  MouseLeftButtonDown="TextBlock_MouseLeftButtonDown"/>
                     </StatusBarItem>
                     <StatusBarItem  x:Name="StatusBarItem2" d:DataContext="{d:DesignInstance  local:PerformanceSetting}" HorizontalAlignment="Right" Content="{Binding Time}"/>
                 </DockPanel>

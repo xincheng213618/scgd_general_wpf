@@ -36,20 +36,10 @@ namespace ColorVision.MQTT
         public MQTTPG()
         {
             MQTTControl = MQTTControl.GetInstance();
-            MQTTControl.Connected += (s, e) => MQTTControlInit();
-            Task.Run(() => MQTTControl.Connect());
-        }
-
-
-        private void MQTTControlInit()
-        {
             SendTopic = "PG";
             SubscribeTopic = "PGService";
-            MQTTControl.SubscribeAsyncClient(SubscribeTopic);
-            //如果之前绑定了，先移除在添加
-            MQTTControl.ApplicationMessageReceivedAsync -= MqttClient_ApplicationMessageReceivedAsync;
+            MQTTControl.ConnectEx(SubscribeTopic);
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
-            MQTTControl.Connected -= (s, e) => MQTTControlInit();
         }
 
 
