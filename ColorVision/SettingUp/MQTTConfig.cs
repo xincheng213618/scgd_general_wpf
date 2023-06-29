@@ -10,7 +10,7 @@ namespace ColorVision.SettingUp
     public class MQTTConfig : ViewModelBase
     {
         /// <summary>
-        /// IP地址
+        /// 连接名称
         /// </summary>
         public string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
         private string _Name;

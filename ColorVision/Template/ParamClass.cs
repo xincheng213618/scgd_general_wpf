@@ -29,30 +29,8 @@ namespace ColorVision.Template
     }
 
 
-    /// <summary>
-    /// 关注点模板
-    /// </summary>
-    public class PoiParam : ParamBase
-    {
-        /// <summary>
-        /// 关注点列表
-        /// </summary>
-        public List<PoiParamData> PoiPoints { get; set; }
-    }
 
-    public class PoiParamData
-    {
-        public string Name { set; get; }
-        public RiPointTypes PointType { set; get; }
-        public double PixX { set; get; }
-        public double PixY { set; get; }
-        public double PixWidth { set; get; }
-        public double PixHeight { set; get; }
-        public double CadX { set; get; }
-        public double CadY { set; get; }
-        public double CadWidth { set; get; }
-        public double CadHeight { set; get; }
-    }
+
 
     /// <summary>
     /// 关注点模板

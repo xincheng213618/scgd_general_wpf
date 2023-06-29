@@ -1,6 +1,7 @@
 ﻿using ColorVision.Extension;
 using ColorVision.MQTT;
 using ColorVision.MVVM;
+using ColorVision.MySql;
 using ColorVision.SettingUp;
 using ColorVision.Template;
 using System;
@@ -61,7 +62,8 @@ namespace ColorVision
             ListView1.ItemsSource = DrawingVisualLists;
             StatusBarItem1.DataContext = PerformanceSetting;
             StatusBarItem2.DataContext = PerformanceSetting;
-            StatusBarMqtt.DataContext = MQTT.MQTTControl.GetInstance();
+            StatusBarMqtt.DataContext = MQTTControl.GetInstance();
+            StatusBarMysql.DataContext = MySqlControl.GetInstance();
             MQTTControl = MQTTControl.GetInstance();
 
            
@@ -923,8 +925,12 @@ namespace ColorVision
 
         private void TextBlock_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            MQTTConnect mQTTConnect = new MQTTConnect() { Owner =this,WindowStartupLocation =WindowStartupLocation.CenterOwner};
-            mQTTConnect.ShowDialog();
+            new MQTTConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+
+        private void TextBlock_MouseLeftButtonDown1(object sender, MouseButtonEventArgs e)
+        {
+            new MySqlConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
     }
 

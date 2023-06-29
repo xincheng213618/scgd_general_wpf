@@ -2,6 +2,7 @@
 
 
 using ColorVision.Config;
+using ColorVision.Template;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -153,12 +154,7 @@ namespace ColorVision
         }
     }
 
-    public enum RiPointTypes
-    {
-        Circle = 0,
-        Rect = 1,
-        Mask = 2
-    }
+
 
 
     public class RoiPointData

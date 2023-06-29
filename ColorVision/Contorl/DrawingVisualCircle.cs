@@ -29,6 +29,10 @@ namespace ColorVision
         [Category("DrawingVisual"), DisplayName("序号")]
         public int ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
 
+        private string _Name;
+        [Category("DrawingVisual"), DisplayName("名称")]
+        public string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
+
         private bool _IsShow = true;
         [Category("DrawingVisual"), DisplayName("是否显示")]
         public bool IsShow { get => _IsShow; set { _IsShow = value; NotifyPropertyChanged(); } }

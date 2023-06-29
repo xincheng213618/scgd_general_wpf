@@ -143,10 +143,15 @@ namespace ColorVision.Template
                 switch (TemplateType)
                 {
                     case WindowTemplateType.PoiParam:
-                        new WindowFocusPoint() { Owner = Application.Current.MainWindow }.Show();
+                        if (ListConfigs[listView.SelectedIndex].Value is PoiParam poiParam)
+                        {
+                            new WindowFocusPoint(poiParam) { Owner = Application.Current.MainWindow }.Show();
+                        }
+                        this.Close();
                         break;
                     case WindowTemplateType.LedParam:
                         new WindowLedCheck() { Owner = Application.Current.MainWindow }.Show();
+                        this.Close();
                         break;
                     case WindowTemplateType.FlowParam:
                         if (ListConfigs[listView.SelectedIndex].Value is FlowParam flowParam)
@@ -154,6 +159,7 @@ namespace ColorVision.Template
                             flowParam.FileName ??= ListConfigs[listView.SelectedIndex].Name;
                             new FlowEngine.WindowFlowEngine(flowParam) { Owner = Application.Current.MainWindow }.Show();
                         }
+                        this.Close();
                         break;
                 }
             }

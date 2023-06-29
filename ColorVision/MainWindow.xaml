@@ -535,16 +535,32 @@
             <GridSplitter  Grid.Column="2"  Width="1" HorizontalAlignment="Left" />
         </Grid>
         <Grid Grid.Row="2" x:Name="StatusBarGrid" Visibility="{Binding ElementName=MenuStatusBar,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
-            <StatusBar  DataContext="{Binding performanceSetting}" Grid.ColumnSpan="2">
-                <DockPanel  x:Name="StatusBarItem1">
+            <StatusBar>
+                <StatusBar.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                        </Grid>
+                    </ItemsPanelTemplate>
+                </StatusBar.ItemsPanel>
+                <DockPanel  x:Name="StatusBarItem1" d:DataContext="{d:DesignInstance  local:PerformanceSetting}" >
                     <StatusBarItem    Content="{Binding Path=MemoryThis}"/>
                 </DockPanel>
-                <DockPanel >
-                    <StatusBarItem  x:Name="StatusBarMqtt" d:DataContext="{d:DesignInstance mqtt:MQTTControl}" HorizontalAlignment="Right">
-                        <TextBlock Text="{Binding ConnectSign,StringFormat='MQTT：{0}'}"  MouseLeftButtonDown="TextBlock_MouseLeftButtonDown"/>
-                    </StatusBarItem>
-                    <StatusBarItem  x:Name="StatusBarItem2" d:DataContext="{d:DesignInstance  local:PerformanceSetting}" HorizontalAlignment="Right" Content="{Binding Time}"/>
-                </DockPanel>
+                <StatusBarItem Grid.Column="1" >
+                    <DockPanel>
+                        <StatusBarItem  x:Name="StatusBarMysql" d:DataContext="{d:DesignInstance mqtt:MQTTControl}">
+                            <TextBlock Text="{Binding ConnectSign,StringFormat='MySql：{0}'}"  MouseLeftButtonDown="TextBlock_MouseLeftButtonDown1"/>
+                        </StatusBarItem>
+                        <StatusBarItem  x:Name="StatusBarMqtt" d:DataContext="{d:DesignInstance mqtt:MQTTControl}">
+                            <TextBlock Text="{Binding ConnectSign,StringFormat='MQTT：{0}'}"  MouseLeftButtonDown="TextBlock_MouseLeftButtonDown"/>
+                        </StatusBarItem>
+                        <StatusBarItem  x:Name="StatusBarItem2" d:DataContext="{d:DesignInstance  local:PerformanceSetting}"  Content="{Binding Time}"/>
+                    </DockPanel>
+                </StatusBarItem>
+
             </StatusBar>
         </Grid>
     </Grid>

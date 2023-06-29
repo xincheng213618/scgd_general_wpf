@@ -1,6 +1,8 @@
 ﻿using ColorVision.Extension;
 using ColorVision.MQTT;
+using ColorVision.Template;
 using ColorVision.Util;
+using cvColorVision;
 using Gu.Wpf.Geometry;
 using log4net;
 using Microsoft.VisualBasic.Logging;
@@ -21,14 +23,63 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Media.Media3D;
 using System.Windows.Shapes;
+using Xceed.Wpf.Toolkit.Zoombox;
 
-namespace ColorVision
+namespace ColorVision.Template
 {
+
+
+    /// <summary>
+    /// 关注点模板
+    /// </summary>
+    public class PoiParam : ParamBase
+    {
+        public PoiParam()
+        {
+        }
+
+        public int Width { get => _Width; set { _Width = value; NotifyPropertyChanged(); } }
+        private int _Width;
+
+        public int Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
+        private int _Height;
+
+
+        /// <summary>
+        /// 关注点列表
+        /// </summary>
+        public List<PoiParamData> PoiPoints { get; set; } = new List<PoiParamData>();
+    }
+
+
+    public enum RiPointTypes
+    {
+        Circle = 0,
+        Rect = 1,
+        Mask = 2
+    }
+
+    public class PoiParamData
+    {
+        public string Name { set; get; }
+        public RiPointTypes PointType { set; get; }
+        public double PixX { set; get; }
+        public double PixY { set; get; }
+        public double PixWidth { set; get; }
+        public double PixHeight { set; get; }
+        public double CadX { set; get; }
+        public double CadY { set; get; }
+        public double CadWidth { set; get; }
+        public double CadHeight { set; get; }
+    }
+
+
 
     public class CADPoints
     {
-        public Point X1 { get; set; } = new Point() { X=100, Y=100 };
+        public Point X1 { get; set; } = new Point() { X = 100, Y = 100 };
         public Point X2 { get; set; } = new Point() { X = 300, Y = 100 };
         public Point X3 { get; set; } = new Point() { X = 300, Y = 300 };
         public Point X4 { get; set; } = new Point() { X = 100, Y = 300 };
@@ -49,8 +100,8 @@ namespace ColorVision
             [Description("相对值")]
             Relative
         }
-        public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
 
+        public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
 
         CADPoints CADPoints { get; set; } = new CADPoints();
 
@@ -59,9 +110,92 @@ namespace ColorVision
             InitializeComponent();
             ListView1.ItemsSource = DrawingVisualLists;
             StackPanelCADPoints.DataContext = CADPoints;
+            PoiParam = new PoiParam();
         }
 
-        private void Window_Initialized(object sender, EventArgs e)
+
+        PoiParam PoiParam { get; set; }
+        public WindowFocusPoint(PoiParam poiParam)
+        {
+            PoiParam = poiParam;
+            InitializeComponent();
+            ListView1.ItemsSource = DrawingVisualLists;
+            StackPanelCADPoints.DataContext = CADPoints;
+            RadioButtonCAD.IsChecked = true;
+            this.DataContext = PoiParam;
+
+
+            this.Closed += (s, e) =>
+            {
+                foreach (var item in DrawingVisualLists)
+                {
+                    DrawAttributeBase drawAttributeBase = item.GetAttribute();
+                    if (drawAttributeBase is CircleAttribute circle)
+                    {
+
+                        PoiParamData poiParamData = new PoiParamData()
+                        {
+                            Name = circle.ID.ToString(),
+                            PointType = RiPointTypes.Circle,
+                            PixX = circle.Center.X,
+                            PixY = circle.Center.Y,
+                            PixWidth = circle.Radius,
+                            PixHeight = circle.Radius,
+                        };
+                        PoiParam.PoiPoints.Add(poiParamData);
+
+                    }
+                    else if (drawAttributeBase is RectangleAttribute rectangle)
+                    {
+                        PoiParamData poiParamData = new PoiParamData()
+                        {
+                            Name = rectangle.ID.ToString(),
+                            PointType = RiPointTypes.Rect,
+                            PixX = rectangle.Rect.X,
+                            PixY = rectangle.Rect.Y,
+                            PixWidth = rectangle.Rect.Width,
+                            PixHeight = rectangle.Rect.Height,
+                        };
+                        PoiParam.PoiPoints.Add(poiParamData);
+                    }
+                }
+            };
+
+        }
+
+        private void PoiParamToDrawingVisual(PoiParam poiParam)
+        {
+            foreach (var item in poiParam.PoiPoints)
+            {
+                switch(item.PointType)
+                {
+                    case RiPointTypes.Circle:
+                        DrawingVisualCircleWord drawingVisualCircle = new DrawingVisualCircleWord();
+                        drawingVisualCircle.Attribute.Center = new Point(item.PixX, item.PixY);
+                        drawingVisualCircle.Attribute.Radius = item.PixWidth;
+                        drawingVisualCircle.Attribute.Brush = Brushes.Transparent;
+                        drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                        drawingVisualCircle.Attribute.ID = int.Parse(item.Name);
+                        drawingVisualCircle.Render();
+                        ImageShow.AddVisual(drawingVisualCircle);
+                        break;
+                    case RiPointTypes.Rect:
+                        DrawingVisualRectangle drawingVisualRectangle = new DrawingVisualRectangle();
+                        drawingVisualRectangle.Attribute.Rect = new Rect(item.PixX, item.PixY,item.PixWidth,item.PixHeight);
+                        drawingVisualRectangle.Attribute.Brush = Brushes.Transparent;
+                        drawingVisualRectangle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                        drawingVisualRectangle.Attribute.ID = int.Parse(item.Name);
+                        drawingVisualRectangle.Render();
+                        ImageShow.AddVisual(drawingVisualRectangle);
+                        break;
+                    case RiPointTypes.Mask:
+                        break;
+                }
+            }
+        }
+
+
+        private async void Window_Initialized(object sender, EventArgs e)
         {
             ComboBoxBorderType.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>()
                                              select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
@@ -74,6 +208,9 @@ namespace ColorVision
                 }
             };
             WindowState = WindowState.Maximized;
+
+
+
 
 
             ImageShow.VisualsAdd += (s, e) =>
@@ -116,6 +253,18 @@ namespace ColorVision
                         DrawingVisualLists.Remove(visual);
                 }
             };
+
+            if (PoiParam.Height != 0 && PoiParam.Width != 0)
+            {
+                await Task.Delay(300);
+                CreateImage(PoiParam.Width, PoiParam.Height, System.Windows.Media.Colors.White);
+                PoiParamToDrawingVisual(PoiParam);
+            }
+            else
+            {
+                PoiParam.Width = 400;
+                PoiParam.Height = 300;
+            }
         }
 
         private void button1_Click(object sender, RoutedEventArgs e)
@@ -137,7 +286,13 @@ namespace ColorVision
             if (!int.TryParse(TextBoxCADH.Text, out int height))
                 height = 300;
 
-            BitmapImage bitmapImage = ImageUtil.CreateSolidColorBitmap(width,height, System.Windows.Media.Colors.White);
+            CreateImage(width, height, System.Windows.Media.Colors.White);
+        }
+
+
+        private void CreateImage(int width, int height, System.Windows.Media.Color color)
+        {
+            BitmapImage bitmapImage = ImageUtil.CreateSolidColorBitmap(width, height, color);
             ImageShow.Source = bitmapImage;
             Zoombox1.ZoomUniform();
 
@@ -156,7 +311,12 @@ namespace ColorVision
                     }
                 }
             };
+
+            ImageShow.Clear();
+            DrawingVisualLists.Clear();
+            PropertyGrid2.SelectedObject = null;
         }
+
 
         public List<DrawingVisualCircle> DefaultPoint { get; set; } = new List<DrawingVisualCircle>();
 
@@ -188,7 +348,7 @@ namespace ColorVision
                 drawingVisualCircle.Attribute.Radius = 5;
                 drawingVisualCircle.Attribute.Brush = Brushes.Transparent;
                 drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red, 2);
-                drawingVisualCircle.Attribute.ID = i+1;
+                drawingVisualCircle.Attribute.ID = i + 1;
                 drawingVisualCircle.Render();
                 DefaultPoint.Add(drawingVisualCircle);
                 ImageShow.AddVisual(drawingVisualCircle);
@@ -201,6 +361,10 @@ namespace ColorVision
             {
                 BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
                 ImageShow.Source = new BitmapImage(new Uri(filePath));
+
+                PoiParam.Width = bitmapImage.PixelWidth;
+                PoiParam.Height = bitmapImage.PixelHeight;
+
                 Zoombox1.ZoomUniform();
 
                 Zoombox1.LayoutUpdated += (s, e) =>
@@ -325,7 +489,7 @@ namespace ColorVision
                     startR = 0;
 
 
-                if (ComboBoxBorderType.SelectedItem is KeyValuePair<BorderType, string> KeyValue && KeyValue.Key== BorderType.Relative)
+                if (ComboBoxBorderType.SelectedItem is KeyValuePair<BorderType, string> KeyValue && KeyValue.Key == BorderType.Relative)
                 {
                     startU = bitmapImage.PixelHeight * startU / 100;
                     startD = bitmapImage.PixelHeight * startD / 100;
@@ -334,8 +498,8 @@ namespace ColorVision
                     startR = bitmapImage.PixelWidth * startR / 100;
                 }
 
-                double StepRow = (bitmapImage.PixelHeight - startD - startU) / (rows-1);
-                double StepCol= (bitmapImage.PixelWidth - startL - startR) / (cols-1);
+                double StepRow = (bitmapImage.PixelHeight - startD - startU) / (rows - 1);
+                double StepCol = (bitmapImage.PixelWidth - startL - startR) / (cols - 1);
 
 
 
@@ -344,21 +508,21 @@ namespace ColorVision
                 {
                     for (int j = 0; j < cols; j++)
                     {
-                        if (RadioButtonCircle.IsChecked==true)
+                        if (RadioButtonCircle.IsChecked == true)
                         {
                             DrawingVisualCircle drawingVisualCircle = new DrawingVisualCircleWord();
                             drawingVisualCircle.Attribute.Center = new Point(startL + StepCol * j, startU + StepRow * i);
                             drawingVisualCircle.Attribute.Radius = 100;
                             drawingVisualCircle.Attribute.Brush = Brushes.Transparent;
-                            drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red, 10);
-                            drawingVisualCircle.Attribute.ID = start + i * cols + j +1;
+                            drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                            drawingVisualCircle.Attribute.ID = start + i * cols + j + 1;
                             drawingVisualCircle.Render();
                             ImageShow.AddVisual(drawingVisualCircle);
                         }
                         else
                         {
-                            DrawingVisualRectangle drawingVisualCircle = new  DrawingVisualRectangle();
-                            drawingVisualCircle.Attribute.Rect = new Rect(startL + StepCol * j, startU + StepRow * i,100,100);
+                            DrawingVisualRectangle drawingVisualCircle = new DrawingVisualRectangle();
+                            drawingVisualCircle.Attribute.Rect = new Rect(startL + StepCol * j, startU + StepRow * i, 100, 100);
                             drawingVisualCircle.Attribute.Brush = Brushes.Transparent;
                             drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red, 10);
                             drawingVisualCircle.Render();

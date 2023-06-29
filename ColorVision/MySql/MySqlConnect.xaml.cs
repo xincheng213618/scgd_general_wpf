@@ -14,14 +14,14 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
-namespace ColorVision.MQTT
+namespace ColorVision.MySql
 {
     /// <summary>
     /// MySqlConnect.xaml 的交互逻辑
     /// </summary>
-    public partial class MQTTConnect : Window
+    public partial class MySqlConnect : Window
     {
-        public MQTTConnect()
+        public MySqlConnect()
         {
             InitializeComponent();
         }
@@ -45,39 +45,38 @@ namespace ColorVision.MQTT
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(MQTTConfig.Name))
+            if (string.IsNullOrEmpty(MySqlConfig.Name))
             {
-                MQTTConfig.Name = MQTTConfig.Host +"_" +MQTTConfig.Port;
+                MySqlConfig.Name = MySqlConfig.Host +"_" +MySqlConfig.Port;
             }
-
             GlobalSetting.GetInstance().SaveSoftwareConfig();
-            Task.Run(() => MQTTControl.GetInstance().Connect());
+            MySqlControl.GetInstance().Open();
             this.Close();
         }
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
-            MQTTConfigBackUp.CopyTo(MQTTConfig);
+            MySqlConfigBackUp.CopyTo(MySqlConfig);
             this.Close();
         }
 
 
-        public MQTTConfig MQTTConfig { get;set;}
+        public MySqlConfig MySqlConfig { get;set;}
 
-        private MQTTConfig MQTTConfigBackUp { get; set; }
+        private MySqlConfig MySqlConfigBackUp { get; set; }
 
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            MQTTConfig= GlobalSetting.GetInstance().SoftwareConfig.MQTTConfig;
-            GridMQTT.DataContext = MQTTConfig;
-            MQTTConfigBackUp = new MQTTConfig();
-            MQTTConfig.CopyTo(MQTTConfigBackUp);
+            MySqlConfig= GlobalSetting.GetInstance().SoftwareConfig.MySqlConfig;
+            GridMQTT.DataContext = MySqlConfig;
+            MySqlConfigBackUp = new MySqlConfig();
+            MySqlConfig.CopyTo(MySqlConfigBackUp);
         }
 
-        private async void Button_Click_Test(object sender, RoutedEventArgs e)
+        private void Button_Click_Test(object sender, RoutedEventArgs e)
         {
-            bool IsConnect = await MQTTControl.TestConnect(MQTTConfig);
+            bool IsConnect = MySqlControl.TestConnect(MySqlConfig);
             MessageBox.Show($"连接{(IsConnect ? "成功" : "失败")}");
 
         }
