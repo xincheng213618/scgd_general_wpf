@@ -52,8 +52,12 @@ namespace ColorVision.MQTT
         private bool IsRun;
         public async Task<bool> Connect()
         {
+            MQTTHelper.MqttClient?.Dispose();
+
             if (IsRun) return false;
             IsRun = true;
+
+
             ConnectSign = "未连接";
 
             ResultDataMQTT resultDataMQTT = await MQTTHelper.CreateMQTTClientAndStart(MQTTConfig.Host, MQTTConfig.Port, MQTTConfig.UserName, MQTTConfig.UserPwd);
@@ -63,17 +67,18 @@ namespace ColorVision.MQTT
                 IsRun = false;
                 return false;
             }
+            if (MQTTHelper.MqttClient != null)
+            {
+                MQTTHelper.MqttClient.ApplicationMessageReceivedAsync += (arg) =>
+                {
+                    ApplicationMessageReceivedAsync.Invoke(arg); return Task.CompletedTask;
+                };
+                MQTTHelper.MqttClient.DisconnectedAsync += (arg) =>
+                {
+                    IsConnect = false; return Task.CompletedTask;
+                };
+            }
 
-            MQTTHelper.MqttClient.ApplicationMessageReceivedAsync += (arg) =>
-            {
-                ApplicationMessageReceivedAsync.Invoke(arg); return Task.CompletedTask;
-            };
-            MQTTHelper.MqttClient.DisconnectedAsync += async (arg) =>
-            {
-                IsConnect = false;
-                await MQTTHelper.CreateMQTTClientAndStart(MQTTConfig.Host, MQTTConfig.Port, MQTTConfig.UserName, MQTTConfig.UserPwd);
-                IsConnect = true;
-            };
             IsConnect = true;
             ConnectSign = "已连接";
             Connected?.Invoke(this, new EventArgs());
@@ -117,7 +122,7 @@ namespace ColorVision.MQTT
 
 
         List<string> SubscribeTopicCache = new List<string>();
-        public void ConnectEx(string SubscribeTopic)
+        public void SubscribeCache(string SubscribeTopic)
         {
             if (IsConnect)
             {

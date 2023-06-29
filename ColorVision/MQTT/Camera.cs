@@ -83,7 +83,7 @@ namespace ColorVision.MQTT
             MQTTControl = MQTTControl.GetInstance();
             SendTopic = "Camera";
             SubscribeTopic = "CameraService";
-            MQTTControl.ConnectEx(SubscribeTopic);
+            MQTTControl.SubscribeCache(SubscribeTopic);
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
         }
 

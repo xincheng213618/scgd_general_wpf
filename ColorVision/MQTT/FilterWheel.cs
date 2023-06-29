@@ -22,7 +22,7 @@ namespace ColorVision.MQTT
             MQTTControl = MQTTControl.GetInstance();
             SendTopic = "FilterWheel";
             SubscribeTopic = "FilterWheelService";
-            MQTTControl.ConnectEx(SubscribeTopic);
+            MQTTControl.SubscribeCache(SubscribeTopic);
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
         }
 

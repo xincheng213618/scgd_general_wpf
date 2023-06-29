@@ -53,7 +53,7 @@ namespace ColorVision.MQTT
             this.MQTTControl = mQTTControl;
             this.SendTopic = "SYS.CMD." +topic;
             this.SubscribeTopic = "SYS.STATUS." + topic;
-            MQTTControl.ConnectEx(SubscribeTopic);
+            MQTTControl.SubscribeCache(SubscribeTopic);
             MQTTControl.ApplicationMessageReceivedAsync += MQTTControl_ApplicationMessageReceivedAsync;
         }
 

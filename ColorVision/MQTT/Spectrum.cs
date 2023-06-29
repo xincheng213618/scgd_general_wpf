@@ -25,7 +25,7 @@ namespace ColorVision.MQTT
             MQTTControl = MQTTControl.GetInstance();
             SendTopic = "Spectrum";
             SubscribeTopic = "SpectrumService";
-            MQTTControl.ConnectEx(SubscribeTopic);
+            MQTTControl.SubscribeCache(SubscribeTopic);
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
 
         }
