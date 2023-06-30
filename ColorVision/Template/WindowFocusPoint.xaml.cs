@@ -131,7 +131,7 @@ namespace ColorVision.Template
             InitializeComponent();
             ListView1.ItemsSource = DrawingVisualLists;
             StackPanelCADPoints.DataContext = CADPoints;
-            RadioButtonCAD.IsChecked = true;
+            //RadioButtonCAD.IsChecked = true;
             this.DataContext = PoiParam;
 
 
