@@ -220,7 +220,7 @@ namespace ColorVision
                 MessageBox.Show($"删除DdId{items.Last().DdId}失败");
             }
         }
-        List<DictionaryModMaster> items;
+        List<DictionaryModMaster> items = new List<DictionaryModMaster>();
         private void Button_Click_3(object sender, RoutedEventArgs e)
         {
             Update();

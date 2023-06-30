@@ -148,7 +148,6 @@ namespace ColorVision.Template
                         }
                         break;
                     case WindowTemplateType.LedParam:
-                        new WindowLedCheck() { Owner = Application.Current.MainWindow }.Show();
                         break;
                     case WindowTemplateType.FlowParam:
                         if (ListConfigs[listView.SelectedIndex].Value is FlowParam flowParam)

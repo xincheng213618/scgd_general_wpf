@@ -87,7 +87,8 @@ namespace ColorVision.MySql
             {
                 MySqlDataAdapter adapter = new MySqlDataAdapter(sql, MySqlControl.MySqlConnection);
                 int count = adapter.Fill(dt);
-            } catch (Exception ex) {
+            }
+            catch (Exception ex) {
                 log.Error(ex);
             }
 
@@ -107,7 +108,10 @@ namespace ColorVision.MySql
                 MySqlDataAdapter adapter = new MySqlDataAdapter(command);
                 int count = adapter.Fill(dt);
             }
-            catch (Exception ex) { }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
             return dt;
         }
 
@@ -119,7 +123,10 @@ namespace ColorVision.MySql
                 MySqlCommand command = new MySqlCommand(sql, MySqlControl.MySqlConnection);
                 count = command.ExecuteNonQuery();
             }
-            catch (Exception ex) { }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
             return count;
         }
 
@@ -135,7 +142,10 @@ namespace ColorVision.MySql
                 }
                 count = command.ExecuteNonQuery();
             }
-            catch (Exception ex) { }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
             return count;
         }
 
@@ -147,7 +157,10 @@ namespace ColorVision.MySql
                 MySqlDataAdapter adapter = new MySqlDataAdapter("", MySqlControl.MySqlConnection);
                 count = adapter.Update(dt);
             }
-            catch (Exception ex) { }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
 
             return count;
         }
