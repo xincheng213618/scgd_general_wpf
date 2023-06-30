@@ -8,13 +8,14 @@ namespace ColorVision.MySql
 {
     public class PoiDetail
     {
-        string Tables = "t_scgd_cfg_poi_master";
+        private string Tables { get; set; } = "t_scgd_cfg_poi_master";
 
         public MySqlControl MySqlControl { get; set; }
 
         public PoiDetail()
         {
             MySqlControl = MySqlControl.GetInstance();
+            Tables = "1";
         }
         
     }

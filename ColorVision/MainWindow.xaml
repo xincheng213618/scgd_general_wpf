@@ -33,7 +33,6 @@
                     <MenuItem Header="数据判断模板设置(_J)" Tag="LedReusltParams"  Click="MenuItem_Template"/>
                     <MenuItem Header="源表模板设置(_V)"  Tag="SxParms" Click="MenuItem_Template"/>
                     <MenuItem Header="关注点模板设置(_A)" Tag="FocusParm" Click="MenuItem_Template"/>
-                    <MenuItem Header="灯珠检测模板(_L)"  Tag="LedParam"  Click="MenuItem_Template"/>
                     <MenuItem Header="流程引擎模板(_F)" Tag="FlowParam"  Click="MenuItem_Template"/>
                 </MenuItem>
                 <MenuItem Header="视图(_V)">

@@ -54,12 +54,17 @@
                                     </UniformGrid>
                                 </StackPanel>
                             </GroupBox>
+                        </StackPanel>
+                    </Border>
 
+                    <Border Margin="5" Style="{StaticResource BorderModuleArea}">
+                        <StackPanel>
                             <GroupBox Header="模式" Margin="5">
                                 <StackPanel  Margin="5">
-                                    <UniformGrid Columns="2" Margin="5">
-                                        <RadioButton x:Name="RadioButtonMode1" Content="布点基准" IsChecked="True" />
-                                        <RadioButton x:Name="RadioButtonMode2" Content="灯珠计算"  />
+                                    <UniformGrid Columns="3" Margin="5">
+                                        <RadioButton x:Name="RadioButtonMode1" Content="手动布点" IsChecked="True" />
+                                        <RadioButton x:Name="RadioButtonMode2" Content="自动布点"/>
+                                        <RadioButton x:Name="RadioButtonMode3" Content="导入布点"/>
                                     </UniformGrid>
                                 </StackPanel>
                             </GroupBox>
@@ -84,47 +89,47 @@
                                                 <RadioButton x:Name="RadioButtonBuildMode3" Content="自动计算"  />
                                             </UniformGrid>
                                         </StackPanel>
-                                        <StackPanel  x:Name="StackPanelCADPoints" Visibility="{Binding ElementName=RadioButtonBuildMode1, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}"  d:DataContext="{d:DesignInstance Template:CADPoints}" Margin="5">
+                                        <StackPanel  x:Name="StackPanelDatumAreaPoints" Visibility="{Binding ElementName=RadioButtonBuildMode1, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}"  d:DataContext="{d:DesignInstance Template:DatumAreaPoints}" Margin="5">
                                             <UniformGrid Columns="2">
                                                 <DockPanel  Margin="2">
                                                     <TextBlock Text="X1.X:" />
-                                                    <TextBox  Text="{Binding X1.X}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                    <TextBox  Text="{Binding X1X}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                                                 </DockPanel>
                                                 <DockPanel Margin="2" >
                                                     <TextBlock Text="X1Y:" />
-                                                    <TextBox   Text="{Binding X1.Y}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                    <TextBox   Text="{Binding X1Y}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                                                 </DockPanel>
                                                 <DockPanel  Margin="2">
                                                     <TextBlock Text="X2X:" />
-                                                    <TextBox  Text="{Binding X2.X}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                    <TextBox  Text="{Binding X2X}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                                                 </DockPanel>
                                                 <DockPanel Margin="2" >
                                                     <TextBlock Text="X2Y:" />
-                                                    <TextBox   Text="{Binding X2.Y}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                    <TextBox   Text="{Binding X2Y}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                                                 </DockPanel>
                                                 <DockPanel  Margin="2">
                                                     <TextBlock Text="X3X:" />
-                                                    <TextBox  Text="{Binding X3.X}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                    <TextBox  Text="{Binding X3X}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                                                 </DockPanel>
                                                 <DockPanel Margin="2" >
                                                     <TextBlock Text="X3Y:" />
-                                                    <TextBox   Text="{Binding X3.Y}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                    <TextBox   Text="{Binding X3Y}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                                                 </DockPanel>
                                                 <DockPanel  Margin="2">
                                                     <TextBlock Text="X4X:" />
-                                                    <TextBox  Text="{Binding X4.X}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                    <TextBox  Text="{Binding X4X}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                                                 </DockPanel>
                                                 <DockPanel Margin="2" >
                                                     <TextBlock Text="X4Y:" />
-                                                    <TextBox   Text="{Binding X4.Y}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                    <TextBox   Text="{Binding X4Y}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                                                 </DockPanel>
                                                 <DockPanel  Margin="2">
                                                     <TextBlock Text="CenterX:"/>
-                                                    <TextBox  Text="{Binding Center.X}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                    <TextBox  Text="{Binding CenterX}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                                                 </DockPanel>
                                                 <DockPanel Margin="2" >
                                                     <TextBlock Text="CenterY:"/>
-                                                    <TextBox   Text="{Binding Center.Y}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                    <TextBox   Text="{Binding CenterY}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                                                 </DockPanel>
                                             </UniformGrid>
                                             <Button  Content="基准4个点以及中心点" Click="SetDeafult_Click" Margin="2"/>
@@ -175,33 +180,23 @@
                                         <StackPanel  Margin="5"  Visibility="{Binding ElementName=RadioButtonAreaCircle, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
                                             <DockPanel  Margin="5">
                                                 <TextBlock Text="半径:" Width="40"/>
-                                                <TextBox  x:Name="TextBoxAreaCircleR" Margin="15,0,30,0" Text="10"  BorderThickness="0,0,0,1"  PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                <TextBox  x:Name="TextBoxAreaCircleR" Margin="15,0,30,0" Text="100"  BorderThickness="0,0,0,1"  PreviewTextInput="TextBox_PreviewTextInput"/>
                                             </DockPanel>
 
                                             <UniformGrid Columns="2" Margin="5">
                                                 <DockPanel>
                                                     <TextBlock Text="数量:"  Width="40"/>
-                                                    <TextBox x:Name="tbNum" Margin="15,0,30,0" Text="3" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput" />
+                                                    <TextBox x:Name="tbNum" Margin="15,0,30,0" Text="6" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput" />
                                                 </DockPanel>
                                                 <DockPanel>
                                                     <TextBlock Text="角度:"  Width="40"/>
-                                                    <TextBox x:Name="tbAngle" Margin="15,0,30,0"  Text="3" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                    <TextBox x:Name="tbAngle" Margin="15,0,30,0"  Text="0" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                                                 </DockPanel>
                                             </UniformGrid>
 
 
                                         </StackPanel>
                                         <StackPanel  Margin="5"  Visibility="{Binding ElementName=RadioButtonAreaRect, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
-                                            <UniformGrid   Columns="2" Margin="5">
-                                                <DockPanel>
-                                                    <TextBlock Text="宽度:" Width="40"/>
-                                                    <TextBox x:Name="tbWidth"  Margin="15,0,30,0" Text="3" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput" />
-                                                </DockPanel>
-                                                <DockPanel>
-                                                    <TextBlock Text="高度:" Width="40"/>
-                                                    <TextBox x:Name="tbHeight"  Margin="15,0,30,0"  Text="3" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
-                                                </DockPanel>
-                                            </UniformGrid>
                                             <UniformGrid  Columns="2" Margin="5">
                                                 <DockPanel>
                                                     <TextBlock Text="行数:"  Width="40"/>
@@ -213,13 +208,10 @@
                                                 </DockPanel>
                                             </UniformGrid>
                                         </StackPanel>
-                                        <Button Content="生成区域"/>
+                                        <Button Content="显示布点区域"  Click="Button_Click"/>
                                     </StackPanel>
                                 </GroupBox>
                                 
-                                <GroupBox Header="点阵数" Margin="5">
-
-                                </GroupBox>
                                 <GroupBox Header="点形状" Margin="5">
                                     <StackPanel>
                                         <UniformGrid Columns="2" Margin="5">
@@ -230,7 +222,7 @@
                                         <StackPanel Margin="5" Visibility="{Binding ElementName=RadioButtonCircle, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
                                             <DockPanel Margin="2" >
                                                 <TextBlock Text="半径:" Width="40"/>
-                                                <TextBox  x:Name="TextBoxCircleR" Text="10"  BorderThickness="0,0,0,1"  PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                <TextBox  x:Name="TextBoxCircleR" Text="{Binding DeafultCircleRadius}"  BorderThickness="0,0,0,1"  PreviewTextInput="TextBox_PreviewTextInput"/>
                                             </DockPanel>
                                         </StackPanel>
 
@@ -239,32 +231,23 @@
                                             <UniformGrid Columns="2">
                                                 <DockPanel Margin="2" >
                                                     <TextBlock Text="宽度:" Width="40"/>
-                                                    <TextBox  x:Name="TextBoxRectW" Text="10" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                    <TextBox  x:Name="TextBoxRectW" Text="{Binding DeafultRectWidth}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                                                 </DockPanel>
                                                 <DockPanel Margin="2" >
                                                     <TextBlock Text="高度:" Width="40"/>
-                                                    <TextBox  x:Name="TextBoxRectH" Text="10" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                    <TextBox  x:Name="TextBoxRectH" Text="{Binding DeafultRectHeight}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                                                 </DockPanel>
                                             </UniformGrid>
                                         </StackPanel>
                                     </StackPanel>
                                 </GroupBox>
 
-                                <Border Margin="5" Style="{StaticResource BorderModuleArea}">
-                                    <GroupBox Header="发光区" Margin="5">
-
-                                    </GroupBox>
-                                </Border>
-                                <Border Margin="5" Style="{StaticResource BorderModuleArea}">
-                                    <StackPanel  Margin="5">
-                                        <UniformGrid Columns="2">
-                                            <Button x:Name="button2" Content="绘制行列图像" Click="button2_Click"/>
-                                            <Button x:Name="button3" Content="清空" Click="button3_Click"/>
-                                            <Button x:Name="button4" Content="生成" Click="button3_Click"/>
-                                            <Button x:Name="button5" Content="导出" Click="button3_Click"/>
-                                        </UniformGrid>
-                                    </StackPanel>
-                                </Border>
+                                <StackPanel  Margin="5">
+                                    <UniformGrid Columns="2">
+                                        <Button x:Name="button2" Margin="2" Content="绘制关注点" Click="button2_Click"/>
+                                        <Button x:Name="button3"  Margin="2"  Content="清空关注点" Click="button3_Click"/>
+                                    </UniformGrid>
+                                </StackPanel>
                             </StackPanel>
                         </StackPanel>
                     </Border>
@@ -273,12 +256,8 @@
             </ScrollViewer>
 
             <xctk:PropertyGrid  Grid.Row="1"  Height="300"  x:Name="PropertyGrid2" >
-                
+
             </xctk:PropertyGrid>
-            <!--<WindowsFormsHost Grid.Row="1"  Height="300"  x:Name="WindowsFormsHost1" UseLayoutRounding="True" TextOptions.TextFormattingMode="Display"  Visibility="Visible"  >
-                <winf:PropertyGrid x:Name="PropertyGrid2" >
-                </winf:PropertyGrid>
-            </WindowsFormsHost>-->
         </Grid>
 
         <Grid Grid.Column="1"  Background="#c3c3c3">
@@ -331,7 +310,7 @@
                                 </StackPanel.ContextMenu>
                                 <TextBlock Width="{Binding ElementName=GridListHeader0,Path=ActualWidth}" Text="圆形" HorizontalAlignment="Center"/>
                                 <TextBlock Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}" Text="{Binding Attribute.ID}" HorizontalAlignment="Center"/>
-                                <CheckBox Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}" IsChecked="{Binding Attribute.IsShow}"  Click="CheckBox_Click" Tag="{Binding .}"/>
+                                <CheckBox Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}" IsChecked="{Binding Attribute.IsShow}"  Tag="{Binding .}"/>
                                 <TextBlock Width="{Binding ElementName=GridListHeader3,Path=ActualWidth}" HorizontalAlignment="Center">
                                                     <Run Text="{Binding Path = CenterX,StringFormat={}{0:F0}}"/>
                                                     <Run Text=","/>
@@ -349,7 +328,7 @@
                                 </StackPanel.ContextMenu>
                                 <TextBlock Width="{Binding ElementName=GridListHeader0,Path=ActualWidth}" Text="矩形" HorizontalAlignment="Center"/>
                                 <TextBlock Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}" Text="{Binding Attribute.ID}" HorizontalAlignment="Center"/>
-                                <CheckBox Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}" IsChecked="{Binding Attribute.IsShow}" Click="CheckBox_Click" Tag="{Binding .}"/>
+                                <CheckBox Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}" IsChecked="{Binding Attribute.IsShow}" Tag="{Binding .}"/>
                                 <TextBlock>
                                             <Run Text="{Binding Attribute.Rect.X,StringFormat={}{0:F0}}"/>
                                             <Run Text="{Binding Attribute.Rect.Y,StringFormat={}{0:F0}}"/>
