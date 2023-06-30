@@ -144,7 +144,9 @@ namespace ColorVision.Template
             InitializeComponent();
             ListView1.ItemsSource = DrawingVisualLists;
             PoiParam = new PoiParam();
+            DatumAreaPoints = PoiParam.DatumAreaPoints;
             StackPanelDatumAreaPoints.DataContext = PoiParam.DatumAreaPoints;
+            this.DataContext = PoiParam;
         }
 
 
@@ -152,6 +154,7 @@ namespace ColorVision.Template
         public WindowFocusPoint(PoiParam poiParam)
         {
             PoiParam = poiParam;
+            DatumAreaPoints = PoiParam.DatumAreaPoints; 
             InitializeComponent();
             ListView1.ItemsSource = DrawingVisualLists;
             StackPanelDatumAreaPoints.DataContext = DatumAreaPoints;
@@ -501,42 +504,54 @@ namespace ColorVision.Template
                         return;
                     }
 
+                    if (!double.TryParse(tbWidth.Text, out double Width))
+                        Width = 0;
+                    if (!double.TryParse(tbHeight.Text, out double Height))
+                        Height = 0;
 
-                    if (RadioButtonBuildMode1.IsChecked == true)
-                    {
-                        startU = PoiParam.DatumAreaPoints.X1.X;
-                        startD = bitmapImage.PixelHeight - PoiParam.DatumAreaPoints.X3.Y;
+
+                    startU =  PoiParam.DatumAreaPoints.CenterY - Height/2;
+                    startD = bitmapImage.PixelHeight - PoiParam.DatumAreaPoints.CenterY - Height / 2;
 
 
-                        startL = PoiParam.DatumAreaPoints.X1.Y;
-                        startR = bitmapImage.PixelWidth - PoiParam.DatumAreaPoints.X3.X;
-                    }
-                    else if (RadioButtonBuildMode2.IsChecked == true)
-                    {
-                        if (!double.TryParse(TextBoxUp.Text, out startU))
-                            startU = 0;
+                    startL = PoiParam.DatumAreaPoints.CenterX - Width / 2;
+                    startR = bitmapImage.PixelWidth - PoiParam.DatumAreaPoints.CenterX - Width / 2;
 
-                        if (!double.TryParse(TextBoxDown.Text, out startD))
-                            startD = 0;
+                    //if (RadioButtonBuildMode1.IsChecked == true)
+                    //{
+                    //    startU = PoiParam.DatumAreaPoints.X1.X;
+                    //    startD = bitmapImage.PixelHeight - PoiParam.DatumAreaPoints.X3.Y;
 
-                        if (!double.TryParse(TextBoxLeft.Text, out startL))
-                            startL = 0;
-                        if (!double.TryParse(TextBoxRight.Text, out startR))
-                            startR = 0;
 
-                        if (ComboBoxBorderType.SelectedItem is KeyValuePair<BorderType, string> KeyValue && KeyValue.Key == BorderType.Relative)
-                        {
-                            startU = bitmapImage.PixelHeight * startU / 100;
-                            startD = bitmapImage.PixelHeight * startD / 100;
+                    //    startL = PoiParam.DatumAreaPoints.X1.Y;
+                    //    startR = bitmapImage.PixelWidth - PoiParam.DatumAreaPoints.X3.X;
+                    //}
+                    //else if (RadioButtonBuildMode2.IsChecked == true)
+                    //{
+                    //    if (!double.TryParse(TextBoxUp.Text, out startU))
+                    //        startU = 0;
 
-                            startL = bitmapImage.PixelWidth * startL / 100;
-                            startR = bitmapImage.PixelWidth * startR / 100;
-                        }
-                    }
-                    else if (RadioButtonBuildMode3.IsChecked == true)
-                    {
-                        return;
-                    }
+                    //    if (!double.TryParse(TextBoxDown.Text, out startD))
+                    //        startD = 0;
+
+                    //    if (!double.TryParse(TextBoxLeft.Text, out startL))
+                    //        startL = 0;
+                    //    if (!double.TryParse(TextBoxRight.Text, out startR))
+                    //        startR = 0;
+
+                    //    if (ComboBoxBorderType.SelectedItem is KeyValuePair<BorderType, string> KeyValue && KeyValue.Key == BorderType.Relative)
+                    //    {
+                    //        startU = bitmapImage.PixelHeight * startU / 100;
+                    //        startD = bitmapImage.PixelHeight * startD / 100;
+
+                    //        startL = bitmapImage.PixelWidth * startL / 100;
+                    //        startR = bitmapImage.PixelWidth * startR / 100;
+                    //    }
+                    //}
+                    //else if (RadioButtonBuildMode3.IsChecked == true)
+                    //{
+                    //    return;
+                    //}
 
 
                     double StepRow = (bitmapImage.PixelHeight - startD - startU) / (rows - 1);
@@ -560,7 +575,7 @@ namespace ColorVision.Template
                             else
                             {
                                 DrawingVisualRectangle drawingVisualCircle = new DrawingVisualRectangle();
-                                drawingVisualCircle.Attribute.Rect = new Rect(startL + StepCol * j, startU + StepRow * i, PoiParam.DeafultRectWidth, PoiParam.DeafultRectHeight);
+                                drawingVisualCircle.Attribute.Rect = new Rect(startL + StepCol * j, startU + StepRow * i , PoiParam.DeafultRectWidth, PoiParam.DeafultRectHeight);
                                 drawingVisualCircle.Attribute.Brush = Brushes.Transparent;
                                 drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
                                 drawingVisualCircle.Attribute.ID = start + i * cols + j + 1;
@@ -591,41 +606,39 @@ namespace ColorVision.Template
                         return;
                     }
 
-                    if (RadioButtonBuildMode1.IsChecked == true)
+                    for (int i = 0; i < count; i++)
                     {
-                        for (int i = 0; i < count; i++)
+
+                        double x1 = PoiParam.DatumAreaPoints.CenterX + CircleR * Math.Cos(i * 2 * Math.PI / count + Math.PI / 180 * angle);
+                        double y1 = PoiParam.DatumAreaPoints.CenterY + CircleR * Math.Sin(i * 2 * Math.PI / count + Math.PI / 180 * angle);
+
+                        if (RadioButtonCircle.IsChecked == true)
                         {
-
-                            double x1 = PoiParam.DatumAreaPoints.CenterX + CircleR * Math.Cos(i * 2 * Math.PI / count + Math.PI/180 * angle);
-                            double y1 = PoiParam.DatumAreaPoints.CenterY + CircleR * Math.Sin(i * 2 * Math.PI / count + Math.PI/180 * angle);
-
-                            if (RadioButtonCircle.IsChecked == true)
-                            {
-                                DrawingVisualCircle drawingVisualCircle = new DrawingVisualCircleWord();
-                                drawingVisualCircle.Attribute.Center = new Point(x1, y1);
-                                drawingVisualCircle.Attribute.Radius = PoiParam.DeafultCircleRadius;
-                                drawingVisualCircle.Attribute.Brush = Brushes.Transparent;
-                                drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                                drawingVisualCircle.Attribute.ID = start + i  + 1;
-                                drawingVisualCircle.Render();
-                                ImageShow.AddVisual(drawingVisualCircle);
-                            }
-                            else
-                            {
-                                DrawingVisualRectangle drawingVisualCircle = new DrawingVisualRectangle();
-                                drawingVisualCircle.Attribute.Rect = new Rect(x1,y1, PoiParam.DeafultRectWidth, PoiParam.DeafultRectHeight);
-                                drawingVisualCircle.Attribute.Brush = Brushes.Transparent;
-                                drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                                drawingVisualCircle.Attribute.ID = start + i + 1;
-                                drawingVisualCircle.Render();
-                                ImageShow.AddVisual(drawingVisualCircle);
-                            }
-
-
-
-
+                            DrawingVisualCircle drawingVisualCircle = new DrawingVisualCircleWord();
+                            drawingVisualCircle.Attribute.Center = new Point(x1, y1);
+                            drawingVisualCircle.Attribute.Radius = PoiParam.DeafultCircleRadius;
+                            drawingVisualCircle.Attribute.Brush = Brushes.Transparent;
+                            drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                            drawingVisualCircle.Attribute.ID = start + i + 1;
+                            drawingVisualCircle.Render();
+                            ImageShow.AddVisual(drawingVisualCircle);
                         }
+                        else
+                        {
+                            DrawingVisualRectangle drawingVisualCircle = new DrawingVisualRectangle();
+                            drawingVisualCircle.Attribute.Rect = new Rect(x1 - PoiParam.DeafultRectWidth/2, y1 - PoiParam.DeafultRectHeight/2, PoiParam.DeafultRectWidth, PoiParam.DeafultRectHeight);
+                            drawingVisualCircle.Attribute.Brush = Brushes.Transparent;
+                            drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                            drawingVisualCircle.Attribute.ID = start + i + 1;
+                            drawingVisualCircle.Render();
+                            ImageShow.AddVisual(drawingVisualCircle);
+                        }
+
+
+
+
                     }
+
 
 
 
@@ -727,8 +740,13 @@ namespace ColorVision.Template
             }
             else
             {
+                if (!double.TryParse(tbWidth.Text, out double Width))
+                    Width = 0;
+                if (!double.TryParse(tbHeight.Text, out double Height))
+                    Height = 0;
+
                 DrawingVisualDatumRectangle drawingVisualDatumRectangle = new DrawingVisualDatumRectangle();
-                drawingVisualDatumRectangle.Attribute.Rect = new Rect(PoiParam.DatumAreaPoints.X1, PoiParam.DatumAreaPoints.X3);
+                drawingVisualDatumRectangle.Attribute.Rect = new Rect(PoiParam.DatumAreaPoints.Center - new Vector((int)(Width/2), (int)(Height/2)), (PoiParam.DatumAreaPoints.Center + new Vector((int)(Width / 2), (int)(Height / 2))));
                 drawingVisualDatumRectangle.Attribute.Brush = Brushes.Transparent;
 
                 drawingVisualDatumRectangle.Attribute.Pen = new Pen(Brushes.Blue, 2);
@@ -744,6 +762,49 @@ namespace ColorVision.Template
 
             DefaultPoint.Add(drawingVisualDatum);
             ImageShow.AddVisual(drawingVisualDatum);
+
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            if (ImageShow.Source is BitmapImage bitmapImage)
+            {
+                if (!double.TryParse(TextBoxUp.Text, out double startU))
+                    startU = 0;
+
+                if (!double.TryParse(TextBoxDown.Text, out double startD))
+                    startD = 0;
+
+                if (!double.TryParse(TextBoxLeft.Text, out double startL))
+                    startL = 0;
+                if (!double.TryParse(TextBoxRight.Text, out double startR))
+                    startR = 0;
+
+                if ( ComboBoxBorderType.SelectedItem is KeyValuePair<BorderType, string> KeyValue && KeyValue.Key == BorderType.Relative)
+                {
+                    startU = bitmapImage.PixelHeight * startU / 100;
+                    startD = bitmapImage.PixelHeight * startD / 100;
+
+                    startL = bitmapImage.PixelWidth * startL / 100;
+                    startR = bitmapImage.PixelWidth * startR / 100;
+
+
+                }
+
+                PoiParam.DatumAreaPoints.X1X = (int)startL;
+                PoiParam.DatumAreaPoints.X1Y = (int)startU;
+                PoiParam.DatumAreaPoints.X2X = bitmapImage.PixelWidth - (int)startR;
+                PoiParam.DatumAreaPoints.X2Y = (int)startU;
+                PoiParam.DatumAreaPoints.X3X = bitmapImage.PixelWidth - (int)startR;
+                PoiParam.DatumAreaPoints.X3Y = bitmapImage.PixelHeight - (int)startD;
+                PoiParam.DatumAreaPoints.X4X = (int)startR;
+                PoiParam.DatumAreaPoints.X4Y = bitmapImage.PixelHeight - (int)startD;
+                PoiParam.DatumAreaPoints.CenterX = (int)bitmapImage.PixelWidth / 2;
+                PoiParam.DatumAreaPoints.CenterY = bitmapImage.PixelHeight / 2;
+
+            }
+
+
 
         }
     }

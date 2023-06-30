@@ -144,7 +144,7 @@ namespace ColorVision.Template
                     case WindowTemplateType.PoiParam:
                         if (ListConfigs[listView.SelectedIndex].Value is PoiParam poiParam)
                         {
-                            new WindowFocusPoint(poiParam) { Owner = Application.Current.MainWindow }.Show();
+                            new WindowFocusPoint(poiParam) { Owner = this }.ShowDialog();
                         }
                         break;
                     case WindowTemplateType.LedParam:
