@@ -15,12 +15,11 @@ namespace ColorVision.MySql
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseService));
 
         protected string _tableName;
-        protected MySqlConnection connection;
+        MySqlControl MySqlControl { get; set; }
 
         public BaseService(string tableName)
         {
-            MySqlControl control = MySqlControl.GetInstance();
-            connection = control.MySqlConnection;
+            MySqlControl = MySqlControl.GetInstance();
             _tableName = tableName;
         }
 
@@ -86,7 +85,7 @@ namespace ColorVision.MySql
             DataTable dt = new DataTable();
             try
             {
-                MySqlDataAdapter adapter = new MySqlDataAdapter(sql, connection);
+                MySqlDataAdapter adapter = new MySqlDataAdapter(sql, MySqlControl.MySqlConnection);
                 int count = adapter.Fill(dt);
             } catch (Exception ex) {
                 log.Error(ex);
@@ -100,7 +99,7 @@ namespace ColorVision.MySql
             DataTable dt = new DataTable();
             try
             {
-                MySqlCommand command = new MySqlCommand(sql, connection);
+                MySqlCommand command = new MySqlCommand(sql, MySqlControl.MySqlConnection);
                 foreach (var item in param)
                 {
                     command.Parameters.AddWithValue(item.Key, item.Value);
@@ -117,7 +116,7 @@ namespace ColorVision.MySql
             int count = -1;
             try
             {
-                MySqlCommand command = new MySqlCommand(sql, connection);
+                MySqlCommand command = new MySqlCommand(sql, MySqlControl.MySqlConnection);
                 count = command.ExecuteNonQuery();
             }
             catch (Exception ex) { }
@@ -129,7 +128,7 @@ namespace ColorVision.MySql
             int count = -1;
             try
             {
-                MySqlCommand command = new MySqlCommand(sql, connection);
+                MySqlCommand command = new MySqlCommand(sql, MySqlControl.MySqlConnection);
                 foreach (var item in param)
                 {
                     command.Parameters.AddWithValue(item.Key, item.Value);
@@ -145,7 +144,7 @@ namespace ColorVision.MySql
             int count = -1;
             try
             {
-                MySqlDataAdapter adapter = new MySqlDataAdapter("", connection);
+                MySqlDataAdapter adapter = new MySqlDataAdapter("", MySqlControl.MySqlConnection);
                 count = adapter.Update(dt);
             }
             catch (Exception ex) { }
