@@ -42,6 +42,9 @@
                                     <RadioButton x:Name="RadioButtonCAD" Content="CAD模式"  />
                                 </UniformGrid>
                             </GroupBox>
+
+
+
                             <StackPanel Margin="5" Visibility="{Binding ElementName=RadioButtonImage, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
                                 <Border Margin="5" Style="{StaticResource BorderModuleArea}">
                                     <UniformGrid Columns="2">
@@ -49,6 +52,51 @@
                                         <Button  Content="打开视频" Click="button1_Click"/>
                                     </UniformGrid>
                                 </Border>
+
+                                <GroupBox Header="尺寸设定" Margin="5">
+                                    <StackPanel Margin="5">
+                                        <UniformGrid Columns="2">
+                                            <DockPanel  Margin="2">
+                                                <TextBlock Text="W:" Width="20"/>
+                                                <TextBox  Text="{Binding Width}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                            </DockPanel>
+                                            <DockPanel Margin="2" >
+                                                <TextBlock Text="H:" Width="20"/>
+                                                <TextBox  Text="{Binding Height}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                            </DockPanel>
+                                        </UniformGrid>
+                                    </StackPanel>
+                                </GroupBox>
+
+                                <GroupBox Header="点形状" Margin="5">
+                                    <StackPanel>
+                                        <UniformGrid Columns="2" Margin="5">
+                                            <RadioButton x:Name="RadioButtonCircle"  GroupName="shape" IsChecked="True" Content="圆"/>
+                                            <RadioButton x:Name="RadioButtonRect"  GroupName="shape" Content="矩形"/>
+                                        </UniformGrid>
+                                        <StackPanel Margin="5" Visibility="{Binding ElementName=RadioButtonCircle, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
+                                            <DockPanel Margin="2" >
+                                                <TextBlock Text="半径:" Width="20"/>
+                                                <TextBox  x:Name="TextBoxCircleR" Text="10" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                            </DockPanel>
+                                        </StackPanel>
+
+
+                                        <StackPanel Margin="5" Visibility="{Binding ElementName=RadioButtonRect, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
+                                            <UniformGrid Columns="2">
+                                                <DockPanel Margin="2" >
+                                                    <TextBlock Text="半径:" Width="20"/>
+                                                    <TextBox  x:Name="TextBoxRectW" Text="10" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                </DockPanel>
+                                                <DockPanel Margin="2" >
+                                                    <TextBlock Text="半径:" Width="20"/>
+                                                    <TextBox  x:Name="TextBoxRectH" Text="10" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                </DockPanel>
+                                            </UniformGrid>
+
+                                        </StackPanel>
+                                    </StackPanel>
+                                </GroupBox>
 
                                 <GroupBox Header="点阵数" Margin="5">
                                     <UniformGrid  Columns="2" Margin="5">
@@ -62,14 +110,7 @@
                                         </DockPanel>
                                     </UniformGrid>
                                 </GroupBox>
-                                <GroupBox Header="点形状" Margin="5">
-                                    <StackPanel>
-                                        <UniformGrid Columns="2" Margin="5">
-                                            <RadioButton x:Name="RadioButtonCircle"  GroupName="shape" IsChecked="True" Content="圆"/>
-                                            <RadioButton x:Name="RadioButtonRect"  GroupName="shape" Content="矩形"/>
-                                        </UniformGrid>
-                                    </StackPanel>
-                                </GroupBox>
+
                                 <GroupBox Header="边框" Margin="5">
                                     <StackPanel Margin="5">
                                         <UniformGrid Columns="2" Margin="0,5">
@@ -110,16 +151,6 @@
                                         </StackPanel>
                                     </GroupBox>
                                 </Border>
-                                <Border Margin="5" Style="{StaticResource BorderModuleArea}">
-                                    <StackPanel  Margin="5">
-                                        <UniformGrid Columns="2">
-                                            <Button x:Name="button2" Content="绘制行列图像" Click="button2_Click"/>
-                                            <Button x:Name="button3" Content="清空" Click="button3_Click"/>
-                                            <Button x:Name="button4" Content="生成" Click="button3_Click"/>
-                                            <Button x:Name="button5" Content="导出" Click="button3_Click"/>
-                                        </UniformGrid>
-                                    </StackPanel>
-                                </Border>
                             </StackPanel>
 
                             <StackPanel Margin="5" Visibility="{Binding ElementName=RadioButtonCAD, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
@@ -142,7 +173,7 @@
                                         </GroupBox>
 
                                         <GroupBox Header="初始布点" Margin="5">
-                                            <StackPanel  x:Name="StackPanelCADPoints"  d:DataContext="{d:DesignInstance local:CADPoints}" Margin="5">
+                                            <StackPanel  x:Name="StackPanelCADPoints"  d:DataContext="{d:DesignInstance Template:CADPoints}" Margin="5">
                                                 <UniformGrid Columns="2">
                                                     <DockPanel  Margin="2">
                                                         <TextBlock Text="X1.X:" />
@@ -194,6 +225,20 @@
                                     </StackPanel>
 
 
+                                </Border>
+                            </StackPanel>
+
+
+                            <StackPanel  Margin="5">
+                                <Border Margin="5" Style="{StaticResource BorderModuleArea}">
+                                    <StackPanel  Margin="5">
+                                        <UniformGrid Columns="2">
+                                            <Button x:Name="button2" Content="绘制行列图像" Click="button2_Click"/>
+                                            <Button x:Name="button3" Content="清空" Click="button3_Click"/>
+                                            <Button x:Name="button4" Content="生成" Click="button3_Click"/>
+                                            <Button x:Name="button5" Content="导出" Click="button3_Click"/>
+                                        </UniformGrid>
+                                    </StackPanel>
                                 </Border>
                             </StackPanel>
 

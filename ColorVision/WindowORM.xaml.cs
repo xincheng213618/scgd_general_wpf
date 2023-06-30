@@ -1,5 +1,6 @@
 ﻿using ColorVision.MySql;
 using ColorVision.SettingUp;
+using ColorVision.Template;
 using MySql.Data.MySqlClient;
 using System;
 using System.Collections;
@@ -88,26 +89,96 @@ namespace ColorVision
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
+            var keyValuePair = TemplateControl.GetInstance().PoiParams[0];
+
+
+            string Name = keyValuePair.Key;
+            PoiParam poiParam = keyValuePair.Value;
+
             Dictionary<string, object> keyValuePairs = new Dictionary<string, object>()
             {
-                { "code", "your_code" },
-                { "name", "your_name" },
-                { "pid", 1 },
-                { "pcode", "your_pcode" },
+                { "name", Name },
+                { "type",poiParam.Type},
+                { "width", poiParam.Width },
+                {"height", poiParam.Height},
                 {"create_date", DateTime.Now},
                 {"is_enable", 1},
                 {"is_delete", 0},
-                {"remark", "your_remark"}
+                {"remark", ""}
             };
-            if (Add(keyValuePairs) == 1)
+
+            if (Add("t_scgd_cfg_poi_master", keyValuePairs) == 1)
             {
-                MessageBox.Show("添加成功");
+                MessageBox.Show("添加表信息成功");
+
+                foreach (var item in poiParam.PoiPoints)
+                {
+                    Dictionary<string, object> keyValuePairs1 = new Dictionary<string, object>()
+                    {
+                        { "type",poiParam.Type},
+                        { "width", poiParam.Width },
+                        {"height", poiParam.Height},
+                        {"create_date", DateTime.Now},
+                        {"is_enable", 1},
+                        {"is_delete", 0},
+                        {"remark", ""}
+                    };
+
+                }
+
+
             }
             else
             {
                 MessageBox.Show("添加失败");
             }
+
+
+
+
+            //Dictionary<string, object> keyValuePairs = new Dictionary<string, object>()
+            //{
+            //    { "code", "your_code" },
+            //    { "name", "your_name" },
+            //    { "pid", 1 },
+            //    { "pcode", "your_pcode" },
+            //    {"create_date", DateTime.Now},
+            //    {"is_enable", 1},
+            //    {"is_delete", 0},
+            //    {"remark", "your_remark"}
+            //};
+            //if (Add(keyValuePairs) == 1)
+            //{
+            //    MessageBox.Show("添加成功");
+            //}
+            //else
+            //{
+            //    MessageBox.Show("添加失败");
+            //}
         }
+
+
+        public int Add(string TablesName,Dictionary<string, object> keyValuePairs)
+        {
+            string a1 = string.Empty;
+            string a2 = string.Empty;
+
+            foreach (var item in keyValuePairs)
+            {
+                a1 += item.Key + ",";
+                a2 += "@" + item.Key + ",";
+            }
+            a1 = a1[..^1];
+            a2 = a2[..^1];
+
+            string insertQuery = $"INSERT INTO {TablesName} ({a1}) VALUES ({a2})";
+            using MySqlCommand command = new MySqlCommand(insertQuery, connection);
+            foreach (var item in keyValuePairs)
+                command.Parameters.AddWithValue("@" + item.Key, item.Value);
+            int rowsAffected = command.ExecuteNonQuery();
+            return rowsAffected;
+        }
+
 
         public int Add(Dictionary<string,object> keyValuePairs)
         {

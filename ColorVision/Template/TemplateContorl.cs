@@ -198,7 +198,6 @@ namespace ColorVision.Template
             }
         }
 
-
         private static void SaveDefault<T>(string FileNameParams, ObservableCollection<KeyValuePair<string, T>> t, bool IsOldParams)
         {
             if (IsOldParams)

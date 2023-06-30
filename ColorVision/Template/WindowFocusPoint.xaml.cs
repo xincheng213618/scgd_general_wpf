@@ -41,6 +41,10 @@ namespace ColorVision.Template
 
         }
 
+        public int Type { get => _Type; set { _Type = value; NotifyPropertyChanged(); } }
+        private int _Type;
+
+
         public int Width { get => _Width; set { _Width = value; NotifyPropertyChanged(); } }
         private int _Width;
 
@@ -64,6 +68,11 @@ namespace ColorVision.Template
 
     public class PoiParamData
     {
+        /// <summary>
+        /// 数据库ID
+        /// </summary>
+        public int DdId { get; set; }
+
         public string Name { set; get; }
         public RiPointTypes PointType { set; get; }
         public double PixX { set; get; }
@@ -128,12 +137,12 @@ namespace ColorVision.Template
 
             this.Closed += (s, e) =>
             {
+                PoiParam.PoiPoints.Clear();
                 foreach (var item in DrawingVisualLists)
                 {
                     DrawAttributeBase drawAttributeBase = item.GetAttribute();
                     if (drawAttributeBase is CircleAttribute circle)
                     {
-
                         PoiParamData poiParamData = new PoiParamData()
                         {
                             Name = circle.ID.ToString(),
