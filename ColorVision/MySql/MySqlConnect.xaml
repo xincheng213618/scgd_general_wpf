@@ -30,17 +30,17 @@
                         </DockPanel>
                         <DockPanel Margin="5,2">
                             <TextBlock Text="端口:" VerticalAlignment="Center" Width="120"/>
-                            <TextBox ToolTip="主机"  VerticalAlignment="Center"  Text="{Binding Port}" PreviewKeyDown="NumberValidationTextBox" Width="50"  HorizontalAlignment="Left" BorderThickness="0,0,0,1" />
+                            <TextBox ToolTip="端口"  VerticalAlignment="Center"  Text="{Binding Port}" PreviewKeyDown="NumberValidationTextBox" Width="50"  HorizontalAlignment="Left" BorderThickness="0,0,0,1" />
                         </DockPanel>
 
                         <DockPanel Margin="5,2">
                             <TextBlock Text="用户:" VerticalAlignment="Center" Width="120"/>
-                            <TextBox ToolTip="主机"  VerticalAlignment="Center"  HorizontalAlignment="Left" Text="{Binding UserName}" Width="180" BorderThickness="0,0,0,1" />
+                            <TextBox ToolTip="用户"  VerticalAlignment="Center"  HorizontalAlignment="Left" Text="{Binding UserName}" Width="180" BorderThickness="0,0,0,1" />
                         </DockPanel>
 
                         <DockPanel Margin="5,2">
                             <TextBlock Text="密码:" VerticalAlignment="Center" Width="120"/>
-                            <TextBox ToolTip="主机"  VerticalAlignment="Center" HorizontalAlignment="Left" Text="{Binding UserPwd}" Width="180"  BorderThickness="0,0,0,1" />
+                            <TextBox ToolTip="密码"  VerticalAlignment="Center" HorizontalAlignment="Left" Text="{Binding UserPwd}" Width="180"  BorderThickness="0,0,0,1" />
                         </DockPanel>
 
                     </StackPanel>

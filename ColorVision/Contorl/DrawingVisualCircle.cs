@@ -136,8 +136,85 @@ namespace ColorVision
             using DrawingContext dc = RenderOpen();
             dc.DrawEllipse(Attribute.Brush, Attribute.Pen, Attribute.Center, Attribute.Radius, Attribute.Radius);
         }
+    }
 
 
+    public class DrawingVisualDatumCircle: DrawingVisualBase
+    {
+        public CircleAttribute Attribute { get; set; }
+        public DrawAttributeBase GetAttribute() => Attribute;
+
+        public bool AutoAttributeChanged { get; set; } = true;
+
+        public DrawingVisualDatumCircle()
+        {
+            Attribute = new CircleAttribute();
+            Attribute.ID = No++;
+            Attribute.Brush = Brushes.Red;
+            Attribute.Pen = new Pen(Brushes.Red, 2);
+            Attribute.Center = new Point(50, 50);
+            Attribute.Radius = 30;
+            Attribute.PropertyChanged += (s, e) =>
+            {
+                if (AutoAttributeChanged)
+                    Render();
+                if (e.PropertyName == "Center")
+                {
+                    NotifyPropertyChanged(nameof(CenterX));
+                    NotifyPropertyChanged(nameof(CenterY));
+                }
+                else if (e.PropertyName == "Radius")
+                {
+                    NotifyPropertyChanged(nameof(Radius));
+                }
+            };
+        }
+        
+        public int ID { get => Attribute.ID; set => Attribute.ID = value; }
+
+        public Point Center { get => Attribute.Center; set => Attribute.Center = value; }
+
+        public double CenterX { get => Attribute.Center.X; set => Attribute.Center = new Point(value, Attribute.Center.Y); }
+        public double CenterY { get => Attribute.Center.Y; set => Attribute.Center = new Point(Attribute.Center.X, value); }
+
+        public double Radius { get => Attribute.Radius; set => Attribute.Radius = value; }
+
+
+
+        public virtual void Render()
+        {
+            using DrawingContext dc = RenderOpen();
+            dc.DrawEllipse(Attribute.Brush, Attribute.Pen, Attribute.Center, Attribute.Radius, Attribute.Radius);
+        }
+    }
+
+
+    public class DrawingVisualDatumRectangle: DrawingVisualBase
+    {
+            public RectangleAttribute Attribute { get; set; }
+            public DrawAttributeBase GetAttribute() => Attribute;
+
+            public bool AutoAttributeChanged { get; set; } = true;
+
+            public DrawingVisualDatumRectangle()
+            {
+                Attribute = new RectangleAttribute();
+                Attribute.ID = No++;
+                Attribute.Brush = Brushes.Transparent;
+                Attribute.Pen = new Pen(Brushes.Red, 1);
+                Attribute.Rect = new Rect(50, 50, 100, 100);
+                Attribute.PropertyChanged += (s, e) =>
+                {
+                    if (AutoAttributeChanged) Render();
+                };
+            }
+            public int ID { get => Attribute.ID; set => Attribute.ID = value; }
+
+            public void Render()
+            {
+                using DrawingContext dc = RenderOpen();
+                dc.DrawRectangle(Attribute.Brush, Attribute.Pen, Attribute.Rect);
+            }
     }
 
     public class DrawingVisualCircleWord: DrawingVisualCircle
@@ -243,20 +320,11 @@ namespace ColorVision
         }
         public int ID { get => Attribute.ID; set => Attribute.ID = value; }
 
-
-
         public void Render()
         {
             using DrawingContext dc = RenderOpen();
-
-
-            //RotateTransform form = new RotateTransform(50, Attribute.Rect.Left, Attribute.Rect.Top);
-            //dc.PushTransform(form);
             dc.DrawRectangle(Attribute.Brush, Attribute.Pen, Attribute.Rect);
         }
-
-
-
     }
 
 

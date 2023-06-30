@@ -115,18 +115,22 @@ namespace ColorVision
                 {
                     Dictionary<string, object> keyValuePairs1 = new Dictionary<string, object>()
                     {
-                        { "type",poiParam.Type},
-                        { "width", poiParam.Width },
-                        {"height", poiParam.Height},
+                        { "name",item.Name},
+                        { "pid",2},
+                        { "pt_type", (int)item.PointType},
+                        {"pix_x", item.PixX},
+                        {"pix_y", item.PixY},
+                        {"pix_width", item.PixWidth},
+                        {"pix_height", item.PixHeight},
+
+
                         {"create_date", DateTime.Now},
                         {"is_enable", 1},
                         {"is_delete", 0},
                         {"remark", ""}
                     };
-
+                    Add("t_scgd_cfg_poi_detail", keyValuePairs1);
                 }
-
-
             }
             else
             {
