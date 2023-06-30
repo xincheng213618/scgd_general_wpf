@@ -38,6 +38,7 @@ namespace ColorVision.Template
     {
         public PoiParam()
         {
+
         }
 
         public int Width { get => _Width; set { _Width = value; NotifyPropertyChanged(); } }

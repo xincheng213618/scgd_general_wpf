@@ -13,7 +13,7 @@
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <Border  Background="#F9F9F9"  BorderBrush="#EAEAEA" BorderThickness="1"  Margin="5" CornerRadius="3">
+            <Border  Background="#F9F9F9"  BorderBrush="#EAEAEA" BorderThickness="1"  Margin="5" CornerRadius="10,10,3,3">
                 <Grid x:Name="GridMQTT" Margin="5,5,10,5"  d:DataContext="{d:DesignInstance setting:MySqlConfig}">
                     <StackPanel>
                         <Label Content="Mysql连接" HorizontalAlignment="Center" Margin="10" FontSize="17"/>
