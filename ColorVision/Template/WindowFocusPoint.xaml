@@ -154,7 +154,6 @@
                                                 </DockPanel>
                                             </UniformGrid>
                                             <ComboBox x:Name="ComboBoxBorderType"   SelectedValuePath="Key"  DisplayMemberPath="Value" Height="20" Margin="0,0,6,0"/>
-                                            <Button Content="生成"  Click="Button_Click_1" />
                                         </StackPanel>
                                         <StackPanel Margin="5"  Visibility="{Binding ElementName=RadioButtonBuildMode3, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
                                             <UniformGrid Columns="2">
@@ -162,12 +161,9 @@
                                                     <TextBlock Text="阈值:" Width="30"/>
                                                     <TextBox   Text="3" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                                                 </DockPanel>
-                                                <Button Content="计算发光区"/>
                                             </UniformGrid>
-
                                         </StackPanel>
                                         <Button  Content="显示基准点" Click="SetDeafult_Click" Margin="2"/>
-
 
                                     </StackPanel>
                                 </GroupBox>
