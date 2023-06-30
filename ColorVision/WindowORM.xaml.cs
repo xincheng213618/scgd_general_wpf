@@ -139,7 +139,6 @@ namespace ColorVision
 
 
 
-
             //Dictionary<string, object> keyValuePairs = new Dictionary<string, object>()
             //{
             //    { "code", "your_code" },
@@ -269,26 +268,30 @@ namespace ColorVision
         public DataSet dataSet { get; set; } = new DataSet();
         private void Button_Click_4(object sender, RoutedEventArgs e)
         {
-            List<Dictionary<string, object>> myList = new List<Dictionary<string, object>>();
-            string selectQuery = "SELECT * FROM t_scgd_sys_dictionary_mod_master";
+            //List<Dictionary<string, object>> myList = new List<Dictionary<string, object>>();
+            //string selectQuery = "SELECT * FROM t_scgd_sys_dictionary_mod_master";
 
-            // 设置DataGrid的数据源
-            using (MySqlCommand command = new MySqlCommand(selectQuery, connection))
-            {
+            //// 设置DataGrid的数据源
+            //using (MySqlCommand command = new MySqlCommand(selectQuery, connection))
+            //{
 
-                using (MySqlDataAdapter adapter = new MySqlDataAdapter(command))
-                {
-                    // 创建数据集
-                    dataSet = new DataSet();
+            //    using (MySqlDataAdapter adapter = new MySqlDataAdapter(command))
+            //    {
+            //        // 创建数据集
+            //        dataSet = new DataSet();
 
-                    // 填充数据集
-                    adapter.Fill(dataSet);
-                    // 将数据集设置为DataGrid的数据源
-                    dataGrid.ItemsSource = dataSet.Tables[0].DefaultView;
+            //        // 填充数据集
+            //        adapter.Fill(dataSet);
+            //        // 将数据集设置为DataGrid的数据源
+            //        dataGrid.ItemsSource = dataSet.Tables[0].DefaultView;
 
-                    items =DataSetToList(dataSet);
-                }
-            }
+            //        items =DataSetToList(dataSet);
+            //    }
+            //}
+
+            PoiMasterService service = new PoiMasterService();
+            var rec = service.GetTableAll();
+            dataGrid.ItemsSource = rec.AsDataView();
         }
     }
 }
