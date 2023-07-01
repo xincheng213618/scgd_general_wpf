@@ -40,7 +40,7 @@ namespace ColorVision.MySql
             try
             {
                 Log.LogWrite($"数据库连接信息:{connStr}");
-                MySqlConnection = new MySqlConnection() { ConnectionString = connStr };
+                MySqlConnection = new MySqlConnection() { ConnectionString = connStr  };
                 MySqlConnection.Open();
 
                 IsConnect = true;
@@ -57,7 +57,7 @@ namespace ColorVision.MySql
 
         public static bool TestConnect(MySqlConfig MySqlConfig)
         {
-            string connStr = $"server={MySqlConfig.Host};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database}";
+            string connStr = $"server={MySqlConfig.Host};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};;Connect Timeout=3";
             MySqlConnection MySqlConnection;
             try
             {

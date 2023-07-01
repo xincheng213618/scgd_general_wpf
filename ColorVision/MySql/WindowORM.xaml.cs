@@ -122,8 +122,6 @@ namespace ColorVision
                         {"pix_y", item.PixY},
                         {"pix_width", item.PixWidth},
                         {"pix_height", item.PixHeight},
-
-
                         {"create_date", DateTime.Now},
                         {"is_enable", 1},
                         {"is_delete", 0},

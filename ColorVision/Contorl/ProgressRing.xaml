@@ -12,7 +12,7 @@
                 HorizontalAlignment="Left"
                 VerticalAlignment="Top">
                 <Path Data="M50,27.5 C50,24.23333 45,24.23333 45,27.5 C45,30.83333 50,30.83333 50,27.5"
-                  Fill="#FFFFFFFF"
+                  Fill="#FF6196EE"
                   RenderTransformOrigin="0.5,0.83333">
                     <Path.RenderTransform >
                         <RotateTransform x:Name="_rot1" Angle="0"/>
@@ -38,7 +38,7 @@
                     </Path.Triggers>
                 </Path>
                 <Path Data="M50,27.5 C50,24.23333 45,24.23333 45,27.5 C45,30.83333 50,30.83333 50,27.5"
-                  Fill="#DDFFFFFF"
+                  Fill="#DD6196EE"
                   RenderTransformOrigin="0.5,0.83333">
                     <Path.RenderTransform>
                         <RotateTransform x:Name="_rot2" Angle="13"/>
@@ -65,7 +65,7 @@
                     </Path.Triggers>
                 </Path>
                 <Path Data="M50,27.5 C50,24.23333 45,24.23333 45,27.5 C45,30.83333 50,30.83333 50,27.5"
-                  Fill="#BBFFFFFF"
+                  Fill="#BB6196EE"
                   RenderTransformOrigin="0.5,0.83333">
                     <Path.RenderTransform>
                         <RotateTransform x:Name="_rot3" Angle="26"/>
@@ -93,7 +93,7 @@
                 </Path>
 
                 <Path Data="M50,27.5 C50,24.23333 45,24.23333 45,27.5 C45,30.83333 50,30.83333 50,27.5"
-                  Fill="#99FFFFFF"
+                  Fill="#996196EE"
                   RenderTransformOrigin="0.5,0.83333">
                     <Path.RenderTransform>
                         <RotateTransform x:Name="_rot4" Angle="39"/>
@@ -120,7 +120,7 @@
                     </Path.Triggers>
                 </Path>
                 <Path Data="M50,27.5 C50,24.23333 45,24.23333 45,27.5 C45,30.83333 50,30.83333 50,27.5"
-                  Fill="#77FFFFFF"
+                  Fill="#776196EE"
                   RenderTransformOrigin="0.5,0.83333">
                     <Path.RenderTransform>
                         <RotateTransform x:Name="_rot5" Angle="52"/>

@@ -5,6 +5,7 @@ using ColorVision.Template;
 using ColorVision.Util;
 using cvColorVision;
 using Gu.Wpf.Geometry;
+using HandyControl.Tools.Extension;
 using log4net;
 using Microsoft.VisualBasic.Logging;
 using MySqlX.XDevAPI.Relational;
@@ -17,6 +18,7 @@ using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -161,11 +163,22 @@ namespace ColorVision.Template
             this.DataContext = PoiParam;
         }
 
-        private void PoiParamToDrawingVisual(PoiParam poiParam)
+        public bool IsLayoutUpdated { get; set; } = true;
+
+        private async void PoiParamToDrawingVisual(PoiParam poiParam)
         {
+            int i = 0;
+
+
             foreach (var item in poiParam.PoiPoints)
             {
-                switch(item.PointType)
+                i++;
+                if (i % 50 ==0)
+                {
+                    WaitControlProgressBar.Value = 20 + i *80 / poiParam.PoiPoints.Count;
+                    await Task.Delay(100);
+                }
+                switch (item.PointType)
                 {
                     case RiPointTypes.Circle:
                         DrawingVisualCircleWord drawingVisualCircle = new DrawingVisualCircleWord();
@@ -192,6 +205,8 @@ namespace ColorVision.Template
                         break;
                 }
             }
+            WaitControl.Visibility = Visibility.Hidden;
+            WaitControlProgressBar.Visibility = Visibility.Hidden;
         }
 
 
@@ -208,9 +223,6 @@ namespace ColorVision.Template
                 }
             };
             WindowState = WindowState.Maximized;
-
-
-
 
 
             ImageShow.VisualsAdd += (s, e) =>
@@ -256,25 +268,42 @@ namespace ColorVision.Template
 
             Zoombox1.LayoutUpdated += (s, e) =>
             {
-                foreach (var item in DrawingVisualLists)
+                if (IsLayoutUpdated)
                 {
-                    DrawAttributeBase drawAttributeBase = item.GetAttribute();
-                    if (drawAttributeBase is CircleAttribute circleAttribute)
+                    foreach (var item in DrawingVisualLists)
                     {
-                        circleAttribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                    }
-                    else if (drawAttributeBase is RectangleAttribute rectangleAttribute)
-                    {
-                        rectangleAttribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                        DrawAttributeBase drawAttributeBase = item.GetAttribute();
+                        if (drawAttributeBase is CircleAttribute circleAttribute)
+                        {
+                            circleAttribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                        }
+                        else if (drawAttributeBase is RectangleAttribute rectangleAttribute)
+                        {
+                            rectangleAttribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                        }
                     }
                 }
+
             };
 
             if (PoiParam.Height != 0 && PoiParam.Width != 0)
             {
-                await Task.Delay(300);
-                CreateImage(PoiParam.Width, PoiParam.Height, System.Windows.Media.Colors.White);
+                WaitControl.Visibility = Visibility.Visible;
+                WaitControlProgressBar.Visibility = Visibility.Visible;
+                WaitControlProgressBar.Value = 0;
+                await Task.Delay(200);
+                WaitControlProgressBar.Value = 10;
+
+                if (PoiParam.PoiPoints.Count > 100)
+                {
+                    IsLayoutUpdated = false;
+
+                }
+
+                CreateImage(PoiParam.Width, PoiParam.Height, System.Windows.Media.Colors.White,false);
+                WaitControlProgressBar.Value = 20;
                 PoiParamToDrawingVisual(PoiParam);
+
             }
             else
             {
@@ -320,6 +349,8 @@ namespace ColorVision.Template
                 }
             };
 
+            SettingGroup.DataContext = this;
+
         }
 
         private void button1_Click(object sender, RoutedEventArgs e)
@@ -336,19 +367,39 @@ namespace ColorVision.Template
 
         private void OpenCAD_Click(object sender, RoutedEventArgs e)
         {
-            CreateImage(PoiParam.Width, PoiParam.Height, Colors.White);
+            CreateImage(PoiParam.Width, PoiParam.Height, Colors.White,false);
         }
 
 
-        private void CreateImage(int width, int height, System.Windows.Media.Color color)
+        private void CreateImage(int width, int height, System.Windows.Media.Color color,bool IsClear = true)
         {
-            BitmapImage bitmapImage = ImageUtil.CreateSolidColorBitmap(width, height, color);
-            ImageShow.Source = bitmapImage;
-            Zoombox1.ZoomUniform();
+            Thread thread = new Thread(() => 
+            {
+                BitmapImage bitmapImage = ImageUtil.CreateSolidColorBitmap(width, height, color);
+                bitmapImage.Freeze();
+                Application.Current.Dispatcher.Invoke(() =>
+                {
 
-            ImageShow.Clear();
-            DrawingVisualLists.Clear();
-            PropertyGrid2.SelectedObject = null;
+                    if (ImageShow.Source == null)
+                    {
+                        ImageShow.Source = bitmapImage;
+                        Zoombox1.ZoomUniform();
+                    }
+                    else
+                    {
+                        ImageShow.Source = bitmapImage;
+                    }
+                    if (IsClear)
+                    {
+                        ImageShow.Clear();
+                        DrawingVisualLists.Clear();
+                        PropertyGrid2.SelectedObject = null;
+                    }
+
+                });
+            });
+            thread.Start();
+
         }
 
 
@@ -435,11 +486,18 @@ namespace ColorVision.Template
             if (filePath != null && File.Exists(filePath))
             {
                 BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
-                ImageShow.Source = new BitmapImage(new Uri(filePath));
 
+                if (ImageShow.Source == null)
+                {
+                    ImageShow.Source = new BitmapImage(new Uri(filePath));
+                    Zoombox1.ZoomUniform();
+                }
+                else
+                {
+                    ImageShow.Source = new BitmapImage(new Uri(filePath));
+                }
                 PoiParam.Width = bitmapImage.PixelWidth;
                 PoiParam.Height = bitmapImage.PixelHeight;
-                Zoombox1.ZoomUniform();
             }
         }
 

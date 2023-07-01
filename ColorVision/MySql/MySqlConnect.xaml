@@ -16,7 +16,7 @@
             <Border  Background="#F9F9F9"  BorderBrush="#EAEAEA" BorderThickness="1"  Margin="5" CornerRadius="10,10,3,3">
                 <Grid x:Name="GridMQTT" Margin="5,5,10,5"  d:DataContext="{d:DesignInstance setting:MySqlConfig}">
                     <StackPanel>
-                        <Label Content="Mysql连接" HorizontalAlignment="Center" Margin="10" FontSize="17"/>
+                        <TextBlock Text="Mysql连接" HorizontalAlignment="Center" Margin="15" FontSize="17"/>
                         <DockPanel Margin="5">
                             <TextBlock Text="连接名:" VerticalAlignment="Center" Width="120"/>
                             <TextBox  ToolTip="连接名"  VerticalAlignment="Center" TextWrapping="Wrap" Text="{Binding Name}"  BorderThickness="0,0,0,1" />

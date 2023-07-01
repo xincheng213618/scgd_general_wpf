@@ -7,6 +7,7 @@
         DataContext="{Binding RelativeSource={RelativeSource Self}}"
         xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         ShowInTaskbar="False"
         Title="WindowTemplate" Height="500" Width="600"  MinWidth="600" WindowStartupLocation="CenterOwner" Initialized="Window_Initialized">
@@ -72,9 +73,20 @@
         </GroupBox>
 
         <Grid Grid.Row="0" Grid.Column="1"  x:Name="GridProperty" Margin="0,15,0,5">
-            <xctk:PropertyGrid   x:Name="PropertyGrid1" >
+            <!--<Grid.Resources>
+                <ResourceDictionary>
+                    <ResourceDictionary.MergedDictionaries>
+                        <ResourceDictionary Source="/HandyControl;component/themes/basic/colors/light.xaml"/>
+                        <ResourceDictionary Source="/HandyControl;component/Themes/Theme.xaml"/>
+                    </ResourceDictionary.MergedDictionaries>
+                </ResourceDictionary>
+            </Grid.Resources>
+            <hc:PropertyGrid x:Name="PropertyGrid1"/>-->
 
-            </xctk:PropertyGrid>
+
+            <xctk:PropertyGrid   x:Name="PropertyGrid1" />
+
+
         </Grid>
 
         <StackPanel x:Name="CreateGrid"  Grid.Column="1" Grid.Row="1" HorizontalAlignment="Center">
