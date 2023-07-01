@@ -248,7 +248,12 @@
                                     </Grid>
                                 </ScrollViewer>
                             </Border>
-                            <Rectangle Height="2" VerticalAlignment="Top" Margin="1,0,0,0" HorizontalAlignment="Left" Width="{Binding ElementName=TopLevelContentBorder11,Path=ActualWidth}" Fill="{DynamicResource ContextMenuBackground}"/>
+                            <StackPanel Orientation="Horizontal"  VerticalAlignment="Top" Margin="1,0,0,0" HorizontalAlignment="Left">
+                                <Rectangle Height="2"   Width="{Binding ElementName=TopLevelContentBorder11,Path=ActualWidth}" Fill="{DynamicResource ContextMenuBackground}"/>
+                                <Rectangle Height="2"   Width="1" Fill="{DynamicResource ContextMenuBackground}"/>
+
+                            </StackPanel>
+                       
                         </Grid>
                     </theme:SystemDropShadowChrome>
                 </Popup>

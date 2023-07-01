@@ -46,7 +46,7 @@
 
 
 
-    <Style TargetType="{x:Type ToolTip}">
+    <!--<Style TargetType="{x:Type ToolTip}">
         <Setter Property="OverridesDefaultStyle" Value="true" />
         <Setter Property="HasDropShadow" Value="True" />
         <Setter Property="ToolTipService.Placement" Value="MousePoint"/>
@@ -67,7 +67,9 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
-    </Style>
+    </Style>-->
+    
+    
     <Style  TargetType="{x:Type Label}">
         <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
         <Setter Property="Background" Value="Transparent"/>

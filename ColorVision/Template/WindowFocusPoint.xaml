@@ -33,14 +33,18 @@
                             <Setter Property="CornerRadius" Value="5"/>
                         </Style>
                     </StackPanel.Resources>
-
                     <Border Margin="5" Style="{StaticResource BorderModuleArea}">
-                        <StackPanel>
+                        <StackPanel >
                             <GroupBox x:Name="SettingGroup" d:DataContext="{d:DesignInstance Template:WindowFocusPoint}" Header="设置" Margin="5">
                                 <StackPanel Margin="5">
                                     <CheckBox Content="缩放重渲染" ToolTip="比较消耗性能" IsChecked="{Binding IsLayoutUpdated }"/>
                                 </StackPanel>
                             </GroupBox>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Margin="5" Style="{StaticResource BorderModuleArea}">
+                        <StackPanel>
                             <GroupBox Header="图像尺寸设定" Margin="5">
                                 <StackPanel Margin="5">
                                     <UniformGrid Columns="2">
@@ -54,9 +58,9 @@
                                         </DockPanel>
                                     </UniformGrid>
                                     <UniformGrid Columns="3">
-                                        <Button  Content="生成图像" Click="OpenCAD_Click"  Margin="2"/>
-                                        <Button x:Name="button1" Content="导入图像" Click="button1_Click" Margin="2"/>
-                                        <Button  Content="获取图像" Click="button1_Click" Margin="2"/>
+                                        <Button  Content="默认画布" Click="OpenCAD_Click"  Margin="2"/>
+                                        <Button x:Name="button1" Content="图像导入" Click="button1_Click" Margin="2"/>
+                                        <Button  Content="视频导入" Click="button1_Click" Margin="2"/>
                                     </UniformGrid>
                                 </StackPanel>
                             </GroupBox>
@@ -205,21 +209,21 @@
                                             <UniformGrid   Columns="2" Margin="5">
                                                 <DockPanel>
                                                     <TextBlock Text="宽度:" Width="40"/>
-                                                    <TextBox x:Name="tbWidth"  Margin="15,0,30,0" Text="200" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput" />
+                                                    <TextBox x:Name="tbWidth"   Text="200" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput" />
                                                 </DockPanel>
                                                 <DockPanel>
                                                     <TextBlock Text="高度:" Width="40"/>
-                                                    <TextBox x:Name="tbHeight"  Margin="15,0,30,0"  Text="200" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                    <TextBox x:Name="tbHeight"   Text="200" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                                                 </DockPanel>
                                             </UniformGrid>
                                             <UniformGrid  Columns="2" Margin="5">
                                                 <DockPanel>
                                                     <TextBlock Text="行数:"  Width="40"/>
-                                                    <TextBox x:Name="tbX" Margin="15,0,30,0" Text="3" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput" />
+                                                    <TextBox x:Name="tbX"  Text="3" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput" />
                                                 </DockPanel>
                                                 <DockPanel>
                                                     <TextBlock Text="列数:"  Width="40"/>
-                                                    <TextBox x:Name="tbY" Margin="15,0,30,0"  Text="3" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                    <TextBox x:Name="tbY"  Text="3" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                                                 </DockPanel>
                                             </UniformGrid>
                                         </StackPanel>

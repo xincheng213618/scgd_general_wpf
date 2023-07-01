@@ -165,49 +165,6 @@ namespace ColorVision.Template
 
         public bool IsLayoutUpdated { get; set; } = true;
 
-        private async void PoiParamToDrawingVisual(PoiParam poiParam)
-        {
-            int i = 0;
-
-
-            foreach (var item in poiParam.PoiPoints)
-            {
-                i++;
-                if (i % 50 ==0)
-                {
-                    WaitControlProgressBar.Value = 20 + i *80 / poiParam.PoiPoints.Count;
-                    await Task.Delay(10);
-                }
-                switch (item.PointType)
-                {
-                    case RiPointTypes.Circle:
-                        DrawingVisualCircleWord drawingVisualCircle = new DrawingVisualCircleWord();
-                        drawingVisualCircle.Attribute.Center = new Point(item.PixX, item.PixY);
-                        drawingVisualCircle.Attribute.Radius = item.PixWidth;
-                        drawingVisualCircle.Attribute.Brush = Brushes.Transparent;
-                        drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                        drawingVisualCircle.Attribute.ID = item.ID;
-                        drawingVisualCircle.Attribute.Name = item.Name;
-                        drawingVisualCircle.Render();
-                        ImageShow.AddVisual(drawingVisualCircle);
-                        break;
-                    case RiPointTypes.Rect:
-                        DrawingVisualRectangle drawingVisualRectangle = new DrawingVisualRectangle();
-                        drawingVisualRectangle.Attribute.Rect = new Rect(item.PixX, item.PixY,item.PixWidth,item.PixHeight);
-                        drawingVisualRectangle.Attribute.Brush = Brushes.Transparent;
-                        drawingVisualRectangle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                        drawingVisualRectangle.Attribute.ID = item.ID;
-                        drawingVisualRectangle.Attribute.Name = item.Name;
-                        drawingVisualRectangle.Render();
-                        ImageShow.AddVisual(drawingVisualRectangle);
-                        break;
-                    case RiPointTypes.Mask:
-                        break;
-                }
-            }
-            WaitControl.Visibility = Visibility.Hidden;
-            WaitControlProgressBar.Visibility = Visibility.Hidden;
-        }
 
 
         private async void Window_Initialized(object sender, EventArgs e)
@@ -370,6 +327,26 @@ namespace ColorVision.Template
             CreateImage(PoiParam.Width, PoiParam.Height, Colors.White,false);
         }
 
+        public void OpenImage(string? filePath)
+        {
+            if (filePath != null && File.Exists(filePath))
+            {
+                BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
+
+                if (ImageShow.Source == null)
+                {
+                    ImageShow.Source = new BitmapImage(new Uri(filePath));
+                    Zoombox1.ZoomUniform();
+                }
+                else
+                {
+                    ImageShow.Source = new BitmapImage(new Uri(filePath));
+                }
+                PoiParam.Width = bitmapImage.PixelWidth;
+                PoiParam.Height = bitmapImage.PixelHeight;
+            }
+        }
+        private bool Init;
 
         private void CreateImage(int width, int height, System.Windows.Media.Color color,bool IsClear = true)
         {
@@ -395,12 +372,69 @@ namespace ColorVision.Template
                         DrawingVisualLists.Clear();
                         PropertyGrid2.SelectedObject = null;
                     }
+                    if (Init)
+                    {
+                        WaitControl.Visibility = Visibility.Hidden;
+                        WaitControlProgressBar.Visibility = Visibility.Hidden;
+                    }
+                    Init = true;
 
                 });
             });
             thread.Start();
 
         }
+
+        private async void PoiParamToDrawingVisual(PoiParam poiParam)
+        {
+            int i = 0;
+
+
+            foreach (var item in poiParam.PoiPoints)
+            {
+                i++;
+                if (i % 50 == 0)
+                {
+                    WaitControlProgressBar.Value = 20 + i * 79 / poiParam.PoiPoints.Count;
+                    await Task.Delay(10);
+                }
+                switch (item.PointType)
+                {
+                    case RiPointTypes.Circle:
+                        DrawingVisualCircleWord drawingVisualCircle = new DrawingVisualCircleWord();
+                        drawingVisualCircle.Attribute.Center = new Point(item.PixX, item.PixY);
+                        drawingVisualCircle.Attribute.Radius = item.PixWidth;
+                        drawingVisualCircle.Attribute.Brush = Brushes.Transparent;
+                        drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                        drawingVisualCircle.Attribute.ID = item.ID;
+                        drawingVisualCircle.Attribute.Name = item.Name;
+                        drawingVisualCircle.Render();
+                        ImageShow.AddVisual(drawingVisualCircle);
+                        break;
+                    case RiPointTypes.Rect:
+                        DrawingVisualRectangle drawingVisualRectangle = new DrawingVisualRectangle();
+                        drawingVisualRectangle.Attribute.Rect = new Rect(item.PixX, item.PixY, item.PixWidth, item.PixHeight);
+                        drawingVisualRectangle.Attribute.Brush = Brushes.Transparent;
+                        drawingVisualRectangle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                        drawingVisualRectangle.Attribute.ID = item.ID;
+                        drawingVisualRectangle.Attribute.Name = item.Name;
+                        drawingVisualRectangle.Render();
+                        ImageShow.AddVisual(drawingVisualRectangle);
+                        break;
+                    case RiPointTypes.Mask:
+                        break;
+                }
+            }
+            WaitControlProgressBar.Value = 99;
+
+            if (Init)
+            {
+                WaitControl.Visibility = Visibility.Hidden;
+                WaitControlProgressBar.Visibility = Visibility.Hidden;
+            }
+            Init = true;
+        }
+
 
 
 
@@ -481,25 +515,7 @@ namespace ColorVision.Template
 
         }
 
-        public void OpenImage(string? filePath)
-        {
-            if (filePath != null && File.Exists(filePath))
-            {
-                BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
 
-                if (ImageShow.Source == null)
-                {
-                    ImageShow.Source = new BitmapImage(new Uri(filePath));
-                    Zoombox1.ZoomUniform();
-                }
-                else
-                {
-                    ImageShow.Source = new BitmapImage(new Uri(filePath));
-                }
-                PoiParam.Width = bitmapImage.PixelWidth;
-                PoiParam.Height = bitmapImage.PixelHeight;
-            }
-        }
 
 
         private void ImageShow_Initialized(object sender, EventArgs e)
