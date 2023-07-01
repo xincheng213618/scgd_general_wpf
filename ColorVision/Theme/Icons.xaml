@@ -3,8 +3,8 @@
 
 
     <Style x:Key="ToolBarImage" TargetType="{x:Type Image}">
-        <Setter Property="Height" Value="22"/>
-        <Setter Property="Width" Value="22"/>
+        <Setter Property="Height" Value="17"/>
+        <Setter Property="Width" Value="17"/>
         <Setter Property="Stretch" Value="Uniform"/>
         <Setter Property="Effect">
             <Setter.Value>

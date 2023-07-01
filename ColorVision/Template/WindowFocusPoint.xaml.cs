@@ -176,7 +176,7 @@ namespace ColorVision.Template
                 if (i % 50 ==0)
                 {
                     WaitControlProgressBar.Value = 20 + i *80 / poiParam.PoiPoints.Count;
-                    await Task.Delay(100);
+                    await Task.Delay(10);
                 }
                 switch (item.PointType)
                 {
