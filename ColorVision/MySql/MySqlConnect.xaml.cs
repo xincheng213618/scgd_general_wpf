@@ -49,6 +49,8 @@ namespace ColorVision.MySql
             {
                 MySqlConfig.Name = MySqlConfig.Host +"_" +MySqlConfig.Port;
             }
+            MySqlConfig.UserPwd = PasswordBox1.Password;
+
             GlobalSetting.GetInstance().SaveSoftwareConfig();
             MySqlControl.GetInstance().Open();
             this.Close();
@@ -72,10 +74,12 @@ namespace ColorVision.MySql
             GridMQTT.DataContext = MySqlConfig;
             MySqlConfigBackUp = new MySqlConfig();
             MySqlConfig.CopyTo(MySqlConfigBackUp);
+            PasswordBox1.Password = MySqlConfig.UserPwd;
         }
 
         private void Button_Click_Test(object sender, RoutedEventArgs e)
         {
+            MySqlConfig.UserPwd = PasswordBox1.Password;
             bool IsConnect = MySqlControl.TestConnect(MySqlConfig);
             MessageBox.Show($"连接{(IsConnect ? "成功" : "失败")}");
 

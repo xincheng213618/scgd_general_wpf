@@ -1,5 +1,6 @@
 ﻿using ColorVision.Config;
 using ColorVision.MQTT;
+using ColorVision.MySql;
 using ColorVision.Util;
 using cvColorVision;
 using ScottPlot.Styles;
@@ -162,6 +163,7 @@ namespace ColorVision.Template
             SaveDefault(FileNameFocusParms, PoiParams, IsOldFocusParams);
             SaveDefault(FileNameLedParms, LedParams, IsOldLedParams);
             SaveDefault(FileNameFlowParms, FlowParams, IsOldFlowParams);
+            SaveMysql();
         }
 
 
@@ -186,6 +188,8 @@ namespace ColorVision.Template
                     break;
                 case WindowTemplateType.PoiParam:
                     SaveDefault(FileNameFocusParms, PoiParams, IsOldFocusParams);
+
+                    SaveMysql();
                     break;
                 case WindowTemplateType.LedParam:
                     SaveDefault(FileNameLedParms, LedParams, IsOldLedParams);
@@ -196,6 +200,32 @@ namespace ColorVision.Template
                 default:
                     break;
             }
+        }
+
+        public void SaveMysql()
+        {
+            PoiMasterService poiMasterService = new PoiMasterService()
+            {
+            };
+
+            List<PoiMasterModel> poiMasterModels = new List<PoiMasterModel>();
+
+            foreach (var item in PoiParams)
+            {
+                PoiParam poiParam = item.Value;
+
+                PoiMasterModel poiMasterModel = new PoiMasterModel()
+                {
+                    Id = poiParam.ID,
+                    Name = item.Key,
+                    Type = poiParam.Type,
+                    Width =poiParam.Width,
+                    Height =poiParam.Height
+                };
+                poiMasterModels.Add(poiMasterModel);
+            }
+            poiMasterService.Save(poiMasterModels);
+
         }
 
         private static void SaveDefault<T>(string FileNameParams, ObservableCollection<KeyValuePair<string, T>> t, bool IsOldParams)

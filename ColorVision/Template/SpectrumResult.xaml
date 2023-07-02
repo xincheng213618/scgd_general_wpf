@@ -23,13 +23,13 @@
                 <ResourceDictionary Source="/Theme/Icons.xaml"/>
             </ToolBar.Resources>
             <ToggleButton Click="Button1_Click" Margin="2,2,0,0" >
-                <Image  Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImageSwitch}" />
+                <Image  Stretch="Uniform" Source="{StaticResource DrawingImageSwitch}" />
             </ToggleButton>
             <Button Click="Button_Click" Margin="2,2,0,0" >
-                <Image  Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImageSave}" />
+                <Image  Stretch="Uniform" Source="{StaticResource DrawingImageSave}" />
             </Button>
             <Button Click="Button2_Click" Margin="2,2,0,0" ToolTip="您可以全选后删除" >
-                <Image  Height="25" Width="25" Stretch="Uniform" Source="{StaticResource DrawingImageDelete}" />
+                <Image  Stretch="Uniform" Source="{StaticResource DrawingImageDelete}" />
             </Button>
         </ToolBar>
 

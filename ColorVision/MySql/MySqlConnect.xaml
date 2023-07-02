@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.MySql"
         xmlns:setting="clr-namespace:ColorVision.SettingUp"
+        xmlns:hc ="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         Title="Mysql连接配置" Background="#F0F0F0" Height="500" Width="400" Initialized="Window_Initialized">
     <Grid>
@@ -40,7 +41,7 @@
 
                         <DockPanel Margin="5,2">
                             <TextBlock Text="密码:" VerticalAlignment="Center" Width="120"/>
-                            <TextBox ToolTip="密码"  VerticalAlignment="Center" HorizontalAlignment="Left" Text="{Binding UserPwd}" Width="180"  BorderThickness="0,0,0,1" />
+                            <PasswordBox x:Name="PasswordBox1" ToolTip="密码"  VerticalAlignment="Center"  HorizontalAlignment="Left" Password=""  Width="180"  BorderThickness="0,0,0,1" />
                         </DockPanel>
                         <DockPanel Margin="5,2">
                             <TextBlock Text=""  Width="120"/>

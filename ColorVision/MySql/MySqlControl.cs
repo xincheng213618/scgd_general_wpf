@@ -50,6 +50,7 @@ namespace ColorVision.MySql
             catch (Exception ex)
             {
                 IsConnect = false;
+                ConnectSign = "未连接";
                 Log.LogException(ex);
                 return false;
             }
@@ -57,7 +58,7 @@ namespace ColorVision.MySql
 
         public static bool TestConnect(MySqlConfig MySqlConfig)
         {
-            string connStr = $"server={MySqlConfig.Host};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};;Connect Timeout=3";
+            string connStr = $"server={MySqlConfig.Host};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};Connect Timeout=3";
             MySqlConnection MySqlConnection;
             try
             {

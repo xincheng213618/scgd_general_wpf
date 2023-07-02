@@ -7,13 +7,31 @@ using System.Threading.Tasks;
 
 namespace ColorVision.MySql
 {
-    internal class PoiDetailService : BaseService<PoiDetailModel>
+
+    public class PoiDetailModel
+    {
+        public int? Id { get; set; }
+        public string? Name { get; set; }
+        public int? Pid { get; set; }
+        public int? Type { get; set; }
+        public int? PixX { get; set; }
+        public int? PixY { get; set; }
+        public int? PixWidth { get; set; }
+        public int? PixHeight { get; set; }
+        public DateTime? CreateDate { get; set; }
+        public bool? IsEnable { get; set; }
+        public bool? IsDelete { get; set; }
+        public string? Remark { get; set; }
+    }
+
+
+    public class PoiDetailService : BaseServiceMaster<PoiDetailModel>
     {
         public PoiDetailService() : base("t_scgd_cfg_poi_detail")
         {
         }
 
-        protected override PoiDetailModel GetModel(DataRow item)
+        public override PoiDetailModel GetModel(DataRow item)
         {
             PoiDetailModel model = new PoiDetailModel
             {
@@ -33,7 +51,7 @@ namespace ColorVision.MySql
             return model;
         }
 
-        protected override DataRow GetRow(PoiDetailModel item, DataTable d_info)
+        public override DataRow GetRow(PoiDetailModel item, DataTable d_info)
         {
             DataRow row = base.GetRow(item, d_info);
             if (item != null)

@@ -58,8 +58,11 @@ namespace ColorVision
         {
             MySqlControl = MySqlControl.GetInstance();
 
-            if (!MySqlControl.Open())
+            if (!MySqlControl.IsConnect)
+            {
+                MySqlControl.Open();
                 MessageBox.Show("数据库连接失败");
+            }
             connection = MySqlControl.GetInstance().MySqlConnection;
 
         }
@@ -89,6 +92,15 @@ namespace ColorVision
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
+            PoiMasterService poiMasterService = new PoiMasterService();
+            List <PoiMasterModel> poiMasterServices = poiMasterService.GetAll();
+
+
+
+
+
+
+
             var keyValuePair = TemplateControl.GetInstance().PoiParams[0];
 
 

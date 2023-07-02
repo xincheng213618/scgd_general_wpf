@@ -40,10 +40,14 @@ namespace ColorVision.Template
     /// </summary>
     public class PoiParam : ParamBase
     {
+        private static int No = 1;
         public PoiParam()
         {
-
+            ID = No++;
         }
+
+        public int ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
+        private int _ID;
 
         public int Type { get => _Type; set { _Type = value; NotifyPropertyChanged(); } }
         private int _Type;
