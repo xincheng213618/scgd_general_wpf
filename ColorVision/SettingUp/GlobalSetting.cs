@@ -26,6 +26,7 @@ namespace ColorVision.SettingUp
         public GlobalSetting()
         {
             SoftwareConfigLazy = new Lazy<SoftwareConfig>(() => ReadConfig<SoftwareConfig>(GlobalConst.SoftwareConfigFileName) ?? new SoftwareConfig());
+            SoftwareConfig.Version = System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString() ?? "1.0";
 
             AppDomain.CurrentDomain.ProcessExit += (s, e) =>
             {
@@ -65,7 +66,7 @@ namespace ColorVision.SettingUp
             if (DirectoryName != null && !Directory.Exists(DirectoryName))
                 Directory.CreateDirectory(DirectoryName);
 
-            string jsonString = JsonSerializer.Serialize(t, new JsonSerializerOptions());
+            string jsonString = JsonSerializer.Serialize(t, new JsonSerializerOptions() {WriteIndented =true});
             File.WriteAllText(fileName, jsonString);
         }
     }
