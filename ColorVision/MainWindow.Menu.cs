@@ -23,7 +23,7 @@ namespace ColorVision
             if (sender is MenuItem menuItem)
             {
                 WindowTemplate windowTemplate;
-                switch (menuItem.Tag.ToString())
+                switch (menuItem.Tag?.ToString()??string.Empty)
                 {
                     case "AoiParam":
                         windowTemplate = new WindowTemplate(WindowTemplateType.AoiParam) { Title = "AOI参数设置" };
@@ -56,6 +56,7 @@ namespace ColorVision
                         TemplateAbb(windowTemplate, TemplateControl.FlowParams);
                         break;
                     default:
+                        HandyControl.Controls.Growl.Info("开发中");
                         break;
                 }
             }

@@ -22,8 +22,8 @@
         <Grid Grid.Row="0">
             <Menu x:Name="Menu1" Height ="24" Background="#F3F3F3" >
                 <MenuItem Header="文件(_F)">
-                    <MenuItem Header="打开(_O)"/>
-                    <MenuItem Header="工程(_F)"/>
+                    <MenuItem Header="打开(_O)" Click="MenuItem_Template"/>
+                    <MenuItem Header="工程(_F)" Click="MenuItem_Template"/>
                     <MenuItem Header="退出(_X)" InputGestureText="Alt + F4" Click="MenuItem_Exit"/>
                 </MenuItem>
                 <MenuItem Header="模板(_T)">
@@ -41,12 +41,12 @@
                     <MenuItem Header="数据库(_M)"  Click="MenuItem_Click_7"/>
                     <MenuItem Header="状态栏" x:Name="MenuStatusBar"  IsChecked="True"  Click="MenuStatusBar_Click" />
                 </MenuItem>
-
                 <MenuItem Header="标定(_A)">
                     <MenuItem Header="四色校正" Click="MenuItem_Click8"/>
                 </MenuItem>
                 
                 <MenuItem Header="帮助(_H)">
+                    <MenuItem Header="检查更新(_U)" Click="MenuItem_Template"/>
                     <MenuItem Header="关于(_A)" Click="MenuItem_Click_1"/>
                 </MenuItem>
             </Menu>
