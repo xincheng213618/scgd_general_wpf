@@ -15,9 +15,14 @@ namespace ColorVision.SettingUp
         {
             MQTTConfig = new MQTTConfig();
             MySqlConfig = new MySqlConfig();
+
         }
 
         public string Version { get; set; } = "0.0";
+
+        public bool IsUseMySql { get; set; } = true;
+
+
 
         /// <summary>
         /// MQTT配置

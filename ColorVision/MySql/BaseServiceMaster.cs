@@ -67,13 +67,23 @@ namespace ColorVision.MySql
             DataTable dt = new DataTable();
             try
             {
-                MySqlCommand command = new MySqlCommand(sql, MySqlControl.MySqlConnection);
-                foreach (var item in param)
+                if (param.Count ==0)
                 {
-                    command.Parameters.AddWithValue(item.Key, item.Value);
+                    using MySqlDataAdapter adapter = new MySqlDataAdapter(sql, MySqlControl.MySqlConnection);
+                    int count = adapter.Fill(dt);
                 }
-                using MySqlDataAdapter adapter = new MySqlDataAdapter(command);
-                int count = adapter.Fill(dt);
+                else
+                {
+                    MySqlCommand command = new MySqlCommand(sql, MySqlControl.MySqlConnection);
+                    foreach (var item in param)
+                    {
+                        command.Parameters.AddWithValue(item.Key, item.Value);
+                    }
+                    using MySqlDataAdapter adapter = new MySqlDataAdapter(command);
+                    int count = adapter.Fill(dt);
+                }
+
+
             }
             catch (Exception ex)
             {
@@ -87,13 +97,17 @@ namespace ColorVision.MySql
             int count = -1;
             try
             {
-                MySqlDataAdapter adapter = new MySqlDataAdapter($"select * from {TableName}", MySqlControl.MySqlConnection);
+                MySqlCommand command = new MySqlCommand($"select * from {TableName}", MySqlControl.MySqlConnection);
+
+                using MySqlDataAdapter adapter = new MySqlDataAdapter(command);
                 DataTable olddt = new DataTable();
-                adapter.Fill(dt);
+                adapter.Fill(olddt);
 
                 MySqlCommandBuilder cmdb = new MySqlCommandBuilder(adapter);
                 adapter.UpdateCommand = cmdb.GetUpdateCommand();
                 adapter.InsertCommand = cmdb.GetInsertCommand();
+                adapter.DeleteCommand = cmdb.GetDeleteCommand();
+                olddt.Rows[0]["type"] = 1;
                 count = adapter.Update(dt);
             }
             catch (Exception ex)
@@ -232,30 +246,14 @@ namespace ColorVision.MySql
 
         public int Save(List<T> datas)
         {
-            DeleteAll();
-            DataTable d_info = new DataTable(TableName);
-            d_info.Columns.Add("id");
-            d_info.Columns.Add("name");
-            d_info.Columns.Add("type");
-            d_info.Columns.Add("width");
-            d_info.Columns.Add("height");
-            d_info.Columns.Add("left_top_x");
-            d_info.Columns.Add("left_top_y");
-            d_info.Columns.Add("right_top_x");
-            d_info.Columns.Add("right_top_y");
-            d_info.Columns.Add("right_bottom_x");
-            d_info.Columns.Add("right_bottom_y");
-            d_info.Columns.Add("left_bottom_x");
-            d_info.Columns.Add("left_bottom_y");
-            d_info.Columns.Add("dynamics");
-            d_info.Columns.Add("create_date");
-            d_info.Columns.Add("is_enable");
-            d_info.Columns.Add("is_delete");
-            d_info.Columns.Add("remark");
+            //DeleteAll();
+            DataTable d_info = GetDataTable();
             foreach (var item in datas)
             {
                 DataRow row = GetRow(item, d_info);
                 d_info.Rows.Add(row);
+                row.AcceptChanges();
+                row.SetModified();
             }
 
             return Save(d_info);
@@ -286,15 +284,14 @@ namespace ColorVision.MySql
             return list;
         }
 
-        public virtual T? GetModel(DataRow item)
-        {
-            return default;
-        }
 
-        public virtual DataRow GetRow(T item, DataTable dataTable)
-        {
-            return dataTable.NewRow();
-        }
+
+        public virtual T? GetModel(DataRow item) => default;
+
+        public virtual DataRow GetRow(T item, DataTable dataTable) => dataTable.NewRow();
+
+        public virtual DataTable GetDataTable(string? tableName =null) => new DataTable(tableName);
+
 
         public int DeleteAll()
         {

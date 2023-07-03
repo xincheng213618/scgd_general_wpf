@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ColorVision.Util;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -25,7 +26,21 @@ namespace ColorVision.SettingUp
 
         public GlobalSetting()
         {
-            SoftwareConfigLazy = new Lazy<SoftwareConfig>(() => ReadConfig<SoftwareConfig>(GlobalConst.SoftwareConfigFileName) ?? new SoftwareConfig());
+            SoftwareConfigLazy = new Lazy<SoftwareConfig>(() =>
+            {
+                SoftwareConfig config = ReadConfig<SoftwareConfig>(GlobalConst.SoftwareConfigFileName);
+                if (config != null)
+                {
+                    config.MySqlConfig.UserPwd = AESUtil.AESDecrypt(config.MySqlConfig.UserPwd, "ColorVision", "ColorVision");
+                    config.MQTTConfig.UserPwd = AESUtil.AESDecrypt(config.MQTTConfig.UserPwd, "ColorVision", "ColorVision");
+
+                    return config;
+                }
+                else
+                {
+                    return new SoftwareConfig();
+                }
+            });
             SoftwareConfig.Version = System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString() ?? "1.0";
 
             AppDomain.CurrentDomain.ProcessExit += (s, e) =>
@@ -42,7 +57,14 @@ namespace ColorVision.SettingUp
 
         public void SaveSoftwareConfig()
         {
+            string Temp = SoftwareConfig.MySqlConfig.UserPwd;
+            string Temp1 = SoftwareConfig.MQTTConfig.UserPwd;
+
+            SoftwareConfig.MySqlConfig.UserPwd = AESUtil.AESEncrypt(SoftwareConfig.MySqlConfig.UserPwd, "ColorVision", "ColorVision");
+            SoftwareConfig.MQTTConfig.UserPwd = AESUtil.AESEncrypt(SoftwareConfig.MQTTConfig.UserPwd, "ColorVision", "ColorVision");
             WriteConfig(GlobalConst.SoftwareConfigFileName, SoftwareConfig);
+            SoftwareConfig.MySqlConfig.UserPwd = Temp;
+            SoftwareConfig.MQTTConfig.UserPwd = Temp1;
         }
 
 

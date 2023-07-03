@@ -94,14 +94,14 @@
                 <Label Content="模板名称："/>
                 <TextBox x:Name="TextBox1" Margin="3"/>
             </DockPanel>
-            <UniformGrid x:Name="FunctionGrid" Columns="3" Margin="0,5"  Width="300"  HorizontalAlignment="Center">
-                <Button Width="80"  Click="Button_Click">
+            <UniformGrid x:Name="FunctionGrid" Columns="3" Margin="0,8"  Width="330"  HorizontalAlignment="Center">
+                <Button Width="80"  Click="Button_Click" HorizontalAlignment="Left">
                     <TextBlock Text="{Binding ElementName=TemplateGrid,Path=Header,StringFormat='新建{0}'}"/>
                 </Button>
-                <Button  Width="80"   Click="Button_Click_1">
+                <Button  Width="80"   Click="Button_Click_1" >
                     <TextBlock Text="{Binding ElementName=TemplateGrid,Path=Header,StringFormat='删除{0}'}"/>
                 </Button>
-                <Button Content="保存" Width="80"   Click="Button_Click_2" />
+                <Button Content="保存" Width="80" HorizontalAlignment="Right"  Click="Button_Click_2" />
             </UniformGrid>
         </StackPanel>
 

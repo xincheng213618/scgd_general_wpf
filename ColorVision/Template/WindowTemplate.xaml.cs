@@ -103,6 +103,7 @@ namespace ColorVision.Template
             {
                 case WindowTemplateType.LedParam:
                 case WindowTemplateType.PoiParam:
+                    TemplateGrid.Header = "点集";
                     break;
                 case WindowTemplateType.FlowParam:
                     TemplateGrid.Header = "流程";

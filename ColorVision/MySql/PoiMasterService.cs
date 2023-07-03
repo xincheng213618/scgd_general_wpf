@@ -39,6 +39,29 @@ namespace ColorVision.MySql
         {
             
         }
+        public override DataTable GetDataTable(string? tableName =null)
+        {
+            DataTable dataTable = base.GetDataTable();
+            dataTable.Columns.Add("id");
+            dataTable.Columns.Add("name");
+            dataTable.Columns.Add("type");
+            dataTable.Columns.Add("width");
+            dataTable.Columns.Add("height");
+            dataTable.Columns.Add("left_top_x");
+            dataTable.Columns.Add("left_top_y");
+            dataTable.Columns.Add("right_top_x");
+            dataTable.Columns.Add("right_top_y");
+            dataTable.Columns.Add("right_bottom_x");
+            dataTable.Columns.Add("right_bottom_y");
+            dataTable.Columns.Add("left_bottom_x");
+            dataTable.Columns.Add("left_bottom_y");
+            dataTable.Columns.Add("dynamics");
+            dataTable.Columns.Add("create_date");
+            dataTable.Columns.Add("is_enable");
+            dataTable.Columns.Add("is_delete");
+            dataTable.Columns.Add("remark");
+            return dataTable;
+        }
 
         public override PoiMasterModel GetModel(DataRow item)
         {
@@ -68,29 +91,29 @@ namespace ColorVision.MySql
 
         public override DataRow GetRow(PoiMasterModel item, DataTable d_info)
         {
-            d_info.Columns.Add();
             DataRow row = base.GetRow(item, d_info);
             if (item != null)
             {
-                if (item.Id > 0) row[0] = item.Id;
-                if (item.Name != null) row[1] = item.Name;
-                if (item.Type >= 0) row[2] = item.Type;
-                if (item.Width > 0) row[3] = item.Width;
-                if (item.Height > 0) row[4] = item.Height;
-                if (item.LeftTopX >= 0) row[5] = item.LeftTopX;
-                if (item.LeftTopY >= 0) row[6] = item.LeftTopY;
-                if (item.RightTopX >= 0) row[7] = item.RightTopX;
-                if (item.RightTopY >= 0) row[8] = item.RightTopY;
-                if (item.RightBottomX >= 0) row[9] = item.RightBottomX;
-                if (item.RightBottomY >= 0) row[10] = item.RightBottomY;
-                if (item.LeftBottomX >= 0) row[11] = item.LeftBottomX;
-                if (item.LeftBottomY >= 0) row[12] = item.LeftBottomY;
-                row[13] = item.IsDynamics;
+                if (item.Id > 0) row["id"] = item.Id;
+                if (item.Name != null) row["name"] = item.Name;
+                if (item.Type >= 0) row["type"] = item.Type;
+                if (item.Width > 0) row["width"] = item.Width;
+                if (item.Height > 0) row["height"] = item.Height;
+                if (item.LeftTopX >= 0) row["left_top_x"] = item.LeftTopX;
+                if (item.LeftTopY >= 0) row["left_top_y"] = item.LeftTopY;
+                if (item.RightTopX >= 0) row["right_top_x"] = item.RightTopX;
+                if (item.RightTopY >= 0) row["right_top_y"] = item.RightTopY;
+                if (item.RightBottomX >= 0) row["right_bottom_x"] = item.RightBottomX;
+                if (item.RightBottomY >= 0) row["right_bottom_y"] = item.RightBottomY;
+                if (item.LeftBottomX >= 0) row["left_bottom_x"] = item.LeftBottomX;
+                if (item.LeftBottomY >= 0) row["left_bottom_y"] = item.LeftBottomY;
+                row["dynamics"] = item.IsDynamics;
                 //row["create_date"] = item.CreateDate;
                 //row["is_enable"] = item.IsEnable;
                 //row["is_delete"] = item.IsDelete;
-                if (item.Remark != null) row[14] = item.Remark;
+                if (item.Remark != null) row["remark"] = item.Remark;
             }
+
             return row;
         }
     }

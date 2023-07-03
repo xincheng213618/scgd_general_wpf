@@ -9,6 +9,7 @@ using HandyControl.Tools.Extension;
 using log4net;
 using Microsoft.VisualBasic.Logging;
 using MySqlX.XDevAPI.Relational;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -87,6 +88,7 @@ namespace ColorVision.Template
         /// <summary>
         /// 数据库ID
         /// </summary>
+        [JsonIgnore()]
         public int DdId { get; set; }
         public int  ID { set; get; }
 
@@ -96,29 +98,32 @@ namespace ColorVision.Template
         public double PixY { set; get; }
         public double PixWidth { set; get; }
         public double PixHeight { set; get; }
-        public double CadX { set; get; }
-        public double CadY { set; get; }
-        public double CadWidth { set; get; }
-        public double CadHeight { set; get; }
     }
 
 
 
     public class DatumAreaPoints:ViewModelBase
     {
-
+        [JsonIgnore()]
         public int X1X { get => (int)X1.X; set { X1 = new Point( value, X1.Y); NotifyPropertyChanged(); } }
+        [JsonIgnore]
         public int X1Y { get => (int)X1.Y; set { X1 = new Point(X1.X, value); NotifyPropertyChanged(); } }
+        [JsonIgnore]
         public int X2X { get => (int)X2.X; set { X2 = new Point(value, X2.Y); NotifyPropertyChanged(); } }
+        [JsonIgnore]
         public int X2Y { get => (int)X2.Y; set { X2 = new Point(X2.X, value); NotifyPropertyChanged(); } }
+        [JsonIgnore]
         public int X3X { get => (int)X3.X; set { X3 = new Point(value, X3.Y); NotifyPropertyChanged(); } }
+        [JsonIgnore]
         public int X3Y { get => (int)X3.Y; set { X3 = new Point(X3.X, value); NotifyPropertyChanged(); } }
+        [JsonIgnore]
         public int X4X { get => (int)X4.X; set { X4 = new Point(value, X4.Y); NotifyPropertyChanged(); } }
+        [JsonIgnore]
         public int X4Y { get => (int)X4.Y; set { X4 = new Point(X4.X, value); NotifyPropertyChanged(); } }
+        [JsonIgnore]
         public int CenterX { get => (int)Center.X; set { Center = new Point(value, Center.Y); NotifyPropertyChanged(); } }
+        [JsonIgnore]
         public int CenterY { get => (int)Center.Y; set { Center = new Point(Center.X, value); NotifyPropertyChanged(); } }
-
-
 
         public Point X1 { get; set; } = new Point() { X = 100, Y = 100 };
         public Point X2 { get; set; } = new Point() { X = 300, Y = 100 };
@@ -167,7 +172,35 @@ namespace ColorVision.Template
             this.DataContext = PoiParam;
         }
 
-        public bool IsLayoutUpdated { get; set; } = true;
+        public bool IsLayoutUpdated { get => _IsLayoutUpdated; set { _IsLayoutUpdated = value; if(value) UpdateVisualLayout();  } }
+        private bool _IsLayoutUpdated = true;
+
+        private void UpdateVisualLayout()
+        {
+            foreach (var item in DefaultPoint)
+            {
+                if (item is DrawingVisualDatumCircle visualDatumCircle)
+                {
+                    visualDatumCircle.Attribute.Radius = 5 / Zoombox1.ContentMatrix.M11;
+                }
+            }
+
+            if (IsLayoutUpdated)
+            {
+                foreach (var item in DrawingVisualLists)
+                {
+                    DrawAttributeBase drawAttributeBase = item.GetAttribute();
+                    if (drawAttributeBase is CircleAttribute circleAttribute)
+                    {
+                        circleAttribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                    }
+                    else if (drawAttributeBase is RectangleAttribute rectangleAttribute)
+                    {
+                        rectangleAttribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                    }
+                }
+            }
+        }
 
 
 
@@ -227,24 +260,14 @@ namespace ColorVision.Template
                 }
             };
 
+            double oldmax = Zoombox1.ContentMatrix.M11;
             Zoombox1.LayoutUpdated += (s, e) =>
             {
-                if (IsLayoutUpdated)
+                if (oldmax != Zoombox1.ContentMatrix.M11)
                 {
-                    foreach (var item in DrawingVisualLists)
-                    {
-                        DrawAttributeBase drawAttributeBase = item.GetAttribute();
-                        if (drawAttributeBase is CircleAttribute circleAttribute)
-                        {
-                            circleAttribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                        }
-                        else if (drawAttributeBase is RectangleAttribute rectangleAttribute)
-                        {
-                            rectangleAttribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                        }
-                    }
+                    oldmax = Zoombox1.ContentMatrix.M11;
+                    UpdateVisualLayout();
                 }
-
             };
 
             if (PoiParam.Height != 0 && PoiParam.Width != 0)

@@ -1,6 +1,7 @@
 ﻿using ColorVision.Config;
 using ColorVision.MQTT;
 using ColorVision.MySql;
+using ColorVision.SettingUp;
 using ColorVision.Util;
 using cvColorVision;
 using ScottPlot.Styles;
@@ -83,7 +84,28 @@ namespace ColorVision.Template
 
             SxParams = IDefault(FileNameSxParms, new SxParam(), ref IsOldSxParams);
 
-            PoiParams = IDefault(FileNameFocusParms, new PoiParam(), ref IsOldFocusParams);
+
+            PoiParamsLazy = new Lazy<ObservableCollection<KeyValuePair<string, PoiParam>>>(() =>
+            {
+                var config = IDefault(FileNameFocusParms, new PoiParam(), ref IsOldFocusParams);
+
+                PoiMasterService poiMasterService = new PoiMasterService();
+                List<PoiMasterModel> poiMasterServices = poiMasterService.GetAll();
+
+                foreach (var item in poiMasterServices)
+                {
+                    foreach (var item1 in config)
+                    {
+                        if (item.Name == item1.Key)
+                        {
+                            item1.Value.ID = item.Id ?? 0;
+                        }
+                    }
+                }
+                return config;
+            });
+
+
 
             LedParams = IDefault(FileNameLedParms, new LedParam(), ref IsOldLedParams);
             FlowParams = IDefault(FileNameFlowParms, new FlowParam(), ref IsOldFlowParams);
@@ -220,7 +242,15 @@ namespace ColorVision.Template
                     Name = item.Key,
                     Type = poiParam.Type,
                     Width =poiParam.Width,
-                    Height =poiParam.Height
+                    Height =poiParam.Height,
+                    LeftTopX =poiParam.DatumAreaPoints.X1X,
+                    LeftTopY =poiParam.DatumAreaPoints.X1Y,
+                    RightTopX = poiParam.DatumAreaPoints.X2X,
+                    RightTopY = poiParam.DatumAreaPoints.X2Y,
+                    LeftBottomX = poiParam.DatumAreaPoints.X3X,
+                    LeftBottomY = poiParam.DatumAreaPoints.X3Y,
+                    RightBottomX = poiParam.DatumAreaPoints.X4X,
+                    RightBottomY = poiParam.DatumAreaPoints.X4Y
                 };
                 poiMasterModels.Add(poiMasterModel);
             }
@@ -246,12 +276,15 @@ namespace ColorVision.Template
             return keys;
         }
 
+        readonly Lazy<ObservableCollection<KeyValuePair<string, PoiParam>>> PoiParamsLazy;
+
         public ObservableCollection<KeyValuePair<string, AoiParam>> AoiParams { get; set; }
         public ObservableCollection<KeyValuePair<string, CalibrationParam>> CalibrationParams { get; set; } 
         public ObservableCollection<KeyValuePair<string, PGParam>> PGParams { get; set; }
         public ObservableCollection<KeyValuePair<string, SxParam>> SxParams { get; set; }
         public ObservableCollection<KeyValuePair<string, LedReusltParam>> LedReusltParams { get; set; }
-        public ObservableCollection<KeyValuePair<string, PoiParam>> PoiParams { get; set;}
+        public ObservableCollection<KeyValuePair<string, PoiParam>> PoiParams { get => PoiParamsLazy.Value;}
+
         public ObservableCollection<KeyValuePair<string, LedParam>> LedParams { get; set; }        
         public ObservableCollection<KeyValuePair<string, FlowParam>> FlowParams { get; set; }
     }

@@ -19,4 +19,10 @@
     <ProjectReference Include="..\ColorVision\ColorVision.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="log4net.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

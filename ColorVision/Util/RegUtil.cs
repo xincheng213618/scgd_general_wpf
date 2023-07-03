@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Util
 {
-    public static class Reg
+    public static class RegUtil
     {
         public static string ReadValue(string path, string name, string def)
         {
