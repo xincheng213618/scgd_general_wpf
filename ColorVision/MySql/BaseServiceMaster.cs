@@ -1,4 +1,5 @@
 ﻿using ColorVision.MQTT;
+using HandyControl.Controls;
 using log4net;
 using MySql.Data.MySqlClient;
 using MySqlX.XDevAPI.Relational;
@@ -97,18 +98,52 @@ namespace ColorVision.MySql
             int count = -1;
             try
             {
-                MySqlCommand command = new MySqlCommand($"select * from {TableName}", MySqlControl.MySqlConnection);
+                MySqlCommand command = new MySqlCommand($"select * from {TableName} where is_delete=1", MySqlControl.MySqlConnection);
 
                 using MySqlDataAdapter adapter = new MySqlDataAdapter(command);
                 DataTable olddt = new DataTable();
                 adapter.Fill(olddt);
 
+
+                List<DataRow> SaveDataRows = new List<DataRow>();
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    SaveDataRows.Add(dt.Rows[i]);
+                }
+                
+                for (int i = 0; i < olddt.Rows.Count; i++)
+                {
+                    for (int j = 0; j < dt.Rows.Count; j++)
+                    {
+                        DataRow dataRow = olddt.Rows[i];
+                        DataRow dataRow1 = dt.Rows[j];
+                        if ((int)dataRow["id"] == (int)dataRow1["id"])
+                        {
+                            SaveDataRows.Remove(dataRow1);
+                            for (int k = 0; k < dt.Columns.Count; k++)
+                            {
+                                dataRow[k] = dataRow1[k];
+                            }
+                        }
+                    }
+                }
+                int ll = (int)olddt.Rows[0]["id"];
+                foreach (var item in SaveDataRows)
+                {
+                    DataRow dataRow = olddt.NewRow();
+                    dataRow[0] = ll++;
+                    for (int k = 1; k < dt.Columns.Count; k++)
+                    {
+                        dataRow[k] = item[k];
+                    }
+                    olddt.Rows.Add(dataRow);
+                }
+
                 MySqlCommandBuilder cmdb = new MySqlCommandBuilder(adapter);
                 adapter.UpdateCommand = cmdb.GetUpdateCommand();
                 adapter.InsertCommand = cmdb.GetInsertCommand();
                 adapter.DeleteCommand = cmdb.GetDeleteCommand();
-                olddt.Rows[0]["type"] = 1;
-                count = adapter.Update(dt);
+                count = adapter.Update(olddt);
             }
             catch (Exception ex)
             {
@@ -246,16 +281,13 @@ namespace ColorVision.MySql
 
         public int Save(List<T> datas)
         {
-            //DeleteAll();
+            DeleteAll();
             DataTable d_info = GetDataTable();
             foreach (var item in datas)
             {
                 DataRow row = GetRow(item, d_info);
                 d_info.Rows.Add(row);
-                row.AcceptChanges();
-                row.SetModified();
             }
-
             return Save(d_info);
         }
 

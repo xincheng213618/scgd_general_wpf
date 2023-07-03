@@ -209,9 +209,8 @@ namespace ColorVision.Template
                     SaveDefault(FileNameSxParms, SxParams, IsOldSxParams);
                     break;
                 case WindowTemplateType.PoiParam:
-                    SaveDefault(FileNameFocusParms, PoiParams, IsOldFocusParams);
-
                     SaveMysql();
+                    SaveDefault(FileNameFocusParms, PoiParams, IsOldFocusParams);
                     break;
                 case WindowTemplateType.LedParam:
                     SaveDefault(FileNameLedParms, LedParams, IsOldLedParams);
@@ -226,35 +225,28 @@ namespace ColorVision.Template
 
         public void SaveMysql()
         {
-            PoiMasterService poiMasterService = new PoiMasterService()
-            {
-            };
+            PoiMasterService poiMasterService = new PoiMasterService();
 
             List<PoiMasterModel> poiMasterModels = new List<PoiMasterModel>();
-
             foreach (var item in PoiParams)
             {
-                PoiParam poiParam = item.Value;
-
-                PoiMasterModel poiMasterModel = new PoiMasterModel()
-                {
-                    Id = poiParam.ID,
-                    Name = item.Key,
-                    Type = poiParam.Type,
-                    Width =poiParam.Width,
-                    Height =poiParam.Height,
-                    LeftTopX =poiParam.DatumAreaPoints.X1X,
-                    LeftTopY =poiParam.DatumAreaPoints.X1Y,
-                    RightTopX = poiParam.DatumAreaPoints.X2X,
-                    RightTopY = poiParam.DatumAreaPoints.X2Y,
-                    LeftBottomX = poiParam.DatumAreaPoints.X3X,
-                    LeftBottomY = poiParam.DatumAreaPoints.X3Y,
-                    RightBottomX = poiParam.DatumAreaPoints.X4X,
-                    RightBottomY = poiParam.DatumAreaPoints.X4Y
-                };
+                PoiMasterModel poiMasterModel = new PoiMasterModel(item.Key, item.Value);
                 poiMasterModels.Add(poiMasterModel);
             }
             poiMasterService.Save(poiMasterModels);
+
+
+            List<PoiMasterModel> poiMasterServices = poiMasterService.GetAll();
+            foreach (var item in poiMasterServices)
+            {
+                foreach (var item1 in PoiParams)
+                {
+                    if (item.Name == item1.Key)
+                    {
+                        item1.Value.ID = item.Id ?? 0;
+                    }
+                }
+            }
 
         }
 

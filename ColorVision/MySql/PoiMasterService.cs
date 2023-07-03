@@ -1,4 +1,5 @@
-﻿using MySql.Data.MySqlClient;
+﻿using ColorVision.Template;
+using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -10,6 +11,30 @@ namespace ColorVision.MySql
 {
     internal class PoiMasterModel
     {
+        public PoiMasterModel()
+        {
+
+        }
+
+        public PoiMasterModel(string name,PoiParam poiParam )
+        {
+            Id = poiParam.ID;
+            Name = name;
+            Type = poiParam.Type;
+            Width = poiParam.Width;
+            Height = poiParam.Height;
+            LeftTopX = poiParam.DatumAreaPoints.X1X;
+            LeftTopY = poiParam.DatumAreaPoints.X1Y;
+            RightTopX = poiParam.DatumAreaPoints.X2X;
+            RightTopY = poiParam.DatumAreaPoints.X2Y;
+            LeftBottomX = poiParam.DatumAreaPoints.X3X;
+            LeftBottomY = poiParam.DatumAreaPoints.X3Y;
+            RightBottomX = poiParam.DatumAreaPoints.X4X;
+            RightBottomY = poiParam.DatumAreaPoints.X4Y;
+        }
+
+
+
         public int? Id { get; set; }
         public string? Name { get; set; }
 
@@ -24,10 +49,10 @@ namespace ColorVision.MySql
         public int? RightBottomY { get; set; }
         public int? LeftBottomX { get; set; }
         public int? LeftBottomY { get; set; }
-        public bool? IsDynamics { get; set; }
-        public DateTime? CreateDate { get; set; }
-        public bool? IsEnable { get; set; }
-        public bool? IsDelete { get; set; }
+        public bool? IsDynamics { get; set; } = false;
+        public DateTime? CreateDate { get; set; } = DateTime.Now;
+        public bool? IsEnable { get; set; } = true;
+        public bool? IsDelete { get; set; } = false;
         public string? Remark { get; set; }
     }
 
@@ -42,24 +67,24 @@ namespace ColorVision.MySql
         public override DataTable GetDataTable(string? tableName =null)
         {
             DataTable dataTable = base.GetDataTable();
-            dataTable.Columns.Add("id");
-            dataTable.Columns.Add("name");
-            dataTable.Columns.Add("type");
-            dataTable.Columns.Add("width");
-            dataTable.Columns.Add("height");
-            dataTable.Columns.Add("left_top_x");
-            dataTable.Columns.Add("left_top_y");
-            dataTable.Columns.Add("right_top_x");
-            dataTable.Columns.Add("right_top_y");
-            dataTable.Columns.Add("right_bottom_x");
-            dataTable.Columns.Add("right_bottom_y");
-            dataTable.Columns.Add("left_bottom_x");
-            dataTable.Columns.Add("left_bottom_y");
-            dataTable.Columns.Add("dynamics");
-            dataTable.Columns.Add("create_date");
-            dataTable.Columns.Add("is_enable");
-            dataTable.Columns.Add("is_delete");
-            dataTable.Columns.Add("remark");
+            dataTable.Columns.Add("id", typeof(int));
+            dataTable.Columns.Add("name", typeof(string));
+            dataTable.Columns.Add("type", typeof(sbyte));
+            dataTable.Columns.Add("width", typeof(int));
+            dataTable.Columns.Add("height", typeof(int));
+            dataTable.Columns.Add("left_top_x", typeof(int));
+            dataTable.Columns.Add("left_top_y", typeof(int));
+            dataTable.Columns.Add("right_top_x", typeof(int));
+            dataTable.Columns.Add("right_top_y", typeof(int));
+            dataTable.Columns.Add("right_bottom_x", typeof(int));
+            dataTable.Columns.Add("right_bottom_y", typeof(int));
+            dataTable.Columns.Add("left_bottom_x", typeof(int));
+            dataTable.Columns.Add("left_bottom_y", typeof(int));
+            dataTable.Columns.Add("dynamics", typeof(bool));
+            dataTable.Columns.Add("create_date", typeof(DateTime));
+            dataTable.Columns.Add("is_enable", typeof(bool));
+            dataTable.Columns.Add("is_delete", typeof(bool));
+            dataTable.Columns.Add("remark", typeof(string));
             return dataTable;
         }
 
@@ -108,9 +133,9 @@ namespace ColorVision.MySql
                 if (item.LeftBottomX >= 0) row["left_bottom_x"] = item.LeftBottomX;
                 if (item.LeftBottomY >= 0) row["left_bottom_y"] = item.LeftBottomY;
                 row["dynamics"] = item.IsDynamics;
-                //row["create_date"] = item.CreateDate;
-                //row["is_enable"] = item.IsEnable;
-                //row["is_delete"] = item.IsDelete;
+                row["create_date"] = item.CreateDate;
+                row["is_enable"] = item.IsEnable;
+                row["is_delete"] = item.IsDelete;
                 if (item.Remark != null) row["remark"] = item.Remark;
             }
 
