@@ -45,7 +45,6 @@ namespace ColorVision
 
         private async void Window_Initialized(object sender, EventArgs e)
         {
-            //this.Icon = new BitmapImage(new Uri("/ColorVision;Component/Image/ColorVision1.ico", UriKind.Relative));
             if (WindowConfig.IsExist)
             {
                 this.Icon = WindowConfig.Icon ?? this.Icon;

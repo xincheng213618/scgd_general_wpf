@@ -232,7 +232,7 @@ namespace ColorVision.MySql
 
         public int Save(List<T> datas)
         {
-            //DeleteAll();
+            DeleteAll();
             DataTable d_info = new DataTable(TableName);
             d_info.Columns.Add("id");
             d_info.Columns.Add("name");
