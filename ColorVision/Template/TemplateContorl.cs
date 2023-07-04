@@ -82,20 +82,14 @@ namespace ColorVision.Template
             PGParams = IDefault(FileNamePGParams, new PGParam(), ref IsOldPGParams);
 
             LedReusltParams = IDefault(FileNameLedJudgeParams, new LedReusltParam(), ref IsOldLedJudgeParams);
-
             SxParams = IDefault(FileNameSxParms, new SxParam(), ref IsOldSxParams);
-
-            PoiParamsLazy = new Lazy<ObservableCollection<KeyValuePair<string, PoiParam>>>(() =>
-            {
-                var config = IDefault(FileNameFocusParms, new PoiParam(), ref IsOldFocusParams);
-                return config;
-            });
-
-
 
             LedParams = IDefault(FileNameLedParms, new LedParam(), ref IsOldLedParams);
             FlowParams = IDefault(FileNameFlowParms, new FlowParam(), ref IsOldFlowParams);
 
+
+
+            PoiParams = new ObservableCollection<KeyValuePair<string, PoiParam>>();
 
             Application.Current.MainWindow.Closed += (s, e) =>
             {
@@ -171,7 +165,6 @@ namespace ColorVision.Template
             //SaveDefault(FileNameFocusParms, PoiParams, IsOldFocusParams);
             SaveDefault(FileNameLedParms, LedParams, IsOldLedParams);
             SaveDefault(FileNameFlowParms, FlowParams, IsOldFlowParams);
-            //SaveMysql();
         }
 
 
@@ -231,21 +224,30 @@ namespace ColorVision.Template
             return keys;
         }
 
-        internal ObservableCollection<KeyValuePair<string, PoiParam>> LoadPoi()
+        public void LoadPoiParam()
         {
             PoiParams.Clear();
-            List<PoiMasterModel> poiMaster = poiService.GetPoiMasterAll();
-            foreach (var dbModel in poiMaster)
+            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
             {
-                KeyValuePair<string, PoiParam> item = new KeyValuePair<string, PoiParam>(dbModel.Name??"default", new PoiParam(dbModel));
-                PoiParams.Add(item);
+                List<PoiMasterModel> poiMaster = poiService.GetPoiMasterAll();
+                foreach (var dbModel in poiMaster)
+                {
+                    KeyValuePair<string, PoiParam> item = new KeyValuePair<string, PoiParam>(dbModel.Name ?? "default", new PoiParam(dbModel));
+                    PoiParams.Add(item);
+                }
             }
-            return PoiParams;
+            else
+            {
+                PoiParams = IDefault(FileNameFocusParms, new PoiParam(), ref IsOldFocusParams);
+            }
+
         }
 
         internal void LoadPoiDetailFromDB(PoiParam poiParam)
         {
             poiParam.PoiPoints.Clear();
+
+
             List<PoiDetailModel> poiDetail = poiService.GetPoiDetailByPid(poiParam.ID);
             foreach (var dbModel in poiDetail)
             {
@@ -261,14 +263,13 @@ namespace ColorVision.Template
             return poiMaster.GetPK();
         }
 
-        readonly Lazy<ObservableCollection<KeyValuePair<string, PoiParam>>> PoiParamsLazy;
 
         public ObservableCollection<KeyValuePair<string, AoiParam>> AoiParams { get; set; }
         public ObservableCollection<KeyValuePair<string, CalibrationParam>> CalibrationParams { get; set; } 
         public ObservableCollection<KeyValuePair<string, PGParam>> PGParams { get; set; }
         public ObservableCollection<KeyValuePair<string, SxParam>> SxParams { get; set; }
         public ObservableCollection<KeyValuePair<string, LedReusltParam>> LedReusltParams { get; set; }
-        public ObservableCollection<KeyValuePair<string, PoiParam>> PoiParams { get => PoiParamsLazy.Value;}
+        public ObservableCollection<KeyValuePair<string, PoiParam>> PoiParams { get; set; }
         public ObservableCollection<KeyValuePair<string, LedParam>> LedParams { get; set; }        
         public ObservableCollection<KeyValuePair<string, FlowParam>> FlowParams { get; set; }
     }

@@ -27,7 +27,7 @@
                     <MenuItem Header="工程(_F)" Click="MenuItem_ProjectNew_Click"/>
                     <MenuItem Header="退出(_X)" InputGestureText="Alt + F4" Click="MenuItem_Exit"/>
                 </MenuItem>
-                <MenuItem Header="模板(_T)">
+                <MenuItem Header="模板(_M)">
                     <MenuItem Header="_AOI参数模板设置" Tag="AoiParam" Click="MenuItem_Template"/>
                     <MenuItem Header="校正模板设置(_C)" Tag="Calibration"  Click="MenuItem_Template"/>
                     <MenuItem Header="_PG通讯模板设置" Tag="PGParam"  Click="MenuItem_Template"/>
@@ -42,6 +42,9 @@
                     <MenuItem Header="数据库(_M)"  Click="MenuItem_Click_7"/>
                     <MenuItem Header="侧边栏(_M)"  IsChecked="{Binding IsOpenSidebar}"  Click="MenuStatusBar_Click"/>
                     <MenuItem Header="状态栏(_S)" IsChecked="{Binding IsOpenStatusBar}"  Click="MenuStatusBar_Click" />
+                </MenuItem>
+                <MenuItem Header="工具(_T)">
+                    <MenuItem Header="设置(_O)" Click="MenuItem_Click_2"/>
                 </MenuItem>
                 <MenuItem Header="标定(_A)">
                     <MenuItem Header="四色校正" Click="MenuItem_Click8"/>
@@ -61,16 +64,6 @@
             <Grid  Grid.Row="0" Background="#F9F9F9" Width="300" x:Name="SiderBarGrid" d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}" Visibility="{Binding IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" >
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                     <StackPanel >
-                        <StackPanel.Resources>
-                            <Style x:Key="BorderModuleArea" TargetType="{x:Type Border}">
-                                <Setter Property="Background" Value="#F3F3F3"/>
-                                <Setter Property="BorderBrush" Value="#EAEAEA"/>
-                                <Setter Property="BorderThickness" Value="1"/>
-                                <Setter Property="Margin" Value="5,2"/>
-                                <Setter Property="CornerRadius" Value="5"/>
-                            </Style>
-
-                        </StackPanel.Resources>
 
                         <StackPanel Margin="0,5" x:Name="StackPanelPG" Initialized="StackPanelPG_Initialized">
                             <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Background="#F9F9F9"  Content="PG"  FontSize="15" Foreground="Black" IsChecked="False" />

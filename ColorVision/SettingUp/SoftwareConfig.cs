@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ColorVision.MVVM;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,7 +10,7 @@ namespace ColorVision.SettingUp
     /// <summary>
     /// 软件配置
     /// </summary>
-    public class SoftwareConfig
+    public class SoftwareConfig: ViewModelBase
     {
         public SoftwareConfig()
         {
@@ -21,7 +22,9 @@ namespace ColorVision.SettingUp
 
         public string Version { get; set; } = "0.0";
 
-        public bool IsUseMySql { get; set; } = true;
+        public bool IsUseMySql { get => _IsUseMySql; set { _IsUseMySql = value; NotifyPropertyChanged();} }
+        private bool _IsUseMySql = true;
+
 
         public bool IsUseMQTT { get; set; } = true;
 

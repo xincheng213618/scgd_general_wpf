@@ -1,4 +1,5 @@
-﻿using ColorVision.Template;
+﻿using ColorVision.SettingUp;
+using ColorVision.Template;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -7,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-
+using System.Windows.Input;
 
 namespace ColorVision
 {
@@ -49,8 +50,8 @@ namespace ColorVision
                         break;
                     case "FocusParm":
                         windowTemplate = new WindowTemplate(WindowTemplateType.PoiParam) { Title = "关注点设置" };
-                        //TemplateAbb(windowTemplate, TemplateControl.PoiParams);
-                        TemplateAbb(windowTemplate, TemplateControl.LoadPoi());
+                        TemplateControl.LoadPoiParam();
+                        TemplateAbb(windowTemplate, TemplateControl.PoiParams);
                         break;
                     case "FlowParam":
                         windowTemplate = new WindowTemplate(WindowTemplateType.FlowParam) { Title = "流程引擎" };
@@ -93,6 +94,44 @@ namespace ColorVision
         {
             new FlowEngine.WindowFlowEngine() { Owner = this }.Show();
         }
+
+        private void MenuItem_ProjectNew_Click(object sender, RoutedEventArgs e)
+        {
+            NewCreatWindow newCreatWindow = new NewCreatWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            newCreatWindow.Closed += delegate
+            {
+                if (newCreatWindow.IsCreate)
+                {
+                    string SolutionDirectoryPath = newCreatWindow.newCreatViewMode.DirectoryPath + "\\" + newCreatWindow.newCreatViewMode.Name;
+                    GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectName = SolutionDirectoryPath;
+                }
+            };
+            newCreatWindow.ShowDialog();
+
+        }
+
+        private void TextBlock_MouseLeftButtonDown2(object sender, MouseButtonEventArgs e)
+        {
+            //NewCreatWindow newCreatWindow = new NewCreatWindow() { Owner = this,WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            //newCreatWindow.Closed += delegate
+            //{
+            //    if (newCreatWindow.IsCreate)
+            //    {
+            //        string SolutionDirectoryPath = newCreatWindow.newCreatViewMode.DirectoryPath + "\\" + newCreatWindow.newCreatViewMode.Name;
+            //        GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectName = SolutionDirectoryPath;
+            //    }
+            //};
+            //newCreatWindow.ShowDialog();
+
+            System.Diagnostics.Process.Start("explorer.exe", $"{GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectName}");
+
+        }
+
+        private void MenuItem_Click_2(object sender, RoutedEventArgs e)
+        {
+            new SettingWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+
 
         private void MenuItem_Exit(object sender, RoutedEventArgs e)
         {

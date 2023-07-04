@@ -935,37 +935,7 @@ namespace ColorVision
             new MySqlConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
-        private void MenuItem_ProjectNew_Click(object sender, RoutedEventArgs e)
-        {
-            NewCreatWindow newCreatWindow = new NewCreatWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };    
-            newCreatWindow.Closed += delegate
-            {
-                if (newCreatWindow.IsCreate)
-                {
-                    string SolutionDirectoryPath = newCreatWindow.newCreatViewMode.DirectoryPath + "\\" + newCreatWindow.newCreatViewMode.Name;
-                    GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectName = SolutionDirectoryPath;
-                }
-            };
-            newCreatWindow.ShowDialog();
-            
-        }
 
-        private void TextBlock_MouseLeftButtonDown2(object sender, MouseButtonEventArgs e)
-        {
-            //NewCreatWindow newCreatWindow = new NewCreatWindow() { Owner = this,WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            //newCreatWindow.Closed += delegate
-            //{
-            //    if (newCreatWindow.IsCreate)
-            //    {
-            //        string SolutionDirectoryPath = newCreatWindow.newCreatViewMode.DirectoryPath + "\\" + newCreatWindow.newCreatViewMode.Name;
-            //        GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectName = SolutionDirectoryPath;
-            //    }
-            //};
-            //newCreatWindow.ShowDialog();
-
-            System.Diagnostics.Process.Start("explorer.exe", $"{GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectName}");
-
-        }
     }
 
 
