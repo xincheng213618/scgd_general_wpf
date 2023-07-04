@@ -4,6 +4,7 @@ using ColorVision.MVVM;
 using ColorVision.MySql;
 using ColorVision.SettingUp;
 using ColorVision.Template;
+using Microsoft.VisualBasic.Logging;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -93,7 +94,6 @@ namespace ColorVision
         {
             if (filePath != null && File.Exists(filePath))
             {
-                Log.LogWrite(filePath);
                 BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
 
                 ImageShow.Source = bitmapImage;

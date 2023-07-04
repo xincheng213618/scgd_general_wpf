@@ -53,12 +53,12 @@ namespace ColorVision.Template
         }
         public PoiParam(PoiMasterModel dbModel)
         {
-            this._ID = dbModel.Id ?? -1;
-            this._PoiName = dbModel.Name ?? string.Empty;
-            this._Width = dbModel.Width ?? 0;
-            this._Height = dbModel.Height ?? 0;
-            this._Type = dbModel.Type ?? 0;
-            this._CfgJson = dbModel.CfgJson??string.Empty;
+            this.ID = dbModel.Id ?? -1;
+            this.PoiName = dbModel.Name ?? string.Empty;
+            this.Width = dbModel.Width ?? 0;
+            this.Height = dbModel.Height ?? 0;
+            this.Type = dbModel.Type ?? 0;
+            this.CfgJson = dbModel.CfgJson??string.Empty;
             this.DatumAreaPoints.X1X = dbModel.LeftTopX ?? 0;
             this.DatumAreaPoints.X1Y = dbModel.LeftTopY ?? 0;
             this.DatumAreaPoints.X2X = dbModel.RightTopX ?? 0;
@@ -69,8 +69,20 @@ namespace ColorVision.Template
             this.DatumAreaPoints.X4Y = dbModel.LeftBottomY ?? 0;
         }
 
-        public string CfgJson { get { return _CfgJson; } set { _CfgJson = value; NotifyPropertyChanged(); } }
-        private string _CfgJson;
+        public string CfgJson {
+            get => JsonConvert.SerializeObject(DatumAreaPoints);
+            set
+            {
+                if (string.IsNullOrEmpty(value))
+                {
+                    DatumAreaPoints = new DatumAreaPoints();
+                    return;
+                }
+                DatumAreaPoints = JsonConvert.DeserializeObject<DatumAreaPoints>(value) ?? new DatumAreaPoints();
+            }
+        }
+
+
         public string PoiName { get { return _PoiName; } set { _PoiName = value; NotifyPropertyChanged(); } }
         private string _PoiName;
         public int ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
@@ -121,19 +133,15 @@ namespace ColorVision.Template
         public PoiParamData(PoiDetailModel dbModel)
         {
             ID = dbModel.Id;
-            Name = dbModel.Name ?? string.Empty;
-            switch (dbModel.Type)
+            Name = dbModel.Name ?? dbModel.Id.ToString();
+            PointType = dbModel.Type switch
             {
-                case 0:
-                    PointType = RiPointTypes.Circle; break;
-                case 1:
-                    PointType = RiPointTypes.Rect; break;
-                case 2:
-                    PointType = RiPointTypes.Mask; break;
-                default:
-                    PointType = RiPointTypes.Circle; break;
-            }
-            PixX = dbModel.PixX??0;
+                0 => RiPointTypes.Circle,
+                1 => RiPointTypes.Rect,
+                2 => RiPointTypes.Mask,
+                _ => RiPointTypes.Circle,
+            };
+            PixX = dbModel.PixX ?? 0;
             PixY = dbModel.PixY ?? 0;
             PixWidth = dbModel.PixWidth ?? 0;
             PixHeight = dbModel.PixHeight ?? 0;
@@ -143,12 +151,7 @@ namespace ColorVision.Template
         {
         }
 
-        /// <summary>
-        /// 数据库ID
-        /// </summary>
-        [JsonIgnore()]
-        public int Pid { get; set; }
-        public int  ID { set; get; }
+        public int ID { set; get; }
 
         public string Name { set; get; }
         public RiPointTypes PointType { set; get; }
@@ -156,24 +159,6 @@ namespace ColorVision.Template
         public double PixY { set; get; }
         public double PixWidth { set; get; }
         public double PixHeight { set; get; }
-    }
-
-
-    public struct PoiParamView
-    {
-        public Point X1 { set; get; }
-        public Point X2 { set; get; }
-        public Point X3 { set; get; }
-        public Point X4 { set; get; }
-        public Point Center { set; get; }
-
-        public Point DatumArea1 { set; get; }
-        public Point DatumArea2 { set; get; }
-        public Point DatumArea3 { set; get; }
-        public Point DatumArea4 { set; get; }
-
-        public DatumAreaTypes areaType { set; get; }
-
     }
 
     public class DatumAreaPoints:ViewModelBase
@@ -352,15 +337,13 @@ namespace ColorVision.Template
                 WaitControl.Visibility = Visibility.Visible;
                 WaitControlProgressBar.Visibility = Visibility.Visible;
                 WaitControlProgressBar.Value = 0;
-                await Task.Delay(200);
-                LoadPoiFromDb(PoiParam);
+                await Task.Delay(100);
+                TemplateControl.GetInstance().LoadPoiDetailFromDB(PoiParam);
                 WaitControlProgressBar.Value = 10;
 
-                if (PoiParam.PoiPoints.Count > 100)
-                {
+                if (PoiParam.PoiPoints.Count > 500)
                     IsLayoutUpdated = false;
 
-                }
                 CreateImage(PoiParam.Width, PoiParam.Height, System.Windows.Media.Colors.White,false);
                 WaitControlProgressBar.Value = 20;
                 PoiParamToDrawingVisual(PoiParam);
@@ -416,9 +399,6 @@ namespace ColorVision.Template
 
         private static void LoadPoiFromDb(PoiParam poiParam)
         {
-            log.Debug("LoadPoi begin");
-            TemplateControl.GetInstance().LoadPoiDetailFromDB(poiParam);
-            log.Debug("LoadPoi end");
         }
 
         private void button1_Click(object sender, RoutedEventArgs e)
@@ -966,16 +946,6 @@ namespace ColorVision.Template
 
         }
 
-        private PoiParamView GetPoiJson()
-        {
-            PoiParamView result = new PoiParamView();
-            result.X1 = DatumAreaPoints.X1;
-            result.X2 = DatumAreaPoints.X2;
-            result.X3 = DatumAreaPoints.X3;
-            result.X4 = DatumAreaPoints.X4;
-            result.Center = DatumAreaPoints.Center;
-            return result;
-        }
 
         private void button_save_Click(object sender, RoutedEventArgs e)
         {
@@ -1013,7 +983,6 @@ namespace ColorVision.Template
                     PoiParam.PoiPoints.Add(poiParamData);
                 }
             }
-            PoiParam.CfgJson = JsonConvert.SerializeObject(GetPoiJson());
             TemplateControl.GetInstance().SavePOI2DB(PoiParam);
         }
     }
