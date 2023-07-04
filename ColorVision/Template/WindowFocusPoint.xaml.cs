@@ -47,6 +47,10 @@ namespace ColorVision.Template
         {
             ID = No++;
         }
+        public PoiParam(int id)
+        {
+            ID = id;
+        }
         public PoiParam(PoiMasterModel dbModel)
         {
             this._ID = dbModel.Id;
@@ -54,11 +58,19 @@ namespace ColorVision.Template
             this._Width = dbModel.Width;
             this._Height = dbModel.Height;
             this._Type = dbModel.Type;
+            this._CfgJson = dbModel.CfgJson;
             this.DatumAreaPoints.X1X = (int)dbModel.LeftTopX;
             this.DatumAreaPoints.X1Y = (int)dbModel.LeftTopY;
+            this.DatumAreaPoints.X2X = (int)dbModel.RightTopX;
+            this.DatumAreaPoints.X2Y = (int)dbModel.RightTopY;
+            this.DatumAreaPoints.X3X = (int)dbModel.RightBottomX;
+            this.DatumAreaPoints.X3Y = (int)dbModel.RightBottomY;
+            this.DatumAreaPoints.X4X = (int)dbModel.LeftBottomX;
+            this.DatumAreaPoints.X4Y = (int)dbModel.LeftBottomY;
         }
 
-
+        public string CfgJson { get { return _CfgJson; } set { _CfgJson = value; } }
+        private string _CfgJson;
         public string PoiName { get { return _PoiName; } set { _PoiName = value; } }
         private string _PoiName;
         public int ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
@@ -91,6 +103,13 @@ namespace ColorVision.Template
 
 
     public enum RiPointTypes
+    {
+        Circle = 0,
+        Rect = 1,
+        Mask = 2
+    }
+
+    public enum DatumAreaTypes
     {
         Circle = 0,
         Rect = 1,
@@ -140,6 +159,22 @@ namespace ColorVision.Template
     }
 
 
+    public struct PoiParamView
+    {
+        public Point X1 { set; get; }
+        public Point X2 { set; get; }
+        public Point X3 { set; get; }
+        public Point X4 { set; get; }
+        public Point Center { set; get; }
+
+        public Point DatumArea1 { set; get; }
+        public Point DatumArea2 { set; get; }
+        public Point DatumArea3 { set; get; }
+        public Point DatumArea4 { set; get; }
+
+        public DatumAreaTypes areaType { set; get; }
+
+    }
 
     public class DatumAreaPoints:ViewModelBase
     {
@@ -176,7 +211,7 @@ namespace ColorVision.Template
     /// </summary>
     public partial class WindowFocusPoint : Window
     {
-
+        private static readonly ILog log = LogManager.GetLogger(typeof(WindowFocusPoint));
         public enum BorderType
         {
             [Description("绝对值")]
@@ -318,7 +353,6 @@ namespace ColorVision.Template
                 WaitControlProgressBar.Visibility = Visibility.Visible;
                 WaitControlProgressBar.Value = 0;
                 await Task.Delay(200);
-
                 LoadPoiFromDb(PoiParam);
                 WaitControlProgressBar.Value = 10;
 
@@ -331,7 +365,7 @@ namespace ColorVision.Template
                 CreateImage(PoiParam.Width, PoiParam.Height, System.Windows.Media.Colors.White,false);
                 WaitControlProgressBar.Value = 20;
                 PoiParamToDrawingVisual(PoiParam);
-
+                log.Debug("Render Poi end");
             }
             else
             {
@@ -383,7 +417,9 @@ namespace ColorVision.Template
 
         private void LoadPoiFromDb(PoiParam poiParam)
         {
+            log.Debug("LoadPoi begin");
             TemplateControl.GetInstance().LoadPoiDetailFromDB(poiParam);
+            log.Debug("LoadPoi end");
         }
 
         private void button1_Click(object sender, RoutedEventArgs e)
@@ -472,7 +508,7 @@ namespace ColorVision.Template
                 if (i % 50 == 0)
                 {
                     WaitControlProgressBar.Value = 20 + i * 79 / poiParam.PoiPoints.Count;
-                    await Task.Delay(10);
+                    //await Task.Delay(10);
                 }
                 switch (item.PointType)
                 {
@@ -587,12 +623,7 @@ namespace ColorVision.Template
                 DefaultPoint.Add(drawingVisual);
                 ImageShow.AddVisual(drawingVisual);
             }
-
-
         }
-
-
-
 
         private void ImageShow_Initialized(object sender, EventArgs e)
         {
@@ -826,28 +857,10 @@ namespace ColorVision.Template
                             drawingVisualCircle.Render();
                             ImageShow.AddVisual(drawingVisualCircle);
                         }
-
-
-
-
                     }
-
-
-
-
-
                 }
-
-
-
-
-
             }
         }
-
-
-        
-
 
 
         private void TextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
@@ -955,6 +968,17 @@ namespace ColorVision.Template
 
         }
 
+        private PoiParamView GetPoiJson()
+        {
+            PoiParamView result = new PoiParamView();
+            result.X1 = DatumAreaPoints.X1;
+            result.X2 = DatumAreaPoints.X2;
+            result.X3 = DatumAreaPoints.X3;
+            result.X4 = DatumAreaPoints.X4;
+            result.Center = DatumAreaPoints.Center;
+            return result;
+        }
+
         private void button_save_Click(object sender, RoutedEventArgs e)
         {
             PoiParam.PoiPoints.Clear();
@@ -991,7 +1015,7 @@ namespace ColorVision.Template
                     PoiParam.PoiPoints.Add(poiParamData);
                 }
             }
-
+            PoiParam.CfgJson = JsonConvert.SerializeObject(GetPoiJson());
             TemplateControl.GetInstance().SavePOI2DB(PoiParam);
         }
     }

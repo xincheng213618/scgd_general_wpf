@@ -8,8 +8,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.MySql
 {
-
-    public class PoiDetailModel
+    public class PoiDetailModel : IBaseModel
     {
         public int Id { get; set; }
         public string? Name { get; set; }
@@ -55,12 +54,22 @@ namespace ColorVision.MySql
             IsEnable = true;
             IsDelete = false;
         }
+
+        public int GetPK()
+        {
+            return Id;
+        }
+
+        public void SetPK(int id)
+        {
+            Id =id;
+        }
     }
 
 
     public class PoiDetailDao : BaseServiceMaster<PoiDetailModel>
     {
-        public PoiDetailDao() : base("t_scgd_cfg_poi_detail")
+        public PoiDetailDao() : base("t_scgd_cfg_poi_detail","id")
         {
         }
 
@@ -104,9 +113,8 @@ namespace ColorVision.MySql
             return model;
         }
 
-        public override DataRow GetRow(PoiDetailModel item, DataTable dataTable)
+        public override DataRow Model2Row(PoiDetailModel item, DataRow row)
         {
-            DataRow row = base.GetRow(item, dataTable);
             if (item != null)
             {
                 if (item.Id > 0) row["id"] = item.Id;
@@ -117,8 +125,9 @@ namespace ColorVision.MySql
                 if (item.PixHeight > 0) row["pix_height"] = item.PixHeight;
                 if (item.PixX >= 0) row["pix_x"] = item.PixX;
                 if (item.PixY >= 0) row["pix_y"] = item.PixY;
-                row["is_enable"] = item.IsEnable;
-                row["is_delete"] = item.IsDelete;
+                //row["create_date"] = item.CreateDate;
+                //row["is_enable"] = item.IsEnable;
+                //row["is_delete"] = item.IsDelete;
                 if (item.Remark != null) row["remark"] = item.Remark;
             }
             return row;

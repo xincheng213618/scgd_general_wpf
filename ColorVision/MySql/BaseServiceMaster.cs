@@ -19,12 +19,16 @@ namespace ColorVision.MySql
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseDao));
 
         public MySqlControl MySqlControl { get; set; }
-        public string TableName { get; set; }
+        public string TableName { get { return _TableName; } set { _TableName = value; } }
+        protected string _TableName;
+        public string PKField { get { return _PKField; } set { _PKField = value; } }
+        protected string _PKField;
 
-        public BaseDao(string tableName)
+        public BaseDao(string tableName,string pkField)
         {
             MySqlControl = MySqlControl.GetInstance();
-            TableName = tableName;
+            _TableName = tableName;
+            _PKField = pkField;
         }
 
         public int ExecuteNonQuery(string sql)
@@ -102,6 +106,7 @@ namespace ColorVision.MySql
                 using (MySqlCommand cmd = new MySqlCommand(sqlStr, MySqlControl.MySqlConnection))
                 {
                     MySqlDataAdapter dataAdapter = new MySqlDataAdapter(cmd);
+                    dataAdapter.RowUpdated += DataAdapter_RowUpdated;
                     MySqlCommandBuilder builder = new MySqlCommandBuilder(dataAdapter);
                     builder.ConflictOption = ConflictOption.OverwriteChanges;
                     builder.SetAllValues = true;
@@ -122,13 +127,34 @@ namespace ColorVision.MySql
             return count;
         }
 
+        private void DataAdapter_RowUpdated(object sender, MySqlRowUpdatedEventArgs e)
+        {
+            e.Row[_PKField] = e.Command.LastInsertedId;
+        }
 
+        public DataTable selectById(int id)
+        {
+            string sql = $"select * from {TableName} where is_delete=0 and id=@id";
+            Dictionary<string, object> param = new Dictionary<string, object>
+            {
+                { "id",  id}
+            };
+            DataTable d_info = GetData(sql, param);
+            return d_info;
+        }
 
+        public DataRow? selectRow(int id, DataTable dInfo)
+        {
+            DataRow[] rows = dInfo.Select($"id={id}");
+
+            if (rows.Length == 1) return rows[0];
+            else return null;
+        }
     }
 
     public class BaseServiceDetail<T> : BaseDao
     {
-        public BaseServiceDetail(string tableName) : base(tableName)
+        public BaseServiceDetail(string tableName, string pkField) : base(tableName, pkField)
         {
 
         }
@@ -215,10 +241,10 @@ namespace ColorVision.MySql
         }
     }
 
-    public class BaseServiceMaster<T>: BaseDao
+    public class BaseServiceMaster<T>: BaseDao where T : IBaseModel
     {
 
-        public BaseServiceMaster(string tableName):base(tableName)
+        public BaseServiceMaster(string tableName, string pkField) :base(tableName, pkField)
         {
 
         }
@@ -234,17 +260,27 @@ namespace ColorVision.MySql
             return d_info.Rows.Count == 1 ? GetModel(d_info.Rows[0]) : default;
         }
 
-        public virtual DataTable CreateColumns(DataTable dInfo) => dInfo;
-
-        public int Save(T t)
+        public virtual DataRow Model2Row(T item, DataRow row)
         {
-            DataTable d_info = new DataTable(TableName);
-            CreateColumns(d_info);
-            DataRow row = GetRow(t, d_info);
-            d_info.Rows.Add(row);
-            return Save(d_info);
+            return row;
         }
 
+        public virtual DataTable CreateColumns(DataTable dInfo) => dInfo;
+
+        public int Save(T item)
+        {
+            DataTable d_info = selectById(item.GetPK());
+            ConvertRow(item, d_info);
+            int ret = Save(d_info);
+            item.SetPK(d_info.Rows[0].Field<int>(_PKField));
+            return ret;
+        }
+
+        public void ConvertRow(T item, DataTable dataTable)
+        {
+            DataRow row = GetRow(item, dataTable);
+            Model2Row(item, row);
+        }
 
         public int Save(List<T> datas)
         {
@@ -254,7 +290,8 @@ namespace ColorVision.MySql
             foreach (var item in datas)
             {
                 DataRow row = GetRow(item, d_info);
-                d_info.Rows.Add(row);
+                //d_info.Rows.Add(row);
+                Model2Row(item, row);
             }
             return Save(d_info);
         }
@@ -266,8 +303,10 @@ namespace ColorVision.MySql
             CreateColumns(d_info);
             foreach (var item in datas)
             {
-                DataRow row = GetRow(item, d_info);
+                //DataRow row = GetRow(item, d_info);
+                DataRow row = d_info.NewRow();
                 d_info.Rows.Add(row);
+                Model2Row(item, row);
             }
             return Save(d_info);
         }
@@ -320,7 +359,20 @@ namespace ColorVision.MySql
 
         public virtual T? GetModel(DataRow item) => default;
 
-        public virtual DataRow GetRow(T item, DataTable dataTable) => dataTable.NewRow();
+        public DataRow GetRow(T item, DataTable dataTable)
+        {
+            DataRow row = selectRow(item.GetPK(), dataTable);
+            if (row == null)
+            {
+                row = dataTable.NewRow();
+                dataTable.Rows.Add(row);
+            }
+            else
+            {
+
+            }
+            return row;
+        }
 
         public virtual DataTable GetDataTable(string? tableName =null) => new DataTable(tableName);
 

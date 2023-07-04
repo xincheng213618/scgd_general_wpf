@@ -23,7 +23,10 @@ namespace ColorVision.MySql
         {
             return poiMaster.GetAll();
         }
-
+        public void Save(PoiMasterModel master)
+        {
+            poiMaster.Save(master);
+        }
         public void Save(PoiParam poiParam)
         {
             PoiMasterModel poiMasterModel = new PoiMasterModel(poiParam);
@@ -35,7 +38,7 @@ namespace ColorVision.MySql
                 PoiDetailModel poiDetail = new PoiDetailModel(poiParam.ID, pt);
                 poiDetails.Add(poiDetail);
             }
-            poiDetail.SaveByPid(poiMasterModel.Id,poiDetails);
+            poiDetail.SaveByPid(poiParam.ID, poiDetails);
 
         }
 

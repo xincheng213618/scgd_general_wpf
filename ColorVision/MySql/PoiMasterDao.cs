@@ -9,14 +9,34 @@ using System.Threading.Tasks;
 
 namespace ColorVision.MySql
 {
-    public class PoiMasterModel
+    public class PoiMasterModel : IBaseModel
     {
-        public PoiMasterModel()
+        public PoiMasterModel() : this("")
         {
-
         }
 
-        public PoiMasterModel(PoiParam poiParam )
+        public PoiMasterModel(string name)
+        {
+            Id = -1;
+            Name = name;
+            Type = 0;
+            Width = 400;
+            Height = 300;
+            LeftTopX = 0;
+            LeftTopY = 0;
+            RightTopX = 400;
+            RightTopY = 0;
+            RightBottomX = 400;
+            RightBottomY = 300;
+            LeftBottomX = 0;
+            LeftBottomY = 300;
+            IsDynamics = false;
+            CreateDate = DateTime.Now;
+            IsEnable = true;
+            IsDelete = false;
+        }
+
+        public PoiMasterModel(PoiParam poiParam)
         {
             Id = poiParam.ID;
             Name = poiParam.PoiName;
@@ -27,10 +47,15 @@ namespace ColorVision.MySql
             LeftTopY = poiParam.DatumAreaPoints.X1Y;
             RightTopX = poiParam.DatumAreaPoints.X2X;
             RightTopY = poiParam.DatumAreaPoints.X2Y;
-            LeftBottomX = poiParam.DatumAreaPoints.X3X;
-            LeftBottomY = poiParam.DatumAreaPoints.X3Y;
-            RightBottomX = poiParam.DatumAreaPoints.X4X;
-            RightBottomY = poiParam.DatumAreaPoints.X4Y;
+            RightBottomX = poiParam.DatumAreaPoints.X3X;
+            RightBottomY = poiParam.DatumAreaPoints.X3Y;
+            LeftBottomX = poiParam.DatumAreaPoints.X4X;
+            LeftBottomY = poiParam.DatumAreaPoints.X4Y;
+            IsDynamics = false;
+            CfgJson = poiParam.CfgJson;
+            CreateDate = DateTime.Now;
+            IsEnable = true;
+            IsDelete = false;
         }
 
 
@@ -50,42 +75,35 @@ namespace ColorVision.MySql
         public int? LeftBottomX { get; set; }
         public int? LeftBottomY { get; set; }
         public bool? IsDynamics { get; set; } = false;
+        public string? CfgJson { get; set; }
         public DateTime? CreateDate { get; set; } = DateTime.Now;
         public bool? IsEnable { get; set; } = true;
         public bool? IsDelete { get; set; } = false;
         public string? Remark { get; set; }
+
+        public int GetPK()
+        {
+            return Id;
+        }
+
+        public void SetPK(int id)
+        {
+           Id = id;
+        }
     }
 
 
 
     internal class PoiMasterDao : BaseServiceMaster<PoiMasterModel>
     {
-        public PoiMasterDao() : base("t_scgd_cfg_poi_master")
+        public PoiMasterDao() : base("t_scgd_cfg_poi_master","id")
         {
             
         }
         public override DataTable GetDataTable(string? tableName =null)
         {
             DataTable dataTable = base.GetDataTable();
-            dataTable.Columns.Add("id", typeof(int));
-            dataTable.Columns.Add("name", typeof(string));
-            dataTable.Columns.Add("type", typeof(sbyte));
-            dataTable.Columns.Add("width", typeof(int));
-            dataTable.Columns.Add("height", typeof(int));
-            dataTable.Columns.Add("left_top_x", typeof(int));
-            dataTable.Columns.Add("left_top_y", typeof(int));
-            dataTable.Columns.Add("right_top_x", typeof(int));
-            dataTable.Columns.Add("right_top_y", typeof(int));
-            dataTable.Columns.Add("right_bottom_x", typeof(int));
-            dataTable.Columns.Add("right_bottom_y", typeof(int));
-            dataTable.Columns.Add("left_bottom_x", typeof(int));
-            dataTable.Columns.Add("left_bottom_y", typeof(int));
-            dataTable.Columns.Add("dynamics", typeof(bool));
-            dataTable.Columns.Add("create_date", typeof(DateTime));
-            dataTable.Columns.Add("is_enable", typeof(bool));
-            dataTable.Columns.Add("is_delete", typeof(bool));
-            dataTable.Columns.Add("remark", typeof(string));
-            return dataTable;
+            return CreateColumns(dataTable);
         }
 
         public override PoiMasterModel GetModel(DataRow item)
@@ -93,7 +111,7 @@ namespace ColorVision.MySql
             PoiMasterModel model = new PoiMasterModel
             {
                 Id = item.Field<int>("id"),
-                Name = item.Field<string?>("name"),
+                Name = item.Field<string>("name"),
                 Type = item.Field<sbyte>("type"),
                 Width = item.Field<int>("width"),
                 Height = item.Field<int>("height"),
@@ -106,6 +124,7 @@ namespace ColorVision.MySql
                 LeftBottomX = item.Field<int?>("left_bottom_x"),
                 LeftBottomY = item.Field<int?>("left_bottom_y"),
                 IsDynamics =item.Field<bool?>("dynamics"),
+                CfgJson = item.Field<string?>("cfg_json"),
                 CreateDate = item.Field<DateTime?>("create_date"),
                 IsEnable = item.Field<bool?>("is_enable"),
                 IsDelete = item.Field<bool?>("is_delete"),
@@ -114,9 +133,8 @@ namespace ColorVision.MySql
             return model;
         }
 
-        public override DataRow GetRow(PoiMasterModel item, DataTable d_info)
+        public override DataRow Model2Row(PoiMasterModel item, DataRow row)
         {
-            DataRow row = base.GetRow(item, d_info);
             if (item != null)
             {
                 if (item.Id > 0) row["id"] = item.Id;
@@ -132,37 +150,38 @@ namespace ColorVision.MySql
                 if (item.RightBottomY >= 0) row["right_bottom_y"] = item.RightBottomY;
                 if (item.LeftBottomX >= 0) row["left_bottom_x"] = item.LeftBottomX;
                 if (item.LeftBottomY >= 0) row["left_bottom_y"] = item.LeftBottomY;
+                if (item.CfgJson != null) row["cfg_json"] = item.CfgJson;
                 row["dynamics"] = item.IsDynamics;
                 row["create_date"] = item.CreateDate;
-                row["is_enable"] = item.IsEnable;
-                row["is_delete"] = item.IsDelete;
+                //row["is_enable"] = item.IsEnable;
+                //row["is_delete"] = item.IsDelete;
                 if (item.Remark != null) row["remark"] = item.Remark;
             }
-
             return row;
         }
 
-        public override DataTable CreateColumns(DataTable d_info)
+        public override DataTable CreateColumns(DataTable dataTable)
         {
-            d_info.Columns.Add("id", typeof(int));
-            d_info.Columns.Add("name", typeof(string));
-            d_info.Columns.Add("type", typeof(sbyte));
-            d_info.Columns.Add("width", typeof(int));
-            d_info.Columns.Add("height", typeof(int));
-            d_info.Columns.Add("left_top_x", typeof(int));
-            d_info.Columns.Add("left_top_y", typeof(int));
-            d_info.Columns.Add("right_top_x", typeof(int));
-            d_info.Columns.Add("right_top_y", typeof(int));
-            d_info.Columns.Add("right_bottom_x", typeof(int));
-            d_info.Columns.Add("right_bottom_y", typeof(int));
-            d_info.Columns.Add("left_bottom_x", typeof(int));
-            d_info.Columns.Add("left_bottom_y", typeof(int));
-            d_info.Columns.Add("dynamics", typeof(bool));
-            d_info.Columns.Add("create_date", typeof(DateTime));
-            d_info.Columns.Add("is_enable", typeof(bool));
-            d_info.Columns.Add("is_delete", typeof(bool));
-            d_info.Columns.Add("remark", typeof(string));
-            return d_info;
+            dataTable.Columns.Add("id", typeof(int));
+            dataTable.Columns.Add("name", typeof(string));
+            dataTable.Columns.Add("type", typeof(sbyte));
+            dataTable.Columns.Add("width", typeof(int));
+            dataTable.Columns.Add("height", typeof(int));
+            dataTable.Columns.Add("left_top_x", typeof(int));
+            dataTable.Columns.Add("left_top_y", typeof(int));
+            dataTable.Columns.Add("right_top_x", typeof(int));
+            dataTable.Columns.Add("right_top_y", typeof(int));
+            dataTable.Columns.Add("right_bottom_x", typeof(int));
+            dataTable.Columns.Add("right_bottom_y", typeof(int));
+            dataTable.Columns.Add("left_bottom_x", typeof(int));
+            dataTable.Columns.Add("left_bottom_y", typeof(int));
+            dataTable.Columns.Add("dynamics", typeof(bool));
+            dataTable.Columns.Add("cfg_json", typeof(string));
+            dataTable.Columns.Add("create_date", typeof(DateTime));
+            dataTable.Columns.Add("is_enable", typeof(bool));
+            dataTable.Columns.Add("is_delete", typeof(bool));
+            dataTable.Columns.Add("remark", typeof(string));
+            return dataTable;
         }
     }
 }

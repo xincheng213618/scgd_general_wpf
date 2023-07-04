@@ -231,7 +231,8 @@ namespace ColorVision.Template
                         CreateNewTemplate(TemplateControl.GetInstance().SxParams, TextBox1.Text, new SxParam());
                         break;
                     case WindowTemplateType.PoiParam:
-                        CreateNewTemplate(TemplateControl.GetInstance().PoiParams, TextBox1.Text, new PoiParam());
+                        int pkId = TemplateControl.GetInstance().AddPoi(TextBox1.Text);
+                        if(pkId > 0) CreateNewTemplate(TemplateControl.GetInstance().PoiParams, TextBox1.Text, new PoiParam(pkId));
                         break;
                     case WindowTemplateType.LedParam:
                         CreateNewTemplate(TemplateControl.GetInstance().LedParams, TextBox1.Text, new LedParam());
