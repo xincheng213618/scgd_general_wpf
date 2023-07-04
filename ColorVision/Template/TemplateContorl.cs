@@ -85,25 +85,24 @@ namespace ColorVision.Template
 
             SxParams = IDefault(FileNameSxParms, new SxParam(), ref IsOldSxParams);
 
-
-            PoiDBParams = new ObservableCollection<KeyValuePair<string, PoiMasterModel>>();
             PoiParamsLazy = new Lazy<ObservableCollection<KeyValuePair<string, PoiParam>>>(() =>
             {
-                var config = IDefault(FileNameFocusParms, new PoiParam(), ref IsOldFocusParams);
-                PoiMasterDao poiMasterService = new PoiMasterDao();
-                List<PoiMasterModel> poiMasterServices = poiMasterService.GetAll();
-                foreach (var item in poiMasterServices)
-                {
-                    PoiDBParams.Add(new KeyValuePair<string, PoiMasterModel>(item.Name, item));
-                    foreach (var item1 in config)
-                    {
-                        item1.Value.PoiName = item1.Key;
-                        if (item.Name == item1.Key)
-                        {
-                            item1.Value.ID = item.Id ?? 0;
-                        }
-                    }
-                }
+                var config = new ObservableCollection<KeyValuePair<string, PoiParam>>();
+                //var config = IDefault(FileNameFocusParms, new PoiParam(), ref IsOldFocusParams);
+                //PoiMasterDao poiMasterService = new PoiMasterDao();
+                //List<PoiMasterModel> poiMasterServices = poiMasterService.GetAll();
+                //foreach (var item in poiMasterServices)
+                //{
+                //    PoiDBParams.Add(new KeyValuePair<string, PoiMasterModel>(item.Name, item));
+                //    //foreach (var item1 in config)
+                //    //{
+                //    //    item1.Value.PoiName = item1.Key;
+                //    //    if (item.Name == item1.Key)
+                //    //    {
+                //    //        item1.Value.ID = item.Id ?? 0;
+                //    //    }
+                //    //}
+                //}
                 return config;
             });
 
@@ -225,34 +224,10 @@ namespace ColorVision.Template
             }
         }
 
-        public void SavePOI(PoiParam poiParam)
+        public void SavePOI2DB(PoiParam poiParam)
         {
             poiService.Save(poiParam);
         }
-
-        //public void SaveMysql()
-        //{
-        //    List<PoiMasterModel> poiMasterModels = new List<PoiMasterModel>();
-        //    foreach (var item in PoiParams)
-        //    {
-        //        PoiMasterModel poiMasterModel = new PoiMasterModel(item.Value);
-        //        poiMasterModels.Add(poiMasterModel);
-        //    }
-        //    poiMasterService.Save(poiMasterModels);
-
-
-        //    List<PoiMasterModel> poiMasterServices = poiMasterService.GetAll();
-        //    foreach (var item in poiMasterServices)
-        //    {
-        //        foreach (var item1 in PoiParams)
-        //        {
-        //            if (item.Name == item1.Key)
-        //            {
-        //                item1.Value.ID = item.Id ?? 0;
-        //            }
-        //        }
-        //    }
-        //}
 
         private static void SaveDefault<T>(string FileNameParams, ObservableCollection<KeyValuePair<string, T>> t, bool IsOldParams)
         {
@@ -272,14 +247,26 @@ namespace ColorVision.Template
             return keys;
         }
 
-        internal ObservableCollection<KeyValuePair<string, PoiMasterModel>> LoadPoi()
+        internal ObservableCollection<KeyValuePair<string, PoiParam>> LoadPoi()
         {
-            List<PoiMasterModel> poiMasterServices = poiService.GetPoiMasterAll();
-            foreach (var item in poiMasterServices)
+            PoiParams.Clear();
+            List<PoiMasterModel> poiMaster = poiService.GetPoiMasterAll();
+            foreach (var dbModel in poiMaster)
             {
-                PoiDBParams.Add(new KeyValuePair<string, PoiMasterModel>(item.Name, item));
+                KeyValuePair<string, PoiParam> item = new KeyValuePair<string, PoiParam>(dbModel.Name, new PoiParam(dbModel));
+                PoiParams.Add(item);
             }
-            return PoiDBParams;
+            return PoiParams;
+        }
+
+        internal void LoadPoiDetailFromDB(PoiParam poiParam)
+        {
+            poiParam.PoiPoints.Clear();
+            List<PoiDetailModel> poiDetail = poiService.GetPoiDetailByPid(poiParam.ID);
+            foreach (var dbModel in poiDetail)
+            {
+                poiParam.PoiPoints.Add(new PoiParamData(dbModel));
+            }
         }
 
         readonly Lazy<ObservableCollection<KeyValuePair<string, PoiParam>>> PoiParamsLazy;
@@ -290,7 +277,6 @@ namespace ColorVision.Template
         public ObservableCollection<KeyValuePair<string, SxParam>> SxParams { get; set; }
         public ObservableCollection<KeyValuePair<string, LedReusltParam>> LedReusltParams { get; set; }
         public ObservableCollection<KeyValuePair<string, PoiParam>> PoiParams { get => PoiParamsLazy.Value;}
-        public ObservableCollection<KeyValuePair<string, PoiMasterModel>> PoiDBParams { get; set; }
         public ObservableCollection<KeyValuePair<string, LedParam>> LedParams { get; set; }        
         public ObservableCollection<KeyValuePair<string, FlowParam>> FlowParams { get; set; }
     }
