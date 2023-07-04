@@ -61,14 +61,16 @@ namespace ColorVision
             ListView1.ItemsSource = DrawingVisualLists;
             StatusBarItem1.DataContext = PerformanceSetting;
             StatusBarItem2.DataContext = PerformanceSetting;
-            StatusBarItem3.DataContext = GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig;
+            SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
+
+            StatusBarItem3.DataContext = SoftwareConfig.ProjectConfig;
             StatusBarMqtt.DataContext = MQTTControl.GetInstance();
             StatusBarMysql.DataContext = MySqlControl.GetInstance();
             MQTTControl = MQTTControl.GetInstance();
 
-           
-
-
+            StatusBarGrid.DataContext = SoftwareConfig;
+            MenuStatusBar.DataContext = SoftwareConfig;
+            SiderBarGrid.DataContext = SoftwareConfig;
         }
 
 
