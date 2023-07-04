@@ -1,6 +1,7 @@
 ﻿using ColorVision.Extension;
 using ColorVision.MQTT;
 using ColorVision.MVVM;
+using ColorVision.MySql;
 using ColorVision.Template;
 using ColorVision.Util;
 using cvColorVision;
@@ -42,13 +43,21 @@ namespace ColorVision.Template
     public class PoiParam : ParamBase
     {
         private static int No = 1;
-        private string _PoiName;
         public PoiParam()
         {
             ID = No++;
         }
+        public PoiParam(PoiMasterModel dbModel)
+        {
+            this._ID = dbModel.Id;
+            this._PoiName = dbModel.Name;
+            this._Width = dbModel.Width;
+            this._Height = dbModel.Height;
+        }
+
 
         public string PoiName { get { return _PoiName; } set { _PoiName = value; } }
+        private string _PoiName;
         public int ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
         private int _ID;
 
