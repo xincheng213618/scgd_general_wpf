@@ -15,13 +15,15 @@ namespace ColorVision.SettingUp
         {
             MQTTConfig = new MQTTConfig();
             MySqlConfig = new MySqlConfig();
-
+            UserConfig = new UserConfig();
+            ProjectConfig = new ProjectConfig();
         }
 
         public string Version { get; set; } = "0.0";
 
         public bool IsUseMySql { get; set; } = true;
 
+        public bool
 
 
         /// <summary>
@@ -34,6 +36,9 @@ namespace ColorVision.SettingUp
         /// </summary>
         public MySqlConfig MySqlConfig { get; set; }
 
+        public UserConfig UserConfig { get; set; }
+
+        public ProjectConfig ProjectConfig { get; set; }
 
     }
 }

@@ -7,9 +7,9 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/HandyControl;component/themes/basic/colors/light.xaml"/>
                 <ResourceDictionary Source="/HandyControl;component/Themes/Theme.xaml"/>
-                <ResourceDictionary Source="/Theme/Base.xaml"/>
-                <ResourceDictionary Source="/Theme/Menu.xaml"/>
-                <ResourceDictionary Source="/Theme/GroupBox.xaml"/>
+                <ResourceDictionary Source="/ColorVision;component/Theme/Base.xaml"/>
+                <ResourceDictionary Source="/ColorVision;component/Theme/Menu.xaml"/>
+                <ResourceDictionary Source="/ColorVision;component/Theme/GroupBox.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

@@ -14,7 +14,6 @@
         </Grid.RowDefinitions>
         <Grid  Grid.Row="0">
             <Label Grid.Row="0"  Content="操作员检测界面" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="40"/>
-            <Button Grid.Row="0" HorizontalAlignment="Right" Content="X" FontSize="50" Background="#EFF4F9" BorderThickness="0" Width="100" Margin="10" Click="Button_Click" VerticalAlignment="Top"/>
         </Grid>
         <Grid Grid.Row="1">
             <Button Height="100" Width="100" Content="开始检测" FontSize="17" FontWeight="Bold" Foreground="White" >

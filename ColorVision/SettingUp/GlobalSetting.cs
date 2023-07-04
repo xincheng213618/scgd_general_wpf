@@ -12,6 +12,8 @@ namespace ColorVision.SettingUp
     public static class GlobalConst
     {
         public const string SoftwareConfigFileName = "Config\\SoftwareConfig.json";
+
+
     }
 
 
@@ -66,9 +68,6 @@ namespace ColorVision.SettingUp
             SoftwareConfig.MySqlConfig.UserPwd = Temp;
             SoftwareConfig.MQTTConfig.UserPwd = Temp1;
         }
-
-
-
 
         private static T? ReadConfig<T>(string fileName)
         {

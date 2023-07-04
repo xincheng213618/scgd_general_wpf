@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace ColorVision.SettingUp
 {
+    /// <summary>
+    /// MQTT配置
+    /// </summary>
     public class MQTTConfig : ViewModelBase
     {
         /// <summary>

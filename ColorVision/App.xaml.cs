@@ -21,16 +21,6 @@ using System.Windows.Resources;
 [assembly: XmlConfigurator(ConfigFile = "log4net.config", Watch = true)]
 namespace ColorVision
 {
-    [StructLayout(LayoutKind.Sequential)]
-    struct COPYDATASTRUCT
-    {
-        public IntPtr dwData;
-        public int cbData;
-        public IntPtr lpData;
-    }
-
-
-
     /// <summary>
     /// Interaction logic for App.xaml
     /// </summary>
@@ -56,7 +46,6 @@ namespace ColorVision
                 }
             }
 
-
             if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
             {
                 var fileAppender = (log4net.Appender.FileAppender)LogManager.GetRepository().GetAppenders().FirstOrDefault(a => a is log4net.Appender.FileAppender);
@@ -81,8 +70,8 @@ namespace ColorVision
                     log.Info("程序已经打开");
                     Environment.Exit(0);
                 }
-
-
+                ////写在这里可以Avoid命令行多开的效果，但是没有办法检测版本，实现同版本的情况下更新条件唯一
+                //Environment.Exit(0);
             }
 
             log.Info("程序打开");

@@ -133,6 +133,7 @@ namespace ColorVision.Template
         {
             ListConfigs = new ObservableCollection<ListConfig>();
             ListView1.ItemsSource = ListConfigs;
+            TextBox1.Text = NewCreateFileName("default");
         }
 
 
@@ -192,6 +193,20 @@ namespace ColorVision.Template
                 }
             }
         }
+        public string NewCreateFileName(string FileName)
+        {
+            List<string> Names = new List<string>();
+            foreach (var item in ListConfigs)
+            {
+                Names.Add(item.Name);
+            }
+            for (int i = 1; i < 9999; i++)
+            {
+                if (!Names.Contains($"{FileName}{i}"))
+                    return $"{FileName}{i}";
+            }
+            return FileName;
+        }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -225,7 +240,7 @@ namespace ColorVision.Template
                         break;
 
                 }
-                TextBox1.Text =string.Empty;
+                TextBox1.Text = NewCreateFileName("default");
             }
             else
             {
@@ -236,7 +251,10 @@ namespace ColorVision.Template
         private void CreateNewTemplate<T>(ObservableCollection<KeyValuePair<string, T>> keyValuePairs ,string Name,T t)
         {
             keyValuePairs.Add(new KeyValuePair<string, T>(Name, t));
-            ListConfigs.Add(new ListConfig() { ID = ListConfigs.Count + 1, Name = Name, Value = t });
+            ListConfig config = new ListConfig() { ID = ListConfigs.Count + 1, Name = Name, Value = t };
+            ListConfigs.Add(config);
+            ListView1.SelectedIndex = ListConfigs.Count - 1;
+            ListView1.ScrollIntoView(config);
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
@@ -270,6 +288,7 @@ namespace ColorVision.Template
                             break;
                     }
                     ListConfigs.RemoveAt(ListView1.SelectedIndex);
+                    ListView1.SelectedIndex = ListConfigs.Count - 1;
                 }
             }
             else

@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace ColorVision.SettingUp
 {
+    /// <summary>
+    /// MySql配置
+    /// </summary>
     public class MySqlConfig: ViewModelBase
     {
         /// <summary>

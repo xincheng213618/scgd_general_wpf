@@ -61,6 +61,7 @@ namespace ColorVision
             ListView1.ItemsSource = DrawingVisualLists;
             StatusBarItem1.DataContext = PerformanceSetting;
             StatusBarItem2.DataContext = PerformanceSetting;
+            StatusBarItem3.DataContext = GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig;
             StatusBarMqtt.DataContext = MQTTControl.GetInstance();
             StatusBarMysql.DataContext = MySqlControl.GetInstance();
             MQTTControl = MQTTControl.GetInstance();
@@ -930,6 +931,38 @@ namespace ColorVision
         private void TextBlock_MouseLeftButtonDown1(object sender, MouseButtonEventArgs e)
         {
             new MySqlConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+
+        private void MenuItem_ProjectNew_Click(object sender, RoutedEventArgs e)
+        {
+            NewCreatWindow newCreatWindow = new NewCreatWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };    
+            newCreatWindow.Closed += delegate
+            {
+                if (newCreatWindow.IsCreate)
+                {
+                    string SolutionDirectoryPath = newCreatWindow.newCreatViewMode.DirectoryPath + "\\" + newCreatWindow.newCreatViewMode.Name;
+                    GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectName = SolutionDirectoryPath;
+                }
+            };
+            newCreatWindow.ShowDialog();
+            
+        }
+
+        private void TextBlock_MouseLeftButtonDown2(object sender, MouseButtonEventArgs e)
+        {
+            //NewCreatWindow newCreatWindow = new NewCreatWindow() { Owner = this,WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            //newCreatWindow.Closed += delegate
+            //{
+            //    if (newCreatWindow.IsCreate)
+            //    {
+            //        string SolutionDirectoryPath = newCreatWindow.newCreatViewMode.DirectoryPath + "\\" + newCreatWindow.newCreatViewMode.Name;
+            //        GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectName = SolutionDirectoryPath;
+            //    }
+            //};
+            //newCreatWindow.ShowDialog();
+
+            System.Diagnostics.Process.Start("explorer.exe", $"{GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectName}");
+
         }
     }
 

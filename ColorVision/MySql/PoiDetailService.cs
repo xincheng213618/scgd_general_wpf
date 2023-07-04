@@ -31,6 +31,26 @@ namespace ColorVision.MySql
         {
         }
 
+
+        public override DataTable GetDataTable(string? tableName = null)
+        {
+            DataTable dataTable = base.GetDataTable();
+            dataTable.Columns.Add("id", typeof(int));
+            dataTable.Columns.Add("name", typeof(string));
+            dataTable.Columns.Add("pt_type", typeof(sbyte));
+            dataTable.Columns.Add("pid", typeof(int));
+            dataTable.Columns.Add("pix_width", typeof(int));
+            dataTable.Columns.Add("pix_height", typeof(int));
+            dataTable.Columns.Add("pix_x", typeof(int));
+            dataTable.Columns.Add("pix_y", typeof(int));
+            dataTable.Columns.Add("create_date", typeof(DateTime));
+            dataTable.Columns.Add("is_enable", typeof(bool));
+            dataTable.Columns.Add("is_delete", typeof(bool));
+            dataTable.Columns.Add("remark", typeof(string));
+            return dataTable;
+        }
+
+
         public override PoiDetailModel GetModel(DataRow item)
         {
             PoiDetailModel model = new PoiDetailModel
@@ -64,9 +84,9 @@ namespace ColorVision.MySql
                 if (item.PixHeight > 0) row["pix_height"] = item.PixHeight;
                 if (item.PixX >= 0) row["pix_x"] = item.PixX;
                 if (item.PixY >= 0) row["pix_y"] = item.PixY;
-                //row["create_date"] = item.CreateDate;
-                //row["is_enable"] = item.IsEnable;
-                //row["is_delete"] = item.IsDelete;
+                row["create_date"] = item.CreateDate;
+                row["is_enable"] = item.IsEnable;
+                row["is_delete"] = item.IsDelete;
                 if (item.Remark != null) row["remark"] = item.Remark;
             }
             return row;
