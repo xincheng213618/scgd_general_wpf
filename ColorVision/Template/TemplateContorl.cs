@@ -87,22 +87,7 @@ namespace ColorVision.Template
 
             PoiParamsLazy = new Lazy<ObservableCollection<KeyValuePair<string, PoiParam>>>(() =>
             {
-                var config = new ObservableCollection<KeyValuePair<string, PoiParam>>();
-                //var config = IDefault(FileNameFocusParms, new PoiParam(), ref IsOldFocusParams);
-                //PoiMasterDao poiMasterService = new PoiMasterDao();
-                //List<PoiMasterModel> poiMasterServices = poiMasterService.GetAll();
-                //foreach (var item in poiMasterServices)
-                //{
-                //    PoiDBParams.Add(new KeyValuePair<string, PoiMasterModel>(item.Name, item));
-                //    //foreach (var item1 in config)
-                //    //{
-                //    //    item1.Value.PoiName = item1.Key;
-                //    //    if (item.Name == item1.Key)
-                //    //    {
-                //    //        item1.Value.ID = item.Id ?? 0;
-                //    //    }
-                //    //}
-                //}
+                var config = IDefault(FileNameFocusParms, new PoiParam(), ref IsOldFocusParams);
                 return config;
             });
 
@@ -210,7 +195,6 @@ namespace ColorVision.Template
                     SaveDefault(FileNameSxParms, SxParams, IsOldSxParams);
                     break;
                 case WindowTemplateType.PoiParam:
-                    //SaveMysql();
                     SaveDefault(FileNameFocusParms, PoiParams, IsOldFocusParams);
                     break;
                 case WindowTemplateType.LedParam:
@@ -253,7 +237,7 @@ namespace ColorVision.Template
             List<PoiMasterModel> poiMaster = poiService.GetPoiMasterAll();
             foreach (var dbModel in poiMaster)
             {
-                KeyValuePair<string, PoiParam> item = new KeyValuePair<string, PoiParam>(dbModel.Name, new PoiParam(dbModel));
+                KeyValuePair<string, PoiParam> item = new KeyValuePair<string, PoiParam>(dbModel.Name??"default", new PoiParam(dbModel));
                 PoiParams.Add(item);
             }
             return PoiParams;

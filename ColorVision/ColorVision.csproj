@@ -87,7 +87,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="ColorVision.png" />
     <Resource Include="Image\ColorVision.ico" />
     <Resource Include="Image\ColorVision.png" />
     <Resource Include="Image\ColorVision1.ico" />

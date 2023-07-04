@@ -53,25 +53,25 @@ namespace ColorVision.Template
         }
         public PoiParam(PoiMasterModel dbModel)
         {
-            this._ID = dbModel.Id;
-            this._PoiName = dbModel.Name;
-            this._Width = dbModel.Width;
-            this._Height = dbModel.Height;
-            this._Type = dbModel.Type;
-            this._CfgJson = dbModel.CfgJson;
-            this.DatumAreaPoints.X1X = (int)dbModel.LeftTopX;
-            this.DatumAreaPoints.X1Y = (int)dbModel.LeftTopY;
-            this.DatumAreaPoints.X2X = (int)dbModel.RightTopX;
-            this.DatumAreaPoints.X2Y = (int)dbModel.RightTopY;
-            this.DatumAreaPoints.X3X = (int)dbModel.RightBottomX;
-            this.DatumAreaPoints.X3Y = (int)dbModel.RightBottomY;
-            this.DatumAreaPoints.X4X = (int)dbModel.LeftBottomX;
-            this.DatumAreaPoints.X4Y = (int)dbModel.LeftBottomY;
+            this._ID = dbModel.Id ?? -1;
+            this._PoiName = dbModel.Name ?? string.Empty;
+            this._Width = dbModel.Width ?? 0;
+            this._Height = dbModel.Height ?? 0;
+            this._Type = dbModel.Type ?? 0;
+            this._CfgJson = dbModel.CfgJson??string.Empty;
+            this.DatumAreaPoints.X1X = dbModel.LeftTopX ?? 0;
+            this.DatumAreaPoints.X1Y = dbModel.LeftTopY ?? 0;
+            this.DatumAreaPoints.X2X = dbModel.RightTopX ?? 0;
+            this.DatumAreaPoints.X2Y = dbModel.RightTopY ?? 0;
+            this.DatumAreaPoints.X3X = dbModel.RightBottomX ?? 0;
+            this.DatumAreaPoints.X3Y = dbModel.RightBottomY ?? 0;
+            this.DatumAreaPoints.X4X = dbModel.LeftBottomX ?? 0;
+            this.DatumAreaPoints.X4Y = dbModel.LeftBottomY ?? 0;
         }
 
-        public string CfgJson { get { return _CfgJson; } set { _CfgJson = value; } }
+        public string CfgJson { get { return _CfgJson; } set { _CfgJson = value; NotifyPropertyChanged(); } }
         private string _CfgJson;
-        public string PoiName { get { return _PoiName; } set { _PoiName = value; } }
+        public string PoiName { get { return _PoiName; } set { _PoiName = value; NotifyPropertyChanged(); } }
         private string _PoiName;
         public int ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
         private int _ID;
@@ -121,7 +121,7 @@ namespace ColorVision.Template
         public PoiParamData(PoiDetailModel dbModel)
         {
             ID = dbModel.Id;
-            Name = dbModel.Name;
+            Name = dbModel.Name ?? string.Empty;
             switch (dbModel.Type)
             {
                 case 0:
@@ -133,10 +133,10 @@ namespace ColorVision.Template
                 default:
                     PointType = RiPointTypes.Circle; break;
             }
-            PixX = (double)dbModel.PixX;
-            PixY = (double)dbModel.PixY;
-            PixWidth = (double)dbModel.PixWidth;
-            PixHeight = (double)dbModel.PixHeight;
+            PixX = dbModel.PixX??0;
+            PixY = dbModel.PixY ?? 0;
+            PixWidth = dbModel.PixWidth ?? 0;
+            PixHeight = dbModel.PixHeight ?? 0;
         }
 
         public PoiParamData()
@@ -361,7 +361,6 @@ namespace ColorVision.Template
                     IsLayoutUpdated = false;
 
                 }
-
                 CreateImage(PoiParam.Width, PoiParam.Height, System.Windows.Media.Colors.White,false);
                 WaitControlProgressBar.Value = 20;
                 PoiParamToDrawingVisual(PoiParam);
@@ -415,7 +414,7 @@ namespace ColorVision.Template
 
         }
 
-        private void LoadPoiFromDb(PoiParam poiParam)
+        private static void LoadPoiFromDb(PoiParam poiParam)
         {
             log.Debug("LoadPoi begin");
             TemplateControl.GetInstance().LoadPoiDetailFromDB(poiParam);
@@ -500,15 +499,14 @@ namespace ColorVision.Template
         private async void PoiParamToDrawingVisual(PoiParam poiParam)
         {
             int i = 0;
-
-
+            var len =  1 / Zoombox1.ContentMatrix.M11;
             foreach (var item in poiParam.PoiPoints)
             {
                 i++;
                 if (i % 50 == 0)
                 {
                     WaitControlProgressBar.Value = 20 + i * 79 / poiParam.PoiPoints.Count;
-                    //await Task.Delay(10);
+                    await Task.Delay(1);
                 }
                 switch (item.PointType)
                 {
@@ -517,7 +515,7 @@ namespace ColorVision.Template
                         drawingVisualCircle.Attribute.Center = new Point(item.PixX, item.PixY);
                         drawingVisualCircle.Attribute.Radius = item.PixWidth;
                         drawingVisualCircle.Attribute.Brush = Brushes.Transparent;
-                        drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                        drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red, len);
                         drawingVisualCircle.Attribute.ID = item.ID;
                         drawingVisualCircle.Attribute.Name = item.Name;
                         drawingVisualCircle.Render();
@@ -527,7 +525,7 @@ namespace ColorVision.Template
                         DrawingVisualRectangle drawingVisualRectangle = new DrawingVisualRectangle();
                         drawingVisualRectangle.Attribute.Rect = new Rect(item.PixX, item.PixY, item.PixWidth, item.PixHeight);
                         drawingVisualRectangle.Attribute.Brush = Brushes.Transparent;
-                        drawingVisualRectangle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                        drawingVisualRectangle.Attribute.Pen = new Pen(Brushes.Red, len);
                         drawingVisualRectangle.Attribute.ID = item.ID;
                         drawingVisualRectangle.Attribute.Name = item.Name;
                         drawingVisualRectangle.Render();

@@ -20,15 +20,15 @@ namespace ColorVision.MySql
 
         public MySqlControl MySqlControl { get; set; }
         public string TableName { get { return _TableName; } set { _TableName = value; } }
-        protected string _TableName;
+        private string _TableName { get; set; }
         public string PKField { get { return _PKField; } set { _PKField = value; } }
-        protected string _PKField;
+        private string _PKField { get; set; }
 
         public BaseDao(string tableName,string pkField)
         {
             MySqlControl = MySqlControl.GetInstance();
-            _TableName = tableName;
-            _PKField = pkField;
+            TableName = tableName;
+            PKField = pkField;
         }
 
         public int ExecuteNonQuery(string sql)
@@ -143,101 +143,12 @@ namespace ColorVision.MySql
             return d_info;
         }
 
-        public DataRow? selectRow(int id, DataTable dInfo)
+        public static DataRow? selectRow(int id, DataTable dInfo)
         {
             DataRow[] rows = dInfo.Select($"id={id}");
 
             if (rows.Length == 1) return rows[0];
             else return null;
-        }
-    }
-
-    public class BaseServiceDetail<T> : BaseDao
-    {
-        public BaseServiceDetail(string tableName, string pkField) : base(tableName, pkField)
-        {
-
-        }
-
-        public T? GetByID(int id)
-        {
-            string sql = $"select * from {TableName} where is_delete=0 and id=@id";
-            Dictionary<string, object> param = new Dictionary<string, object>
-            {
-                { "id", id }
-            };
-            DataTable d_info = GetData(sql, param);
-            return d_info.Rows.Count == 1 ? GetModel(d_info.Rows[0]) : default;
-        }
-
-        public List<T> GetByPID(int pid)
-        {
-            string sql = $"select * from {TableName} where is_delete=0 and pid=@pid";
-            Dictionary<string, object> param = new Dictionary<string, object>
-            {
-                { "pid", pid }
-            };
-            DataTable d_info = GetData(sql, param);
-
-
-            List<T> list = new List<T>();
-            foreach (var item in d_info.AsEnumerable())
-            {
-                T? model = GetModel(item);
-                if (model != null)
-                {
-                    list.Add(model);
-                }
-            }
-            return list;
-        }
-
-        public int SavePID(int Pid,List<T> datas)
-        {
-            DataTable d_info = new DataTable(TableName);
-            foreach (var item in datas)
-            {
-                DataRow row = GetRow(item, d_info);
-                d_info.Rows.Add(row);
-            }
-
-            return Save(d_info);
-        }
-
-
-        public int DeleteByPId(int pid)
-        {
-            string sql = $"update {TableName} set is_delete=1 where pid=@pid";
-            Dictionary<string, object> param = new Dictionary<string, object>
-            {
-                { "pid", pid }
-            };
-            return ExecuteNonQuery(sql, param);
-        }
-
-
-
-
-
-        public int DeleteById(int id)
-        {
-            string sql = $"update {TableName} set is_delete=1 where id=@id";
-            Dictionary<string, object> param = new Dictionary<string, object>
-            {
-                { "id", id }
-            };
-            return ExecuteNonQuery(sql, param);
-        }
-
-
-        public virtual T? GetModel(DataRow item)
-        {
-            return default;
-        }
-
-        public virtual DataRow GetRow(T item, DataTable dataTable)
-        {
-            return dataTable.NewRow();
         }
     }
 
@@ -272,7 +183,7 @@ namespace ColorVision.MySql
             DataTable d_info = selectById(item.GetPK());
             ConvertRow(item, d_info);
             int ret = Save(d_info);
-            item.SetPK(d_info.Rows[0].Field<int>(_PKField));
+            item.SetPK(d_info.Rows[0].Field<int>(PKField));
             return ret;
         }
 
