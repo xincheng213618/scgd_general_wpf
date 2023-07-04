@@ -2,6 +2,7 @@
 using ColorVision.MQTT;
 using ColorVision.MVVM;
 using ColorVision.MySql;
+using ColorVision.SettingUp;
 using ColorVision.Template;
 using ColorVision.Util;
 using cvColorVision;
@@ -208,7 +209,7 @@ namespace ColorVision.Template
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
 
         DatumAreaPoints DatumAreaPoints { get; set; } = new DatumAreaPoints();
-
+        SoftwareConfig SoftwareConfig { get; set; }
         public WindowFocusPoint()
         {
             InitializeComponent();
@@ -228,6 +229,7 @@ namespace ColorVision.Template
             ListView1.ItemsSource = DrawingVisualLists;
             StackPanelDatumAreaPoints.DataContext = DatumAreaPoints;
             this.DataContext = PoiParam;
+
         }
 
         public bool IsLayoutUpdated { get => _IsLayoutUpdated; set { _IsLayoutUpdated = value; if(value) UpdateVisualLayout();  } }
@@ -354,7 +356,7 @@ namespace ColorVision.Template
                 PoiParam.Width = 400;
                 PoiParam.Height = 300;
             }
-
+            SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
             this.Closed += (s, e) =>
             {
                 PoiParam.PoiPoints.Clear();
@@ -391,14 +393,15 @@ namespace ColorVision.Template
                         PoiParam.PoiPoints.Add(poiParamData);
                     }
                 }
+
+                if (SoftwareConfig.IsUseMySql)
+                {
+                    new PoiMasterDao().Save(new PoiMasterModel(PoiParam) { Name = PoiParam.PoiName });
+                }
             };
 
             SettingGroup.DataContext = this;
 
-        }
-
-        private static void LoadPoiFromDb(PoiParam poiParam)
-        {
         }
 
         private void button1_Click(object sender, RoutedEventArgs e)
@@ -949,41 +952,55 @@ namespace ColorVision.Template
 
         private void button_save_Click(object sender, RoutedEventArgs e)
         {
-            PoiParam.PoiPoints.Clear();
-            foreach (var item in DrawingVisualLists)
+            if (SoftwareConfig.IsUseMySql)
             {
-                DrawAttributeBase drawAttributeBase = item.GetAttribute();
-                if (drawAttributeBase is CircleAttribute circle)
+                PoiParam.PoiPoints.Clear();
+                foreach (var item in DrawingVisualLists)
                 {
-                    PoiParamData poiParamData = new PoiParamData()
+                    DrawAttributeBase drawAttributeBase = item.GetAttribute();
+                    if (drawAttributeBase is CircleAttribute circle)
                     {
-                        ID = circle.ID,
-                        Name = circle.Name,
-                        PointType = RiPointTypes.Circle,
-                        PixX = circle.Center.X,
-                        PixY = circle.Center.Y,
-                        PixWidth = circle.Radius,
-                        PixHeight = circle.Radius,
-                    };
-                    PoiParam.PoiPoints.Add(poiParamData);
+                        PoiParamData poiParamData = new PoiParamData()
+                        {
+                            ID = circle.ID,
+                            Name = circle.Name,
+                            PointType = RiPointTypes.Circle,
+                            PixX = circle.Center.X,
+                            PixY = circle.Center.Y,
+                            PixWidth = circle.Radius,
+                            PixHeight = circle.Radius,
+                        };
+                        PoiParam.PoiPoints.Add(poiParamData);
 
-                }
-                else if (drawAttributeBase is RectangleAttribute rectangle)
-                {
-                    PoiParamData poiParamData = new PoiParamData()
+                    }
+                    else if (drawAttributeBase is RectangleAttribute rectangle)
                     {
-                        ID = rectangle.ID,
-                        Name = rectangle.Name,
-                        PointType = RiPointTypes.Rect,
-                        PixX = rectangle.Rect.X,
-                        PixY = rectangle.Rect.Y,
-                        PixWidth = rectangle.Rect.Width,
-                        PixHeight = rectangle.Rect.Height,
-                    };
-                    PoiParam.PoiPoints.Add(poiParamData);
+                        PoiParamData poiParamData = new PoiParamData()
+                        {
+                            ID = rectangle.ID,
+                            Name = rectangle.Name,
+                            PointType = RiPointTypes.Rect,
+                            PixX = rectangle.Rect.X,
+                            PixY = rectangle.Rect.Y,
+                            PixWidth = rectangle.Rect.Width,
+                            PixHeight = rectangle.Rect.Height,
+                        };
+                        PoiParam.PoiPoints.Add(poiParamData);
+                    }
                 }
+                WaitControl.Visibility = Visibility.Visible;
+                WaitControlProgressBar.Visibility = Visibility.Collapsed;
+                WaitControlText.Text = "数据正在保存";
+                Thread thread = new Thread(() =>
+                {
+                    TemplateControl.GetInstance().SavePOI2DB(PoiParam);
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        WaitControl.Visibility = Visibility.Collapsed;
+                    });
+                });
+                thread.Start();
             }
-            TemplateControl.GetInstance().SavePOI2DB(PoiParam);
         }
     }
 
