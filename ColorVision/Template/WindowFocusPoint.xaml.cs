@@ -346,6 +346,7 @@ namespace ColorVision.Template
                     UpdateVisualLayout();
                 }
             };
+            SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
 
             if (PoiParam.Height != 0 && PoiParam.Width != 0)
             {
@@ -353,7 +354,8 @@ namespace ColorVision.Template
                 WaitControlProgressBar.Visibility = Visibility.Visible;
                 WaitControlProgressBar.Value = 0;
                 await Task.Delay(100);
-                TemplateControl.GetInstance().LoadPoiDetailFromDB(PoiParam);
+                if(SoftwareConfig.IsUseMySql)
+                    TemplateControl.GetInstance().LoadPoiDetailFromDB(PoiParam);
                 WaitControlProgressBar.Value = 10;
 
                 if (PoiParam.PoiPoints.Count > 500)
@@ -369,7 +371,6 @@ namespace ColorVision.Template
                 PoiParam.Width = 400;
                 PoiParam.Height = 300;
             }
-            SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
             this.Closed += (s, e) =>
             {
                 PoiParam.PoiPoints.Clear();
