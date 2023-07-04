@@ -35,8 +35,13 @@ namespace ColorVision.MySql
                 PoiDetailModel poiDetail = new PoiDetailModel(poiParam.ID, pt);
                 poiDetails.Add(poiDetail);
             }
-            poiDetail.Save(poiDetails);
+            poiDetail.SaveByPid(poiMasterModel.Id,poiDetails);
 
+        }
+
+        internal List<PoiDetailModel> GetPoiDetailByPid(int pid)
+        {
+            return poiDetail.GetAllByPid(pid);
         }
     }
 }

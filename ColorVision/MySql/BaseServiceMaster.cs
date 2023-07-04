@@ -259,6 +259,19 @@ namespace ColorVision.MySql
             return Save(d_info);
         }
 
+        public int SaveByPid(int pid,List<T> datas)
+        {
+            DeleteAllByPid(pid);
+            DataTable d_info = GetDataTable();
+            CreateColumns(d_info);
+            foreach (var item in datas)
+            {
+                DataRow row = GetRow(item, d_info);
+                d_info.Rows.Add(row);
+            }
+            return Save(d_info);
+        }
+
 
 
         public DataTable GetTableAll()
@@ -268,6 +281,12 @@ namespace ColorVision.MySql
             return d_info;
         }
 
+        public DataTable GetTableAllByPid(int pid)
+        {
+            string sql = $"select * from {TableName} where is_delete=0 and pid={pid}";
+            DataTable d_info = GetData(sql);
+            return d_info;
+        }
 
         public List<T> GetAll()
         {
@@ -284,7 +303,20 @@ namespace ColorVision.MySql
             return list;
         }
 
-
+        public List<T> GetAllByPid(int pid)
+        {
+            List<T> list = new List<T>();
+            DataTable d_info = GetTableAllByPid(pid);
+            foreach (var item in d_info.AsEnumerable())
+            {
+                T? model = GetModel(item);
+                if (model != null)
+                {
+                    list.Add(model);
+                }
+            }
+            return list;
+        }
 
         public virtual T? GetModel(DataRow item) => default;
 
@@ -296,6 +328,12 @@ namespace ColorVision.MySql
         public int DeleteAll()
         {
             string sql = $"update {TableName} set is_delete=1";
+            return ExecuteNonQuery(sql);
+        }
+
+        public int DeleteAllByPid(int pid)
+        {
+            string sql = $"update {TableName} set is_delete=1 where pid={pid}";
             return ExecuteNonQuery(sql);
         }
 

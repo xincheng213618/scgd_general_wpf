@@ -53,6 +53,9 @@ namespace ColorVision.Template
             this._PoiName = dbModel.Name;
             this._Width = dbModel.Width;
             this._Height = dbModel.Height;
+            this._Type = dbModel.Type;
+            this.DatumAreaPoints.X1X = (int)dbModel.LeftTopX;
+            this.DatumAreaPoints.X1Y = (int)dbModel.LeftTopY;
         }
 
 
@@ -96,11 +99,36 @@ namespace ColorVision.Template
 
     public class PoiParamData
     {
+        public PoiParamData(PoiDetailModel dbModel)
+        {
+            ID = dbModel.Id;
+            Name = dbModel.Name;
+            switch (dbModel.Type)
+            {
+                case 0:
+                    PointType = RiPointTypes.Circle; break;
+                case 1:
+                    PointType = RiPointTypes.Rect; break;
+                case 2:
+                    PointType = RiPointTypes.Mask; break;
+                default:
+                    PointType = RiPointTypes.Circle; break;
+            }
+            PixX = (double)dbModel.PixX;
+            PixY = (double)dbModel.PixY;
+            PixWidth = (double)dbModel.PixWidth;
+            PixHeight = (double)dbModel.PixHeight;
+        }
+
+        public PoiParamData()
+        {
+        }
+
         /// <summary>
         /// 数据库ID
         /// </summary>
         [JsonIgnore()]
-        public int DdId { get; set; }
+        public int Pid { get; set; }
         public int  ID { set; get; }
 
         public string Name { set; get; }
@@ -195,6 +223,11 @@ namespace ColorVision.Template
                 }
             }
 
+            if (drawingVisualDatum != null && drawingVisualDatum is DrawingVisualDatumCircle dw)
+            {
+                dw.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
+            }
+
             if (IsLayoutUpdated)
             {
                 foreach (var item in DrawingVisualLists)
@@ -256,7 +289,6 @@ namespace ColorVision.Template
                             }
                         }
                     };
-
                 }
             };
 
@@ -286,6 +318,8 @@ namespace ColorVision.Template
                 WaitControlProgressBar.Visibility = Visibility.Visible;
                 WaitControlProgressBar.Value = 0;
                 await Task.Delay(200);
+
+                LoadPoiFromDb(PoiParam);
                 WaitControlProgressBar.Value = 10;
 
                 if (PoiParam.PoiPoints.Count > 100)
@@ -345,6 +379,11 @@ namespace ColorVision.Template
 
             SettingGroup.DataContext = this;
 
+        }
+
+        private void LoadPoiFromDb(PoiParam poiParam)
+        {
+            TemplateControl.GetInstance().LoadPoiDetailFromDB(poiParam);
         }
 
         private void button1_Click(object sender, RoutedEventArgs e)
@@ -912,19 +951,13 @@ namespace ColorVision.Template
                 drawingVisualDatum = drawingVisualDatumRectangle;
             }
 
-
-
-
-
-
-
-            DefaultPoint.Add(drawingVisualDatum);
             ImageShow.AddVisual(drawingVisualDatum);
 
         }
 
         private void button_save_Click(object sender, RoutedEventArgs e)
         {
+            PoiParam.PoiPoints.Clear();
             foreach (var item in DrawingVisualLists)
             {
                 DrawAttributeBase drawAttributeBase = item.GetAttribute();
@@ -959,7 +992,7 @@ namespace ColorVision.Template
                 }
             }
 
-            TemplateControl.GetInstance().SavePOI(PoiParam);
+            TemplateControl.GetInstance().SavePOI2DB(PoiParam);
         }
     }
 

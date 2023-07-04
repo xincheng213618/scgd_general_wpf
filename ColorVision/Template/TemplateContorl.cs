@@ -224,34 +224,10 @@ namespace ColorVision.Template
             }
         }
 
-        public void SavePOI(PoiParam poiParam)
+        public void SavePOI2DB(PoiParam poiParam)
         {
             poiService.Save(poiParam);
         }
-
-        //public void SaveMysql()
-        //{
-        //    List<PoiMasterModel> poiMasterModels = new List<PoiMasterModel>();
-        //    foreach (var item in PoiParams)
-        //    {
-        //        PoiMasterModel poiMasterModel = new PoiMasterModel(item.Value);
-        //        poiMasterModels.Add(poiMasterModel);
-        //    }
-        //    poiMasterService.Save(poiMasterModels);
-
-
-        //    List<PoiMasterModel> poiMasterServices = poiMasterService.GetAll();
-        //    foreach (var item in poiMasterServices)
-        //    {
-        //        foreach (var item1 in PoiParams)
-        //        {
-        //            if (item.Name == item1.Key)
-        //            {
-        //                item1.Value.ID = item.Id ?? 0;
-        //            }
-        //        }
-        //    }
-        //}
 
         private static void SaveDefault<T>(string FileNameParams, ObservableCollection<KeyValuePair<string, T>> t, bool IsOldParams)
         {
@@ -274,13 +250,23 @@ namespace ColorVision.Template
         internal ObservableCollection<KeyValuePair<string, PoiParam>> LoadPoi()
         {
             PoiParams.Clear();
-            List<PoiMasterModel> poiMasterServices = poiService.GetPoiMasterAll();
-            foreach (var dbModel in poiMasterServices)
+            List<PoiMasterModel> poiMaster = poiService.GetPoiMasterAll();
+            foreach (var dbModel in poiMaster)
             {
                 KeyValuePair<string, PoiParam> item = new KeyValuePair<string, PoiParam>(dbModel.Name, new PoiParam(dbModel));
                 PoiParams.Add(item);
             }
             return PoiParams;
+        }
+
+        internal void LoadPoiDetailFromDB(PoiParam poiParam)
+        {
+            poiParam.PoiPoints.Clear();
+            List<PoiDetailModel> poiDetail = poiService.GetPoiDetailByPid(poiParam.ID);
+            foreach (var dbModel in poiDetail)
+            {
+                poiParam.PoiPoints.Add(new PoiParamData(dbModel));
+            }
         }
 
         readonly Lazy<ObservableCollection<KeyValuePair<string, PoiParam>>> PoiParamsLazy;

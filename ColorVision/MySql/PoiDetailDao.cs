@@ -11,7 +11,7 @@ namespace ColorVision.MySql
 
     public class PoiDetailModel
     {
-        public int? Id { get; set; }
+        public int Id { get; set; }
         public string? Name { get; set; }
         public int? Pid { get; set; }
         public int? Type { get; set; }
@@ -30,7 +30,7 @@ namespace ColorVision.MySql
 
         public PoiDetailModel(int pid, PoiParamData data)
         {
-            Id = data.DdId;
+            Id = data.ID;
             Pid = pid;
             Name = data.Name;
             switch (data.PointType)
@@ -122,22 +122,6 @@ namespace ColorVision.MySql
                 if (item.Remark != null) row["remark"] = item.Remark;
             }
             return row;
-        }
-
-        public override DataTable CreateColumns(DataTable dInfo)
-        {
-            dInfo.Columns.Add("id");
-            dInfo.Columns.Add("name");
-            dInfo.Columns.Add("pt_type");
-            dInfo.Columns.Add("pid");
-            dInfo.Columns.Add("pix_width");
-            dInfo.Columns.Add("pix_height");
-            dInfo.Columns.Add("pix_x");
-            dInfo.Columns.Add("pix_y");
-            dInfo.Columns.Add("is_enable");
-            dInfo.Columns.Add("is_delete");
-            dInfo.Columns.Add("remark");
-            return dInfo;
         }
     }
 }
