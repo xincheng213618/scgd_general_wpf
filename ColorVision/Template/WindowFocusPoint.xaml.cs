@@ -185,6 +185,11 @@ namespace ColorVision.Template
                     visualDatumCircle.Attribute.Radius = 5 / Zoombox1.ContentMatrix.M11;
                 }
             }
+            if (drawingVisualDatum != null && drawingVisualDatum is DrawingVisualDatumCircle dw)
+            {
+                dw.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
+            }
+            
 
             if (IsLayoutUpdated)
             {
@@ -276,7 +281,7 @@ namespace ColorVision.Template
                 WaitControl.Visibility = Visibility.Visible;
                 WaitControlProgressBar.Visibility = Visibility.Visible;
                 WaitControlProgressBar.Value = 0;
-                await Task.Delay(200);
+                await Task.Delay(100);
                 WaitControlProgressBar.Value = 10;
 
                 if (PoiParam.PoiPoints.Count > 100)
@@ -904,12 +909,6 @@ namespace ColorVision.Template
             }
 
 
-
-
-
-
-
-            DefaultPoint.Add(drawingVisualDatum);
             ImageShow.AddVisual(drawingVisualDatum);
 
         }

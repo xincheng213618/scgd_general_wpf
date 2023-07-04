@@ -87,25 +87,25 @@ namespace ColorVision.Template
 
 
             PoiDBParams = new ObservableCollection<KeyValuePair<string, PoiMasterModel>>();
-            //PoiParamsLazy = new Lazy<ObservableCollection<KeyValuePair<string, PoiParam>>>(() =>
-            //{
-            //    var config = IDefault(FileNameFocusParms, new PoiParam(), ref IsOldFocusParams);
-            //    PoiMasterDao poiMasterService = new PoiMasterDao();
-            //    List<PoiMasterModel> poiMasterServices = poiMasterService.GetAll();
-            //    foreach (var item in poiMasterServices)
-            //    {
-            //        PoiDBParams.Add(new KeyValuePair<string, PoiMasterModel>(item.Name, item));
-            //        //foreach (var item1 in config)
-            //        //{
-            //        //    item1.Value.PoiName = item1.Key;
-            //        //    if (item.Name == item1.Key)
-            //        //    {
-            //        //        item1.Value.ID = item.Id ?? 0;
-            //        //    }
-            //        //}
-            //    }
-            //    return config;
-            //});
+            PoiParamsLazy = new Lazy<ObservableCollection<KeyValuePair<string, PoiParam>>>(() =>
+            {
+                var config = IDefault(FileNameFocusParms, new PoiParam(), ref IsOldFocusParams);
+                PoiMasterDao poiMasterService = new PoiMasterDao();
+                List<PoiMasterModel> poiMasterServices = poiMasterService.GetAll();
+                foreach (var item in poiMasterServices)
+                {
+                    PoiDBParams.Add(new KeyValuePair<string, PoiMasterModel>(item.Name, item));
+                    foreach (var item1 in config)
+                    {
+                        item1.Value.PoiName = item1.Key;
+                        if (item.Name == item1.Key)
+                        {
+                            item1.Value.ID = item.Id ?? 0;
+                        }
+                    }
+                }
+                return config;
+            });
 
 
 
