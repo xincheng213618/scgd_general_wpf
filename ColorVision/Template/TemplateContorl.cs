@@ -186,7 +186,7 @@ namespace ColorVision.Template
             SaveDefault(FileNameFocusParms, PoiParams, IsOldFocusParams);
             SaveDefault(FileNameLedParms, LedParams, IsOldLedParams);
             SaveDefault(FileNameFlowParms, FlowParams, IsOldFlowParams);
-            SaveMysql();
+            //SaveMysql();
         }
 
 

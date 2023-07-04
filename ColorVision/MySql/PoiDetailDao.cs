@@ -117,7 +117,6 @@ namespace ColorVision.MySql
                 if (item.PixHeight > 0) row["pix_height"] = item.PixHeight;
                 if (item.PixX >= 0) row["pix_x"] = item.PixX;
                 if (item.PixY >= 0) row["pix_y"] = item.PixY;
-                row["create_date"] = item.CreateDate;
                 row["is_enable"] = item.IsEnable;
                 row["is_delete"] = item.IsDelete;
                 if (item.Remark != null) row["remark"] = item.Remark;
