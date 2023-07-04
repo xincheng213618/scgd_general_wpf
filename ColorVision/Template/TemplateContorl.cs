@@ -14,6 +14,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Forms.Design;
 
 namespace ColorVision.Template
 {
@@ -47,8 +48,8 @@ namespace ColorVision.Template
         private bool IsOldLedParams;
         private bool IsOldFlowParams;
 
-        private PoiMasterDao poiMasterService = new PoiMasterDao();
-        private PoiDetailDao poiDetailService = new PoiDetailDao();
+        //private PoiMasterDao poiMasterService = new PoiMasterDao();
+        //private PoiDetailDao poiDetailService = new PoiDetailDao();
         private PoiService poiService = new PoiService();
 
         public TemplateControl()
@@ -86,25 +87,25 @@ namespace ColorVision.Template
 
 
             PoiDBParams = new ObservableCollection<KeyValuePair<string, PoiMasterModel>>();
-            PoiParamsLazy = new Lazy<ObservableCollection<KeyValuePair<string, PoiParam>>>(() =>
-            {
-                var config = IDefault(FileNameFocusParms, new PoiParam(), ref IsOldFocusParams);
-                PoiMasterDao poiMasterService = new PoiMasterDao();
-                List<PoiMasterModel> poiMasterServices = poiMasterService.GetAll();
-                foreach (var item in poiMasterServices)
-                {
-                    PoiDBParams.Add(new KeyValuePair<string, PoiMasterModel>(item.Name, item));
-                    //foreach (var item1 in config)
-                    //{
-                    //    item1.Value.PoiName = item1.Key;
-                    //    if (item.Name == item1.Key)
-                    //    {
-                    //        item1.Value.ID = item.Id ?? 0;
-                    //    }
-                    //}
-                }
-                return config;
-            });
+            //PoiParamsLazy = new Lazy<ObservableCollection<KeyValuePair<string, PoiParam>>>(() =>
+            //{
+            //    var config = IDefault(FileNameFocusParms, new PoiParam(), ref IsOldFocusParams);
+            //    PoiMasterDao poiMasterService = new PoiMasterDao();
+            //    List<PoiMasterModel> poiMasterServices = poiMasterService.GetAll();
+            //    foreach (var item in poiMasterServices)
+            //    {
+            //        PoiDBParams.Add(new KeyValuePair<string, PoiMasterModel>(item.Name, item));
+            //        //foreach (var item1 in config)
+            //        //{
+            //        //    item1.Value.PoiName = item1.Key;
+            //        //    if (item.Name == item1.Key)
+            //        //    {
+            //        //        item1.Value.ID = item.Id ?? 0;
+            //        //    }
+            //        //}
+            //    }
+            //    return config;
+            //});
 
 
 
@@ -183,7 +184,7 @@ namespace ColorVision.Template
             SaveDefault(FileNamePGParams, PGParams, IsOldPGParams);
             SaveDefault(FileNameLedJudgeParams, LedReusltParams, IsOldLedJudgeParams);
             SaveDefault(FileNameSxParms, SxParams, IsOldSxParams);
-            SaveDefault(FileNameFocusParms, PoiParams, IsOldFocusParams);
+            //SaveDefault(FileNameFocusParms, PoiParams, IsOldFocusParams);
             SaveDefault(FileNameLedParms, LedParams, IsOldLedParams);
             SaveDefault(FileNameFlowParms, FlowParams, IsOldFlowParams);
             //SaveMysql();
@@ -210,7 +211,7 @@ namespace ColorVision.Template
                     SaveDefault(FileNameSxParms, SxParams, IsOldSxParams);
                     break;
                 case WindowTemplateType.PoiParam:
-                    SaveMysql();
+                    //SaveMysql();
                     SaveDefault(FileNameFocusParms, PoiParams, IsOldFocusParams);
                     break;
                 case WindowTemplateType.LedParam:
@@ -229,29 +230,29 @@ namespace ColorVision.Template
             poiService.Save(poiParam);
         }
 
-        public void SaveMysql()
-        {
-            List<PoiMasterModel> poiMasterModels = new List<PoiMasterModel>();
-            foreach (var item in PoiParams)
-            {
-                PoiMasterModel poiMasterModel = new PoiMasterModel(item.Value);
-                poiMasterModels.Add(poiMasterModel);
-            }
-            poiMasterService.Save(poiMasterModels);
+        //public void SaveMysql()
+        //{
+        //    List<PoiMasterModel> poiMasterModels = new List<PoiMasterModel>();
+        //    foreach (var item in PoiParams)
+        //    {
+        //        PoiMasterModel poiMasterModel = new PoiMasterModel(item.Value);
+        //        poiMasterModels.Add(poiMasterModel);
+        //    }
+        //    poiMasterService.Save(poiMasterModels);
 
 
-            List<PoiMasterModel> poiMasterServices = poiMasterService.GetAll();
-            foreach (var item in poiMasterServices)
-            {
-                foreach (var item1 in PoiParams)
-                {
-                    if (item.Name == item1.Key)
-                    {
-                        item1.Value.ID = item.Id ?? 0;
-                    }
-                }
-            }
-        }
+        //    List<PoiMasterModel> poiMasterServices = poiMasterService.GetAll();
+        //    foreach (var item in poiMasterServices)
+        //    {
+        //        foreach (var item1 in PoiParams)
+        //        {
+        //            if (item.Name == item1.Key)
+        //            {
+        //                item1.Value.ID = item.Id ?? 0;
+        //            }
+        //        }
+        //    }
+        //}
 
         private static void SaveDefault<T>(string FileNameParams, ObservableCollection<KeyValuePair<string, T>> t, bool IsOldParams)
         {
@@ -269,6 +270,16 @@ namespace ColorVision.Template
                 keys.Add(key.Key, key.Value);
             }
             return keys;
+        }
+
+        internal ObservableCollection<KeyValuePair<string, PoiMasterModel>> LoadPoi()
+        {
+            List<PoiMasterModel> poiMasterServices = poiService.GetPoiMasterAll();
+            foreach (var item in poiMasterServices)
+            {
+                PoiDBParams.Add(new KeyValuePair<string, PoiMasterModel>(item.Name, item));
+            }
+            return PoiDBParams;
         }
 
         readonly Lazy<ObservableCollection<KeyValuePair<string, PoiParam>>> PoiParamsLazy;
