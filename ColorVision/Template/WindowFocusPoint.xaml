@@ -265,6 +265,7 @@
                                     <UniformGrid Columns="2">
                                         <Button x:Name="button2" Margin="2" Content="绘制关注点" Click="button2_Click"/>
                                         <Button x:Name="button3"  Margin="2"  Content="清空关注点" Click="button3_Click"/>
+                                        <Button x:Name="button_save"  Margin="2"  Content="保存关注点" Click="button_save_Click"/>
                                     </UniformGrid>
                                 </StackPanel>
                             </StackPanel>

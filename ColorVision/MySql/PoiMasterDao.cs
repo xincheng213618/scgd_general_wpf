@@ -9,17 +9,17 @@ using System.Threading.Tasks;
 
 namespace ColorVision.MySql
 {
-    internal class PoiMasterModel
+    public class PoiMasterModel
     {
         public PoiMasterModel()
         {
 
         }
 
-        public PoiMasterModel(string name,PoiParam poiParam )
+        public PoiMasterModel(PoiParam poiParam )
         {
             Id = poiParam.ID;
-            Name = name;
+            Name = poiParam.PoiName;
             Type = poiParam.Type;
             Width = poiParam.Width;
             Height = poiParam.Height;
@@ -58,9 +58,9 @@ namespace ColorVision.MySql
 
 
 
-    internal class PoiMasterService : BaseServiceMaster<PoiMasterModel>
+    internal class PoiMasterDao : BaseServiceMaster<PoiMasterModel>
     {
-        public PoiMasterService() : base("t_scgd_cfg_poi_master")
+        public PoiMasterDao() : base("t_scgd_cfg_poi_master")
         {
             
         }
@@ -140,6 +140,29 @@ namespace ColorVision.MySql
             }
 
             return row;
+        }
+
+        public override DataTable CreateColumns(DataTable d_info)
+        {
+            d_info.Columns.Add("id", typeof(int));
+            d_info.Columns.Add("name", typeof(string));
+            d_info.Columns.Add("type", typeof(sbyte));
+            d_info.Columns.Add("width", typeof(int));
+            d_info.Columns.Add("height", typeof(int));
+            d_info.Columns.Add("left_top_x", typeof(int));
+            d_info.Columns.Add("left_top_y", typeof(int));
+            d_info.Columns.Add("right_top_x", typeof(int));
+            d_info.Columns.Add("right_top_y", typeof(int));
+            d_info.Columns.Add("right_bottom_x", typeof(int));
+            d_info.Columns.Add("right_bottom_y", typeof(int));
+            d_info.Columns.Add("left_bottom_x", typeof(int));
+            d_info.Columns.Add("left_bottom_y", typeof(int));
+            d_info.Columns.Add("dynamics", typeof(bool));
+            d_info.Columns.Add("create_date", typeof(DateTime));
+            d_info.Columns.Add("is_enable", typeof(bool));
+            d_info.Columns.Add("is_delete", typeof(bool));
+            d_info.Columns.Add("remark", typeof(string));
+            return d_info;
         }
     }
 }
