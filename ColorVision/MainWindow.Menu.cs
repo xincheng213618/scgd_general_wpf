@@ -51,6 +51,12 @@ namespace ColorVision
                     case "FocusParm":
                         windowTemplate = new WindowTemplate(WindowTemplateType.PoiParam) { Title = "关注点设置" };
                         TemplateControl.LoadPoiParam();
+                        SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
+                        if (SoftwareConfig.IsUseMySql&& !SoftwareConfig.MySqlControl.IsConnect)
+                        {
+                            MessageBox.Show("数据库连接失败，请先连接数据库在操作");
+                            return;
+                        }
                         TemplateAbb(windowTemplate, TemplateControl.PoiParams);
                         break;
                     case "FlowParam":
