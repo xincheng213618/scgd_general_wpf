@@ -269,6 +269,14 @@ namespace ColorVision.Template
             }
         }
 
+        internal int AddPoi(string text)
+        {
+            PoiMasterModel poiMaster = new PoiMasterModel();
+            poiMaster.Name = text;
+            poiService.Save(poiMaster);
+            return poiMaster.GetPK();
+        }
+
         readonly Lazy<ObservableCollection<KeyValuePair<string, PoiParam>>> PoiParamsLazy;
 
         public ObservableCollection<KeyValuePair<string, AoiParam>> AoiParams { get; set; }
