@@ -14,14 +14,14 @@ using System.Windows.Documents;
 namespace ColorVision.MySql
 {
 
-    public class BaseService
+    public class BaseDao
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(BaseService));
+        private static readonly ILog log = LogManager.GetLogger(typeof(BaseDao));
 
         public MySqlControl MySqlControl { get; set; }
         public string TableName { get; set; }
 
-        public BaseService(string tableName)
+        public BaseDao(string tableName)
         {
             MySqlControl = MySqlControl.GetInstance();
             TableName = tableName;
@@ -96,54 +96,24 @@ namespace ColorVision.MySql
         public int Save(DataTable dt)
         {
             int count = -1;
+            string sqlStr = string.Format("SELECT * FROM {0} WHERE FALSE", TableName);
             try
             {
-                MySqlCommand command = new MySqlCommand($"select * from {TableName} where is_delete=1", MySqlControl.MySqlConnection);
-
-                using MySqlDataAdapter adapter = new MySqlDataAdapter(command);
-                DataTable olddt = new DataTable();
-                adapter.Fill(olddt);
-
-
-                List<DataRow> SaveDataRows = new List<DataRow>();
-                for (int i = 0; i < dt.Rows.Count; i++)
+                using (MySqlCommand cmd = new MySqlCommand(sqlStr, MySqlControl.MySqlConnection))
                 {
-                    SaveDataRows.Add(dt.Rows[i]);
-                }
-                
-                for (int i = 0; i < olddt.Rows.Count; i++)
-                {
-                    for (int j = 0; j < dt.Rows.Count; j++)
-                    {
-                        DataRow dataRow = olddt.Rows[i];
-                        DataRow dataRow1 = dt.Rows[j];
-                        if ((int)dataRow["id"] == (int)dataRow1["id"])
-                        {
-                            SaveDataRows.Remove(dataRow1);
-                            for (int k = 0; k < dt.Columns.Count; k++)
-                            {
-                                dataRow[k] = dataRow1[k];
-                            }
-                        }
-                    }
-                }
-                int ll = (int)olddt.Rows[0]["id"];
-                foreach (var item in SaveDataRows)
-                {
-                    DataRow dataRow = olddt.NewRow();
-                    dataRow[0] = ll++;
-                    for (int k = 1; k < dt.Columns.Count; k++)
-                    {
-                        dataRow[k] = item[k];
-                    }
-                    olddt.Rows.Add(dataRow);
+                    MySqlDataAdapter dataAdapter = new MySqlDataAdapter(cmd);
+                    MySqlCommandBuilder builder = new MySqlCommandBuilder(dataAdapter);
+                    builder.ConflictOption = ConflictOption.OverwriteChanges;
+                    builder.SetAllValues = true;
+                    //dataAdapter.SelectCommand = builder.;
+                    dataAdapter.UpdateCommand = builder.GetUpdateCommand(true) as MySqlCommand;
+                    count = dataAdapter.Update(dt);
+
+                    dt.AcceptChanges();
+                    dataAdapter.Dispose();
+                    builder.Dispose();
                 }
 
-                MySqlCommandBuilder cmdb = new MySqlCommandBuilder(adapter);
-                adapter.UpdateCommand = cmdb.GetUpdateCommand();
-                adapter.InsertCommand = cmdb.GetInsertCommand();
-                adapter.DeleteCommand = cmdb.GetDeleteCommand();
-                count = adapter.Update(olddt);
             }
             catch (Exception ex)
             {
@@ -156,7 +126,7 @@ namespace ColorVision.MySql
 
     }
 
-    public class BaseServiceDetail<T> : BaseService
+    public class BaseServiceDetail<T> : BaseDao
     {
         public BaseServiceDetail(string tableName) : base(tableName)
         {
@@ -243,14 +213,9 @@ namespace ColorVision.MySql
         {
             return dataTable.NewRow();
         }
-
-
     }
 
-
-
-
-    public class BaseServiceMaster<T>: BaseService
+    public class BaseServiceMaster<T>: BaseDao
     {
 
         public BaseServiceMaster(string tableName):base(tableName)
@@ -269,10 +234,12 @@ namespace ColorVision.MySql
             return d_info.Rows.Count == 1 ? GetModel(d_info.Rows[0]) : default;
         }
 
+        public virtual DataTable CreateColumns(DataTable dInfo) => dInfo;
 
         public int Save(T t)
         {
             DataTable d_info = new DataTable(TableName);
+            CreateColumns(d_info);
             DataRow row = GetRow(t, d_info);
             d_info.Rows.Add(row);
             return Save(d_info);
@@ -283,6 +250,7 @@ namespace ColorVision.MySql
         {
             DeleteAll();
             DataTable d_info = GetDataTable();
+            CreateColumns(d_info);
             foreach (var item in datas)
             {
                 DataRow row = GetRow(item, d_info);

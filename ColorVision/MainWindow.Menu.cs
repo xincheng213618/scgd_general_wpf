@@ -49,7 +49,8 @@ namespace ColorVision
                         break;
                     case "FocusParm":
                         windowTemplate = new WindowTemplate(WindowTemplateType.PoiParam) { Title = "关注点设置" };
-                        TemplateAbb(windowTemplate, TemplateControl.PoiParams);
+                        //TemplateAbb(windowTemplate, TemplateControl.PoiParams);
+                        TemplateAbb(windowTemplate, TemplateControl.PoiDBParams);
                         break;
                     case "FlowParam":
                         windowTemplate = new WindowTemplate(WindowTemplateType.FlowParam) { Title = "流程引擎" };

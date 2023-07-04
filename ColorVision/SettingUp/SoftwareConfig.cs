@@ -23,6 +23,7 @@ namespace ColorVision.SettingUp
 
         public bool IsUseMySql { get; set; } = true;
 
+
         /// <summary>
         /// MQTT配置
         /// </summary>
