@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ColorVision.Template;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -18,16 +19,48 @@ namespace ColorVision.MySql
         public int? PixY { get; set; }
         public int? PixWidth { get; set; }
         public int? PixHeight { get; set; }
-        public DateTime? CreateDate { get; set; }
         public bool? IsEnable { get; set; }
         public bool? IsDelete { get; set; }
         public string? Remark { get; set; }
+
+        public PoiDetailModel()
+        {
+
+        }
+
+        public PoiDetailModel(int pid, PoiParamData data)
+        {
+            Id = data.DdId;
+            Pid = pid;
+            Name = data.Name;
+            switch (data.PointType)
+            {
+                case RiPointTypes.Circle:
+                    Type = 0;
+                    break;
+                case RiPointTypes.Rect:
+                    Type = 1;
+                    break;
+                case RiPointTypes.Mask:
+                    Type = 2;
+                    break;
+                default:
+                    Type = 0;
+                    break;
+            }
+            PixX = (int)data.PixX;
+            PixY = (int)data.PixY;
+            PixWidth = (int)data.PixWidth;
+            PixHeight = (int)data.PixHeight;
+            IsEnable = true;
+            IsDelete = false;
+        }
     }
 
 
-    public class PoiDetailService : BaseServiceMaster<PoiDetailModel>
+    public class PoiDetailDao : BaseServiceMaster<PoiDetailModel>
     {
-        public PoiDetailService() : base("t_scgd_cfg_poi_detail")
+        public PoiDetailDao() : base("t_scgd_cfg_poi_detail")
         {
         }
 
@@ -63,7 +96,7 @@ namespace ColorVision.MySql
                 PixHeight = item.Field<int>("pix_height"),
                 PixX = item.Field<int>("pix_x"),
                 PixY = item.Field<int>("pix_y"),
-                CreateDate = item.Field<DateTime>("create_date"),
+                //CreateDate = item.Field<DateTime>("create_date"),
                 IsEnable = item.Field<bool>("is_enable"),
                 IsDelete = item.Field<bool>("is_delete"),
                 Remark = item.Field<string>("remark"),
@@ -71,9 +104,9 @@ namespace ColorVision.MySql
             return model;
         }
 
-        public override DataRow GetRow(PoiDetailModel item, DataTable d_info)
+        public override DataRow GetRow(PoiDetailModel item, DataTable dataTable)
         {
-            DataRow row = base.GetRow(item, d_info);
+            DataRow row = base.GetRow(item, dataTable);
             if (item != null)
             {
                 if (item.Id > 0) row["id"] = item.Id;
@@ -90,6 +123,22 @@ namespace ColorVision.MySql
                 if (item.Remark != null) row["remark"] = item.Remark;
             }
             return row;
+        }
+
+        public override DataTable CreateColumns(DataTable dInfo)
+        {
+            dInfo.Columns.Add("id");
+            dInfo.Columns.Add("name");
+            dInfo.Columns.Add("pt_type");
+            dInfo.Columns.Add("pid");
+            dInfo.Columns.Add("pix_width");
+            dInfo.Columns.Add("pix_height");
+            dInfo.Columns.Add("pix_x");
+            dInfo.Columns.Add("pix_y");
+            dInfo.Columns.Add("is_enable");
+            dInfo.Columns.Add("is_delete");
+            dInfo.Columns.Add("remark");
+            return dInfo;
         }
     }
 }

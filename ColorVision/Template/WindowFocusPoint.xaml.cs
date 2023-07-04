@@ -42,11 +42,13 @@ namespace ColorVision.Template
     public class PoiParam : ParamBase
     {
         private static int No = 1;
+        private string _PoiName;
         public PoiParam()
         {
             ID = No++;
         }
 
+        public string PoiName { get { return _PoiName; } set { _PoiName = value; } }
         public int ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
         private int _ID;
 
@@ -159,7 +161,6 @@ namespace ColorVision.Template
             StackPanelDatumAreaPoints.DataContext = PoiParam.DatumAreaPoints;
             this.DataContext = PoiParam;
         }
-
 
         PoiParam PoiParam { get; set; }
         public WindowFocusPoint(PoiParam poiParam)
@@ -913,6 +914,44 @@ namespace ColorVision.Template
 
         }
 
+        private void button_save_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var item in DrawingVisualLists)
+            {
+                DrawAttributeBase drawAttributeBase = item.GetAttribute();
+                if (drawAttributeBase is CircleAttribute circle)
+                {
+                    PoiParamData poiParamData = new PoiParamData()
+                    {
+                        ID = circle.ID,
+                        Name = circle.Name,
+                        PointType = RiPointTypes.Circle,
+                        PixX = circle.Center.X,
+                        PixY = circle.Center.Y,
+                        PixWidth = circle.Radius,
+                        PixHeight = circle.Radius,
+                    };
+                    PoiParam.PoiPoints.Add(poiParamData);
+
+                }
+                else if (drawAttributeBase is RectangleAttribute rectangle)
+                {
+                    PoiParamData poiParamData = new PoiParamData()
+                    {
+                        ID = rectangle.ID,
+                        Name = rectangle.Name,
+                        PointType = RiPointTypes.Rect,
+                        PixX = rectangle.Rect.X,
+                        PixY = rectangle.Rect.Y,
+                        PixWidth = rectangle.Rect.Width,
+                        PixHeight = rectangle.Rect.Height,
+                    };
+                    PoiParam.PoiPoints.Add(poiParamData);
+                }
+            }
+
+            TemplateControl.GetInstance().SavePOI(PoiParam);
+        }
     }
 
 }
