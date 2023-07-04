@@ -122,13 +122,6 @@ namespace ColorVision.Template
         Mask = 2
     }
 
-    public enum DatumAreaTypes
-    {
-        Circle = 0,
-        Rect = 1,
-        Mask = 2
-    }
-
     public class PoiParamData
     {
         public PoiParamData(PoiDetailModel dbModel)
@@ -190,6 +183,26 @@ namespace ColorVision.Template
         public Point X3 { get; set; } = new Point() { X = 300, Y = 300 };
         public Point X4 { get; set; } = new Point() { X = 100, Y = 300 };
         public Point Center { get; set; } = new Point() { X = 200, Y = 200 };
+
+        [JsonIgnore]
+        public bool IsAreaCircle { get => PointType == RiPointTypes.Circle;set { if (value) PointType = RiPointTypes.Circle;  } }
+        [JsonIgnore]
+        public bool IsAreaRect { get => PointType == RiPointTypes.Rect; set { if (value) PointType = RiPointTypes.Rect; } }
+        [JsonIgnore]
+        public bool IsAreaMask { get => PointType == RiPointTypes.Mask; set { if (value) PointType = RiPointTypes.Rect; } }
+
+        public RiPointTypes PointType { set; get; }
+
+        public int AreaCircleRadius { get; set; } = 100;
+
+        public int AreaCircleNum { get; set; } = 6;
+        public int AreaCircleAngle { get; set; }
+
+        public int AreaRectWidth { get; set; } = 200;
+        public int AreaRectHeight { get; set; } = 200;
+        public int AreaRectRow { get; set; } = 3;
+        public int AreaRectCol { get; set; } = 3;
+
     }
 
     /// <summary>
@@ -245,9 +258,9 @@ namespace ColorVision.Template
                 }
             }
 
-            if (drawingVisualDatum != null && drawingVisualDatum is DrawingVisualDatumCircle dw)
+            if (drawingVisualDatum != null && drawingVisualDatum is IDrawingVisualDatum dw)
             {
-                dw.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
+                dw.GetAttribute().Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
             }
 
             if (IsLayoutUpdated)
@@ -596,7 +609,7 @@ namespace ColorVision.Template
             {
                 DrawingVisualDatumCircle drawingVisual = new DrawingVisualDatumCircle();
                 drawingVisual.Attribute.Center = Points[i];
-                drawingVisual.Attribute.Radius = 5;
+                drawingVisual.Attribute.Radius = 5 / Zoombox1.ContentMatrix.M11;
                 drawingVisual.Attribute.Brush = Brushes.Blue;
                 drawingVisual.Attribute.Pen = new Pen(Brushes.Blue, 2);
                 drawingVisual.Attribute.ID = i + 1;
@@ -925,7 +938,7 @@ namespace ColorVision.Template
                 drawingVisual.Attribute.Center = PoiParam.DatumAreaPoints.Center;
                 drawingVisual.Attribute.Radius = Radius;
                 drawingVisual.Attribute.Brush = Brushes.Transparent;
-                drawingVisual.Attribute.Pen = new Pen(Brushes.Blue, 2);
+                drawingVisual.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
                 drawingVisual.Render();
                 drawingVisualDatum = drawingVisual;
             }
@@ -940,7 +953,7 @@ namespace ColorVision.Template
                 drawingVisualDatumRectangle.Attribute.Rect = new Rect(PoiParam.DatumAreaPoints.Center - new Vector((int)(Width/2), (int)(Height/2)), (PoiParam.DatumAreaPoints.Center + new Vector((int)(Width / 2), (int)(Height / 2))));
                 drawingVisualDatumRectangle.Attribute.Brush = Brushes.Transparent;
 
-                drawingVisualDatumRectangle.Attribute.Pen = new Pen(Brushes.Blue, 2);
+                drawingVisualDatumRectangle.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
                 drawingVisualDatumRectangle.Render();
                 drawingVisualDatum = drawingVisualDatumRectangle;
             }
