@@ -29,18 +29,6 @@ namespace ColorVision.Template
     }
 
 
-
-
-
-    /// <summary>
-    /// 关注点模板
-    /// </summary>
-    public class LedParam : ParamBase
-    {
-
-    }
-
-
     /// <summary>
     /// 流程引擎模板
     /// </summary>

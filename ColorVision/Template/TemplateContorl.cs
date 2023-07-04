@@ -34,8 +34,7 @@ namespace ColorVision.Template
 
         private static string FileNameLedJudgeParams = "cfg\\LedJudgeSetup.cfg";
         private static string FileNameSxParms = "cfg\\SxParamSetup.cfg";
-        private static string FileNameFocusParms = "cfg\\FocusParmSetup.cfg";
-        private static string FileNameLedParms = "cfg\\LedParmSetup.cfg";
+        private static string FileNamePoiParms = "cfg\\PoiParmSetup.cfg";
         private static string FileNameFlowParms = "cfg\\FlowParmSetup.cfg";
 
 
@@ -44,8 +43,7 @@ namespace ColorVision.Template
         private bool IsOldPGParams;
         private bool IsOldLedJudgeParams;
         private bool IsOldSxParams;
-        private bool IsOldFocusParams;
-        private bool IsOldLedParams;
+        private bool IsOldPoiParams;
         private bool IsOldFlowParams;
 
         //private PoiMasterDao poiMasterService = new PoiMasterDao();
@@ -84,7 +82,6 @@ namespace ColorVision.Template
             LedReusltParams = IDefault(FileNameLedJudgeParams, new LedReusltParam(), ref IsOldLedJudgeParams);
             SxParams = IDefault(FileNameSxParms, new SxParam(), ref IsOldSxParams);
 
-            LedParams = IDefault(FileNameLedParms, new LedParam(), ref IsOldLedParams);
             FlowParams = IDefault(FileNameFlowParms, new FlowParam(), ref IsOldFlowParams);
 
 
@@ -162,8 +159,8 @@ namespace ColorVision.Template
             SaveDefault(FileNamePGParams, PGParams, IsOldPGParams);
             SaveDefault(FileNameLedJudgeParams, LedReusltParams, IsOldLedJudgeParams);
             SaveDefault(FileNameSxParms, SxParams, IsOldSxParams);
-            //SaveDefault(FileNameFocusParms, PoiParams, IsOldFocusParams);
-            SaveDefault(FileNameLedParms, LedParams, IsOldLedParams);
+            if (!GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+                SaveDefault(FileNamePoiParms, PoiParams, IsOldPoiParams);
             SaveDefault(FileNameFlowParms, FlowParams, IsOldFlowParams);
         }
 
@@ -188,10 +185,8 @@ namespace ColorVision.Template
                     SaveDefault(FileNameSxParms, SxParams, IsOldSxParams);
                     break;
                 case WindowTemplateType.PoiParam:
-                    SaveDefault(FileNameFocusParms, PoiParams, IsOldFocusParams);
-                    break;
-                case WindowTemplateType.LedParam:
-                    SaveDefault(FileNameLedParms, LedParams, IsOldLedParams);
+                    if (!GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+                        SaveDefault(FileNamePoiParms, PoiParams, IsOldPoiParams);
                     break;
                 case WindowTemplateType.FlowParam:
                     SaveDefault(FileNameFlowParms, FlowParams, IsOldFlowParams);
@@ -238,7 +233,7 @@ namespace ColorVision.Template
             }
             else
             {
-                PoiParams = IDefault(FileNameFocusParms, new PoiParam(), ref IsOldFocusParams);
+                PoiParams = IDefault(FileNamePoiParms, new PoiParam(), ref IsOldPoiParams);
             }
 
         }
@@ -270,7 +265,6 @@ namespace ColorVision.Template
         public ObservableCollection<KeyValuePair<string, SxParam>> SxParams { get; set; }
         public ObservableCollection<KeyValuePair<string, LedReusltParam>> LedReusltParams { get; set; }
         public ObservableCollection<KeyValuePair<string, PoiParam>> PoiParams { get; set; }
-        public ObservableCollection<KeyValuePair<string, LedParam>> LedParams { get; set; }        
         public ObservableCollection<KeyValuePair<string, FlowParam>> FlowParams { get; set; }
     }
 }
