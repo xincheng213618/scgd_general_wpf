@@ -875,7 +875,7 @@ namespace ColorVision
             int port = MQTTConfig.Port;
             string uName = "";
             string uPwd = "";
-            FlowEngineLib.MQTTHelper.SetDefaultCfg(iPStr, port, uName, uPwd);
+            FlowEngineLib.MQTTHelper.SetDefaultCfg(iPStr, port, uName, uPwd, false, null);
 
 
             System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
