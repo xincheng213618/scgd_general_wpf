@@ -33,21 +33,13 @@ namespace ColorVision.MySql.DAO
             Id = data.ID;
             Pid = pid;
             Name = data.Name;
-            switch (data.PointType)
+            Type = data.PointType switch
             {
-                case RiPointTypes.Circle:
-                    Type = 0;
-                    break;
-                case RiPointTypes.Rect:
-                    Type = 1;
-                    break;
-                case RiPointTypes.Mask:
-                    Type = 2;
-                    break;
-                default:
-                    Type = 0;
-                    break;
-            }
+                RiPointTypes.Circle => 0,
+                RiPointTypes.Rect => 1,
+                RiPointTypes.Mask => 2,
+                _ => (int?)0,
+            };
             PixX = (int)data.PixX;
             PixY = (int)data.PixY;
             PixWidth = (int)data.PixWidth;
