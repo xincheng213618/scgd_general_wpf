@@ -80,7 +80,7 @@ namespace ColorVision.Template
             {
                 if (string.IsNullOrEmpty(value))
                 {
-                    if (DatumArea == null) DatumArea = new DatumArea();
+                    DatumArea ??= new DatumArea();
                 }
                 else
                 {
@@ -172,8 +172,13 @@ namespace ColorVision.Template
 
     public class DatumArea:ViewModelBase
     {
+        public Point X1 { get; set; } = new Point() { X = 100, Y = 100 };
+        public Point X2 { get; set; } = new Point() { X = 300, Y = 100 };
+        public Point X3 { get; set; } = new Point() { X = 300, Y = 300 };
+        public Point X4 { get; set; } = new Point() { X = 100, Y = 300 };
+        public Point Center { get; set; } = new Point() { X = 200, Y = 200 };
         [JsonIgnore()]
-        public int X1X { get => (int)X1.X; set { X1 = new Point( value, X1.Y); NotifyPropertyChanged(); } }
+        public int X1X { get => (int)X1.X; set { X1 = new Point(value, X1.Y); NotifyPropertyChanged(); } }
         [JsonIgnore]
         public int X1Y { get => (int)X1.Y; set { X1 = new Point(X1.X, value); NotifyPropertyChanged(); } }
         [JsonIgnore]
@@ -193,12 +198,7 @@ namespace ColorVision.Template
         [JsonIgnore]
         public int CenterY { get => (int)Center.Y; set { Center = new Point(Center.X, value); NotifyPropertyChanged(); } }
 
-        public Point X1 { get; set; } = new Point() { X = 100, Y = 100 };
-        public Point X2 { get; set; } = new Point() { X = 300, Y = 100 };
-        public Point X3 { get; set; } = new Point() { X = 300, Y = 300 };
-        public Point X4 { get; set; } = new Point() { X = 100, Y = 300 };
-        public Point Center { get; set; } = new Point() { X = 200, Y = 200 };
-
+        public RiPointTypes PointType { set; get; }
         [JsonIgnore]
         public bool IsAreaCircle { get => PointType == RiPointTypes.Circle;set { if (value) PointType = RiPointTypes.Circle; NotifyPropertyChanged(); } }
         [JsonIgnore]
@@ -206,7 +206,6 @@ namespace ColorVision.Template
         [JsonIgnore]
         public bool IsAreaMask { get => PointType == RiPointTypes.Mask; set { if (value) PointType = RiPointTypes.Mask; NotifyPropertyChanged(); } }
 
-        public RiPointTypes PointType { set; get; }
 
         public int AreaCircleRadius { get; set; } = 100;
 
@@ -219,16 +218,14 @@ namespace ColorVision.Template
         public int AreaRectCol { get; set; } = 3;
 
 
+        public int AreaPolygonRow { get; set; } = 3;
+        public int AreaPolygonCol { get; set; } = 3;
+
 
         public Point Polygon1 { get; set; } = new Point() { X = 100, Y = 100 };
         public Point Polygon2 { get; set; } = new Point() { X = 300, Y = 100 };
         public Point Polygon3 { get; set; } = new Point() { X = 300, Y = 300 };
         public Point Polygon4 { get; set; } = new Point() { X = 100, Y = 300 };
-
-        public int AreaPolygonRow { get; set; } = 3;
-        public int AreaPolygonCol { get; set; } = 3;
-
-
         [JsonIgnore()]
         public int Polygon1X { get => (int)Polygon1.X; set { Polygon1 = new Point(value, Polygon1.Y); NotifyPropertyChanged(); } }
         [JsonIgnore]
@@ -423,6 +420,8 @@ namespace ColorVision.Template
                 CreateImage(PoiParam.Width, PoiParam.Height, System.Windows.Media.Colors.White,false);
                 WaitControlProgressBar.Value = 20;
                 PoiParamToDrawingVisual(PoiParam);
+                DatumAreaSet();
+                ShowAreaDatum();
                 log.Debug("Render Poi end");
             }
             else
@@ -554,7 +553,9 @@ namespace ColorVision.Template
         private async void PoiParamToDrawingVisual(PoiParam poiParam)
         {
             int i = 0;
-            var len =  1 / Zoombox1.ContentMatrix.M11;
+            //var len =  1 / Zoombox1.ContentMatrix.M11;
+            //var len = PixWidth/5;
+
             foreach (var item in poiParam.PoiPoints)
             {
                 i++;
@@ -570,7 +571,7 @@ namespace ColorVision.Template
                         drawingVisualCircle.Attribute.Center = new Point(item.PixX, item.PixY);
                         drawingVisualCircle.Attribute.Radius = item.PixWidth;
                         drawingVisualCircle.Attribute.Brush = Brushes.Transparent;
-                        drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red, len);
+                        drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red,  item.PixWidth/30);
                         drawingVisualCircle.Attribute.ID = item.ID;
                         drawingVisualCircle.Attribute.Name = item.Name;
                         drawingVisualCircle.Render();
@@ -580,7 +581,7 @@ namespace ColorVision.Template
                         DrawingVisualRectangle drawingVisualRectangle = new DrawingVisualRectangle();
                         drawingVisualRectangle.Attribute.Rect = new Rect(item.PixX, item.PixY, item.PixWidth, item.PixHeight);
                         drawingVisualRectangle.Attribute.Brush = Brushes.Transparent;
-                        drawingVisualRectangle.Attribute.Pen = new Pen(Brushes.Red, len);
+                        drawingVisualRectangle.Attribute.Pen = new Pen(Brushes.Red,  item.PixWidth/30);
                         drawingVisualRectangle.Attribute.ID = item.ID;
                         drawingVisualRectangle.Attribute.Name = item.Name;
                         drawingVisualRectangle.Render();
@@ -647,8 +648,11 @@ namespace ColorVision.Template
 
                 }
             }
+            DatumAreaSet();
+        }
 
-
+        private void DatumAreaSet()
+        {
             List<Point> Points = new List<Point>()
             {
                 new Point(DatumAreaPoints.X1.X, DatumAreaPoints.X1.Y),
@@ -677,6 +681,7 @@ namespace ColorVision.Template
                 ImageShow.AddVisual(drawingVisual);
             }
         }
+
 
         private void ImageShow_Initialized(object sender, EventArgs e)
         {
@@ -1002,6 +1007,11 @@ namespace ColorVision.Template
         DrawingVisual drawingVisualDatum;
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            ShowAreaDatum();
+        }
+
+        private void ShowAreaDatum()
+        {
             if (drawingVisualDatum != null)
             {
                 DefaultPoint.Remove(drawingVisualDatum);
@@ -1030,7 +1040,7 @@ namespace ColorVision.Template
                     drawingVisualDatum = Rectangle;
                     ImageShow.AddVisual(drawingVisualDatum);
                     break;
-                 case RiPointTypes.Mask:
+                case RiPointTypes.Mask:
 
                     List<Point> pts_src = new List<Point>();
                     pts_src.Add(PoiParam.DatumArea.Polygon1);
@@ -1043,7 +1053,7 @@ namespace ColorVision.Template
 
 
 
-                    DrawingVisualDatumPolygon Polygon = new DrawingVisualDatumPolygon() { IsDrawing = false};
+                    DrawingVisualDatumPolygon Polygon = new DrawingVisualDatumPolygon() { IsDrawing = false };
                     Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
                     Polygon.Attribute.Brush = Brushes.Transparent;
                     Polygon.Attribute.Points.Add(result[0]);
@@ -1057,7 +1067,6 @@ namespace ColorVision.Template
                 default:
                     break;
             }
-
         }
 
         public List<Point> SortPolyPoints(List<Point> vPoints)
