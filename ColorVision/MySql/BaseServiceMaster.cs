@@ -154,7 +154,7 @@ namespace ColorVision.MySql
 
     public class BaseServiceMaster<T>: BaseDao where T : IBaseModel
     {
-
+        private static readonly ILog log = LogManager.GetLogger(typeof(BaseServiceMaster<T>));
         public BaseServiceMaster(string tableName, string pkField) :base(tableName, pkField)
         {
 
@@ -218,11 +218,52 @@ namespace ColorVision.MySql
                 DataRow row = d_info.NewRow();
                 d_info.Rows.Add(row);
                 Model2Row(item, row);
+                row[PKField] = DBNull.Value;
             }
-            return Save(d_info);
+            return BulkInsertAsync(d_info);
         }
 
+        public int BulkInsertAsync(DataTable dataTable)
+        {
+            int count = -1;
+            MySqlConnector.MySqlConnection connection = new MySqlConnector.MySqlConnection(MySqlControl.GetInstance().GetCurConnectionString()+ ";SslMode = none;AllowLoadLocalInfile=True");
+            dataTable.TableName = TableName;
+            using (connection)
+            {
+                var bulkCopy = new MySqlConnector.MySqlBulkCopy(connection);
+                bulkCopy.DestinationTableName = dataTable.TableName;
+                bulkCopy.ColumnMappings.AddRange(GetMySqlColumnMapping(dataTable));
+                try
+                {
 
+                    MySqlConnector.MySqlBulkCopyResult result = bulkCopy.WriteToServer(dataTable);
+                    count = result.RowsInserted;
+                    //check for problems
+                    //if (result.Warnings.Count != 0)
+                    //{
+                    //    /* handle potential data loss warnings */
+                    //}
+                }
+                catch (Exception ex)
+                {
+                    log.Error(ex);
+                }
+            }
+
+            return count;
+        }
+
+        private List<MySqlConnector.MySqlBulkCopyColumnMapping> GetMySqlColumnMapping(DataTable dataTable)
+        {
+            List<MySqlConnector.MySqlBulkCopyColumnMapping> colMappings = new List<MySqlConnector.MySqlBulkCopyColumnMapping>();
+            int i = 0;
+            foreach (DataColumn col in dataTable.Columns)
+            {
+                colMappings.Add(new MySqlConnector.MySqlBulkCopyColumnMapping(i, col.ColumnName));
+                i++;
+            }
+            return colMappings;
+        }
 
         public DataTable GetTableAll()
         {

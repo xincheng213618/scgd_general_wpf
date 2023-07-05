@@ -36,10 +36,15 @@ namespace ColorVision.MySql
         private string _ConnectSign = "未连接";
 
 
+        public string GetCurConnectionString()
+        {
+            string connStr = GetConnectionString(MySqlConfig);
+            return connStr;
+        }
 
         public bool Open()
         {
-            string connStr = $"server={MySqlConfig.Host};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database}";
+            string connStr = GetConnectionString(MySqlConfig);
             try
             {
                 log.Info($"数据库连接信息:{connStr}");
@@ -59,10 +64,16 @@ namespace ColorVision.MySql
             }
         }
 
-        public static bool TestConnect(MySqlConfig MySqlConfig)
+        public static string GetConnectionString(MySqlConfig MySqlConfig)
         {
             string connStr = $"server={MySqlConfig.Host};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};Connect Timeout=3";
+            return connStr;
+        }
+
+        public static bool TestConnect(MySqlConfig MySqlConfig)
+        {
             MySqlConnection MySqlConnection;
+            string connStr = GetConnectionString(MySqlConfig);
             try
             {
                 log.Info($"Test数据库连接信息:{connStr}");
