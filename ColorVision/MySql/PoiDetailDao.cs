@@ -86,7 +86,7 @@ namespace ColorVision.MySql
             dataTable.Columns.Add("pix_height", typeof(int));
             dataTable.Columns.Add("pix_x", typeof(int));
             dataTable.Columns.Add("pix_y", typeof(int));
-            dataTable.Columns.Add("create_date", typeof(DateTime));
+            //dataTable.Columns.Add("create_date", typeof(DateTime));
             dataTable.Columns.Add("is_enable", typeof(bool));
             dataTable.Columns.Add("is_delete", typeof(bool));
             dataTable.Columns.Add("remark", typeof(string));
@@ -132,42 +132,6 @@ namespace ColorVision.MySql
                 if (item.Remark != null) row["remark"] = item.Remark;
             }
             return row;
-        }
-
-        public void BatchSqlBulkCopy(DataTable dataTable)
-        {
-            MySqlConnection connection = new MySqlConnection(MySqlControl.GetInstance().MySqlConnection.ConnectionString);
-            using (connection)
-            {
-                var bulkCopy = new MySqlBulkCopy(connection);
-                bulkCopy.DestinationTableName = dataTable.TableName;
-                bulkCopy.ColumnMappings.AddRange(GetMySqlColumnMapping(dataTable));
-                try
-                {
-
-                    MySqlBulkCopyResult result = bulkCopy.WriteToServer(dataTable);
-                    //check for problems
-                    //if (result.Warnings.Count != 0)
-                    //{
-                    //    /* handle potential data loss warnings */
-                    //}
-                }
-                catch (Exception ex)
-                {
-                }
-            }
-        }
-
-        private List<MySqlBulkCopyColumnMapping> GetMySqlColumnMapping(DataTable dataTable)
-        {
-            List<MySqlBulkCopyColumnMapping> colMappings = new List<MySqlBulkCopyColumnMapping>();
-            int i = 0;
-            foreach (DataColumn col in dataTable.Columns)
-            {
-                colMappings.Add(new MySqlBulkCopyColumnMapping(i, col.ColumnName));
-                i++;
-            }
-            return colMappings;
         }
     }
 }
