@@ -1,6 +1,7 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.MVVM;
 using ColorVision.MySql;
+using ColorVision.Template;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,7 +14,7 @@ namespace ColorVision.SettingUp
     /// <summary>
     /// 软件配置
     /// </summary>
-    public class SoftwareConfig: ViewModelBase
+    public class SoftwareConfig
     {
         public SoftwareConfig()
         {
@@ -23,18 +24,34 @@ namespace ColorVision.SettingUp
             ProjectConfig = new ProjectConfig();
             MQTTControlLazy = new Lazy<MQTTControl>(() => MQTTControl.GetInstance());
             MySqlControlLazy = new Lazy<MySqlControl>(() => MySqlControl.GetInstance());
+            PerformanceControlLazy = new Lazy<PerformanceControl>(() => PerformanceControl.GetInstance());
+            TemplateControlLazy = new Lazy<TemplateControl>(() => TemplateControl.GetInstance());
         }
 
         public string Version { get; set; } = "0.0";
 
-        public bool IsUseMySql { get => _IsUseMySql; set { _IsUseMySql = value; NotifyPropertyChanged();} }
-        private bool _IsUseMySql = true;
+        public bool IsUseMySql { get; set; } = true;
 
 
         public bool IsUseMQTT { get; set; } = true;
 
-        public bool IsOpenStatusBar { get; set; } = true;
+        public bool IsOpenStatusBar { get; set; }
+
         public bool IsOpenSidebar { get; set; } = true;
+
+
+        [JsonIgnore]
+        readonly Lazy<PerformanceControl> PerformanceControlLazy;
+        [JsonIgnore]
+        public PerformanceControl PerformanceControl { get => PerformanceControlLazy.Value; }
+
+
+        [JsonIgnore]
+        readonly Lazy<TemplateControl> TemplateControlLazy;
+        [JsonIgnore]
+        public TemplateControl TemplateControl { get => TemplateControlLazy.Value; }
+
+        
 
 
         /// <summary>

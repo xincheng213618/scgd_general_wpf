@@ -1,4 +1,5 @@
 ﻿using ColorVision.MVVM;
+using ColorVision.MySql;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -7,24 +8,15 @@ using System.Threading.Tasks;
 
 namespace ColorVision
 {
-    public class PerformanceSetting : ViewModelBase, IDisposable
+    public class PerformanceControl : ViewModelBase, IDisposable
     {
-        public void Run()
-        {
-            try
-            {
-                ProcessThis = new PerformanceCounter("Process", "% Processor Time", Process.GetCurrentProcess().ProcessName);
-                RAM = new PerformanceCounter("Memory", "Available MBytes");
 
-                RAMThis = new PerformanceCounter("Process", "Working Set - Private", Process.GetCurrentProcess().ProcessName);
-                CPU = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-                PerformanceCounterIsOpen = true;
-            }
-            catch
-            {
-                PerformanceCounterIsOpen = false;
-            }
-        }
+
+        private static PerformanceControl _instance;
+        private static readonly object _locker = new();
+        public static PerformanceControl GetInstance() { lock (_locker) { return _instance ??= new PerformanceControl(); } }
+
+
 
         private bool PerformanceCounterIsOpen;
 
@@ -51,9 +43,24 @@ namespace ColorVision
             }    
         }
 
-        public PerformanceSetting()
+        public PerformanceControl()
         {
-            Task.Run(() => Run());
+            Task.Run(() => 
+            {
+                try
+                {
+                    ProcessThis = new PerformanceCounter("Process", "% Processor Time", Process.GetCurrentProcess().ProcessName);
+                    RAM = new PerformanceCounter("Memory", "Available MBytes");
+
+                    RAMThis = new PerformanceCounter("Process", "Working Set - Private", Process.GetCurrentProcess().ProcessName);
+                    CPU = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+                    PerformanceCounterIsOpen = true;
+                }
+                catch
+                {
+                    PerformanceCounterIsOpen = false;
+                }
+            });
             timer = new Timer(TimeRun, null, 0, UpdateSpeed);
         }
 

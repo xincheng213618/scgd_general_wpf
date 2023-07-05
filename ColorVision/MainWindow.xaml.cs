@@ -32,11 +32,7 @@ namespace ColorVision
     {
         public ImageInfo ImageInfo { get; set; } = new ImageInfo();
 
-        public PerformanceSetting PerformanceSetting { get; set; } = new PerformanceSetting();
-
         public ToolBarTop ToolBarTop { get; set; }
-
-        public MQTTControl MQTTControl { get; set; }
 
         public MainWindow()
         {
@@ -60,14 +56,14 @@ namespace ColorVision
             ToolBarTop = new ToolBarTop(Zoombox1, ImageShow);
             ToolBar1.DataContext = ToolBarTop;
             ListView1.ItemsSource = DrawingVisualLists;
-            StatusBarItem1.DataContext = PerformanceSetting;
-            StatusBarItem2.DataContext = PerformanceSetting;
             SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
 
+            StatusBarItem1.DataContext = SoftwareConfig.PerformanceControl;
+            StatusBarItem2.DataContext = SoftwareConfig.PerformanceControl;
+
             StatusBarItem3.DataContext = SoftwareConfig.ProjectConfig;
-            StatusBarMqtt.DataContext = MQTTControl.GetInstance();
-            StatusBarMysql.DataContext = MySqlControl.GetInstance();
-            MQTTControl = MQTTControl.GetInstance();
+            StatusBarMqtt.DataContext = SoftwareConfig.MQTTControl;
+            StatusBarMysql.DataContext = SoftwareConfig.MySqlControl;
 
             StatusBarGrid.DataContext = SoftwareConfig;
             MenuStatusBar.DataContext = SoftwareConfig;

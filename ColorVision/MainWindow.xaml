@@ -545,14 +545,14 @@
                 </StatusBarItem>
                 <StatusBarItem Grid.Column="1" >
                     <DockPanel>
-                        <StatusBarItem  x:Name="StatusBarItem1" d:DataContext="{d:DesignInstance  local:PerformanceSetting}"  Content="{Binding Path=MemoryThis}"/>
+                        <StatusBarItem  x:Name="StatusBarItem1" d:DataContext="{d:DesignInstance  local:PerformanceControl}"  Content="{Binding Path=MemoryThis}"/>
                         <StatusBarItem  x:Name="StatusBarMysql" d:DataContext="{d:DesignInstance mqtt:MQTTControl}">
                             <TextBlock Text="{Binding ConnectSign,StringFormat='MySql：{0}'}"  MouseLeftButtonDown="TextBlock_MouseLeftButtonDown1"/>
                         </StatusBarItem>
                         <StatusBarItem  x:Name="StatusBarMqtt" d:DataContext="{d:DesignInstance mqtt:MQTTControl}">
                             <TextBlock Text="{Binding ConnectSign,StringFormat='MQTT：{0}'}"  MouseLeftButtonDown="TextBlock_MouseLeftButtonDown"/>
                         </StatusBarItem>
-                        <StatusBarItem  x:Name="StatusBarItem2" d:DataContext="{d:DesignInstance  local:PerformanceSetting}"  Content="{Binding Time}"/>
+                        <StatusBarItem  x:Name="StatusBarItem2" d:DataContext="{d:DesignInstance  local:PerformanceControl}"  Content="{Binding Time}"/>
                     </DockPanel>
                 </StatusBarItem>
 
