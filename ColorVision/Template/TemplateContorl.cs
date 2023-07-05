@@ -224,7 +224,7 @@ namespace ColorVision.Template
             PoiParams.Clear();
             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
             {
-                List<PoiMasterModel> poiMaster = poiService.GetPoiMasterAll();
+                List<PoiMasterModel> poiMaster = poiService.GetPoiMasterAll(GlobalSetting.GetInstance().SoftwareConfig.TenantId);
                 foreach (var dbModel in poiMaster)
                 {
                     KeyValuePair<string, PoiParam> item = new KeyValuePair<string, PoiParam>(dbModel.Name ?? "default", new PoiParam(dbModel));
@@ -250,14 +250,24 @@ namespace ColorVision.Template
             }
         }
 
-        internal int AddPoi(string text)
+        internal PoiParam? AddPoiParam(string text)
         {
-            PoiMasterModel poiMaster = new PoiMasterModel();
-            poiMaster.Name = text;
+            PoiMasterModel poiMaster = new PoiMasterModel(text, GlobalSetting.GetInstance().SoftwareConfig.TenantId);
             poiService.Save(poiMaster);
-            return poiMaster.GetPK();
+            int pkId = poiMaster.GetPK();
+            if (pkId > 0 )
+            {
+               return LoadPoiParamById(pkId);
+            }
+            return null;
         }
 
+        internal PoiParam? LoadPoiParamById(int pkId)
+        {
+            PoiMasterModel poiMaster = poiService.GetPoiMasterById(pkId);
+            if (poiMaster != null) return new PoiParam(poiMaster);
+            else return null;
+        }
 
         public ObservableCollection<KeyValuePair<string, AoiParam>> AoiParams { get; set; }
         public ObservableCollection<KeyValuePair<string, CalibrationParam>> CalibrationParams { get; set; } 

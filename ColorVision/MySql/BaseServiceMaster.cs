@@ -110,7 +110,6 @@ namespace ColorVision.MySql
                     MySqlCommandBuilder builder = new MySqlCommandBuilder(dataAdapter);
                     builder.ConflictOption = ConflictOption.OverwriteChanges;
                     builder.SetAllValues = true;
-                    //dataAdapter.SelectCommand = builder.;
                     dataAdapter.UpdateCommand = builder.GetUpdateCommand(true) as MySqlCommand;
                     count = dataAdapter.Update(dt);
 
@@ -129,7 +128,10 @@ namespace ColorVision.MySql
 
         private void DataAdapter_RowUpdated(object sender, MySqlRowUpdatedEventArgs e)
         {
-            e.Row[_PKField] = e.Command.LastInsertedId;
+            if(e.Row[_PKField] == DBNull.Value)
+            {
+                e.Row[_PKField] = e.Command.LastInsertedId;
+            }
         }
 
         public DataTable selectById(int id)
@@ -193,9 +195,9 @@ namespace ColorVision.MySql
             Model2Row(item, row);
         }
 
-        public int Save(List<T> datas)
+        public int Save(List<T> datas,int tenantId)
         {
-            DeleteAll();
+            DeleteAll(tenantId);
             DataTable d_info = GetDataTable();
             CreateColumns(d_info);
             foreach (var item in datas)
@@ -253,7 +255,7 @@ namespace ColorVision.MySql
             return count;
         }
 
-        private List<MySqlConnector.MySqlBulkCopyColumnMapping> GetMySqlColumnMapping(DataTable dataTable)
+        private static List<MySqlConnector.MySqlBulkCopyColumnMapping> GetMySqlColumnMapping(DataTable dataTable)
         {
             List<MySqlConnector.MySqlBulkCopyColumnMapping> colMappings = new List<MySqlConnector.MySqlBulkCopyColumnMapping>();
             int i = 0;
@@ -265,9 +267,9 @@ namespace ColorVision.MySql
             return colMappings;
         }
 
-        public DataTable GetTableAll()
+        public DataTable GetTableAll(int tenantId)
         {
-            string sql = $"select * from {TableName} where is_delete=0";
+            string sql = $"select * from {TableName} where is_delete=0 and tenant_id={tenantId}";
             DataTable d_info = GetData(sql);
             return d_info;
         }
@@ -279,10 +281,10 @@ namespace ColorVision.MySql
             return d_info;
         }
 
-        public List<T> GetAll()
+        public List<T> GetAll(int tenantId)
         {
             List<T> list = new List<T>();
-            DataTable d_info = GetTableAll();
+            DataTable d_info = GetTableAll(tenantId);
             foreach (var item in d_info.AsEnumerable())
             {
                 T? model = GetModel(item);
@@ -329,9 +331,9 @@ namespace ColorVision.MySql
         public virtual DataTable GetDataTable(string? tableName =null) => new DataTable(tableName);
 
 
-        public int DeleteAll()
+        public int DeleteAll(int tenantId)
         {
-            string sql = $"update {TableName} set is_delete=1";
+            string sql = $"update {TableName} set is_delete=1 where tenant_id={tenantId}";
             return ExecuteNonQuery(sql);
         }
 

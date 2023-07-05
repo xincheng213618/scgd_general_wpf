@@ -11,11 +11,11 @@ namespace ColorVision.MySql
 {
     public class PoiMasterModel : IBaseModel
     {
-        public PoiMasterModel() : this("")
+        public PoiMasterModel() : this("",0)
         {
         }
 
-        public PoiMasterModel(string name)
+        public PoiMasterModel(string name,int tenantId)
         {
             Id = -1;
             Name = name;
@@ -34,6 +34,7 @@ namespace ColorVision.MySql
             CreateDate = DateTime.Now;
             IsEnable = true;
             IsDelete = false;
+            TenantId = tenantId;
         }
 
         public PoiMasterModel(PoiParam poiParam)
@@ -56,6 +57,7 @@ namespace ColorVision.MySql
             CreateDate = DateTime.Now;
             IsEnable = true;
             IsDelete = false;
+            TenantId = 0;
         }
 
 
@@ -80,6 +82,8 @@ namespace ColorVision.MySql
         public bool? IsEnable { get; set; } = true;
         public bool? IsDelete { get; set; } = false;
         public string? Remark { get; set; }
+
+        public int TenantId { get; set; }
 
         public int GetPK()
         {
@@ -129,6 +133,7 @@ namespace ColorVision.MySql
                 IsEnable = item.Field<bool?>("is_enable"),
                 IsDelete = item.Field<bool?>("is_delete"),
                 Remark = item.Field<string?>("remark"),
+                TenantId = item.Field<int>("tenant_id"),
             };
             return model;
         }
@@ -156,6 +161,7 @@ namespace ColorVision.MySql
                 //row["is_enable"] = item.IsEnable;
                 //row["is_delete"] = item.IsDelete;
                 if (item.Remark != null) row["remark"] = item.Remark;
+                row["tenant_id"] = item.TenantId;
             }
             return row;
         }
@@ -181,6 +187,7 @@ namespace ColorVision.MySql
             dataTable.Columns.Add("is_enable", typeof(bool));
             dataTable.Columns.Add("is_delete", typeof(bool));
             dataTable.Columns.Add("remark", typeof(string));
+            dataTable.Columns.Add("tenant_id", typeof(int));
             return dataTable;
         }
     }

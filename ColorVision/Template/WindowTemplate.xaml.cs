@@ -206,7 +206,7 @@ namespace ColorVision.Template
             return FileName;
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private void Button_New_Click(object sender, RoutedEventArgs e)
         {
             if (!TextBox1.Text.IsNullOrEmpty())
             {
@@ -230,8 +230,8 @@ namespace ColorVision.Template
                     case WindowTemplateType.PoiParam:
                         if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
                         {
-                            int pkId = TemplateControl.AddPoi(TextBox1.Text);
-                            if (pkId > 0) CreateNewTemplate(TemplateControl.PoiParams, TextBox1.Text, new PoiParam(pkId));
+                            PoiParam poiParam = TemplateControl.AddPoiParam(TextBox1.Text);
+                            if (poiParam != null) CreateNewTemplate(TemplateControl.PoiParams, TextBox1.Text, poiParam);
                             else MessageBox.Show("数据库创建POI模板失败");
                         }
                         else
@@ -261,7 +261,7 @@ namespace ColorVision.Template
             ListView1.ScrollIntoView(config);
         }
 
-        private void Button_Click_1(object sender, RoutedEventArgs e)
+        private void Button_Del_Click(object sender, RoutedEventArgs e)
         {
             if (ListView1.SelectedIndex > -1)
             {
@@ -312,7 +312,7 @@ namespace ColorVision.Template
             e.Handled = true;
         }
 
-        private void Button_Click_2(object sender, RoutedEventArgs e)
+        private void Button_Save_Click(object sender, RoutedEventArgs e)
         {
             TemplateControl.Save(TemplateType);
             this.Close();
