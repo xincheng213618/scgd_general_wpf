@@ -18,6 +18,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -208,7 +209,7 @@ namespace ColorVision.Template
     /// <summary>
     /// WindowFocusPoint.xaml 的交互逻辑
     /// </summary>
-    public partial class WindowFocusPoint : Window
+    public partial class WindowFocusPoint : Window, INotifyPropertyChanged
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(WindowFocusPoint));
         public enum BorderType
@@ -245,10 +246,22 @@ namespace ColorVision.Template
 
         }
 
-        public bool IsLayoutUpdated { get => _IsLayoutUpdated; set { _IsLayoutUpdated = value; if(value) UpdateVisualLayout();  } }
-        private bool _IsLayoutUpdated = true;
 
-        private void UpdateVisualLayout()
+        public event PropertyChangedEventHandler? PropertyChanged;
+        /// <summary>
+        /// 消息通知事件
+        /// </summary>
+        public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
+
+        public bool IsLayoutUpdated { get => _IsLayoutUpdated; set { _IsLayoutUpdated = value; NotifyPropertyChanged(); if (value) UpdateVisualLayout(value);  } }
+        private bool _IsLayoutUpdated = true;
+        private void Button_Click_UpdateVisualLayout(object sender, RoutedEventArgs e)
+        {
+            UpdateVisualLayout(true);
+        }
+
+        private void UpdateVisualLayout(bool IsLayoutUpdated)
         {
             foreach (var item in DefaultPoint)
             {
@@ -343,7 +356,7 @@ namespace ColorVision.Template
                 if (oldmax != Zoombox1.ContentMatrix.M11)
                 {
                     oldmax = Zoombox1.ContentMatrix.M11;
-                    UpdateVisualLayout();
+                    UpdateVisualLayout(IsLayoutUpdated);
                 }
             };
             SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
@@ -1016,6 +1029,8 @@ namespace ColorVision.Template
                 thread.Start();
             }
         }
+
+
     }
 
 }

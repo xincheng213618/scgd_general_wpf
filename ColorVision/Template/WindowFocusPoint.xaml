@@ -37,7 +37,10 @@
                         <StackPanel >
                             <GroupBox x:Name="SettingGroup" d:DataContext="{d:DesignInstance Template:WindowFocusPoint}" Header="设置" Margin="5">
                                 <StackPanel Margin="5">
-                                    <CheckBox Content="缩放重渲染" ToolTip="比较消耗性能" IsChecked="{Binding IsLayoutUpdated }"/>
+                                    <DockPanel>
+                                        <Button Content="重渲染"  ToolTip="一次"  Click="Button_Click_UpdateVisualLayout"  DockPanel.Dock="Right" IsEnabled="{Binding IsLayoutUpdated,Converter={StaticResource Boolean2BooleanReConverter}}" />
+                                        <CheckBox Content="缩放自动重渲染" ToolTip="比较消耗性能" IsChecked="{Binding IsLayoutUpdated }"/>
+                                    </DockPanel>
                                 </StackPanel>
                             </GroupBox>
                         </StackPanel>
