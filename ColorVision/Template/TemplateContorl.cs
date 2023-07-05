@@ -221,7 +221,7 @@ namespace ColorVision.Template
             return keys;
         }
 
-        public void LoadPoiParam()
+        public ObservableCollection<KeyValuePair<string, PoiParam>> LoadPoiParam()
         {
             PoiParams.Clear();
             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
@@ -238,6 +238,7 @@ namespace ColorVision.Template
                 PoiParams = IDefault(FileNamePoiParms, new PoiParam(), ref IsOldPoiParams);
             }
 
+            return PoiParams;
         }
 
         internal void LoadPoiDetailFromDB(PoiParam poiParam)
@@ -273,7 +274,7 @@ namespace ColorVision.Template
 
         internal FlowParam? AddFlowParam(string text)
         {
-            FlowModel flowMaster = new FlowModel(text, GlobalSetting.GetInstance().SoftwareConfig.TenantId);
+            FlowMasterModel flowMaster = new FlowMasterModel(text, GlobalSetting.GetInstance().SoftwareConfig.TenantId);
             flowService.Save(flowMaster);
             int pkId = flowMaster.GetPK();
             if (pkId > 0)
@@ -285,7 +286,26 @@ namespace ColorVision.Template
 
         private FlowParam? LoadFlowParamById(int pkId)
         {
-            throw new NotImplementedException();
+            return null;
+        }
+
+        internal ObservableCollection<KeyValuePair<string, FlowParam>> LoadFlowParam()
+        {
+            FlowParams.Clear();
+            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+            {
+                List<FlowMasterModel> flows = flowService.GetFlowAll(GlobalSetting.GetInstance().SoftwareConfig.TenantId);
+                foreach (var dbModel in flows)
+                {
+                    KeyValuePair<string, FlowParam> item = new KeyValuePair<string, FlowParam>(dbModel.Name ?? "default", new FlowParam(dbModel));
+                    FlowParams.Add(item);
+                }
+            }
+            else
+            {
+                FlowParams = IDefault(FileNameFlowParms, new FlowParam(), ref IsOldFlowParams);
+            }
+            return FlowParams;
         }
 
         public ObservableCollection<KeyValuePair<string, AoiParam>> AoiParams { get; set; }

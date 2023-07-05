@@ -6,16 +6,10 @@ using System.Threading.Tasks;
 
 namespace ColorVision.MySql.DAO
 {
-    public class FlowModel : IBaseModel
+    public class FlowDetailModel : IBaseModel
     {
-        public FlowModel(string text, int tenantId)
-        {
-            TenantId = tenantId;
-        }
-
         public int Id { get; set; }
-        public string? Name { get; set; }
-        public int TenantId { get; set; }
+
         public int GetPK()
         {
             return Id;
@@ -26,7 +20,11 @@ namespace ColorVision.MySql.DAO
             Id = id;
         }
     }
-    internal class FlowDao
+
+    public class FlowDetailDao : BaseModDetailDao<FlowDetailModel>
     {
+        public FlowDetailDao() : base("t_scgd_mod_param_detail", "id")
+        {
+        }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using ColorVision.MVVM;
+using ColorVision.MySql.DAO;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -34,6 +35,12 @@ namespace ColorVision.Template
     /// </summary>
     public class FlowParam : ParamBase
     {
+        public FlowParam() { }
+        public FlowParam(FlowMasterModel dbModel)
+        {
+            FileName = dbModel.Name;
+        }
+
         /// <summary>
         /// 流程文件名称
         /// </summary>
