@@ -1,6 +1,7 @@
 ﻿using ColorVision.Config;
 using ColorVision.MQTT;
-using ColorVision.MySql;
+using ColorVision.MySql.DAO;
+using ColorVision.MySql.service;
 using ColorVision.SettingUp;
 using ColorVision.Util;
 using cvColorVision;
@@ -49,6 +50,7 @@ namespace ColorVision.Template
         //private PoiMasterDao poiMasterService = new PoiMasterDao();
         //private PoiDetailDao poiDetailService = new PoiDetailDao();
         private PoiService poiService = new PoiService();
+        private FlowService flowService = new FlowService();
 
         public TemplateControl()
         {
@@ -267,6 +269,23 @@ namespace ColorVision.Template
             PoiMasterModel poiMaster = poiService.GetPoiMasterById(pkId);
             if (poiMaster != null) return new PoiParam(poiMaster);
             else return null;
+        }
+
+        internal FlowParam? AddFlowParam(string text)
+        {
+            FlowModel flowMaster = new FlowModel(text, GlobalSetting.GetInstance().SoftwareConfig.TenantId);
+            flowService.Save(flowMaster);
+            int pkId = flowMaster.GetPK();
+            if (pkId > 0)
+            {
+                return LoadFlowParamById(pkId);
+            }
+            return null;
+        }
+
+        private FlowParam? LoadFlowParamById(int pkId)
+        {
+            throw new NotImplementedException();
         }
 
         public ObservableCollection<KeyValuePair<string, AoiParam>> AoiParams { get; set; }

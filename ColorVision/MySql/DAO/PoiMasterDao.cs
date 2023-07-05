@@ -7,15 +7,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ColorVision.MySql
+namespace ColorVision.MySql.DAO
 {
     public class PoiMasterModel : IBaseModel
     {
-        public PoiMasterModel() : this("",0)
+        public PoiMasterModel() : this("", 0)
         {
         }
 
-        public PoiMasterModel(string name,int tenantId)
+        public PoiMasterModel(string name, int tenantId)
         {
             Id = -1;
             Name = name;
@@ -87,12 +87,12 @@ namespace ColorVision.MySql
 
         public int GetPK()
         {
-            return Id??-1;
+            return Id ?? -1;
         }
 
         public void SetPK(int id)
         {
-           Id = id;
+            Id = id;
         }
     }
 
@@ -100,11 +100,11 @@ namespace ColorVision.MySql
 
     internal class PoiMasterDao : BaseServiceMaster<PoiMasterModel>
     {
-        public PoiMasterDao() : base("t_scgd_cfg_poi_master","id")
+        public PoiMasterDao() : base("t_scgd_cfg_poi_master", "id")
         {
-            
+
         }
-        public override DataTable GetDataTable(string? tableName =null)
+        public override DataTable GetDataTable(string? tableName = null)
         {
             DataTable dataTable = base.GetDataTable();
             return CreateColumns(dataTable);
@@ -127,7 +127,7 @@ namespace ColorVision.MySql
                 RightBottomY = item.Field<int?>("right_bottom_y"),
                 LeftBottomX = item.Field<int?>("left_bottom_x"),
                 LeftBottomY = item.Field<int?>("left_bottom_y"),
-                IsDynamics =item.Field<bool?>("dynamics"),
+                IsDynamics = item.Field<bool?>("dynamics"),
                 CfgJson = item.Field<string?>("cfg_json"),
                 CreateDate = item.Field<DateTime?>("create_date"),
                 IsEnable = item.Field<bool?>("is_enable"),

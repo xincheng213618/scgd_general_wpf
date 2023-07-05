@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CA1707
 using ColorVision.Extension;
 using ColorVision.MySql;
+using ColorVision.MySql.DAO;
 using ColorVision.SettingUp;
 using ColorVision.Util;
 using cvColorVision;
@@ -230,7 +231,7 @@ namespace ColorVision.Template
                     case WindowTemplateType.PoiParam:
                         if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
                         {
-                            PoiParam poiParam = TemplateControl.AddPoiParam(TextBox1.Text);
+                            PoiParam? poiParam = TemplateControl.AddPoiParam(TextBox1.Text);
                             if (poiParam != null) CreateNewTemplate(TemplateControl.PoiParams, TextBox1.Text, poiParam);
                             else MessageBox.Show("数据库创建POI模板失败");
                         }
@@ -240,7 +241,14 @@ namespace ColorVision.Template
                         }
                         break;
                     case WindowTemplateType.FlowParam:
-                        CreateNewTemplate(TemplateControl.FlowParams, TextBox1.Text, new FlowParam() {FileName = TextBox1.Text });
+                        if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+                        {
+                            FlowParam? flowParam = TemplateControl.AddFlowParam(TextBox1.Text);
+                            if (flowParam != null) CreateNewTemplate(TemplateControl.FlowParams, TextBox1.Text, flowParam);
+                            else MessageBox.Show("数据库创建流程模板失败");
+                        }
+                        else
+                            CreateNewTemplate(TemplateControl.FlowParams, TextBox1.Text, new FlowParam() {FileName = TextBox1.Text });
                         break;
 
                 }

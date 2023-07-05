@@ -1,4 +1,5 @@
-﻿using ColorVision.Template;
+﻿using ColorVision.MySql.DAO;
+using ColorVision.Template;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Documents;
 
-namespace ColorVision.MySql
+namespace ColorVision.MySql.service
 {
     public class PoiService
     {
@@ -32,7 +33,7 @@ namespace ColorVision.MySql
             PoiMasterModel poiMasterModel = new PoiMasterModel(poiParam);
             poiMaster.Save(poiMasterModel);
 
-            List< PoiDetailModel > poiDetails = new List< PoiDetailModel >();
+            List<PoiDetailModel> poiDetails = new List<PoiDetailModel>();
             foreach (PoiParamData pt in poiParam.PoiPoints)
             {
                 PoiDetailModel poiDetail = new PoiDetailModel(poiParam.ID, pt);

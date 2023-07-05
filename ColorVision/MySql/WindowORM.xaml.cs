@@ -1,4 +1,5 @@
 ﻿using ColorVision.MySql;
+using ColorVision.MySql.DAO;
 using ColorVision.SettingUp;
 using ColorVision.Template;
 using MySql.Data.MySqlClient;

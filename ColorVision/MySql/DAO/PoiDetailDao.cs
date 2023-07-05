@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ColorVision.MySql
+namespace ColorVision.MySql.DAO
 {
     public class PoiDetailModel : IBaseModel
     {
@@ -63,14 +63,14 @@ namespace ColorVision.MySql
 
         public void SetPK(int id)
         {
-            Id =id;
+            Id = id;
         }
     }
 
 
     public class PoiDetailDao : BaseServiceMaster<PoiDetailModel>
     {
-        public PoiDetailDao() : base("t_scgd_cfg_poi_detail","id")
+        public PoiDetailDao() : base("t_scgd_cfg_poi_detail", "id")
         {
         }
 
