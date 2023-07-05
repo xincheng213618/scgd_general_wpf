@@ -1,6 +1,7 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.MVVM;
 using ColorVision.MySql;
+using ColorVision.Template;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,6 +24,8 @@ namespace ColorVision.SettingUp
             ProjectConfig = new ProjectConfig();
             MQTTControlLazy = new Lazy<MQTTControl>(() => MQTTControl.GetInstance());
             MySqlControlLazy = new Lazy<MySqlControl>(() => MySqlControl.GetInstance());
+            PerformanceControlLazy = new Lazy<PerformanceControl>(() => PerformanceControl.GetInstance());
+            TemplateControlLazy = new Lazy<TemplateControl>(() => TemplateControl.GetInstance());
         }
 
         public string Version { get; set; } = "0.0";
@@ -35,6 +38,20 @@ namespace ColorVision.SettingUp
         public bool IsOpenStatusBar { get; set; }
 
         public bool IsOpenSidebar { get; set; } = true;
+
+
+        [JsonIgnore]
+        readonly Lazy<PerformanceControl> PerformanceControlLazy;
+        [JsonIgnore]
+        public PerformanceControl PerformanceControl { get => PerformanceControlLazy.Value; }
+
+
+        [JsonIgnore]
+        readonly Lazy<TemplateControl> TemplateControlLazy;
+        [JsonIgnore]
+        public TemplateControl TemplateControl { get => TemplateControlLazy.Value; }
+
+        
 
 
         /// <summary>

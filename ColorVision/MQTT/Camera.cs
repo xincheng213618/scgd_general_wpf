@@ -68,9 +68,7 @@ namespace ColorVision.MQTT
 
     public class MQTTCamera :BaseService
     {
-
         public event MQTTCameraFileHandler FileHandler;
-
         public event EventHandler InitCameraSuccess;
         public event EventHandler OpenCameraSuccess;
         public event EventHandler CloseCameraSuccess;
