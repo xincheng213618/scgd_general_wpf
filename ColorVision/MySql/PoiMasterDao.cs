@@ -60,12 +60,12 @@ namespace ColorVision.MySql
 
 
 
-        public int Id { get; set; }
-        public string Name { get; set; }
+        public int? Id { get; set; }
+        public string? Name { get; set; }
 
-        public int Type { get; set; }
-        public int Width { get; set; }
-        public int Height { get; set; }
+        public int? Type { get; set; }
+        public int? Width { get; set; }
+        public int? Height { get; set; }
         public int? LeftTopX { get; set; }
         public int? LeftTopY { get; set; }
         public int? RightTopX { get; set; }
@@ -83,7 +83,7 @@ namespace ColorVision.MySql
 
         public int GetPK()
         {
-            return Id;
+            return Id??-1;
         }
 
         public void SetPK(int id)
@@ -110,11 +110,11 @@ namespace ColorVision.MySql
         {
             PoiMasterModel model = new PoiMasterModel
             {
-                Id = item.Field<int>("id"),
-                Name = item.Field<string>("name"),
+                Id = item.Field<int?>("id"),
+                Name = item.Field<string?>("name"),
                 Type = item.Field<sbyte>("type"),
-                Width = item.Field<int>("width"),
-                Height = item.Field<int>("height"),
+                Width = item.Field<int?>("width"),
+                Height = item.Field<int?>("height"),
                 LeftTopX = item.Field<int?>("left_top_x"),
                 LeftTopY = item.Field<int?>("left_top_y"),
                 RightTopX = item.Field<int?>("right_top_x"),

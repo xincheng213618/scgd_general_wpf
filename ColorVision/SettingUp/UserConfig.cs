@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ColorVision.MVVM;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,8 +7,32 @@ using System.Threading.Tasks;
 
 namespace ColorVision.SettingUp
 {
-    public class UserConfig
+    public class UserConfig:ViewModelBase
     {
+        /// <summary>
+        /// 账号
+        /// </summary>
+        public string UserName { get => _UserName; set { _UserName = value; NotifyPropertyChanged(); } }
+        private string _UserName = string.Empty;
+
+        /// <summary>
+        /// 密码
+        /// </summary>
+        public string UserPwd { get => _UserPwd; set { _UserPwd = value; NotifyPropertyChanged(); } }
+        private string _UserPwd = string.Empty;
+
+
+
+        public PerMissionMode PerMissionMode { get => _PerMissionMode; set { _PerMissionMode = value; NotifyPropertyChanged(); } }
+        private PerMissionMode _PerMissionMode;
+
 
     }
+
+    public enum PerMissionMode
+    {
+        Administrator,
+        User
+    }
 }
+

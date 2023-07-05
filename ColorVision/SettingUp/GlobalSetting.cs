@@ -35,7 +35,7 @@ namespace ColorVision.SettingUp
                 {
                     config.MySqlConfig.UserPwd = AESUtil.AESDecrypt(config.MySqlConfig.UserPwd, "ColorVision", "ColorVision");
                     config.MQTTConfig.UserPwd = AESUtil.AESDecrypt(config.MQTTConfig.UserPwd, "ColorVision", "ColorVision");
-
+                    config.UserConfig.UserPwd = AESUtil.AESDecrypt(config.UserConfig.UserPwd, "ColorVision", "ColorVision");
                     return config;
                 }
                 else
@@ -59,14 +59,17 @@ namespace ColorVision.SettingUp
 
         public void SaveSoftwareConfig()
         {
-            string Temp = SoftwareConfig.MySqlConfig.UserPwd;
+            string Temp0 = SoftwareConfig.MySqlConfig.UserPwd;
             string Temp1 = SoftwareConfig.MQTTConfig.UserPwd;
+            string Temp2 = SoftwareConfig.UserConfig.UserPwd;
 
             SoftwareConfig.MySqlConfig.UserPwd = AESUtil.AESEncrypt(SoftwareConfig.MySqlConfig.UserPwd, "ColorVision", "ColorVision");
             SoftwareConfig.MQTTConfig.UserPwd = AESUtil.AESEncrypt(SoftwareConfig.MQTTConfig.UserPwd, "ColorVision", "ColorVision");
+            SoftwareConfig.UserConfig.UserPwd = AESUtil.AESDecrypt(SoftwareConfig.UserConfig.UserPwd, "ColorVision", "ColorVision");
             WriteConfig(GlobalConst.SoftwareConfigFileName, SoftwareConfig);
-            SoftwareConfig.MySqlConfig.UserPwd = Temp;
+            SoftwareConfig.MySqlConfig.UserPwd = Temp0;
             SoftwareConfig.MQTTConfig.UserPwd = Temp1;
+            SoftwareConfig.UserConfig.UserPwd = Temp2;
         }
 
         private static T? ReadConfig<T>(string fileName)

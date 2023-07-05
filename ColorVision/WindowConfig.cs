@@ -8,9 +8,7 @@ namespace ColorVision
     public class WindowConfig
     {
         private static string ConfigPath = Environment.CurrentDirectory + "\\config\\config.ini";
-
         public static bool IsExist { get => File.Exists(ConfigPath); }
-
         public static ImageSource? Icon
         {
             get

@@ -37,6 +37,11 @@ namespace ColorVision
         [Category("DrawingVisual"), DisplayName("是否显示")]
         public bool IsShow { get => _IsShow; set { _IsShow = value; NotifyPropertyChanged(); } }
 
+        private Pen _Pen;
+
+        [Category("DrawingVisual"), DisplayName("笔刷"), BrowsableAttribute(false)]
+        public Pen Pen { get => _Pen; set { _Pen = value; NotifyPropertyChanged(); } }
+
     }
 
 
@@ -53,11 +58,6 @@ namespace ColorVision
 
         [Category("DrawingVisualCircle"), DisplayName("颜色")]
         public Brush Brush { get => _Brush; set { _Brush = value; NotifyPropertyChanged(); } }
-
-        private Pen _Pen;
-
-        [Category("DrawingVisualCircle"), DisplayName("笔刷"), BrowsableAttribute(false)]
-        public Pen Pen { get => _Pen; set { _Pen = value; NotifyPropertyChanged(); } }
 
         private Point _Center;
 
@@ -76,10 +76,6 @@ namespace ColorVision
 
         [Category("RectangleAttribute"), DisplayName("颜色")]
         public Brush Brush { get => _Brush; set { _Brush = value; NotifyPropertyChanged(); } }
-
-        private Pen _Pen;
-        [Category("DrawingVisualCircle"), DisplayName("笔刷"), BrowsableAttribute(false)]
-        public Pen Pen { get => _Pen; set { _Pen = value; NotifyPropertyChanged(); } }
 
         private Rect _Rect;
 
@@ -137,9 +133,12 @@ namespace ColorVision
             dc.DrawEllipse(Attribute.Brush, Attribute.Pen, Attribute.Center, Attribute.Radius, Attribute.Radius);
         }
     }
+    public interface IDrawingVisualDatum
+    {
+        public abstract DrawAttributeBase GetAttribute();
+    }
 
-
-    public class DrawingVisualDatumCircle: DrawingVisualBase
+    public class DrawingVisualDatumCircle: DrawingVisualBase, IDrawingVisualDatum
     {
         public CircleAttribute Attribute { get; set; }
         public DrawAttributeBase GetAttribute() => Attribute;
@@ -189,7 +188,7 @@ namespace ColorVision
     }
 
 
-    public class DrawingVisualDatumRectangle: DrawingVisualBase
+    public class DrawingVisualDatumRectangle: DrawingVisualBase, IDrawingVisualDatum
     {
             public RectangleAttribute Attribute { get; set; }
             public DrawAttributeBase GetAttribute() => Attribute;
@@ -239,11 +238,6 @@ namespace ColorVision
 
         [Category("RectangleAttribute"), DisplayName("颜色")]
         public Brush Brush { get => _Brush; set { _Brush = value; NotifyPropertyChanged(); } }
-
-        private Pen _Pen;
-
-        [Category("RectangleAttribute"), DisplayName("笔刷")]
-        public Pen Pen { get => _Pen; set { _Pen = value; NotifyPropertyChanged(); } }
 
         private List<Point> _Points;
         public  List<Point> Points { get => _Points; set { _Points = value; NotifyPropertyChanged(); } }

@@ -60,10 +60,11 @@ namespace ColorVision
     /// </summary>
     public partial class NewCreatWindow : Window
     {
-        public NewCreatViewMode newCreatViewMode = new NewCreatViewMode();
+        public NewCreatViewMode newCreatViewMode { get; set; }
         public NewCreatWindow()
         {
             InitializeComponent();
+            newCreatViewMode = new NewCreatViewMode();
             this.DataContext = newCreatViewMode;
         }
 
@@ -82,7 +83,7 @@ namespace ColorVision
                 newCreatViewMode.DirectoryPath = dialog.SelectedPath;
             }
         }
-        public bool IsCreate = false;
+        public bool IsCreate { get; set; }
 
         private void Button_Close_Click(object sender, RoutedEventArgs e)
         {

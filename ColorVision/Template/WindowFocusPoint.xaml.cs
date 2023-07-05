@@ -2,6 +2,7 @@
 using ColorVision.MQTT;
 using ColorVision.MVVM;
 using ColorVision.MySql;
+using ColorVision.SettingUp;
 using ColorVision.Template;
 using ColorVision.Util;
 using cvColorVision;
@@ -53,25 +54,37 @@ namespace ColorVision.Template
         }
         public PoiParam(PoiMasterModel dbModel)
         {
-            this._ID = dbModel.Id;
-            this._PoiName = dbModel.Name;
-            this._Width = dbModel.Width;
-            this._Height = dbModel.Height;
-            this._Type = dbModel.Type;
-            this._CfgJson = dbModel.CfgJson;
-            this.DatumAreaPoints.X1X = (int)dbModel.LeftTopX;
-            this.DatumAreaPoints.X1Y = (int)dbModel.LeftTopY;
-            this.DatumAreaPoints.X2X = (int)dbModel.RightTopX;
-            this.DatumAreaPoints.X2Y = (int)dbModel.RightTopY;
-            this.DatumAreaPoints.X3X = (int)dbModel.RightBottomX;
-            this.DatumAreaPoints.X3Y = (int)dbModel.RightBottomY;
-            this.DatumAreaPoints.X4X = (int)dbModel.LeftBottomX;
-            this.DatumAreaPoints.X4Y = (int)dbModel.LeftBottomY;
+            this.ID = dbModel.Id ?? -1;
+            this.PoiName = dbModel.Name ?? string.Empty;
+            this.Width = dbModel.Width ?? 0;
+            this.Height = dbModel.Height ?? 0;
+            this.Type = dbModel.Type ?? 0;
+            this.CfgJson = dbModel.CfgJson??string.Empty;
+            this.DatumAreaPoints.X1X = dbModel.LeftTopX ?? 0;
+            this.DatumAreaPoints.X1Y = dbModel.LeftTopY ?? 0;
+            this.DatumAreaPoints.X2X = dbModel.RightTopX ?? 0;
+            this.DatumAreaPoints.X2Y = dbModel.RightTopY ?? 0;
+            this.DatumAreaPoints.X3X = dbModel.RightBottomX ?? 0;
+            this.DatumAreaPoints.X3Y = dbModel.RightBottomY ?? 0;
+            this.DatumAreaPoints.X4X = dbModel.LeftBottomX ?? 0;
+            this.DatumAreaPoints.X4Y = dbModel.LeftBottomY ?? 0;
         }
 
-        public string CfgJson { get { return _CfgJson; } set { _CfgJson = value; } }
-        private string _CfgJson;
-        public string PoiName { get { return _PoiName; } set { _PoiName = value; } }
+        public string CfgJson {
+            get => JsonConvert.SerializeObject(DatumAreaPoints);
+            set
+            {
+                if (string.IsNullOrEmpty(value))
+                {
+                    DatumAreaPoints = new DatumAreaPoints();
+                    return;
+                }
+                DatumAreaPoints = JsonConvert.DeserializeObject<DatumAreaPoints>(value) ?? new DatumAreaPoints();
+            }
+        }
+
+
+        public string PoiName { get { return _PoiName; } set { _PoiName = value; NotifyPropertyChanged(); } }
         private string _PoiName;
         public int ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
         private int _ID;
@@ -109,46 +122,30 @@ namespace ColorVision.Template
         Mask = 2
     }
 
-    public enum DatumAreaTypes
-    {
-        Circle = 0,
-        Rect = 1,
-        Mask = 2
-    }
-
     public class PoiParamData
     {
         public PoiParamData(PoiDetailModel dbModel)
         {
             ID = dbModel.Id;
-            Name = dbModel.Name;
-            switch (dbModel.Type)
+            Name = dbModel.Name ?? dbModel.Id.ToString();
+            PointType = dbModel.Type switch
             {
-                case 0:
-                    PointType = RiPointTypes.Circle; break;
-                case 1:
-                    PointType = RiPointTypes.Rect; break;
-                case 2:
-                    PointType = RiPointTypes.Mask; break;
-                default:
-                    PointType = RiPointTypes.Circle; break;
-            }
-            PixX = (double)dbModel.PixX;
-            PixY = (double)dbModel.PixY;
-            PixWidth = (double)dbModel.PixWidth;
-            PixHeight = (double)dbModel.PixHeight;
+                0 => RiPointTypes.Circle,
+                1 => RiPointTypes.Rect,
+                2 => RiPointTypes.Mask,
+                _ => RiPointTypes.Circle,
+            };
+            PixX = dbModel.PixX ?? 0;
+            PixY = dbModel.PixY ?? 0;
+            PixWidth = dbModel.PixWidth ?? 0;
+            PixHeight = dbModel.PixHeight ?? 0;
         }
 
         public PoiParamData()
         {
         }
 
-        /// <summary>
-        /// 数据库ID
-        /// </summary>
-        [JsonIgnore()]
-        public int Pid { get; set; }
-        public int  ID { set; get; }
+        public int ID { set; get; }
 
         public string Name { set; get; }
         public RiPointTypes PointType { set; get; }
@@ -156,24 +153,6 @@ namespace ColorVision.Template
         public double PixY { set; get; }
         public double PixWidth { set; get; }
         public double PixHeight { set; get; }
-    }
-
-
-    public struct PoiParamView
-    {
-        public Point X1 { set; get; }
-        public Point X2 { set; get; }
-        public Point X3 { set; get; }
-        public Point X4 { set; get; }
-        public Point Center { set; get; }
-
-        public Point DatumArea1 { set; get; }
-        public Point DatumArea2 { set; get; }
-        public Point DatumArea3 { set; get; }
-        public Point DatumArea4 { set; get; }
-
-        public DatumAreaTypes areaType { set; get; }
-
     }
 
     public class DatumAreaPoints:ViewModelBase
@@ -204,6 +183,26 @@ namespace ColorVision.Template
         public Point X3 { get; set; } = new Point() { X = 300, Y = 300 };
         public Point X4 { get; set; } = new Point() { X = 100, Y = 300 };
         public Point Center { get; set; } = new Point() { X = 200, Y = 200 };
+
+        [JsonIgnore]
+        public bool IsAreaCircle { get => PointType == RiPointTypes.Circle;set { if (value) PointType = RiPointTypes.Circle;  } }
+        [JsonIgnore]
+        public bool IsAreaRect { get => PointType == RiPointTypes.Rect; set { if (value) PointType = RiPointTypes.Rect; } }
+        [JsonIgnore]
+        public bool IsAreaMask { get => PointType == RiPointTypes.Mask; set { if (value) PointType = RiPointTypes.Rect; } }
+
+        public RiPointTypes PointType { set; get; }
+
+        public int AreaCircleRadius { get; set; } = 100;
+
+        public int AreaCircleNum { get; set; } = 6;
+        public int AreaCircleAngle { get; set; }
+
+        public int AreaRectWidth { get; set; } = 200;
+        public int AreaRectHeight { get; set; } = 200;
+        public int AreaRectRow { get; set; } = 3;
+        public int AreaRectCol { get; set; } = 3;
+
     }
 
     /// <summary>
@@ -223,7 +222,7 @@ namespace ColorVision.Template
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
 
         DatumAreaPoints DatumAreaPoints { get; set; } = new DatumAreaPoints();
-
+        SoftwareConfig SoftwareConfig { get; set; }
         public WindowFocusPoint()
         {
             InitializeComponent();
@@ -243,6 +242,7 @@ namespace ColorVision.Template
             ListView1.ItemsSource = DrawingVisualLists;
             StackPanelDatumAreaPoints.DataContext = DatumAreaPoints;
             this.DataContext = PoiParam;
+
         }
 
         public bool IsLayoutUpdated { get => _IsLayoutUpdated; set { _IsLayoutUpdated = value; if(value) UpdateVisualLayout();  } }
@@ -258,9 +258,9 @@ namespace ColorVision.Template
                 }
             }
 
-            if (drawingVisualDatum != null && drawingVisualDatum is DrawingVisualDatumCircle dw)
+            if (drawingVisualDatum != null && drawingVisualDatum is IDrawingVisualDatum dw)
             {
-                dw.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
+                dw.GetAttribute().Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
             }
 
             if (IsLayoutUpdated)
@@ -346,21 +346,20 @@ namespace ColorVision.Template
                     UpdateVisualLayout();
                 }
             };
+            SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
 
             if (PoiParam.Height != 0 && PoiParam.Width != 0)
             {
                 WaitControl.Visibility = Visibility.Visible;
                 WaitControlProgressBar.Visibility = Visibility.Visible;
                 WaitControlProgressBar.Value = 0;
-                await Task.Delay(200);
-                LoadPoiFromDb(PoiParam);
+                await Task.Delay(100);
+                if(SoftwareConfig.IsUseMySql)
+                    TemplateControl.GetInstance().LoadPoiDetailFromDB(PoiParam);
                 WaitControlProgressBar.Value = 10;
 
-                if (PoiParam.PoiPoints.Count > 100)
-                {
+                if (PoiParam.PoiPoints.Count > 500)
                     IsLayoutUpdated = false;
-
-                }
 
                 CreateImage(PoiParam.Width, PoiParam.Height, System.Windows.Media.Colors.White,false);
                 WaitControlProgressBar.Value = 20;
@@ -372,7 +371,6 @@ namespace ColorVision.Template
                 PoiParam.Width = 400;
                 PoiParam.Height = 300;
             }
-
             this.Closed += (s, e) =>
             {
                 PoiParam.PoiPoints.Clear();
@@ -409,17 +407,15 @@ namespace ColorVision.Template
                         PoiParam.PoiPoints.Add(poiParamData);
                     }
                 }
+
+                if (SoftwareConfig.IsUseMySql)
+                {
+                    new PoiMasterDao().Save(new PoiMasterModel(PoiParam) { Name = PoiParam.PoiName });
+                }
             };
 
             SettingGroup.DataContext = this;
 
-        }
-
-        private void LoadPoiFromDb(PoiParam poiParam)
-        {
-            log.Debug("LoadPoi begin");
-            TemplateControl.GetInstance().LoadPoiDetailFromDB(poiParam);
-            log.Debug("LoadPoi end");
         }
 
         private void button1_Click(object sender, RoutedEventArgs e)
@@ -500,15 +496,14 @@ namespace ColorVision.Template
         private async void PoiParamToDrawingVisual(PoiParam poiParam)
         {
             int i = 0;
-
-
+            var len =  1 / Zoombox1.ContentMatrix.M11;
             foreach (var item in poiParam.PoiPoints)
             {
                 i++;
                 if (i % 50 == 0)
                 {
                     WaitControlProgressBar.Value = 20 + i * 79 / poiParam.PoiPoints.Count;
-                    //await Task.Delay(10);
+                    await Task.Delay(1);
                 }
                 switch (item.PointType)
                 {
@@ -517,7 +512,7 @@ namespace ColorVision.Template
                         drawingVisualCircle.Attribute.Center = new Point(item.PixX, item.PixY);
                         drawingVisualCircle.Attribute.Radius = item.PixWidth;
                         drawingVisualCircle.Attribute.Brush = Brushes.Transparent;
-                        drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                        drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red, len);
                         drawingVisualCircle.Attribute.ID = item.ID;
                         drawingVisualCircle.Attribute.Name = item.Name;
                         drawingVisualCircle.Render();
@@ -527,7 +522,7 @@ namespace ColorVision.Template
                         DrawingVisualRectangle drawingVisualRectangle = new DrawingVisualRectangle();
                         drawingVisualRectangle.Attribute.Rect = new Rect(item.PixX, item.PixY, item.PixWidth, item.PixHeight);
                         drawingVisualRectangle.Attribute.Brush = Brushes.Transparent;
-                        drawingVisualRectangle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                        drawingVisualRectangle.Attribute.Pen = new Pen(Brushes.Red, len);
                         drawingVisualRectangle.Attribute.ID = item.ID;
                         drawingVisualRectangle.Attribute.Name = item.Name;
                         drawingVisualRectangle.Render();
@@ -615,7 +610,7 @@ namespace ColorVision.Template
             {
                 DrawingVisualDatumCircle drawingVisual = new DrawingVisualDatumCircle();
                 drawingVisual.Attribute.Center = Points[i];
-                drawingVisual.Attribute.Radius = 5;
+                drawingVisual.Attribute.Radius = 5 / Zoombox1.ContentMatrix.M11;
                 drawingVisual.Attribute.Brush = Brushes.Blue;
                 drawingVisual.Attribute.Pen = new Pen(Brushes.Blue, 2);
                 drawingVisual.Attribute.ID = i + 1;
@@ -944,7 +939,7 @@ namespace ColorVision.Template
                 drawingVisual.Attribute.Center = PoiParam.DatumAreaPoints.Center;
                 drawingVisual.Attribute.Radius = Radius;
                 drawingVisual.Attribute.Brush = Brushes.Transparent;
-                drawingVisual.Attribute.Pen = new Pen(Brushes.Blue, 2);
+                drawingVisual.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
                 drawingVisual.Render();
                 drawingVisualDatum = drawingVisual;
             }
@@ -959,7 +954,7 @@ namespace ColorVision.Template
                 drawingVisualDatumRectangle.Attribute.Rect = new Rect(PoiParam.DatumAreaPoints.Center - new Vector((int)(Width/2), (int)(Height/2)), (PoiParam.DatumAreaPoints.Center + new Vector((int)(Width / 2), (int)(Height / 2))));
                 drawingVisualDatumRectangle.Attribute.Brush = Brushes.Transparent;
 
-                drawingVisualDatumRectangle.Attribute.Pen = new Pen(Brushes.Blue, 2);
+                drawingVisualDatumRectangle.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
                 drawingVisualDatumRectangle.Render();
                 drawingVisualDatum = drawingVisualDatumRectangle;
             }
@@ -968,55 +963,58 @@ namespace ColorVision.Template
 
         }
 
-        private PoiParamView GetPoiJson()
-        {
-            PoiParamView result = new PoiParamView();
-            result.X1 = DatumAreaPoints.X1;
-            result.X2 = DatumAreaPoints.X2;
-            result.X3 = DatumAreaPoints.X3;
-            result.X4 = DatumAreaPoints.X4;
-            result.Center = DatumAreaPoints.Center;
-            return result;
-        }
 
         private void button_save_Click(object sender, RoutedEventArgs e)
         {
-            PoiParam.PoiPoints.Clear();
-            foreach (var item in DrawingVisualLists)
+            if (SoftwareConfig.IsUseMySql)
             {
-                DrawAttributeBase drawAttributeBase = item.GetAttribute();
-                if (drawAttributeBase is CircleAttribute circle)
+                PoiParam.PoiPoints.Clear();
+                foreach (var item in DrawingVisualLists)
                 {
-                    PoiParamData poiParamData = new PoiParamData()
+                    DrawAttributeBase drawAttributeBase = item.GetAttribute();
+                    if (drawAttributeBase is CircleAttribute circle)
                     {
-                        ID = circle.ID,
-                        Name = circle.Name,
-                        PointType = RiPointTypes.Circle,
-                        PixX = circle.Center.X,
-                        PixY = circle.Center.Y,
-                        PixWidth = circle.Radius,
-                        PixHeight = circle.Radius,
-                    };
-                    PoiParam.PoiPoints.Add(poiParamData);
+                        PoiParamData poiParamData = new PoiParamData()
+                        {
+                            ID = circle.ID,
+                            Name = circle.Name,
+                            PointType = RiPointTypes.Circle,
+                            PixX = circle.Center.X,
+                            PixY = circle.Center.Y,
+                            PixWidth = circle.Radius,
+                            PixHeight = circle.Radius,
+                        };
+                        PoiParam.PoiPoints.Add(poiParamData);
 
-                }
-                else if (drawAttributeBase is RectangleAttribute rectangle)
-                {
-                    PoiParamData poiParamData = new PoiParamData()
+                    }
+                    else if (drawAttributeBase is RectangleAttribute rectangle)
                     {
-                        ID = rectangle.ID,
-                        Name = rectangle.Name,
-                        PointType = RiPointTypes.Rect,
-                        PixX = rectangle.Rect.X,
-                        PixY = rectangle.Rect.Y,
-                        PixWidth = rectangle.Rect.Width,
-                        PixHeight = rectangle.Rect.Height,
-                    };
-                    PoiParam.PoiPoints.Add(poiParamData);
+                        PoiParamData poiParamData = new PoiParamData()
+                        {
+                            ID = rectangle.ID,
+                            Name = rectangle.Name,
+                            PointType = RiPointTypes.Rect,
+                            PixX = rectangle.Rect.X,
+                            PixY = rectangle.Rect.Y,
+                            PixWidth = rectangle.Rect.Width,
+                            PixHeight = rectangle.Rect.Height,
+                        };
+                        PoiParam.PoiPoints.Add(poiParamData);
+                    }
                 }
+                WaitControl.Visibility = Visibility.Visible;
+                WaitControlProgressBar.Visibility = Visibility.Collapsed;
+                WaitControlText.Text = "数据正在保存";
+                Thread thread = new Thread(() =>
+                {
+                    TemplateControl.GetInstance().SavePOI2DB(PoiParam);
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        WaitControl.Visibility = Visibility.Collapsed;
+                    });
+                });
+                thread.Start();
             }
-            PoiParam.CfgJson = JsonConvert.SerializeObject(GetPoiJson());
-            TemplateControl.GetInstance().SavePOI2DB(PoiParam);
         }
     }
 

@@ -4,6 +4,7 @@ using ColorVision.MVVM;
 using ColorVision.MySql;
 using ColorVision.SettingUp;
 using ColorVision.Template;
+using Microsoft.VisualBasic.Logging;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -61,14 +62,16 @@ namespace ColorVision
             ListView1.ItemsSource = DrawingVisualLists;
             StatusBarItem1.DataContext = PerformanceSetting;
             StatusBarItem2.DataContext = PerformanceSetting;
-            StatusBarItem3.DataContext = GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig;
+            SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
+
+            StatusBarItem3.DataContext = SoftwareConfig.ProjectConfig;
             StatusBarMqtt.DataContext = MQTTControl.GetInstance();
             StatusBarMysql.DataContext = MySqlControl.GetInstance();
             MQTTControl = MQTTControl.GetInstance();
 
-           
-
-
+            StatusBarGrid.DataContext = SoftwareConfig;
+            MenuStatusBar.DataContext = SoftwareConfig;
+            SiderBarGrid.DataContext = SoftwareConfig;
         }
 
 
@@ -91,7 +94,6 @@ namespace ColorVision
         {
             if (filePath != null && File.Exists(filePath))
             {
-                Log.LogWrite(filePath);
                 BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
 
                 ImageShow.Source = bitmapImage;
@@ -933,37 +935,7 @@ namespace ColorVision
             new MySqlConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
-        private void MenuItem_ProjectNew_Click(object sender, RoutedEventArgs e)
-        {
-            NewCreatWindow newCreatWindow = new NewCreatWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };    
-            newCreatWindow.Closed += delegate
-            {
-                if (newCreatWindow.IsCreate)
-                {
-                    string SolutionDirectoryPath = newCreatWindow.newCreatViewMode.DirectoryPath + "\\" + newCreatWindow.newCreatViewMode.Name;
-                    GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectName = SolutionDirectoryPath;
-                }
-            };
-            newCreatWindow.ShowDialog();
-            
-        }
 
-        private void TextBlock_MouseLeftButtonDown2(object sender, MouseButtonEventArgs e)
-        {
-            //NewCreatWindow newCreatWindow = new NewCreatWindow() { Owner = this,WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            //newCreatWindow.Closed += delegate
-            //{
-            //    if (newCreatWindow.IsCreate)
-            //    {
-            //        string SolutionDirectoryPath = newCreatWindow.newCreatViewMode.DirectoryPath + "\\" + newCreatWindow.newCreatViewMode.Name;
-            //        GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectName = SolutionDirectoryPath;
-            //    }
-            //};
-            //newCreatWindow.ShowDialog();
-
-            System.Diagnostics.Process.Start("explorer.exe", $"{GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectName}");
-
-        }
     }
 
 

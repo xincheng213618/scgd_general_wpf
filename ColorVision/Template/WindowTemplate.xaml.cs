@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CA1707
 using ColorVision.Extension;
 using ColorVision.MySql;
+using ColorVision.SettingUp;
 using ColorVision.Util;
 using cvColorVision;
 using OpenCvSharp.Detail;
@@ -42,7 +43,6 @@ namespace ColorVision.Template
         LedReuslt,
         SxParm,
         PoiParam,
-        LedParam,
         FlowParam
     }
 
@@ -56,16 +56,16 @@ namespace ColorVision.Template
     public partial class WindowTemplate : Window
     {
         WindowTemplateType TemplateType { get; set; }
-
+        TemplateControl TemplateControl { get;set; }
         public WindowTemplate(WindowTemplateType windowTemplateType)
         {
             TemplateType = windowTemplateType;
+            TemplateControl = TemplateControl.GetInstance();
             InitializeComponent();
 
 
             switch (TemplateType)
             {
-                case WindowTemplateType.LedParam:
                 case WindowTemplateType.FlowParam:
                 case WindowTemplateType.PoiParam:
 
@@ -89,6 +89,7 @@ namespace ColorVision.Template
         public WindowTemplate(WindowTemplateType windowTemplateType,UserControl userControl)
         {
             TemplateType = windowTemplateType;
+            TemplateControl = TemplateControl.GetInstance();
             InitializeComponent();
 
             GridProperty.Children.Clear();
@@ -102,7 +103,6 @@ namespace ColorVision.Template
         {
             switch (TemplateType)
             {
-                case WindowTemplateType.LedParam:
                 case WindowTemplateType.PoiParam:
                     TemplateGrid.Header = "点集";
                     break;
@@ -114,7 +114,7 @@ namespace ColorVision.Template
                         System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
                         ofd.Filter = "*.stn|*.stn";
                         if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                        CreateNewTemplate(TemplateControl.GetInstance().FlowParams, Path.GetFileNameWithoutExtension(ofd.FileName), new FlowParam() { FileName = ofd.FileName });
+                        CreateNewTemplate(TemplateControl.FlowParams, Path.GetFileNameWithoutExtension(ofd.FileName), new FlowParam() { FileName = ofd.FileName });
                     };
                     FunctionGrid.Children.Insert(1, button);
                     FunctionGrid.Columns = 4;
@@ -134,7 +134,6 @@ namespace ColorVision.Template
         {
             ListConfigs = new ObservableCollection<ListConfig>();
             ListView1.ItemsSource = ListConfigs;
-            TextBox1.Text = NewCreateFileName("default");
         }
 
 
@@ -149,8 +148,6 @@ namespace ColorVision.Template
                         {
                             new WindowFocusPoint(poiParam) { Owner = this }.ShowDialog();
                         }
-                        break;
-                    case WindowTemplateType.LedParam:
                         break;
                     case WindowTemplateType.FlowParam:
                         if (ListConfigs[listView.SelectedIndex].Value is FlowParam flowParam)
@@ -216,29 +213,34 @@ namespace ColorVision.Template
                 switch (TemplateType)
                 {
                     case WindowTemplateType.AoiParam:
-                        CreateNewTemplate(TemplateControl.GetInstance().AoiParams, TextBox1.Text, new AoiParam());
+                        CreateNewTemplate(TemplateControl.AoiParams, TextBox1.Text, new AoiParam());
                         break;
                     case WindowTemplateType.Calibration:
-                        CreateNewTemplate(TemplateControl.GetInstance().CalibrationParams, TextBox1.Text, new CalibrationParam());
+                        CreateNewTemplate(TemplateControl.CalibrationParams, TextBox1.Text, new CalibrationParam());
                         break;
                     case WindowTemplateType.PGParam:
-                        CreateNewTemplate(TemplateControl.GetInstance().PGParams,TextBox1.Text, new PGParam());
+                        CreateNewTemplate(TemplateControl.PGParams,TextBox1.Text, new PGParam());
                         break;
                     case WindowTemplateType.LedReuslt:
-                        CreateNewTemplate(TemplateControl.GetInstance().LedReusltParams, TextBox1.Text, new LedReusltParam());
+                        CreateNewTemplate(TemplateControl.LedReusltParams, TextBox1.Text, new LedReusltParam());
                         break;
                     case WindowTemplateType.SxParm:
-                        CreateNewTemplate(TemplateControl.GetInstance().SxParams, TextBox1.Text, new SxParam());
+                        CreateNewTemplate(TemplateControl.SxParams, TextBox1.Text, new SxParam());
                         break;
                     case WindowTemplateType.PoiParam:
-                        int pkId = TemplateControl.GetInstance().AddPoi(TextBox1.Text);
-                        if(pkId > 0) CreateNewTemplate(TemplateControl.GetInstance().PoiParams, TextBox1.Text, new PoiParam(pkId));
-                        break;
-                    case WindowTemplateType.LedParam:
-                        CreateNewTemplate(TemplateControl.GetInstance().LedParams, TextBox1.Text, new LedParam());
+                        if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+                        {
+                            int pkId = TemplateControl.AddPoi(TextBox1.Text);
+                            if (pkId > 0) CreateNewTemplate(TemplateControl.PoiParams, TextBox1.Text, new PoiParam(pkId));
+                            else MessageBox.Show("数据库创建POI模板失败");
+                        }
+                        else
+                        {
+                            CreateNewTemplate(TemplateControl.PoiParams, TextBox1.Text, new PoiParam() {  });
+                        }
                         break;
                     case WindowTemplateType.FlowParam:
-                        CreateNewTemplate(TemplateControl.GetInstance().FlowParams, TextBox1.Text, new FlowParam() {FileName = TextBox1.Text });
+                        CreateNewTemplate(TemplateControl.FlowParams, TextBox1.Text, new FlowParam() {FileName = TextBox1.Text });
                         break;
 
                 }
@@ -268,25 +270,27 @@ namespace ColorVision.Template
                     switch (TemplateType)
                     {
                         case WindowTemplateType.AoiParam:
-                            TemplateControl.GetInstance().AoiParams.RemoveAt(ListView1.SelectedIndex);
+                            TemplateControl.AoiParams.RemoveAt(ListView1.SelectedIndex);
                             break;
                         case WindowTemplateType.Calibration:
-                            TemplateControl.GetInstance().CalibrationParams.RemoveAt(ListView1.SelectedIndex);
+                            TemplateControl.CalibrationParams.RemoveAt(ListView1.SelectedIndex);
                             break;
                         case WindowTemplateType.PGParam:
-                            TemplateControl.GetInstance().PGParams.RemoveAt(ListView1.SelectedIndex);
+                            TemplateControl.PGParams.RemoveAt(ListView1.SelectedIndex);
                             break;
                         case WindowTemplateType.LedReuslt:
-                            TemplateControl.GetInstance().LedReusltParams.RemoveAt(ListView1.SelectedIndex);
+                            TemplateControl.LedReusltParams.RemoveAt(ListView1.SelectedIndex);
                             break;
                         case WindowTemplateType.SxParm:
-                            TemplateControl.GetInstance().SxParams.RemoveAt(ListView1.SelectedIndex);
+                            TemplateControl.SxParams.RemoveAt(ListView1.SelectedIndex);
                             break;
                         case WindowTemplateType.PoiParam:
-                            TemplateControl.GetInstance().PoiParams.RemoveAt(ListView1.SelectedIndex);
+                            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+                                new PoiMasterDao().DeleteById(TemplateControl.PoiParams[ListView1.SelectedIndex].Value.ID);
+                            TemplateControl.PoiParams.RemoveAt(ListView1.SelectedIndex);
                             break;
                         case WindowTemplateType.FlowParam:
-                            TemplateControl.GetInstance().FlowParams.RemoveAt(ListView1.SelectedIndex);
+                            TemplateControl.FlowParams.RemoveAt(ListView1.SelectedIndex);
                             break;
                     }
                     ListConfigs.RemoveAt(ListView1.SelectedIndex);
@@ -310,15 +314,13 @@ namespace ColorVision.Template
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
-            TemplateControl.GetInstance().Save(TemplateType);
+            TemplateControl.Save(TemplateType);
             this.Close();
         }
 
-        private void ListView1_Selected(object sender, RoutedEventArgs e)
+        private void ListView1_Loaded(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("2222");
+            TextBox1.Text = NewCreateFileName("default");
         }
-
-
     }
 }

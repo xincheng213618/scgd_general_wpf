@@ -9,11 +9,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using log4net;
 
 namespace ColorVision.MySql
 {
     public class MySqlControl: ViewModelBase
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(MySqlControl));
+
         private static MySqlControl _instance;
         private static readonly object _locker = new();
         public static MySqlControl GetInstance() { lock (_locker) { return _instance ??= new MySqlControl(); } }
@@ -39,7 +42,7 @@ namespace ColorVision.MySql
             string connStr = $"server={MySqlConfig.Host};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database}";
             try
             {
-                Log.LogWrite($"数据库连接信息:{connStr}");
+                log.Info($"数据库连接信息:{connStr}");
                 MySqlConnection = new MySqlConnection() { ConnectionString = connStr  };
                 MySqlConnection.Open();
 
@@ -51,7 +54,7 @@ namespace ColorVision.MySql
             {
                 IsConnect = false;
                 ConnectSign = "未连接";
-                Log.LogException(ex);
+                log.Error(ex);
                 return false;
             }
         }
@@ -62,14 +65,14 @@ namespace ColorVision.MySql
             MySqlConnection MySqlConnection;
             try
             {
-                Log.LogWrite($"Test数据库连接信息:{connStr}");
+                log.Info($"Test数据库连接信息:{connStr}");
                 MySqlConnection = new MySqlConnection() { ConnectionString = connStr };
                 MySqlConnection.Open();
                 return true;
             }
             catch (Exception ex)
             {
-                Log.LogException(ex);
+                log.Error(ex);
                 return false;
             }
         }
