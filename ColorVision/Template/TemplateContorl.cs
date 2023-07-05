@@ -224,7 +224,7 @@ namespace ColorVision.Template
             PoiParams.Clear();
             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
             {
-                List<PoiMasterModel> poiMaster = poiService.GetPoiMasterAll();
+                List<PoiMasterModel> poiMaster = poiService.GetPoiMasterAll(GlobalSetting.GetInstance().SoftwareConfig.TenantId);
                 foreach (var dbModel in poiMaster)
                 {
                     KeyValuePair<string, PoiParam> item = new KeyValuePair<string, PoiParam>(dbModel.Name ?? "default", new PoiParam(dbModel));
@@ -252,7 +252,7 @@ namespace ColorVision.Template
 
         internal PoiParam? AddPoiParam(string text)
         {
-            PoiMasterModel poiMaster = new PoiMasterModel(text);
+            PoiMasterModel poiMaster = new PoiMasterModel(text, GlobalSetting.GetInstance().SoftwareConfig.TenantId);
             poiService.Save(poiMaster);
             int pkId = poiMaster.GetPK();
             if (pkId > 0 )

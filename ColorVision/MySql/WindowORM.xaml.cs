@@ -93,7 +93,7 @@ namespace ColorVision
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             PoiMasterDao poiMasterService = new PoiMasterDao();
-            List <PoiMasterModel> poiMasterServices = poiMasterService.GetAll();
+            List <PoiMasterModel> poiMasterServices = poiMasterService.GetAll(GlobalSetting.GetInstance().SoftwareConfig.TenantId);
 
 
 
@@ -300,7 +300,7 @@ namespace ColorVision
             //}
 
             PoiMasterDao service = new PoiMasterDao();
-            var rec = service.GetTableAll();
+            var rec = service.GetTableAll(GlobalSetting.GetInstance().SoftwareConfig.TenantId);
             dataGrid.ItemsSource = rec.AsDataView();
         }
     }
