@@ -13,7 +13,7 @@ namespace ColorVision.SettingUp
     /// <summary>
     /// 软件配置
     /// </summary>
-    public class SoftwareConfig: ViewModelBase
+    public class SoftwareConfig
     {
         public SoftwareConfig()
         {
@@ -27,13 +27,13 @@ namespace ColorVision.SettingUp
 
         public string Version { get; set; } = "0.0";
 
-        public bool IsUseMySql { get => _IsUseMySql; set { _IsUseMySql = value; NotifyPropertyChanged();} }
-        private bool _IsUseMySql = true;
+        public bool IsUseMySql { get; set; } = true;
 
 
         public bool IsUseMQTT { get; set; } = true;
 
-        public bool IsOpenStatusBar { get; set; } = true;
+        public bool IsOpenStatusBar { get; set; }
+
         public bool IsOpenSidebar { get; set; } = true;
 
 
