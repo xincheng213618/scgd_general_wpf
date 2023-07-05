@@ -38,9 +38,12 @@ namespace ColorVision.Template
         public FlowParam() { }
         public FlowParam(FlowMasterModel dbModel)
         {
-            FileName = dbModel.Name;
+            this.ID = dbModel.Id;
+            this.FileName = dbModel.Name ?? string.Empty; ;
         }
 
+        public int ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
+        private int _ID;
         /// <summary>
         /// 流程文件名称
         /// </summary>

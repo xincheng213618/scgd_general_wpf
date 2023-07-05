@@ -294,10 +294,12 @@ namespace ColorVision.Template
                             break;
                         case WindowTemplateType.PoiParam:
                             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
-                                new PoiMasterDao().DeleteById(TemplateControl.PoiParams[ListView1.SelectedIndex].Value.ID);
+                                TemplateControl.PoiMasterDeleteById(TemplateControl.PoiParams[ListView1.SelectedIndex].Value.ID);
                             TemplateControl.PoiParams.RemoveAt(ListView1.SelectedIndex);
                             break;
                         case WindowTemplateType.FlowParam:
+                            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+                                TemplateControl.FlowMasterDeleteById(TemplateControl.FlowParams[ListView1.SelectedIndex].Value.ID);
                             TemplateControl.FlowParams.RemoveAt(ListView1.SelectedIndex);
                             break;
                     }

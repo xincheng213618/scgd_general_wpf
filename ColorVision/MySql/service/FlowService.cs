@@ -22,9 +22,19 @@ namespace ColorVision.MySql.service
            return masterDao.GetAll(tenantId);
         }
 
-        internal void Save(FlowMasterModel flowMaster)
+        internal FlowMasterModel? GetMasterById(int pkId)
         {
-            masterDao.Save(flowMaster);
+            return masterDao.GetByID(pkId);
+        }
+
+        internal int MasterDeleteById(int id)
+        {
+           return masterDao.DeleteById(id);
+        }
+
+        internal int Save(FlowMasterModel flowMaster)
+        {
+            return masterDao.Save(flowMaster);
         }
     }
 }

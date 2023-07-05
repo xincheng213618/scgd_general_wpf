@@ -20,7 +20,7 @@ namespace ColorVision.MySql.service
             poiDetail = new PoiDetailDao();
         }
 
-        public List<PoiMasterModel> GetPoiMasterAll(int tenantId)
+        public List<PoiMasterModel> GetMasterAll(int tenantId)
         {
             return poiMaster.GetAll(tenantId);
         }
@@ -43,14 +43,19 @@ namespace ColorVision.MySql.service
 
         }
 
-        internal List<PoiDetailModel> GetPoiDetailByPid(int pid)
+        internal List<PoiDetailModel> GetDetailByPid(int pid)
         {
             return poiDetail.GetAllByPid(pid);
         }
 
-        internal PoiMasterModel? GetPoiMasterById(int pkId)
+        internal PoiMasterModel? GetMasterById(int pkId)
         {
             return poiMaster.GetByID(pkId);
+        }
+
+        internal int MasterDeleteById(int id)
+        {
+           return poiMaster.DeleteById(id);
         }
     }
 }
