@@ -1,4 +1,5 @@
 ﻿using ColorVision.Template;
+using MySqlConnector;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -131,6 +132,42 @@ namespace ColorVision.MySql
                 if (item.Remark != null) row["remark"] = item.Remark;
             }
             return row;
+        }
+
+        public void BatchSqlBulkCopy(DataTable dataTable)
+        {
+            MySqlConnection connection = new MySqlConnection(MySqlControl.GetInstance().MySqlConnection.ConnectionString);
+            using (connection)
+            {
+                var bulkCopy = new MySqlBulkCopy(connection);
+                bulkCopy.DestinationTableName = dataTable.TableName;
+                bulkCopy.ColumnMappings.AddRange(GetMySqlColumnMapping(dataTable));
+                try
+                {
+
+                    MySqlBulkCopyResult result = bulkCopy.WriteToServer(dataTable);
+                    //check for problems
+                    //if (result.Warnings.Count != 0)
+                    //{
+                    //    /* handle potential data loss warnings */
+                    //}
+                }
+                catch (Exception ex)
+                {
+                }
+            }
+        }
+
+        private List<MySqlBulkCopyColumnMapping> GetMySqlColumnMapping(DataTable dataTable)
+        {
+            List<MySqlBulkCopyColumnMapping> colMappings = new List<MySqlBulkCopyColumnMapping>();
+            int i = 0;
+            foreach (DataColumn col in dataTable.Columns)
+            {
+                colMappings.Add(new MySqlBulkCopyColumnMapping(i, col.ColumnName));
+                i++;
+            }
+            return colMappings;
         }
     }
 }
