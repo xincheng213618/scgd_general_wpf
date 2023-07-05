@@ -226,7 +226,7 @@ namespace ColorVision.Template
             PoiParams.Clear();
             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
             {
-                List<PoiMasterModel> poiMaster = poiService.GetPoiMasterAll(GlobalSetting.GetInstance().SoftwareConfig.TenantId);
+                List<PoiMasterModel> poiMaster = poiService.GetMasterAll(GlobalSetting.GetInstance().SoftwareConfig.TenantId);
                 foreach (var dbModel in poiMaster)
                 {
                     KeyValuePair<string, PoiParam> item = new KeyValuePair<string, PoiParam>(dbModel.Name ?? "default", new PoiParam(dbModel));
@@ -246,7 +246,7 @@ namespace ColorVision.Template
             poiParam.PoiPoints.Clear();
 
 
-            List<PoiDetailModel> poiDetail = poiService.GetPoiDetailByPid(poiParam.ID);
+            List<PoiDetailModel> poiDetail = poiService.GetDetailByPid(poiParam.ID);
             foreach (var dbModel in poiDetail)
             {
                 poiParam.PoiPoints.Add(new PoiParamData(dbModel));
@@ -267,7 +267,7 @@ namespace ColorVision.Template
 
         internal PoiParam? LoadPoiParamById(int pkId)
         {
-            PoiMasterModel poiMaster = poiService.GetPoiMasterById(pkId);
+            PoiMasterModel poiMaster = poiService.GetMasterById(pkId);
             if (poiMaster != null) return new PoiParam(poiMaster);
             else return null;
         }
@@ -286,7 +286,9 @@ namespace ColorVision.Template
 
         private FlowParam? LoadFlowParamById(int pkId)
         {
-            return null;
+            FlowMasterModel flowMaster = flowService.GetMasterById(pkId);
+            if (flowMaster != null) return new FlowParam(flowMaster);
+            else return null;
         }
 
         internal ObservableCollection<KeyValuePair<string, FlowParam>> LoadFlowParam()

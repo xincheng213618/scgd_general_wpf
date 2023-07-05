@@ -5,6 +5,7 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace ColorVision.MySql.DAO
 {
@@ -13,11 +14,17 @@ namespace ColorVision.MySql.DAO
         public FlowMasterModel() : this("",0){ }
         public FlowMasterModel(string text, int tenantId)
         {
+            Name = text;
             TenantId = tenantId;
+            CreateDate = DateTime.Now;
         }
 
         public int Id { get; set; }
         public string? Name { get; set; }
+        public DateTime? CreateDate { get; set; } = DateTime.Now;
+        public bool? IsEnable { get; set; } = true;
+        public bool? IsDelete { get; set; } = false;
+        public string? Remark { get; set; }
         public int TenantId { get; set; }
         public int Pid { get; set; }
         public int GetPK()
@@ -42,6 +49,10 @@ namespace ColorVision.MySql.DAO
             {
                 Id = item.Field<int>("id"),
                 Name = item.Field<string?>("name"),
+                CreateDate = item.Field<DateTime?>("create_date"),
+                IsEnable = item.Field<bool?>("is_enable"),
+                IsDelete = item.Field<bool?>("is_delete"),
+                Remark = item.Field<string?>("remark"),
             };
 
             return model;
@@ -53,6 +64,10 @@ namespace ColorVision.MySql.DAO
             {
                 if (item.Id > 0) row["id"] = item.Id;
                 if (item.Name != null) row["name"] = item.Name;
+                row["create_date"] = item.CreateDate;
+                //row["is_enable"] = item.IsEnable;
+                //row["is_delete"] = item.IsDelete;
+                if (item.Remark != null) row["remark"] = item.Remark;
                 row["tenant_id"] = item.TenantId;
                 row["mm_id"] = item.Pid;
             }
