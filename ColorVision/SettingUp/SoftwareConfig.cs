@@ -29,7 +29,7 @@ namespace ColorVision.SettingUp
         }
 
         public string Version { get; set; } = "0.0";
-        public int TenantId { get; set; } = 0;
+        public int TenantId { get; set; }
 
         public bool IsUseMySql { get; set; } = true;
 
@@ -52,8 +52,7 @@ namespace ColorVision.SettingUp
         [JsonIgnore]
         public TemplateControl TemplateControl { get => TemplateControlLazy.Value; }
 
-        
-
+       
 
         /// <summary>
         /// MQTT配置

@@ -25,25 +25,28 @@
                 <MenuItem Header="文件(_F)">
                     <MenuItem Header="打开(_O)" Click="MenuItem_Template"/>
                     <MenuItem Header="工程(_F)" Click="MenuItem_ProjectNew_Click"/>
+                    <Separator/>
                     <MenuItem Header="退出(_X)" InputGestureText="Alt + F4" Click="MenuItem_Exit"/>
                 </MenuItem>
                 <MenuItem Header="模板(_M)">
+                    <MenuItem Header="流程引擎模板(_F)" Tag="FlowParam"  Click="MenuItem_Template"/>
+                    <MenuItem Header="关注点模板设置(_P)" Tag="FocusParm" Click="MenuItem_Template"/>
+                    <Separator/>
                     <MenuItem Header="_AOI参数模板设置" Tag="AoiParam" Click="MenuItem_Template"/>
                     <MenuItem Header="校正模板设置(_C)" Tag="Calibration"  Click="MenuItem_Template"/>
                     <MenuItem Header="_PG通讯模板设置" Tag="PGParam"  Click="MenuItem_Template"/>
                     <MenuItem Header="数据判断模板设置(_J)" Tag="LedReusltParams"  Click="MenuItem_Template"/>
                     <MenuItem Header="源表模板设置(_V)"  Tag="SxParms" Click="MenuItem_Template"/>
-                    <MenuItem Header="关注点模板设置(_P)" Tag="FocusParm" Click="MenuItem_Template"/>
-                    <MenuItem Header="流程引擎模板(_F)" Tag="FlowParam"  Click="MenuItem_Template"/>
                 </MenuItem>
                 <MenuItem  x:Name="MenuStatusBar"  d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  Header="视图(_V)">
                     <MenuItem Header="侧边栏(_M)"  IsChecked="{Binding IsOpenSidebar}"  Click="MenuStatusBar_Click"/>
                     <MenuItem Header="状态栏(_S)" IsChecked="{Binding IsOpenStatusBar}"  Click="MenuStatusBar_Click" />
                 </MenuItem>
                 <MenuItem Header="工具(_T)">
-                    <MenuItem Header="MQTT日志(_L)" Click="MenuItem_Click"/>
                     <MenuItem Header="流程引擎(_F)" Click="MenuItem9_Click"/>
+                    <MenuItem Header="MQTT日志(_L)" Click="MenuItem_Click"/>
                     <MenuItem Header="数据库(_M)"  Click="MenuItem_Click_7"/>
+                    <Separator/>
                     <MenuItem Header="设置(_O)" Click="MenuItem_Click_2"/>
                 </MenuItem>
                 <MenuItem Header="标定(_A)">
