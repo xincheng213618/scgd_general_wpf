@@ -110,7 +110,6 @@ namespace ColorVision.MySql
                     MySqlCommandBuilder builder = new MySqlCommandBuilder(dataAdapter);
                     builder.ConflictOption = ConflictOption.OverwriteChanges;
                     builder.SetAllValues = true;
-                    //dataAdapter.SelectCommand = builder.;
                     dataAdapter.UpdateCommand = builder.GetUpdateCommand(true) as MySqlCommand;
                     count = dataAdapter.Update(dt);
 
@@ -129,7 +128,10 @@ namespace ColorVision.MySql
 
         private void DataAdapter_RowUpdated(object sender, MySqlRowUpdatedEventArgs e)
         {
-            e.Row[_PKField] = e.Command.LastInsertedId;
+            if(e.Row[_PKField] == DBNull.Value)
+            {
+                e.Row[_PKField] = e.Command.LastInsertedId;
+            }
         }
 
         public DataTable selectById(int id)
@@ -253,7 +255,7 @@ namespace ColorVision.MySql
             return count;
         }
 
-        private List<MySqlConnector.MySqlBulkCopyColumnMapping> GetMySqlColumnMapping(DataTable dataTable)
+        private static List<MySqlConnector.MySqlBulkCopyColumnMapping> GetMySqlColumnMapping(DataTable dataTable)
         {
             List<MySqlConnector.MySqlBulkCopyColumnMapping> colMappings = new List<MySqlConnector.MySqlBulkCopyColumnMapping>();
             int i = 0;

@@ -34,6 +34,7 @@ namespace ColorVision.MySql
             CreateDate = DateTime.Now;
             IsEnable = true;
             IsDelete = false;
+            TenantId = 0;
         }
 
         public PoiMasterModel(PoiParam poiParam)
@@ -56,6 +57,7 @@ namespace ColorVision.MySql
             CreateDate = DateTime.Now;
             IsEnable = true;
             IsDelete = false;
+            TenantId = 0;
         }
 
 
@@ -80,6 +82,8 @@ namespace ColorVision.MySql
         public bool? IsEnable { get; set; } = true;
         public bool? IsDelete { get; set; } = false;
         public string? Remark { get; set; }
+
+        public int TenantId { get; set; }
 
         public int GetPK()
         {

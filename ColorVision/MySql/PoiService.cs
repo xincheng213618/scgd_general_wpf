@@ -46,5 +46,10 @@ namespace ColorVision.MySql
         {
             return poiDetail.GetAllByPid(pid);
         }
+
+        internal PoiMasterModel? GetPoiMasterById(int pkId)
+        {
+            return poiMaster.GetByID(pkId);
+        }
     }
 }

@@ -59,7 +59,6 @@ namespace ColorVision.Template
             this.Width = dbModel.Width ?? 0;
             this.Height = dbModel.Height ?? 0;
             this.Type = dbModel.Type ?? 0;
-            this.CfgJson = dbModel.CfgJson??string.Empty;
             this.DatumAreaPoints.X1X = dbModel.LeftTopX ?? 0;
             this.DatumAreaPoints.X1Y = dbModel.LeftTopY ?? 0;
             this.DatumAreaPoints.X2X = dbModel.RightTopX ?? 0;
@@ -68,6 +67,9 @@ namespace ColorVision.Template
             this.DatumAreaPoints.X3Y = dbModel.RightBottomY ?? 0;
             this.DatumAreaPoints.X4X = dbModel.LeftBottomX ?? 0;
             this.DatumAreaPoints.X4Y = dbModel.LeftBottomY ?? 0;
+            this.DatumAreaPoints.CenterX = (this.DatumAreaPoints.X2X - this.DatumAreaPoints.X1X)/2;
+            this.DatumAreaPoints.CenterY = (this.DatumAreaPoints.X4Y - this.DatumAreaPoints.X1Y) /2;
+            this.CfgJson = dbModel.CfgJson ?? string.Empty;
         }
 
         public string CfgJson {
@@ -76,10 +78,12 @@ namespace ColorVision.Template
             {
                 if (string.IsNullOrEmpty(value))
                 {
-                    DatumAreaPoints = new DatumAreaPoints();
-                    return;
+                    if (DatumAreaPoints == null) DatumAreaPoints = new DatumAreaPoints();
                 }
-                DatumAreaPoints = JsonConvert.DeserializeObject<DatumAreaPoints>(value) ?? new DatumAreaPoints();
+                else
+                {
+                    DatumAreaPoints = JsonConvert.DeserializeObject<DatumAreaPoints>(value) ?? new DatumAreaPoints();
+                }
             }
         }
 

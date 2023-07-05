@@ -252,12 +252,17 @@ namespace ColorVision.Template
 
         internal int AddPoi(string text)
         {
-            PoiMasterModel poiMaster = new PoiMasterModel();
-            poiMaster.Name = text;
+            PoiMasterModel poiMaster = new PoiMasterModel(text);
             poiService.Save(poiMaster);
             return poiMaster.GetPK();
         }
 
+        internal PoiParam LoadPoiParamById(int pkId)
+        {
+            PoiMasterModel poiMaster = poiService.GetPoiMasterById(pkId);
+            if(poiMaster == null) return new PoiParam(pkId);
+            else return new PoiParam(poiMaster);
+        }
 
         public ObservableCollection<KeyValuePair<string, AoiParam>> AoiParams { get; set; }
         public ObservableCollection<KeyValuePair<string, CalibrationParam>> CalibrationParams { get; set; } 

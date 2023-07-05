@@ -231,7 +231,10 @@ namespace ColorVision.Template
                         if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
                         {
                             int pkId = TemplateControl.AddPoi(TextBox1.Text);
-                            if (pkId > 0) CreateNewTemplate(TemplateControl.PoiParams, TextBox1.Text, new PoiParam(pkId));
+                            if (pkId > 0)
+                            {
+                                CreateNewTemplate(TemplateControl.PoiParams, TextBox1.Text, TemplateControl.LoadPoiParamById(pkId));
+                            }
                             else MessageBox.Show("数据库创建POI模板失败");
                         }
                         else
