@@ -89,7 +89,7 @@ namespace ColorVision
                 listConfig.Value = item.Value;
                 if (item.Value is PoiParam poiParam)
                 {
-                    listConfig.Tag = $"{poiParam.Width}*{poiParam.Height}_{poiParam.PoiPoints.Count}";
+                    listConfig.Tag = $"{poiParam.Width}*{poiParam.Height}{(GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql?"": $"_{poiParam.PoiPoints.Count}")}";
                 }
 
                 windowTemplate.ListConfigs.Add(listConfig);

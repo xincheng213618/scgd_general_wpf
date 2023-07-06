@@ -35,7 +35,7 @@ namespace FlowEngine
             if (File.Exists(FileName))
             {
                 OpenFlow(FileName);
-                ButtonOpen.Visibility = Visibility.Collapsed;
+                ButtonOpen.Visibility = Visibility.Collapsed;   
                 ButtonNew.Visibility = Visibility.Collapsed;
             }
             else
