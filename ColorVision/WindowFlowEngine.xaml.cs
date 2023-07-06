@@ -133,9 +133,8 @@ namespace FlowEngine
         private void StNodeEditor1_NodeAdded(object sender, STNodeEditorEventArgs e)
         {
             STNode node = (STNode)e.Node;
-            if (e.Node != null && e.Node is BaseStartNode)
+            if (e.Node != null && e.Node is BaseStartNode nodeStart)
             {
-                BaseStartNode nodeStart = e.Node as BaseStartNode;
                 startNodeName = nodeStart.NodeName;
             }
             node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();

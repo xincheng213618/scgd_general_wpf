@@ -35,11 +35,18 @@
                     </StackPanel.Resources>
                     <Border Margin="5" Style="{StaticResource BorderModuleArea}">
                         <StackPanel >
-                            <GroupBox x:Name="SettingGroup" d:DataContext="{d:DesignInstance Template:WindowFocusPoint}" Header="设置" Margin="5">
+                            <GroupBox Header="设置" Margin="5">
                                 <StackPanel Margin="5">
+                                    <DockPanel x:Name="SettingGroup"  d:DataContext="{d:DesignInstance Template:WindowFocusPoint}">
+                                        <Button Content="重渲染"  ToolTip="一次"  Click="Button_Click_UpdateVisualLayout"  DockPanel.Dock="Right" Visibility="{Binding IsLayoutUpdated,Converter={StaticResource bool2VisibilityConverter1}}" IsEnabled="{Binding IsLayoutUpdated,Converter={StaticResource Boolean2BooleanReConverter}}" />
+                                        <ToggleButton DockPanel.Dock="Right" HorizontalAlignment="Left" Height="20" Margin="2" Content="缩放自动重渲染" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsLayoutUpdated}"/>
+                                    </DockPanel>
                                     <DockPanel>
-                                        <Button Content="重渲染"  ToolTip="一次"  Click="Button_Click_UpdateVisualLayout"  DockPanel.Dock="Right" IsEnabled="{Binding IsLayoutUpdated,Converter={StaticResource Boolean2BooleanReConverter}}" />
-                                        <CheckBox Content="缩放自动重渲染" ToolTip="比较消耗性能" IsChecked="{Binding IsLayoutUpdated }"/>
+
+                                        <ToggleButton DockPanel.Dock="Right" HorizontalAlignment="Left" Height="20" Margin="2" Content="基准点显示" Style="{StaticResource ToggleButtonSwitch}"  Click="SetDeafult_Click" IsChecked="{Binding DatumArea.IsShowDatum}"/>
+                                    </DockPanel>
+                                    <DockPanel >
+                                        <ToggleButton DockPanel.Dock="Right"  HorizontalAlignment="Left" Height="20" Margin="2" Content="布点区域显示" Style="{StaticResource ToggleButtonSwitch}"  Click="ShowDatumArea_Click" IsChecked="{Binding DatumArea.IsShowDatumArea}"/>
                                     </DockPanel>
                                 </StackPanel>
                             </GroupBox>
@@ -176,8 +183,7 @@
                                                 </DockPanel>
                                             </UniformGrid>
                                         </StackPanel>
-                                        <Button  Content="显示基准点" Click="SetDeafult_Click" Margin="2"/>
-
+                                        <Button Content="设置基准点" Click="SetDeafult_Click"/>
                                     </StackPanel>
                                 </GroupBox>
 
@@ -279,7 +285,8 @@
                                                 </DockPanel>
                                             </UniformGrid>
                                         </StackPanel>
-                                        <Button Content="显示布点区域"  Click="Button_Click"/>
+                                        <Button Content="设置布点区域" Click="ShowDatumArea_Click"/>
+
                                     </StackPanel>
                                 </GroupBox>
                                 
@@ -293,7 +300,7 @@
                                         <StackPanel Margin="5" Visibility="{Binding IsPointCircle,Converter={StaticResource bool2VisibilityConverter}}" >
                                             <DockPanel Margin="2" >
                                                 <TextBlock Text="半径:" Width="40"/>
-                                                <TextBox  Text="{Binding DeafultCircleRadius}"  BorderThickness="0,0,0,1"  PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                <TextBox  Text="{Binding DatumArea.DefaultCircleRadius}"  BorderThickness="0,0,0,1"  PreviewTextInput="TextBox_PreviewTextInput"/>
                                             </DockPanel>
                                         </StackPanel>
 
@@ -302,11 +309,11 @@
                                             <UniformGrid Columns="2">
                                                 <DockPanel Margin="2" >
                                                     <TextBlock Text="宽度:" Width="40"/>
-                                                    <TextBox Text="{Binding DeafultRectWidth}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                    <TextBox Text="{Binding DatumArea.DefaultRectWidth}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                                                 </DockPanel>
                                                 <DockPanel Margin="2" >
                                                     <TextBlock Text="高度:" Width="40"/>
-                                                    <TextBox Text="{Binding DeafultRectHeight}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                    <TextBox Text="{Binding DatumArea.DefaultRectHeight}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                                                 </DockPanel>
                                             </UniformGrid>
                                         </StackPanel>

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -27,6 +28,11 @@ namespace ColorVision.SettingUp
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = GlobalSetting.GetInstance().SoftwareConfig;
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

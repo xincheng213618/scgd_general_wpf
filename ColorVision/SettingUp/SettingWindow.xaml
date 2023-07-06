@@ -16,7 +16,19 @@
             <StackPanel >
                 <Border Style="{StaticResource BorderModuleArea}">
                     <StackPanel Margin="5">
-                        <DockPanel>
+                        <DockPanel Margin="5">
+                            <ToggleButton DockPanel.Dock="Right" Height="20" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsUseMySql}"/>
+                            <TextBlock Text="启用数据库"/>
+                        </DockPanel>
+                        <DockPanel Margin="5">
+                            <ToggleButton DockPanel.Dock="Right" Height="20" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsUseMySql}"/>
+                            <TextBlock Text="启用MQTT"/>
+                        </DockPanel>
+                        <DockPanel Margin="5">
+                            <ToggleButton DockPanel.Dock="Right" Height="20" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsUseMySql}"/>
+                            <TextBlock Text="启用数据库"/>
+                        </DockPanel>
+                        <DockPanel Margin="5">
                             <ToggleButton DockPanel.Dock="Right" Height="20" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsUseMySql}"/>
                             <TextBlock Text="启用数据库"/>
                         </DockPanel>
