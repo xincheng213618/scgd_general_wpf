@@ -7,11 +7,34 @@ using ColorVision.MySql.DAO;
 
 namespace ColorVision.MySql.service
 {
-    internal class FlowService
+    public class FlowService
     {
-        internal void Save(FlowModel flowMaster)
+        private FlowMasterDao masterDao;
+        private FlowDetailDao detailDao;
+
+        public FlowService()
         {
-            throw new NotImplementedException();
+            masterDao = new FlowMasterDao();
+            detailDao = new FlowDetailDao();
+        }
+        internal List<FlowMasterModel> GetFlowAll(int tenantId)
+        {
+           return masterDao.GetAll(tenantId);
+        }
+
+        internal FlowMasterModel? GetMasterById(int pkId)
+        {
+            return masterDao.GetByID(pkId);
+        }
+
+        internal int MasterDeleteById(int id)
+        {
+           return masterDao.DeleteById(id);
+        }
+
+        internal int Save(FlowMasterModel flowMaster)
+        {
+            return masterDao.Save(flowMaster);
         }
     }
 }

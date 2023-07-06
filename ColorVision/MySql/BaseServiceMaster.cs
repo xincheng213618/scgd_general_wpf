@@ -180,7 +180,7 @@ namespace ColorVision.MySql
 
         public virtual DataTable CreateColumns(DataTable dInfo) => dInfo;
 
-        public int Save(T item)
+        public virtual int Save(T item)
         {
             DataTable d_info = selectById(item.GetPK());
             ConvertRow(item, d_info);
@@ -195,7 +195,7 @@ namespace ColorVision.MySql
             Model2Row(item, row);
         }
 
-        public int Save(List<T> datas,int tenantId)
+        public virtual int Save(List<T> datas,int tenantId)
         {
             DeleteAll(tenantId);
             DataTable d_info = GetDataTable();
@@ -267,7 +267,7 @@ namespace ColorVision.MySql
             return colMappings;
         }
 
-        public DataTable GetTableAll(int tenantId)
+        public virtual DataTable GetTableAll(int tenantId)
         {
             string sql = $"select * from {TableName} where is_delete=0 and tenant_id={tenantId}";
             DataTable d_info = GetData(sql);
