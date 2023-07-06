@@ -62,27 +62,26 @@ namespace ColorVision.MySql.DAO
 
     public class PoiDetailDao : BaseServiceMaster<PoiDetailModel>
     {
-        public PoiDetailDao() : base(null,"t_scgd_cfg_poi_detail", "id")
+        public PoiDetailDao() : base(null, "t_scgd_cfg_poi_detail", "id", true)
         {
         }
 
 
-        public override DataTable GetDataTable(string? tableName = null)
+        public override DataTable CreateColumns(DataTable dInfo)
         {
-            DataTable dataTable = base.GetDataTable();
-            dataTable.Columns.Add("id", typeof(int));
-            dataTable.Columns.Add("name", typeof(string));
-            dataTable.Columns.Add("pt_type", typeof(sbyte));
-            dataTable.Columns.Add("pid", typeof(int));
-            dataTable.Columns.Add("pix_width", typeof(int));
-            dataTable.Columns.Add("pix_height", typeof(int));
-            dataTable.Columns.Add("pix_x", typeof(int));
-            dataTable.Columns.Add("pix_y", typeof(int));
+            dInfo.Columns.Add("id", typeof(int));
+            dInfo.Columns.Add("name", typeof(string));
+            dInfo.Columns.Add("pt_type", typeof(sbyte));
+            dInfo.Columns.Add("pid", typeof(int));
+            dInfo.Columns.Add("pix_width", typeof(int));
+            dInfo.Columns.Add("pix_height", typeof(int));
+            dInfo.Columns.Add("pix_x", typeof(int));
+            dInfo.Columns.Add("pix_y", typeof(int));
             //dataTable.Columns.Add("create_date", typeof(DateTime));
-            dataTable.Columns.Add("is_enable", typeof(bool));
-            dataTable.Columns.Add("is_delete", typeof(bool));
-            dataTable.Columns.Add("remark", typeof(string));
-            return dataTable;
+            dInfo.Columns.Add("is_enable", typeof(bool));
+            dInfo.Columns.Add("is_delete", typeof(bool));
+            dInfo.Columns.Add("remark", typeof(string));
+            return dInfo;
         }
 
 

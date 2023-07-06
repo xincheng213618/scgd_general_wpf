@@ -39,7 +39,7 @@ namespace ColorVision.MySql.DAO
     }
     public class FlowMasterDao : BaseModMasterDao<FlowMasterModel>
     {
-        public FlowMasterDao() : base("flow", "v_scgd_mod_master", "t_scgd_mod_param_master", "id")
+        public FlowMasterDao() : base("flow", "v_scgd_mod_master", "t_scgd_mod_param_master", "id", true)
         {
         }
 

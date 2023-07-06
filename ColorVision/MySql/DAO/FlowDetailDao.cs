@@ -20,6 +20,8 @@ namespace ColorVision.MySql.DAO
         public string? ValueA { get; set; }
         public string? ValueB { get; set; }
         public string? Symbol { get; set; }
+        public bool? IsEnable { get; set; } = true;
+        public bool? IsDelete { get; set; } = false;
 
         public int GetPK()
         {
@@ -34,7 +36,7 @@ namespace ColorVision.MySql.DAO
 
     public class FlowDetailDao : BaseModDetailDao<FlowDetailModel>
     {
-        public FlowDetailDao() : base("flow", "v_scgd_mod_detail", "t_scgd_mod_param_detail", "id")
+        public FlowDetailDao() : base("flow", "v_scgd_mod_detail", "t_scgd_mod_param_detail", "id", true)
         {
         }
 
@@ -48,6 +50,8 @@ namespace ColorVision.MySql.DAO
                 ValueA = item.Field<string>("value_a"),
                 ValueB = item.Field<string>("value_b"),
                 Symbol = item.Field<string>("symbol"),
+                IsEnable = item.Field<bool>("is_enable"),
+                IsDelete = item.Field<bool>("is_delete"),
             };
 
             return model;
@@ -62,6 +66,8 @@ namespace ColorVision.MySql.DAO
                 row["cc_pid"] = item.SysPid;
                 if (item.ValueA != null) row["value_a"] = item.ValueA;
                 if (item.ValueB != null) row["value_b"] = item.ValueB;
+                row["is_enable"] = item.IsEnable;
+                row["is_delete"] = item.IsDelete;
             }
             return row;
         }

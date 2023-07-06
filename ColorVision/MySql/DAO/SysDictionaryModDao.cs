@@ -26,7 +26,7 @@ namespace ColorVision.MySql.DAO
     }
     public class SysDictionaryModDao : BaseServiceMaster<SysDictionaryModModel>
     {
-        public SysDictionaryModDao() : base(null, "t_scgd_sys_dictionary_mod_master", "id")
+        public SysDictionaryModDao() : base(null, "t_scgd_sys_dictionary_mod_master", "id", true)
         {
         }
 
@@ -45,7 +45,7 @@ namespace ColorVision.MySql.DAO
 
         public SysDictionaryModModel GetByCode(string code,int tenantId)
         {
-            string sql = $"select * from {GetReadTableViewName()} where is_delete=0 and code=@code and tenant_id=@tenantId";
+            string sql = $"select * from {GetTableName()} where is_delete=0 and code=@code and tenant_id=@tenantId";
             Dictionary<string, object> param = new Dictionary<string, object>
             {
                 { "code", code },

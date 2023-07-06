@@ -67,7 +67,7 @@ namespace ColorVision.MySql.service
         {
             List<FlowDetailModel> list = new List<FlowDetailModel>();
             flowParam.GetDetail(list);
-            detailDao.SaveByPid(flowParam.ID, list);
+            detailDao.UpdateByPid(flowParam.ID,list);
         }
     }
 }

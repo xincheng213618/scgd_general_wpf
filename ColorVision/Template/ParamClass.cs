@@ -49,11 +49,14 @@ namespace ColorVision.Template
                     _Parameters.Add(flowDetailModel.Symbol, flowDetailModel);
                 }
             }
-            this.FileName = dbModel.Name ?? string.Empty;
+            this.name = dbModel.Name ?? string.Empty;
         }
 
         public int ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
         private int _ID;
+
+        private string name;
+        public string Name { get => name; set { name = value; } }
         /// <summary>
         /// 流程文件名称
         /// </summary>

@@ -10,7 +10,7 @@ namespace ColorVision.MySql.DAO
     public class BaseModMasterDao<T> : BaseServiceMaster<T> where T : IBaseModel
     {
         protected string _code;
-        public BaseModMasterDao(string code, string viewName, string tableName, string pkField) : base(viewName, tableName, pkField)
+        public BaseModMasterDao(string code, string viewName, string tableName, string pkField, bool isLogicDel) : base(viewName, tableName, pkField, isLogicDel)
         {
             _code = code;
         }
@@ -30,7 +30,7 @@ namespace ColorVision.MySql.DAO
     public class BaseModDetailDao<T> : BaseServiceMaster<T> where T : IBaseModel
     {
         protected string _code;
-        public BaseModDetailDao(string code, string viewName, string tableName, string pkField) : base(viewName, tableName, pkField)
+        public BaseModDetailDao(string code, string viewName, string tableName, string pkField, bool isLogicDel) : base(viewName, tableName, pkField, isLogicDel)
         {
             _code = code;
         }
@@ -41,14 +41,9 @@ namespace ColorVision.MySql.DAO
             dInfo.Columns.Add("pid", typeof(int));
             dInfo.Columns.Add("value_a", typeof(string));
             dInfo.Columns.Add("value_b", typeof(string));
+            dInfo.Columns.Add("is_enable", typeof(bool));
+            dInfo.Columns.Add("is_delete", typeof(bool));
             return dInfo;
-        }
-
-        public override DataTable GetTableAllByPid(int pid)
-        {
-            string sql = $"select * from {GetReadTableViewName()} where pid={pid}";
-            DataTable d_info = GetData(sql);
-            return d_info;
         }
     }
 }
