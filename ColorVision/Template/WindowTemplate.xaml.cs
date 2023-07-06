@@ -76,9 +76,6 @@ namespace ColorVision.Template
 
                     Grid.SetColumnSpan(CreateGrid, 2);
                     Grid.SetColumn(CreateGrid, 0);
-
-                    this.MinWidth = 400;
-                    this.Width = 450;
                     break;
                 default:
                     break;
@@ -106,6 +103,8 @@ namespace ColorVision.Template
             {
                 case WindowTemplateType.PoiParam:
                     TemplateGrid.Header = "点集";
+                    this.MinWidth = 380;
+                    this.Width = 380;
                     break;
                 case WindowTemplateType.FlowParam:
                     TemplateGrid.Header = "流程";
@@ -117,9 +116,32 @@ namespace ColorVision.Template
                         if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
                         CreateNewTemplate(TemplateControl.FlowParams, Path.GetFileNameWithoutExtension(ofd.FileName), new FlowParam() { FileName = ofd.FileName });
                     };
-                    FunctionGrid.Children.Insert(1, button);
-                    FunctionGrid.Columns = 4;
-                    FunctionGrid.Width = 400;
+                    FunctionGrid.Children.Insert(2, button);
+
+                    Button button1 = new Button() { Content = "导出流程", Width = 80 };
+                    button1.Click += (s, e) =>
+                    {
+                        if (ListView1.SelectedIndex<0)
+                        {
+                            MessageBox.Show("请选择您要导出的流程");
+                            return;
+                        }
+                        System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
+                        ofd.DefaultExt = "stn";
+                        ofd.Filter = "*.stn|*.stn";
+                        ofd.AddExtension = false;
+                        ofd.RestoreDirectory = true;
+                        ofd.Title = "导出流程";
+                        ofd.FileName = TemplateControl.FlowParams[ListView1.SelectedIndex].Key;
+                        if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+                        CreateNewTemplate(TemplateControl.FlowParams, Path.GetFileNameWithoutExtension(ofd.FileName), new FlowParam() { FileName = ofd.FileName });
+                    };
+                    FunctionGrid.Children.Insert(3, button1);
+
+                    FunctionGrid.Columns = 5;
+                    FunctionGrid.Width = 450;
+                    this.MinWidth = 400;
+                    this.Width = 500;
                     break;
                 default:
                     ListView1.SelectedIndex = 0;

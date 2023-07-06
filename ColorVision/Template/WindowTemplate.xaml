@@ -90,11 +90,11 @@
         </Grid>
 
         <StackPanel x:Name="CreateGrid"  Grid.Column="1" Grid.Row="1" HorizontalAlignment="Center">
-            <DockPanel Width="330" >
+            <DockPanel  >
                 <Label Content="模板名称："/>
-                <TextBox x:Name="TextBox1" Margin="3"/>
+                <TextBox x:Name="TextBox1" Margin="3,3,0,3"/>
             </DockPanel>
-            <UniformGrid x:Name="FunctionGrid" Columns="3" Margin="0,8"  Width="330"  HorizontalAlignment="Center">
+            <UniformGrid x:Name="FunctionGrid" Columns="3" Margin="0,8"  Width="345"  HorizontalAlignment="Center">
                 <Button Width="80"  Click="Button_New_Click" HorizontalAlignment="Left">
                     <TextBlock Text="{Binding ElementName=TemplateGrid,Path=Header,StringFormat='新建{0}'}"/>
                 </Button>
