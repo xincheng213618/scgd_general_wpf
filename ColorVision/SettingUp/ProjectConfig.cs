@@ -15,7 +15,8 @@ namespace ColorVision.SettingUp
         public string ProjectName { get => _ProjectName; set { _ProjectName = value; NotifyPropertyChanged(); } }
         private string _ProjectName;
 
-
+        public string ProjectFullName { get => _ProjectFullName; set { _ProjectFullName = value; NotifyPropertyChanged(); } }
+        private string _ProjectFullName;
 
     }
 }

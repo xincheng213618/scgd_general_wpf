@@ -23,8 +23,8 @@
         <Grid Grid.Row="0">
             <Menu x:Name="Menu1" Height ="24" Background="#F3F3F3" >
                 <MenuItem Header="文件(_F)">
-                    <MenuItem Header="打开(_O)" Click="MenuItem_Template"/>
-                    <MenuItem Header="工程(_F)" Click="MenuItem_ProjectNew_Click"/>
+                    <MenuItem Header="新建(_O)" Click="MenuItem_ProjectNew_Click"/>
+                    <MenuItem Header="打开(_O)" Click="MenuItem_ProjectOpen_Click"/>
                     <Separator/>
                     <MenuItem Header="退出(_X)" InputGestureText="Alt + F4" Click="MenuItem_Exit"/>
                 </MenuItem>
@@ -544,7 +544,10 @@
                     </ItemsPanelTemplate>
                 </StatusBar.ItemsPanel>
                 <StatusBarItem  x:Name="StatusBarItem3" d:DataContext="{d:DesignInstance  SettingUp:ProjectConfig}">
-                    <TextBlock Text="{Binding ProjectName}" MouseLeftButtonDown="TextBlock_MouseLeftButtonDown2"/>
+                    <DockPanel>
+                        <TextBlock Text="当前工程: "/>
+                        <TextBlock Text="{Binding ProjectName}"  MouseLeftButtonDown="TextBlock_MouseLeftButtonDown2"/>
+                    </DockPanel>
                 </StatusBarItem>
                 <StatusBarItem Grid.Column="1" >
                     <DockPanel>

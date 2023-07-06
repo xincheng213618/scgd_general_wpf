@@ -152,7 +152,7 @@ namespace ColorVision
 
             //Dictionary<string, object> keyValuePairs = new Dictionary<string, object>()
             //{
-            //    { "code", "your_code" },
+            //    { "Code", "your_code" },
             //    { "name", "your_name" },
             //    { "pid", 1 },
             //    { "pcode", "your_pcode" },

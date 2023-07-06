@@ -132,7 +132,7 @@ namespace FlowEngine
         private string startNodeName;
         private void StNodeEditor1_NodeAdded(object sender, STNodeEditorEventArgs e)
         {
-            STNode node = (STNode)e.Node;
+            STNode node = e.Node;
             if (e.Node != null && e.Node is BaseStartNode nodeStart)
             {
                 startNodeName = nodeStart.NodeName;

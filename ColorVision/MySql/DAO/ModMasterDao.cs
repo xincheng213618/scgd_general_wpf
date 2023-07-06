@@ -50,8 +50,8 @@ namespace ColorVision.MySql.DAO
         public override DataTable GetTableAllByTenantId(int tenantId)
         {
             string sql;
-            if (string.IsNullOrEmpty(_viewName)) sql = $"select * from {TableName} where is_delete=0 and tenant_id={tenantId} and pcode='{_code}'";
-            else sql = $"select * from {_viewName} where is_delete=0 and tenant_id={tenantId} and pcode='{_code}'";
+            if (string.IsNullOrEmpty(ViewName)) sql = $"select * from {TableName} where is_delete=0 and tenant_id={tenantId} and pcode='{_code}'";
+            else sql = $"select * from {ViewName} where is_delete=0 and tenant_id={tenantId} and pcode='{_code}'";
             DataTable d_info = GetData(sql);
             return d_info;
         }
