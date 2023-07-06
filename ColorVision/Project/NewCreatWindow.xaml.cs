@@ -24,9 +24,6 @@ namespace ColorVision.Project
 
         public NewCreateViewMode()
         {
-            if (RecentNewCreatCache.RecentFiles.Count == 0)
-                RecentNewCreatCache.InsertFile(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ColorVision");
-
             foreach (var item in RecentNewCreatCache.RecentFiles)
             {
                 DirectoryInfo directoryInfo = new DirectoryInfo(item);
@@ -37,9 +34,13 @@ namespace ColorVision.Project
             }
             if (RecentNewCreatCacheList.Count == 0)
             {
-                RecentNewCreatCache.InsertFile(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ColorVision");
-                RecentNewCreatCacheList.Add(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ColorVision");
+                string Default = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ColorVision";
+                RecentNewCreatCache.InsertFile(Default);
+                RecentNewCreatCacheList.Add(Default);
+                if (Directory.Exists(Default))
+                    Directory.CreateDirectory(Default);
             }
+
 
             DirectoryPath = RecentNewCreatCacheList[0];
             this.Name = NewCreateFileName("新建工程");
