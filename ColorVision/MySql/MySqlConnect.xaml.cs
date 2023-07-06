@@ -1,8 +1,10 @@
 ﻿using ColorVision.MVVM;
 using ColorVision.SettingUp;
 using ColorVision.Util;
+using HandyControl.Tools.Extension;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -68,6 +70,7 @@ namespace ColorVision.MySql
 
         private MySqlConfig MySqlConfigBackUp { get; set; }
 
+        public ObservableCollection<MySqlConfig> MySqlConfigs { get; set; }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -76,6 +79,12 @@ namespace ColorVision.MySql
             MySqlConfigBackUp = new MySqlConfig();
             MySqlConfig.CopyTo(MySqlConfigBackUp);
             PasswordBox1.Password = MySqlConfig.UserPwd;
+            MySqlConfigs = GlobalSetting.GetInstance().SoftwareConfig.MySqlConfigs;
+            ListViewMySql.ItemsSource = MySqlConfigs;
+            //MySqlConfigs.Clear();
+            if (MySqlConfigs.Count == 0)
+                MySqlConfigs.Add(MySqlConfig);
+            //ListViewMySql.SelectedIndex = 0;
         }
 
         private void Button_Click_Test(object sender, RoutedEventArgs e)
@@ -84,6 +93,52 @@ namespace ColorVision.MySql
             bool IsConnect = MySqlControl.TestConnect(MySqlConfig);
             MessageBox.Show($"连接{(IsConnect ? "成功" : "失败")}");
 
+        }
+
+        private void Button_Click_Test1(object sender, RoutedEventArgs e)
+        {
+            if (ListViewMySqlBorder.Visibility == Visibility.Visible)
+            {
+                ListViewMySqlBorder.Visibility = Visibility.Collapsed;
+                this.Width -= 150;
+            }
+            else
+            {
+                ListViewMySqlBorder.Visibility = Visibility.Visible;
+                this.Width += 150;
+            }           
+        }
+
+        private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)
+        {
+
+        }
+
+        private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ListView listView && listView.SelectedIndex > -1)
+            {
+                MySqlConfig = MySqlConfigs[listView.SelectedIndex];
+                GridMQTT.DataContext = MySqlConfig;
+                PasswordBox1.Password = MySqlConfig.UserPwd;
+                GlobalSetting.GetInstance().SoftwareConfig.MySqlConfig = MySqlConfig;
+            }
+        }
+
+        private void Button_Click_Test2(object sender, RoutedEventArgs e)
+        {
+            MySqlConfig mySqlConfig = new MySqlConfig() {};
+            MySqlConfig.CopyTo(mySqlConfig);
+            MySqlConfigs.Add(mySqlConfig);
+
+        }
+
+        private void MenuItem_Click_Delete(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Tag is MySqlConfig mySqlConfig)
+            {
+                MySqlConfigs.Remove(mySqlConfig);
+            }
         }
     }
 }

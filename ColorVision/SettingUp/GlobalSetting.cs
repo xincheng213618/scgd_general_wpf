@@ -1,4 +1,5 @@
-﻿using ColorVision.Util;
+﻿using ColorVision.MVVM;
+using ColorVision.Util;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -36,6 +37,10 @@ namespace ColorVision.SettingUp
                     config.MySqlConfig.UserPwd = AESUtil.AESDecrypt(config.MySqlConfig.UserPwd, "ColorVision", "ColorVision");
                     config.MQTTConfig.UserPwd = AESUtil.AESDecrypt(config.MQTTConfig.UserPwd, "ColorVision", "ColorVision");
                     config.UserConfig.UserPwd = AESUtil.AESDecrypt(config.UserConfig.UserPwd, "ColorVision", "ColorVision");
+                    foreach (var item in config.MySqlConfigs)
+                        item.UserPwd = AESUtil.AESDecrypt(item.UserPwd, "ColorVision", "ColorVision");
+
+
                     return config;
                 }
                 else
@@ -59,17 +64,31 @@ namespace ColorVision.SettingUp
 
         public void SaveSoftwareConfig()
         {
-            string Temp0 = SoftwareConfig.MySqlConfig.UserPwd;
+            //string Temp0 = SoftwareConfig.MySqlConfig.UserPwd;
             string Temp1 = SoftwareConfig.MQTTConfig.UserPwd;
             string Temp2 = SoftwareConfig.UserConfig.UserPwd;
 
-            SoftwareConfig.MySqlConfig.UserPwd = AESUtil.AESEncrypt(SoftwareConfig.MySqlConfig.UserPwd, "ColorVision", "ColorVision");
+            //SoftwareConfig.MySqlConfig.UserPwd = AESUtil.AESEncrypt(SoftwareConfig.MySqlConfig.UserPwd, "ColorVision", "ColorVision");
             SoftwareConfig.MQTTConfig.UserPwd = AESUtil.AESEncrypt(SoftwareConfig.MQTTConfig.UserPwd, "ColorVision", "ColorVision");
-            SoftwareConfig.UserConfig.UserPwd = AESUtil.AESDecrypt(SoftwareConfig.UserConfig.UserPwd, "ColorVision", "ColorVision");
+            SoftwareConfig.UserConfig.UserPwd = AESUtil.AESEncrypt(SoftwareConfig.UserConfig.UserPwd, "ColorVision", "ColorVision");
+
+            List<string> MySqlConfigsPwd = new List<string>();
+            foreach (var item in SoftwareConfig.MySqlConfigs)
+            {
+                MySqlConfigsPwd.Add(item.UserPwd);
+                item.UserPwd = AESUtil.AESEncrypt(item.UserPwd, "ColorVision", "ColorVision");
+            }
+
+
             WriteConfig(GlobalConst.SoftwareConfigFileName, SoftwareConfig);
-            SoftwareConfig.MySqlConfig.UserPwd = Temp0;
+            //SoftwareConfig.MySqlConfig.UserPwd = Temp0;
             SoftwareConfig.MQTTConfig.UserPwd = Temp1;
             SoftwareConfig.UserConfig.UserPwd = Temp2;
+
+            for (int i = 0; i < MySqlConfigsPwd.Count; i++)
+                SoftwareConfig.MySqlConfigs[i].UserPwd = MySqlConfigsPwd[i];
+
+
         }
 
         private static T? ReadConfig<T>(string fileName)

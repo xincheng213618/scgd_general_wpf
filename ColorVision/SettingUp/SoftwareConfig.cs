@@ -4,6 +4,7 @@ using ColorVision.MySql;
 using ColorVision.Template;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -26,6 +27,10 @@ namespace ColorVision.SettingUp
             MySqlControlLazy = new Lazy<MySqlControl>(() => MySqlControl.GetInstance());
             PerformanceControlLazy = new Lazy<PerformanceControl>(() => PerformanceControl.GetInstance());
             TemplateControlLazy = new Lazy<TemplateControl>(() => TemplateControl.GetInstance());
+
+            MQTTConfigs = new ObservableCollection<MQTTConfig>();
+
+            MySqlConfigs = new ObservableCollection<MySqlConfig>();
         }
 
         public string Version { get; set; } = "0.0";
@@ -59,6 +64,9 @@ namespace ColorVision.SettingUp
         /// </summary>
         public MQTTConfig MQTTConfig { get; set; }
 
+        public ObservableCollection<MQTTConfig> MQTTConfigs { get; set; } 
+
+
         [JsonIgnore]
         readonly Lazy<MQTTControl> MQTTControlLazy;
         [JsonIgnore]
@@ -73,6 +81,8 @@ namespace ColorVision.SettingUp
         readonly Lazy<MySqlControl> MySqlControlLazy;
         [JsonIgnore]
         public MySqlControl MySqlControl { get => MySqlControlLazy.Value; }
+
+        public ObservableCollection<MySqlConfig> MySqlConfigs { get; set; }
 
 
         public UserConfig UserConfig { get; set; }

@@ -15,7 +15,7 @@ namespace ColorVision.MVVM
     public static class ViewModeBaseExtensions
     {
 
-        public static void CopyTo<T>(this T source, T target) where T: ViewModelBase
+        public static void CopyTo<T>(this T source, T target) 
         {
             Type type = source.GetType();
             var fields = type.GetRuntimeFields().ToList();
@@ -30,6 +30,7 @@ namespace ColorVision.MVVM
                 property.SetValue(target, property.GetValue(source));
             }
         }
+
 
 
         public static string ToJson(this ViewModelBase viewModelBase)

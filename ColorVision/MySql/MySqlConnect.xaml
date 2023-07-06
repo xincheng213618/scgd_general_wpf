@@ -14,49 +14,78 @@
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <Border  Background="#F9F9F9"  BorderBrush="#EAEAEA" BorderThickness="1"  Margin="5" CornerRadius="10,10,3,3">
-                <Grid x:Name="GridMQTT" Margin="5,5,10,5"  d:DataContext="{d:DesignInstance setting:MySqlConfig}">
-                    <StackPanel>
-                        <TextBlock Text="Mysql连接" HorizontalAlignment="Center" Margin="15" FontSize="17"/>
-                        <DockPanel Margin="5">
-                            <TextBlock Text="连接名:" VerticalAlignment="Center" Width="120"/>
-                            <TextBox  ToolTip="连接名"  VerticalAlignment="Center" TextWrapping="Wrap" Text="{Binding Name}"  BorderThickness="0,0,0,1" />
-                        </DockPanel>
-                        <DockPanel Margin="5,2">
-                            <TextBlock Text=""  Width="120"/>
-                        </DockPanel>
-                        <DockPanel Margin="5,2">
-                            <TextBlock Text="主机:" VerticalAlignment="Center" Width="120"/>
-                            <TextBox  ToolTip="主机"  VerticalAlignment="Center" Text="{Binding Host}"  BorderThickness="0,0,0,1" />
-                        </DockPanel>
-                        <DockPanel Margin="5,2">
-                            <TextBlock Text="端口:" VerticalAlignment="Center" Width="120"/>
-                            <TextBox ToolTip="端口"  VerticalAlignment="Center"  Text="{Binding Port}" PreviewKeyDown="NumberValidationTextBox" Width="50"  HorizontalAlignment="Left" BorderThickness="0,0,0,1" />
-                        </DockPanel>
 
-                        <DockPanel Margin="5,2">
-                            <TextBlock Text="用户:" VerticalAlignment="Center" Width="120"/>
-                            <TextBox ToolTip="用户"  VerticalAlignment="Center"  HorizontalAlignment="Left" Text="{Binding UserName}" Width="180" BorderThickness="0,0,0,1" />
-                        </DockPanel>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Border x:Name="ListViewMySqlBorder" Background="#FFFFFF"  BorderBrush="#EAEAEA" BorderThickness="1" Visibility="Collapsed" Width="150"  Margin="5" CornerRadius="10,10,5,5">
+                    <Grid>
+                        <ListView x:Name="ListViewMySql"  Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" SelectionChanged="ListView1_SelectionChanged">
+                            <ListView.ItemTemplate>
+                                <DataTemplate DataType="{x:Type setting:MySqlConfig}" >
+                                    <Border>
+                                        <Border.ContextMenu>
+                                            <ContextMenu>
+                                                <MenuItem  Header="删除" Click="MenuItem_Click_Delete" Tag="{Binding .}"/>
+                                            </ContextMenu>
+                                        </Border.ContextMenu>
+                                        <TextBlock  Text="{Binding Name}" TextTrimming = "CharacterEllipsis"/>
+                                    </Border>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                        <Button Content="+" Click="Button_Click_Test2" Margin="0,0,0,-1"  VerticalAlignment="Bottom"/>
+                    </Grid>
+                </Border>
+                <Border Grid.Column="1"  Background="#F9F9F9"  BorderBrush="#EAEAEA" BorderThickness="1"  Margin="5" CornerRadius="10,10,3,3">
+                    <Grid x:Name="GridMQTT" Margin="5,5,10,5"  d:DataContext="{d:DesignInstance setting:MySqlConfig}">
+                        <StackPanel>
+                            <TextBlock Text="Mysql连接" HorizontalAlignment="Center" Margin="15" FontSize="17"/>
+                            <DockPanel Margin="5">
+                                <TextBlock Text="连接名:" VerticalAlignment="Center" Width="120"/>
+                                <TextBox  ToolTip="连接名"  VerticalAlignment="Center" TextWrapping="Wrap" Text="{Binding Name}"  BorderThickness="0,0,0,1" />
+                            </DockPanel>
+                            <DockPanel Margin="5,2">
+                                <TextBlock Text=""  Width="120"/>
+                            </DockPanel>
+                            <DockPanel Margin="5,2">
+                                <TextBlock Text="主机:" VerticalAlignment="Center" Width="120"/>
+                                <TextBox  ToolTip="主机"  VerticalAlignment="Center" Text="{Binding Host}"  BorderThickness="0,0,0,1" />
+                            </DockPanel>
+                            <DockPanel Margin="5,2">
+                                <TextBlock Text="端口:" VerticalAlignment="Center" Width="120"/>
+                                <TextBox ToolTip="端口"  VerticalAlignment="Center"  Text="{Binding Port}" PreviewKeyDown="NumberValidationTextBox" Width="50"  HorizontalAlignment="Left" BorderThickness="0,0,0,1" />
+                            </DockPanel>
 
-                        <DockPanel Margin="5,2">
-                            <TextBlock Text="密码:" VerticalAlignment="Center" Width="120"/>
-                            <PasswordBox x:Name="PasswordBox1" ToolTip="密码"  VerticalAlignment="Center"  HorizontalAlignment="Left" Password=""  Width="180"  BorderThickness="0,0,0,1" />
-                        </DockPanel>
-                        <DockPanel Margin="5,2">
-                            <TextBlock Text=""  Width="120"/>
-                        </DockPanel>
-                        <DockPanel Margin="5,2">
-                            <TextBlock Text="数据库名称:" VerticalAlignment="Center" Width="120"/>
-                            <TextBox ToolTip="数据库名称"  VerticalAlignment="Center" HorizontalAlignment="Left" Text="{Binding Database}" Width="180"  BorderThickness="0,0,0,1" />
-                        </DockPanel>
+                            <DockPanel Margin="5,2">
+                                <TextBlock Text="用户:" VerticalAlignment="Center" Width="120"/>
+                                <TextBox ToolTip="用户"  VerticalAlignment="Center"  HorizontalAlignment="Left" Text="{Binding UserName}" Width="180" BorderThickness="0,0,0,1" />
+                            </DockPanel>
 
-                    </StackPanel>
-                </Grid>
-            </Border>
+                            <DockPanel Margin="5,2">
+                                <TextBlock Text="密码:" VerticalAlignment="Center" Width="120"/>
+                                <PasswordBox x:Name="PasswordBox1" ToolTip="密码"  VerticalAlignment="Center"  HorizontalAlignment="Left" Password=""  Width="180"  BorderThickness="0,0,0,1" />
+                            </DockPanel>
+                            <DockPanel Margin="5,2">
+                                <TextBlock Text=""  Width="120"/>
+                            </DockPanel>
+                            <DockPanel Margin="5,2">
+                                <TextBlock Text="数据库名称:" VerticalAlignment="Center" Width="120"/>
+                                <TextBox ToolTip="数据库名称"  VerticalAlignment="Center" HorizontalAlignment="Left" Text="{Binding Database}" Width="180"  BorderThickness="0,0,0,1" />
+                            </DockPanel>
+
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+            </Grid>
             
-            <StackPanel Grid.Row="1" Margin="5"   HorizontalAlignment="Left" VerticalAlignment="Bottom">
-                <Button Content="测试连接" Width="120" Click="Button_Click_Test"/>
+            
+            <StackPanel Grid.Row="1" Margin="5" Orientation="Horizontal"  HorizontalAlignment="Left" VerticalAlignment="Bottom">
+                <Button Content="%%" Width="40" Click="Button_Click_Test1" Margin="0,0,5,0"/>
+                <Button Content="测试连接" Width="80" Click="Button_Click_Test"/>
             </StackPanel>
             <StackPanel Grid.Row="1" Margin="0,5"   HorizontalAlignment="Right" VerticalAlignment="Bottom">
                 <UniformGrid x:Name="FunctionGrid" Columns="2" Width="180"   HorizontalAlignment="Center">

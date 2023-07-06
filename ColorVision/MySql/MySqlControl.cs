@@ -20,12 +20,13 @@ namespace ColorVision.MySql
         private static MySqlControl _instance;
         private static readonly object _locker = new();
         public static MySqlControl GetInstance() { lock (_locker) { return _instance ??= new MySqlControl(); } }
-        public MySqlConfig MySqlConfig { get; set; }
         public MySqlConnection MySqlConnection { get; set; }
+
+        public SoftwareConfig SoftwareConfig { get; set; }
 
         public MySqlControl()
         {
-            MySqlConfig = GlobalSetting.GetInstance().SoftwareConfig.MySqlConfig;
+            SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
             Task.Run(() => Open());
         }
 
@@ -38,13 +39,13 @@ namespace ColorVision.MySql
 
         public string GetCurConnectionString()
         {
-            string connStr = GetConnectionString(MySqlConfig);
+            string connStr = GetConnectionString(SoftwareConfig.MySqlConfig);
             return connStr;
         }
 
         public bool Open()
         {
-            string connStr = GetConnectionString(MySqlConfig);
+            string connStr = GetConnectionString(SoftwareConfig.MySqlConfig);
             try
             {
                 log.Info($"数据库连接信息:{connStr}");
