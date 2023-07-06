@@ -1,4 +1,5 @@
 ﻿using ColorVision.MVVM;
+using ColorVision.Project.RecentFile;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -15,15 +16,26 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
-namespace ColorVision
+namespace ColorVision.Project
 {
-    public class NewCreatViewMode : ViewModelBase
+    public class NewCreateViewMode : ViewModelBase
     {
+        public RecentFileList RecentNewCreatCache { get; set; } = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\RecentNewCreatCache") };
 
-        public NewCreatViewMode()
+        public NewCreateViewMode()
         {
-            DirectoryPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ColorVision";
-            RecentNewCreatCacheList.Add(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ColorVision");
+            if (RecentNewCreatCache.RecentFiles.Count == 0)
+                RecentNewCreatCache.InsertFile(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\Grid");
+
+            foreach (var item in RecentNewCreatCache.RecentFiles)
+            {
+                DirectoryInfo directoryInfo = new DirectoryInfo(item);
+                if (directoryInfo.Exists)
+                {
+                    RecentNewCreatCacheList.Add(directoryInfo.FullName);
+                }
+            }
+            DirectoryPath = RecentNewCreatCacheList[0];
             this.Name = NewCreateFileName("新建工程");
         }
 
@@ -60,11 +72,11 @@ namespace ColorVision
     /// </summary>
     public partial class NewCreatWindow : Window
     {
-        public NewCreatViewMode newCreatViewMode { get; set; }
+        public NewCreateViewMode newCreatViewMode { get; set; }
         public NewCreatWindow()
         {
             InitializeComponent();
-            newCreatViewMode = new NewCreatViewMode();
+            newCreatViewMode = new NewCreateViewMode();
             this.DataContext = newCreatViewMode;
         }
 
@@ -81,6 +93,7 @@ namespace ColorVision
                     return;
                 }
                 newCreatViewMode.DirectoryPath = dialog.SelectedPath;
+                newCreatViewMode.RecentNewCreatCache.InsertFile(newCreatViewMode.DirectoryPath);
             }
         }
         public bool IsCreate { get; set; }

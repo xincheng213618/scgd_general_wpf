@@ -169,11 +169,11 @@ namespace ColorVision.MySql
 
     public class BaseServiceMaster<T>: BaseDao where T : IBaseModel
     {
-        protected string _viewName;
+        protected string ViewName { get; set; }
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseServiceMaster<T>));
         public BaseServiceMaster(string viewName, string tableName, string pkField, bool isLogicDel) :base(tableName, pkField, isLogicDel)
         {
-            _viewName = viewName;
+            ViewName = viewName;
         }
 
         public virtual DataRow Model2Row(T item, DataRow row)
@@ -285,8 +285,8 @@ namespace ColorVision.MySql
 
         protected string GetTableName()
         {
-            if (string.IsNullOrEmpty(_viewName)) return TableName;
-            else return _viewName;
+            if (string.IsNullOrEmpty(ViewName)) return TableName;
+            else return ViewName;
         }
 
         public T? GetByID(int id)

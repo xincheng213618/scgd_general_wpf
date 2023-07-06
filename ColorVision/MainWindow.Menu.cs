@@ -1,8 +1,11 @@
-﻿using ColorVision.SettingUp;
+﻿using ColorVision.Project;
+using ColorVision.Project.RecentFile;
+using ColorVision.SettingUp;
 using ColorVision.Template;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -95,12 +98,12 @@ namespace ColorVision
 
         private void MenuItem_Click8(object sender, RoutedEventArgs e)
         {
-            new WindowFourColorCalibration() {Owner = this}.Show();
+            new WindowFourColorCalibration() {Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
 
         private void MenuItem9_Click(object sender, RoutedEventArgs e)
         {
-            new FlowEngine.WindowFlowEngine() { Owner = this }.Show();
+            new FlowEngine.WindowFlowEngine() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
 
         private void MenuItem_ProjectNew_Click(object sender, RoutedEventArgs e)
@@ -111,35 +114,59 @@ namespace ColorVision
                 if (newCreatWindow.IsCreate)
                 {
                     string SolutionDirectoryPath = newCreatWindow.newCreatViewMode.DirectoryPath + "\\" + newCreatWindow.newCreatViewMode.Name;
-                    GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectName = SolutionDirectoryPath;
+                    ProjectConfig ProjectConfig = GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig;
+                    if (Directory.Exists(SolutionDirectoryPath))
+                    {
+                        DirectoryInfo Info = new DirectoryInfo(SolutionDirectoryPath);
+                        ProjectConfig.ProjectName = Info.Name;
+                        ProjectConfig.ProjectFullName = Info.FullName;
+                        RecentFileList SolutionHistory = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
+                        SolutionHistory.InsertFile(Info.FullName);
+                    }
+
                 }
             };
             newCreatWindow.ShowDialog();
 
         }
 
+        private void MenuItem_ProjectOpen_Click(object sender, RoutedEventArgs e)
+        {
+            OpenSolutionWindow openSolutionWindow = new OpenSolutionWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            openSolutionWindow.Closed += delegate
+            {
+                string SolutionDirectoryPath = openSolutionWindow.FullName;
+                ProjectConfig ProjectConfig = GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig;
+                if (Directory.Exists(SolutionDirectoryPath))
+                {
+                    DirectoryInfo Info = new DirectoryInfo(SolutionDirectoryPath);
+                    ProjectConfig.ProjectName = Info.Name;
+                    ProjectConfig.ProjectFullName = Info.FullName;
+                    RecentFileList SolutionHistory = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
+                    SolutionHistory.InsertFile(Info.FullName);
+                }
+
+            };
+            openSolutionWindow.Show();
+
+        }
+        private DateTime lastClickTime = DateTime.MinValue;
+
         private void TextBlock_MouseLeftButtonDown2(object sender, MouseButtonEventArgs e)
         {
-            //NewCreatWindow newCreatWindow = new NewCreatWindow() { Owner = this,WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            //newCreatWindow.Closed += delegate
-            //{
-            //    if (newCreatWindow.IsCreate)
-            //    {
-            //        string SolutionDirectoryPath = newCreatWindow.newCreatViewMode.DirectoryPath + "\\" + newCreatWindow.newCreatViewMode.Name;
-            //        GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectName = SolutionDirectoryPath;
-            //    }
-            //};
-            //newCreatWindow.ShowDialog();
+            TimeSpan elapsedTime = DateTime.Now - lastClickTime;
+            if (elapsedTime.TotalMilliseconds <= 300) 
+            {
+                System.Diagnostics.Process.Start("explorer.exe", $"{GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectFullName}");
+            }
 
-            System.Diagnostics.Process.Start("explorer.exe", $"{GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectName}");
-
+            lastClickTime = DateTime.Now;
         }
 
         private void MenuItem_Click_2(object sender, RoutedEventArgs e)
         {
-            new SettingWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new SettingWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
-
 
         private void MenuItem_Exit(object sender, RoutedEventArgs e)
         {

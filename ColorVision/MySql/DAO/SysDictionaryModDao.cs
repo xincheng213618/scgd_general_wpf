@@ -10,8 +10,8 @@ namespace ColorVision.MySql.DAO
     public class SysDictionaryModModel : IBaseModel
     {
         public int Id { get; set; }
-        public string Code { get; set; }
-        public string Name { get; set; }
+        public string? Code { get; set; }
+        public string? Name { get; set; }
         public int TenantId { get; set; }
 
         public int GetPK()
@@ -26,7 +26,7 @@ namespace ColorVision.MySql.DAO
     }
     public class SysDictionaryModDao : BaseServiceMaster<SysDictionaryModModel>
     {
-        public SysDictionaryModDao() : base(null, "t_scgd_sys_dictionary_mod_master", "id", true)
+        public SysDictionaryModDao() : base(string.Empty, "t_scgd_sys_dictionary_mod_master", "id", true)
         {
         }
 
@@ -52,7 +52,7 @@ namespace ColorVision.MySql.DAO
                 { "tenantId", tenantId }
             };
             DataTable d_info = GetData(sql, param);
-            return d_info.Rows.Count == 1 ? GetModel(d_info.Rows[0]) : default;
+            return d_info.Rows.Count == 1 ? GetModel(d_info.Rows[0]) : new SysDictionaryModModel();
         }
     }
 }

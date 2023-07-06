@@ -1175,9 +1175,7 @@ namespace ColorVision.Template
                 {
                     if (PointCmp(vPoints[j], vPoints[j + 1], center))
                     {
-                        Point tmp = vPoints[j];
-                        vPoints[j] = vPoints[j + 1];
-                        vPoints[j + 1] = tmp;
+                        (vPoints[j + 1], vPoints[j]) = (vPoints[j], vPoints[j + 1]);
                     }
                 }
             }

@@ -53,7 +53,7 @@ namespace ColorVision.Template
             if(flowDetail != null ) {
                 foreach(var flowDetailModel in flowDetail)
                 {
-                    _Parameters.Add(flowDetailModel.Symbol, flowDetailModel);
+                    _Parameters.Add(flowDetailModel.Symbol??"", flowDetailModel);
                 }
             }
             this.name = dbModel.Name ?? string.Empty;
@@ -67,11 +67,12 @@ namespace ColorVision.Template
         /// <summary>
         /// 流程文件名称
         /// </summary>
-        public string FileName { set { if (_Parameters.ContainsKey("filename")) _Parameters["filename"].ValueA = value;
-                else;
+        public string? FileName { set {
+                if (_Parameters.ContainsKey("filename")) _Parameters["filename"].ValueA = value;
             } 
-            get { 
-                if (_Parameters.ContainsKey("filename")) return _Parameters["filename"].ValueA;
+            get {
+
+                if ( _Parameters.ContainsKey("filename")&& _Parameters["filename"] != null) return _Parameters["filename"].ValueA;
                 else return "";
             } }
 
