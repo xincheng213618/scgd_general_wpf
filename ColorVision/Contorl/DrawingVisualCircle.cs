@@ -134,6 +134,10 @@ namespace ColorVision
             dc.DrawEllipse(Attribute.Brush, Attribute.Pen, Attribute.Center, Attribute.Radius, Attribute.Radius);
         }
     }
+
+
+
+
     public interface IDrawingVisualDatum
     {
         public abstract DrawAttributeBase GetAttribute();
@@ -274,6 +278,21 @@ namespace ColorVision
         }
     }
 
+    public class DrawingVisualRectangleWord : DrawingVisualRectangle
+    {
+        public override void Render()
+        {
+            Brush brush = Brushes.Red;
+            FontFamily fontFamily = new FontFamily("Arial");
+            double fontSize = Attribute.Pen.Thickness * 10;
+            using DrawingContext dc = RenderOpen();
+            FormattedText formattedText = new FormattedText("Point_" + ID.ToString(), CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+            dc.DrawText(formattedText, new Point(Attribute.Rect.X , Attribute.Rect.Y - fontSize));
+            dc.DrawRectangle(Attribute.Brush, Attribute.Pen, Attribute.Rect);
+        }
+    }
+
+
 
 
     public class PolygonAttribute : DrawAttributeBase
@@ -358,7 +377,7 @@ namespace ColorVision
         }
         public int ID { get => Attribute.ID; set => Attribute.ID = value; }
 
-        public void Render()
+        public virtual void Render()
         {
             using DrawingContext dc = RenderOpen();
             dc.DrawRectangle(Attribute.Brush, Attribute.Pen, Attribute.Rect);
