@@ -61,7 +61,7 @@ namespace FlowEngine
             }
             else
             {
-                this.FileName = flowParam.FileName;
+                this.FileName = flowParam.Name;
                 ButtonOpen.Visibility = Visibility.Collapsed;
                 ButtonNew.Visibility = Visibility.Collapsed;
                 IsSave = false;
@@ -224,6 +224,8 @@ namespace FlowEngine
             {
                 STNodeEditor1.SaveCanvas(flowName);
             }
+
+            TemplateControl.GetInstance().SaveFlow2DB(FlowParam);
         }
 
         private string GetTopic()

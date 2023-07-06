@@ -35,20 +35,43 @@ namespace ColorVision.Template
     /// </summary>
     public class FlowParam : ParamBase
     {
-        public FlowParam() { }
-        public FlowParam(FlowMasterModel dbModel)
+        private Dictionary<string, FlowDetailModel> _Parameters;
+        public FlowParam() {
+            this._Parameters = new Dictionary<string, FlowDetailModel>();
+        }
+        public FlowParam(FlowMasterModel dbModel, List<FlowDetailModel> flowDetail)
         {
+            this._Parameters = new Dictionary<string, FlowDetailModel>();
             this.ID = dbModel.Id;
-            this.FileName = dbModel.Name ?? string.Empty; ;
+            if(flowDetail != null ) {
+                foreach(var flowDetailModel in flowDetail)
+                {
+                    _Parameters.Add(flowDetailModel.Symbol, flowDetailModel);
+                }
+            }
+            this.name = dbModel.Name ?? string.Empty;
         }
 
         public int ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
         private int _ID;
+
+        private string name;
+        public string Name { get => name; set { name = value; } }
         /// <summary>
         /// 流程文件名称
         /// </summary>
-        public string FileName { set; get; }
+        public string FileName { set { if (_Parameters.ContainsKey("filename")) _Parameters["filename"].ValueA = value;
+                else;
+            } 
+            get { 
+                if (_Parameters.ContainsKey("filename")) return _Parameters["filename"].ValueA;
+                else return "";
+            } }
 
+        internal void GetDetail(List<FlowDetailModel> list)
+        {
+            list.AddRange(_Parameters.Values.ToList());
+        }
     }
 
 

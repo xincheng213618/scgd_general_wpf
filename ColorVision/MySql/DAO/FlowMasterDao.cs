@@ -39,7 +39,7 @@ namespace ColorVision.MySql.DAO
     }
     public class FlowMasterDao : BaseModMasterDao<FlowMasterModel>
     {
-        public FlowMasterDao() : base("flow", "v_scgd_mod_master", "t_scgd_mod_param_master", "id")
+        public FlowMasterDao() : base("flow", "v_scgd_mod_master", "t_scgd_mod_param_master", "id", true)
         {
         }
 
@@ -72,12 +72,6 @@ namespace ColorVision.MySql.DAO
                 row["mm_id"] = item.Pid;
             }
             return row;
-        }
-
-        public override int Save(FlowMasterModel item)
-        {
-            item.Pid = 11;
-            return base.Save(item);
         }
     }
 }

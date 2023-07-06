@@ -96,18 +96,11 @@ namespace ColorVision.MySql.DAO
         }
     }
 
-
-
     internal class PoiMasterDao : BaseServiceMaster<PoiMasterModel>
     {
-        public PoiMasterDao() : base("t_scgd_cfg_poi_master", "id")
+        public PoiMasterDao() : base("", "t_scgd_cfg_poi_master", "id", true)
         {
 
-        }
-        public override DataTable GetDataTable(string? tableName = null)
-        {
-            DataTable dataTable = base.GetDataTable();
-            return CreateColumns(dataTable);
         }
 
         public override PoiMasterModel GetModel(DataRow item)

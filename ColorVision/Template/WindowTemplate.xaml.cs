@@ -175,7 +175,7 @@ namespace ColorVision.Template
                     case WindowTemplateType.FlowParam:
                         if (ListConfigs[listView.SelectedIndex].Value is FlowParam flowParam)
                         {
-                            flowParam.FileName ??= ListConfigs[listView.SelectedIndex].Name;
+                            flowParam.Name ??= ListConfigs[listView.SelectedIndex].Name;
                             new FlowEngine.WindowFlowEngine(flowParam) { Owner = Application.Current.MainWindow }.Show();
                         }
                         break;
@@ -270,7 +270,7 @@ namespace ColorVision.Template
                             else MessageBox.Show("数据库创建流程模板失败");
                         }
                         else
-                            CreateNewTemplate(TemplateControl.FlowParams, TextBox1.Text, new FlowParam() {FileName = TextBox1.Text });
+                            CreateNewTemplate(TemplateControl.FlowParams, TextBox1.Text, new FlowParam() {Name = TextBox1.Text });
                         break;
 
                 }
