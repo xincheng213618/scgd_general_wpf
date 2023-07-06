@@ -221,9 +221,9 @@ namespace ColorVision.Template
 
         public ObservableCollection<KeyValuePair<string, PoiParam>> LoadPoiParam()
         {
-            PoiParams.Clear();
             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
             {
+                PoiParams.Clear();
                 List<PoiMasterModel> poiMaster = poiService.GetMasterAll(GlobalSetting.GetInstance().SoftwareConfig.TenantId);
                 foreach (var dbModel in poiMaster)
                 {
@@ -233,7 +233,8 @@ namespace ColorVision.Template
             }
             else
             {
-                PoiParams = IDefault(FileNamePoiParms, new PoiParam(), ref IsOldPoiParams);
+                if (PoiParams.Count == 0)
+                    PoiParams = IDefault(FileNamePoiParms, new PoiParam(), ref IsOldPoiParams);
             }
 
             return PoiParams;

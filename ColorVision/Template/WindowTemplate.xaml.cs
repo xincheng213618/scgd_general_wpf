@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1707
-using ColorVision.Extension;
+﻿using ColorVision.Extension;
 using ColorVision.MySql;
 using ColorVision.MySql.DAO;
 using ColorVision.SettingUp;
@@ -32,6 +31,8 @@ namespace ColorVision.Template
     {
         public int ID { set; get; }
         public string Name { set; get; }
+        public string Tag { set; get; }
+
 
         public object? Value { set; get; }
     }
@@ -103,8 +104,8 @@ namespace ColorVision.Template
             {
                 case WindowTemplateType.PoiParam:
                     TemplateGrid.Header = "点集";
-                    this.MinWidth = 380;
-                    this.Width = 380;
+                    this.MinWidth = 390;
+                    this.Width = 390;
                     break;
                 case WindowTemplateType.FlowParam:
                     TemplateGrid.Header = "流程";
@@ -284,7 +285,7 @@ namespace ColorVision.Template
                     CreateNewTemplate(TemplateControl.SxParams, TextBox1.Text, new SxParam());
                     break;
                 case WindowTemplateType.PoiParam:
-                    CreateNewTemplate(TemplateControl.PoiParams, TextBox1.Text, new PoiParam() { });
+                    CreateNewTemplate(TemplateControl.PoiParams, TextBox1.Text , new PoiParam() { });
                     break;
                 case WindowTemplateType.FlowParam:
                     CreateNewTemplate(TemplateControl.FlowParams, TextBox1.Text, new FlowParam() { Name = TextBox1.Text });
@@ -312,10 +313,10 @@ namespace ColorVision.Template
             }
         }
 
-        private void CreateNewTemplate<T>(ObservableCollection<KeyValuePair<string, T>> keyValuePairs ,string Name,T t)
+        private void CreateNewTemplate<T>(ObservableCollection<KeyValuePair<string, T>> keyValuePairs ,string Name,T t )
         {
             keyValuePairs.Add(new KeyValuePair<string, T>(Name, t));
-            ListConfig config = new ListConfig() { ID = ListConfigs.Count + 1, Name = Name, Value = t };
+            ListConfig config = new ListConfig() { ID = ListConfigs.Count + 1, Name = Name, Value = t  };
             ListConfigs.Add(config);
             ListView1.SelectedIndex = ListConfigs.Count - 1;
             ListView1.ScrollIntoView(config);

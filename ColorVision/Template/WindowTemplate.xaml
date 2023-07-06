@@ -34,6 +34,7 @@
                     <Grid x:Name="GridListHeader2" Grid.Column="1">
                         <TextBlock  HorizontalAlignment="Left" VerticalAlignment="Center" Text="{Binding ElementName=TemplateGrid,Path=Header,StringFormat='{}{0}名称'}" Margin="10,0,0,0" />
                     </Grid>
+                    <Grid x:Name="GridListLen" Grid.Column="0" Grid.ColumnSpan="2" Margin="20,0" />
                 </Grid>
 
                 <ListView  x:Name="ListView1" Loaded="ListView1_Loaded" DataContext="{Binding ListConfigs}"   ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" PreviewMouseDoubleClick="ListView1_PreviewMouseDoubleClick" SelectionChanged="ListView1_SelectionChanged">
@@ -46,17 +47,18 @@
                     </ListView.Resources>
                     <ListView.View>
                         <GridView>
-                            <GridViewColumn Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}">
+                            <GridViewColumn Width="{Binding ElementName=GridListLen,Path=ActualWidth}" >
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate >
-                                        <TextBlock Text="{Binding Path=ID}" HorizontalAlignment="Center"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}">>
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate >
-                                        <TextBlock Text="{Binding Path=Name}" HorizontalAlignment="Center"/>
+                                    <DataTemplate x:Name="ListConfigDataTemplate"  DataType="{x:Type local:ListConfig}">
+                                        <DockPanel Width="{Binding ElementName=GridListLen,Path=ActualWidth}" Margin="0,0,-30,0">
+                                            <TextBlock DockPanel.Dock="Right"  Text="{ Binding Tag}"  FontSize="10" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                            <Grid Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}">
+                                                <TextBlock Text="{ Binding ID}" HorizontalAlignment="Left"/>
+                                            </Grid>
+                                            <Grid >
+                                                <TextBlock Text="{ Binding Name}" HorizontalAlignment="Left"/>
+                                            </Grid>
+                                        </DockPanel>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
@@ -102,7 +104,7 @@
                     <TextBlock Text="{Binding ElementName=TemplateGrid,Path=Header,StringFormat='删除{0}'}"/>
                 </Button>
                 <Button  Width="80" HorizontalAlignment="Right"  Click="Button_Save_Click" >
-                    <TextBlock Text="{Binding ElementName=TemplateGrid,Path=Header,StringFormat='删除{0}'}"/>
+                    <TextBlock Text="{Binding ElementName=TemplateGrid,Path=Header,StringFormat='保存{0}'}"/>
                 </Button>                
 
             </UniformGrid>

@@ -1253,7 +1253,15 @@ namespace ColorVision.Template
             }
         }
 
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("生成关注点");
+        }
 
+        private void Button1_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("导入关注点");
+        }
     }
 
 }

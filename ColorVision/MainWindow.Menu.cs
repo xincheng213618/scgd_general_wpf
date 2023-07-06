@@ -2,6 +2,7 @@
 using ColorVision.Project.RecentFile;
 using ColorVision.SettingUp;
 using ColorVision.Template;
+using HandyControl.Tools.Extension;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -86,6 +87,11 @@ namespace ColorVision
                 listConfig.ID = id++;
                 listConfig.Name = item.Key;
                 listConfig.Value = item.Value;
+                if (item.Value is PoiParam poiParam)
+                {
+                    listConfig.Tag = $"{poiParam.Width}*{poiParam.Height}_{poiParam.PoiPoints.Count}";
+                }
+
                 windowTemplate.ListConfigs.Add(listConfig);
             }
             windowTemplate.ShowDialog();

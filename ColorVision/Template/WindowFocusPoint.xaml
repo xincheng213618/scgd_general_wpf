@@ -91,11 +91,17 @@
                             <StackPanel Margin="5" Visibility="{Binding ElementName=RadioButtonMode2, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
                                 <GroupBox Header="灯珠计算" Margin="5">
                                     <StackPanel Margin="5">
-                                        
+                                        <Button Content="自动生成关注点" Click="Button_Click"/>
                                     </StackPanel>
                                 </GroupBox>
                             </StackPanel>
-
+                            <StackPanel Margin="5" Visibility="{Binding ElementName=RadioButtonMode3, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
+                                <GroupBox Header="导入布点" Margin="5">
+                                    <StackPanel Margin="5">
+                                        <Button Content="自动导入布点" Click="Button1_Click"/>
+                                    </StackPanel>
+                                </GroupBox>
+                            </StackPanel>
 
 
 
