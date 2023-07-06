@@ -1,4 +1,6 @@
-﻿using ColorVision.SettingUp;
+﻿using ColorVision.Project;
+using ColorVision.Project.RecentFile;
+using ColorVision.SettingUp;
 using ColorVision.Template;
 using System;
 using System.Collections.Generic;
@@ -99,12 +101,12 @@ namespace ColorVision
 
         private void MenuItem_Click8(object sender, RoutedEventArgs e)
         {
-            new WindowFourColorCalibration() {Owner = this}.Show();
+            new WindowFourColorCalibration() {Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
 
         private void MenuItem9_Click(object sender, RoutedEventArgs e)
         {
-            new FlowEngine.WindowFlowEngine() { Owner = this }.Show();
+            new FlowEngine.WindowFlowEngine() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
 
         private void MenuItem_ProjectNew_Click(object sender, RoutedEventArgs e)
@@ -116,9 +118,25 @@ namespace ColorVision
                 {
                     string SolutionDirectoryPath = newCreatWindow.newCreatViewMode.DirectoryPath + "\\" + newCreatWindow.newCreatViewMode.Name;
                     GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectName = SolutionDirectoryPath;
+                    RecentFileList SolutionHistory = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
+                    SolutionHistory.InsertFile(SolutionDirectoryPath);
                 }
             };
             newCreatWindow.ShowDialog();
+
+        }
+
+        private void MenuItem_ProjectOpen_Click(object sender, RoutedEventArgs e)
+        {
+            OpenSolutionWindow openSolutionWindow = new OpenSolutionWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            openSolutionWindow.Closed += delegate
+            {
+                string SolutionDirectoryPath = openSolutionWindow.FullName;
+                GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectName = SolutionDirectoryPath;
+                RecentFileList SolutionHistory = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
+                SolutionHistory.InsertFile(SolutionDirectoryPath);
+            };
+            openSolutionWindow.Show();
 
         }
 
@@ -136,14 +154,12 @@ namespace ColorVision
             //newCreatWindow.ShowDialog();
 
             System.Diagnostics.Process.Start("explorer.exe", $"{GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectName}");
-
         }
 
         private void MenuItem_Click_2(object sender, RoutedEventArgs e)
         {
-            new SettingWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new SettingWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
-
 
         private void MenuItem_Exit(object sender, RoutedEventArgs e)
         {

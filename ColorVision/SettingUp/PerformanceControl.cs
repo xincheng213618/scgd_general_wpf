@@ -10,18 +10,13 @@ namespace ColorVision
 {
     public class PerformanceControl : ViewModelBase, IDisposable
     {
-
-
         private static PerformanceControl _instance;
         private static readonly object _locker = new();
         public static PerformanceControl GetInstance() { lock (_locker) { return _instance ??= new PerformanceControl(); } }
 
-
-
         private bool PerformanceCounterIsOpen;
-
         private PerformanceCounter CPU;
-        private PerformanceCounter ProcessThis;
+        private PerformanceCounter CPUThis;
 
         private double RAMAL = (double)NativeMethods.PerformanceInfo.GetTotalMemoryInMiB() / 1024;
         private PerformanceCounter RAM;
@@ -49,11 +44,12 @@ namespace ColorVision
             {
                 try
                 {
-                    ProcessThis = new PerformanceCounter("Process", "% Processor Time", Process.GetCurrentProcess().ProcessName);
+                    CPU = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+                    CPUThis = new PerformanceCounter("Process", "% Processor Time", Process.GetCurrentProcess().ProcessName);
                     RAM = new PerformanceCounter("Memory", "Available MBytes");
 
                     RAMThis = new PerformanceCounter("Process", "Working Set - Private", Process.GetCurrentProcess().ProcessName);
-                    CPU = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+
                     PerformanceCounterIsOpen = true;
                 }
                 catch
@@ -69,7 +65,18 @@ namespace ColorVision
         {
             if (PerformanceCounterIsOpen)
             {
-                MemoryThis = (RAMThis.NextValue() / 1024 / 1024).ToString("f1") + "MB" + "/" + RAMAL.ToString("f1") + "GB";
+
+
+                RAMPercent = 100- RAM.NextValue() / 1024 / RAMAL * 100;
+                RAMThisPercent = RAMThis.NextValue() / 1024 / 1024 / 1024 / RAMAL * 100;
+
+                CPUThisPercent = CPUThis.NextValue();
+                CPUPercent = CPU.NextValue();
+
+
+                float curRAM = RAMThis.NextValue() / 1024 / 1024;
+
+                MemoryThis = curRAM.ToString("f1") + "MB" + "/" + RAMAL.ToString("f1") + "GB";
                 ProcessorTotal = CPU.NextValue().ToString("f1") + "%";
                 Time = DateTime.Now.ToString("MM月dd日 HH:mm:ss");
             }
@@ -104,6 +111,18 @@ namespace ColorVision
         /// </summary>
         public string MemoryThis { get => _MemoryThis; set { _MemoryThis = value; NotifyPropertyChanged(); } }
         private string _MemoryThis = String.Empty;
+
+        public double RAMPercent { get => _RAMPercent; set { _RAMPercent = value; NotifyPropertyChanged(); } }
+        private double _RAMPercent;
+
+        public double RAMThisPercent { get => _RAMThisPercent; set { _RAMThisPercent = value; NotifyPropertyChanged(); } }
+        private double _RAMThisPercent;
+
+        public double CPUPercent { get => _CPUPercent; set { _CPUPercent = value; NotifyPropertyChanged(); } }
+        private double _CPUPercent;
+
+        public double CPUThisPercent { get => _CPUThisPercent; set { _CPUThisPercent = value; NotifyPropertyChanged(); } }
+        private double _CPUThisPercent;
 
 
         public void Dispose()
