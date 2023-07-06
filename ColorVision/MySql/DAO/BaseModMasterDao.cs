@@ -9,10 +9,10 @@ namespace ColorVision.MySql.DAO
 {
     public class BaseModMasterDao<T> : BaseServiceMaster<T> where T : IBaseModel
     {
-        protected string _code;
+        protected string Code { get; set; }
         public BaseModMasterDao(string code, string viewName, string tableName, string pkField, bool isLogicDel) : base(viewName, tableName, pkField, isLogicDel)
         {
-            _code = code;
+            Code = code;
         }
 
         public override DataTable GetTableAllByTenantId(int tenantId)
@@ -24,15 +24,15 @@ namespace ColorVision.MySql.DAO
             return d_info;
         }
 
-        public string GetPCode() { return _code; }
+        public string GetPCode() { return Code; }
     }
 
     public class BaseModDetailDao<T> : BaseServiceMaster<T> where T : IBaseModel
     {
-        protected string _code;
+        protected string Code { get; set; }
         public BaseModDetailDao(string code, string viewName, string tableName, string pkField, bool isLogicDel) : base(viewName, tableName, pkField, isLogicDel)
         {
-            _code = code;
+            Code = code;
         }
         public override DataTable CreateColumns(DataTable dInfo)
         {
