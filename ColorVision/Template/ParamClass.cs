@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -27,6 +28,13 @@ namespace ColorVision.Template
             }
         }
         private bool _IsEnable;
+        protected Dictionary<string, ModDetailModel> _Parameters;
+
+        public int GetValue([CallerMemberName] string propertyName = "")
+        {
+            if (_Parameters.ContainsKey(propertyName)) return int.Parse(_Parameters[propertyName].ValueA);
+            else return 0;
+        }
     }
 
 
@@ -35,13 +43,12 @@ namespace ColorVision.Template
     /// </summary>
     public class FlowParam : ParamBase
     {
-        private Dictionary<string, FlowDetailModel> _Parameters;
         public FlowParam() {
-            this._Parameters = new Dictionary<string, FlowDetailModel>();
+            this._Parameters = new Dictionary<string, ModDetailModel>();
         }
-        public FlowParam(FlowMasterModel dbModel, List<FlowDetailModel> flowDetail)
+        public FlowParam(ModMasterModel dbModel, List<ModDetailModel> flowDetail)
         {
-            this._Parameters = new Dictionary<string, FlowDetailModel>();
+            this._Parameters = new Dictionary<string, ModDetailModel>();
             this.ID = dbModel.Id;
             if(flowDetail != null ) {
                 foreach(var flowDetailModel in flowDetail)
@@ -68,16 +75,51 @@ namespace ColorVision.Template
                 else return "";
             } }
 
-        internal void GetDetail(List<FlowDetailModel> list)
+        internal void GetDetail(List<ModDetailModel> list)
         {
             list.AddRange(_Parameters.Values.ToList());
         }
     }
 
-
-
     public class AoiParam: ParamBase
     {
+        public AoiParam()
+        {
+            this.FilterByArea = true;
+            this.MaxArea = 6000;
+            this.MinArea = 10;
+            this.FilterByContrast = true;
+            this.MaxContrast = 1.7f;
+            this.MinContrast = 0.3f;
+            this.ContrastBrightness = 1.0f;
+            this.ContrastDarkness = 0.5f;
+            this.BlurSize = 19;
+            this.MinContourSize = 5;
+            this.ErodeSize = 5;
+            this.DilateSize = 5;
+            this.Left = 5;
+            this.Right = 5;
+            this.Top = 5;
+            this.Bottom = 5;
+            this._Parameters = new Dictionary<string, ModDetailModel>();
+            this.ID = -1;
+        }
+        public AoiParam(ModMasterModel aoiMaster, List<ModDetailModel> aoiDetail)
+        {
+            this.ID = aoiMaster.Id;
+            this._Parameters = new Dictionary<string, ModDetailModel>();
+            if (aoiDetail != null)
+            {
+                foreach (var aoiDetailModel in aoiDetail)
+                {
+                    _Parameters.Add(aoiDetailModel.Symbol, aoiDetailModel);
+                }
+            }
+        }
+
+        public int ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
+        private int _ID;
+
         public bool FilterByArea { set; get; }
         public int MaxArea { set; get; }
         public int MinArea { set; get; }
@@ -90,16 +132,15 @@ namespace ColorVision.Template
         public int MinContourSize { set; get; }
         public int ErodeSize { set; get; }
         public int DilateSize { set; get; }
-        [Category("left")]
-        public int Left { set; get; }
         [Category("AoiRect")]
-        public int Right { set; get; }
+        public int Left { set {; } get => GetValue(); }
         [Category("AoiRect")]
-        public int Top { set; get; }
+        public int Right { set {; } get => GetValue(); }
         [Category("AoiRect")]
-        public int Bottom { set; get; }
-    };
-
+        public int Top { set {; } get => GetValue(); }
+        [Category("AoiRect")]
+        public int Bottom { set {; } get => GetValue(); }
+    }
     public class LedReusltParam : ParamBase
     {
         [Category("检测判断配置"), DefaultValue(1),DisplayName("灯珠抓取通道")]

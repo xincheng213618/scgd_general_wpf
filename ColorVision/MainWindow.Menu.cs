@@ -25,10 +25,16 @@ namespace ColorVision
             {
                 SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
                 WindowTemplate windowTemplate;
+                if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
+                {
+                    MessageBox.Show("数据库连接失败，请先连接数据库在操作");
+                    return;
+                }
                 switch (menuItem.Tag?.ToString()??string.Empty)
                 {
                     case "AoiParam":
                         windowTemplate = new WindowTemplate(WindowTemplateType.AoiParam) { Title = "AOI参数设置" };
+                        TemplateControl.LoadAoiParam();
                         TemplateAbb(windowTemplate, TemplateControl.AoiParams);
                         break;
                     case "Calibration":
@@ -51,21 +57,11 @@ namespace ColorVision
                         break;
                     case "FocusParm":
                         windowTemplate = new WindowTemplate(WindowTemplateType.PoiParam) { Title = "关注点设置" };
-                        if (SoftwareConfig.IsUseMySql&& !SoftwareConfig.MySqlControl.IsConnect)
-                        {
-                            MessageBox.Show("数据库连接失败，请先连接数据库在操作");
-                            return;
-                        }
                         TemplateControl.LoadPoiParam();
                         TemplateAbb(windowTemplate, TemplateControl.PoiParams);
                         break;
                     case "FlowParam":
                         windowTemplate = new WindowTemplate(WindowTemplateType.FlowParam) { Title = "流程引擎" };
-                        if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
-                        {
-                            MessageBox.Show("数据库连接失败，请先连接数据库在操作");
-                            return;
-                        }
                         TemplateControl.LoadFlowParam();
                         TemplateAbb(windowTemplate, TemplateControl.FlowParams);
                         break;

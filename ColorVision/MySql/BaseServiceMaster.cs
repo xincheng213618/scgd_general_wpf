@@ -21,11 +21,11 @@ namespace ColorVision.MySql
 
         public MySqlControl MySqlControl { get; set; }
         public string TableName { get { return _TableName; } set { _TableName = value; } }
-        protected string _TableName;
+        private string _TableName;
         public string PKField { get { return _PKField; } set { _PKField = value; } }
-        protected string _PKField;
+        private string _PKField;
         public bool IsLogicDel { get { return _IsLogicDel; } set { _IsLogicDel = value; } }
-        protected bool _IsLogicDel;
+        private bool _IsLogicDel;
 
         public BaseDao(string tableName, string pkField, bool isLogicDel)
         {

@@ -7,12 +7,13 @@ using System.Threading.Tasks;
 
 namespace ColorVision.MySql.DAO
 {
-    public class FlowDetailModel : IBaseModel
+    public class ModDetailModel : IBaseModel
     {
-        public FlowDetailModel() :this(-1,-1){ }
-        public FlowDetailModel(int sysPid,int pid) {
+        public ModDetailModel() :this(-1,-1,null){ }
+        public ModDetailModel(int sysPid,int pid,string? val) {
             SysPid = sysPid;
             Pid = pid;
+            ValueA = val;
         }
         public int Id { get; set; }
         public int SysPid { get; set; }
@@ -34,15 +35,15 @@ namespace ColorVision.MySql.DAO
         }
     }
 
-    public class FlowDetailDao : BaseModDetailDao<FlowDetailModel>
+    public class ModDetailDao : BaseServiceMaster<ModDetailModel>
     {
-        public FlowDetailDao() : base("flow", "v_scgd_mod_detail", "t_scgd_mod_param_detail", "id", true)
+        public ModDetailDao() : base("v_scgd_mod_detail", "t_scgd_mod_param_detail", "id", true)
         {
         }
 
-        public override FlowDetailModel GetModel(DataRow item)
+        public override ModDetailModel GetModel(DataRow item)
         {
-            FlowDetailModel model = new FlowDetailModel
+            ModDetailModel model = new ModDetailModel
             {
                 Id = item.Field<int>("id"),
                 SysPid = item.Field<int>("cc_pid"),
@@ -57,7 +58,7 @@ namespace ColorVision.MySql.DAO
             return model;
         }
 
-        public override DataRow Model2Row(FlowDetailModel item, DataRow row)
+        public override DataRow Model2Row(ModDetailModel item, DataRow row)
         {
             if (item != null)
             {
@@ -70,6 +71,18 @@ namespace ColorVision.MySql.DAO
                 row["is_delete"] = item.IsDelete;
             }
             return row;
+        }
+
+        public override DataTable CreateColumns(DataTable dInfo)
+        {
+            dInfo.Columns.Add("id", typeof(int));
+            dInfo.Columns.Add("cc_pid", typeof(int));
+            dInfo.Columns.Add("pid", typeof(int));
+            dInfo.Columns.Add("value_a", typeof(string));
+            dInfo.Columns.Add("value_b", typeof(string));
+            dInfo.Columns.Add("is_enable", typeof(bool));
+            dInfo.Columns.Add("is_delete", typeof(bool));
+            return dInfo;
         }
     }
 }

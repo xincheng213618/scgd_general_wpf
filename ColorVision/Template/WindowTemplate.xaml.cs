@@ -229,50 +229,80 @@ namespace ColorVision.Template
             return FileName;
         }
 
+        private void CreateNewTemplateFromDB()
+        {
+            switch (TemplateType)
+            {
+                case WindowTemplateType.AoiParam:
+                    AoiParam? aoiParam = TemplateControl.AddAoiParam(TextBox1.Text);
+                    if (aoiParam != null) CreateNewTemplate(TemplateControl.AoiParams, TextBox1.Text, aoiParam);
+                    else MessageBox.Show("数据库创建AOI模板失败");
+                    break;
+                case WindowTemplateType.Calibration:
+                    CreateNewTemplate(TemplateControl.CalibrationParams, TextBox1.Text, new CalibrationParam());
+                    break;
+                case WindowTemplateType.PGParam:
+                    CreateNewTemplate(TemplateControl.PGParams, TextBox1.Text, new PGParam());
+                    break;
+                case WindowTemplateType.LedReuslt:
+                    CreateNewTemplate(TemplateControl.LedReusltParams, TextBox1.Text, new LedReusltParam());
+                    break;
+                case WindowTemplateType.SxParm:
+                    CreateNewTemplate(TemplateControl.SxParams, TextBox1.Text, new SxParam());
+                    break;
+                case WindowTemplateType.PoiParam:
+                        PoiParam? poiParam = TemplateControl.AddPoiParam(TextBox1.Text);
+                        if (poiParam != null) CreateNewTemplate(TemplateControl.PoiParams, TextBox1.Text, poiParam);
+                        else MessageBox.Show("数据库创建POI模板失败");
+                    break;
+                case WindowTemplateType.FlowParam:
+                        FlowParam? flowParam = TemplateControl.AddFlowParam(TextBox1.Text);
+                        if (flowParam != null) CreateNewTemplate(TemplateControl.FlowParams, TextBox1.Text, flowParam);
+                        else MessageBox.Show("数据库创建流程模板失败");
+                    break;
+
+            }
+        }
+
+        private void CreateNewTemplateFromCsv()
+        {
+            switch (TemplateType)
+            {
+                case WindowTemplateType.AoiParam:
+                    CreateNewTemplate(TemplateControl.AoiParams, TextBox1.Text, new AoiParam());
+                    break;
+                case WindowTemplateType.Calibration:
+                    CreateNewTemplate(TemplateControl.CalibrationParams, TextBox1.Text, new CalibrationParam());
+                    break;
+                case WindowTemplateType.PGParam:
+                    CreateNewTemplate(TemplateControl.PGParams, TextBox1.Text, new PGParam());
+                    break;
+                case WindowTemplateType.LedReuslt:
+                    CreateNewTemplate(TemplateControl.LedReusltParams, TextBox1.Text, new LedReusltParam());
+                    break;
+                case WindowTemplateType.SxParm:
+                    CreateNewTemplate(TemplateControl.SxParams, TextBox1.Text, new SxParam());
+                    break;
+                case WindowTemplateType.PoiParam:
+                    CreateNewTemplate(TemplateControl.PoiParams, TextBox1.Text, new PoiParam() { });
+                    break;
+                case WindowTemplateType.FlowParam:
+                    CreateNewTemplate(TemplateControl.FlowParams, TextBox1.Text, new FlowParam() { Name = TextBox1.Text });
+                    break;
+            }
+        }
+
         private void Button_New_Click(object sender, RoutedEventArgs e)
         {
             if (!TextBox1.Text.IsNullOrEmpty())
             {
-                switch (TemplateType)
+                if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
                 {
-                    case WindowTemplateType.AoiParam:
-                        CreateNewTemplate(TemplateControl.AoiParams, TextBox1.Text, new AoiParam());
-                        break;
-                    case WindowTemplateType.Calibration:
-                        CreateNewTemplate(TemplateControl.CalibrationParams, TextBox1.Text, new CalibrationParam());
-                        break;
-                    case WindowTemplateType.PGParam:
-                        CreateNewTemplate(TemplateControl.PGParams,TextBox1.Text, new PGParam());
-                        break;
-                    case WindowTemplateType.LedReuslt:
-                        CreateNewTemplate(TemplateControl.LedReusltParams, TextBox1.Text, new LedReusltParam());
-                        break;
-                    case WindowTemplateType.SxParm:
-                        CreateNewTemplate(TemplateControl.SxParams, TextBox1.Text, new SxParam());
-                        break;
-                    case WindowTemplateType.PoiParam:
-                        if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
-                        {
-                            PoiParam? poiParam = TemplateControl.AddPoiParam(TextBox1.Text);
-                            if (poiParam != null) CreateNewTemplate(TemplateControl.PoiParams, TextBox1.Text, poiParam);
-                            else MessageBox.Show("数据库创建POI模板失败");
-                        }
-                        else
-                        {
-                            CreateNewTemplate(TemplateControl.PoiParams, TextBox1.Text, new PoiParam() {  });
-                        }
-                        break;
-                    case WindowTemplateType.FlowParam:
-                        if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
-                        {
-                            FlowParam? flowParam = TemplateControl.AddFlowParam(TextBox1.Text);
-                            if (flowParam != null) CreateNewTemplate(TemplateControl.FlowParams, TextBox1.Text, flowParam);
-                            else MessageBox.Show("数据库创建流程模板失败");
-                        }
-                        else
-                            CreateNewTemplate(TemplateControl.FlowParams, TextBox1.Text, new FlowParam() {Name = TextBox1.Text });
-                        break;
-
+                    CreateNewTemplateFromDB();
+                }
+                else
+                {
+                    CreateNewTemplateFromCsv();
                 }
                 TextBox1.Text = NewCreateFileName("default");
             }

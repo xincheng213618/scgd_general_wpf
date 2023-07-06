@@ -9,11 +9,12 @@ using System.Xml.Linq;
 
 namespace ColorVision.MySql.DAO
 {
-    public class FlowMasterModel : IBaseModel
+    public class ModMasterModel : IBaseModel
     {
-        public FlowMasterModel() : this("",0){ }
-        public FlowMasterModel(string text, int tenantId)
+        public ModMasterModel() : this("","",0){ }
+        public ModMasterModel(string pcode, string text, int tenantId)
         {
+            Pcode = pcode;
             Name = text;
             TenantId = tenantId;
             CreateDate = DateTime.Now;
@@ -27,6 +28,7 @@ namespace ColorVision.MySql.DAO
         public string? Remark { get; set; }
         public int TenantId { get; set; }
         public int Pid { get; set; }
+        public string? Pcode { get; set; }
         public int GetPK()
         {
             return Id;
@@ -37,15 +39,28 @@ namespace ColorVision.MySql.DAO
             Id = id;
         }
     }
-    public class FlowMasterDao : BaseModMasterDao<FlowMasterModel>
+    public class ModMasterDao : BaseServiceMaster<ModMasterModel>
     {
-        public FlowMasterDao() : base("flow", "v_scgd_mod_master", "t_scgd_mod_param_master", "id", true)
+        private string _code;
+        public ModMasterDao(string code) : base("v_scgd_mod_master", "t_scgd_mod_param_master", "id", true)
         {
+            _code = code;
         }
 
-        public override FlowMasterModel GetModel(DataRow item)
+        public override DataTable GetTableAllByTenantId(int tenantId)
         {
-            FlowMasterModel model = new FlowMasterModel
+            string sql;
+            if (string.IsNullOrEmpty(_viewName)) sql = $"select * from {TableName} where is_delete=0 and tenant_id={tenantId} and pcode='{_code}'";
+            else sql = $"select * from {_viewName} where is_delete=0 and tenant_id={tenantId} and pcode='{_code}'";
+            DataTable d_info = GetData(sql);
+            return d_info;
+        }
+
+        public string GetPCode() { return _code; }
+
+        public override ModMasterModel GetModel(DataRow item)
+        {
+            ModMasterModel model = new ModMasterModel
             {
                 Id = item.Field<int>("id"),
                 Name = item.Field<string?>("name"),
@@ -53,12 +68,13 @@ namespace ColorVision.MySql.DAO
                 IsEnable = item.Field<bool?>("is_enable"),
                 IsDelete = item.Field<bool?>("is_delete"),
                 Remark = item.Field<string?>("remark"),
+                Pcode = item.Field<string>("pcode"),
             };
 
             return model;
         }
 
-        public override DataRow Model2Row(FlowMasterModel item, DataRow row)
+        public override DataRow Model2Row(ModMasterModel item, DataRow row)
         {
             if (item != null)
             {

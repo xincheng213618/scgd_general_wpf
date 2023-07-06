@@ -48,7 +48,7 @@ namespace ColorVision.Template
         private bool IsOldFlowParams;
 
         private PoiService poiService = new PoiService();
-        private FlowService flowService = new FlowService();
+        private ModService modService = new ModService();
 
         public TemplateControl()
         {
@@ -250,7 +250,18 @@ namespace ColorVision.Template
                 poiParam.PoiPoints.Add(new PoiParamData(dbModel));
             }
         }
-
+        internal AoiParam? AddAoiParam(string text)
+        {
+            ModMasterModel flowMaster = new ModMasterModel(ModMasterType.Aoi, text, GlobalSetting.GetInstance().SoftwareConfig.TenantId);
+            modService.Save(flowMaster);
+            int pkId = flowMaster.GetPK();
+            if (pkId > 0)
+            {
+                return LoadAoiParamById(pkId);
+            }
+            return null;
+        }
+    
         internal PoiParam? AddPoiParam(string text)
         {
             PoiMasterModel poiMaster = new PoiMasterModel(text, GlobalSetting.GetInstance().SoftwareConfig.TenantId);
@@ -263,17 +274,10 @@ namespace ColorVision.Template
             return null;
         }
 
-        internal PoiParam? LoadPoiParamById(int pkId)
-        {
-            PoiMasterModel poiMaster = poiService.GetMasterById(pkId);
-            if (poiMaster != null) return new PoiParam(poiMaster);
-            else return null;
-        }
-
         internal FlowParam? AddFlowParam(string text)
         {
-            FlowMasterModel flowMaster = new FlowMasterModel(text, GlobalSetting.GetInstance().SoftwareConfig.TenantId);
-            flowService.Save(flowMaster);
+            ModMasterModel flowMaster = new ModMasterModel(ModMasterType.Flow, text, GlobalSetting.GetInstance().SoftwareConfig.TenantId);
+            modService.Save(flowMaster);
             int pkId = flowMaster.GetPK();
             if (pkId > 0)
             {
@@ -282,11 +286,26 @@ namespace ColorVision.Template
             return null;
         }
 
+        internal PoiParam? LoadPoiParamById(int pkId)
+        {
+            PoiMasterModel poiMaster = poiService.GetMasterById(pkId);
+            if (poiMaster != null) return new PoiParam(poiMaster);
+            else return null;
+        }
+
         private FlowParam? LoadFlowParamById(int pkId)
         {
-            FlowMasterModel flowMaster = flowService.GetMasterById(pkId);
-            List<FlowDetailModel> flowDetail = flowService.GetDetailByPid(pkId);
+            ModMasterModel flowMaster = modService.GetMasterById(pkId);
+            List<ModDetailModel> flowDetail = modService.GetDetailByPid(pkId);
             if (flowMaster != null) return new FlowParam(flowMaster, flowDetail);
+            else return null;
+        }
+
+        private AoiParam? LoadAoiParamById(int pkId)
+        {
+            ModMasterModel aoiMaster = modService.GetMasterById(pkId);
+            List<ModDetailModel> aoiDetail = modService.GetDetailByPid(pkId);
+            if (aoiMaster != null) return new AoiParam(aoiMaster, aoiDetail);
             else return null;
         }
 
@@ -295,10 +314,10 @@ namespace ColorVision.Template
             FlowParams.Clear();
             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
             {
-                List<FlowMasterModel> flows = flowService.GetFlowAll(GlobalSetting.GetInstance().SoftwareConfig.TenantId);
+                List<ModMasterModel> flows = modService.GetFlowAll(GlobalSetting.GetInstance().SoftwareConfig.TenantId);
                 foreach (var dbModel in flows)
                 {
-                    List<FlowDetailModel> flowDetails = flowService.GetDetailByPid(dbModel.Id);
+                    List<ModDetailModel> flowDetails = modService.GetDetailByPid(dbModel.Id);
                     KeyValuePair<string, FlowParam> item = new KeyValuePair<string, FlowParam>(dbModel.Name ?? "default", new FlowParam(dbModel, flowDetails));
                     FlowParams.Add(item);
                 }
@@ -310,6 +329,46 @@ namespace ColorVision.Template
             return FlowParams;
         }
 
+
+        internal ObservableCollection<KeyValuePair<string, AoiParam>> LoadAoiParam()
+        {
+            AoiParams.Clear();
+            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+            {
+                List<ModMasterModel> flows = modService.GetAoiAll(GlobalSetting.GetInstance().SoftwareConfig.TenantId);
+                foreach (var dbModel in flows)
+                {
+                    List<ModDetailModel> flowDetails = modService.GetDetailByPid(dbModel.Id);
+                    KeyValuePair<string, AoiParam> item = new KeyValuePair<string, AoiParam>(dbModel.Name ?? "default", new AoiParam(dbModel, flowDetails));
+                    AoiParams.Add(item);
+                }
+            }
+            else
+            {
+                AoiParam param = new AoiParam
+                {
+                    FilterByArea = true,
+                    MaxArea = 6000,
+                    MinArea = 10,
+                    FilterByContrast = true,
+                    MaxContrast = 1.7f,
+                    MinContrast = 0.3f,
+                    ContrastBrightness = 1.0f,
+                    ContrastDarkness = 0.5f,
+                    BlurSize = 19,
+                    MinContourSize = 5,
+                    ErodeSize = 5,
+                    DilateSize = 5,
+                    Left = 5,
+                    Right = 5,
+                    Top = 5,
+                    Bottom = 5
+                };
+                AoiParams = IDefault(FileNameAoiParams, param, ref IsOldAoiParams);
+            }
+            return AoiParams;
+        }
+
         internal int PoiMasterDeleteById(int id)
         {
             return poiService.MasterDeleteById(id);
@@ -317,12 +376,12 @@ namespace ColorVision.Template
 
         internal int FlowMasterDeleteById(int id)
         {
-           return flowService.MasterDeleteById(id);
+           return modService.MasterDeleteById(id);
         }
 
         internal void SaveFlow2DB(FlowParam flowParam)
         {
-            flowService.Save(flowParam);
+            modService.Save(flowParam);
         }
 
         public ObservableCollection<KeyValuePair<string, AoiParam>> AoiParams { get; set; }
