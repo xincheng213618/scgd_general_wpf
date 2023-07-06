@@ -301,7 +301,7 @@ namespace ColorVision
             //}
 
             PoiMasterDao service = new PoiMasterDao();
-            var rec = service.GetTableAll(GlobalSetting.GetInstance().SoftwareConfig.TenantId);
+            var rec = service.GetTableAllByTenantId(GlobalSetting.GetInstance().SoftwareConfig.TenantId);
             dataGrid.ItemsSource = rec.AsDataView();
         }
     }

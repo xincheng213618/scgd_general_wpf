@@ -156,21 +156,11 @@ namespace ColorVision.MySql
 
     public class BaseServiceMaster<T>: BaseDao where T : IBaseModel
     {
+        protected string _viewName;
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseServiceMaster<T>));
-        public BaseServiceMaster(string tableName, string pkField) :base(tableName, pkField)
+        public BaseServiceMaster(string viewName, string tableName, string pkField) :base(tableName, pkField)
         {
-
-        }
-
-        public T? GetByID(int id)
-        {
-            string sql = $"select * from {TableName} where is_delete=0 and id=@id";
-            Dictionary<string, object> param = new Dictionary<string, object>
-            {
-                { "id", id }
-            };
-            DataTable d_info = GetData(sql, param);
-            return d_info.Rows.Count == 1 ? GetModel(d_info.Rows[0]) : default;
+            _viewName = viewName;
         }
 
         public virtual DataRow Model2Row(T item, DataRow row)
@@ -267,16 +257,40 @@ namespace ColorVision.MySql
             return colMappings;
         }
 
-        public virtual DataTable GetTableAll(int tenantId)
+        protected string GetReadTableViewName()
         {
-            string sql = $"select * from {TableName} where is_delete=0 and tenant_id={tenantId}";
+            if (string.IsNullOrEmpty(_viewName)) return TableName;
+            else return _viewName;
+        }
+
+        public T? GetByID(int id)
+        {
+            string sql = $"select * from {GetReadTableViewName()} where is_delete=0 and id=@id";
+            Dictionary<string, object> param = new Dictionary<string, object>
+            {
+                { "id", id }
+            };
+            DataTable d_info = GetData(sql, param);
+            return d_info.Rows.Count == 1 ? GetModel(d_info.Rows[0]) : default;
+        }
+
+        public virtual DataTable GetTableAllByTenantId(int tenantId)
+        {
+            string sql = $"select * from {GetReadTableViewName()} where is_delete=0 and tenant_id={tenantId}";
             DataTable d_info = GetData(sql);
             return d_info;
         }
 
-        public DataTable GetTableAllByPid(int pid)
+        public virtual DataTable GetTableAllByPid(int pid)
         {
-            string sql = $"select * from {TableName} where is_delete=0 and pid={pid}";
+            string sql = $"select * from {GetReadTableViewName()} where is_delete=0 and pid={pid}";
+            DataTable d_info = GetData(sql);
+            return d_info;
+        }
+
+        public DataTable GetTableAllByPcode(string pcode)
+        {
+            string sql = $"select * from {GetReadTableViewName()} where is_delete=0 and pcode='{pcode}'";
             DataTable d_info = GetData(sql);
             return d_info;
         }
@@ -284,7 +298,7 @@ namespace ColorVision.MySql
         public List<T> GetAll(int tenantId)
         {
             List<T> list = new List<T>();
-            DataTable d_info = GetTableAll(tenantId);
+            DataTable d_info = GetTableAllByTenantId(tenantId);
             foreach (var item in d_info.AsEnumerable())
             {
                 T? model = GetModel(item);
@@ -300,6 +314,21 @@ namespace ColorVision.MySql
         {
             List<T> list = new List<T>();
             DataTable d_info = GetTableAllByPid(pid);
+            foreach (var item in d_info.AsEnumerable())
+            {
+                T? model = GetModel(item);
+                if (model != null)
+                {
+                    list.Add(model);
+                }
+            }
+            return list;
+        }
+
+        public List<T> GetAllByPcode(string pcode)
+        {
+            List<T> list = new List<T>();
+            DataTable d_info = GetTableAllByPcode(pcode);
             foreach (var item in d_info.AsEnumerable())
             {
                 T? model = GetModel(item);

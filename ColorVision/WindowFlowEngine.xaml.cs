@@ -225,6 +225,8 @@ namespace FlowEngine
             {
                 STNodeEditor1.SaveCanvas(flowName);
             }
+
+            TemplateControl.GetInstance().SaveFlow2DB(FlowParam);
         }
 
         private string GetTopic()

@@ -10,14 +10,12 @@ namespace ColorVision.MySql.DAO
     public class BaseModMasterDao<T> : BaseServiceMaster<T> where T : IBaseModel
     {
         protected string _code;
-        protected string _viewName;
-        public BaseModMasterDao(string code, string viewName, string tableName, string pkField) : base(tableName, pkField)
+        public BaseModMasterDao(string code, string viewName, string tableName, string pkField) : base(viewName, tableName, pkField)
         {
             _code = code;
-            _viewName = viewName;
         }
 
-        public override DataTable GetTableAll(int tenantId)
+        public override DataTable GetTableAllByTenantId(int tenantId)
         {
             string sql;
             if(string.IsNullOrEmpty(_viewName)) sql = $"select * from {TableName} where is_delete=0 and tenant_id={tenantId} and pcode='{_code}'";
@@ -25,12 +23,32 @@ namespace ColorVision.MySql.DAO
             DataTable d_info = GetData(sql);
             return d_info;
         }
+
+        public string GetPCode() { return _code; }
     }
 
-    public class BaseModDetailDao<T> : BaseDao
+    public class BaseModDetailDao<T> : BaseServiceMaster<T> where T : IBaseModel
     {
-        public BaseModDetailDao(string tableName, string pkField) : base(tableName, pkField)
+        protected string _code;
+        public BaseModDetailDao(string code, string viewName, string tableName, string pkField) : base(viewName, tableName, pkField)
         {
+            _code = code;
+        }
+        public override DataTable CreateColumns(DataTable dInfo)
+        {
+            dInfo.Columns.Add("id", typeof(int));
+            dInfo.Columns.Add("cc_pid", typeof(int));
+            dInfo.Columns.Add("pid", typeof(int));
+            dInfo.Columns.Add("value_a", typeof(string));
+            dInfo.Columns.Add("value_b", typeof(string));
+            return dInfo;
+        }
+
+        public override DataTable GetTableAllByPid(int pid)
+        {
+            string sql = $"select * from {GetReadTableViewName()} where pid={pid}";
+            DataTable d_info = GetData(sql);
+            return d_info;
         }
     }
 }

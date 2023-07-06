@@ -73,11 +73,5 @@ namespace ColorVision.MySql.DAO
             }
             return row;
         }
-
-        public override int Save(FlowMasterModel item)
-        {
-            item.Pid = 11;
-            return base.Save(item);
-        }
     }
 }

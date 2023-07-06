@@ -100,7 +100,7 @@ namespace ColorVision.MySql.DAO
 
     internal class PoiMasterDao : BaseServiceMaster<PoiMasterModel>
     {
-        public PoiMasterDao() : base("t_scgd_cfg_poi_master", "id")
+        public PoiMasterDao() : base(null,"t_scgd_cfg_poi_master", "id")
         {
 
         }

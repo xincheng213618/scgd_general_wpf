@@ -285,7 +285,8 @@ namespace ColorVision.Template
         private FlowParam? LoadFlowParamById(int pkId)
         {
             FlowMasterModel flowMaster = flowService.GetMasterById(pkId);
-            if (flowMaster != null) return new FlowParam(flowMaster);
+            List<FlowDetailModel> flowDetail = flowService.GetDetailByPid(pkId);
+            if (flowMaster != null) return new FlowParam(flowMaster, flowDetail);
             else return null;
         }
 
@@ -297,7 +298,8 @@ namespace ColorVision.Template
                 List<FlowMasterModel> flows = flowService.GetFlowAll(GlobalSetting.GetInstance().SoftwareConfig.TenantId);
                 foreach (var dbModel in flows)
                 {
-                    KeyValuePair<string, FlowParam> item = new KeyValuePair<string, FlowParam>(dbModel.Name ?? "default", new FlowParam(dbModel));
+                    List<FlowDetailModel> flowDetails = flowService.GetDetailByPid(dbModel.Id);
+                    KeyValuePair<string, FlowParam> item = new KeyValuePair<string, FlowParam>(dbModel.Name ?? "default", new FlowParam(dbModel, flowDetails));
                     FlowParams.Add(item);
                 }
             }
@@ -316,6 +318,11 @@ namespace ColorVision.Template
         internal int FlowMasterDeleteById(int id)
         {
            return flowService.MasterDeleteById(id);
+        }
+
+        internal void SaveFlow2DB(FlowParam flowParam)
+        {
+            flowService.Save(flowParam);
         }
 
         public ObservableCollection<KeyValuePair<string, AoiParam>> AoiParams { get; set; }
