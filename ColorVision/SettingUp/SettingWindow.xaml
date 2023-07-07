@@ -13,8 +13,25 @@
             <ColumnDefinition Width="300"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        
         <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" >
+            <StackPanel>
+                <Border  Style="{StaticResource BorderModuleArea}">
+                    <StackPanel Orientation="Horizontal">
+                        <Grid>
+                            <hc:WaveProgressBar  Value="{Binding PerformanceControl.RAMPercent}"/>
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="RAM"/>
+                        </Grid>
+                        <Grid>
+                            <hc:WaveProgressBar  Value="{Binding PerformanceControl.RAMThisPercent}"/>
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="{Binding PerformanceControl.RAMThis}"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+        </ScrollViewer>
+        
+        <ScrollViewer Grid.Column="0" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" >
             <StackPanel >
                 <Border Style="{StaticResource BorderModuleArea}">
                     <StackPanel Margin="5">
@@ -26,26 +43,6 @@
                             <ToggleButton DockPanel.Dock="Right" Height="20" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsUseMQTT}"/>
                             <TextBlock Text="启用MQTT"/>
                         </DockPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,32,0,0">
-                            <Grid>
-                                <hc:WaveProgressBar  Value="{Binding PerformanceControl.CPUPercent}"/>
-                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="CPU"/>
-                            </Grid>
-                            <Grid>
-                                <hc:WaveProgressBar  Value="{Binding PerformanceControl.CPUThisPercent}"/>
-                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="CPUthis"/>
-                            </Grid>
-                            <Grid>
-                                <hc:WaveProgressBar  Value="{Binding PerformanceControl.RAMPercent}"/>
-                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="RAM"/>
-                            </Grid>
-                            <Grid>
-                                <hc:WaveProgressBar  Value="{Binding PerformanceControl.RAMThisPercent}"/>
-                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="RAMThis"/>
-                            </Grid>
-                        </StackPanel>
-
-
                     </StackPanel>
                 </Border>
             </StackPanel>

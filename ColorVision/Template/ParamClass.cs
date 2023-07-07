@@ -18,9 +18,6 @@ namespace ColorVision.Template
     {
         public event EventHandler IsEnabledChanged;
 
-        public int ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
-        private int _ID;
-
         [Category("设置"), DisplayName("是否启用模板")]
         public bool IsEnable
         {
@@ -33,17 +30,22 @@ namespace ColorVision.Template
             }
         }
         private bool _IsEnable;
-        private Dictionary<string, ModDetailModel> _Parameters;
+
+        [Category("设置"), DisplayName("序号")]
+        public int ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
+        private int _ID;
+
+        private Dictionary<string, ModDetailModel> parameters;
 
         public ParamBase(int id)
         {
             this.ID = id;
-            this._Parameters = new Dictionary<string, ModDetailModel>();
+            this.parameters = new Dictionary<string, ModDetailModel>();
         }
         public ParamBase(int id,List<ModDetailModel> detail)
         {
             this.ID = id;
-            this._Parameters = new Dictionary<string, ModDetailModel>();
+            this.parameters = new Dictionary<string, ModDetailModel>();
             if (detail != null)
             {
                 foreach (var flowDetailModel in detail)
@@ -54,24 +56,24 @@ namespace ColorVision.Template
         }
         public void AddParameter(string key, ModDetailModel value)
         {
-            _Parameters.Add(key, value);
+            parameters.Add(key, value);
         }
         internal void GetDetail(List<ModDetailModel> list)
         {
-            list.AddRange(_Parameters.Values.ToList());
+            list.AddRange(parameters.Values.ToList());
         }
         public void SetValue(string value,[CallerMemberName] string propertyName = "")
         {
-            if (_Parameters.ContainsKey(propertyName))
+            if (parameters.ContainsKey(propertyName))
             {
-                _Parameters[propertyName].ValueB = _Parameters[propertyName].ValueA;
-                _Parameters[propertyName].ValueA = value;
+                parameters[propertyName].ValueB = parameters[propertyName].ValueA;
+                parameters[propertyName].ValueA = value;
             }
         }
-        public T GetValue<T> ([CallerMemberName] string propertyName = "")
+        public T? GetValue<T> ([CallerMemberName] string propertyName = "")
         {
             string val = "";
-            if (_Parameters.ContainsKey(propertyName)) val =  _Parameters[propertyName].ValueA;
+            if (parameters.ContainsKey(propertyName)) val =  parameters[propertyName].ValueA;
             if (typeof(T) == typeof(int))
             {
                 if(string.IsNullOrEmpty(val)) val = "0";
@@ -139,6 +141,8 @@ namespace ColorVision.Template
             this.Top = 5;
             this.Bottom = 5;
         }
+
+
         public AoiParam(ModMasterModel aoiMaster, List<ModDetailModel> aoiDetail) : base(aoiMaster.Id,aoiDetail)
         {
         }
