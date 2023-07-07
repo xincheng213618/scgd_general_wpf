@@ -198,6 +198,9 @@ namespace ColorVision.Template
         public bool SelectedUniformityX { get => _SelectedUniformityX; set { _SelectedUniformityX = value; NotifyPropertyChanged(); } }
         private bool _SelectedUniformityX;
 
+        public CalibrationParam() : base(-1)
+        {
+        }
     }
 
 

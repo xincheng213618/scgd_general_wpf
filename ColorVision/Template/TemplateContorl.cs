@@ -170,7 +170,8 @@ namespace ColorVision.Template
             switch (windowTemplateType)
             {
                 case WindowTemplateType.AoiParam:
-                    SaveDefault(FileNameAoiParams, AoiParams, IsOldAoiParams);
+                    if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql) SaveAoi2DB(AoiParams);
+                    else SaveDefault(FileNameAoiParams, AoiParams, IsOldAoiParams);
                     break;
                 case WindowTemplateType.Calibration:
                     SaveDefault(FileNameCalibrationParams, CalibrationParams, IsOldCalibrationParams);
@@ -380,6 +381,17 @@ namespace ColorVision.Template
            return modService.MasterDeleteById(id);
         }
 
+        internal void SaveAoi2DB(ObservableCollection<KeyValuePair<string, AoiParam>> aoiParams)
+        {
+            foreach (var item in aoiParams)
+            {
+                SaveAoi2DB(item.Value);
+            }
+        }
+        internal void SaveAoi2DB(AoiParam aoiParam)
+        {
+            modService.Save(aoiParam);
+        }
         internal void SaveFlow2DB(FlowParam flowParam)
         {
             modService.Save(flowParam);

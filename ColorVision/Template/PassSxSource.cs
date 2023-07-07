@@ -1,4 +1,5 @@
 ﻿using ColorVision.MVVM;
+using ColorVision.MySql.DAO;
 using cvColorVision;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -18,6 +19,9 @@ namespace ColorVision.Template
 
     public class SxParam : ParamBase
     {
+        public SxParam():base(-1) { }
+        public SxParam(ModMasterModel sxMaster, List<ModDetailModel> sxDetail) : base(sxMaster.Id,sxDetail) {
+        }
         public double StartMeasureVal { get; set; } 
         public double StopMeasureVal { get; set; } = 3;
         public int Number { get; set; } = 100;

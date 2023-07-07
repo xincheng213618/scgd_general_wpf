@@ -1,4 +1,5 @@
 ﻿using ColorVision.MVVM;
+using ColorVision.MySql.DAO;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -63,6 +64,12 @@ namespace ColorVision.Template
 #pragma warning disable CA1507
     public class PGParam : ParamBase
     {
+        public PGParam() : base(-1)
+        {
+        }
+        public PGParam(ModMasterModel pgMaster, List<ModDetailModel> pgDetail) : base(pgMaster.Id,pgDetail)
+        {
+        }
         //PG的类型-1为默认的TCPIP，2为广林达的dllPG
         [JsonProperty("PGtype")]
         public int PGtype { get => _PGtype; set { _PGtype = value; NotifyPropertyChanged(); } }

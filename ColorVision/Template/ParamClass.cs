@@ -1,5 +1,7 @@
 ﻿using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
+using Google.Protobuf.WellKnownTypes;
+using HslCommunication.Secs.Types;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -16,6 +18,9 @@ namespace ColorVision.Template
     {
         public event EventHandler IsEnabledChanged;
 
+        public int ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
+        private int _ID;
+
         [Category("设置"), DisplayName("是否启用模板")]
         public bool IsEnable
         {
@@ -28,8 +33,41 @@ namespace ColorVision.Template
             }
         }
         private bool _IsEnable;
-        protected Dictionary<string, ModDetailModel> _Parameters;
+        private Dictionary<string, ModDetailModel> _Parameters;
 
+        public ParamBase(int id)
+        {
+            this.ID = id;
+            this._Parameters = new Dictionary<string, ModDetailModel>();
+        }
+        public ParamBase(int id,List<ModDetailModel> detail)
+        {
+            this.ID = id;
+            this._Parameters = new Dictionary<string, ModDetailModel>();
+            if (detail != null)
+            {
+                foreach (var flowDetailModel in detail)
+                {
+                    AddParameter(flowDetailModel.Symbol ?? "", flowDetailModel);
+                }
+            }
+        }
+        public void AddParameter(string key, ModDetailModel value)
+        {
+            _Parameters.Add(key, value);
+        }
+        internal void GetDetail(List<ModDetailModel> list)
+        {
+            list.AddRange(_Parameters.Values.ToList());
+        }
+        public void SetValue(string value,[CallerMemberName] string propertyName = "")
+        {
+            if (_Parameters.ContainsKey(propertyName))
+            {
+                _Parameters[propertyName].ValueB = _Parameters[propertyName].ValueA;
+                _Parameters[propertyName].ValueA = value;
+            }
+        }
         public T GetValue<T> ([CallerMemberName] string propertyName = "")
         {
             string val = "";
@@ -61,45 +99,28 @@ namespace ColorVision.Template
     /// </summary>
     public class FlowParam : ParamBase
     {
-        public FlowParam() {
-            this._Parameters = new Dictionary<string, ModDetailModel>();
+        public FlowParam():base(-1) {
         }
-        public FlowParam(ModMasterModel dbModel, List<ModDetailModel> flowDetail)
+        public FlowParam(ModMasterModel dbModel, List<ModDetailModel> flowDetail) : base(dbModel.Id,flowDetail)
         {
-            this._Parameters = new Dictionary<string, ModDetailModel>();
-            this.ID = dbModel.Id;
-            if(flowDetail != null ) {
-                foreach(var flowDetailModel in flowDetail)
-                {
-                    _Parameters.Add(flowDetailModel.Symbol??"", flowDetailModel);
-                }
-            }
             this.name = dbModel.Name ?? string.Empty;
         }
-
-        public int ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
-        private int _ID;
 
         private string name;
         public string Name { get => name; set { name = value; } }
         /// <summary>
         /// 流程文件名称
         /// </summary>
-        public string? FileName { set {
-                if (_Parameters.ContainsKey("filename")) _Parameters["filename"].ValueA = value;
-            } 
-            get => GetValue<string>("filename");
-        }
-
-        internal void GetDetail(List<ModDetailModel> list)
+        public string? FileName
         {
-            list.AddRange(_Parameters.Values.ToList());
+            set { SetValue(value, "filename"); }
+            get => GetValue<string>("filename");
         }
     }
 
     public class AoiParam: ParamBase
     {
-        public AoiParam()
+        public AoiParam() : base(-1)
         {
             this.FilterByArea = true;
             this.MaxArea = 6000;
@@ -117,183 +138,177 @@ namespace ColorVision.Template
             this.Right = 5;
             this.Top = 5;
             this.Bottom = 5;
-            this._Parameters = new Dictionary<string, ModDetailModel>();
-            this.ID = -1;
         }
-        public AoiParam(ModMasterModel aoiMaster, List<ModDetailModel> aoiDetail)
+        public AoiParam(ModMasterModel aoiMaster, List<ModDetailModel> aoiDetail) : base(aoiMaster.Id,aoiDetail)
         {
-            this.ID = aoiMaster.Id;
-            this._Parameters = new Dictionary<string, ModDetailModel>();
-            if (aoiDetail != null)
-            {
-                foreach (var aoiDetailModel in aoiDetail)
-                {
-                    _Parameters.Add(aoiDetailModel.Symbol, aoiDetailModel);
-                }
-            }
         }
 
-        public int ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
-        private int _ID;
-
-        public bool FilterByArea { set; get; }
-        public int MaxArea { set; get; }
-        public int MinArea { set; get; }
-        public bool FilterByContrast { set {; } get => GetValue<bool>(); }
-        public float MaxContrast { set {; } get => GetValue<float>(); }
-        public float MinContrast { set {; } get => GetValue<float>(); }
-        public float ContrastBrightness { set; get; }
-        public float ContrastDarkness { set; get; }
-        public int BlurSize { set {; } get => GetValue<int>(); }
-        public int MinContourSize { set; get; }
-        public int ErodeSize { set; get; }
-        public int DilateSize { set {; } get => GetValue<int>(); }
+        public bool FilterByArea { set { SetValue(value.ToString()); } get => GetValue<bool>(); }
+        public int MaxArea { set { SetValue(value.ToString()); } get => GetValue<int>(); }
+        public int MinArea { set { SetValue(value.ToString()); } get => GetValue<int>(); }
+        public bool FilterByContrast { set { SetValue(value.ToString()); } get => GetValue<bool>(); }
+        public float MaxContrast { set { SetValue(value.ToString()); } get => GetValue<float>(); }
+        public float MinContrast { set { SetValue(value.ToString()); } get => GetValue<float>(); }
+        public float ContrastBrightness { set { SetValue(value.ToString()); } get => GetValue<float>(); }
+        public float ContrastDarkness { set { SetValue(value.ToString()); } get => GetValue<float>(); }
+        public int BlurSize { set { SetValue(value.ToString()); } get => GetValue<int>(); }
+        public int MinContourSize { set { SetValue(value.ToString()); } get => GetValue<int>(); }
+        public int ErodeSize { set { SetValue(value.ToString()); } get => GetValue<int>(); }
+        public int DilateSize { set { SetValue(value.ToString()); } get => GetValue<int>(); }
         [Category("AoiRect")]
-        public int Left { set {; } get => GetValue<int>(); }
+        public int Left { set { SetValue(value.ToString()); } get => GetValue<int>(); }
         [Category("AoiRect")]
-        public int Right { set {; } get => GetValue<int>(); }
+        public int Right { set { SetValue(value.ToString()); } get => GetValue<int>(); }
         [Category("AoiRect")]
-        public int Top { set {; } get => GetValue<int>(); }
+        public int Top { set { SetValue(value.ToString()); } get => GetValue<int>(); }
         [Category("AoiRect")]
-        public int Bottom { set {; } get => GetValue<int>(); }
+        public int Bottom { set { SetValue(value.ToString()); } get => GetValue<int>(); }
     }
     public class LedReusltParam : ParamBase
     {
+        public LedReusltParam() : base(-1)
+        {
+        }
+
+        public LedReusltParam(ModMasterModel ledMaster, List<ModDetailModel> ledDetail) : base(ledMaster.Id, ledDetail)
+        {
+        }
+
         [Category("检测判断配置"), DefaultValue(1),DisplayName("灯珠抓取通道")]
-        public int Channel { set; get; }
+        public int Channel { set { SetValue(value.ToString()); } get => GetValue<int>(); }
         [Category("检测判断配置"), DefaultValue(false)]
-        public bool IsDebug { set; get; }
+        public bool IsDebug { set { SetValue(value.ToString()); } get => GetValue<bool>(); }
         [Category("检测判断配置"), DefaultValue(true), DisplayName("是否下限检测")]
-        public bool IsLDetection { set; get; }
+        public bool IsLDetection { set { SetValue(value.ToString()); } get => GetValue<bool>(); }
         [Category("检测判断配置"), DefaultValue(true), DisplayName("是否上限检测")]
-        public bool IsHDetection { set; get; }
+        public bool IsHDetection { set { SetValue(value.ToString()); } get => GetValue<bool>(); }
 
         [Category("参数X判断配置"), DefaultValue(false),DisplayName("X启用检测")]
-        public bool IsXEnable { set; get; }
+        public bool IsXEnable { set { SetValue(value.ToString()); } get => GetValue<bool>(); }
         [Category("参数X判断配置"), DefaultValue(0.2),DisplayName("X下限检测阈值百分比")]
-        public float LLDetectionPX { set; get; }
+        public float LLDetectionPX { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数X判断配置"), DefaultValue(0),DisplayName("X下限检测阈值固定值")]
-        public float LLDetectionFX { set; get; }
+        public float LLDetectionFX { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数X判断配置"), DefaultValue(1.8),DisplayName("X上限检测阈值百分比")]
-        public float HLDetectionPX { set; get; }
+        public float HLDetectionPX { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数X判断配置"), DefaultValue(float.MaxValue), DisplayName("X上限检测阈值固定值")]
-        public float HLDetectionFX { set; get; }
+        public float HLDetectionFX { set { SetValue(value.ToString()); } get => GetValue<float>(); }
 
         [Category("参数Y判断配置"), DefaultValue(false),DisplayName("Y启用检测")]
-        public bool IsYEnable { set; get; }
+        public bool IsYEnable { set { SetValue(value.ToString()); } get => GetValue<bool>(); }
         [Category("参数Y判断配置"), DefaultValue(0.2), DisplayName("Y下限检测阈值百分比")]
-        public float LLDetectionPY { set; get; }
+        public float LLDetectionPY { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数Y判断配置"), DefaultValue(0),DisplayName("Y下限检测阈值固定值")]
-        public float LLDetectionFY { set; get; }
+        public float LLDetectionFY { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数Y判断配置"), DefaultValue(1.8), DisplayName("Y上限检测阈值百分比")]
-        public float HLDetectionPY { set; get; }
+        public float HLDetectionPY { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数Y判断配置"), DefaultValue(float.MaxValue), DisplayName("Y上限检测阈值固定值")]
-        public float HLDetectionFY { set; get; }
+        public float HLDetectionFY { set { SetValue(value.ToString()); } get => GetValue<float>(); }
 
         [Category("参数Z判断配置"), DefaultValue(false),DisplayName("Z启用检测")]
-        public bool IsZEnable { set; get; }
+        public bool IsZEnable { set { SetValue(value.ToString()); } get => GetValue<bool>(); }
         [Category("参数Z判断配置"), DefaultValue(0.2), DisplayName("Z下限检测阈值百分比")]
-        public float LLDetectionPZ { set; get; }
+        public float LLDetectionPZ { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数Z判断配置"), DefaultValue(0), DisplayName("Z下限检测阈值固定值")]
-        public float LLDetectionFZ { set; get; }
+        public float LLDetectionFZ { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数Z判断配置"), DefaultValue(1.8), DisplayName("Z上限检测阈值百分比")]
-        public float HLDetectionPZ { set; get; }
+        public float HLDetectionPZ { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数Z判断配置"), DefaultValue(float.MaxValue), DisplayName("Z上限检测阈值固定值")]
-        public float HLDetectionFZ { set; get; }
+        public float HLDetectionFZ { set { SetValue(value.ToString()); } get => GetValue<float>(); }
 
         [Category("参数x判断配置"), DefaultValue(false), DisplayName("x启用检测")]
-        public bool IslxEnable { set; get; }
+        public bool IslxEnable { set { SetValue(value.ToString()); } get => GetValue<bool>(); }
         [Category("参数x判断配置"), DefaultValue(0.2), DisplayName("x下限检测阈值百分比")]
-        public float LLDetectionPlx { set; get; }
+        public float LLDetectionPlx { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数x判断配置"), DefaultValue(0), DisplayName("x下限检测阈值固定值")]
-        public float LLDetectionFlx { set; get; }
+        public float LLDetectionFlx { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数x判断配置"), DefaultValue(1.8), DisplayName("x上限检测阈值百分比")]
-        public float HLDetectionPlx { set; get; }
+        public float HLDetectionPlx { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数x判断配置"), DefaultValue(float.MaxValue), DisplayName("x上限检测阈值固定值")]
-        public float HLDetectionFlx { set; get; }
+        public float HLDetectionFlx { set { SetValue(value.ToString()); } get => GetValue<float>(); }
 
         [Category("参数y判断配置"), DefaultValue(false), DisplayName("y启用检测")]
-        public bool IslyEnable { set; get; }
+        public bool IslyEnable { set { SetValue(value.ToString()); } get => GetValue<bool>(); }
         [Category("参数y判断配置"), DefaultValue(0.2), DisplayName("y下限检测阈值百分比")]
-        public float LLDetectionPly { set; get; }
+        public float LLDetectionPly { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数y判断配置"), DefaultValue(0), DisplayName("y下限检测阈值固定值")]
-        public float LLDetectionFly { set; get; }
+        public float LLDetectionFly { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数y判断配置"), DefaultValue(1.8), DisplayName("y上限检测阈值百分比")]
-        public float HLDetectionPly { set; get; }
+        public float HLDetectionPly { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数y判断配置"), DefaultValue(float.MaxValue), DisplayName("y上限检测阈值固定值")]
-        public float HLDetectionFly { set; get; }
+        public float HLDetectionFly { set { SetValue(value.ToString()); } get => GetValue<float>(); }
 
         [Category("参数u判断配置"), DefaultValue(false), DisplayName("u启用检测")]
-        public bool IsluEnable { set; get; }
+        public bool IsluEnable { set { SetValue(value.ToString()); } get => GetValue<bool>(); }
         [Category("参数u判断配置"), DefaultValue(0.2), DisplayName("u下限检测阈值百分比")]
-        public float LLDetectionPlu { set; get; }
+        public float LLDetectionPlu { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数u判断配置"), DefaultValue(0), DisplayName("u下限检测阈值固定值")]
-        public float LLDetectionFlu { set; get; }
+        public float LLDetectionFlu { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数u判断配置"), DefaultValue(1.8), DisplayName("u上限检测阈值百分比")]
-        public float HLDetectionPlu { set; get; }
+        public float HLDetectionPlu { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数u判断配置"), DefaultValue(float.MaxValue), DisplayName("u上限检测阈值固定值")]
-        public float HLDetectionFlu { set; get; }
+        public float HLDetectionFlu { set { SetValue(value.ToString()); } get => GetValue<float>(); }
 
         [Category("参数v判断配置"), DefaultValue(false), DisplayName("v启用检测")]
-        public bool IslvEnable { set; get; }
+        public bool IslvEnable { set { SetValue(value.ToString()); } get => GetValue<bool>(); }
         [Category("参数v判断配置"), DefaultValue(0.2), DisplayName("v下限检测阈值百分比")]
-        public float LLDetectionPlv { set; get; }
+        public float LLDetectionPlv { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数v判断配置"), DefaultValue(0), DisplayName("v下限检测阈值固定值")]
-        public float LLDetectionFlv { set; get; }
+        public float LLDetectionFlv { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数v判断配置"), DefaultValue(1.8), DisplayName("v上限检测阈值百分比")]
-        public float HLDetectionPlv { set; get; }
+        public float HLDetectionPlv { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数v判断配置"), DefaultValue(float.MaxValue), DisplayName("v上限检测阈值固定值")]
-        public float HLDetectionFlv { set; get; }
+        public float HLDetectionFlv { set { SetValue(value.ToString()); } get => GetValue<float>(); }
 
         [Category("参数CCT判断配置"), DefaultValue(false), DisplayName("CCT启用检测")]
-        public bool IsCCTEnable { set; get; }
+        public bool IsCCTEnable { set { SetValue(value.ToString()); } get => GetValue<bool>(); }
         [Category("参数CCT判断配置"), DefaultValue(0.2), DisplayName("CCT下限检测阈值百分比")]
-        public float LLDetectionPCCT { set; get; }
+        public float LLDetectionPCCT { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数CCT判断配置"), DefaultValue(0), DisplayName("CCT下限检测阈值固定值")]
-        public float LLDetectionFCCT { set; get; }
+        public float LLDetectionFCCT { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数CCT判断配置"), DefaultValue(1.8), DisplayName("CCT上限检测阈值百分比")]
-        public float HLDetectionPCCT { set; get; }
+        public float HLDetectionPCCT { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数CCT判断配置"), DefaultValue(float.MaxValue), DisplayName("CCT上限检测阈值固定值")]
-        public float HLDetectionFCCT { set; get; }
+        public float HLDetectionFCCT { set { SetValue(value.ToString()); } get => GetValue<float>(); }
 
         [Category("参数DW判断配置"), DefaultValue(false), DisplayName("DW启用检测")]
-        public bool IsDWTEnable { set; get; }
+        public bool IsDWTEnable { set { SetValue(value.ToString()); } get => GetValue<bool>(); }
         [Category("参数DW判断配置"), DefaultValue(0.2), DisplayName("DW下限检测阈值百分比")]
-        public float LLDetectionPDW { set; get; }
+        public float LLDetectionPDW { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数DW判断配置"), DefaultValue(0), DisplayName("DW下限检测阈值固定值")]
-        public float LLDetectionFDW { set; get; }
+        public float LLDetectionFDW { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数DW判断配置"), DefaultValue(1.8), DisplayName("DW上限检测阈值百分比")]
-        public float HLDetectionPDW { set; get; }
+        public float HLDetectionPDW { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数DW判断配置"), DefaultValue(float.MaxValue), DisplayName("DW上限检测阈值固定值")]
-        public float HLDetectionFDW { set; get; }
+        public float HLDetectionFDW { set { SetValue(value.ToString()); } get => GetValue<float>(); }
 
         [Category("参数亮度均匀性判断配置"), DefaultValue(false), DisplayName("亮度均匀性启用检测")]
-        public bool IsBUEnable { set; get; }
+        public bool IsBUEnable { set { SetValue(value.ToString()); } get => GetValue<bool>(); }
         [Category("参数亮度均匀性判断配置"), DefaultValue(0.2), DisplayName("亮度均匀性下限检测阈值百分比")]
-        public float LLDetectionPBU { set; get; }
+        public float LLDetectionPBU { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数亮度均匀性判断配置"), DefaultValue(0), DisplayName("亮度均匀性下限检测阈值固定值")]
-        public float LLDetectionFBU { set; get; }
+        public float LLDetectionFBU { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数亮度均匀性判断配置"), DefaultValue(1.8), DisplayName("亮度均匀性上限检测阈值百分比")]
-        public float HLDetectionPBU { set; get; }
+        public float HLDetectionPBU { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数亮度均匀性判断配置"), DefaultValue(float.MaxValue), DisplayName("亮度均匀性上限检测阈值固定值")]
-        public float HLDetectionFBU { set; get; }
+        public float HLDetectionFBU { set { SetValue(value.ToString()); } get => GetValue<float>(); }
 
         [Category("参数色度均匀性判断配置"), DefaultValue(false), DisplayName("色度均匀性启用检测")]
-        public bool IsCUEnable { set; get; }
+        public bool IsCUEnable { set { SetValue(value.ToString()); } get => GetValue<bool>(); }
         [Category("参数色度均匀性判断配置"), DefaultValue(0.2), DisplayName("色度均匀性下限检测阈值百分比")]
-        public float LLDetectionPCU { set; get; }
+        public float LLDetectionPCU { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数色度均匀性判断配置"), DefaultValue(0), DisplayName("色度均匀性下限检测阈值固定值")]
-        public float LLDetectionFCU { set; get; }
+        public float LLDetectionFCU { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数色度均匀性判断配置"), DefaultValue(1.8), DisplayName("色度均匀性上限检测阈值百分比")]
-        public float HLDetectionPCU { set; get; }
+        public float HLDetectionPCU { set { SetValue(value.ToString()); } get => GetValue<float>(); }
         [Category("参数色度均匀性判断配置"), DefaultValue(float.MaxValue), DisplayName("色度均匀性上限检测阈值固定值")]
-        public float HLDetectionFCU { set; get; }
+        public float HLDetectionFCU { set { SetValue(value.ToString()); } get => GetValue<float>(); }
 
         [Category("检测判断配置"), DisplayName("判断方式"), Description("1-仅通过百分比阈值判断\r\n2-仅通过固定阈值判断\r\n3-结合两种方式同时判断") ]
-        public int JudgingWay { set; get; }
+        public int JudgingWay { set { SetValue(value.ToString()); } get => GetValue<int>(); }
 
         [Category("检测判断配置"), DisplayName("多参数判断方式"), Description("1-选定参数中有一个判断NG即返回NG\r\n2-当所有选定参数都判定NG时返回NG")  ]
-        public int JudgingWayMul { set; get; }
+        public int JudgingWayMul { set { SetValue(value.ToString()); } get => GetValue<int>(); }
     }
 
 
