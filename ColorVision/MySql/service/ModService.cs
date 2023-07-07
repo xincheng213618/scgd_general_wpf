@@ -81,5 +81,12 @@ namespace ColorVision.MySql.service
             flowParam.GetDetail(list);
             detailDao.UpdateByPid(flowParam.ID,list);
         }
+
+        internal void Save(AoiParam aoiParam)
+        {
+            List<ModDetailModel> list = new List<ModDetailModel>();
+            aoiParam.GetDetail(list);
+            detailDao.UpdateByPid(aoiParam.ID, list);
+        }
     }
 }

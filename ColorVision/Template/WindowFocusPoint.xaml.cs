@@ -46,17 +46,15 @@ namespace ColorVision.Template
     public class PoiParam : ParamBase
     {
         private static int No = 1;
-        public PoiParam()
+        public PoiParam():base(No++)
         {
-            ID = No++;
         }
-        public PoiParam(int id)
+        public PoiParam(int id) : base(id)
         {
-            ID = id;
         }
-        public PoiParam(PoiMasterModel dbModel)
+        public PoiParam(PoiMasterModel dbModel) : base(dbModel.Id ?? -1)
         {
-            this.ID = dbModel.Id ?? -1;
+            //this.ID = dbModel.Id ?? -1;
             this.PoiName = dbModel.Name ?? string.Empty;
             this.Width = dbModel.Width ?? 0;
             this.Height = dbModel.Height ?? 0;
@@ -92,8 +90,6 @@ namespace ColorVision.Template
 
         public string PoiName { get { return _PoiName; } set { _PoiName = value; NotifyPropertyChanged(); } }
         private string _PoiName;
-        public int ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
-        private int _ID;
 
         public int Type { get => _Type; set { _Type = value; NotifyPropertyChanged(); } }
         private int _Type;
