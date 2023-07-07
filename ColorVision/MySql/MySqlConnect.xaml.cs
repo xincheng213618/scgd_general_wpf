@@ -103,12 +103,12 @@ namespace ColorVision.MySql
             if (ListViewMySqlBorder.Visibility == Visibility.Visible)
             {
                 ListViewMySqlBorder.Visibility = Visibility.Collapsed;
-                this.Width -= 150;
+                this.Width -= 170;
             }
             else
             {
                 ListViewMySqlBorder.Visibility = Visibility.Visible;
-                this.Width += 150;
+                this.Width += 170;
             }           
         }
 

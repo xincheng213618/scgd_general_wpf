@@ -79,6 +79,12 @@ namespace ColorVision.SettingUp
                 item.UserPwd = AESUtil.AESEncrypt(item.UserPwd, "ColorVision", "ColorVision");
             }
 
+            List<string> MQTTConfigsPwd = new List<string>();
+            foreach (var item in SoftwareConfig.MQTTConfigs)
+            {
+                MQTTConfigsPwd.Add(item.UserPwd);
+                item.UserPwd = AESUtil.AESEncrypt(item.UserPwd, "ColorVision", "ColorVision");
+            }
 
             WriteConfig(GlobalConst.SoftwareConfigFileName, SoftwareConfig);
             SoftwareConfig.MySqlConfig.UserPwd = Temp0;
@@ -88,7 +94,8 @@ namespace ColorVision.SettingUp
             for (int i = 0; i < MySqlConfigsPwd.Count; i++)
                 SoftwareConfig.MySqlConfigs[i].UserPwd = MySqlConfigsPwd[i];
 
-
+            for (int i = 0; i < MQTTConfigsPwd.Count; i++)
+                SoftwareConfig.MQTTConfigs[i].UserPwd = MQTTConfigsPwd[i];
         }
 
         private static T? ReadConfig<T>(string fileName)

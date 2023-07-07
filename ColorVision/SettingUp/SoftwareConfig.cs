@@ -19,18 +19,18 @@ namespace ColorVision.SettingUp
     {
         public SoftwareConfig()
         {
-            MQTTConfig = new MQTTConfig();
-            MySqlConfig = new MySqlConfig();
             UserConfig = new UserConfig();
             ProjectConfig = new ProjectConfig();
-            MQTTControlLazy = new Lazy<MQTTControl>(() => MQTTControl.GetInstance());
-            MySqlControlLazy = new Lazy<MySqlControl>(() => MySqlControl.GetInstance());
             PerformanceControlLazy = new Lazy<PerformanceControl>(() => PerformanceControl.GetInstance());
             TemplateControlLazy = new Lazy<TemplateControl>(() => TemplateControl.GetInstance());
 
+            MQTTConfig = new MQTTConfig();
             MQTTConfigs = new ObservableCollection<MQTTConfig>();
+            MQTTControlLazy = new Lazy<MQTTControl>(() => MQTTControl.GetInstance());
 
+            MySqlConfig = new MySqlConfig();
             MySqlConfigs = new ObservableCollection<MySqlConfig>();
+            MySqlControlLazy = new Lazy<MySqlControl>(() => MySqlControl.GetInstance());
         }
 
         public string Version { get; set; } = "0.0";
@@ -65,8 +65,6 @@ namespace ColorVision.SettingUp
         public MQTTConfig MQTTConfig { get; set; }
 
         public ObservableCollection<MQTTConfig> MQTTConfigs { get; set; } 
-
-
         [JsonIgnore]
         readonly Lazy<MQTTControl> MQTTControlLazy;
         [JsonIgnore]
@@ -77,12 +75,13 @@ namespace ColorVision.SettingUp
         /// MySQL配置
         /// </summary>
         public MySqlConfig MySqlConfig { get; set; }
+        public ObservableCollection<MySqlConfig> MySqlConfigs { get; set; }
+
         [JsonIgnore]
         readonly Lazy<MySqlControl> MySqlControlLazy;
         [JsonIgnore]
         public MySqlControl MySqlControl { get => MySqlControlLazy.Value; }
 
-        public ObservableCollection<MySqlConfig> MySqlConfigs { get; set; }
 
 
         public UserConfig UserConfig { get; set; }

@@ -2,6 +2,7 @@
 using ColorVision.SettingUp;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -49,7 +50,7 @@ namespace ColorVision.MQTT
             {
                 MQTTConfig.Name = MQTTConfig.Host +"_" +MQTTConfig.Port;
             }
-
+            MQTTConfigs.Remove(MQTTConfig);
             GlobalSetting.GetInstance().SaveSoftwareConfig();
             Task.Run(() => MQTTControl.GetInstance().Connect());
             this.Close();
@@ -65,7 +66,7 @@ namespace ColorVision.MQTT
         public MQTTConfig MQTTConfig { get;set;}
 
         private MQTTConfig MQTTConfigBackUp { get; set; }
-
+        public ObservableCollection<MQTTConfig> MQTTConfigs { get; set; }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -73,6 +74,15 @@ namespace ColorVision.MQTT
             GridMQTT.DataContext = MQTTConfig;
             MQTTConfigBackUp = new MQTTConfig();
             MQTTConfig.CopyTo(MQTTConfigBackUp);
+
+            MQTTConfigs = GlobalSetting.GetInstance().SoftwareConfig.MQTTConfigs;
+            ListViewMQTT.ItemsSource = MQTTConfigs;
+
+            MQTTConfigs.Insert(0, MQTTConfig);
+            this.Closed += (s, e) =>
+            {
+                MQTTConfigs.Remove(MQTTConfig);
+            };
         }
 
         private async void Button_Click_Test(object sender, RoutedEventArgs e)
@@ -80,6 +90,51 @@ namespace ColorVision.MQTT
             bool IsConnect = await MQTTControl.TestConnect(MQTTConfig);
             MessageBox.Show($"连接{(IsConnect ? "成功" : "失败")}");
 
+        }
+
+        private void Button_Click_Test1(object sender, RoutedEventArgs e)
+        {
+            if (ListViewMQTTBorder.Visibility == Visibility.Visible)
+            {
+                ListViewMQTTBorder.Visibility = Visibility.Collapsed;
+                this.Width -= 170;
+            }
+            else
+            {
+                ListViewMQTTBorder.Visibility = Visibility.Visible;
+                this.Width += 170;
+            }
+        }
+
+        private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)
+        {
+            e.Handled = true;
+        }
+
+        private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ListView listView && listView.SelectedIndex > -1)
+            {
+                MQTTConfig = MQTTConfigs[listView.SelectedIndex];
+                GridMQTT.DataContext = MQTTConfig;
+                GlobalSetting.GetInstance().SoftwareConfig.MQTTConfig = MQTTConfig;
+            }
+
+        }
+
+        private void MenuItem_Click_Delete(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Tag is MQTTConfig config)
+            {
+                MQTTConfigs.Remove(config);
+            }
+        }
+
+        private void Button_Click_Test2(object sender, RoutedEventArgs e)
+        {
+            MQTTConfig config = new MQTTConfig() { };
+            MQTTConfig.CopyTo(config);
+            MQTTConfigs.Add(config);
         }
     }
 }

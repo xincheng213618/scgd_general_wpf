@@ -20,7 +20,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <Border x:Name="ListViewMySqlBorder" Background="#FFFFFF"  BorderBrush="#EAEAEA" BorderThickness="1" Visibility="Collapsed" Width="150"  Margin="5" CornerRadius="10,10,5,5">
+                <Border x:Name="ListViewMySqlBorder" Background="#F9F9F9"  BorderBrush="#EAEAEA" BorderThickness="1" Visibility="Collapsed" Width="170"  Margin="5" CornerRadius="10,10,5,5">
                     <Grid>
                         <ListView x:Name="ListViewMySql"  Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" SelectionChanged="ListView1_SelectionChanged">
                             <ListView.ItemTemplate>
@@ -36,7 +36,7 @@
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </ListView>
-                        <Button Content="+" Click="Button_Click_Test2" Margin="0,0,0,-1"  VerticalAlignment="Bottom"/>
+                        <Button Content="复制当前配置" Click="Button_Click_Test2" BorderThickness="1,0.5,1,1" Margin="0,0,0,-1"  VerticalAlignment="Bottom"/>
                     </Grid>
                 </Border>
                 <Border Grid.Column="1"  Background="#F9F9F9"  BorderBrush="#EAEAEA" BorderThickness="1"  Margin="5" CornerRadius="10,10,3,3">
@@ -84,7 +84,9 @@
             
             
             <StackPanel Grid.Row="1" Margin="5" Orientation="Horizontal"  HorizontalAlignment="Left" VerticalAlignment="Bottom">
-                <Button Content="%%" Width="40" Click="Button_Click_Test1" Margin="0,0,5,0"/>
+                <Button  Width="40" Click="Button_Click_Test1" Margin="0,0,5,0">
+                    <Image Source="/Image/connect.png"/>
+                </Button>
                 <Button Content="测试连接" Width="80" Click="Button_Click_Test"/>
             </StackPanel>
             <StackPanel Grid.Row="1" Margin="0,5"   HorizontalAlignment="Right" VerticalAlignment="Bottom">

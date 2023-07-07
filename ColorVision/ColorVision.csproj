@@ -41,6 +41,7 @@
     <None Remove="ColorVision.png" />
     <None Remove="Image\ColorVision.png" />
     <None Remove="Image\ColorVision1.ico" />
+    <None Remove="Image\connect.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -91,6 +92,7 @@
     <Resource Include="Image\ColorVision.ico" />
     <Resource Include="Image\ColorVision.png" />
     <Resource Include="Image\ColorVision1.ico" />
+    <Resource Include="Image\connect.png" />
   </ItemGroup>
 
   <ItemGroup>
