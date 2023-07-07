@@ -845,96 +845,45 @@ namespace ColorVision.Template
         {
             if (ImageShow.Source is BitmapImage bitmapImage)
             {
-                int start = DrawingVisualLists.Count;
-                switch (PoiParam.DatumArea.PointType)
+                if(RadioButtonMode1.IsChecked == true)
                 {
-                    case RiPointTypes.Circle:
-                        if (PoiParam.DatumArea.AreaCircleNum < 1)
-                        {
-                            MessageBox.Show("绘制的个数不能小于1");
-                            return;
-                        }
-
-                        for (int i = 0; i < PoiParam.DatumArea.AreaCircleNum; i++)
-                        {
-
-                            double x1 = PoiParam.DatumArea.CenterX + PoiParam.DatumArea.AreaCircleRadius * Math.Cos(i * 2 * Math.PI / PoiParam.DatumArea.AreaCircleNum + Math.PI / 180 * PoiParam.DatumArea.AreaCircleAngle);
-                            double y1 = PoiParam.DatumArea.CenterY + PoiParam.DatumArea.AreaCircleRadius * Math.Sin(i * 2 * Math.PI / PoiParam.DatumArea.AreaCircleNum + Math.PI / 180 * PoiParam.DatumArea.AreaCircleAngle);
 
 
-                            switch (PoiParam.DeafultPointType)
+                    int start = DrawingVisualLists.Count;
+                    switch (PoiParam.DatumArea.PointType)
+                    {
+                        case RiPointTypes.Circle:
+                            if (PoiParam.DatumArea.AreaCircleNum < 1)
                             {
-                                case RiPointTypes.Circle:
-                                    DrawingVisualCircle Circle = new DrawingVisualCircleWord();
-                                    Circle.Attribute.Center = new Point(x1, y1);
-                                    Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
-                                    Circle.Attribute.Brush = Brushes.Transparent;
-                                    Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                                    Circle.Attribute.ID = start + i + 1;
-                                    Circle.Render();
-                                    ImageShow.AddVisual(Circle);
-                                    break;
-                                case RiPointTypes.Rect:
-                                    DrawingVisualRectangleWord Rectangle = new DrawingVisualRectangleWord();
-                                    Rectangle.Attribute.Rect = new Rect(x1 - PoiParam.DatumArea.DefaultRectWidth / 2, y1 - PoiParam.DatumArea.DefaultRectHeight / 2, PoiParam.DatumArea.DefaultRectWidth, PoiParam.DatumArea.DefaultRectHeight);
-                                    Rectangle.Attribute.Brush = Brushes.Transparent;
-                                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                                    Rectangle.Attribute.ID = start + i + 1;
-                                    Rectangle.Render();
-                                    ImageShow.AddVisual(Rectangle);
-                                    break;
-                                case RiPointTypes.Mask:
-                                    break;
-                                default:
-                                    break;
+                                MessageBox.Show("绘制的个数不能小于1");
+                                return;
                             }
-                        }
-                        break;
-                    case RiPointTypes.Rect:
 
-                        int cols = PoiParam.DatumArea.AreaRectCol;
-                        int rows = PoiParam.DatumArea.AreaRectRow;
-
-                        if (rows < 1 || cols < 1)
-                        {
-                            MessageBox.Show("点阵数的行列不能小于1");
-                            return;
-                        }
-                        double Width = PoiParam.DatumArea.AreaRectWidth;
-                        double Height = PoiParam.DatumArea.AreaRectHeight;
-
-
-                        double startU = PoiParam.DatumArea.CenterY - Height / 2;
-                        double startD = bitmapImage.PixelHeight - PoiParam.DatumArea.CenterY - Height / 2;
-                        double startL = PoiParam.DatumArea.CenterX - Width / 2;
-                        double startR = bitmapImage.PixelWidth - PoiParam.DatumArea.CenterX - Width / 2;
-
-
-                        double StepRow = (bitmapImage.PixelHeight - startD - startU) / (rows - 1);
-                        double StepCol = (bitmapImage.PixelWidth - startL - startR) / (cols - 1);
-
-                        for (int i = 0; i < rows; i++)
-                        {
-                            for (int j = 0; j < cols; j++)
+                            for (int i = 0; i < PoiParam.DatumArea.AreaCircleNum; i++)
                             {
+
+                                double x1 = PoiParam.DatumArea.CenterX + PoiParam.DatumArea.AreaCircleRadius * Math.Cos(i * 2 * Math.PI / PoiParam.DatumArea.AreaCircleNum + Math.PI / 180 * PoiParam.DatumArea.AreaCircleAngle);
+                                double y1 = PoiParam.DatumArea.CenterY + PoiParam.DatumArea.AreaCircleRadius * Math.Sin(i * 2 * Math.PI / PoiParam.DatumArea.AreaCircleNum + Math.PI / 180 * PoiParam.DatumArea.AreaCircleAngle);
+
+
                                 switch (PoiParam.DeafultPointType)
                                 {
                                     case RiPointTypes.Circle:
                                         DrawingVisualCircle Circle = new DrawingVisualCircleWord();
-                                        Circle.Attribute.Center = new Point(startL + StepCol * j, startU + StepRow * i);
+                                        Circle.Attribute.Center = new Point(x1, y1);
                                         Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
                                         Circle.Attribute.Brush = Brushes.Transparent;
                                         Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                                        Circle.Attribute.ID = start + i * cols + j + 1;
+                                        Circle.Attribute.ID = start + i + 1;
                                         Circle.Render();
                                         ImageShow.AddVisual(Circle);
                                         break;
                                     case RiPointTypes.Rect:
                                         DrawingVisualRectangleWord Rectangle = new DrawingVisualRectangleWord();
-                                        Rectangle.Attribute.Rect = new Rect(startL + StepCol * j - PoiParam.DatumArea.DefaultRectWidth / 2, startU + StepRow * i - PoiParam.DatumArea.DefaultRectWidth / 2, PoiParam.DatumArea.DefaultRectWidth, PoiParam.DatumArea.DefaultRectWidth);
+                                        Rectangle.Attribute.Rect = new Rect(x1 - PoiParam.DatumArea.DefaultRectWidth / 2, y1 - PoiParam.DatumArea.DefaultRectHeight / 2, PoiParam.DatumArea.DefaultRectWidth, PoiParam.DatumArea.DefaultRectHeight);
                                         Rectangle.Attribute.Brush = Brushes.Transparent;
                                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                                        Rectangle.Attribute.ID = start + i * cols + j + 1;
+                                        Rectangle.Attribute.ID = start + i + 1;
                                         Rectangle.Render();
                                         ImageShow.AddVisual(Rectangle);
                                         break;
@@ -944,79 +893,144 @@ namespace ColorVision.Template
                                         break;
                                 }
                             }
-                        }
+                            break;
+                        case RiPointTypes.Rect:
 
-                        break;
-                    case RiPointTypes.Mask:
+                            int cols = PoiParam.DatumArea.AreaRectCol;
+                            int rows = PoiParam.DatumArea.AreaRectRow;
 
-
-                        List<Point> pts_src = new List<Point>();
-                        pts_src.Add(PoiParam.DatumArea.Polygon1);
-                        pts_src.Add(PoiParam.DatumArea.Polygon2);
-                        pts_src.Add(PoiParam.DatumArea.Polygon3);
-                        pts_src.Add(PoiParam.DatumArea.Polygon4);
-
-
-                        List<Point> points = SortPolyPoints(pts_src);
-
-                        cols = PoiParam.DatumArea.AreaPolygonCol;
-                        rows = PoiParam.DatumArea.AreaPolygonRow;
-
-
-                        double rowStep = 1.0 / (rows-1);
-                        double columnStep = 1.0 / (cols - 1);
-                        for (int i = 0; i < rows; i++)
-                        {
-                            for (int j = 0; j < rows; j++)
+                            if (rows < 1 || cols < 1)
                             {
-                                // Calculate the position of the point within the quadrilateral
-                                double x = (1 - i * rowStep) * (1 - j * columnStep) * points[0].X +
-                                           (1 - i * rowStep) * (j * columnStep) * points[1].X +
-                                           (i * rowStep) * (1 - j * columnStep) * points[3].X +
-                                           (i * rowStep) * (j * columnStep) * points[2].X;
-
-                                double y = (1 - i * rowStep) * (1 - j * columnStep) * points[0].Y +
-                                           (1 - i * rowStep) * (j * columnStep) * points[1].Y +
-                                           (i * rowStep) * (1 - j * columnStep) * points[3].Y +
-                                           (i * rowStep) * (j * columnStep) * points[2].Y;
-
-                                Point point = new Point(x, y);
-
-                                switch (PoiParam.DeafultPointType)
-                                {
-                                    case RiPointTypes.Circle:
-                                        DrawingVisualCircle Circle = new DrawingVisualCircleWord();
-                                        Circle.Attribute.Center = new Point(point.X, point.Y);
-                                        Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
-                                        Circle.Attribute.Brush = Brushes.Transparent;
-                                        Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                                        Circle.Attribute.ID = start + i * cols + j + 1;
-                                        Circle.Render();
-                                        ImageShow.AddVisual(Circle);
-                                        break;
-                                    case RiPointTypes.Rect:
-                                        DrawingVisualRectangleWord Rectangle = new DrawingVisualRectangleWord();
-                                        Rectangle.Attribute.Rect = new Rect(point.X - PoiParam.DatumArea.DefaultRectWidth / 2, point.Y - PoiParam.DatumArea.DefaultRectHeight / 2, PoiParam.DatumArea.DefaultRectWidth, PoiParam.DatumArea.DefaultRectHeight);
-                                        Rectangle.Attribute.Brush = Brushes.Transparent;
-                                        Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                                        Rectangle.Attribute.ID = start + i * cols + j + 1;
-                                        Rectangle.Render();
-                                        ImageShow.AddVisual(Rectangle);
-                                        break;
-                                    case RiPointTypes.Mask:
-                                        break;
-                                    default:
-                                        break;
-                                }
-
-
+                                MessageBox.Show("点阵数的行列不能小于1");
+                                return;
                             }
-                        }
+                            double Width = PoiParam.DatumArea.AreaRectWidth;
+                            double Height = PoiParam.DatumArea.AreaRectHeight;
 
-                        break;
-                    default:
-                        break;
+
+                            double startU = PoiParam.DatumArea.CenterY - Height / 2;
+                            double startD = bitmapImage.PixelHeight - PoiParam.DatumArea.CenterY - Height / 2;
+                            double startL = PoiParam.DatumArea.CenterX - Width / 2;
+                            double startR = bitmapImage.PixelWidth - PoiParam.DatumArea.CenterX - Width / 2;
+
+
+                            double StepRow = (bitmapImage.PixelHeight - startD - startU) / (rows - 1);
+                            double StepCol = (bitmapImage.PixelWidth - startL - startR) / (cols - 1);
+
+                            for (int i = 0; i < rows; i++)
+                            {
+                                for (int j = 0; j < cols; j++)
+                                {
+                                    switch (PoiParam.DeafultPointType)
+                                    {
+                                        case RiPointTypes.Circle:
+                                            DrawingVisualCircle Circle = new DrawingVisualCircleWord();
+                                            Circle.Attribute.Center = new Point(startL + StepCol * j, startU + StepRow * i);
+                                            Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
+                                            Circle.Attribute.Brush = Brushes.Transparent;
+                                            Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                                            Circle.Attribute.ID = start + i * cols + j + 1;
+                                            Circle.Render();
+                                            ImageShow.AddVisual(Circle);
+                                            break;
+                                        case RiPointTypes.Rect:
+                                            DrawingVisualRectangleWord Rectangle = new DrawingVisualRectangleWord();
+                                            Rectangle.Attribute.Rect = new Rect(startL + StepCol * j - PoiParam.DatumArea.DefaultRectWidth / 2, startU + StepRow * i - PoiParam.DatumArea.DefaultRectWidth / 2, PoiParam.DatumArea.DefaultRectWidth, PoiParam.DatumArea.DefaultRectWidth);
+                                            Rectangle.Attribute.Brush = Brushes.Transparent;
+                                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                                            Rectangle.Attribute.ID = start + i * cols + j + 1;
+                                            Rectangle.Render();
+                                            ImageShow.AddVisual(Rectangle);
+                                            break;
+                                        case RiPointTypes.Mask:
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                }
+                            }
+
+                            break;
+                        case RiPointTypes.Mask:
+
+
+                            List<Point> pts_src = new List<Point>();
+                            pts_src.Add(PoiParam.DatumArea.Polygon1);
+                            pts_src.Add(PoiParam.DatumArea.Polygon2);
+                            pts_src.Add(PoiParam.DatumArea.Polygon3);
+                            pts_src.Add(PoiParam.DatumArea.Polygon4);
+
+
+                            List<Point> points = SortPolyPoints(pts_src);
+
+                            cols = PoiParam.DatumArea.AreaPolygonCol;
+                            rows = PoiParam.DatumArea.AreaPolygonRow;
+
+
+                            double rowStep = 1.0 / (rows - 1);
+                            double columnStep = 1.0 / (cols - 1);
+                            for (int i = 0; i < rows; i++)
+                            {
+                                for (int j = 0; j < rows; j++)
+                                {
+                                    // Calculate the position of the point within the quadrilateral
+                                    double x = (1 - i * rowStep) * (1 - j * columnStep) * points[0].X +
+                                               (1 - i * rowStep) * (j * columnStep) * points[1].X +
+                                               (i * rowStep) * (1 - j * columnStep) * points[3].X +
+                                               (i * rowStep) * (j * columnStep) * points[2].X;
+
+                                    double y = (1 - i * rowStep) * (1 - j * columnStep) * points[0].Y +
+                                               (1 - i * rowStep) * (j * columnStep) * points[1].Y +
+                                               (i * rowStep) * (1 - j * columnStep) * points[3].Y +
+                                               (i * rowStep) * (j * columnStep) * points[2].Y;
+
+                                    Point point = new Point(x, y);
+
+                                    switch (PoiParam.DeafultPointType)
+                                    {
+                                        case RiPointTypes.Circle:
+                                            DrawingVisualCircle Circle = new DrawingVisualCircleWord();
+                                            Circle.Attribute.Center = new Point(point.X, point.Y);
+                                            Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
+                                            Circle.Attribute.Brush = Brushes.Transparent;
+                                            Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                                            Circle.Attribute.ID = start + i * cols + j + 1;
+                                            Circle.Render();
+                                            ImageShow.AddVisual(Circle);
+                                            break;
+                                        case RiPointTypes.Rect:
+                                            DrawingVisualRectangleWord Rectangle = new DrawingVisualRectangleWord();
+                                            Rectangle.Attribute.Rect = new Rect(point.X - PoiParam.DatumArea.DefaultRectWidth / 2, point.Y - PoiParam.DatumArea.DefaultRectHeight / 2, PoiParam.DatumArea.DefaultRectWidth, PoiParam.DatumArea.DefaultRectHeight);
+                                            Rectangle.Attribute.Brush = Brushes.Transparent;
+                                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                                            Rectangle.Attribute.ID = start + i * cols + j + 1;
+                                            Rectangle.Render();
+                                            ImageShow.AddVisual(Rectangle);
+                                            break;
+                                        case RiPointTypes.Mask:
+                                            break;
+                                        default:
+                                            break;
+                                    }
+
+
+                                }
+                            }
+
+                            break;
+                        default:
+                            break;
+                    }
                 }
+                else if (RadioButtonMode2.IsChecked == true)
+                {
+
+                }
+                else if (RadioButtonMode3.IsChecked ==true)
+                {
+
+                }
+
 
             }
         }
@@ -1261,6 +1275,24 @@ namespace ColorVision.Template
         private void Button1_Click(object sender, RoutedEventArgs e)
         {
             MessageBox.Show("导入关注点");
+        }
+
+        private void RadioButtonMode1_Checked(object sender, RoutedEventArgs e)
+        {
+            if (GridBenckMark!=null)
+                GridBenckMark.Visibility = Visibility.Visible;
+        }
+
+        private void RadioButtonMode3_Checked(object sender, RoutedEventArgs e)
+        {
+            if (GridBenckMark != null)
+                GridBenckMark.Visibility = Visibility.Visible;
+        }
+
+        private void RadioButtonMode2_Checked(object sender, RoutedEventArgs e)
+        {
+            if (GridBenckMark != null)
+                GridBenckMark.Visibility = Visibility.Collapsed;
         }
     }
 
