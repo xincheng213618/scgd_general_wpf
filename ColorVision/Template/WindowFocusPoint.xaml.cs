@@ -642,25 +642,25 @@ namespace ColorVision.Template
                 switch (item.PointType)
                 {
                     case RiPointTypes.Circle:
-                        DrawingVisualCircleWord drawingVisualCircle = new DrawingVisualCircleWord();
-                        drawingVisualCircle.Attribute.Center = new Point(item.PixX, item.PixY);
-                        drawingVisualCircle.Attribute.Radius = item.PixWidth;
-                        drawingVisualCircle.Attribute.Brush = Brushes.Transparent;
-                        drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red,  item.PixWidth/30);
-                        drawingVisualCircle.Attribute.ID = item.ID;
-                        drawingVisualCircle.Attribute.Name = item.Name;
-                        drawingVisualCircle.Render();
-                        ImageShow.AddVisual(drawingVisualCircle);
+                        DrawingVisualCircleWord Circle = new DrawingVisualCircleWord();
+                        Circle.Attribute.Center = new Point(item.PixX, item.PixY);
+                        Circle.Attribute.Radius = item.PixWidth;
+                        Circle.Attribute.Brush = Brushes.Transparent;
+                        Circle.Attribute.Pen = new Pen(Brushes.Red,  item.PixWidth/30);
+                        Circle.Attribute.ID = item.ID;
+                        Circle.Attribute.Name = item.Name;
+                        Circle.Render();
+                        ImageShow.AddVisual(Circle);
                         break;
                     case RiPointTypes.Rect:
-                        DrawingVisualRectangle drawingVisualRectangle = new DrawingVisualRectangle();
-                        drawingVisualRectangle.Attribute.Rect = new Rect(item.PixX, item.PixY, item.PixWidth, item.PixHeight);
-                        drawingVisualRectangle.Attribute.Brush = Brushes.Transparent;
-                        drawingVisualRectangle.Attribute.Pen = new Pen(Brushes.Red,  item.PixWidth/30);
-                        drawingVisualRectangle.Attribute.ID = item.ID;
-                        drawingVisualRectangle.Attribute.Name = item.Name;
-                        drawingVisualRectangle.Render();
-                        ImageShow.AddVisual(drawingVisualRectangle);
+                        DrawingVisualRectangleWord Rectangle = new DrawingVisualRectangleWord();
+                        Rectangle.Attribute.Rect = new Rect(item.PixX, item.PixY, item.PixWidth, item.PixHeight);
+                        Rectangle.Attribute.Brush = Brushes.Transparent;
+                        Rectangle.Attribute.Pen = new Pen(Brushes.Red,  item.PixWidth/30);
+                        Rectangle.Attribute.ID = item.ID;
+                        Rectangle.Attribute.Name = item.Name;
+                        Rectangle.Render();
+                        ImageShow.AddVisual(Rectangle);
                         break;
                     case RiPointTypes.Mask:
                         break;
