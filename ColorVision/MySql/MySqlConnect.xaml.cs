@@ -53,6 +53,7 @@ namespace ColorVision.MySql
                 MySqlConfig.Name = MySqlConfig.Host +"_" +MySqlConfig.Port;
             }
             MySqlConfig.UserPwd = PasswordBox1.Password;
+            MySqlConfigs.Remove(MySqlConfig);
 
             GlobalSetting.GetInstance().SaveSoftwareConfig();
             MySqlControl.GetInstance().Open();
@@ -81,10 +82,12 @@ namespace ColorVision.MySql
             PasswordBox1.Password = MySqlConfig.UserPwd;
             MySqlConfigs = GlobalSetting.GetInstance().SoftwareConfig.MySqlConfigs;
             ListViewMySql.ItemsSource = MySqlConfigs;
-            //MySqlConfigs.Clear();
-            if (MySqlConfigs.Count == 0)
-                MySqlConfigs.Add(MySqlConfig);
-            //ListViewMySql.SelectedIndex = 0;
+
+            MySqlConfigs.Insert(0, MySqlConfig);
+            this.Closed += (s, e) =>
+            {
+                MySqlConfigs.Remove(MySqlConfig);
+            };
         }
 
         private void Button_Click_Test(object sender, RoutedEventArgs e)

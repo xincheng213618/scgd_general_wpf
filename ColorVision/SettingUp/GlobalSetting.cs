@@ -64,11 +64,11 @@ namespace ColorVision.SettingUp
 
         public void SaveSoftwareConfig()
         {
-            //string Temp0 = SoftwareConfig.MySqlConfig.UserPwd;
+            string Temp0 = SoftwareConfig.MySqlConfig.UserPwd;
             string Temp1 = SoftwareConfig.MQTTConfig.UserPwd;
             string Temp2 = SoftwareConfig.UserConfig.UserPwd;
 
-            //SoftwareConfig.MySqlConfig.UserPwd = AESUtil.AESEncrypt(SoftwareConfig.MySqlConfig.UserPwd, "ColorVision", "ColorVision");
+            SoftwareConfig.MySqlConfig.UserPwd = AESUtil.AESEncrypt(SoftwareConfig.MySqlConfig.UserPwd, "ColorVision", "ColorVision");
             SoftwareConfig.MQTTConfig.UserPwd = AESUtil.AESEncrypt(SoftwareConfig.MQTTConfig.UserPwd, "ColorVision", "ColorVision");
             SoftwareConfig.UserConfig.UserPwd = AESUtil.AESEncrypt(SoftwareConfig.UserConfig.UserPwd, "ColorVision", "ColorVision");
 
@@ -81,7 +81,7 @@ namespace ColorVision.SettingUp
 
 
             WriteConfig(GlobalConst.SoftwareConfigFileName, SoftwareConfig);
-            //SoftwareConfig.MySqlConfig.UserPwd = Temp0;
+            SoftwareConfig.MySqlConfig.UserPwd = Temp0;
             SoftwareConfig.MQTTConfig.UserPwd = Temp1;
             SoftwareConfig.UserConfig.UserPwd = Temp2;
 

@@ -930,7 +930,7 @@ namespace ColorVision.Template
                                         ImageShow.AddVisual(Circle);
                                         break;
                                     case RiPointTypes.Rect:
-                                        DrawingVisualRectangle Rectangle = new DrawingVisualRectangle();
+                                        DrawingVisualRectangleWord Rectangle = new DrawingVisualRectangleWord();
                                         Rectangle.Attribute.Rect = new Rect(startL + StepCol * j - PoiParam.DatumArea.DefaultRectWidth / 2, startU + StepRow * i - PoiParam.DatumArea.DefaultRectWidth / 2, PoiParam.DatumArea.DefaultRectWidth, PoiParam.DatumArea.DefaultRectWidth);
                                         Rectangle.Attribute.Brush = Brushes.Transparent;
                                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
@@ -995,7 +995,7 @@ namespace ColorVision.Template
                                         ImageShow.AddVisual(Circle);
                                         break;
                                     case RiPointTypes.Rect:
-                                        DrawingVisualRectangle Rectangle = new DrawingVisualRectangle();
+                                        DrawingVisualRectangleWord Rectangle = new DrawingVisualRectangleWord();
                                         Rectangle.Attribute.Rect = new Rect(point.X - PoiParam.DatumArea.DefaultRectWidth / 2, point.Y - PoiParam.DatumArea.DefaultRectHeight / 2, PoiParam.DatumArea.DefaultRectWidth, PoiParam.DatumArea.DefaultRectHeight);
                                         Rectangle.Attribute.Brush = Brushes.Transparent;
                                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
