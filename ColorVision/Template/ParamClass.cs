@@ -30,10 +30,28 @@ namespace ColorVision.Template
         private bool _IsEnable;
         protected Dictionary<string, ModDetailModel> _Parameters;
 
-        public int GetValue([CallerMemberName] string propertyName = "")
+        public T GetValue<T> ([CallerMemberName] string propertyName = "")
         {
-            if (_Parameters.ContainsKey(propertyName)) return int.Parse(_Parameters[propertyName].ValueA);
-            else return 0;
+            string val = "";
+            if (_Parameters.ContainsKey(propertyName)) val =  _Parameters[propertyName].ValueA;
+            if (typeof(T) == typeof(int))
+            {
+                if(string.IsNullOrEmpty(val)) val = "0";
+                return (T)(object)int.Parse(val);
+            }else if (typeof(T) == typeof(string))
+            {
+                return (T)(object)val;
+            }else if(typeof(T) == typeof(bool))
+            {
+                if (string.IsNullOrEmpty(val)) val = "False";
+                return (T)(object)bool.Parse(val);
+            }
+            else if (typeof(T) == typeof(float))
+            {
+                if (string.IsNullOrEmpty(val)) val = "0.0";
+                return (T)(object)float.Parse(val);
+            }
+            return (T)(object)val;
         }
     }
 
@@ -70,11 +88,8 @@ namespace ColorVision.Template
         public string? FileName { set {
                 if (_Parameters.ContainsKey("filename")) _Parameters["filename"].ValueA = value;
             } 
-            get {
-
-                if ( _Parameters.ContainsKey("filename")&& _Parameters["filename"] != null) return _Parameters["filename"].ValueA;
-                else return "";
-            } }
+            get => GetValue<string>("filename");
+        }
 
         internal void GetDetail(List<ModDetailModel> list)
         {
@@ -124,23 +139,23 @@ namespace ColorVision.Template
         public bool FilterByArea { set; get; }
         public int MaxArea { set; get; }
         public int MinArea { set; get; }
-        public bool FilterByContrast { set; get; }
-        public float MaxContrast { set; get; }
-        public float MinContrast { set; get; }
+        public bool FilterByContrast { set {; } get => GetValue<bool>(); }
+        public float MaxContrast { set {; } get => GetValue<float>(); }
+        public float MinContrast { set {; } get => GetValue<float>(); }
         public float ContrastBrightness { set; get; }
         public float ContrastDarkness { set; get; }
-        public int BlurSize { set; get; }
+        public int BlurSize { set {; } get => GetValue<int>(); }
         public int MinContourSize { set; get; }
         public int ErodeSize { set; get; }
-        public int DilateSize { set; get; }
+        public int DilateSize { set {; } get => GetValue<int>(); }
         [Category("AoiRect")]
-        public int Left { set {; } get => GetValue(); }
+        public int Left { set {; } get => GetValue<int>(); }
         [Category("AoiRect")]
-        public int Right { set {; } get => GetValue(); }
+        public int Right { set {; } get => GetValue<int>(); }
         [Category("AoiRect")]
-        public int Top { set {; } get => GetValue(); }
+        public int Top { set {; } get => GetValue<int>(); }
         [Category("AoiRect")]
-        public int Bottom { set {; } get => GetValue(); }
+        public int Bottom { set {; } get => GetValue<int>(); }
     }
     public class LedReusltParam : ParamBase
     {
