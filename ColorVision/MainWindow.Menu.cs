@@ -1,4 +1,5 @@
-﻿using ColorVision.Project;
+﻿using ColorVision.HotKey;
+using ColorVision.Project;
 using ColorVision.Project.RecentFile;
 using ColorVision.SettingUp;
 using ColorVision.Template;
@@ -114,29 +115,32 @@ namespace ColorVision
 
         private void MenuItem_ProjectNew_Click(object sender, RoutedEventArgs e)
         {
-            NewCreatWindow newCreatWindow = new NewCreatWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            newCreatWindow.Closed += delegate
-            {
-                if (newCreatWindow.IsCreate)
-                {
-                    string SolutionDirectoryPath = newCreatWindow.newCreatViewMode.DirectoryPath + "\\" + newCreatWindow.newCreatViewMode.Name;
-                    ProjectConfig ProjectConfig = GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig;
-                    if (Directory.Exists(SolutionDirectoryPath))
-                    {
-                        DirectoryInfo Info = new DirectoryInfo(SolutionDirectoryPath);
-                        ProjectConfig.ProjectName = Info.Name;
-                        ProjectConfig.ProjectFullName = Info.FullName;
-                        RecentFileList SolutionHistory = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
-                        SolutionHistory.InsertFile(Info.FullName);
-                    }
-
-                }
-            };
-            newCreatWindow.ShowDialog();
-
+            NewCreatSolution();
         }
 
         private void MenuItem_ProjectOpen_Click(object sender, RoutedEventArgs e)
+        {
+            OpenSolution();
+        }
+        private DateTime lastClickTime = DateTime.MinValue;
+
+        private void TextBlock_MouseLeftButtonDown2(object sender, MouseButtonEventArgs e)
+        {
+            TimeSpan elapsedTime = DateTime.Now - lastClickTime;
+            if (elapsedTime.TotalMilliseconds <= 300) 
+            {
+                System.Diagnostics.Process.Start("explorer.exe", $"{GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectFullName}");
+            }
+
+            lastClickTime = DateTime.Now;
+        }
+
+        private void MenuItem_Click_2(object sender, RoutedEventArgs e)
+        {
+            OpenSetting();
+        }
+
+        private void OpenSolution()
         {
             OpenSolutionWindow openSolutionWindow = new OpenSolutionWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
             openSolutionWindow.Closed += delegate
@@ -154,24 +158,89 @@ namespace ColorVision
 
             };
             openSolutionWindow.Show();
-
         }
-        private DateTime lastClickTime = DateTime.MinValue;
 
-        private void TextBlock_MouseLeftButtonDown2(object sender, MouseButtonEventArgs e)
+        private void NewCreatSolution()
         {
-            TimeSpan elapsedTime = DateTime.Now - lastClickTime;
-            if (elapsedTime.TotalMilliseconds <= 300) 
+            NewCreatWindow newCreatWindow = new NewCreatWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            newCreatWindow.Closed += delegate
             {
-                System.Diagnostics.Process.Start("explorer.exe", $"{GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectFullName}");
-            }
-
-            lastClickTime = DateTime.Now;
+                if (newCreatWindow.IsCreate)
+                {
+                    string SolutionDirectoryPath = newCreatWindow.newCreatViewMode.DirectoryPath + "\\" + newCreatWindow.newCreatViewMode.Name;
+                    OpenSolution(SolutionDirectoryPath);
+                }
+            };
+            newCreatWindow.ShowDialog();
         }
 
-        private void MenuItem_Click_2(object sender, RoutedEventArgs e)
+        private void OpenSolution(string SolutionFullPath)
+        {
+            ProjectConfig ProjectConfig = GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig;
+            if (Directory.Exists(SolutionFullPath))
+            {
+                DirectoryInfo Info = new DirectoryInfo(SolutionFullPath);
+                ProjectConfig.ProjectName = Info.Name;
+                ProjectConfig.ProjectFullName = Info.FullName;
+                SolutionHistory.InsertFile(Info.FullName);
+            }
+        }
+
+        private void OpenSetting()
         {
             new SettingWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+        }
+        RecentFileList SolutionHistory = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
+
+        private void Menu_Initialized(object sender, EventArgs e)
+        {
+
+            Application.Current.MainWindow.AddHotKeys(new HotKeys("打开当前工程", new Hotkey(Key.O, ModifierKeys.Control), OpenSolution));
+            Application.Current.MainWindow.AddHotKeys(new HotKeys("新建工程", new Hotkey(Key.N, ModifierKeys.Control), NewCreatSolution));
+            Application.Current.MainWindow.AddHotKeys(new HotKeys("设置", new Hotkey(Key.I, ModifierKeys.Control), OpenSetting));
+
+
+            MenuItem RecentListMenuItem = null;
+
+
+
+
+            RecentListMenuItem ??= new MenuItem();
+            RecentListMenuItem.Header = "最近使用过的文件(_F)";
+            RecentListMenuItem.SubmenuOpened += (s, e) =>
+            {
+                var firstMenuItem = RecentListMenuItem.Items[0];
+                foreach (var item in SolutionHistory.RecentFiles)
+                {
+                    if (Directory.Exists(item))
+                    {
+                        MenuItem menuItem = new MenuItem();
+                        menuItem.Header = item;
+                        menuItem.Click += (sender, e) =>
+                        {
+                            OpenSolution(item);
+                        };
+                        RecentListMenuItem.Items.Add(menuItem);
+                    }
+                    else
+                    {
+                        SolutionHistory.RecentFiles.Remove(item);
+                    }
+
+
+
+                };
+                RecentListMenuItem.Items.Remove(firstMenuItem);
+
+            };
+            RecentListMenuItem.SubmenuClosed += (s, e) => {
+                RecentListMenuItem.Items.Clear();
+                RecentListMenuItem.Items.Add(new MenuItem());
+            };
+            RecentListMenuItem.Items.Add(new MenuItem());
+
+            FileMenuItem.Items.Insert(FileMenuItem.Items.Count-2, RecentListMenuItem);
+
         }
 
         private void MenuItem_Exit(object sender, RoutedEventArgs e)

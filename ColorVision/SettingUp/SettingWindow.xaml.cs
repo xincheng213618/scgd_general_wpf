@@ -34,5 +34,11 @@ namespace ColorVision.SettingUp
         {
 
         }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            HotKey.HotKeyManger hotKeyManger = new HotKey.HotKeyManger();
+            hotKeyManger.Show();
+        }
     }
 }

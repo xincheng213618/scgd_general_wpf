@@ -62,7 +62,7 @@ namespace ColorVision.Template
         {
             list.AddRange(parameters.Values.ToList());
         }
-        public void SetValue(string value,[CallerMemberName] string propertyName = "")
+        public void SetValue(string? value,[CallerMemberName] string propertyName = "")
         {
             if (parameters.ContainsKey(propertyName))
             {
