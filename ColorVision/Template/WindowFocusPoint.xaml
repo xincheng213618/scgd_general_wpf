@@ -39,14 +39,16 @@
                                 <StackPanel Margin="5">
                                     <DockPanel x:Name="SettingGroup"  d:DataContext="{d:DesignInstance Template:WindowFocusPoint}">
                                         <Button Content="重渲染"  ToolTip="一次"  Click="Button_Click_UpdateVisualLayout"  DockPanel.Dock="Right" Visibility="{Binding IsLayoutUpdated,Converter={StaticResource bool2VisibilityConverter1}}" IsEnabled="{Binding IsLayoutUpdated,Converter={StaticResource Boolean2BooleanReConverter}}" />
-                                        <ToggleButton DockPanel.Dock="Right" HorizontalAlignment="Left" Height="20" Margin="2" Content="缩放自动重渲染" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsLayoutUpdated}"/>
+                                        <ToggleButton DockPanel.Dock="Left" HorizontalAlignment="Left"  Height="16"  Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsLayoutUpdated}"/>
+                                        <TextBlock  DockPanel.Dock="Left" HorizontalAlignment="Left" Text="缩放自动重渲染"/>
                                     </DockPanel>
                                     <DockPanel>
-
-                                        <ToggleButton DockPanel.Dock="Right" HorizontalAlignment="Left" Height="20" Margin="2" Content="基准点显示" Style="{StaticResource ToggleButtonSwitch}"  Click="SetDefault_Click" IsChecked="{Binding DatumArea.IsShowDatum}"/>
+                                        <ToggleButton  HorizontalAlignment="Left"  Height="16" Margin="2" Style="{StaticResource ToggleButtonSwitch}"  Click="SetDefault_Click" IsChecked="{Binding DatumArea.IsShowDatum}"/>
+                                        <TextBlock   HorizontalAlignment="Left" Text="基准点显示"/>
                                     </DockPanel>
                                     <DockPanel >
-                                        <ToggleButton DockPanel.Dock="Right"  HorizontalAlignment="Left" Height="20" Margin="2" Content="布点区域显示" Style="{StaticResource ToggleButtonSwitch}"  Click="ShowDatumArea_Click" IsChecked="{Binding DatumArea.IsShowDatumArea}"/>
+                                        <ToggleButton HorizontalAlignment="Left" Height="16" Margin="2" Style="{StaticResource ToggleButtonSwitch}"  Click="ShowDatumArea_Click" IsChecked="{Binding DatumArea.IsShowDatumArea}"/>
+                                        <TextBlock   HorizontalAlignment="Left" Text="布点区域显示"/>
                                     </DockPanel>
                                 </StackPanel>
                             </GroupBox>

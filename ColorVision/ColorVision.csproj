@@ -51,7 +51,7 @@
   <ItemGroup>
     <PackageReference Include="Extended.Wpf.Toolkit" Version="4.5.0" />
     <PackageReference Include="Gu.Wpf.Geometry" Version="2.2.8" />
-    <PackageReference Include="HandyControls" Version="3.4.5" />
+    <PackageReference Include="HandyControl" Version="3.4.0" />
     <PackageReference Include="log4net" Version="2.0.15" />
     <PackageReference Include="MQTTnet" Version="4.2.1.781" />
     <PackageReference Include="MySql.Data" Version="8.0.33" />

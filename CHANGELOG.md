@@ -8,6 +8,8 @@
 
 3.添加配置页面
 
+4.Fix  bitmapImage 的内存泄漏的问题（因为引入了HandyContorls 而不是HandyContorl,导致生成的Image不会自动回收造成的）
+
 ## [1.0.1.4] 2023-07-07
 1.修改MySql和MQTT在前台展示连接的方式
 

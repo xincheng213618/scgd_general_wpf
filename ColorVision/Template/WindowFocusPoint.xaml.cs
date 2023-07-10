@@ -1,18 +1,10 @@
 ﻿using ColorVision.Extension;
-using ColorVision.MQTT;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.SettingUp;
-using ColorVision.Template;
 using ColorVision.Util;
-using cvColorVision;
-using Gu.Wpf.Geometry;
-using HandyControl.Tools.Extension;
 using log4net;
-using Microsoft.VisualBasic.Logging;
-using MySqlX.XDevAPI.Relational;
 using Newtonsoft.Json;
-using OpenCvSharp.Flann;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -20,21 +12,14 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Media.Media3D;
-using System.Windows.Shapes;
-using Xceed.Wpf.Toolkit.Zoombox;
 
 namespace ColorVision.Template
 {
@@ -556,7 +541,6 @@ namespace ColorVision.Template
                 bitmapImage.Freeze();
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-
                     if (ImageShow.Source == null)
                     {
                         ImageShow.Source = bitmapImage;
