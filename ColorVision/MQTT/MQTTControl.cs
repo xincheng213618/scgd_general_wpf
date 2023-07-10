@@ -28,13 +28,14 @@ namespace ColorVision.MQTT
 
         public event MQTTMsgHandler MQTTMsgChanged;
 
-        public MQTTConfig MQTTConfig { get; set; }
+        public SoftwareConfig SoftwareConfig { get; set; }
+        public MQTTConfig MQTTConfig { get => SoftwareConfig.MQTTConfig; }
 
         private MQTTControl()
         {
-            MQTTConfig =GlobalSetting.GetInstance().SoftwareConfig.MQTTConfig;
+            SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
             MQTTHelper = new MQTTHelper();
-            Task.Run(() => Connect());
+            Task.Run(() => Connect(MQTTConfig));
             MQTTHelper.MsgHandle += (s) => { MQTTMsgChanged?.Invoke(s); };
         }
 
@@ -50,7 +51,7 @@ namespace ColorVision.MQTT
 
 
         private bool IsRun;
-        public async Task<bool> Connect()
+        public async Task<bool> Connect(MQTTConfig MQTTConfig)
         {
             MQTTHelper.MqttClient?.Dispose();
 
@@ -101,7 +102,6 @@ namespace ColorVision.MQTT
             }
             mqttClientOptionsBuilder.WithClientId(Guid.NewGuid().ToString("N"));  // 设置客户端序列号
             MqttClientOptions options = mqttClientOptionsBuilder.Build();
-            options.Timeout = new TimeSpan(2);
 
             IMqttClient MqttClient = new MqttFactory().CreateMqttClient();
             bool IsConnected =false;

@@ -25,6 +25,9 @@ namespace ColorVision.MySql
 
         public SoftwareConfig SoftwareConfig { get; set; }
 
+        public MySqlConfig MySqlConfig { get => SoftwareConfig.MySqlConfig; }
+
+
         public MySqlControl()
         {
             SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
@@ -40,13 +43,13 @@ namespace ColorVision.MySql
 
         public string GetCurConnectionString()
         {
-            string connStr = GetConnectionString(SoftwareConfig.MySqlConfig);
+            string connStr = GetConnectionString(MySqlConfig);
             return connStr;
         }
 
         public bool Connect()
         {
-            string connStr = GetConnectionString(SoftwareConfig.MySqlConfig);
+            string connStr = GetConnectionString(MySqlConfig);
             try
             {
                 log.Info($"数据库连接信息:{connStr}");

@@ -57,11 +57,7 @@ namespace ColorVision.SettingUp
         [JsonIgnore]
         public TemplateControl TemplateControl { get => TemplateControlLazy.Value; }
 
-       
 
-        /// <summary>
-        /// MQTT配置
-        /// </summary>
         public MQTTConfig MQTTConfig { get; set; }
 
         public ObservableCollection<MQTTConfig> MQTTConfigs { get; set; } 

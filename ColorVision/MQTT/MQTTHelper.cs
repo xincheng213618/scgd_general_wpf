@@ -390,7 +390,6 @@ namespace ColorVision.MQTT
                 }
                 mqttClientOptionsBuilder.WithClientId(Guid.NewGuid().ToString("N"));  // 设置客户端序列号
                 MqttClientOptions options = mqttClientOptionsBuilder.Build();
-                options.Timeout = new TimeSpan(5);
 
                 MqttClient = new MqttFactory().CreateMqttClient();
                 MqttClient.ConnectedAsync += ConnectedHandle;        // 服务器连接事件

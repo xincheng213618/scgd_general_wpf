@@ -13,6 +13,8 @@ namespace ColorVision.SettingUp
     public static class GlobalConst
     {
         public const string SoftwareConfigFileName = "Config\\SoftwareConfig.json";
+        public const string SoftwareConfigAESKey= "ColorVision";
+        public const string SoftwareConfigAESVector = "ColorVision";
 
 
     }
@@ -34,11 +36,13 @@ namespace ColorVision.SettingUp
                 SoftwareConfig config = ReadConfig<SoftwareConfig>(GlobalConst.SoftwareConfigFileName);
                 if (config != null)
                 {
-                    config.MySqlConfig.UserPwd = AESUtil.AESDecrypt(config.MySqlConfig.UserPwd, "ColorVision", "ColorVision");
-                    config.MQTTConfig.UserPwd = AESUtil.AESDecrypt(config.MQTTConfig.UserPwd, "ColorVision", "ColorVision");
-                    config.UserConfig.UserPwd = AESUtil.AESDecrypt(config.UserConfig.UserPwd, "ColorVision", "ColorVision");
+                    config.MySqlConfig.UserPwd = AESUtil.AESDecrypt(config.MySqlConfig.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
+                    config.MQTTConfig.UserPwd = AESUtil.AESDecrypt(config.MQTTConfig.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
+                    config.UserConfig.UserPwd = AESUtil.AESDecrypt(config.UserConfig.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
                     foreach (var item in config.MySqlConfigs)
-                        item.UserPwd = AESUtil.AESDecrypt(item.UserPwd, "ColorVision", "ColorVision");
+                        item.UserPwd = AESUtil.AESDecrypt(item.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
+                    foreach (var item in config.MQTTConfigs)
+                        item.UserPwd = AESUtil.AESDecrypt(item.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
 
 
                     return config;

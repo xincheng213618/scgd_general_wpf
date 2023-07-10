@@ -20,7 +20,7 @@ namespace ColorVision
     public partial class MQTTLog : Window
     {
 
-        MQTTControl MQTTControl;
+        MQTTControl MQTTControl { get; set; }
         public MQTTLog()
         {
             InitializeComponent();
@@ -28,14 +28,11 @@ namespace ColorVision
             MQTTControl.MQTTMsgChanged += ShowLog;
             TopicListView.ItemsSource = MQTTControl.SubscribeTopic;
             this.DataContext = MQTTControl;
+            this.Title += $"  {MQTTControl.MQTTConfig.Host}_{MQTTControl.MQTTConfig.Port}";
         }
 
 
-        private async void Start_Click(object sender, RoutedEventArgs e)
-        {
-            if (!MQTTControl.IsConnect)
-                await MQTTControl.Connect();
-        }
+
 
         private void ShowLog(ResultDataMQTT resultData_MQTT)
         {

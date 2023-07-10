@@ -52,7 +52,7 @@ namespace ColorVision.MQTT
             }
             MQTTConfigs.Remove(MQTTConfig);
             GlobalSetting.GetInstance().SaveSoftwareConfig();
-            Task.Run(() => MQTTControl.GetInstance().Connect());
+            Task.Run(() => MQTTControl.GetInstance().Connect(MQTTConfig));
             this.Close();
         }
 
