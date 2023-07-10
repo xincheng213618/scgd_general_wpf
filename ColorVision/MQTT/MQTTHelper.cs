@@ -13,7 +13,6 @@ using System.Threading.Tasks;
 namespace ColorVision.MQTT
 {
 
-    public delegate void MQTTMsgHandle(ResultDataMQTT resultDataMQTT);
     /// <summary>
     /// MQTT通讯相关的工具类
     /// </summary>
@@ -32,9 +31,9 @@ namespace ColorVision.MQTT
         /// <summary>
         /// 创建MQTTServer并运行
         /// </summary>
-        public async Task<ResultDataMQTT> CreateMQTTServerAndStart(MqttServerOptionsBuilder mqttServerOptionsBuilder)
+        public async Task<ResultDataMQ> CreateMQTTServerAndStart(MqttServerOptionsBuilder mqttServerOptionsBuilder)
         {
-            ResultDataMQTT resultData_MQTT = new ResultDataMQTT();
+            ResultDataMQ resultData_MQTT = new ResultDataMQ();
             try
             {
                 MqttServerOptions mqttServerOptions = mqttServerOptionsBuilder.Build();
@@ -52,7 +51,7 @@ namespace ColorVision.MQTT
 
                 if (MqttServer.IsStarted)
                 {
-                    resultData_MQTT = new ResultDataMQTT()
+                    resultData_MQTT = new ResultDataMQ()
                     {
                         ResultCode = 1,
                         ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了开启MQTTServer_成功！"
@@ -60,7 +59,7 @@ namespace ColorVision.MQTT
                 }
                 else
                 {
-                    resultData_MQTT = new ResultDataMQTT()
+                    resultData_MQTT = new ResultDataMQ()
                     {
                         ResultCode = -1,
                         ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了开启MQTTServer_失败！"
@@ -69,7 +68,7 @@ namespace ColorVision.MQTT
             }
             catch (Exception ex)
             {
-                resultData_MQTT = new ResultDataMQTT()
+                resultData_MQTT = new ResultDataMQ()
                 {
                     ResultCode = -1,
                     ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了开启MQTTServer_失败！错误信息：" + ex.Message
@@ -88,9 +87,9 @@ namespace ColorVision.MQTT
         /// <param name="withPersistentSessions">是否保持会话</param>
         /// <param name="callback">处理方法</param>
         /// <returns></returns>
-        public async Task<ResultDataMQTT> CreateMQTTServerAndStart(string ip, int port, bool withPersistentSessions)
+        public async Task<ResultDataMQ> CreateMQTTServerAndStart(string ip, int port, bool withPersistentSessions)
         {
-            ResultDataMQTT resultData_MQTT = new ResultDataMQTT();
+            ResultDataMQ resultData_MQTT = new ResultDataMQ();
             try
             {
                 MqttServerOptionsBuilder mqttServerOptionsBuilder = new MqttServerOptionsBuilder();  // MQTT服务器配置
@@ -124,7 +123,7 @@ namespace ColorVision.MQTT
 
                 if (MqttServer.IsStarted)
                 {
-                    resultData_MQTT = new ResultDataMQTT()
+                    resultData_MQTT = new ResultDataMQ()
                     {
                         ResultCode = 1,
                         ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了开启MQTTServer_成功！"
@@ -132,7 +131,7 @@ namespace ColorVision.MQTT
                 }
                 else
                 {
-                    resultData_MQTT = new ResultDataMQTT()
+                    resultData_MQTT = new ResultDataMQ()
                     {
                         ResultCode = -1,
                         ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了开启MQTTServer_失败！"
@@ -141,7 +140,7 @@ namespace ColorVision.MQTT
             }
             catch (Exception ex)
             {
-                resultData_MQTT = new ResultDataMQTT()
+                resultData_MQTT = new ResultDataMQ()
                 {
                     ResultCode = -1,
                     ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了开启MQTTServer_失败！错误信息：" + ex.Message
@@ -155,15 +154,15 @@ namespace ColorVision.MQTT
         /// <summary>
         /// 关闭MQTTServer
         /// </summary>
-        public async Task<ResultDataMQTT> StopMQTTServer()
+        public async Task<ResultDataMQ> StopMQTTServer()
         {
-            ResultDataMQTT resultData_MQTT = new ResultDataMQTT();
+            ResultDataMQ resultData_MQTT = new ResultDataMQ();
 
             try
             {
                 if (MqttServer == null)
                 {
-                    resultData_MQTT = new ResultDataMQTT()
+                    resultData_MQTT = new ResultDataMQ()
                     {
                         ResultCode = -1,
                         ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了关闭MQTTServer_出错！MQTTServer未在运行。"
@@ -177,7 +176,7 @@ namespace ColorVision.MQTT
                     }
                     await MqttServer.StopAsync();
 
-                    resultData_MQTT = new ResultDataMQTT()
+                    resultData_MQTT = new ResultDataMQ()
                     {
                         ResultCode = 1,
                         ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了关闭MQTTServer_成功！"
@@ -186,7 +185,7 @@ namespace ColorVision.MQTT
             }
             catch (Exception ex)
             {
-                resultData_MQTT = new ResultDataMQTT()
+                resultData_MQTT = new ResultDataMQ()
                 {
                     ResultCode = -1,
                     ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了关闭MQTTServer_失败！错误信息：" + ex.Message
@@ -211,7 +210,7 @@ namespace ColorVision.MQTT
         /// </summary>
         private Task StartedHandle(EventArgs arg)
         {
-            MsgHandle?.Invoke(new ResultDataMQTT()
+            MsgHandle?.Invoke(new ResultDataMQ()
             {
                 ResultCode = 1,
                 ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "MQTTServer已开启！"
@@ -224,7 +223,7 @@ namespace ColorVision.MQTT
         /// </summary>
         private Task StoppedHandle(EventArgs arg)
         {
-            MsgHandle?.Invoke(new ResultDataMQTT()
+            MsgHandle?.Invoke(new ResultDataMQ()
             {
                 ResultCode = 1,
                 ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "MQTTServer已关闭！"
@@ -239,7 +238,7 @@ namespace ColorVision.MQTT
         {
             var clients = MqttServer.GetClientsAsync().Result;
 
-            MsgHandle?.Invoke(new ResultDataMQTT()
+            MsgHandle?.Invoke(new ResultDataMQ()
             {
                 ResultCode = 1,
                 ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + $"客户端'{arg.ClientId}'已成功连接！当前客户端连接数：{clients?.Count}个。"
@@ -253,7 +252,7 @@ namespace ColorVision.MQTT
         private Task ClientDisconnectedHandle(ClientDisconnectedEventArgs arg)
         {
             var clients = MqttServer.GetClientsAsync().Result;
-            MsgHandle?.Invoke(new ResultDataMQTT()
+            MsgHandle?.Invoke(new ResultDataMQ()
             {
                 ResultCode = 1,
                 ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + $"客户端'{arg.ClientId}'已断开连接！当前客户端连接数：{clients?.Count}个。"
@@ -268,7 +267,7 @@ namespace ColorVision.MQTT
         private Task ClientSubscribedTopicHandle(ClientSubscribedTopicEventArgs arg)
         {
 
-            MsgHandle?.Invoke(new ResultDataMQTT()
+            MsgHandle?.Invoke(new ResultDataMQ()
             {
                 ResultCode = 1,
                 ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + $"客户端'{arg.ClientId}'订阅了主题'{arg.TopicFilter.Topic}'，主题服务质量：'{arg.TopicFilter.QualityOfServiceLevel}'！"
@@ -282,7 +281,7 @@ namespace ColorVision.MQTT
         /// </summary>
         private Task ClientUnsubscribedTopicHandle(ClientUnsubscribedTopicEventArgs arg)
         {
-            MsgHandle?.Invoke(new ResultDataMQTT()
+            MsgHandle?.Invoke(new ResultDataMQ()
             {
                 ResultCode = 1,
                 ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + $"客户端{arg.ClientId}退订了主题{arg.TopicFilter}！"
@@ -311,7 +310,7 @@ namespace ColorVision.MQTT
         /// </summary>
         private Task ApplicationMessageNotConsumedHandle(ApplicationMessageNotConsumedEventArgs arg)
         {
-            MsgHandle?.Invoke(new ResultDataMQTT()
+            MsgHandle?.Invoke(new ResultDataMQ()
             {
                 ResultCode = -1,
                 ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + $"客户端：'{arg.SenderId}'发布了消息：主题：'{arg.ApplicationMessage.Topic}'！内容：'{Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment)}'；服务质量：{arg.ApplicationMessage.QualityOfServiceLevel}；保留：{arg.ApplicationMessage.Retain}"
@@ -323,294 +322,6 @@ namespace ColorVision.MQTT
         #endregion Server
 
         #region Client
-        /// <summary>
-        /// 客户端
-        /// </summary>
-        public IMqttClient MqttClient { get; set; }
-
-        /// <summary>
-        /// 创建MQTTClient并运行
-        /// </summary>
-        /// <param name="mqttClientOptionsBuilder">MQTTClient连接配置</param>
-        /// <param name="callback">信息处理逻辑</param>
-        /// <returns></returns>
-        public async Task<ResultDataMQTT> CreateMQTTClientAndStart(MqttClientOptionsBuilder mqttClientOptionsBuilder)
-        {
-            ResultDataMQTT resultData_MQTT = new ResultDataMQTT();
-            try
-            {
-                MqttClientOptions options = mqttClientOptionsBuilder.Build();
-
-                MqttClient = new MqttFactory().CreateMqttClient();
-                MqttClient.ConnectedAsync += ConnectedHandle;        // 服务器连接事件
-                MqttClient.DisconnectedAsync += DisconnectedHandle;  // 服务器断开事件（可以写入重连事件）
-                MqttClient.ApplicationMessageReceivedAsync += ApplicationMessageReceivedHandle;  // 发送消息事件
-                await MqttClient.ConnectAsync(options);  // 连接
-
-                if (MqttClient.IsConnected)
-                {
-                    resultData_MQTT = new ResultDataMQTT()
-                    {
-                        ResultCode = 1,
-                        ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了开启MQTTClient_成功！"
-                    };
-                }
-                else
-                {
-                    resultData_MQTT = new ResultDataMQTT()
-                    {
-                        ResultCode = -1,
-                        ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了开启MQTTClient_失败！"
-                    };
-                }
-            }
-            catch (Exception ex)
-            {
-                resultData_MQTT = new ResultDataMQTT()
-                {
-                    ResultCode = -1,
-                    ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了开启MQTTClient_失败！错误信息：" + ex.Message
-                };
-            }
-
-            MsgHandle?.Invoke(resultData_MQTT);
-            return resultData_MQTT;
-        }
-
-        public async Task<ResultDataMQTT> CreateMQTTClientAndStart(string mqttServerUrl, int port, string userName, string userPassword)
-        {
-            ResultDataMQTT resultData_MQTT = new ResultDataMQTT();
-            try
-            {
-                MqttClientOptionsBuilder mqttClientOptionsBuilder = new MqttClientOptionsBuilder();
-                mqttClientOptionsBuilder.WithTcpServer(mqttServerUrl, port);          // 设置MQTT服务器地址
-                if (!string.IsNullOrEmpty(userName))
-                {
-                    mqttClientOptionsBuilder.WithCredentials(userName, userPassword);  // 设置鉴权参数
-                }
-                mqttClientOptionsBuilder.WithClientId(Guid.NewGuid().ToString("N"));  // 设置客户端序列号
-                MqttClientOptions options = mqttClientOptionsBuilder.Build();
-
-                MqttClient = new MqttFactory().CreateMqttClient();
-                MqttClient.ConnectedAsync += ConnectedHandle;        // 服务器连接事件
-                MqttClient.DisconnectedAsync += DisconnectedHandle;  // 服务器断开事件（可以写入重连事件）
-                MqttClient.ApplicationMessageReceivedAsync += ApplicationMessageReceivedHandle;  // 发送消息事件
-                await MqttClient.ConnectAsync(options);  // 连接
-
-                if (MqttClient.IsConnected)
-                {
-                    resultData_MQTT = new ResultDataMQTT()
-                    {
-                        ResultCode = 1,
-                        ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了开启MQTTClient_成功！"
-                    };
-                }
-                else
-                {
-                    resultData_MQTT = new ResultDataMQTT()
-                    {
-                        ResultCode = -1,
-                        ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了开启MQTTClient_失败！"
-                    };
-                }
-            }
-            catch (Exception ex)
-            {
-                resultData_MQTT = new ResultDataMQTT()
-                {
-                    ResultCode = -1,
-                    ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了开启MQTTClient_失败！错误信息：" + ex.Message
-                };
-            }
-            MsgHandle?.Invoke(resultData_MQTT);
-            return resultData_MQTT;
-        }
-
-        /// <summary>
-        /// 关闭MQTTClient
-        /// </summary>
-        public async Task DisconnectAsyncClient()
-        {
-            ResultDataMQTT resultData_MQTT = new ResultDataMQTT();
-            try
-            {
-                if (MqttClient != null && MqttClient.IsConnected)
-                {
-                    await MqttClient.DisconnectAsync();
-                    MqttClient.Dispose();
-
-                    resultData_MQTT = new ResultDataMQTT()
-                    {
-                        ResultCode = 1,
-                        ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了关闭MQTTClient_成功！"
-                    };
-                }
-                else
-                {
-                    resultData_MQTT = new ResultDataMQTT()
-                    {
-                        ResultCode = -1,
-                        ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了关闭MQTTClient_失败！MQTTClient未开启连接！"
-                    };
-                }
-            }
-            catch (Exception ex)
-            {
-                resultData_MQTT = new ResultDataMQTT()
-                {
-                    ResultCode = -1,
-                    ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了关闭MQTTClient_失败！错误信息：" + ex.Message
-                };
-            }
-            MsgHandle?.Invoke(resultData_MQTT);
-        }
-
-        /// <summary>
-        /// 重连
-        /// </summary>
-        /// <returns></returns>
-        public async Task ReconnectAsyncClient()
-        {
-            ResultDataMQTT resultData_MQTT = new ResultDataMQTT();
-            try
-            {
-                if (MqttClient != null)
-                {
-                    await MqttClient.ReconnectAsync();
-                    resultData_MQTT = new ResultDataMQTT()
-                    {
-                        ResultCode = 1,
-                        ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了MQTTClient重连_成功！"
-                    };
-                }
-                else
-                {
-                    resultData_MQTT = new ResultDataMQTT()
-                    {
-                        ResultCode = -1,
-                        ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了MQTTClient重连_失败！未设置MQTTClient连接！"
-                    };
-                }
-            }
-            catch (Exception ex)
-            {
-                resultData_MQTT = new ResultDataMQTT()
-                {
-                    ResultCode = -1,
-                    ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "执行了MQTTClient重连_失败！错误信息：" + ex.Message
-                };
-            }
-            MsgHandle?.Invoke(resultData_MQTT);
-        }
-
-        /// <summary>
-        /// 订阅
-        /// </summary>
-        /// <param name="topic">主题</param>
-        public async void SubscribeAsyncClient(string topic)
-        {
-            ResultDataMQTT resultData_MQTT = new ResultDataMQTT();
-            try
-            {
-                MqttTopicFilter topicFilter = new MqttTopicFilterBuilder().WithTopic(topic).Build();
-                await MqttClient.SubscribeAsync(topicFilter, CancellationToken.None);
-
-                resultData_MQTT = new ResultDataMQTT()
-                {
-                    ResultCode = 1,
-                    ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + $"MQTTClient执行了订阅'{topic}'_成功！"
-                };
-            }
-            catch (Exception ex)
-            {
-                resultData_MQTT = new ResultDataMQTT()
-                {
-                    ResultCode = -1,
-                    ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + $"MQTTClient执行了订阅'{topic}'_失败！错误信息：" + ex.Message
-                };
-            }
-            MsgHandle?.Invoke(resultData_MQTT);
-        }
-        /// <summary>
-        /// 退订阅
-        /// </summary>
-        /// <param name="topic">主题</param>
-        public async void UnsubscribeAsyncClient(string topic)
-        {
-            ResultDataMQTT resultData_MQTT = new ResultDataMQTT();
-            try
-            {
-                await MqttClient.UnsubscribeAsync(topic, CancellationToken.None);
-                resultData_MQTT = new ResultDataMQTT()
-                {
-                    ResultCode = 1,
-                    ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + $"MQTTClient执行了退订'{topic}'_成功！"
-                };
-            }
-            catch (Exception ex)
-            {
-                resultData_MQTT = new ResultDataMQTT()
-                {
-                    ResultCode = -1,
-                    ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + $"MQTTClient执行退订'{topic}'_失败！错误信息：" + ex.Message
-                };
-            }
-            MsgHandle?.Invoke(resultData_MQTT);
-        }
-
-        /// <summary>
-        /// 发布消息( 必须在成功连接以后才生效 )
-        /// </summary>
-        /// <param name="topic">主题</param>
-        /// <param name="msg">信息</param>
-        /// <param name="retained">是否保留</param>
-        /// <returns></returns>
-        public async Task PublishAsyncClient(string topic, string msg, bool retained)
-        {
-            ResultDataMQTT resultData_MQTT = new ResultDataMQTT();
-
-            try
-            {
-                MqttApplicationMessageBuilder mqttApplicationMessageBuilder = new MqttApplicationMessageBuilder();
-                mqttApplicationMessageBuilder.WithTopic(topic)          // 主题
-                                            .WithPayload(msg)           // 信息
-                                            .WithRetainFlag(retained);  // 保留
-
-                MqttApplicationMessage messageObj = mqttApplicationMessageBuilder.Build();
-
-                if (MqttClient.IsConnected)
-                {
-                    await MqttClient.PublishAsync(messageObj, CancellationToken.None);
-
-                    resultData_MQTT = new ResultDataMQTT()
-                    {
-                        ResultCode = 1,
-                        ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + $"主题:'{topic}',信息:'{msg}'",
-                        Topic = topic,
-                        Payload = msg,
-                    };
-                }
-                else
-                {
-                    // 未连接
-                    resultData_MQTT = new ResultDataMQTT()
-                    {
-                        ResultCode = -1,
-                        ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "失败 MQTTClient未开启连接！"
-                    };
-                }
-            }
-            catch (Exception ex)
-            {
-                resultData_MQTT = new ResultDataMQTT()
-                {
-                    ResultCode = -1,
-                    ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "失败！错误信息：" + ex.Message
-                };
-            }
-
-            MsgHandle?.Invoke(resultData_MQTT);
-        }
 
         #region 事件
         /// <summary>
@@ -618,7 +329,7 @@ namespace ColorVision.MQTT
         /// </summary>
         private Task ConnectedHandle(MqttClientConnectedEventArgs arg)
         {
-            MsgHandle?.Invoke(new ResultDataMQTT()
+            MsgHandle?.Invoke(new ResultDataMQ()
             {
                 ResultCode = 1,
                 ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + "已连接到MQTT服务器！"
@@ -631,7 +342,7 @@ namespace ColorVision.MQTT
         /// </summary>
         private Task DisconnectedHandle(MqttClientDisconnectedEventArgs arg)
         {
-            MsgHandle?.Invoke(new ResultDataMQTT()
+            MsgHandle?.Invoke(new ResultDataMQ()
             {
                 ResultCode = 1,
                 ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + $"已断开与MQTT服务器连接！"
@@ -639,20 +350,6 @@ namespace ColorVision.MQTT
             return Task.CompletedTask;
         }
 
-        /// <summary>
-        /// 发送消息事件
-        /// </summary>
-        private Task ApplicationMessageReceivedHandle(MqttApplicationMessageReceivedEventArgs arg)
-        {
-            MsgHandle?.Invoke(new ResultDataMQTT()
-            {
-                ResultCode = 1,
-                ResultMsg = DateTime.Now.ToString("HH:mm:ss.fff") + $"MQTTClient'{arg.ClientId}'内容：'{Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment)}'；主题：'{arg.ApplicationMessage.Topic}'，消息等级Qos：[{arg.ApplicationMessage.QualityOfServiceLevel}]，是否保留：[{arg.ApplicationMessage.Retain}]",
-                Topic = arg.ApplicationMessage.Topic,
-                Payload = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment)
-            });
-            return Task.CompletedTask;
-        }
         #endregion 事件
         #endregion Client
     }
@@ -660,8 +357,26 @@ namespace ColorVision.MQTT
     /// <summary>
     /// 信息载体
     /// </summary>
-    public class ResultDataMQTT
+    public class ResultDataMQ
     {
+        public ResultDataMQ()
+        {
+
+        }
+        public ResultDataMQ(int ResultCode, string ResultMsg)
+        {
+            this.ResultCode = ResultCode;
+            this.ResultMsg = ResultMsg;
+        }
+
+        public ResultDataMQ(int ResultCode,string ResultMsg,object Topic, object Payload)
+        {
+            this.ResultCode = ResultCode;
+            this.ResultMsg = ResultMsg;
+            this.Topic = Topic;
+            this.Payload = Payload;
+        }
+
         /// <summary>
         /// 结果Code
         /// 正常1，其他为异常；0不作为回复结果

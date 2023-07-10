@@ -34,7 +34,7 @@ namespace ColorVision
 
 
 
-        private void ShowLog(ResultDataMQTT resultData_MQTT)
+        private void ShowLog(ResultDataMQ resultData_MQTT)
         {
             Application.Current.Dispatcher.BeginInvoke(new Action(() =>
             {
@@ -82,12 +82,12 @@ namespace ColorVision
 
         private void Subscribe_Click(object sender, RoutedEventArgs e)
         {
-            MQTTControl.SubscribeAsyncClient(TextBoxSubscribe.Text);
+            MQTTControl.SubscribeAsyncClientAsync(TextBoxSubscribe.Text);
         }
 
         private void UnSubscribe_Click(object sender, RoutedEventArgs e)
         {
-            MQTTControl.UnsubscribeAsyncClient(TextBoxSubscribe.Text);
+            MQTTControl.UnsubscribeAsyncClientAsync(TextBoxSubscribe.Text);
         }
 
         private void Send_Click(object sender, RoutedEventArgs e)

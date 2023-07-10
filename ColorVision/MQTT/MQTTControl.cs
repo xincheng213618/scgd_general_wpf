@@ -1,95 +1,110 @@
 ﻿using ColorVision.Extension;
 using ColorVision.MVVM;
+using ColorVision.MySql;
 using ColorVision.SettingUp;
+using FlowEngineLib;
+using HandyControl.Expression.Shapes;
+using HandyControl.Tools.Extension;
+using log4net;
 using MQTTnet;
 using MQTTnet.Client;
+using MQTTnet.Packets;
+using ScottPlot.Drawing.Colormaps;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Documents;
+using System.Windows.Interop;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
 namespace ColorVision.MQTT
 {
-    public delegate void MQTTMsgHandler(ResultDataMQTT resultDataMQTT);
+    public delegate void MQTTMsgHandle(ResultDataMQ resultDataMQTT);
 
     public class MQTTControl : ViewModelBase
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(MQTTControl));
+
+
         private static MQTTControl _instance;
         private static readonly object _locker = new();
         public static MQTTControl GetInstance() { lock (_locker) { return _instance ??= new MQTTControl(); } }
 
-        private MQTTHelper _MQTTHelper;
-        public MQTTHelper MQTTHelper { get => _MQTTHelper; set => _MQTTHelper = value; }
-
-        public event MQTTMsgHandler MQTTMsgChanged;
+        public event MQTTMsgHandle MQTTMsgChanged;
 
         public SoftwareConfig SoftwareConfig { get; set; }
         public MQTTConfig MQTTConfig { get => SoftwareConfig.MQTTConfig; }
 
+        public IMqttClient MQTTClient { get; set; }
+
+
         private MQTTControl()
         {
             SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
-            MQTTHelper = new MQTTHelper();
             Task.Run(() => Connect(MQTTConfig));
-            MQTTHelper.MsgHandle += (s) => { MQTTMsgChanged?.Invoke(s); };
         }
 
         public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; NotifyPropertyChanged(); } }
         private bool _IsConnect;
-
-        public string ConnectSign { get => _ConnectSign; private set { _ConnectSign = value; NotifyPropertyChanged(); } }
-        private string _ConnectSign = "未连接";
 
         public event Func<MqttApplicationMessageReceivedEventArgs, Task> ApplicationMessageReceivedAsync;
 
         public event EventHandler Connected;
 
 
+
         private bool IsRun;
         public async Task<bool> Connect(MQTTConfig MQTTConfig)
         {
-            MQTTHelper.MqttClient?.Dispose();
-
             if (IsRun) return false;
             IsRun = true;
 
+            MQTTClient?.Dispose();
 
-            ConnectSign = "未连接";
+            MqttClientOptionsBuilder OptionsBuilder = new MqttClientOptionsBuilder();
+            OptionsBuilder.WithTcpServer(MQTTConfig.Host, MQTTConfig.Port); // 设置MQTT服务器地址
+            if (!string.IsNullOrWhiteSpace(MQTTConfig.UserName))
+                OptionsBuilder.WithCredentials(MQTTConfig.UserName, MQTTConfig.UserPwd);  // 设置鉴权参数
+            OptionsBuilder.WithClientId(Guid.NewGuid().ToString("N"));  // 设置客户端序列号
+            MqttClientOptions options = OptionsBuilder.Build();
 
-            ResultDataMQTT resultDataMQTT = await MQTTHelper.CreateMQTTClientAndStart(MQTTConfig.Host, MQTTConfig.Port, MQTTConfig.UserName, MQTTConfig.UserPwd);
-            if (resultDataMQTT.ResultCode != 1)
+            MQTTClient = new MqttFactory().CreateMqttClient();
+            MQTTClient.ConnectedAsync += (arg) => {
+                MQTTMsgChanged?.Invoke(new ResultDataMQ(1, $"{DateTime.Now:HH:mm:ss.fff} MQTT连接成功"));
+                Connected?.Invoke(this, new EventArgs());
+                IsConnect = true; return Task.CompletedTask; }; 
+            MQTTClient.DisconnectedAsync += (arg) => {
+                MQTTMsgChanged?.Invoke(new ResultDataMQ(-1, $"{DateTime.Now:HH:mm:ss.fff} MQTT失去连接"));
+                IsConnect = false; return Task.CompletedTask; };
+            MQTTClient.ApplicationMessageReceivedAsync += (arg) => {
+                MQTTMsgChanged?.Invoke(new ResultDataMQ(1,
+                    $"{DateTime.Now:HH:mm:ss.fff} 接收：{arg.ApplicationMessage.Topic} {Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment)},消息等级Qos：[{arg.ApplicationMessage.QualityOfServiceLevel}]，是否保留：[{arg.ApplicationMessage.Retain}]",
+                    arg.ApplicationMessage.Topic, Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment)));
+                ApplicationMessageReceivedAsync.Invoke(arg); return Task.CompletedTask; };
+            try
             {
+                await MQTTClient.ConnectAsync(options);
+                IsConnect = true;
+                IsRun = false;
+                foreach (var item in SubscribeTopicCache)
+                    SubscribeAsyncClientAsync(item);
+                foreach (var item in SubscribeTopic)
+                    SubscribeAsyncClientAsync(item);
+                SubscribeTopicCache.Clear();
+                return IsConnect;
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
                 IsConnect = false;
                 IsRun = false;
-                return false;
+                return IsConnect;
             }
-            if (MQTTHelper.MqttClient != null)
-            {
-                MQTTHelper.MqttClient.ApplicationMessageReceivedAsync += (arg) =>
-                {
-                    ApplicationMessageReceivedAsync.Invoke(arg); return Task.CompletedTask;
-                };
-                MQTTHelper.MqttClient.DisconnectedAsync += (arg) =>
-                {
-                    IsConnect = false; return Task.CompletedTask;
-                };
-            }
-
-            IsConnect = true;
-            ConnectSign = "已连接";
-            Connected?.Invoke(this, new EventArgs());
-            IsRun = false;
-            foreach (var item in SubscribeTopicCache)
-                SubscribeAsyncClient(item);
-            foreach (var item in SubscribeTopic)
-                SubscribeAsyncClient(item);
-            SubscribeTopicCache.Clear();
-            return IsConnect;
         }
 
         public static async Task<bool> TestConnect(MQTTConfig MQTTConfig)
@@ -97,9 +112,7 @@ namespace ColorVision.MQTT
             MqttClientOptionsBuilder mqttClientOptionsBuilder = new MqttClientOptionsBuilder();
             mqttClientOptionsBuilder.WithTcpServer(MQTTConfig.Host, MQTTConfig.Port);          // 设置MQTT服务器地址
             if (!string.IsNullOrEmpty(MQTTConfig.UserName))
-            {
                 mqttClientOptionsBuilder.WithCredentials(MQTTConfig.UserName, MQTTConfig.UserPwd);  // 设置鉴权参数
-            }
             mqttClientOptionsBuilder.WithClientId(Guid.NewGuid().ToString("N"));  // 设置客户端序列号
             MqttClientOptions options = mqttClientOptionsBuilder.Build();
 
@@ -108,11 +121,13 @@ namespace ColorVision.MQTT
             try
             {
                 await MqttClient.ConnectAsync(options);
-                 IsConnected = MqttClient.IsConnected;
+                IsConnected = MqttClient.IsConnected;
+                GetInstance().MQTTMsgChanged?.Invoke(new ResultDataMQ(1, $"{DateTime.Now:HH:mm:ss.fff} MQTTTest连接成功"));
             }
-            catch
+            catch (Exception ex)
             {
-
+                log.Error(ex);
+                GetInstance().MQTTMsgChanged?.Invoke(new ResultDataMQ(1, $"{DateTime.Now:HH:mm:ss.fff} MQTTTest连接失败"));
             }
             finally
             {
@@ -127,7 +142,7 @@ namespace ColorVision.MQTT
         {
             if (IsConnect)
             {
-                SubscribeAsyncClient(SubscribeTopic);
+                SubscribeAsyncClientAsync(SubscribeTopic);
             }
             else
             {
@@ -139,31 +154,79 @@ namespace ColorVision.MQTT
 
 
 
-        public async Task DisconnectAsyncClient() => await MQTTHelper.DisconnectAsyncClient();
+        public async Task DisconnectAsyncClient()
+        {
+            if (MQTTClient != null && MQTTClient.IsConnected)
+            {
+                await MQTTClient.DisconnectAsync();
+                MQTTClient.Dispose();
+            }
+        }
 
         public ObservableCollection<string> SubscribeTopic { get; set; } = new ObservableCollection<string>();
 
-        public void SubscribeAsyncClient(string topic) 
+        public async void SubscribeAsyncClientAsync(string topic) 
         {
             if (IsConnect)
             {
-                MQTTHelper.SubscribeAsyncClient(topic);
                 if (!SubscribeTopic.Contains(topic))
                     SubscribeTopic.Add(topic);
+
+                try
+                {
+                    MqttTopicFilter topicFilter = new MqttTopicFilterBuilder().WithTopic(topic).Build();
+                    await MQTTClient.SubscribeAsync(topicFilter, CancellationToken.None);
+                    MQTTMsgChanged?.Invoke(new ResultDataMQ(1, $"{DateTime.Now:HH:mm:ss.fff} 订阅{topic}成功"));
+                }
+                catch (Exception ex)
+                {
+                    log.Warn(ex);
+                    MQTTMsgChanged?.Invoke(new ResultDataMQ(-1, $"{DateTime.Now:HH:mm:ss.fff} 订阅{topic}失败"));
+                }
+
             }
         }
 
-        public void UnsubscribeAsyncClient(string topic)
+        public async Task UnsubscribeAsyncClientAsync(string topic)
         {
-            if (IsConnect)
+            if (MQTTClient.IsConnected)
             {
-                MQTTHelper.UnsubscribeAsyncClient(topic);
-                if (SubscribeTopic == null) return;
-                SubscribeTopic.Remove(topic);
+                try
+                {
+                    await MQTTClient.UnsubscribeAsync(topic, CancellationToken.None);
+                    SubscribeTopic.Remove(topic);
+                    MQTTMsgChanged?.Invoke(new ResultDataMQ(1, $"{DateTime.Now:HH:mm:ss.fff} 取消订阅{topic}成功"));
+                }
+                catch (Exception ex)
+                {
+                    log.Warn(ex);
+                    MQTTMsgChanged?.Invoke(new ResultDataMQ(-1, $"{DateTime.Now:HH:mm:ss.fff} 取消订阅{topic}失败"));
+                }
+            }
+            else
+            {
+                MQTTMsgChanged?.Invoke(new ResultDataMQ(-1, $"{DateTime.Now:HH:mm:ss.fff} MQTTClient未开启连接，取消订阅{topic}失败"));
             }
         }
-           
-        public async Task  PublishAsyncClient(string topic, string msg, bool retained) => await MQTTHelper.PublishAsyncClient(topic, msg, retained);
+
+        public async Task PublishAsyncClient(string topic, string msg, bool retained)
+        {
+            MqttApplicationMessageBuilder mqttApplicationMessageBuilder = new MqttApplicationMessageBuilder();
+            mqttApplicationMessageBuilder.WithTopic(topic)          // 主题
+                                        .WithPayload(msg)           // 信息
+                                        .WithRetainFlag(retained);  // 保留
+
+            MqttApplicationMessage messageObj = mqttApplicationMessageBuilder.Build();
+            if (MQTTClient.IsConnected)
+            {
+                await MQTTClient.PublishAsync(messageObj, CancellationToken.None);
+                MQTTMsgChanged?.Invoke(new ResultDataMQ(1, $"{DateTime.Now:HH:mm:ss.fff} 主题:'{topic}',信息:'{msg}'", topic, msg));
+            }
+            else
+            {
+                MQTTMsgChanged?.Invoke(new ResultDataMQ(-1,$"{DateTime.Now:HH:mm:ss.fff} MQTTClient未开启连接",topic, msg));
+            }
+        }
     }
 
 
