@@ -173,8 +173,9 @@ namespace ColorVision.Template
                         if (ListConfigs[listView.SelectedIndex].Value is PoiParam poiParam)
                         {
                             var WindowFocusPoint = new WindowFocusPoint(poiParam) { Owner = this };
-                            WindowFocusPoint.Closed += (s, e) =>
+                            WindowFocusPoint.Closed += async (s, e) =>
                             {
+                                await Task.Delay(30);
                                 ListConfigs[listView.SelectedIndex].Tag = $"{poiParam.Width}*{poiParam.Height}{(GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql ? "" : $"_{poiParam.PoiPoints.Count}")}";
                             };
                             WindowFocusPoint.Show();
