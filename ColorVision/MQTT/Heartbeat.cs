@@ -20,11 +20,11 @@ namespace ColorVision.MQTT
             SendTopic = "Heartbeat";
             SubscribeTopic = "HeartbeatService";
             MQTTControl.SubscribeCache(SubscribeTopic);
-            MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
+            MQTTControl.ApplicationMessageReceivedAsync += MQTTClient_ApplicationMessageReceivedAsync;
         }
 
 
-        private Task MqttClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
+        private Task MQTTClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
         {
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {

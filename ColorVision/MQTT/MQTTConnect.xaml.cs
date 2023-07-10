@@ -79,6 +79,7 @@ namespace ColorVision.MQTT
             ListViewMQTT.ItemsSource = MQTTConfigs;
 
             MQTTConfigs.Insert(0, MQTTConfig);
+            ListViewMQTT.SelectedIndex = 0;
             this.Closed += (s, e) =>
             {
                 MQTTConfigs.Remove(MQTTConfig);

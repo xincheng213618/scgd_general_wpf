@@ -84,6 +84,8 @@ namespace ColorVision.MySql
             ListViewMySql.ItemsSource = MySqlConfigs;
 
             MySqlConfigs.Insert(0, MySqlConfig);
+            ListViewMySql.SelectedIndex = 0;
+
             this.Closed += (s, e) =>
             {
                 MySqlConfigs.Remove(MySqlConfig);
