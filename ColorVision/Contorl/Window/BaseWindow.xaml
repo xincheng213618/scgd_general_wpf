@@ -86,7 +86,7 @@
                     <Grid >
                         <Border x:Name="RootBorder" Padding="0 29 0 0"   Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"  BorderThickness="{TemplateBinding BorderThickness}">
                             <Grid x:Name="RootGrid" Margin="0,0,0,0">
-                                <Grid Background="Transparent" Height="30"  VerticalAlignment="Top"  Margin="0 -29 0 0" >
+                                <Grid Background="Transparent" Height="30" Panel.ZIndex="9" VerticalAlignment="Top"  Margin="0 -29 0 0" >
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="auto" />

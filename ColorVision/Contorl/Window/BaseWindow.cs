@@ -159,7 +159,7 @@ namespace ColorVision.Controls
                     c.A = 255;
                     Background = new SolidColorBrush(c);
                 });
-                wac.Color = (bool)false ? Color.FromArgb(180, 0, 0, 0) : Color.FromArgb(180, 255, 255, 255);
+                wac.Color = (bool)false ? Color.FromArgb(180, 0, 0, 0) : Color.FromArgb(200, 255, 255, 255);
                 wac.IsEnabled = true;
             }
 

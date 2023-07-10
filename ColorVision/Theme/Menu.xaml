@@ -24,7 +24,7 @@
 
 	<SolidColorBrush x:Key="CaptionButtonBrush" Color="{StaticResource GlobalTextColor}"/>
 	<SolidColorBrush x:Key="CaptionButtonForeground" Color="{StaticResource GlobalTextColor}"/>
-	<SolidColorBrush x:Key="WindowIsNotActiveForeground">#d7d7d7</SolidColorBrush>
+    <SolidColorBrush x:Key="WindowIsNotActiveForeground">#8D8E8E</SolidColorBrush>
 	<SolidColorBrush x:Key="CaptionButtonChoiceBrush">#C7CACF</SolidColorBrush>
 	<SolidColorBrush x:Key="CaptionButtonChoiceBackgrouundBrush">#E5E5E5</SolidColorBrush>
 	<SolidColorBrush x:Key="CaptionButtonCloseBrush" Color="Red"/>
