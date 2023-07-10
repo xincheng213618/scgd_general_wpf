@@ -2,7 +2,7 @@
 using ColorVision.MQTT;
 using ColorVision.MVVM;
 using ColorVision.MySql;
-using ColorVision.Project;
+using ColorVision.Solution;
 using ColorVision.SettingUp;
 using ColorVision.Template;
 using Microsoft.VisualBasic.Logging;

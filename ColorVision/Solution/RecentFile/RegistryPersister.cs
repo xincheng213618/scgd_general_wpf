@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
 
-namespace ColorVision.Project.RecentFile
+namespace ColorVision.Solution.RecentFile
 {
     public class RegistryPersister : IRecentFile
     {

@@ -1,5 +1,5 @@
 ﻿using ColorVision.MVVM;
-using ColorVision.Project.RecentFile;
+using ColorVision.Solution.RecentFile;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -16,7 +16,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
-namespace ColorVision.Project
+namespace ColorVision.Solution
 {
     public class NewCreateViewMode : ViewModelBase
     {

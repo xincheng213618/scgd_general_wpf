@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ColorVision.Project.RecentFile
+namespace ColorVision.Solution.RecentFile
 {
     public interface IRecentFile
     {

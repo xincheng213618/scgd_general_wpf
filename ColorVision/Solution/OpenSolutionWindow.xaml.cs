@@ -1,5 +1,5 @@
 ﻿using ColorVision.Controls;
-using ColorVision.Project.RecentFile;
+using ColorVision.Solution.RecentFile;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -8,7 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Project
+namespace ColorVision.Solution
 {
     /// <summary>
     /// NewCreatWindow.xaml 的交互逻辑

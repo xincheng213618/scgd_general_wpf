@@ -1,6 +1,6 @@
 ﻿using ColorVision.HotKey;
-using ColorVision.Project;
-using ColorVision.Project.RecentFile;
+using ColorVision.Solution;
+using ColorVision.Solution.RecentFile;
 using ColorVision.SettingUp;
 using ColorVision.Template;
 using HandyControl.Tools.Extension;
