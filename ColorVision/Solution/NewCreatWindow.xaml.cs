@@ -1,5 +1,6 @@
 ﻿using ColorVision.MVVM;
 using ColorVision.Solution.RecentFile;
+using ScottPlot.Styles;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -129,8 +130,20 @@ namespace ColorVision.Solution
                 }
             }
             Directory.CreateDirectory(SolutionDirectoryPath);
+            newCreatViewMode.RecentNewCreatCache.InsertFile(newCreatViewMode.DirectoryPath);
+
             IsCreate = true;
             this.Close();
+        }
+
+        private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ComboBox comboBox && comboBox.SelectedIndex>-1)
+            {
+                newCreatViewMode.DirectoryPath = newCreatViewMode.RecentNewCreatCacheList[comboBox.SelectedIndex];
+                newCreatViewMode.Name = newCreatViewMode.NewCreateFileName("新建工程");
+
+            }
         }
     }
 }
