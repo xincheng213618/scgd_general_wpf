@@ -88,14 +88,14 @@ namespace ColorVision.Util
                 using (MemoryStream Memory = new MemoryStream(Data))
                 {
                     //把内存流对象包装成加密对象
-                    using (CryptoStream Decryptor = new CryptoStream(Memory, Ae.CreateDecryptor(bKey, bVector), CryptoStreamMode.Read))
+                    using (CryptoStream Decrypt = new CryptoStream(Memory, Ae.CreateDecryptor(bKey, bVector), CryptoStreamMode.Read))
                     {
                         //明文存储区
                         using (MemoryStream originalMemory = new MemoryStream())
                         {
                             byte[] Buffer = new byte[1024];
                             int readBytes = 0;
-                            while ((readBytes = Decryptor.Read(Buffer, 0, Buffer.Length)) > 0)
+                            while ((readBytes = Decrypt.Read(Buffer, 0, Buffer.Length)) > 0)
                             {
                                 originalMemory.Write(Buffer, 0, readBytes);
                             }

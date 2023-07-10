@@ -58,7 +58,7 @@ namespace ColorVision
                     {
                         System.Windows.Forms.SaveFileDialog saveFileDialog = new System.Windows.Forms.SaveFileDialog();
                         saveFileDialog.Filter = "文本文件|*.txt";
-                        saveFileDialog.FileName = resultData_MQTT.Topic + DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss");
+                        saveFileDialog.FileName = resultData_MQTT.Topic + DateTime.Now.ToString("MM-dd HH-mm-ss");
                         if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                         {
                             File.WriteAllText(saveFileDialog.FileName, resultData_MQTT.Payload.ToString());

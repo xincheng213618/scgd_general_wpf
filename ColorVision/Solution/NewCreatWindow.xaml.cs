@@ -21,7 +21,7 @@ namespace ColorVision.Solution
 {
     public class NewCreateViewMode : ViewModelBase
     {
-        public RecentFileList RecentNewCreateCache { get; set; } = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\RecentNewCreatCache") };
+        public RecentFileList RecentNewCreateCache { get; set; } = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\RecentNewCreateCache") };
 
         public NewCreateViewMode()
         {

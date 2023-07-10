@@ -113,12 +113,12 @@ namespace ColorVision.Template
 
 
         [JsonIgnore]
-        public bool IsPointCircle { get => DeafultPointType == RiPointTypes.Circle; set { if (value) DeafultPointType = RiPointTypes.Circle; NotifyPropertyChanged(); } }
+        public bool IsPointCircle { get => DefaultPointType == RiPointTypes.Circle; set { if (value) DefaultPointType = RiPointTypes.Circle; NotifyPropertyChanged(); } }
         [JsonIgnore]
-        public bool IsPointRect { get => DeafultPointType == RiPointTypes.Rect; set { if (value) DeafultPointType = RiPointTypes.Rect; NotifyPropertyChanged(); } }
+        public bool IsPointRect { get => DefaultPointType == RiPointTypes.Rect; set { if (value) DefaultPointType = RiPointTypes.Rect; NotifyPropertyChanged(); } }
         [JsonIgnore]
-        public bool IsPointMask { get => DeafultPointType == RiPointTypes.Mask; set { if (value) DeafultPointType = RiPointTypes.Rect; NotifyPropertyChanged(); } }
-        public RiPointTypes DeafultPointType { set; get; }
+        public bool IsPointMask { get => DefaultPointType == RiPointTypes.Mask; set { if (value) DefaultPointType = RiPointTypes.Rect; NotifyPropertyChanged(); } }
+        public RiPointTypes DefaultPointType { set; get; }
 
     }
 
@@ -862,7 +862,7 @@ namespace ColorVision.Template
                                 double y1 = PoiParam.DatumArea.CenterY + PoiParam.DatumArea.AreaCircleRadius * Math.Sin(i * 2 * Math.PI / PoiParam.DatumArea.AreaCircleNum + Math.PI / 180 * PoiParam.DatumArea.AreaCircleAngle);
 
 
-                                switch (PoiParam.DeafultPointType)
+                                switch (PoiParam.DefaultPointType)
                                 {
                                     case RiPointTypes.Circle:
                                         DrawingVisualCircle Circle = new DrawingVisualCircleWord();
@@ -917,7 +917,7 @@ namespace ColorVision.Template
                             {
                                 for (int j = 0; j < cols; j++)
                                 {
-                                    switch (PoiParam.DeafultPointType)
+                                    switch (PoiParam.DefaultPointType)
                                     {
                                         case RiPointTypes.Circle:
                                             DrawingVisualCircle Circle = new DrawingVisualCircleWord();
@@ -982,7 +982,7 @@ namespace ColorVision.Template
 
                                     Point point = new Point(x, y);
 
-                                    switch (PoiParam.DeafultPointType)
+                                    switch (PoiParam.DefaultPointType)
                                     {
                                         case RiPointTypes.Circle:
                                             DrawingVisualCircle Circle = new DrawingVisualCircleWord();
