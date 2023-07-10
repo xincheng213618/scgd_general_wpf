@@ -43,7 +43,7 @@
                                     </DockPanel>
                                     <DockPanel>
 
-                                        <ToggleButton DockPanel.Dock="Right" HorizontalAlignment="Left" Height="20" Margin="2" Content="基准点显示" Style="{StaticResource ToggleButtonSwitch}"  Click="SetDeafult_Click" IsChecked="{Binding DatumArea.IsShowDatum}"/>
+                                        <ToggleButton DockPanel.Dock="Right" HorizontalAlignment="Left" Height="20" Margin="2" Content="基准点显示" Style="{StaticResource ToggleButtonSwitch}"  Click="SetDefault_Click" IsChecked="{Binding DatumArea.IsShowDatum}"/>
                                     </DockPanel>
                                     <DockPanel >
                                         <ToggleButton DockPanel.Dock="Right"  HorizontalAlignment="Left" Height="20" Margin="2" Content="布点区域显示" Style="{StaticResource ToggleButtonSwitch}"  Click="ShowDatumArea_Click" IsChecked="{Binding DatumArea.IsShowDatumArea}"/>
@@ -69,8 +69,8 @@
                                     </UniformGrid>
                                     <UniformGrid Columns="3">
                                         <Button  Content="默认画布" Click="OpenCAD_Click"  Margin="2"/>
-                                        <Button x:Name="button1" Content="图像导入" Click="button1_Click" Margin="2"/>
-                                        <Button  Content="视频导入" Click="button1_Click" Margin="2"/>
+                                        <Button x:Name="button1" Content="图像导入" Click="Button1_Click" Margin="2"/>
+                                        <Button  Content="视频导入" Click="Button1_Click" Margin="2"/>
                                     </UniformGrid>
                                 </StackPanel>
                             </GroupBox>
@@ -186,7 +186,7 @@
                                             </DockPanel>
                                         </UniformGrid>
                                     </StackPanel>
-                                    <Button Content="设置基准点" Click="SetDeafult_Click"/>
+                                    <Button Content="设置基准点" Click="SetDefault_Click"/>
                                 </StackPanel>
                             </GroupBox>
 
@@ -324,9 +324,9 @@
 
                             <StackPanel  Margin="5">
                                 <UniformGrid Columns="2">
-                                    <Button x:Name="button2" Margin="2" Content="绘制关注点" Click="button2_Click"/>
-                                    <Button x:Name="button3"  Margin="2"  Content="清空关注点" Click="button3_Click"/>
-                                    <Button x:Name="button_save"  Margin="2"  Content="保存关注点" Click="button_save_Click"/>
+                                    <Button x:Name="button2" Margin="2" Content="绘制关注点" Click="Button2_Click"/>
+                                    <Button x:Name="button3"  Margin="2"  Content="清空关注点" Click="Button3_Click"/>
+                                    <Button x:Name="button_save"  Margin="2"  Content="保存关注点" Click="Button_save_Click"/>
                                 </UniformGrid>
                             </StackPanel>
                         </StackPanel>

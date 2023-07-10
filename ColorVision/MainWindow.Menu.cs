@@ -162,12 +162,12 @@ namespace ColorVision
 
         private void NewCreatSolution()
         {
-            NewCreatWindow newCreatWindow = new NewCreatWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            NewCreateWindow newCreatWindow = new NewCreateWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
             newCreatWindow.Closed += delegate
             {
                 if (newCreatWindow.IsCreate)
                 {
-                    string SolutionDirectoryPath = newCreatWindow.newCreatViewMode.DirectoryPath + "\\" + newCreatWindow.newCreatViewMode.Name;
+                    string SolutionDirectoryPath = newCreatWindow.NewCreateViewMode.DirectoryPath + "\\" + newCreatWindow.NewCreateViewMode.Name;
                     OpenSolution(SolutionDirectoryPath);
                 }
             };

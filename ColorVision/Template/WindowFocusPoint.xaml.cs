@@ -266,8 +266,8 @@ namespace ColorVision.Template
         public int DefaultRectWidth { get => _DefaultRectWidth; set { _DefaultRectWidth = value; NotifyPropertyChanged(); } }
         private int _DefaultRectWidth = 20;
 
-        public int DefaultRectHeight { get => _DeafultRectHeight; set { _DeafultRectHeight = value; NotifyPropertyChanged(); } }
-        private int _DeafultRectHeight = 20;
+        public int DefaultRectHeight { get => _DefaultRectHeight; set { _DefaultRectHeight = value; NotifyPropertyChanged(); } }
+        private int _DefaultRectHeight = 20;
 
     }
 
@@ -417,12 +417,12 @@ namespace ColorVision.Template
                 }
             };
 
-            double oldmax = Zoombox1.ContentMatrix.M11;
+            double oldMax = Zoombox1.ContentMatrix.M11;
             Zoombox1.LayoutUpdated += (s, e) =>
             {
-                if (oldmax != Zoombox1.ContentMatrix.M11)
+                if (oldMax != Zoombox1.ContentMatrix.M11)
                 {
-                    oldmax = Zoombox1.ContentMatrix.M11;
+                    oldMax = Zoombox1.ContentMatrix.M11;
                     UpdateVisualLayout(IsLayoutUpdated);
                 }
             };
@@ -499,7 +499,7 @@ namespace ColorVision.Template
 
         }
 
-        private void button1_Click(object sender, RoutedEventArgs e)
+        private void Button1_Click(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
             openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png,*.tif) | *.jpg; *.jpeg; *.png;*.tif";
@@ -682,7 +682,7 @@ namespace ColorVision.Template
 
         public List<DrawingVisual> DefaultPoint { get; set; } = new List<DrawingVisual>();
 
-        private void SetDeafult_Click(object sender, RoutedEventArgs e)
+        private void SetDefault_Click(object sender, RoutedEventArgs e)
         {
             if (RadioButtonBuildMode2.IsChecked == true)
             {
@@ -837,7 +837,7 @@ namespace ColorVision.Template
 
         }
 
-        private void button2_Click(object sender, RoutedEventArgs e)
+        private void Button2_Click(object sender, RoutedEventArgs e)
         {
             if (ImageShow.Source is BitmapImage bitmapImage)
             {
@@ -1037,7 +1037,7 @@ namespace ColorVision.Template
             e.Handled = new Regex("[^0-9]+").IsMatch(e.Text);
         }
 
-        private void button3_Click(object sender, RoutedEventArgs e)
+        private void Button3_Click(object sender, RoutedEventArgs e)
         {
             
             foreach (var item in DrawingVisualLists.ToList())
@@ -1087,15 +1087,6 @@ namespace ColorVision.Template
             }
         }
 
-        private void button4_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        private void button5_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
         DrawingVisual drawingVisualDatum;
         private void ShowDatumArea_Click(object sender, RoutedEventArgs e)
         {
@@ -1170,14 +1161,13 @@ namespace ColorVision.Template
         {
             if (vPoints == null || vPoints.Count == 0) return new List<Point>();
             //计算重心
-            Point center = new Point();
             double X = 0, Y = 0;
             for (int i = 0; i < vPoints.Count; i++)
             {
                 X += vPoints[i].X;
                 Y += vPoints[i].Y;
             }
-            center = new Point((int)X / vPoints.Count, (int)Y / vPoints.Count);
+            Point center = new Point((int)X / vPoints.Count, (int)Y / vPoints.Count);
             //冒泡排序
             for (int i = 0; i < vPoints.Count - 1; i++)
             {
@@ -1210,7 +1200,7 @@ namespace ColorVision.Template
             return d1 > d2;
         }
 
-        private void button_save_Click(object sender, RoutedEventArgs e)
+        private void Button_save_Click(object sender, RoutedEventArgs e)
         {
             if (SoftwareConfig.IsUseMySql)
             {
@@ -1268,10 +1258,6 @@ namespace ColorVision.Template
             MessageBox.Show("生成关注点");
         }
 
-        private void Button1_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("导入关注点");
-        }
 
         private void RadioButtonMode1_Checked(object sender, RoutedEventArgs e)
         {

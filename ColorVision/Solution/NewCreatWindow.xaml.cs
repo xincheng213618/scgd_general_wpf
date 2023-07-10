@@ -21,29 +21,29 @@ namespace ColorVision.Solution
 {
     public class NewCreateViewMode : ViewModelBase
     {
-        public RecentFileList RecentNewCreatCache { get; set; } = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\RecentNewCreatCache") };
+        public RecentFileList RecentNewCreateCache { get; set; } = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\RecentNewCreatCache") };
 
         public NewCreateViewMode()
         {
-            foreach (var item in RecentNewCreatCache.RecentFiles)
+            foreach (var item in RecentNewCreateCache.RecentFiles)
             {
                 DirectoryInfo directoryInfo = new DirectoryInfo(item);
                 if (directoryInfo.Exists)
                 {
-                    RecentNewCreatCacheList.Add(directoryInfo.FullName);
+                    RecentNewCreateCacheList.Add(directoryInfo.FullName);
                 }
             }
-            if (RecentNewCreatCacheList.Count == 0)
+            if (RecentNewCreateCacheList.Count == 0)
             {
                 string Default = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ColorVision";
-                RecentNewCreatCache.InsertFile(Default);
-                RecentNewCreatCacheList.Add(Default);
+                RecentNewCreateCache.InsertFile(Default);
+                RecentNewCreateCacheList.Add(Default);
                 if (Directory.Exists(Default))
                     Directory.CreateDirectory(Default);
             }
 
 
-            DirectoryPath = RecentNewCreatCacheList[0];
+            DirectoryPath = RecentNewCreateCacheList[0];
             this.Name = NewCreateFileName("新建工程");
         }
 
@@ -71,21 +71,21 @@ namespace ColorVision.Solution
         public string DirectoryPath { get => _DirectoryPath; set { _DirectoryPath = value; NotifyPropertyChanged(); } }
         private string _DirectoryPath = string.Empty;
 
-        public ObservableCollection<string> RecentNewCreatCacheList { get; set; } = new ObservableCollection<string>();
+        public ObservableCollection<string> RecentNewCreateCacheList { get; set; } = new ObservableCollection<string>();
     }
 
 
     /// <summary>
-    /// NewCreatWindow.xaml 的交互逻辑
+    /// NewCreateWindow.xaml 的交互逻辑
     /// </summary>
-    public partial class NewCreatWindow : Window
+    public partial class NewCreateWindow : Window
     {
-        public NewCreateViewMode newCreatViewMode { get; set; }
-        public NewCreatWindow()
+        public NewCreateViewMode NewCreateViewMode { get; set; }
+        public NewCreateWindow()
         {
             InitializeComponent();
-            newCreatViewMode = new NewCreateViewMode();
-            this.DataContext = newCreatViewMode;
+            NewCreateViewMode = new NewCreateViewMode();
+            this.DataContext = NewCreateViewMode;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -100,19 +100,19 @@ namespace ColorVision.Solution
                     MessageBox.Show("文件夹路径不能为空", "提示");
                     return;
                 }
-                newCreatViewMode.DirectoryPath = dialog.SelectedPath;
-                newCreatViewMode.RecentNewCreatCache.InsertFile(newCreatViewMode.DirectoryPath);
+                NewCreateViewMode.DirectoryPath = dialog.SelectedPath;
+                NewCreateViewMode.RecentNewCreateCache.InsertFile(NewCreateViewMode.DirectoryPath);
             }
         }
         public bool IsCreate { get; set; }
 
         private void Button_Close_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(newCreatViewMode.Name))
+            if (string.IsNullOrWhiteSpace(NewCreateViewMode.Name))
             {
                 this.Close();
             }
-            string SolutionDirectoryPath = newCreatViewMode.DirectoryPath + "\\" + newCreatViewMode.Name;
+            string SolutionDirectoryPath = NewCreateViewMode.DirectoryPath + "\\" + NewCreateViewMode.Name;
 
             if (Directory.Exists(SolutionDirectoryPath))
             {
@@ -130,7 +130,7 @@ namespace ColorVision.Solution
                 }
             }
             Directory.CreateDirectory(SolutionDirectoryPath);
-            newCreatViewMode.RecentNewCreatCache.InsertFile(newCreatViewMode.DirectoryPath);
+            NewCreateViewMode.RecentNewCreateCache.InsertFile(NewCreateViewMode.DirectoryPath);
 
             IsCreate = true;
             this.Close();
@@ -140,8 +140,8 @@ namespace ColorVision.Solution
         {
             if (sender is ComboBox comboBox && comboBox.SelectedIndex>-1)
             {
-                newCreatViewMode.DirectoryPath = newCreatViewMode.RecentNewCreatCacheList[comboBox.SelectedIndex];
-                newCreatViewMode.Name = newCreatViewMode.NewCreateFileName("新建工程");
+                NewCreateViewMode.DirectoryPath = NewCreateViewMode.RecentNewCreateCacheList[comboBox.SelectedIndex];
+                NewCreateViewMode.Name = NewCreateViewMode.NewCreateFileName("新建工程");
 
             }
         }

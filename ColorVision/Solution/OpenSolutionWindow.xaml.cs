@@ -11,7 +11,7 @@ using System.Windows.Input;
 namespace ColorVision.Solution
 {
     /// <summary>
-    /// NewCreatWindow.xaml 的交互逻辑
+    /// NewCreateWindow.xaml 的交互逻辑
     /// </summary>
     public partial class OpenSolutionWindow: BaseWindow
     {
