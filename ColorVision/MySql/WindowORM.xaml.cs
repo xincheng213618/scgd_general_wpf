@@ -61,7 +61,7 @@ namespace ColorVision
 
             if (!MySqlControl.IsConnect)
             {
-                MySqlControl.Open();
+                MySqlControl.Connect();
                 MessageBox.Show("数据库连接失败");
             }
             connection = MySqlControl.GetInstance().MySqlConnection;

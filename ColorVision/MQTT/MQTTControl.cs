@@ -101,6 +101,7 @@ namespace ColorVision.MQTT
             }
             mqttClientOptionsBuilder.WithClientId(Guid.NewGuid().ToString("N"));  // 设置客户端序列号
             MqttClientOptions options = mqttClientOptionsBuilder.Build();
+            options.Timeout = new TimeSpan(2);
 
             IMqttClient MqttClient = new MqttFactory().CreateMqttClient();
             bool IsConnected =false;

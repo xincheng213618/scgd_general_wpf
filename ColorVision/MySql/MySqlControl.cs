@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using log4net;
+using System.Threading;
 
 namespace ColorVision.MySql
 {
@@ -27,7 +28,7 @@ namespace ColorVision.MySql
         public MySqlControl()
         {
             SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
-            Task.Run(() => Open());
+            Task.Run(() => Connect());
         }
 
         public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; NotifyPropertyChanged(); } }
@@ -43,7 +44,7 @@ namespace ColorVision.MySql
             return connStr;
         }
 
-        public bool Open()
+        public bool Connect()
         {
             string connStr = GetConnectionString(SoftwareConfig.MySqlConfig);
             try
@@ -65,16 +66,16 @@ namespace ColorVision.MySql
             }
         }
 
-        public static string GetConnectionString(MySqlConfig MySqlConfig)
+        public static string GetConnectionString(MySqlConfig MySqlConfig,int timeout =3 )
         {
-            string connStr = $"server={MySqlConfig.Host};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};Connect Timeout=3";
+            string connStr = $"server={MySqlConfig.Host};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};Connect Timeout={timeout}";
             return connStr;
         }
 
         public static bool TestConnect(MySqlConfig MySqlConfig)
         {
             MySqlConnection MySqlConnection;
-            string connStr = GetConnectionString(MySqlConfig);
+            string connStr = GetConnectionString(MySqlConfig,1);
             try
             {
                 log.Info($"Test数据库连接信息:{connStr}");
