@@ -4,6 +4,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Shell;
+using WindowEffectTest;
 
 namespace ColorVision.Controls
 {
@@ -135,6 +136,9 @@ namespace ColorVision.Controls
             CommandBindings.Add(new CommandBinding(SystemCommands.RestoreWindowCommand, RestoreWindow, CanResizeWindow));
             CommandBindings.Add(new CommandBinding(SystemCommands.ShowSystemMenuCommand, ShowSystemMenu));
         }
+
+        WindowAccentCompositor wac = null;
+
         // https://www.cnblogs.com/dino623/p/problems_of_WindowChrome.html
         //解决WindowsChrome在设置SizeToContent的时候
         protected override void OnSourceInitialized(EventArgs e)
@@ -148,19 +152,15 @@ namespace ColorVision.Controls
             HwndSource.FromHwnd(handle).AddHook(new HwndSourceHook(WndProc));
             if (IsBlurEnabled)
             {
-                if (IsWin11)
+                IsDragMoveEnabled = true;
+                wac = new(this, false, (c) =>
                 {
-                    if (Environment.OSVersion.Version >= new Version(10, 0, 22523))
-                    {
-                        WindowHelper.EnableBackdropMicaBlur(this, false);
-                    }
-                    else
-                    {
-                        WindowHelper.EnableMicaBlur(this, false);
-                    }
-                }
-                if (IsWin10)
-                    WindowHelper.EnableBlur(this);
+                    //没有可用的模糊特效
+                    c.A = 255;
+                    Background = new SolidColorBrush(c);
+                });
+                wac.Color = (bool)false ? Color.FromArgb(180, 0, 0, 0) : Color.FromArgb(180, 255, 255, 255);
+                wac.IsEnabled = true;
             }
 
         }

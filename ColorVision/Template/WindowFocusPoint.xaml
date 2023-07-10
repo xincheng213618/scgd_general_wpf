@@ -12,6 +12,13 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Template:PoiParam}"
         Title="关注点编辑"  Height="720" Width="1280" Initialized="Window_Initialized">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/ColorVision;component/Theme/GroupBox.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="300"/>

@@ -7,7 +7,11 @@
         mc:Ignorable="d"
         Title="四色标定" Height="450" Width="800" Background="#F0F0F0">
     <Window.Resources>
-        <ResourceDictionary Source="/Theme/Base.xaml"/>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/ColorVision;component/Theme/GroupBox.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>

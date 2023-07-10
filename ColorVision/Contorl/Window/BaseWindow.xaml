@@ -85,21 +85,21 @@
                 <ControlTemplate TargetType="{x:Type local:BaseWindow}">
                     <Grid >
                         <Border x:Name="RootBorder" Padding="0 29 0 0"   Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"  BorderThickness="{TemplateBinding BorderThickness}">
-                            <Grid x:Name="RootGrid">
-                                <Grid Background="{TemplateBinding Background}" Height="30"  VerticalAlignment="Top"  Margin="0 -29 0 0" >
+                            <Grid x:Name="RootGrid" Margin="0,0,0,0">
+                                <Grid Background="Transparent" Height="30"  VerticalAlignment="Top"  Margin="0 -29 0 0" >
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="auto" />
                                     </Grid.ColumnDefinitions>
-                                    <StackPanel Orientation="Horizontal">
-                                        <Button Margin="10,0,0,0" Content="{TemplateBinding Icon}" Visibility="{TemplateBinding ShowIcon,Converter={StaticResource bool2VisibilityConverter}}" Height="18" Width="18" IsTabStop="False" Command="{x:Static SystemCommands.ShowSystemMenuCommand}">
+                                    <StackPanel Orientation="Horizontal" Background="Transparent">
+                                        <Button Margin="10,0,0,0" Content="{TemplateBinding Icon}"  Visibility="{TemplateBinding ShowIcon,Converter={StaticResource bool2VisibilityConverter}}" Height="18" Width="18" IsTabStop="False" Command="{x:Static SystemCommands.ShowSystemMenuCommand}">
                                             <Button.Template>
                                                 <ControlTemplate TargetType="{x:Type Button}">
                                                     <Image Source="{TemplateBinding Content}"/>
                                                 </ControlTemplate>
                                             </Button.Template>
                                         </Button>
-                                        <ContentControl Foreground="White" Visibility="{TemplateBinding ShowTitle,Converter={StaticResource bool2VisibilityConverter}}"  FontSize="{DynamicResource {x:Static SystemFonts.CaptionFontSize}}"  Content="{TemplateBinding Title}" HorizontalAlignment="Left"  VerticalAlignment="Center" Margin="0,0,20,0" />
+                                        <ContentControl Foreground="White"  Visibility="{TemplateBinding ShowTitle,Converter={StaticResource bool2VisibilityConverter}}"  FontSize="{DynamicResource {x:Static SystemFonts.CaptionFontSize}}"  Content="{TemplateBinding Title}" HorizontalAlignment="Left"  VerticalAlignment="Center" Margin="0,0,20,0" />
                                     </StackPanel>
                                     <StackPanel x:Name="WindowCommandButtonsPanel"  Grid.Column="1"  HorizontalAlignment="Center" Orientation="Horizontal" WindowChrome.IsHitTestVisibleInChrome="True" Margin="0,0,-1,0" >
                                         <!--<Button x:Name="TopMostButton" Style="{DynamicResource TopMostButtonStyle}"  Width="45" Command="{x:Static local:BaseWindow.WindowTopMost}"/>-->

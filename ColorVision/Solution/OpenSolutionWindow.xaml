@@ -1,10 +1,10 @@
-﻿<be:BaseWindow x:Class="ColorVision.Solution.OpenSolutionWindow"
+﻿<base:BaseWindow x:Class="ColorVision.Solution.OpenSolutionWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Solution"
-        xmlns:be ="clr-namespace:ColorVision.Controls"
+        xmlns:base ="clr-namespace:ColorVision.Controls"
         xmlns:hc ="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         Height="500" Width="800" Title="打开" MinWidth="500" MinHeight="450" Background="#F9F9F9" WindowStyle="ToolWindow" WindowStartupLocation="CenterScreen" Initialized="BaseWindow_Initialized">
@@ -89,4 +89,4 @@
 
 
     </Grid>
-</be:BaseWindow>
+</base:BaseWindow>

@@ -7,6 +7,13 @@
              d:DataContext="{d:DesignInstance Type=local:CalibrationParam}"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="400">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/ColorVision;component/Theme/GroupBox.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
     <Grid>
         <StackPanel>
             <DockPanel  Margin="0,2">

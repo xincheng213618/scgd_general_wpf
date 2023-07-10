@@ -1,4 +1,6 @@
-﻿using System;
+﻿using ColorVision.Controls;
+using ColorVision.HotKey;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -18,7 +20,7 @@ namespace ColorVision.SettingUp
     /// <summary>
     /// SettingWindow.xaml 的交互逻辑
     /// </summary>
-    public partial class SettingWindow : Window
+    public partial class SettingWindow : BaseWindow
     {
         public SettingWindow()
         {
@@ -39,6 +41,14 @@ namespace ColorVision.SettingUp
         {
             HotKey.HotKeyManger hotKeyManger = new HotKey.HotKeyManger();
             hotKeyManger.Show();
+        }
+
+        private void HotKeyStackPanel_Initialized(object sender, EventArgs e)
+        {
+            foreach (HotKeys hotKeys in HotKeys.HotKeysList)
+            {
+                HotKeyStackPanel.Children.Add(new HoyKeyControl(hotKeys));
+            }
         }
     }
 }

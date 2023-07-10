@@ -145,7 +145,7 @@ namespace ColorVision.Controls
             var hwnd = new WindowInteropHelper(window).EnsureHandle();
 
             var isDarkThemeInt = isDarkTheme ? 1 : 0;
-            Dwmapi.SetWindowAttribute(hwnd, (uint)Dwmapi.Window.UseImmersiveDarkMode, ref isDarkThemeInt, Marshal.SizeOf(typeof(bool)));
+            Dwmapi.SetWindowAttribute(hwnd, (uint)Dwmapi.Window.MicaEffect, ref isDarkThemeInt, Marshal.SizeOf(typeof(bool)));
 
             var margins = new Dwmapi.Margins(-1, -1, -1, -1);
             Dwmapi.ExtendFrameIntoClientArea(hwnd, ref margins);
