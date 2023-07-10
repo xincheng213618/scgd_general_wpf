@@ -23,8 +23,16 @@
         <Grid Grid.Row="0">
             <Menu x:Name="Menu1" Height ="24" Background="#F3F3F3"  Initialized="Menu_Initialized">
                 <MenuItem x:Name="FileMenuItem" Header="文件(_F)">
-                    <MenuItem Header="新建(_O)" Click="MenuItem_ProjectNew_Click" InputGestureText="Ctrl + O"/>
-                    <MenuItem Header="打开(_O)" Click="MenuItem_ProjectOpen_Click" InputGestureText="Ctrl + N"/>
+                    <MenuItem Header="新建(_O)" Click="MenuItem_ProjectNew_Click" InputGestureText="Ctrl + O">
+                        <MenuItem.Icon >
+                            <TextBlock Text="&#xE8F4;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="打开(_O)" Click="MenuItem_ProjectOpen_Click" InputGestureText="Ctrl + N">
+                        <MenuItem.Icon >
+                            <TextBlock Text="&#xE8E5;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                        </MenuItem.Icon>
+                    </MenuItem>
                     <Separator/>
                     <MenuItem Header="退出(_X)" InputGestureText="Alt + F4" Click="MenuItem_Exit"/>
                 </MenuItem>
@@ -47,7 +55,11 @@
                     <MenuItem Header="MQTT日志(_L)" Click="MenuItem_Click"/>
                     <MenuItem Header="数据库(_M)"  Click="MenuItem_Click_7"/>
                     <Separator/>
-                    <MenuItem Header="设置(_O)" Click="MenuItem_Click_2"   InputGestureText="Ctrl + I"  />
+                    <MenuItem Header="设置(_O)"  Click="MenuItem_Click_2"   InputGestureText="Ctrl + I"  >
+                        <MenuItem.Icon >
+                            <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                        </MenuItem.Icon>
+                    </MenuItem>
                 </MenuItem>
                 <MenuItem Header="标定(_A)">
                     <MenuItem Header="四色校正" Click="MenuItem_Click8"/>
