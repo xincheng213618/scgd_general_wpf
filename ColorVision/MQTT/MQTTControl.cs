@@ -24,7 +24,7 @@ using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
 namespace ColorVision.MQTT
 {
-    public delegate void MQTTMsgHandle(ResultDataMQ resultDataMQTT);
+    public delegate void MQTTMsgHandle(MQMsg resultDataMQTT);
 
     public class MQTTControl : ViewModelBase
     {
@@ -75,14 +75,14 @@ namespace ColorVision.MQTT
 
             MQTTClient = new MqttFactory().CreateMqttClient();
             MQTTClient.ConnectedAsync += (arg) => {
-                MQTTMsgChanged?.Invoke(new ResultDataMQ(1, $"{DateTime.Now:HH:mm:ss.fff} MQTT连接成功"));
+                MQTTMsgChanged?.Invoke(new MQMsg(1, $"{DateTime.Now:HH:mm:ss.fff} MQTT连接成功"));
                 Connected?.Invoke(this, new EventArgs());
                 IsConnect = true; return Task.CompletedTask; }; 
             MQTTClient.DisconnectedAsync += (arg) => {
-                MQTTMsgChanged?.Invoke(new ResultDataMQ(-1, $"{DateTime.Now:HH:mm:ss.fff} MQTT失去连接"));
+                MQTTMsgChanged?.Invoke(new MQMsg(-1, $"{DateTime.Now:HH:mm:ss.fff} MQTT失去连接"));
                 IsConnect = false; return Task.CompletedTask; };
             MQTTClient.ApplicationMessageReceivedAsync += (arg) => {
-                MQTTMsgChanged?.Invoke(new ResultDataMQ(1,
+                MQTTMsgChanged?.Invoke(new MQMsg(1,
                     $"{DateTime.Now:HH:mm:ss.fff} 接收：{arg.ApplicationMessage.Topic} {Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment)},消息等级Qos：[{arg.ApplicationMessage.QualityOfServiceLevel}]，是否保留：[{arg.ApplicationMessage.Retain}]",
                     arg.ApplicationMessage.Topic, Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment)));
                 ApplicationMessageReceivedAsync.Invoke(arg); return Task.CompletedTask; };
@@ -122,12 +122,12 @@ namespace ColorVision.MQTT
             {
                 await MqttClient.ConnectAsync(options);
                 IsConnected = MqttClient.IsConnected;
-                GetInstance().MQTTMsgChanged?.Invoke(new ResultDataMQ(1, $"{DateTime.Now:HH:mm:ss.fff} MQTTTest连接成功"));
+                GetInstance().MQTTMsgChanged?.Invoke(new MQMsg(1, $"{DateTime.Now:HH:mm:ss.fff} MQTTTest连接成功"));
             }
             catch (Exception ex)
             {
                 log.Error(ex);
-                GetInstance().MQTTMsgChanged?.Invoke(new ResultDataMQ(1, $"{DateTime.Now:HH:mm:ss.fff} MQTTTest连接失败"));
+                GetInstance().MQTTMsgChanged?.Invoke(new MQMsg(1, $"{DateTime.Now:HH:mm:ss.fff} MQTTTest连接失败"));
             }
             finally
             {
@@ -176,12 +176,12 @@ namespace ColorVision.MQTT
                 {
                     MqttTopicFilter topicFilter = new MqttTopicFilterBuilder().WithTopic(topic).Build();
                     await MQTTClient.SubscribeAsync(topicFilter, CancellationToken.None);
-                    MQTTMsgChanged?.Invoke(new ResultDataMQ(1, $"{DateTime.Now:HH:mm:ss.fff} 订阅{topic}成功"));
+                    MQTTMsgChanged?.Invoke(new MQMsg(1, $"{DateTime.Now:HH:mm:ss.fff} 订阅{topic}成功"));
                 }
                 catch (Exception ex)
                 {
                     log.Warn(ex);
-                    MQTTMsgChanged?.Invoke(new ResultDataMQ(-1, $"{DateTime.Now:HH:mm:ss.fff} 订阅{topic}失败"));
+                    MQTTMsgChanged?.Invoke(new MQMsg(-1, $"{DateTime.Now:HH:mm:ss.fff} 订阅{topic}失败"));
                 }
 
             }
@@ -195,17 +195,17 @@ namespace ColorVision.MQTT
                 {
                     await MQTTClient.UnsubscribeAsync(topic, CancellationToken.None);
                     SubscribeTopic.Remove(topic);
-                    MQTTMsgChanged?.Invoke(new ResultDataMQ(1, $"{DateTime.Now:HH:mm:ss.fff} 取消订阅{topic}成功"));
+                    MQTTMsgChanged?.Invoke(new MQMsg(1, $"{DateTime.Now:HH:mm:ss.fff} 取消订阅{topic}成功"));
                 }
                 catch (Exception ex)
                 {
                     log.Warn(ex);
-                    MQTTMsgChanged?.Invoke(new ResultDataMQ(-1, $"{DateTime.Now:HH:mm:ss.fff} 取消订阅{topic}失败"));
+                    MQTTMsgChanged?.Invoke(new MQMsg(-1, $"{DateTime.Now:HH:mm:ss.fff} 取消订阅{topic}失败"));
                 }
             }
             else
             {
-                MQTTMsgChanged?.Invoke(new ResultDataMQ(-1, $"{DateTime.Now:HH:mm:ss.fff} MQTTClient未开启连接，取消订阅{topic}失败"));
+                MQTTMsgChanged?.Invoke(new MQMsg(-1, $"{DateTime.Now:HH:mm:ss.fff} MQTTClient未开启连接，取消订阅{topic}失败"));
             }
         }
 
@@ -220,14 +220,55 @@ namespace ColorVision.MQTT
             if (MQTTClient.IsConnected)
             {
                 await MQTTClient.PublishAsync(messageObj, CancellationToken.None);
-                MQTTMsgChanged?.Invoke(new ResultDataMQ(1, $"{DateTime.Now:HH:mm:ss.fff} 主题:'{topic}',信息:'{msg}'", topic, msg));
+                MQTTMsgChanged?.Invoke(new MQMsg(1, $"{DateTime.Now:HH:mm:ss.fff} 主题:'{topic}',信息:'{msg}'", topic, msg));
             }
             else
             {
-                MQTTMsgChanged?.Invoke(new ResultDataMQ(-1,$"{DateTime.Now:HH:mm:ss.fff} MQTTClient未开启连接",topic, msg));
+                MQTTMsgChanged?.Invoke(new MQMsg(-1,$"{DateTime.Now:HH:mm:ss.fff} MQTTClient未开启连接",topic, msg));
             }
         }
     }
 
+    public class MQMsg
+    {
+        public MQMsg()
+        {
+
+        }
+        public MQMsg(int ResultCode, string ResultMsg)
+        {
+            this.ResultCode = ResultCode;
+            this.ResultMsg = ResultMsg;
+        }
+
+        public MQMsg(int ResultCode, string ResultMsg, object Topic, object Payload)
+        {
+            this.ResultCode = ResultCode;
+            this.ResultMsg = ResultMsg;
+            this.Topic = Topic;
+            this.Payload = Payload;
+        }
+
+        /// <summary>
+        /// 结果Code
+        /// 正常1，其他为异常；0不作为回复结果
+        /// </summary>
+        public int ResultCode { get; set; }
+
+        /// <summary>
+        /// 结果信息
+        /// </summary>
+        public string ResultMsg { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 扩展1
+        /// </summary>
+        public object Topic { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 扩展2
+        /// </summary>
+        public object Payload { get; set; } = string.Empty;
+    }
 
 }

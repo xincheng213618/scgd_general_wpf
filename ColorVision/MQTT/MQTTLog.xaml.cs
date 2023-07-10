@@ -34,7 +34,7 @@ namespace ColorVision
 
 
 
-        private void ShowLog(ResultDataMQ resultData_MQTT)
+        private void ShowLog(MQMsg resultData_MQTT)
         {
             Application.Current.Dispatcher.BeginInvoke(new Action(() =>
             {
