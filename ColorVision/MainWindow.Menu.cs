@@ -243,6 +243,12 @@ namespace ColorVision
 
         }
 
+        private void Update_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("当前版本已经是最新版本","ColorVision",MessageBoxButton.OK);
+
+        }
+
         private void MenuItem_Exit(object sender, RoutedEventArgs e)
         {
             Environment.Exit(0);

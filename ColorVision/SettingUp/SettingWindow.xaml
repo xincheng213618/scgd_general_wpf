@@ -62,6 +62,26 @@
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
+            <TabItem  Header="用户设置" Background="Transparent">
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" Background="#F2F2F2" VerticalScrollBarVisibility="Auto" >
+                    <StackPanel>
+                        <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
+                            <GroupBox.Header>
+                                <TextBlock Text="用户" FontSize="20"/>
+                            </GroupBox.Header>
+                            <Border  Style="{StaticResource BorderModuleArea}" Height="100" Background="White" CornerRadius="2">
+                                <StackPanel VerticalAlignment="Center" Margin="50">
+                                    <TextBlock Text="{Binding UserConfig.UserID}"/>
+                                    <TextBlock Text="{Binding UserConfig.UserName}"/>
+                                    <TextBlock Text="{Binding UserConfig.UserPwd}"/>
+                                </StackPanel>
+                            </Border>
+                        </GroupBox>
+                    </StackPanel>
+                </ScrollViewer>
+
+            </TabItem>
+
             <TabItem  Header="基本设置" Background="Transparent">
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" Background="#F2F2F2" VerticalScrollBarVisibility="Auto" >
                     <StackPanel>

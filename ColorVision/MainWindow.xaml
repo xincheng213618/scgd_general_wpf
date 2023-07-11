@@ -66,8 +66,8 @@
                 </MenuItem>
                 
                 <MenuItem Header="帮助(_H)">
-                    <MenuItem Header="检查更新(_U)" Click="MenuItem_Template"/>
-                    <MenuItem Header="关于(_A)" Click="MenuItem_Click_1"/>
+                    <MenuItem Header="检查更新(_U)" Click="Update_Click"/>
+                    <MenuItem Header="关于(_A)" Click="About_Click"/>
                 </MenuItem>
             </Menu>
         </Grid>
