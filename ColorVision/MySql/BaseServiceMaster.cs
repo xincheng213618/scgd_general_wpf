@@ -213,15 +213,15 @@ namespace ColorVision.MySql
         }
         public int UpdateByPid(int pid, List<T> datas)
         {
-            DataTable d_info = GetTableAllByPid(pid);
+            DataTable d_info = GetUpdateTableAllByPid(pid);
+            d_info.TableName = TableName;
             //CreateColumns(d_info);
             foreach (var item in datas)
             {
                 DataRow row = GetRow(item, d_info);
-                d_info.AcceptChanges();
+                //d_info.AcceptChanges();
                 Model2Row(item, row);
             }
-            d_info.TableName = TableName;
             return Save(d_info);
         }
 
@@ -310,6 +310,13 @@ namespace ColorVision.MySql
         public virtual DataTable GetTableAllByPid(int pid)
         {
             string sql = $"select * from {GetTableName()} where pid={pid}" + GetDelSQL(true);
+            DataTable d_info = GetData(sql);
+            return d_info;
+        }
+
+        public virtual DataTable GetUpdateTableAllByPid(int pid)
+        {
+            string sql = $"select * from {TableName} where pid={pid}" + GetDelSQL(true);
             DataTable d_info = GetData(sql);
             return d_info;
         }
