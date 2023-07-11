@@ -225,7 +225,7 @@ namespace ColorVision.Template
             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
             {
                 PoiParams.Clear();
-                List<PoiMasterModel> poiMaster = poiService.GetMasterAll(GlobalSetting.GetInstance().SoftwareConfig.TenantId);
+                List<PoiMasterModel> poiMaster = poiService.GetMasterAll(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
                 foreach (var dbModel in poiMaster)
                 {
                     KeyValuePair<string, PoiParam> item = new KeyValuePair<string, PoiParam>(dbModel.Name ?? "default", new PoiParam(dbModel));
@@ -255,7 +255,7 @@ namespace ColorVision.Template
         }
         internal AoiParam? AddAoiParam(string text)
         {
-            ModMasterModel flowMaster = new ModMasterModel(ModMasterType.Aoi, text, GlobalSetting.GetInstance().SoftwareConfig.TenantId);
+            ModMasterModel flowMaster = new ModMasterModel(ModMasterType.Aoi, text, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
             modService.Save(flowMaster);
             int pkId = flowMaster.GetPK();
             if (pkId > 0)
@@ -267,7 +267,7 @@ namespace ColorVision.Template
     
         internal PoiParam? AddPoiParam(string text)
         {
-            PoiMasterModel poiMaster = new PoiMasterModel(text, GlobalSetting.GetInstance().SoftwareConfig.TenantId);
+            PoiMasterModel poiMaster = new PoiMasterModel(text, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
             poiService.Save(poiMaster);
             int pkId = poiMaster.GetPK();
             if (pkId > 0 )
@@ -279,7 +279,7 @@ namespace ColorVision.Template
 
         internal FlowParam? AddFlowParam(string text)
         {
-            ModMasterModel flowMaster = new ModMasterModel(ModMasterType.Flow, text, GlobalSetting.GetInstance().SoftwareConfig.TenantId);
+            ModMasterModel flowMaster = new ModMasterModel(ModMasterType.Flow, text, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
             modService.Save(flowMaster);
             int pkId = flowMaster.GetPK();
             if (pkId > 0)
@@ -317,7 +317,7 @@ namespace ColorVision.Template
             FlowParams.Clear();
             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
             {
-                List<ModMasterModel> flows = modService.GetFlowAll(GlobalSetting.GetInstance().SoftwareConfig.TenantId);
+                List<ModMasterModel> flows = modService.GetFlowAll(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
                 foreach (var dbModel in flows)
                 {
                     List<ModDetailModel> flowDetails = modService.GetDetailByPid(dbModel.Id);
@@ -338,7 +338,7 @@ namespace ColorVision.Template
             AoiParams.Clear();
             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
             {
-                List<ModMasterModel> flows = modService.GetAoiAll(GlobalSetting.GetInstance().SoftwareConfig.TenantId);
+                List<ModMasterModel> flows = modService.GetAoiAll(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
                 foreach (var dbModel in flows)
                 {
                     List<ModDetailModel> flowDetails = modService.GetDetailByPid(dbModel.Id);

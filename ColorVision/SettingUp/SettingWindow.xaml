@@ -70,8 +70,7 @@
                                 <TextBlock Text="用户" FontSize="20"/>
                             </GroupBox.Header>
                             <Border  Style="{StaticResource BorderModuleArea}" Height="100" Background="White" CornerRadius="2">
-                                <StackPanel VerticalAlignment="Center" Margin="50">
-                                    <TextBlock Text="{Binding UserConfig.UserID}"/>
+                                <StackPanel VerticalAlignment="Center" Margin="50,0">
                                     <TextBlock Text="{Binding UserConfig.UserName}"/>
                                     <TextBlock Text="{Binding UserConfig.UserPwd}"/>
                                 </StackPanel>

@@ -29,7 +29,11 @@ namespace ColorVision.SettingUp
         public PerMissionMode PerMissionMode { get => _PerMissionMode; set { _PerMissionMode = value; NotifyPropertyChanged(); } }
         private PerMissionMode _PerMissionMode;
 
-
+        /// <summary>
+        /// 租户ID
+        /// </summary>
+        public int TenantId { get=>_TenantId; set { _TenantId = value; NotifyPropertyChanged(); } }
+        private int _TenantId;
     }
 
     public enum PerMissionMode

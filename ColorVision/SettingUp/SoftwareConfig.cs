@@ -34,7 +34,6 @@ namespace ColorVision.SettingUp
         }
 
         public string Version { get; set; } = "0.0";
-        public int TenantId { get; set; }
 
         public bool IsUseMySql { get; set; } = true;
 
