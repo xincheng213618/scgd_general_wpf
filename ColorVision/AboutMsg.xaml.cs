@@ -1,4 +1,5 @@
 ﻿
+using ColorVision.Controls;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -13,7 +14,7 @@ namespace ColorVision
     /// <summary>
     /// AboutMsg.xaml 的交互逻辑
     /// </summary>
-    public partial class AboutMsgWindow : Window
+    public partial class AboutMsgWindow : BaseWindow
     {
         public AboutMsgWindow()
         {
