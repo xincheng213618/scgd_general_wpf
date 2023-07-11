@@ -3,6 +3,7 @@ using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.SettingUp;
 using ColorVision.Util;
+using cvColorVision;
 using log4net;
 using Newtonsoft.Json;
 using System;
@@ -833,10 +834,12 @@ namespace ColorVision.Template
 
         }
 
-        private void Button2_Click(object sender, RoutedEventArgs e)
+        private async void Button2_Click(object sender, RoutedEventArgs e)
         {
             if (ImageShow.Source is BitmapImage bitmapImage)
             {
+                int Num =0;
+
                 if(RadioButtonMode1.IsChecked == true)
                 {
                     int start = DrawingVisualLists.Count;
@@ -849,8 +852,23 @@ namespace ColorVision.Template
                                 return;
                             }
 
+                            if (PoiParam.DatumArea.AreaCircleNum >1000)
+                            {
+                                WaitControl.Visibility = Visibility.Visible;
+                                WaitControlProgressBar.Visibility = Visibility.Visible;
+                                WaitControlProgressBar.Value = 0;
+                                IsLayoutUpdated = false;
+                            }
+
+
                             for (int i = 0; i < PoiParam.DatumArea.AreaCircleNum; i++)
                             {
+                                Num++;
+                                if (Num % 100 == 0 && WaitControl.Visibility == Visibility.Visible)
+                                {
+                                    WaitControlProgressBar.Value =  Num * 100 / PoiParam.DatumArea.AreaCircleNum;
+                                    await Task.Delay(1);
+                                }
 
                                 double x1 = PoiParam.DatumArea.CenterX + PoiParam.DatumArea.AreaCircleRadius * Math.Cos(i * 2 * Math.PI / PoiParam.DatumArea.AreaCircleNum + Math.PI / 180 * PoiParam.DatumArea.AreaCircleAngle);
                                 double y1 = PoiParam.DatumArea.CenterY + PoiParam.DatumArea.AreaCircleRadius * Math.Sin(i * 2 * Math.PI / PoiParam.DatumArea.AreaCircleNum + Math.PI / 180 * PoiParam.DatumArea.AreaCircleAngle);
@@ -863,7 +881,7 @@ namespace ColorVision.Template
                                         Circle.Attribute.Center = new Point(x1, y1);
                                         Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
                                         Circle.Attribute.Brush = Brushes.Transparent;
-                                        Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                                        Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
                                         Circle.Attribute.ID = start + i + 1;
                                         Circle.Render();
                                         ImageShow.AddVisual(Circle);
@@ -872,7 +890,7 @@ namespace ColorVision.Template
                                         DrawingVisualRectangleWord Rectangle = new DrawingVisualRectangleWord();
                                         Rectangle.Attribute.Rect = new Rect(x1 - PoiParam.DatumArea.DefaultRectWidth / 2, y1 - PoiParam.DatumArea.DefaultRectHeight / 2, PoiParam.DatumArea.DefaultRectWidth, PoiParam.DatumArea.DefaultRectHeight);
                                         Rectangle.Attribute.Brush = Brushes.Transparent;
-                                        Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                                        Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
                                         Rectangle.Attribute.ID = start + i + 1;
                                         Rectangle.Render();
                                         ImageShow.AddVisual(Rectangle);
@@ -907,10 +925,27 @@ namespace ColorVision.Template
                             double StepRow = (bitmapImage.PixelHeight - startD - startU) / (rows - 1);
                             double StepCol = (bitmapImage.PixelWidth - startL - startR) / (cols - 1);
 
+
+                            int all = rows * cols;
+                            if (all > 1000)
+                            {
+                                WaitControl.Visibility = Visibility.Visible;
+                                WaitControlProgressBar.Visibility = Visibility.Visible;
+                                WaitControlProgressBar.Value = 0;
+                                IsLayoutUpdated = false;
+                            }
+
                             for (int i = 0; i < rows; i++)
                             {
                                 for (int j = 0; j < cols; j++)
                                 {
+                                    Num++;
+                                    if (Num % 100 == 0 && WaitControl.Visibility == Visibility.Visible)
+                                    {
+                                        WaitControlProgressBar.Value =  Num * 100 / all;
+                                        await Task.Delay(1);
+                                    }
+
                                     switch (PoiParam.DefaultPointType)
                                     {
                                         case RiPointTypes.Circle:
@@ -918,16 +953,16 @@ namespace ColorVision.Template
                                             Circle.Attribute.Center = new Point(startL + StepCol * j, startU + StepRow * i);
                                             Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
                                             Circle.Attribute.Brush = Brushes.Transparent;
-                                            Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                                            Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
                                             Circle.Attribute.ID = start + i * cols + j + 1;
                                             Circle.Render();
                                             ImageShow.AddVisual(Circle);
                                             break;
                                         case RiPointTypes.Rect:
                                             DrawingVisualRectangleWord Rectangle = new DrawingVisualRectangleWord();
-                                            Rectangle.Attribute.Rect = new Rect(startL + StepCol * j - PoiParam.DatumArea.DefaultRectWidth / 2, startU + StepRow * i - PoiParam.DatumArea.DefaultRectWidth / 2, PoiParam.DatumArea.DefaultRectWidth, PoiParam.DatumArea.DefaultRectWidth);
+                                            Rectangle.Attribute.Rect = new Rect(startL + StepCol * j - (double)PoiParam.DatumArea.DefaultRectWidth / 2, startU + StepRow * i - PoiParam.DatumArea.DefaultRectWidth / 2, PoiParam.DatumArea.DefaultRectWidth, PoiParam.DatumArea.DefaultRectWidth);
                                             Rectangle.Attribute.Brush = Brushes.Transparent;
-                                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
                                             Rectangle.Attribute.ID = start + i * cols + j + 1;
                                             Rectangle.Render();
                                             ImageShow.AddVisual(Rectangle);
@@ -942,8 +977,6 @@ namespace ColorVision.Template
 
                             break;
                         case RiPointTypes.Mask:
-
-
                             List<Point> pts_src = new List<Point>();
                             pts_src.Add(PoiParam.DatumArea.Polygon1);
                             pts_src.Add(PoiParam.DatumArea.Polygon2);
@@ -983,7 +1016,7 @@ namespace ColorVision.Template
                                             Circle.Attribute.Center = new Point(point.X, point.Y);
                                             Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
                                             Circle.Attribute.Brush = Brushes.Transparent;
-                                            Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                                            Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius/30);
                                             Circle.Attribute.ID = start + i * cols + j + 1;
                                             Circle.Render();
                                             ImageShow.AddVisual(Circle);
@@ -992,7 +1025,7 @@ namespace ColorVision.Template
                                             DrawingVisualRectangleWord Rectangle = new DrawingVisualRectangleWord();
                                             Rectangle.Attribute.Rect = new Rect(point.X - PoiParam.DatumArea.DefaultRectWidth / 2, point.Y - PoiParam.DatumArea.DefaultRectHeight / 2, PoiParam.DatumArea.DefaultRectWidth, PoiParam.DatumArea.DefaultRectHeight);
                                             Rectangle.Attribute.Brush = Brushes.Transparent;
-                                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
                                             Rectangle.Attribute.ID = start + i * cols + j + 1;
                                             Rectangle.Render();
                                             ImageShow.AddVisual(Rectangle);
@@ -1020,6 +1053,10 @@ namespace ColorVision.Template
                 {
 
                 }
+
+                WaitControl.Visibility = Visibility.Collapsed;
+                WaitControlProgressBar.Visibility = Visibility.Collapsed;
+                WaitControlProgressBar.Value = 0;
 
                 ScrollViewer1.ScrollToEnd();
             }
