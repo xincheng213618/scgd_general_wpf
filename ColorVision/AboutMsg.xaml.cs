@@ -37,6 +37,17 @@ namespace ColorVision
 
 
             Grid1.Background = RainbowAnimation();
+            this.Deactivated += (s, e) =>
+            {
+                try
+                {
+                    this.Close();
+                }
+                catch 
+                {
+
+                }
+            };
 
 
             //for (int i = 0; i < 100; i++)
