@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using ColorVision.license;
 
 namespace ColorVision
 {
@@ -111,6 +112,10 @@ namespace ColorVision
         private void MenuItem9_Click(object sender, RoutedEventArgs e)
         {
             new FlowEngine.WindowFlowEngine() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+        }
+        private void MenuItem_License_Click(object sender, RoutedEventArgs e)
+        {
+            new WindowLicense().Show();
         }
 
         private void MenuItem_ProjectNew_Click(object sender, RoutedEventArgs e)

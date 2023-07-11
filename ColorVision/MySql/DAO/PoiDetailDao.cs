@@ -9,9 +9,8 @@ using System.Threading.Tasks;
 
 namespace ColorVision.MySql.DAO
 {
-    public class PoiDetailModel : IBaseModel
+    public class PoiDetailModel : PKModel
     {
-        public int Id { get; set; }
         public string? Name { get; set; }
         public int? Pid { get; set; }
         public int? Type { get; set; }
@@ -46,16 +45,6 @@ namespace ColorVision.MySql.DAO
             PixHeight = (int)data.PixHeight;
             IsEnable = true;
             IsDelete = false;
-        }
-
-        public int GetPK()
-        {
-            return Id;
-        }
-
-        public void SetPK(int id)
-        {
-            Id = id;
         }
     }
 

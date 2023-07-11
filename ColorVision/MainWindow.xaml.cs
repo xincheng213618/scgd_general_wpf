@@ -931,8 +931,6 @@ namespace ColorVision
         {
             new MySqlConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
-
-
     }
 
 

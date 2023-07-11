@@ -9,7 +9,7 @@ using System.Xml.Linq;
 
 namespace ColorVision.MySql.DAO
 {
-    public class ModMasterModel : IBaseModel
+    public class ModMasterModel : PKModel
     {
         public ModMasterModel() : this("","",0){ }
         public ModMasterModel(string pcode, string text, int tenantId)
@@ -20,7 +20,6 @@ namespace ColorVision.MySql.DAO
             CreateDate = DateTime.Now;
         }
 
-        public int Id { get; set; }
         public string? Name { get; set; }
         public DateTime? CreateDate { get; set; } = DateTime.Now;
         public bool? IsEnable { get; set; } = true;
@@ -29,15 +28,6 @@ namespace ColorVision.MySql.DAO
         public int TenantId { get; set; }
         public int Pid { get; set; }
         public string? Pcode { get; set; }
-        public int GetPK()
-        {
-            return Id;
-        }
-
-        public void SetPK(int id)
-        {
-            Id = id;
-        }
     }
     public class ModMasterDao : BaseServiceMaster<ModMasterModel>
     {
