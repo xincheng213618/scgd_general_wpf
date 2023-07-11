@@ -45,6 +45,7 @@ namespace ColorVision.Solution
 
             DirectoryPath = RecentNewCreateCacheList[0];
             this.Name = NewCreateFileName("新建工程");
+            RecentNewCreateNameCacheList.Add(Name);
         }
 
         public string NewCreateFileName(string FileName)
@@ -75,6 +76,8 @@ namespace ColorVision.Solution
         private string _DirectoryPath = string.Empty;
 
         public ObservableCollection<string> RecentNewCreateCacheList { get; set; } = new ObservableCollection<string>();
+        public ObservableCollection<string> RecentNewCreateNameCacheList { get; set; } = new ObservableCollection<string>();
+
     }
 
 
