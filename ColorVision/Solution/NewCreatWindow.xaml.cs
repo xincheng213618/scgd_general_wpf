@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -15,7 +16,6 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace ColorVision.Solution
 {
@@ -62,13 +62,16 @@ namespace ColorVision.Solution
         /// <summary>
         /// 工程名称
         /// </summary>
-        public string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
+        public string Name { get => _Name; set { IsCanCreate = !(string.IsNullOrWhiteSpace(value)||string.IsNullOrWhiteSpace(DirectoryPath)); _Name = value; NotifyPropertyChanged(); } }
         private string _Name = string.Empty;
+
+        public bool IsCanCreate { get => _IsCanCreate; set { _IsCanCreate = value; NotifyPropertyChanged(); } }
+        private bool _IsCanCreate = true;
 
         /// <summary>
         /// 工程位置
         /// </summary>
-        public string DirectoryPath { get => _DirectoryPath; set { _DirectoryPath = value; NotifyPropertyChanged(); } }
+        public string DirectoryPath { get => _DirectoryPath; set { IsCanCreate = !(string.IsNullOrWhiteSpace(value) || string.IsNullOrWhiteSpace(Name));  _DirectoryPath = value; NotifyPropertyChanged(); } }
         private string _DirectoryPath = string.Empty;
 
         public ObservableCollection<string> RecentNewCreateCacheList { get; set; } = new ObservableCollection<string>();
@@ -111,8 +114,17 @@ namespace ColorVision.Solution
             if (string.IsNullOrWhiteSpace(NewCreateViewMode.Name))
             {
                 this.Close();
+                return;
             }
             string SolutionDirectoryPath = NewCreateViewMode.DirectoryPath + "\\" + NewCreateViewMode.Name;
+
+
+            if (SolutionDirectoryPath.IndexOfAny(System.IO.Path.GetInvalidPathChars()) >= 0 || NewCreateViewMode.Name.IndexOfAny(Path.GetInvalidFileNameChars())>=0)
+            {
+                MessageBox.Show("工程名不能包含特殊字符", "Grid");
+                return;
+            }
+
 
             if (Directory.Exists(SolutionDirectoryPath))
             {

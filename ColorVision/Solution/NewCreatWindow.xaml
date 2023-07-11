@@ -6,36 +6,39 @@
         xmlns:local="clr-namespace:ColorVision.Solution"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance local:NewCreateViewMode}"
         Title="配置新工程" Height="300" Width="500" Background="#F9F9F9">
     <Grid>
-        <Grid Margin="30,30,20,20" >
+        <Grid Margin="30,20,20,20" >
             <StackPanel>
-                <hc:ComboBox  Margin="0,0,0,0" Width="400" HorizontalAlignment="Left" IsEditable="True" SelectedIndex="0" Text="{Binding Name}"  hc:InfoElement.Title="项目名称" 
-                hc:InfoElement.Necessary="True" hc:InfoElement.Symbol="*"   />
+                <hc:ComboBox  Margin="0,0,0,20" Width="400" HorizontalAlignment="Left"  IsEditable="True" SelectedIndex="0" Text="{Binding Name}"  hc:InfoElement.Title="项目名称" 
+                hc:InfoElement.Necessary="True" hc:InfoElement.ShowClearButton="True"  hc:InfoElement.Symbol="*"   />
                 <DockPanel >
                     <Button Content="..." DockPanel.Dock="Right" VerticalAlignment="Bottom" Height="30" Width="30" Click="Button_Click"/>
-                    <hc:ComboBox  Margin="0,0,0,0"  Width="400"  HorizontalAlignment="Left" IsEditable="True" SelectedIndex="0" SelectionChanged="ComboBox_SelectionChanged" Text="{Binding DirectoryPath}"  hc:InfoElement.Title="选择项目保存位置" 
+                    <hc:ComboBox  Margin="0,0,0,0"  Width="400"  HorizontalAlignment="Left"  IsEditable="True" SelectedIndex="0" SelectionChanged="ComboBox_SelectionChanged" Text="{Binding DirectoryPath}"  hc:InfoElement.Title="选择项目保存位置" 
                               hc:InfoElement.Necessary="True"  hc:InfoElement.Symbol="*" 
                               ItemsSource="{Binding RecentNewCreatCacheList}"/>
-
                 </DockPanel>
 
             </StackPanel>
 
             <DockPanel  VerticalAlignment="Bottom" HorizontalAlignment="Right"  >
-                <Button Content="创建工程" Height="40"   Padding="20,0" FontSize="15"  Click="Button_Close_Click">
+                <Button Content="创建工程" Height="40"   Padding="20,0" FontSize="15" IsEnabled="{Binding IsCanCreate}" Click="Button_Close_Click">
                     <Button.Template>
                         <ControlTemplate TargetType="{x:Type Button}">
-                            <Border x:Name="Bd" Background="{TemplateBinding Background}" 	BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"	CornerRadius="3">
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"	CornerRadius="3">
                                 <Grid>
-                                    <Border x:Name="Bds"  Background="#6EA646" 	CornerRadius="3"  Opacity="0.5" Visibility="Collapsed"/>
                                     <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}"  RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 	VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
                                 </Grid>
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="true">
-                                    <Setter TargetName="Bds" Property="Visibility" Value="Visible"/>
+                                    <Setter TargetName="Bd" Property="Background" Value="#6EA646"/>
                                     <Setter Property="Foreground" Value="White"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter TargetName="Bd" Property="Opacity" Value="0.5"/>
+                                    <Setter Property="Foreground" Value="#9D9D9D"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
