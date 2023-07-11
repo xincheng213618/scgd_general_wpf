@@ -67,7 +67,7 @@
                     <StackPanel>
                         <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
                             <GroupBox.Header>
-                                <TextBlock Text="基本设置" FontSize="20"/>
+                                <TextBlock Text="基本" FontSize="20"/>
                             </GroupBox.Header>
                             <Border  Style="{StaticResource BorderModuleArea}" Background="White" CornerRadius="8">
                                 <StackPanel Orientation="Horizontal" Margin="15">
@@ -86,9 +86,25 @@
                 </ScrollViewer>
 
             </TabItem>
+            <TabItem  Header="工程设置" Background="Transparent">
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" Background="#F2F2F2" VerticalScrollBarVisibility="Auto" >
+                    <StackPanel>
+                        <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
+                            <GroupBox.Header>
+                                <TextBlock Text="工程" FontSize="20"/>
+                            </GroupBox.Header>
+                            <Border  Style="{StaticResource BorderModuleArea}" Background="White" CornerRadius="8">
+                                <StackPanel Margin="5">
+                                    <TextBlock Text="{Binding ProjectConfig.ProjectName}" Height="20" />
+                                </StackPanel>
+                            </Border>
+                        </GroupBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
             <TabItem  Header="快捷键" Background="Transparent">
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" Background="#F2F2F2" VerticalScrollBarVisibility="Auto" >
-
                     <StackPanel>
                         <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
                             <GroupBox.Header>
@@ -99,10 +115,8 @@
                                 </StackPanel>
                             </Border>
                         </GroupBox>
-
                     </StackPanel>
                 </ScrollViewer>
-
             </TabItem>
 
         </TabControl>

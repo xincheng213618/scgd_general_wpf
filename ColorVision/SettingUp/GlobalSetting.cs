@@ -72,22 +72,22 @@ namespace ColorVision.SettingUp
             string Temp1 = SoftwareConfig.MQTTConfig.UserPwd;
             string Temp2 = SoftwareConfig.UserConfig.UserPwd;
 
-            SoftwareConfig.MySqlConfig.UserPwd = AESUtil.AESEncrypt(SoftwareConfig.MySqlConfig.UserPwd, "ColorVision", "ColorVision");
-            SoftwareConfig.MQTTConfig.UserPwd = AESUtil.AESEncrypt(SoftwareConfig.MQTTConfig.UserPwd, "ColorVision", "ColorVision");
-            SoftwareConfig.UserConfig.UserPwd = AESUtil.AESEncrypt(SoftwareConfig.UserConfig.UserPwd, "ColorVision", "ColorVision");
+            SoftwareConfig.MySqlConfig.UserPwd = AESUtil.AESEncrypt(SoftwareConfig.MySqlConfig.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
+            SoftwareConfig.MQTTConfig.UserPwd = AESUtil.AESEncrypt(SoftwareConfig.MQTTConfig.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
+            SoftwareConfig.UserConfig.UserPwd = AESUtil.AESEncrypt(SoftwareConfig.UserConfig.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
 
             List<string> MySqlConfigsPwd = new List<string>();
             foreach (var item in SoftwareConfig.MySqlConfigs)
             {
                 MySqlConfigsPwd.Add(item.UserPwd);
-                item.UserPwd = AESUtil.AESEncrypt(item.UserPwd, "ColorVision", "ColorVision");
+                item.UserPwd = AESUtil.AESEncrypt(item.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
             }
 
             List<string> MQTTConfigsPwd = new List<string>();
             foreach (var item in SoftwareConfig.MQTTConfigs)
             {
                 MQTTConfigsPwd.Add(item.UserPwd);
-                item.UserPwd = AESUtil.AESEncrypt(item.UserPwd, "ColorVision", "ColorVision");
+                item.UserPwd = AESUtil.AESEncrypt(item.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
             }
 
             WriteConfig(GlobalConst.SoftwareConfigFileName, SoftwareConfig);
