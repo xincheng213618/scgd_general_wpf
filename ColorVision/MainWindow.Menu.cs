@@ -14,7 +14,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using ColorVision.license;
 
 namespace ColorVision
 {
@@ -113,10 +112,7 @@ namespace ColorVision
         {
             new FlowEngine.WindowFlowEngine() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
-        private void MenuItem_License_Click(object sender, RoutedEventArgs e)
-        {
-            new WindowLicense().Show();
-        }
+
 
         private void MenuItem_ProjectNew_Click(object sender, RoutedEventArgs e)
         {
@@ -251,7 +247,10 @@ namespace ColorVision
         private void Update_Click(object sender, RoutedEventArgs e)
         {
             MessageBox.Show("当前版本已经是最新版本","ColorVision",MessageBoxButton.OK);
-
+        }
+        private void License_Click(object sender, RoutedEventArgs e)
+        {
+            new LicenseManger() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
 
         private void MenuItem_Exit(object sender, RoutedEventArgs e)

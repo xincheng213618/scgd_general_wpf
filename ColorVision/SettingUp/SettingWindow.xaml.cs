@@ -37,12 +37,6 @@ namespace ColorVision.SettingUp
 
         }
 
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            HotKey.HotKeyManger hotKeyManger = new HotKey.HotKeyManger();
-            hotKeyManger.Show();
-        }
-
         private void HotKeyStackPanel_Initialized(object sender, EventArgs e)
         {
             foreach (HotKeys hotKeys in HotKeys.HotKeysList)
