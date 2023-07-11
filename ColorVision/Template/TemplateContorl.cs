@@ -234,6 +234,7 @@ namespace ColorVision.Template
             }
             else
             {
+                PoiParams.Clear();
                 if (PoiParams.Count == 0)
                     PoiParams = IDefault(FileNamePoiParms, new PoiParam(), ref IsOldPoiParams);
             }

@@ -188,7 +188,7 @@ namespace ColorVision
 
         private void OpenSetting()
         {
-            new SettingWindow() { WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            new SettingWindow() { Owner =this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
         RecentFileList SolutionHistory = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
 

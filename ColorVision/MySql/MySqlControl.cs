@@ -52,6 +52,7 @@ namespace ColorVision.MySql
             string connStr = GetConnectionString(MySqlConfig);
             try
             {
+                IsConnect = false;
                 log.Info($"数据库连接信息:{connStr}");
                 MySqlConnection = new MySqlConnection() { ConnectionString = connStr  };
                 MySqlConnection.Open();

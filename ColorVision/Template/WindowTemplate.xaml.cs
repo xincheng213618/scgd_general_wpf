@@ -108,6 +108,10 @@ namespace ColorVision.Template
                     TemplateGrid.Header = "点集";
                     this.MinWidth = 390;
                     this.Width = 390;
+                    this.Closed += (s, e) =>
+                    {
+                        TemplateControl.Save(TemplateType);
+                    };
                     break;
                 case WindowTemplateType.FlowParam:
                     TemplateGrid.Header = "流程";

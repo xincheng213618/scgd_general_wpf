@@ -61,9 +61,7 @@ namespace ColorVision.MQTT
         private bool IsRun;
         public async Task<bool> Connect(MQTTConfig MQTTConfig)
         {
-            if (IsRun) return false;
-            IsRun = true;
-
+            IsConnect = false;
             MQTTClient?.Dispose();
 
             MqttClientOptionsBuilder OptionsBuilder = new MqttClientOptionsBuilder();
@@ -90,7 +88,6 @@ namespace ColorVision.MQTT
             {
                 await MQTTClient.ConnectAsync(options);
                 IsConnect = true;
-                IsRun = false;
                 foreach (var item in SubscribeTopicCache)
                     SubscribeAsyncClientAsync(item);
                 foreach (var item in SubscribeTopic)
@@ -102,7 +99,6 @@ namespace ColorVision.MQTT
             {
                 log.Error(ex);
                 IsConnect = false;
-                IsRun = false;
                 return IsConnect;
             }
         }

@@ -391,6 +391,19 @@ namespace ColorVision.Template
                     };
                 }
             };
+            DrawingVisualLists.CollectionChanged += (s, e) =>
+            {
+                if (DrawingVisualLists.Count ==0)
+                {
+                    FocusPointGrid.Visibility = Visibility.Collapsed;
+                    PropertyGrid2.Visibility = Visibility.Collapsed;
+                }
+                else
+                {
+                    FocusPointGrid.Visibility = Visibility.Visible;
+                    PropertyGrid2.Visibility = Visibility.Visible;
+                }
+            };
 
             //如果是不显示
             ImageShow.VisualsRemove += (s, e) =>
@@ -827,8 +840,6 @@ namespace ColorVision.Template
             {
                 if(RadioButtonMode1.IsChecked == true)
                 {
-
-
                     int start = DrawingVisualLists.Count;
                     switch (PoiParam.DatumArea.PointType)
                     {
@@ -1011,7 +1022,7 @@ namespace ColorVision.Template
 
                 }
 
-
+                ScrollViewer1.ScrollToEnd();
             }
         }
 
