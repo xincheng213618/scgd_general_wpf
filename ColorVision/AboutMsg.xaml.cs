@@ -77,7 +77,7 @@ namespace ColorVision
         private SolidColorBrush RainbowAnimation()
         {
             Color[] colors = { Colors.Red, Colors.Orange, Colors.Yellow, Colors.Green, Colors.DarkGreen, Colors.Blue, Colors.Violet };
-            ColorAnimationUsingKeyFrames colorAnimation = new ColorAnimationUsingKeyFrames();
+            LinearColorKeyFrame colorAnimation = new ColorAnimationUsingKeyFrames();
             colorAnimation.Duration = TimeSpan.FromSeconds(7*0.3);
             colorAnimation.FillBehavior = FillBehavior.Stop;
             colorAnimation.RepeatBehavior = RepeatBehavior.Forever;
