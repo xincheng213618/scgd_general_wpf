@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.MySql.DAO
 {
-    public class ModDetailModel : IBaseModel
+    public class ModDetailModel : PKModel
     {
         public ModDetailModel() :this(-1,-1,null){ }
         public ModDetailModel(int sysPid,int pid,string? val) {
@@ -15,7 +15,6 @@ namespace ColorVision.MySql.DAO
             Pid = pid;
             ValueA = val;
         }
-        public int Id { get; set; }
         public int SysPid { get; set; }
         public int Pid { get; set; }
         public string? ValueA { get; set; }
@@ -23,16 +22,6 @@ namespace ColorVision.MySql.DAO
         public string? Symbol { get; set; }
         public bool? IsEnable { get; set; } = true;
         public bool? IsDelete { get; set; } = false;
-
-        public int GetPK()
-        {
-            return Id;
-        }
-
-        public void SetPK(int id)
-        {
-            Id = id;
-        }
     }
 
     public class ModDetailDao : BaseServiceMaster<ModDetailModel>

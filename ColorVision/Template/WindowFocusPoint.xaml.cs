@@ -37,9 +37,8 @@ namespace ColorVision.Template
         public PoiParam(int id) : base(id)
         {
         }
-        public PoiParam(PoiMasterModel dbModel) : base(dbModel.Id ?? -1)
+        public PoiParam(PoiMasterModel dbModel) : base(dbModel.Id)
         {
-            //this.ID = dbModel.Id ?? -1;
             this.PoiName = dbModel.Name ?? string.Empty;
             this.Width = dbModel.Width ?? 0;
             this.Height = dbModel.Height ?? 0;

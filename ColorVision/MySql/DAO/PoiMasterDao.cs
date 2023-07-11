@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.MySql.DAO
 {
-    public class PoiMasterModel : IBaseModel
+    public class PoiMasterModel : PKModel
     {
         public PoiMasterModel() : this("", 0)
         {
@@ -60,11 +60,7 @@ namespace ColorVision.MySql.DAO
             TenantId = 0;
         }
 
-
-
-        public int? Id { get; set; }
         public string? Name { get; set; }
-
         public int? Type { get; set; }
         public int? Width { get; set; }
         public int? Height { get; set; }
@@ -82,18 +78,7 @@ namespace ColorVision.MySql.DAO
         public bool? IsEnable { get; set; } = true;
         public bool? IsDelete { get; set; } = false;
         public string? Remark { get; set; }
-
         public int TenantId { get; set; }
-
-        public int GetPK()
-        {
-            return Id ?? -1;
-        }
-
-        public void SetPK(int id)
-        {
-            Id = id;
-        }
     }
 
     internal class PoiMasterDao : BaseServiceMaster<PoiMasterModel>
@@ -107,7 +92,7 @@ namespace ColorVision.MySql.DAO
         {
             PoiMasterModel model = new PoiMasterModel
             {
-                Id = item.Field<int?>("id"),
+                Id = item.Field<int>("id"),
                 Name = item.Field<string?>("name"),
                 Type = item.Field<sbyte>("type"),
                 Width = item.Field<int?>("width"),

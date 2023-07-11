@@ -167,7 +167,7 @@ namespace ColorVision.MySql
         }
     }
 
-    public class BaseServiceMaster<T>: BaseDao where T : IBaseModel
+    public class BaseServiceMaster<T>: BaseDao where T : IPKModel
     {
         protected string ViewName { get; set; }
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseServiceMaster<T>));

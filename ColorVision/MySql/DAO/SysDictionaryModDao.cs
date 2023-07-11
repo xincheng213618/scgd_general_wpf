@@ -7,22 +7,11 @@ using System.Threading.Tasks;
 
 namespace ColorVision.MySql.DAO
 {
-    public class SysDictionaryModModel : IBaseModel
+    public class SysDictionaryModModel : PKModel
     {
-        public int Id { get; set; }
         public string? Code { get; set; }
         public string? Name { get; set; }
         public int TenantId { get; set; }
-
-        public int GetPK()
-        {
-            return Id;
-        }
-
-        public void SetPK(int id)
-        {
-            Id = id;
-        }
     }
     public class SysDictionaryModDao : BaseServiceMaster<SysDictionaryModModel>
     {
