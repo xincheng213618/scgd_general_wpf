@@ -376,7 +376,7 @@ namespace ColorVision.Template
             return poiService.MasterDeleteById(id);
         }
 
-        internal int FlowMasterDeleteById(int id)
+        internal int ModMasterDeleteById(int id)
         {
            return modService.MasterDeleteById(id);
         }

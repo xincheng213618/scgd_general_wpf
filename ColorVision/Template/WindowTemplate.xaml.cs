@@ -340,7 +340,7 @@ namespace ColorVision.Template
                     {
                         case WindowTemplateType.AoiParam:
                             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
-                                TemplateControl.PoiMasterDeleteById(TemplateControl.AoiParams[ListView1.SelectedIndex].Value.ID);
+                                TemplateControl.ModMasterDeleteById(TemplateControl.AoiParams[ListView1.SelectedIndex].Value.ID);
                             TemplateControl.AoiParams.RemoveAt(ListView1.SelectedIndex);
                             break;
                         case WindowTemplateType.Calibration:
@@ -362,7 +362,7 @@ namespace ColorVision.Template
                             break;
                         case WindowTemplateType.FlowParam:
                             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
-                                TemplateControl.FlowMasterDeleteById(TemplateControl.FlowParams[ListView1.SelectedIndex].Value.ID);
+                                TemplateControl.ModMasterDeleteById(TemplateControl.FlowParams[ListView1.SelectedIndex].Value.ID);
                             TemplateControl.FlowParams.RemoveAt(ListView1.SelectedIndex);
                             break;
                     }
