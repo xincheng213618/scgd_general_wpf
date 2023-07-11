@@ -5,9 +5,12 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
 
 namespace ColorVision
 {
@@ -32,9 +35,55 @@ namespace ColorVision
 #endif
             Icon = null;
 
+
+            Grid1.Background = RainbowAnimation();
+
+
+            //for (int i = 0; i < 100; i++)
+            //{
+            //    Grid1.Background = Brushes.Red;
+            //    await Task.Delay(350);
+            //    Grid1.Background = Brushes.DarkRed;
+            //    await Task.Delay(350);
+            //    Grid1.Background = Brushes.Orange;
+            //    await Task.Delay(350);
+            //    Grid1.Background = Brushes.Yellow;
+            //    await Task.Delay(350);
+            //    Grid1.Background = Brushes.Green;
+            //    await Task.Delay(350);
+            //    Grid1.Background = Brushes.DarkGreen;
+            //    await Task.Delay(350);
+            //    Grid1.Background = Brushes.Blue;
+            //    await Task.Delay(350);
+            //    Grid1.Background = Brushes.DarkBlue;
+            //    await Task.Delay(350);
+            //    Grid1.Background = Brushes.Violet;
+            //    await Task.Delay(350);
+            //}
+
         }
 
-        private static bool DebugBuild(Assembly assembly)
+        private SolidColorBrush RainbowAnimation()
+        {
+            Color[] colors = { Colors.Red, Colors.Orange, Colors.Yellow, Colors.Green, Colors.DarkGreen, Colors.Blue, Colors.Violet };
+            ColorAnimationUsingKeyFrames colorAnimation = new ColorAnimationUsingKeyFrames();
+            colorAnimation.Duration = TimeSpan.FromSeconds(7*0.3);
+            colorAnimation.FillBehavior = FillBehavior.Stop;
+            colorAnimation.RepeatBehavior = RepeatBehavior.Forever;
+            int z = 0;
+            foreach (var item in colors)
+            {
+                colorAnimation.KeyFrames.Add(new DiscreteColorKeyFrame(item, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(z*0.3))));
+                z++;
+            }
+
+            SolidColorBrush background = new SolidColorBrush();
+            AnimationClock myClock = colorAnimation.CreateClock();
+            background.ApplyAnimationClock(SolidColorBrush.ColorProperty, myClock);
+            return background;
+        }
+
+            private static bool DebugBuild(Assembly assembly)
         {
             foreach (object attribute in assembly.GetCustomAttributes(false))
             {
