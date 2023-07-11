@@ -10,9 +10,9 @@ namespace ColorVision.MySql.DAO
     public class SysDictionaryModDetaiModel : IBaseModel
     {
         public int Id { get; set; }
-        public string Symbol { get; set; }
-        public string Name { get; set; }
-        public string DefaultValue { get; set; }
+        public string? Symbol { get; set; }
+        public string? Name { get; set; }
+        public string? DefaultValue { get; set; }
         public short ValueType { get; set; }
 
         public int GetPK()

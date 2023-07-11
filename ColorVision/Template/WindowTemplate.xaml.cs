@@ -1,4 +1,5 @@
 ﻿using ColorVision.Extension;
+using ColorVision.MVVM;
 using ColorVision.MySql;
 using ColorVision.MySql.DAO;
 using ColorVision.SettingUp;
@@ -27,11 +28,12 @@ namespace ColorVision.Template
     //Aoi检测部分
 
 
-    public class ListConfig
+    public class ListConfig:ViewModelBase
     {
-        public int ID { set; get; }
-        public string Name { set; get; }
-        public string Tag { set; get; }
+        public int ID { get; set; }
+        public string Name {  get; set; }
+        public string Tag { get => _Tag; set { _Tag = value;NotifyPropertyChanged();} }
+        private string _Tag;
 
 
         public object? Value { set; get; }
@@ -170,7 +172,13 @@ namespace ColorVision.Template
                     case WindowTemplateType.PoiParam:
                         if (ListConfigs[listView.SelectedIndex].Value is PoiParam poiParam)
                         {
-                            new WindowFocusPoint(poiParam) { Owner = this }.ShowDialog();
+                            var WindowFocusPoint = new WindowFocusPoint(poiParam) { Owner = this };
+                            WindowFocusPoint.Closed += async (s, e) =>
+                            {
+                                await Task.Delay(30);
+                                ListConfigs[listView.SelectedIndex].Tag = $"{poiParam.Width}*{poiParam.Height}{(GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql ? "" : $"_{poiParam.PoiPoints.Count}")}";
+                            };
+                            WindowFocusPoint.Show();
                         }
                         break;
                     case WindowTemplateType.FlowParam:

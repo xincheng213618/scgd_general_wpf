@@ -7,48 +7,52 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:SoftwareConfig}"
-        Title="设置" Height="450" Background="#F9F9F9"  Width="800" Initialized="Window_Initialized">
+        Title="设置" Height="450" Background="#F9F9F9"  Width="600" Initialized="Window_Initialized">
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="300"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
-        
-        <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" >
-            <StackPanel >
-                <Border Style="{StaticResource BorderModuleArea}">
-                    <StackPanel Margin="5">
-                        <DockPanel Margin="5">
-                            <ToggleButton DockPanel.Dock="Right" Height="20" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsUseMySql}"/>
-                            <TextBlock Text="启用数据库"/>
-                        </DockPanel>
-                        <DockPanel Margin="5">
-                            <ToggleButton DockPanel.Dock="Right" Height="20" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsUseMQTT}"/>
-                            <TextBlock Text="启用MQTT"/>
-                        </DockPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,32,0,0">
-                            <Grid>
-                                <hc:WaveProgressBar  Value="{Binding PerformanceControl.CPUPercent}"/>
-                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="CPU"/>
-                            </Grid>
-                            <Grid>
-                                <hc:WaveProgressBar  Value="{Binding PerformanceControl.CPUThisPercent}"/>
-                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="CPUthis"/>
-                            </Grid>
-                            <Grid>
-                                <hc:WaveProgressBar  Value="{Binding PerformanceControl.RAMPercent}"/>
-                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="RAM"/>
-                            </Grid>
-                            <Grid>
-                                <hc:WaveProgressBar  Value="{Binding PerformanceControl.RAMThisPercent}"/>
-                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="RAMThis"/>
-                            </Grid>
+        <TabControl TabStripPlacement="Left">
+            <TabItem  Header="通用设置">
+                <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" >
+                    <StackPanel >
+                        <Border Style="{StaticResource BorderModuleArea}">
+                            <StackPanel Margin="5">
+                                <Button  Content="热键" Click="Button_Click_1"/>
+                                <DockPanel Margin="5">
+                                    <ToggleButton DockPanel.Dock="Right" Height="20" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsUseMySql}"/>
+                                    <TextBlock Text="启用数据库"/>
+                                </DockPanel>
+                                <DockPanel Margin="5">
+                                    <ToggleButton DockPanel.Dock="Right" Height="20" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsUseMQTT}"/>
+                                    <TextBlock Text="启用MQTT"/>
+                                </DockPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            <TabItem  Header="基本设置">
+                <Grid Background="#F9F9F9">
+                    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" >
+                        <StackPanel>
+                            <Border  Style="{StaticResource BorderModuleArea}">
+                                <StackPanel Orientation="Horizontal">
+                                    <Grid>
+                                        <hc:WaveProgressBar  Value="{Binding PerformanceControl.RAMPercent}"/>
+                                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="RAM"/>
+                                    </Grid>
+                                    <Grid>
+                                        <hc:WaveProgressBar  Value="{Binding PerformanceControl.RAMThisPercent}"/>
+                                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="{Binding PerformanceControl.RAMThis}"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
                         </StackPanel>
 
+                    </ScrollViewer>
+                </Grid>
+            </TabItem>
+        </TabControl>
 
-                    </StackPanel>
-                </Border>
-            </StackPanel>
-        </ScrollViewer>
+
+
     </Grid>
 </Window>

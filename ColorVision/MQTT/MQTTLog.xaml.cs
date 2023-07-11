@@ -20,7 +20,7 @@ namespace ColorVision
     public partial class MQTTLog : Window
     {
 
-        MQTTControl MQTTControl;
+        MQTTControl MQTTControl { get; set; }
         public MQTTLog()
         {
             InitializeComponent();
@@ -28,16 +28,13 @@ namespace ColorVision
             MQTTControl.MQTTMsgChanged += ShowLog;
             TopicListView.ItemsSource = MQTTControl.SubscribeTopic;
             this.DataContext = MQTTControl;
+            this.Title += $"  {MQTTControl.MQTTConfig.Host}_{MQTTControl.MQTTConfig.Port}";
         }
 
 
-        private async void Start_Click(object sender, RoutedEventArgs e)
-        {
-            if (!MQTTControl.IsConnect)
-                await MQTTControl.Connect();
-        }
 
-        private void ShowLog(ResultDataMQTT resultData_MQTT)
+
+        private void ShowLog(MQMsg resultData_MQTT)
         {
             Application.Current.Dispatcher.BeginInvoke(new Action(() =>
             {
@@ -61,7 +58,7 @@ namespace ColorVision
                     {
                         System.Windows.Forms.SaveFileDialog saveFileDialog = new System.Windows.Forms.SaveFileDialog();
                         saveFileDialog.Filter = "文本文件|*.txt";
-                        saveFileDialog.FileName = resultData_MQTT.Topic + DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss");
+                        saveFileDialog.FileName = resultData_MQTT.Topic + DateTime.Now.ToString("MM-dd HH-mm-ss");
                         if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                         {
                             File.WriteAllText(saveFileDialog.FileName, resultData_MQTT.Payload.ToString());
@@ -85,12 +82,12 @@ namespace ColorVision
 
         private void Subscribe_Click(object sender, RoutedEventArgs e)
         {
-            MQTTControl.SubscribeAsyncClient(TextBoxSubscribe.Text);
+            MQTTControl.SubscribeAsyncClientAsync(TextBoxSubscribe.Text);
         }
 
         private void UnSubscribe_Click(object sender, RoutedEventArgs e)
         {
-            MQTTControl.UnsubscribeAsyncClient(TextBoxSubscribe.Text);
+            MQTTControl.UnsubscribeAsyncClientAsync(TextBoxSubscribe.Text);
         }
 
         private void Send_Click(object sender, RoutedEventArgs e)

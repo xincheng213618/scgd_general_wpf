@@ -15,12 +15,12 @@ namespace ColorVision
         public static PerformanceControl GetInstance() { lock (_locker) { return _instance ??= new PerformanceControl(); } }
 
         private bool PerformanceCounterIsOpen;
-        private PerformanceCounter CPU;
-        private PerformanceCounter CPUThis;
+        private PerformanceCounter PCCPU;
+        private PerformanceCounter PCCPUThis;
 
         private double RAMAL = (double)NativeMethods.PerformanceInfo.GetTotalMemoryInMiB() / 1024;
-        private PerformanceCounter RAM;
-        private PerformanceCounter RAMThis;
+        private PerformanceCounter PCRAM;
+        private PerformanceCounter PCRAMThis;
 
         private Timer timer;
         private int _UpdateSpeed = 1000;
@@ -44,11 +44,11 @@ namespace ColorVision
             {
                 try
                 {
-                    CPU = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-                    CPUThis = new PerformanceCounter("Process", "% Processor Time", Process.GetCurrentProcess().ProcessName);
-                    RAM = new PerformanceCounter("Memory", "Available MBytes");
+                    PCCPU = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+                    PCCPUThis = new PerformanceCounter("Process", "% Processor Time", Process.GetCurrentProcess().ProcessName);
+                    PCRAM = new PerformanceCounter("Memory", "Available MBytes");
 
-                    RAMThis = new PerformanceCounter("Process", "Working Set - Private", Process.GetCurrentProcess().ProcessName);
+                    PCRAMThis = new PerformanceCounter("Process", "Working Set - Private", Process.GetCurrentProcess().ProcessName);
 
                     PerformanceCounterIsOpen = true;
                 }
@@ -67,17 +67,17 @@ namespace ColorVision
             {
 
 
-                RAMPercent = 100- RAM.NextValue() / 1024 / RAMAL * 100;
-                RAMThisPercent = RAMThis.NextValue() / 1024 / 1024 / 1024 / RAMAL * 100;
+                RAMPercent = 100- PCRAM.NextValue() / 1024 / RAMAL * 100;
+                RAMThisPercent = PCRAMThis.NextValue() / 1024 / 1024 / 1024 / RAMAL * 100;
 
-                CPUThisPercent = CPUThis.NextValue();
-                CPUPercent = CPU.NextValue();
+                CPUThisPercent = PCCPUThis.NextValue();
+                CPUPercent = PCCPU.NextValue();
 
 
-                float curRAM = RAMThis.NextValue() / 1024 / 1024;
-
+                float curRAM = PCRAMThis.NextValue() / 1024 / 1024;
+                RAMThis = curRAM.ToString("f1") + "MB";
                 MemoryThis = curRAM.ToString("f1") + "MB" + "/" + RAMAL.ToString("f1") + "GB";
-                ProcessorTotal = CPU.NextValue().ToString("f1") + "%";
+                ProcessorTotal = PCCPU.NextValue().ToString("f1") + "%";
                 Time = DateTime.Now.ToString("MM月dd日 HH:mm:ss");
             }
         }
@@ -117,6 +117,9 @@ namespace ColorVision
 
         public double RAMThisPercent { get => _RAMThisPercent; set { _RAMThisPercent = value; NotifyPropertyChanged(); } }
         private double _RAMThisPercent;
+
+        public string RAMThis { get => _RAMThis; set { _RAMThis = value; NotifyPropertyChanged(); } }
+        private string _RAMThis = String.Empty;
 
         public double CPUPercent { get => _CPUPercent; set { _CPUPercent = value; NotifyPropertyChanged(); } }
         private double _CPUPercent;

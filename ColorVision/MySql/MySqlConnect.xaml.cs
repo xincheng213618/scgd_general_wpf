@@ -56,7 +56,7 @@ namespace ColorVision.MySql
             MySqlConfigs.Remove(MySqlConfig);
 
             GlobalSetting.GetInstance().SaveSoftwareConfig();
-            MySqlControl.GetInstance().Open();
+            Task.Run(() => MySqlControl.GetInstance().Connect());
             this.Close();
         }
 
@@ -84,6 +84,8 @@ namespace ColorVision.MySql
             ListViewMySql.ItemsSource = MySqlConfigs;
 
             MySqlConfigs.Insert(0, MySqlConfig);
+            ListViewMySql.SelectedIndex = 0;
+
             this.Closed += (s, e) =>
             {
                 MySqlConfigs.Remove(MySqlConfig);
@@ -93,8 +95,12 @@ namespace ColorVision.MySql
         private void Button_Click_Test(object sender, RoutedEventArgs e)
         {
             MySqlConfig.UserPwd = PasswordBox1.Password;
-            bool IsConnect = MySqlControl.TestConnect(MySqlConfig);
-            MessageBox.Show($"连接{(IsConnect ? "成功" : "失败")}");
+            Task.Run(() =>
+            {
+                bool IsConnect = MySqlControl.TestConnect(MySqlConfig);
+                MessageBox.Show($"连接{(IsConnect ? "成功" : "失败")}");
+            });
+
 
         }
 

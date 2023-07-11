@@ -15,7 +15,7 @@ namespace ColorVision.MVVM
     public static class ViewModeBaseExtensions
     {
 
-        public static void CopyTo<T>(this T source, T target) 
+        public static void CopyTo<T>(this T source, T target) where T:ViewModelBase
         {
             Type type = source.GetType();
             var fields = type.GetRuntimeFields().ToList();

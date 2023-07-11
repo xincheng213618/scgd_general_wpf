@@ -43,8 +43,10 @@ namespace ColorVision.MySql.DAO
             return model;
         }
 
-        public SysDictionaryModModel GetByCode(string code,int tenantId)
+        public SysDictionaryModModel GetByCode(string? code,int tenantId)
         {
+            if (String.IsNullOrEmpty(code))
+                return new SysDictionaryModModel();
             string sql = $"select * from {GetTableName()} where is_delete=0 and code=@code and tenant_id=@tenantId";
             Dictionary<string, object> param = new Dictionary<string, object>
             {

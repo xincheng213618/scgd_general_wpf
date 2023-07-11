@@ -3,9 +3,10 @@
                     xmlns:converter ="clr-namespace:ColorVision.Converter"
                     x:Class="ColorVision.Theme.BaseEvent"
                     >
-    
-    
-  
+
+
+
+    <SolidColorBrush x:Key="DarkDefaultBrush"  Color="#55326CF3" />
     
     <BooleanToVisibilityConverter x:Key="bool2VisibilityConverter"/>
     <converter:InverseBooleanConverter x:Key="inverseBooleanConverter"/>

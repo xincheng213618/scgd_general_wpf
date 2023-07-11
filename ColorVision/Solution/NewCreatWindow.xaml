@@ -1,9 +1,9 @@
-﻿<Window x:Class="ColorVision.Project.NewCreatWindow"
+﻿<Window x:Class="ColorVision.Solution.NewCreateWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ColorVision.Project"
+        xmlns:local="clr-namespace:ColorVision.Solution"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         Title="配置新工程" Height="300" Width="500" Background="#F9F9F9">
@@ -14,7 +14,7 @@
                 hc:InfoElement.Necessary="True" hc:InfoElement.Symbol="*"   />
                 <DockPanel >
                     <Button Content="..." DockPanel.Dock="Right" VerticalAlignment="Bottom" Height="30" Width="30" Click="Button_Click"/>
-                    <hc:ComboBox  Margin="0,0,0,0"  Width="400"  HorizontalAlignment="Left" IsEditable="True" SelectedIndex="0" Text="{Binding DirectoryPath}"  hc:InfoElement.Title="选择项目保存位置" 
+                    <hc:ComboBox  Margin="0,0,0,0"  Width="400"  HorizontalAlignment="Left" IsEditable="True" SelectedIndex="0" SelectionChanged="ComboBox_SelectionChanged" Text="{Binding DirectoryPath}"  hc:InfoElement.Title="选择项目保存位置" 
                               hc:InfoElement.Necessary="True"  hc:InfoElement.Symbol="*" 
                               ItemsSource="{Binding RecentNewCreatCacheList}"/>
 

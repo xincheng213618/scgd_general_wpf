@@ -52,7 +52,7 @@ namespace ColorVision.MQTT
             }
             MQTTConfigs.Remove(MQTTConfig);
             GlobalSetting.GetInstance().SaveSoftwareConfig();
-            Task.Run(() => MQTTControl.GetInstance().Connect());
+            Task.Run(() => MQTTControl.GetInstance().Connect(MQTTConfig));
             this.Close();
         }
 
@@ -79,6 +79,7 @@ namespace ColorVision.MQTT
             ListViewMQTT.ItemsSource = MQTTConfigs;
 
             MQTTConfigs.Insert(0, MQTTConfig);
+            ListViewMQTT.SelectedIndex = 0;
             this.Closed += (s, e) =>
             {
                 MQTTConfigs.Remove(MQTTConfig);
