@@ -193,7 +193,7 @@ namespace ColorVision
 
         private void OpenSetting()
         {
-            new SettingWindow() { WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            new SettingWindow() { Owner =this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
         RecentFileList SolutionHistory = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
 
@@ -245,6 +245,12 @@ namespace ColorVision
             RecentListMenuItem.Items.Add(new MenuItem());
 
             FileMenuItem.Items.Insert(FileMenuItem.Items.Count-2, RecentListMenuItem);
+
+        }
+
+        private void Update_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("当前版本已经是最新版本","ColorVision",MessageBoxButton.OK);
 
         }
 

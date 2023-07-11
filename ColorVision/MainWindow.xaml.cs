@@ -617,7 +617,7 @@ namespace ColorVision
         }
 
 
-        private void MenuItem_Click_1(object sender, RoutedEventArgs e)
+        private void About_Click(object sender, RoutedEventArgs e)
         {
             new AboutMsgWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }

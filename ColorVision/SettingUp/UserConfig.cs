@@ -15,6 +15,9 @@ namespace ColorVision.SettingUp
         public string UserName { get => _UserName; set { _UserName = value; NotifyPropertyChanged(); } }
         private string _UserName = string.Empty;
 
+        public Guid UserID { get => _UserID; set { _UserID = value; NotifyPropertyChanged(); } }
+        private Guid _UserID = System.Guid.NewGuid();
+
         /// <summary>
         /// 密码
         /// </summary>

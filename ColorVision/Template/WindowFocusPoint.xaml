@@ -27,9 +27,9 @@
         <Grid Grid.Row="0">
             <Grid.RowDefinitions>
                 <RowDefinition  Height="*"/>
-                <RowDefinition  Height="300"/>
+                <RowDefinition  Height="auto"/>
             </Grid.RowDefinitions>
-            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <ScrollViewer x:Name="ScrollViewer1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                 <StackPanel Margin="5" Grid.Row="0" Background="#F9F9F9">
                     <StackPanel.Resources>
                         <Style x:Key="BorderModuleArea" TargetType="{x:Type Border}">
@@ -46,8 +46,8 @@
                                 <StackPanel Margin="5">
                                     <DockPanel x:Name="SettingGroup"  d:DataContext="{d:DesignInstance Template:WindowFocusPoint}">
                                         <Button Content="重渲染"  ToolTip="一次"  Click="Button_Click_UpdateVisualLayout"  DockPanel.Dock="Right" Visibility="{Binding IsLayoutUpdated,Converter={StaticResource bool2VisibilityConverter1}}" IsEnabled="{Binding IsLayoutUpdated,Converter={StaticResource Boolean2BooleanReConverter}}" />
-                                        <ToggleButton DockPanel.Dock="Left" HorizontalAlignment="Left"  Height="16"  Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsLayoutUpdated}"/>
-                                        <TextBlock  DockPanel.Dock="Left" HorizontalAlignment="Left" Text="缩放自动重渲染"/>
+                                        <ToggleButton  HorizontalAlignment="Left"  Height="16" Width="40" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsLayoutUpdated}"/>
+                                        <TextBlock HorizontalAlignment="Left" Text="缩放自动重渲染"/>
                                     </DockPanel>
                                     <DockPanel>
                                         <ToggleButton  HorizontalAlignment="Left"  Height="16" Margin="2" Style="{StaticResource ToggleButtonSwitch}"  Click="SetDefault_Click" IsChecked="{Binding DatumArea.IsShowDatum}"/>
@@ -97,21 +97,6 @@
                                     </UniformGrid>
                                 </StackPanel>
                             </GroupBox>
-                            <StackPanel Margin="5" Visibility="{Binding ElementName=RadioButtonMode2, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
-                                <GroupBox Header="灯珠计算" Margin="5">
-                                    <StackPanel Margin="5">
-                                        <Button Content="自动生成关注点" Click="Button_Click"/>
-                                    </StackPanel>
-                                </GroupBox>
-                            </StackPanel>
-                            <StackPanel Margin="5" Visibility="{Binding ElementName=RadioButtonMode3, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
-                                <GroupBox Header="导入布点" Margin="5">
-                                    <StackPanel Margin="5">
-                                        <Button Content="自动导入布点" Click="Button1_Click"/>
-                                    </StackPanel>
-                                </GroupBox>
-                            </StackPanel>
-
                             <GroupBox x:Name="GridBenckMark" Header="布点基准" Margin="5" >
                                 <StackPanel>
                                     <StackPanel  x:Name="StackPanelDatumAreaPoints"   d:DataContext="{d:DesignInstance Template:DatumArea}" Margin="5">
@@ -344,7 +329,7 @@
 
             </ScrollViewer>
 
-            <xctk:PropertyGrid  Grid.Row="1"  Height="300"  x:Name="PropertyGrid2" >
+            <xctk:PropertyGrid  Grid.Row="1"  Height="300"  x:Name="PropertyGrid2"  Visibility="Collapsed">
 
             </xctk:PropertyGrid>
         </Grid>
@@ -358,7 +343,7 @@
                 <local:DrawCanvas x:Name="ImageShow" Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_MouseDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
             </local:ZoomboxSub>
 
-            <Grid Grid.Row="1" Height="200">
+            <Grid x:Name="FocusPointGrid" Visibility="Collapsed" Grid.Row="1" Height="200" >
                 <Grid DockPanel.Dock="Top">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="50*"/>
