@@ -37,11 +37,13 @@ namespace ColorVision
         public LicenseManger()
         {
             InitializeComponent();
-            ListViewMySql.ItemsSource = LicenseConfigs;
-            LicenseConfigs.Add(new LicenseConfig() { Name = "12312313" });
-            LicenseConfigs.Add(new LicenseConfig() { Name = "12312313" });
+            ListViewLicense.ItemsSource = LicenseConfigs;
+            LicenseConfigs.Add(new LicenseConfig() { Name = "ColorVision", Tag = "Licensed to fuzzes ally\n\rSubscription expired on July 2, 2023\n\rYou have a perpetual fallback license for this version" });
+            LicenseConfigs.Add(new LicenseConfig() { Name = "VIDCamera", Tag = "Licensed to fuzzes ally\n\rSubscription expired on July 9, 2023\n\rYou have a perpetual fallback license for this version" });
+            ListViewLicense.SelectedIndex = 0;
         }
-
+        
+        
         private void Import_Click(object sender, RoutedEventArgs e)
         {
             MessageBox.Show("导入");
@@ -54,7 +56,10 @@ namespace ColorVision
 
         private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-
+            if (ListViewLicense.SelectedIndex > -1)
+            {
+                GridContent.DataContext = LicenseConfigs[ListViewLicense.SelectedIndex];
+            }
         }
     }
 }

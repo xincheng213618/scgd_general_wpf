@@ -18,9 +18,9 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <Border x:Name="ListViewMySqlBorder" Background="#55F9F9F9"  BorderBrush="#EAEAEA" BorderThickness="1" Visibility="Visible" Width="170"  Margin="5" CornerRadius="10,10,5,5">
+            <Border x:Name="ListViewMySqlBorder" Background="#55F9F9F9"  BorderBrush="#EAEAEA" BorderThickness="1" Visibility="Visible" Width="170"  Margin="5,0" CornerRadius="10,10,5,5">
                 <ScrollViewer>
-                    <ListView x:Name="ListViewMySql"  Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" SelectionChanged="ListView1_SelectionChanged">
+                    <ListView x:Name="ListViewLicense"  Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" SelectionChanged="ListView1_SelectionChanged">
                         <ListView.ItemTemplate>
                             <DataTemplate DataType="{x:Type local:LicenseConfig}" >
                                 <Border>
@@ -32,8 +32,8 @@
                 </ScrollViewer>
             </Border>
 
-            <Grid Grid.Column="1" Background="#55F5f5f5">
-                
+            <Grid x:Name="GridContent"  d:DataContext="{d:DesignInstance local:LicenseConfig}" Grid.Column="1" Background="#55F5f5f5">
+                <TextBox AllowDrop="True" Text="{Binding Tag}"  BorderThickness="0" Background="Transparent" Margin="10"/>
             </Grid>
 
         </Grid>
