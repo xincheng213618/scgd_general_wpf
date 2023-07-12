@@ -8,7 +8,7 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:SoftwareConfig}"
-        Height="450" IsBlurEnabled="True" WindowStartupLocation="CenterScreen"  Background="#E3E3E3" ResizeMode="NoResize" Width="600" Initialized="Window_Initialized">
+        Height="450" IsBlurEnabled="True" WindowStartupLocation="CenterScreen"  Background="Transparent" ResizeMode="NoResize" Width="600" Initialized="Window_Initialized">
     <Window.Resources>
         <ControlTemplate x:Key="GroupBoxHeader1" TargetType="{x:Type GroupBox}">
             <Grid SnapsToDevicePixels="true"    Margin="0,-10,0,0">
