@@ -77,14 +77,14 @@ namespace ColorVision
         private SolidColorBrush RainbowAnimation()
         {
             Color[] colors = { Colors.Red, Colors.Orange, Colors.Yellow, Colors.Green, Colors.DarkGreen, Colors.Blue, Colors.Violet };
-            LinearColorKeyFrame colorAnimation = new ColorAnimationUsingKeyFrames();
+            ColorAnimationUsingKeyFrames colorAnimation = new ColorAnimationUsingKeyFrames();
             colorAnimation.Duration = TimeSpan.FromSeconds(7*0.3);
             colorAnimation.FillBehavior = FillBehavior.Stop;
             colorAnimation.RepeatBehavior = RepeatBehavior.Forever;
             int z = 0;
             foreach (var item in colors)
             {
-                colorAnimation.KeyFrames.Add(new DiscreteColorKeyFrame(item, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(z*0.3))));
+                colorAnimation.KeyFrames.Add(new LinearColorKeyFrame(item, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(z*0.3))));
                 z++;
             }
 
