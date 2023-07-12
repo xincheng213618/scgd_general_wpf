@@ -18,5 +18,8 @@ namespace ColorVision.SettingUp
         public string ProjectFullName { get => _ProjectFullName; set { _ProjectFullName = value; NotifyPropertyChanged(); } }
         private string _ProjectFullName;
 
+        public string CachePath { get => _CachePath; set { _CachePath = value; NotifyPropertyChanged(); } }
+        private string _CachePath;
+
     }
 }

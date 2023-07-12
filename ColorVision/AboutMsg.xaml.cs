@@ -117,5 +117,13 @@ namespace ColorVision
             Process.Start("explorer", "https://www.color-vision.com.cn/");
             this.Close();
         }
+
+        private void BaseWindow_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape)
+            {
+                this.Close();
+            }
+        }
     }
 }

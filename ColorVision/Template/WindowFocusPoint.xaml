@@ -97,6 +97,13 @@
                                     </UniformGrid>
                                 </StackPanel>
                             </GroupBox>
+                            <StackPanel Margin="5" Visibility="{Binding ElementName=RadioButtonMode2, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
+                                <xctk:PropertyGrid  x:Name="PropertyGridAutoFocus"  />
+                                <Button Content="寻找发光区" Click="Button_Click_1"/>
+                            </StackPanel>
+
+
+
                             <GroupBox x:Name="GridBenckMark" Header="布点基准" Margin="5" >
                                 <StackPanel>
                                     <StackPanel  x:Name="StackPanelDatumAreaPoints"   d:DataContext="{d:DesignInstance Template:DatumArea}" Margin="5">

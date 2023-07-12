@@ -98,6 +98,8 @@
                                         <hc:WaveProgressBar  Value="{Binding PerformanceControl.RAMThisPercent}"/>
                                         <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="{Binding PerformanceControl.RAMThis}"/>
                                     </Grid>
+                                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="{Binding PerformanceControl.Time}"/>
+
                                 </StackPanel>
                             </Border>
                         </GroupBox>
@@ -114,7 +116,18 @@
                             </GroupBox.Header>
                             <Border  Style="{StaticResource BorderModuleArea}" Background="White" CornerRadius="8">
                                 <StackPanel Margin="5">
-                                    <TextBlock Text="{Binding ProjectConfig.ProjectName}" Height="20" />
+                                    <DockPanel Margin="5">
+                                        <TextBlock Text="当前工程: " />
+                                        <TextBlock Text="{Binding ProjectConfig.ProjectName}"  />
+                                    </DockPanel>
+                                    <DockPanel Margin="5">
+                                        <TextBlock Text="当前工程路径: "/>
+                                        <TextBlock Text="{Binding ProjectConfig.ProjectFullName}"  />
+                                    </DockPanel>
+                                    <DockPanel Margin="5">
+                                        <TextBlock Text="新建工程格式: "/>
+                                        <TextBlock Text="{Binding ProjectConfig.ProjectFullName}"  />
+                                    </DockPanel>
                                 </StackPanel>
                             </Border>
                         </GroupBox>
@@ -123,19 +136,31 @@
             </TabItem>
 
             <TabItem  Header="快捷键" Background="Transparent">
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled" Background="#F2F2F2" VerticalScrollBarVisibility="Auto" >
-                    <StackPanel>
-                        <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
-                            <GroupBox.Header>
-                                <TextBlock Text="快捷键" FontSize="20"/>
-                            </GroupBox.Header>
-                            <Border  Style="{StaticResource BorderModuleArea}" Background="White" CornerRadius="8">
-                                <StackPanel x:Name="HotKeyStackPanel"  Margin="5" Initialized="HotKeyStackPanel_Initialized">
-                                </StackPanel>
-                            </Border>
-                        </GroupBox>
-                    </StackPanel>
-                </ScrollViewer>
+                <Grid Background="#F2F2F2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <ScrollViewer HorizontalScrollBarVisibility="Disabled"  VerticalScrollBarVisibility="Auto" >
+                        <StackPanel>
+                            <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
+                                <GroupBox.Header>
+                                    <TextBlock Text="快捷键" FontSize="20"/>
+                                </GroupBox.Header>
+                                <Border  Style="{StaticResource BorderModuleArea}" Background="White" CornerRadius="8">
+                                    <StackPanel x:Name="HotKeyStackPanel"  Margin="5" Initialized="HotKeyStackPanel_Initialized">
+                                    </StackPanel>
+                                </Border>
+                            </GroupBox>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <UniformGrid Grid.Row="1" Columns="3"  Width="300" HorizontalAlignment="Right" Margin="10">
+                        <Button Content="恢复默认" Width="80" Click="SetDefault_Click" />
+                        <Button Content="保存热键" Width="80" Click="ButtonSave_Click" />
+                        <Button Content="加载热键" Width="80" Click="ButtonLoad_Click" />
+                    </UniformGrid>
+                </Grid>
             </TabItem>
 
         </TabControl>

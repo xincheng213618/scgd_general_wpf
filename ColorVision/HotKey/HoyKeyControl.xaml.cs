@@ -114,6 +114,26 @@ namespace ColorVision.HotKey
 
             // Set value
             HotKeys.Hotkey = new Hotkey(key, modifiers);
+            HotkeyTextBox1.Visibility = Visibility.Collapsed;
+        }
+
+        private void HotkeyTextBox_GotFocus(object sender, RoutedEventArgs e)
+        {
+            HotkeyTextBox1.Visibility = Visibility.Visible;
+            HotkeyTextBox1.Text = "按按键设置快捷键";
+        }
+
+        private void HotkeyTextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (HotkeyTextBox.Text == "<None>")
+            {
+                HotkeyTextBox1.Text = "点击设置快捷键";
+            }
+            else
+            {
+                HotkeyTextBox1.Visibility = Visibility.Collapsed;
+            }
+
         }
     }
 }

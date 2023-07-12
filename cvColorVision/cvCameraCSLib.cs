@@ -511,7 +511,14 @@ namespace cvColorVision
             float map_x, float map_y, ref float img_x, ref float img_y);
         #endregion
 
-  
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "findBrightArea",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool findBrightArea(UInt32 w, UInt32 h, UInt32 bpp, UInt32 channels, byte[] imgdata,
+float[] pPointX, float[] pPointY, double thresh, bool direct, uint bright_w, uint bright_h, int dilateTime = 0, bool keyToFindExact = false,
+double qualityLevel = 0.6);
+
+        
 
         private const string LIBRARY_CVCAMERA = "cvCamera.dll";
         private const string LIBRARY_CVCAMERA_CV = "cvCameraCV.dll";

@@ -1,4 +1,5 @@
-﻿using ColorVision.Extension;
+﻿using ColorVision.Config;
+using ColorVision.Extension;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.SettingUp;
@@ -626,51 +627,59 @@ namespace ColorVision.Template
 
         private async void PoiParamToDrawingVisual(PoiParam poiParam)
         {
-            int i = 0;
-
-            foreach (var item in poiParam.PoiPoints)
+            try
             {
-                i++;
-                if (i % 50 == 0)
-                {
-                    WaitControlProgressBar.Value = 20 + i * 79 / poiParam.PoiPoints.Count;
-                    await Task.Delay(1);
-                }
-                switch (item.PointType)
-                {
-                    case RiPointTypes.Circle:
-                        DrawingVisualCircleWord Circle = new DrawingVisualCircleWord();
-                        Circle.Attribute.Center = new Point(item.PixX, item.PixY);
-                        Circle.Attribute.Radius = item.PixWidth;
-                        Circle.Attribute.Brush = Brushes.Transparent;
-                        Circle.Attribute.Pen = new Pen(Brushes.Red,  item.PixWidth/30);
-                        Circle.Attribute.ID = item.ID;
-                        Circle.Attribute.Name = item.Name;
-                        Circle.Render();
-                        ImageShow.AddVisual(Circle);
-                        break;
-                    case RiPointTypes.Rect:
-                        DrawingVisualRectangleWord Rectangle = new DrawingVisualRectangleWord();
-                        Rectangle.Attribute.Rect = new Rect(item.PixX, item.PixY, item.PixWidth, item.PixHeight);
-                        Rectangle.Attribute.Brush = Brushes.Transparent;
-                        Rectangle.Attribute.Pen = new Pen(Brushes.Red,  item.PixWidth/30);
-                        Rectangle.Attribute.ID = item.ID;
-                        Rectangle.Attribute.Name = item.Name;
-                        Rectangle.Render();
-                        ImageShow.AddVisual(Rectangle);
-                        break;
-                    case RiPointTypes.Mask:
-                        break;
-                }
-            }
-            WaitControlProgressBar.Value = 99;
+                int i = 0;
 
-            if (Init)
-            {
-                WaitControl.Visibility = Visibility.Hidden;
-                WaitControlProgressBar.Visibility = Visibility.Hidden;
+                foreach (var item in poiParam.PoiPoints)
+                {
+                    i++;
+                    if (i % 50 == 0)
+                    {
+                        WaitControlProgressBar.Value = 20 + i * 79 / poiParam.PoiPoints.Count;
+                        await Task.Delay(1);
+                    }
+                    switch (item.PointType)
+                    {
+                        case RiPointTypes.Circle:
+                            DrawingVisualCircleWord Circle = new DrawingVisualCircleWord();
+                            Circle.Attribute.Center = new Point(item.PixX, item.PixY);
+                            Circle.Attribute.Radius = item.PixWidth;
+                            Circle.Attribute.Brush = Brushes.Transparent;
+                            Circle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
+                            Circle.Attribute.ID = item.ID;
+                            Circle.Attribute.Name = item.Name;
+                            Circle.Render();
+                            ImageShow.AddVisual(Circle);
+                            break;
+                        case RiPointTypes.Rect:
+                            DrawingVisualRectangleWord Rectangle = new DrawingVisualRectangleWord();
+                            Rectangle.Attribute.Rect = new Rect(item.PixX, item.PixY, item.PixWidth, item.PixHeight);
+                            Rectangle.Attribute.Brush = Brushes.Transparent;
+                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
+                            Rectangle.Attribute.ID = item.ID;
+                            Rectangle.Attribute.Name = item.Name;
+                            Rectangle.Render();
+                            ImageShow.AddVisual(Rectangle);
+                            break;
+                        case RiPointTypes.Mask:
+                            break;
+                    }
+                }
+                WaitControlProgressBar.Value = 99;
+
+                if (Init)
+                {
+                    WaitControl.Visibility = Visibility.Hidden;
+                    WaitControlProgressBar.Visibility = Visibility.Hidden;
+                }
+                Init = true;
             }
-            Init = true;
+            catch
+            {
+
+            }
+
         }
 
 
@@ -974,7 +983,6 @@ namespace ColorVision.Template
                                     }
                                 }
                             }
-
                             break;
                         case RiPointTypes.Mask:
                             List<Point> pts_src = new List<Point>();
@@ -1048,15 +1056,28 @@ namespace ColorVision.Template
                 else if (RadioButtonMode2.IsChecked == true)
                 {
 
+
+
+
+
                 }
                 else if (RadioButtonMode3.IsChecked ==true)
                 {
 
+
+
+
+                }
+                //这里我不推荐添加
+                UpdateVisualLayout(true);
+                if (WaitControl.Visibility == Visibility.Visible)
+                {
+                    WaitControl.Visibility = Visibility.Collapsed;
+                    WaitControlProgressBar.Visibility = Visibility.Collapsed;
+                    WaitControlProgressBar.Value = 0;
                 }
 
-                WaitControl.Visibility = Visibility.Collapsed;
-                WaitControlProgressBar.Visibility = Visibility.Collapsed;
-                WaitControlProgressBar.Value = 0;
+
 
                 ScrollViewer1.ScrollToEnd();
             }
@@ -1287,6 +1308,9 @@ namespace ColorVision.Template
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             MessageBox.Show("生成关注点");
+
+
+
         }
 
 
@@ -1295,6 +1319,7 @@ namespace ColorVision.Template
             if (GridBenckMark!=null)
                 GridBenckMark.Visibility = Visibility.Visible;
         }
+        public LedCheckCfg ledCheckCfg { get; set; } = new LedCheckCfg();
 
         private void RadioButtonMode3_Checked(object sender, RoutedEventArgs e)
         {
@@ -1302,10 +1327,24 @@ namespace ColorVision.Template
                 GridBenckMark.Visibility = Visibility.Visible;
         }
 
+
         private void RadioButtonMode2_Checked(object sender, RoutedEventArgs e)
         {
             if (GridBenckMark != null)
                 GridBenckMark.Visibility = Visibility.Collapsed;
+            PropertyGridAutoFocus.SelectedObject = ledCheckCfg;
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            int[] dstPointX = new int[4] { 990, 4420, 4430, 1000 };
+            int[] dstPointY = new int[4] { 980, 590, 2700, 3180 };
+            float[] PointX = new float[4];
+            float[] PointY = new float[4];
+
+            int nThreshold = 50;
+            //bool bRet = cvCameraCSLib.findBrightArea(PoiParam.Width, PoiParam.Height,8,16, m_cDib.GetBuffer(), PointX, PointY, nThreshold, true, 500, 500);
+
         }
     }
 

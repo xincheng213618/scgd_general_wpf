@@ -3,6 +3,7 @@ using ColorVision.SettingUp;
 using HslCommunication.Profinet.MegMeet;
 using log4net;
 using log4net.Config;
+using Microsoft.VisualBasic.Logging;
 using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
@@ -91,6 +92,7 @@ namespace ColorVision
 
         private App()
         {
+
             Startup += (s, e) => Application_Startup(s, e);
             Exit += new ExitEventHandler(Application_Exit);
         }
