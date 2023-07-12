@@ -9,31 +9,24 @@
         mc:Ignorable="d"
        IsBlurEnabled="True" Background="Transparent" Height="400"  ResizeMode="NoResize"  Width="600">
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="30"/>
-        </Grid.RowDefinitions>
-        <Grid Grid.Row="0">
+        <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <Border x:Name="ListViewMySqlBorder" Background="#55F9F9F9"  BorderBrush="#EAEAEA" BorderThickness="1" Visibility="Visible" Width="170"  Margin="10,0,5,0" CornerRadius="10,10,5,5">
-                <ScrollViewer>
-                    <ListView x:Name="ListViewLicense"  Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" SelectionChanged="ListView1_SelectionChanged">
-                        <ListView.ItemTemplate>
-                            <DataTemplate DataType="{x:Type local:LicenseConfig}" >
-                                <Border>
-                                    <TextBlock  Text="{Binding Name}" TextTrimming = "CharacterEllipsis"/>
-                                </Border>
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-                    </ListView>
-                </ScrollViewer>
-            </Border>
+            <TextBlock Text="许可证管理" FontSize="20"  HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,-20,0,0"/>
 
-            <Border x:Name="GridContent"  d:DataContext="{d:DesignInstance local:LicenseConfig}"  BorderBrush="#EAEAEA" BorderThickness="1" CornerRadius="5" Margin="5,0,10,0" Grid.Column="1" Background="#55F5f5f5">
-                <StackPanel Margin="5">
+            <ListView x:Name="ListViewLicense"  Width="200" Margin="3,10,0,0"  Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" SelectionChanged="ListView1_SelectionChanged">
+                <ListView.ItemTemplate>
+                    <DataTemplate DataType="{x:Type local:LicenseConfig}" >
+                        <Border>
+                            <TextBlock  Text="{Binding Name}" TextTrimming = "CharacterEllipsis"/>
+                        </Border>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+            <Border x:Name="GridContent"  d:DataContext="{d:DesignInstance local:LicenseConfig}"  Grid.Column="1" BorderBrush="#E0E0E0" BorderThickness="1,0,0,0" Background="#F2F2F2">
+                <StackPanel Margin="5,10,5,5">
                     <TextBlock AllowDrop="True" Text="{Binding Tag}"  Background="Transparent" Margin="5" />
                     <Button Content="导入许可证"  Click="Import_Click"  Grid.Row="1" Margin="5"/>
                 </StackPanel>
@@ -41,6 +34,18 @@
             </Border>
 
         </Grid>
+
+        <Grid Margin="0,-30,0,0" Height="30" VerticalAlignment="Top">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="203"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid Grid.Column="1" Background="#F2F2F2" Panel.ZIndex="0">
+            </Grid>
+            <Grid Grid.Column="1" Width="1" Background="#E0E0E0" HorizontalAlignment="Left">
+            </Grid>
+        </Grid>
+
 
 
 

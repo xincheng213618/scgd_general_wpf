@@ -40,11 +40,16 @@ namespace ColorVision
         {
             InitializeComponent();
             ListViewLicense.ItemsSource = LicenseConfigs;
-            
-
             LicenseConfigs.Add(new LicenseConfig() { Name = "ColorVision", Sn = "4060005EAD286752E9BF44AD08D2325E", Tag = $"序列号：4060005EAD286752E9BF44AD08D2325E\n\r许可给 fuzzes ally\n\r订阅将于 July 2, 2023过期\n\r您拥有此版本的永久回退许可证" });
             LicenseConfigs.Add(new LicenseConfig() { Name = "VIDCamera", Sn = "409D2B7555605C0B7ABABD5D31ECA47D", Tag = $"序列号：409D2B7555605C0B7ABABD5D31ECA47D\n\r许可给 fuzzes ally\n\r订阅将于 July 9, 2023过期\n\r您拥有此版本的永久回退许可证" });
             LicenseConfigs.Add(new LicenseConfig() { Name = "CameraTest", Sn = "409D2B7555605C0B7ABABD5D31ECA47D",Tag = $"序列号：409D2B7555605C0B7ABABD5D31ECA47D\n\r未注册" });
+            LicenseConfigs.Add(new LicenseConfig() { Name = "CameraTest", Sn = "409D2B7555605C0B7ABABD5D31ECA47D", Tag = $"序列号：409D2B7555605C0B7ABABD5D31ECA47D\n\r未注册" });
+            LicenseConfigs.Add(new LicenseConfig() { Name = "CameraTest", Sn = "409D2B7555605C0B7ABABD5D31ECA47D", Tag = $"序列号：409D2B7555605C0B7ABABD5D31ECA47D\n\r未注册" });
+            LicenseConfigs.Add(new LicenseConfig() { Name = "CameraTest", Sn = "409D2B7555605C0B7ABABD5D31ECA47D", Tag = $"序列号：409D2B7555605C0B7ABABD5D31ECA47D\n\r未注册" });
+            LicenseConfigs.Add(new LicenseConfig() { Name = "CameraTest", Sn = "409D2B7555605C0B7ABABD5D31ECA47D", Tag = $"序列号：409D2B7555605C0B7ABABD5D31ECA47D\n\r未注册" });
+            LicenseConfigs.Add(new LicenseConfig() { Name = "CameraTest", Sn = "409D2B7555605C0B7ABABD5D31ECA47D", Tag = $"序列号：409D2B7555605C0B7ABABD5D31ECA47D\n\r未注册" });
+            LicenseConfigs.Add(new LicenseConfig() { Name = "CameraTest", Sn = "409D2B7555605C0B7ABABD5D31ECA47D", Tag = $"序列号：409D2B7555605C0B7ABABD5D31ECA47D\n\r未注册" });
+            LicenseConfigs.Add(new LicenseConfig() { Name = "CameraTest", Sn = "409D2B7555605C0B7ABABD5D31ECA47D", Tag = $"序列号：409D2B7555605C0B7ABABD5D31ECA47D\n\r未注册" });
 
             ListViewLicense.SelectedIndex = 0;
         }

@@ -7,7 +7,7 @@
         xmlns:base ="clr-namespace:ColorVision.Controls"
         xmlns:hc ="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
-        Height="500" Width="800" Title="打开" MinWidth="500" MinHeight="450" Background="#F9F9F9" WindowStyle="ToolWindow" WindowStartupLocation="CenterScreen" Initialized="BaseWindow_Initialized">
+        Height="500" Width="800"  MinWidth="500" MinHeight="450" Background="#F9F9F9" WindowStyle="ToolWindow" WindowStartupLocation="CenterScreen" Initialized="BaseWindow_Initialized">
     <Grid>
         <TextBlock Text="打开" FontSize="20"  HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,-20,0,0"/>
         <Grid Margin="10,20" >
