@@ -85,6 +85,9 @@ namespace ColorVision.Controls
             set => SetValue(IsBlurEnabledProperty, value);
         }
 
+
+
+
         public static readonly DependencyProperty IsDragMoveEnabledProperty = DependencyProperty.Register(
             "IsDragMoveEnabled", typeof(bool), typeof(BaseWindow), new PropertyMetadata(false));
 
@@ -159,6 +162,18 @@ namespace ColorVision.Controls
                     c.A = 255;
                     Background = new SolidColorBrush(c);
                 });
+
+                var osVersion = Environment.OSVersion.Version;
+                var windows10_1809 = new Version(10, 0, 17763);
+                var windows10 = new Version(10, 0);
+                var windows11 = new Version(10, 0, 22621);
+
+                if (osVersion >= windows10_1809&& osVersion<= windows11)
+                {
+                    this.WindowStyle = WindowStyle.None;
+                }
+
+
                 wac.Color = (bool)false ? Color.FromArgb(180, 0, 0, 0) : Color.FromArgb(200, 255, 255, 255);
                 wac.IsEnabled = true;
             }

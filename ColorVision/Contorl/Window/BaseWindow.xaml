@@ -146,10 +146,15 @@
                             <Setter TargetName="MinimizeButton" Property="Visibility" Value="Collapsed" />
                             <Setter TargetName="RestoreButton" Property="Visibility" Value="Collapsed" />
                         </Trigger>
-
-                        <Trigger Property="WindowStyle" Value="None">
+                        
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="WindowStyle"  Value="None" />
+                                <Condition Property="IsBlurEnabled" Value="False" />
+                            </MultiTrigger.Conditions>
                             <Setter TargetName="WindowCommandButtonsPanel" Property="Visibility" Value="Collapsed" />
-                        </Trigger>
+                        </MultiTrigger>
+
                         <Trigger Property="WindowStyle" Value="ToolWindow">
                             <Setter TargetName="MaximizeButton" Property="Visibility"  Value="Collapsed" />
                             <Setter TargetName="MinimizeButton" Property="Visibility" Value="Collapsed" />
@@ -167,9 +172,7 @@
                             <Setter TargetName="ResizeGrip" Property="Visibility" Value="Visible" />
                         </MultiTrigger>
                         
-                        
-                        
-                        
+
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>

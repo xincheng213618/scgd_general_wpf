@@ -142,6 +142,7 @@ namespace WindowEffectTest
                     //  https://blog.walterlv.com/post/using-acrylic-in-wpf-application.html
                     accent.AccentState = AccentState.ACCENT_ENABLE_ACRYLICBLURBEHIND;
                     accent.GradientColor = _blurColor;
+                    
                 }
                 else if (osVersion >= windows10)
                 {
