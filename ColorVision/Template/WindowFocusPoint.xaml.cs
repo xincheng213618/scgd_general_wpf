@@ -1344,8 +1344,20 @@ namespace ColorVision.Template
             float[] PointY = new float[4];
 
             int nThreshold = 50;
+            if (ImageShow.Source is BitmapImage bitmapImage)
+            {
+                byte[] data;
+                JpegBitmapEncoder encoder = new JpegBitmapEncoder();
+                encoder.Frames.Add(BitmapFrame.Create(bitmapImage));
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    encoder.Save(ms);
+                    data = ms.ToArray();
+                }
+                int  num = cvCameraCSLib.FindBrightArea((uint)PoiParam.Width, (UInt32)PoiParam.Height,8,3, new byte[0]);
 
-            //int  num = cvCameraCSLib.FindBrightArea(PoiParam.Width, PoiParam.Height,8,16, m_cDib.GetBuffer());
+            }
+
 
         }
     }
