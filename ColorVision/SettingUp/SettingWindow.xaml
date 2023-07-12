@@ -116,15 +116,15 @@
                             </GroupBox.Header>
                             <Border  Style="{StaticResource BorderModuleArea}" Background="White" CornerRadius="8">
                                 <StackPanel Margin="5">
-                                    <DockPanel Margin="5">
+                                    <DockPanel Margin="5" Height="20">
                                         <TextBlock Text="当前工程: " />
                                         <TextBlock Text="{Binding ProjectConfig.ProjectName}"  />
                                     </DockPanel>
-                                    <DockPanel Margin="5">
+                                    <DockPanel Margin="5" Height="20">
                                         <TextBlock Text="当前工程路径: "/>
                                         <TextBlock Text="{Binding ProjectConfig.ProjectFullName}"  />
                                     </DockPanel>
-                                    <DockPanel Margin="5">
+                                    <DockPanel Margin="5" Height="20">
                                         <TextBlock Text="新建工程格式: "/>
                                         <TextBlock Text="{Binding ProjectConfig.ProjectFullName}"  />
                                     </DockPanel>
