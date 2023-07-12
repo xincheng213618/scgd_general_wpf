@@ -15,6 +15,10 @@ namespace cvColorVision
         private static extern unsafe bool CM_ConnectToPG(IntPtr handle, string szIPAddress, uint nPort);
         [DllImport(LibraryCVCamera, EntryPoint = "CM_InitSerialPG", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
         private static extern unsafe bool CM_InitSerialPG(IntPtr handle, string szComName, ulong BaudRate);
+        
+        [DllImport(LibraryCVCamera, EntryPoint = "CM_ClosePG", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private static extern unsafe bool CM_ClosePG(IntPtr handle);
+
         [DllImport(LibraryCVCamera, EntryPoint = "CM_IsConnectedPG", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private static extern unsafe bool CM_IsConnectedPG(IntPtr handle);
         [DllImport(LibraryCVCamera, EntryPoint = "CM_StartPG", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
@@ -43,6 +47,8 @@ namespace cvColorVision
         public static bool CMInitSerialPG(IntPtr handle, string szComName, ulong BaudRate) => CM_InitSerialPG(handle, szComName, BaudRate);
         //判断PG是否已连接
         public static bool CMIsConnectedPG(IntPtr handle) => CM_IsConnectedPG(handle);
+        public static bool CMClosePG(IntPtr handle) => CM_ClosePG(handle);
+
         //StopPG
         public static bool CMStopPG(IntPtr handle) => CM_StopPG(handle);
         //ReSetPG

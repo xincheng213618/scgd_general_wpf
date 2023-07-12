@@ -20,6 +20,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -1343,7 +1344,8 @@ namespace ColorVision.Template
             float[] PointY = new float[4];
 
             int nThreshold = 50;
-            //bool bRet = cvCameraCSLib.findBrightArea(PoiParam.Width, PoiParam.Height,8,16, m_cDib.GetBuffer(), PointX, PointY, nThreshold, true, 500, 500);
+
+            //int  num = cvCameraCSLib.FindBrightArea(PoiParam.Width, PoiParam.Height,8,16, m_cDib.GetBuffer());
 
         }
     }

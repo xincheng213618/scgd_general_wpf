@@ -3,7 +3,6 @@ using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -12,10 +11,8 @@ using System.Windows;
 
 namespace cvColorVision
 {
-    public delegate void TiffShowEvent(string value);
+    public delegate void TiffShowEvent(string value, bool bfast);
     public delegate void LiveShowEvent(int w, int h, byte[] rawArray);
-    public delegate void PartLiveShowEvent();
-    public delegate void StopLiveShow();
     public enum CONTROL_ID
     {
         /*0*/
@@ -463,12 +460,14 @@ namespace cvColorVision
         CameraType_Total,
     };
 
-    public class cvCameraCSLib
+    public partial class cvCameraCSLib
     {
+        private const string LIBRARY_CVCAMERA = "cvCamera.dll";
+
+
+
         public static TiffShowEvent event_ShowTiff;
         public static LiveShowEvent event_ShowLive;
-        public static PartLiveShowEvent event_PartShowLive;
-        public static StopLiveShow event_StopLiveShow;
 
         public static byte[] liveImageDataPartShow;
         public static int picw;
@@ -477,51 +476,9 @@ namespace cvColorVision
         public static int picchannels;
 
 
-        private static string UnicodeToGB(string text)
-        {
-            Encoding unicode = Encoding.Unicode;
-            Encoding gb = Encoding.GetEncoding("gb2312");
-
-            byte[] unicodeBytes = unicode.GetBytes(text);
-            byte[] gbBytes = Encoding.Convert(unicode, gb, unicodeBytes);
-
-            return gb.GetString(gbBytes);
-        }
-
+        private static string UnicodeToGB(string text) => Encoding.GetEncoding("gb2312").GetString(Encoding.Convert(Encoding.Unicode, Encoding.GetEncoding("gb2312"), Encoding.Unicode.GetBytes(text)));
         public delegate ulong QHYCCDProcCallBack(int handle, IntPtr pData, int nW, int nH, int lss, int bpp, int channels, IntPtr usrData);
 
-        #region cvAoi.dll ----------------------------
-
-        private const string LIBRARY_CVAOI = "cvAoi.dll";
-
-        [DllImport(LIBRARY_CVAOI, EntryPoint = "AOIInit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern void AOIInit_O(string sn);
-
-        [DllImport(LIBRARY_CVAOI, EntryPoint = "AOIRelease",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern void AOIRelease_O();
-        [DllImport(LIBRARY_CVAOI, EntryPoint = "test",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern void test_O();
-        [DllImport(LIBRARY_CVAOI, EntryPoint = "AOIDetector", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern void AOIDetector_O(string para, string src_path, bool saveFlag);
-        [DllImport(LIBRARY_CVAOI, EntryPoint = "MuraDetector", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern void MuraDetector_O(string para, string src_path);
-        [DllImport(LIBRARY_CVAOI, EntryPoint = "getMatrix", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern void getMatrix_O(float map_x1, float map_y1, float map_x2, float map_y2, float map_x3, float map_y3,
-            float map_x4, float map_y4, float img_x1, float img_y1, float img_x2, float img_y2, float img_x3, float img_y3, float img_x4, float img_y4,
-            float map_x, float map_y, ref float img_x, ref float img_y);
-        #endregion
-
-
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "findBrightArea",
-    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool findBrightArea(UInt32 w, UInt32 h, UInt32 bpp, UInt32 channels, byte[] imgdata,
-float[] pPointX, float[] pPointY, double thresh, bool direct, uint bright_w, uint bright_h, int dilateTime = 0, bool keyToFindExact = false,
-double qualityLevel = 0.6);
-
-        
-
-        private const string LIBRARY_CVCAMERA = "cvCamera.dll";
-        private const string LIBRARY_CVCAMERA_CV = "cvCameraCV.dll";
         public static int connectedCameraType = 1;
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "InitResource",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
@@ -559,9 +516,6 @@ double qualityLevel = 0.6);
         }
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetAllCameraID", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private unsafe static extern bool GetAllCameraID_Gen(CameraType eType, StringBuilder sn, int len);
-        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_GetAllCameraID",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        private unsafe static extern bool GetAllCameraID_CV(CameraType eType, StringBuilder sn, int len);
-
         public static bool GetAllCameraID(CameraType eType, ref string szText)
         {
             StringBuilder builder = new StringBuilder(256);
@@ -639,10 +593,7 @@ double qualityLevel = 0.6);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetParamColorShift", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern bool CM_SetParamColorShift(IntPtr handle, bool bEnabled, int OffX, int OffY, bool FillOffset);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_DarkNoise", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_SCGD_SDP_DarkNoise_Gen(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
-        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_SCGD_SDP_DarkNoise", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_SCGD_SDP_DarkNoise_CV(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
-        public static bool CM_SCGD_SDP_DarkNoise(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata)=> CM_SCGD_SDP_DarkNoise_Gen(handle, w, h, bpp, channels, imgdata);
+        public unsafe static extern bool CM_SCGD_SDP_DarkNoise_Gen(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);        public static bool CM_SCGD_SDP_DarkNoise(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata)=> CM_SCGD_SDP_DarkNoise_Gen(handle, w, h, bpp, channels, imgdata);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_DefectWPoint",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern bool CM_SCGD_SDP_DefectWPoint_Gen(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
 
@@ -716,9 +667,6 @@ double qualityLevel = 0.6);
         => CM_SCGD_SDP_ColorMultiEx_Gen(handle, w, h, bpp, channels, srcx, srcy, srcz, dstimgdata, dexp);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_IsOpen",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern bool CM_IsOpen_Gen(IntPtr handle);
-
-        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_IsOpen", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_IsOpen_CV(IntPtr handle);
         public static bool CM_IsOpen(IntPtr handle)  => CM_IsOpen_Gen(handle);
 
 
@@ -880,7 +828,7 @@ double qualityLevel = 0.6);
                 C_CM_GetFrame_TIFF(handle, json);
             }
 
-            event_ShowTiff?.Invoke(json.ToString());
+            event_ShowTiff?.Invoke(json.ToString(),true);
         }
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetFrameMemLength",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
@@ -890,8 +838,6 @@ double qualityLevel = 0.6);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetFrameMaxMemLength",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern ulong CM_GetFrameMaxMemLength_Gen(IntPtr handle);
-        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_GetFrameMaxMemLength", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern ulong CM_GetFrameMaxMemLength_CV(IntPtr handle);
         public static ulong CM_GetFrameMaxMemLength(IntPtr handle) => CM_GetFrameMaxMemLength_Gen(handle);
 
 
@@ -901,8 +847,6 @@ double qualityLevel = 0.6);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "GetSysCfgJson",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private unsafe static extern void GetSysCfgJson_Gen(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault);
-        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "GetSysCfgJson", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        private unsafe static extern void GetSysCfgJson_CV(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault);
 
         public static string GetSysCfgJson(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault)
         {
@@ -1101,60 +1045,14 @@ double qualityLevel = 0.6);
             int nRw, int nRh);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetBufferXYZ",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern bool CM_SetBufferXYZ_Gen(IntPtr handle, uint w, uint h, uint bpp, uint channels, byte[] imgdata);
-        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "CM_SetBufferXYZ",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public static extern bool CM_SetBufferXYZ_CV(uint w, uint h, uint bpp, uint channels, byte[] imgdata);
         public static bool CM_SetBufferXYZ(IntPtr handle, uint w, uint h, uint bpp, uint channels, byte[] imgdata) => CM_SetBufferXYZ_Gen(handle, w, h, bpp, channels, imgdata);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_InitXYZ",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]//初始化XYZ用于执行校正
         public static extern bool CM_InitXYZ(IntPtr handle);
 
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CreateAOIDetector", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern IntPtr CreateAOIDetector_Gen();
-
-        public static IntPtr CreateAOIDetector()
-        {
-            return CreateAOIDetector_Gen();
-        }
-
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "AOIDetectorSetParam",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool C_AOIDetectorSetParam_Gen(IntPtr handle, C_AoiParam aoiParam);
-
-        public static bool AOIDetectorSetParam(IntPtr handle, AoiParam aoiParam)
-        {
-            C_AoiParam c_AoiParam;
-            c_AoiParam.filter_by_area = aoiParam.filter_by_area;
-            c_AoiParam.max_area = aoiParam.max_area;
-            c_AoiParam.min_area = aoiParam.min_area;
-            c_AoiParam.filter_by_contrast = aoiParam.filter_by_contrast;
-            c_AoiParam.max_contrast = aoiParam.max_contrast;
-            c_AoiParam.min_contrast = aoiParam.min_contrast;
-            c_AoiParam.contrast_brightness = aoiParam.contrast_brightness;
-            c_AoiParam.contrast_darkness = aoiParam.contrast_darkness;
-            c_AoiParam.blur_size = aoiParam.blur_size;
-            c_AoiParam.min_contour_size = aoiParam.min_contour_size;
-            c_AoiParam.erode_size = aoiParam.erode_size;
-            c_AoiParam.dilate_size = aoiParam.dilate_size;
-            c_AoiParam.left = aoiParam.left;
-            c_AoiParam.right = aoiParam.right;
-            c_AoiParam.top = aoiParam.top;
-            c_AoiParam.bottom = aoiParam.bottom;
-            return C_AOIDetectorSetParam_Gen(handle, c_AoiParam);
-        }
-
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "AOIDetectorInput",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern int AOIDetectorInput_Gen(IntPtr handle, int w, int h, int bpp, int channels, byte[] imgdata);
-        public static int AOIDetectorInput(IntPtr handle, int w, int h, int bpp, int channels, byte[] imgdata) => AOIDetectorInput_Gen(handle, w, h, bpp, channels, imgdata);
-
-
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "GetAoiDetectorBlob",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool GetAoiDetectorBlob_Gen(IntPtr handle, int nIndex, PartiCle tParticle);
-
-        public static bool GetAoiDetectorBlob(IntPtr handle, int nIndex, PartiCle tParticle) => GetAoiDetectorBlob_Gen(handle, nIndex, tParticle);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "ImageRect",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern void ImageRect_Gen(int w, int h, int bpp, int channels, byte[] imgdata, IRECT tIRECT, byte[] imgDstdata);
-        [DllImport(LIBRARY_CVCAMERA_CV, EntryPoint = "ImageRect",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern void ImageRect_CV(int w, int h, int bpp, int channels, byte[] imgdata, IRECT tIRECT, byte[] imgDstdata);
         public static void ImageRect(int w, int h, int bpp, int channels, byte[] imgdata, IRECT tIRECT, byte[] imgDstdata)
         {
             ImageRect_Gen(w, h, bpp, channels, imgdata, tIRECT, imgDstdata);
@@ -1266,31 +1164,6 @@ double qualityLevel = 0.6);
         public unsafe static extern int DistortionCheck(HImage tImg, SIZE iSize, BlobThreParams tBlobThreParams, float[] finalPointsX, float[] finalPointsY, ref double pointx, ref double pointy, ref double maxErrorRatio, ref double t, CornerType type /*= Circlepoint*/, SlopeType sType /*= CenterPoint*/, LayoutType lType /*= SlopeIN*/);
 
     }
-
-    //Aoi检测部分
-    public class AoiParam
-    {
-        public bool filter_by_area { set; get; }
-        public int max_area { set; get; }
-        public int min_area { set; get; }
-        public bool filter_by_contrast { set; get; }
-        public float max_contrast { set; get; }
-        public float min_contrast { set; get; }
-        public float contrast_brightness { set; get; }
-        public float contrast_darkness { set; get; }
-        public int blur_size { set; get; }
-        public int min_contour_size { set; get; }
-        public int erode_size { set; get; }
-        public int dilate_size { set; get; }
-        [Category("AoiRect")]
-        public int left { set; get; }
-        [Category("AoiRect")]
-        public int right { set; get; }
-        [Category("AoiRect")]
-        public int top { set; get; }
-        [Category("AoiRect")]
-        public int bottom { set; get; }
-    };
     public struct C_AoiParam
     {
         public bool filter_by_area;
