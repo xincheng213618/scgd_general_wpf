@@ -11,14 +11,14 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="50"/>
+            <RowDefinition Height="30"/>
         </Grid.RowDefinitions>
         <Grid Grid.Row="0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <Border x:Name="ListViewMySqlBorder" Background="#55F9F9F9"  BorderBrush="#EAEAEA" BorderThickness="1" Visibility="Visible" Width="170"  Margin="5,0" CornerRadius="10,10,5,5">
+            <Border x:Name="ListViewMySqlBorder" Background="#55F9F9F9"  BorderBrush="#EAEAEA" BorderThickness="1" Visibility="Visible" Width="170"  Margin="10,0,5,0" CornerRadius="10,10,5,5">
                 <ScrollViewer>
                     <ListView x:Name="ListViewLicense"  Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" SelectionChanged="ListView1_SelectionChanged">
                         <ListView.ItemTemplate>
@@ -32,13 +32,16 @@
                 </ScrollViewer>
             </Border>
 
-            <Grid x:Name="GridContent"  d:DataContext="{d:DesignInstance local:LicenseConfig}" Grid.Column="1" Background="#55F5f5f5">
-                <TextBox AllowDrop="True" Text="{Binding Tag}"  BorderThickness="0" Background="Transparent" Margin="10"/>
-            </Grid>
+            <Border x:Name="GridContent"  d:DataContext="{d:DesignInstance local:LicenseConfig}"  BorderBrush="#EAEAEA" BorderThickness="1" CornerRadius="5" Margin="5,0,10,0" Grid.Column="1" Background="#55F5f5f5">
+                <StackPanel Margin="5">
+                    <TextBlock AllowDrop="True" Text="{Binding Tag}"  Background="Transparent" Margin="5" />
+                    <Button Content="导入许可证"  Click="Import_Click"  Grid.Row="1" Margin="5"/>
+                </StackPanel>
+
+            </Border>
 
         </Grid>
 
-        <Button Content="导入许可证" Height="30" Width="150" Click="Import_Click" Margin="440,10,10,10" Grid.Row="1"/>
 
 
     </Grid>
