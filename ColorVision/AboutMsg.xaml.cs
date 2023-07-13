@@ -74,7 +74,7 @@ namespace ColorVision
 
         }
 
-        private SolidColorBrush RainbowAnimation()
+        private static SolidColorBrush RainbowAnimation()
         {
             Color[] colors = { Colors.Red, Colors.Orange, Colors.Yellow, Colors.Green, Colors.DarkGreen, Colors.Blue, Colors.Violet };
             ColorAnimationUsingKeyFrames colorAnimation = new ColorAnimationUsingKeyFrames();

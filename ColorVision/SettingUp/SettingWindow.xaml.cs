@@ -25,6 +25,7 @@ namespace ColorVision.SettingUp
     /// </summary>
     public partial class SettingWindow : BaseWindow
     {
+        public SoftwareConfig SoftwareConfig { get;set;}
         public SettingWindow()
         {
             InitializeComponent();
@@ -32,7 +33,8 @@ namespace ColorVision.SettingUp
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = GlobalSetting.GetInstance().SoftwareConfig;
+            SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
+            this.DataContext = SoftwareConfig;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -75,6 +77,31 @@ namespace ColorVision.SettingUp
             JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions() { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
             string Json = JsonSerializer.Serialize(HotKeys.HotKeysList, jsonSerializerOptions);
             File.WriteAllText("Hotkey", Json);
+        }
+
+        private async void SetProjectDefault__Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button)
+            {
+                SoftwareConfig.ProjectConfig.DefaultSaveName = "yyyy/dd/MM HH:mm:ss";
+                var temp = button.Content;
+                button.Content = "已重制";
+                await Task.Delay(1000);
+                button.Content = temp;
+            }
+
+        }
+
+        private async void SetProjectDefaultCreatName_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button)
+            {
+                SoftwareConfig.ProjectConfig.DefaultCreatName = "新建工程";
+                var temp = button.Content;
+                button.Content = "已重制";
+                await Task.Delay(1000);
+                button.Content = temp;
+            }
         }
     }
 }

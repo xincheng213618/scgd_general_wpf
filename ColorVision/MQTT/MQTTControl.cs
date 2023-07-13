@@ -56,9 +56,6 @@ namespace ColorVision.MQTT
 
         public event EventHandler Connected;
 
-
-
-        private bool IsRun;
         public async Task<bool> Connect(MQTTConfig MQTTConfig)
         {
             IsConnect = false;

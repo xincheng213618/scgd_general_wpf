@@ -78,9 +78,11 @@ namespace ColorVision
                 RAMThis = curRAM.ToString("f1") + "MB";
                 MemoryThis = curRAM.ToString("f1") + "MB" + "/" + RAMAL.ToString("f1") + "GB";
                 ProcessorTotal = PCCPU.NextValue().ToString("f1") + "%";
-                Time = DateTime.Now.ToString("MM月dd日 HH:mm:ss");
+                Time = DateTime.Now.ToString(DefaultTimeFormat);
             }
         }
+        public string DefaultTimeFormat { get => _DefaultTimeFormat; set { _DefaultTimeFormat = value; NotifyPropertyChanged(); } }
+        private string _DefaultTimeFormat = "yyyy/dd/MM HH:mm:ss";
 
         /// <summary>
         /// 当前分区硬盘大小
@@ -126,6 +128,8 @@ namespace ColorVision
 
         public double CPUThisPercent { get => _CPUThisPercent; set { _CPUThisPercent = value; NotifyPropertyChanged(); } }
         private double _CPUThisPercent;
+
+
 
 
         public void Dispose()

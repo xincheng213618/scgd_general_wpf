@@ -1343,7 +1343,6 @@ namespace ColorVision.Template
             float[] PointX = new float[4];
             float[] PointY = new float[4];
 
-            int nThreshold = 50;
             if (ImageShow.Source is BitmapImage bitmapImage)
             {
                 byte[] data;
@@ -1354,7 +1353,7 @@ namespace ColorVision.Template
                     encoder.Save(ms);
                     data = ms.ToArray();
                 }
-                int  num = cvCameraCSLib.FindBrightArea((uint)PoiParam.Width, (UInt32)PoiParam.Height,8,3, new byte[0]);
+                int  num = cvCameraCSLib.FindBrightArea((uint)PoiParam.Width, (UInt32)PoiParam.Height,8,3, Array.Empty<byte>());
 
             }
 

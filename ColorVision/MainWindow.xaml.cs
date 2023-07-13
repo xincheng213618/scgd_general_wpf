@@ -922,15 +922,9 @@ namespace ColorVision
         }
 
 
-        private void TextBlock_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            new MQTTConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
 
-        private void TextBlock_MouseLeftButtonDown1(object sender, MouseButtonEventArgs e)
-        {
-            new MySqlConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
+
+
     }
 
 

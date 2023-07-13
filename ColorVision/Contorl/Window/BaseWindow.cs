@@ -140,7 +140,7 @@ namespace ColorVision.Controls
             CommandBindings.Add(new CommandBinding(SystemCommands.ShowSystemMenuCommand, ShowSystemMenu));
         }
 
-        WindowAccentCompositor wac = null;
+        WindowAccentCompositor wac;
 
         // https://www.cnblogs.com/dino623/p/problems_of_WindowChrome.html
         //解决WindowsChrome在设置SizeToContent的时候

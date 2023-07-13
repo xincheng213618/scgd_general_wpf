@@ -14,6 +14,9 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using ColorVision.MQTT;
+using ColorVision.MySql;
+using log4net;
 
 namespace ColorVision
 {
@@ -96,11 +99,6 @@ namespace ColorVision
                 windowTemplate.ListConfigs.Add(listConfig);
             }
             windowTemplate.ShowDialog();
-        }
-
-        private void MenuItem_Click_7(object sender, RoutedEventArgs e)
-        {
-            new WindowORM().Show();
         }
 
         private void MenuItem_Click8(object sender, RoutedEventArgs e)
@@ -256,6 +254,26 @@ namespace ColorVision
         private void MenuItem_Exit(object sender, RoutedEventArgs e)
         {
             Environment.Exit(0);
+        }
+
+        private void TextBlock_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            new MQTTConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+
+        private void TextBlock_MouseLeftButtonDown1(object sender, MouseButtonEventArgs e)
+        {
+            new MySqlConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+        private void Log_Click(object sender, RoutedEventArgs e)
+        {
+            var fileAppender = (log4net.Appender.FileAppender)LogManager.GetRepository().GetAppenders().FirstOrDefault(a => a is log4net.Appender.FileAppender);
+            if (fileAppender != null)
+            {
+                ;
+                System.Diagnostics.Process.Start("explorer.exe", $"{Path.GetDirectoryName(fileAppender.File)}");
+            }
+
         }
     }
 }

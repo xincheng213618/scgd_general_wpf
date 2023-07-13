@@ -27,6 +27,22 @@
             </Grid>
         </ControlTemplate>
 
+        <ControlTemplate x:Key="GroupBoxHeader2" TargetType="{x:Type GroupBox}">
+            <Grid SnapsToDevicePixels="true"  Margin="0,0,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="6"/>
+                </Grid.RowDefinitions>
+                <Border Background="{TemplateBinding Background}" BorderBrush="Transparent" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4" Grid.Column="0" Grid.ColumnSpan="4" Grid.RowSpan="3" Grid.Row="1"/>
+                <Border x:Name="Header" Grid.Column="1" Padding="15,0,3,0" Grid.RowSpan="2" Grid.Row="0">
+                    <ContentPresenter ContentSource="Header"  RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                </Border>
+                <ContentPresenter Grid.Column="1" Grid.ColumnSpan="2" Margin="{TemplateBinding Padding}" Grid.Row="2" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+            </Grid>
+        </ControlTemplate>
+
         <Style x:Key="BorderModuleArea" TargetType="{x:Type Border}">
             <Setter Property="Background" Value="#F3F3F3"/>
             <Setter Property="BorderBrush" Value="#EAEAEA"/>
@@ -45,18 +61,21 @@
                             <GroupBox.Header>
                                 <TextBlock Text="通用" FontSize="20"/>
                             </GroupBox.Header>
-                            <Border Style="{StaticResource BorderModuleArea}" Background="#FFFFFF" CornerRadius="8">
-                                <StackPanel Margin="5">
-                                    <DockPanel Margin="5">
-                                        <ToggleButton DockPanel.Dock="Right" Height="20" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsUseMySql}"/>
-                                        <TextBlock Text="启用数据库"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="5">
-                                        <ToggleButton DockPanel.Dock="Right" Height="20" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsUseMQTT}"/>
-                                        <TextBlock Text="启用MQTT"/>
-                                    </DockPanel>
-                                </StackPanel>
-                            </Border>
+                            <StackPanel>
+                                <Border Style="{StaticResource BorderModuleArea}" Background="#FFFFFF" CornerRadius="8">
+                                    <StackPanel Margin="5">
+                                        <DockPanel Margin="5">
+                                            <ToggleButton DockPanel.Dock="Right" Height="20" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsUseMySql}"/>
+                                            <TextBlock Text="启用数据库"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="5">
+                                            <ToggleButton DockPanel.Dock="Right" Height="20" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsUseMQTT}"/>
+                                            <TextBlock Text="启用MQTT"/>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+
 
                         </GroupBox>
                     </StackPanel>
@@ -78,34 +97,6 @@
                         </GroupBox>
                     </StackPanel>
                 </ScrollViewer>
-
-            </TabItem>
-
-            <TabItem  Header="基本设置" Background="Transparent">
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled" Background="#F2F2F2" VerticalScrollBarVisibility="Auto" >
-                    <StackPanel>
-                        <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
-                            <GroupBox.Header>
-                                <TextBlock Text="基本" FontSize="20"/>
-                            </GroupBox.Header>
-                            <Border  Style="{StaticResource BorderModuleArea}" Background="White" CornerRadius="8">
-                                <StackPanel Orientation="Horizontal" Margin="15">
-                                    <Grid>
-                                        <hc:WaveProgressBar  Value="{Binding PerformanceControl.RAMPercent}"/>
-                                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="RAM"/>
-                                    </Grid>
-                                    <Grid>
-                                        <hc:WaveProgressBar  Value="{Binding PerformanceControl.RAMThisPercent}"/>
-                                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="{Binding PerformanceControl.RAMThis}"/>
-                                    </Grid>
-                                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="{Binding PerformanceControl.Time}"/>
-
-                                </StackPanel>
-                            </Border>
-                        </GroupBox>
-                    </StackPanel>
-                </ScrollViewer>
-
             </TabItem>
             <TabItem  Header="工程设置" Background="Transparent">
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" Background="#F2F2F2" VerticalScrollBarVisibility="Auto" >
@@ -114,25 +105,79 @@
                             <GroupBox.Header>
                                 <TextBlock Text="工程" FontSize="20"/>
                             </GroupBox.Header>
-                            <Border  Style="{StaticResource BorderModuleArea}" Background="White" CornerRadius="8">
-                                <StackPanel Margin="5">
-                                    <DockPanel Margin="5" Height="20">
-                                        <TextBlock Text="当前工程: " />
-                                        <TextBlock Text="{Binding ProjectConfig.ProjectName}"  />
-                                    </DockPanel>
-                                    <DockPanel Margin="5" Height="20">
-                                        <TextBlock Text="当前工程路径: "/>
-                                        <TextBlock Text="{Binding ProjectConfig.ProjectFullName}"  />
-                                    </DockPanel>
-                                    <DockPanel Margin="5" Height="20">
-                                        <TextBlock Text="新建工程格式: "/>
-                                        <TextBlock Text="{Binding ProjectConfig.ProjectFullName}"  />
-                                    </DockPanel>
-                                </StackPanel>
-                            </Border>
+                            <StackPanel>
+                                <Border Style="{StaticResource BorderModuleArea}" Background="White" CornerRadius="8">
+                                    <StackPanel Margin="5">
+                                        <DockPanel Margin="5" Height="20">
+                                            <TextBlock Text="当前工程: " />
+                                            <TextBlock Text="{Binding ProjectConfig.ProjectName}"  />
+                                        </DockPanel>
+                                        <DockPanel Margin="5" Height="20">
+                                            <TextBlock Text="当前工程路径: "/>
+                                            <TextBlock Text="{Binding ProjectConfig.ProjectFullName}"  />
+                                        </DockPanel>
+
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource BorderModuleArea}" Background="White" CornerRadius="8">
+                                    <StackPanel Margin="5">
+                                        <DockPanel Margin="5" Height="20">
+                                            <Button DockPanel.Dock="Right" Content="重置" Click="SetProjectDefaultCreatName_Click"  Width="80"/>
+                                            <TextBlock Text="新建工程格式:" Width="110" />
+                                            <TextBox Text="{Binding ProjectConfig.DefaultCreatName}" HorizontalAlignment="Left" Width="200"/>
+                                        </DockPanel>
+
+                                        <DockPanel Margin="5" Height="20">
+                                            <Button DockPanel.Dock="Right" Content="重置" Click="SetProjectDefault__Click"  Width="80"/>
+                                            <TextBlock Text="默认文件存储格式:" Width="110" />
+                                            <TextBox Text="{Binding ProjectConfig.DefaultSaveName}" HorizontalAlignment="Left" Width="200" />
+                                        </DockPanel>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+
                         </GroupBox>
                     </StackPanel>
                 </ScrollViewer>
+            </TabItem>
+
+
+            <TabItem  Header="性能检测" Background="Transparent">
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" Background="#F2F2F2" VerticalScrollBarVisibility="Auto" >
+                    <StackPanel>
+                        <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
+                            <GroupBox.Header>
+                                <TextBlock Text="性能" FontSize="20"/>
+                            </GroupBox.Header>
+
+                            <StackPanel>
+                                <Border Style="{StaticResource BorderModuleArea}" Background="White" CornerRadius="8">
+                                    <StackPanel Margin="5">
+                                        <DockPanel Margin="5" Height="20">
+                                            <TextBlock Text="日期格式:  " />
+                                            <TextBox Text="{Binding PerformanceControl.DefaultTimeFormat}" HorizontalAlignment="Left" Width="200"/>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </Border>
+                                <Border  Style="{StaticResource BorderModuleArea}" Background="White" CornerRadius="8">
+                                    <StackPanel Orientation="Horizontal" Margin="15">
+                                        <Grid>
+                                            <hc:WaveProgressBar  Value="{Binding PerformanceControl.RAMPercent}"/>
+                                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="RAM"/>
+                                        </Grid>
+                                        <Grid >
+                                            <hc:WaveProgressBar  Value="{Binding PerformanceControl.RAMThisPercent}"/>
+                                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="{Binding PerformanceControl.RAMThis}"/>
+                                        </Grid>
+                                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="{Binding PerformanceControl.Time}"/>
+                                    </StackPanel>
+                                </Border>
+
+                            </StackPanel>
+                        </GroupBox>
+                    </StackPanel>
+                </ScrollViewer>
+
             </TabItem>
 
             <TabItem  Header="快捷键" Background="Transparent">

@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable CS8625,CA1707
+using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -13,7 +14,7 @@ namespace WindowEffectTest
     /// </summary>
     public class WindowAccentCompositor
     {
-        public bool DarkMode = true;
+        public bool DarkMode { get; set; } = true;
 
         private readonly Window _window;
         private bool _isEnabled;
@@ -29,7 +30,7 @@ namespace WindowEffectTest
         public WindowAccentCompositor(Window window,bool enableBlurin=false, Action<Color> noneCallback=null)
         {
             _window = window;
-            _enableBlurin= enableBlurin;
+            EnableBlurin= enableBlurin;
             //var osVersion = Environment.OSVersion.Version;
             //var windows11 = new Version(10, 0, 22621);
             //if (osVersion >= windows11 && !enableBlurin)
@@ -99,7 +100,7 @@ namespace WindowEffectTest
         /// <summary>
         /// 在win11下对特定窗口启用模糊特效
         /// </summary>
-        public bool _enableBlurin = false;
+        public bool EnableBlurin { get; set; }
         private void Composite(IntPtr handle, bool isEnabled)
         {
             // 操作系统版本判定。
@@ -107,7 +108,7 @@ namespace WindowEffectTest
             var windows10_1809 = new Version(10, 0, 17763);
             var windows10 = new Version(10, 0);
             var windows11 = new Version(10, 0,22621);
-            if (osVersion >= windows11 && !_enableBlurin)
+            if (osVersion >= windows11 && !EnableBlurin)
             {
                 if (!isEnabled)
                 {
@@ -175,7 +176,7 @@ namespace WindowEffectTest
                         SizeOfData = accentPolicySize,
                         Data = accentPtr,
                     };
-                    SetWindowCompositionAttribute(handle, ref data);
+                    _=SetWindowCompositionAttribute(handle, ref data);
                 }
                 finally
                 {

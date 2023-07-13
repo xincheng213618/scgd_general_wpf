@@ -1,4 +1,5 @@
 ﻿using ColorVision.MVVM;
+using ColorVision.SettingUp;
 using ColorVision.Solution.RecentFile;
 using ScottPlot.Styles;
 using System;
@@ -21,6 +22,8 @@ namespace ColorVision.Solution
 {
     public class NewCreateViewMode : ViewModelBase
     {
+
+
         public RecentFileList RecentNewCreateCache { get; set; } = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\RecentNewCreateCache") };
 
         public NewCreateViewMode()
@@ -44,7 +47,7 @@ namespace ColorVision.Solution
 
 
             DirectoryPath = RecentNewCreateCacheList[0];
-            this.Name = NewCreateFileName("新建工程");
+            this.Name = NewCreateFileName(GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.DefaultCreatName);
             RecentNewCreateNameCacheList.Add(Name);
         }
 
@@ -124,14 +127,14 @@ namespace ColorVision.Solution
 
             if (SolutionDirectoryPath.IndexOfAny(System.IO.Path.GetInvalidPathChars()) >= 0 || NewCreateViewMode.Name.IndexOfAny(Path.GetInvalidFileNameChars())>=0)
             {
-                MessageBox.Show("工程名不能包含特殊字符", "Grid");
+                MessageBox.Show("工程名不能包含特殊字符", "ColorVision");
                 return;
             }
 
 
             if (Directory.Exists(SolutionDirectoryPath))
             {
-                var result = MessageBox.Show("文件夹不为空，是否清空文件夹", "Grid", MessageBoxButton.YesNo);
+                var result = MessageBox.Show("文件夹不为空，是否清空文件夹", "ColorVision", MessageBoxButton.YesNo);
                 if (result == MessageBoxResult.Yes)
                 {
                     try
@@ -140,7 +143,7 @@ namespace ColorVision.Solution
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show(ex.Message, "Grid");
+                        MessageBox.Show(ex.Message, "ColorVision");
                     }
                 }
             }
@@ -156,7 +159,7 @@ namespace ColorVision.Solution
             if (sender is ComboBox comboBox && comboBox.SelectedIndex>-1)
             {
                 NewCreateViewMode.DirectoryPath = NewCreateViewMode.RecentNewCreateCacheList[comboBox.SelectedIndex];
-                NewCreateViewMode.Name = NewCreateViewMode.NewCreateFileName("新建工程");
+                NewCreateViewMode.Name = NewCreateViewMode.NewCreateFileName(GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.DefaultCreatName);
 
             }
         }
