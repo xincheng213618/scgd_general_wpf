@@ -47,7 +47,7 @@ namespace ColorVision.Solution
 
 
             DirectoryPath = RecentNewCreateCacheList[0];
-            this.Name = NewCreateFileName(GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.DefaultCreatName);
+            this.Name = NewCreateFileName(GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectControl.DefaultCreatName);
             RecentNewCreateNameCacheList.Add(Name);
         }
 
@@ -159,7 +159,7 @@ namespace ColorVision.Solution
             if (sender is ComboBox comboBox && comboBox.SelectedIndex>-1)
             {
                 NewCreateViewMode.DirectoryPath = NewCreateViewMode.RecentNewCreateCacheList[comboBox.SelectedIndex];
-                NewCreateViewMode.Name = NewCreateViewMode.NewCreateFileName(GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.DefaultCreatName);
+                NewCreateViewMode.Name = NewCreateViewMode.NewCreateFileName(GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectControl.DefaultCreatName);
 
             }
         }

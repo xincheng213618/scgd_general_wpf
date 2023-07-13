@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace ColorVision.SettingUp
@@ -58,7 +59,14 @@ namespace ColorVision.SettingUp
             {
                 SaveSoftwareConfig();
             };
+
+            PerformanceControlLazy = new Lazy<PerformanceControl>(() => PerformanceControl.GetInstance());
         }
+
+        [JsonIgnore]
+        readonly Lazy<PerformanceControl> PerformanceControlLazy;
+        [JsonIgnore]
+        public PerformanceControl PerformanceControl { get => PerformanceControlLazy.Value; }
 
 
         readonly Lazy<SoftwareConfig> SoftwareConfigLazy;

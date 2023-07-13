@@ -7,6 +7,15 @@ using System.Threading.Tasks;
 
 namespace ColorVision.SettingUp
 {
+    public class ProjectControl: ViewModelBase
+    {
+        public string DefaultCreatName { get => _DefaultCreatName; set { _DefaultCreatName = value; NotifyPropertyChanged(); } }
+        private string _DefaultCreatName = "新建工程";
+
+        public string DefaultSaveName { get => _DefaultSaveName; set { _DefaultSaveName = value; NotifyPropertyChanged(); } }
+        private string _DefaultSaveName = "yyyy/dd/MM HH:mm:ss";
+    }
+
     /// <summary>
     /// 工程配置
     /// </summary>
@@ -21,11 +30,8 @@ namespace ColorVision.SettingUp
         public string CachePath { get => _CachePath; set { _CachePath = value; NotifyPropertyChanged(); } }
         private string _CachePath;
 
-        public string DefaultCreatName { get => _DefaultCreatName; set { _DefaultCreatName = value; NotifyPropertyChanged(); } }
-        private string _DefaultCreatName = "新建工程";
+        public ProjectControl ProjectControl { get; set; } = new ProjectControl();
 
-        public string DefaultSaveName { get => _DefaultSaveName; set { _DefaultSaveName = value; NotifyPropertyChanged(); } }
-        private string _DefaultSaveName = "yyyy/dd/MM HH:mm:ss";
 
     }
 }

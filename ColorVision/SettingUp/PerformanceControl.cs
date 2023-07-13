@@ -1,13 +1,25 @@
 ﻿using ColorVision.MVVM;
 using ColorVision.MySql;
+using ColorVision.SettingUp;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ColorVision
+namespace ColorVision.SettingUp
 {
+
+    public class PerformanceConfig: ViewModelBase
+    {
+        public int UpdateSpeed { get => _UpdateSpeed; set { _UpdateSpeed = value; NotifyPropertyChanged(); } }
+        private int _UpdateSpeed = 1000;
+
+        public string DefaultTimeFormat { get => _DefaultTimeFormat; set { _DefaultTimeFormat = value; NotifyPropertyChanged(); } }
+        private string _DefaultTimeFormat = "yyyy/dd/MM HH:mm:ss";
+    }
+
+
     public class PerformanceControl : ViewModelBase, IDisposable
     {
         private static PerformanceControl _instance;
@@ -23,23 +35,25 @@ namespace ColorVision
         private PerformanceCounter PCRAMThis;
 
         private Timer timer;
-        private int _UpdateSpeed = 1000;
 
         public int UpdateSpeed
         {
-            get => _UpdateSpeed; set
+            get => Config.UpdateSpeed; set
             {
-                if (value != _UpdateSpeed)
+                if (value != Config.UpdateSpeed)
                 {
-                    _UpdateSpeed = value; NotifyPropertyChanged();
+                    Config.UpdateSpeed = value; NotifyPropertyChanged();
                     timer?.Dispose();
                     timer = new Timer(TimeRun, null, 0, value);
                 }
             }    
         }
 
+        public PerformanceConfig Config { get; set; }
+
         public PerformanceControl()
         {
+            Config = GlobalSetting.GetInstance().SoftwareConfig.PerformanceConfig;
             Task.Run(() => 
             {
                 try
@@ -73,16 +87,14 @@ namespace ColorVision
                 CPUThisPercent = PCCPUThis.NextValue();
                 CPUPercent = PCCPU.NextValue();
 
-
                 float curRAM = PCRAMThis.NextValue() / 1024 / 1024;
                 RAMThis = curRAM.ToString("f1") + "MB";
                 MemoryThis = curRAM.ToString("f1") + "MB" + "/" + RAMAL.ToString("f1") + "GB";
                 ProcessorTotal = PCCPU.NextValue().ToString("f1") + "%";
-                Time = DateTime.Now.ToString(DefaultTimeFormat);
+                Time = DateTime.Now.ToString(Config.DefaultTimeFormat);
             }
         }
-        public string DefaultTimeFormat { get => _DefaultTimeFormat; set { _DefaultTimeFormat = value; NotifyPropertyChanged(); } }
-        private string _DefaultTimeFormat = "yyyy/dd/MM HH:mm:ss";
+
 
         /// <summary>
         /// 当前分区硬盘大小
@@ -128,8 +140,6 @@ namespace ColorVision
 
         public double CPUThisPercent { get => _CPUThisPercent; set { _CPUThisPercent = value; NotifyPropertyChanged(); } }
         private double _CPUThisPercent;
-
-
 
 
         public void Dispose()

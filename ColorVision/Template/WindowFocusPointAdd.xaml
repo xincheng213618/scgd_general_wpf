@@ -1,0 +1,22 @@
+﻿<base:BaseWindow x:Class="ColorVision.Template.WindowFocusPointAdd"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.Template"
+        xmlns:base ="clr-namespace:ColorVision.Controls"
+        mc:Ignorable="d"
+        Background="Transparent" IsBlurEnabled="True" Height="450" Width="200">
+    <Grid>
+        <TextBlock Text="导入关注点" FontSize="20"  HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,-20,0,0"/>
+        <ListView x:Name="ListView1"   Margin="5,5,5,5"  Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" SelectionChanged="ListView1_SelectionChanged">
+            <ListView.ItemTemplate>
+                <DataTemplate DataType="{x:Type local:ListConfig}" >
+                    <Border>
+                        <TextBlock  Text="{Binding Name}" TextTrimming = "CharacterEllipsis"/>
+                    </Border>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </Grid>
+</base:BaseWindow>

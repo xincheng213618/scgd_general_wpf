@@ -1068,9 +1068,27 @@ namespace ColorVision.Template
                 }
                 else if (RadioButtonMode3.IsChecked ==true)
                 {
-
-
-
+                    
+                    var ListConfigs =new ObservableCollection<ListConfig>();
+                    foreach (var item in TemplateControl.GetInstance().PoiParams)
+                    {
+                        if (item.Value != PoiParam)
+                        {
+                            ListConfig listConfig = new ListConfig();
+                            listConfig.Name = item.Key;
+                            listConfig.Value = item.Value;
+                            ListConfigs.Add(listConfig);
+                        }
+                    }
+                    WindowFocusPointAdd windowFocusPointAd = new WindowFocusPointAdd(ListConfigs) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                    windowFocusPointAd.Closed += (s, e) =>
+                    {
+                        if (windowFocusPointAd.SelectPoiParam != null)
+                        {
+                            MessageBox.Show("导入已经存在的点阵");
+                        }   
+                    };
+                    windowFocusPointAd.ShowDialog();
 
                 }
                 //这里我不推荐添加

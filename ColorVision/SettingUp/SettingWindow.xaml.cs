@@ -83,7 +83,7 @@ namespace ColorVision.SettingUp
         {
             if (sender is Button button)
             {
-                SoftwareConfig.ProjectConfig.DefaultSaveName = "yyyy/dd/MM HH:mm:ss";
+                SoftwareConfig.ProjectConfig.ProjectControl.DefaultSaveName = "yyyy/dd/MM HH:mm:ss";
                 var temp = button.Content;
                 button.Content = "已重制";
                 await Task.Delay(1000);
@@ -96,7 +96,7 @@ namespace ColorVision.SettingUp
         {
             if (sender is Button button)
             {
-                SoftwareConfig.ProjectConfig.DefaultCreatName = "新建工程";
+                SoftwareConfig.ProjectConfig.ProjectControl.DefaultCreatName = "新建工程";
                 var temp = button.Content;
                 button.Content = "已重制";
                 await Task.Delay(1000);

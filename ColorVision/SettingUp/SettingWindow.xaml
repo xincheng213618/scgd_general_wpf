@@ -124,13 +124,13 @@
                                         <DockPanel Margin="5" Height="20">
                                             <Button DockPanel.Dock="Right" Content="重置" Click="SetProjectDefaultCreatName_Click"  Width="80"/>
                                             <TextBlock Text="新建工程格式:" Width="110" />
-                                            <TextBox Text="{Binding ProjectConfig.DefaultCreatName}" HorizontalAlignment="Left" Width="200"/>
+                                            <TextBox Text="{Binding ProjectConfig.ProjectControl.DefaultCreatName}" HorizontalAlignment="Left" Width="200"/>
                                         </DockPanel>
 
                                         <DockPanel Margin="5" Height="20">
                                             <Button DockPanel.Dock="Right" Content="重置" Click="SetProjectDefault__Click"  Width="80"/>
                                             <TextBlock Text="默认文件存储格式:" Width="110" />
-                                            <TextBox Text="{Binding ProjectConfig.DefaultSaveName}" HorizontalAlignment="Left" Width="200" />
+                                            <TextBox Text="{Binding ProjectConfig.ProjectControl.DefaultSaveName}" HorizontalAlignment="Left" Width="200" />
                                         </DockPanel>
                                     </StackPanel>
                                 </Border>
@@ -154,8 +154,12 @@
                                 <Border Style="{StaticResource BorderModuleArea}" Background="White" CornerRadius="8">
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="5" Height="20">
+                                            <TextBlock Text="更新速度:  " />
+                                            <TextBox Text="{Binding PerformanceControl.UpdateSpeed}" HorizontalAlignment="Left" Width="200"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="5" Height="20">
                                             <TextBlock Text="日期格式:  " />
-                                            <TextBox Text="{Binding PerformanceControl.DefaultTimeFormat}" HorizontalAlignment="Left" Width="200"/>
+                                            <TextBox Text="{Binding PerformanceConfig.DefaultTimeFormat}" HorizontalAlignment="Left" Width="200"/>
                                         </DockPanel>
                                     </StackPanel>
                                 </Border>

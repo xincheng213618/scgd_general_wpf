@@ -69,8 +69,8 @@ namespace ColorVision
             ListView1.ItemsSource = DrawingVisualLists;
             SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
 
-            StatusBarItem1.DataContext = SoftwareConfig.PerformanceControl;
-            StatusBarItem2.DataContext = SoftwareConfig.PerformanceControl;
+            StatusBarItem1.DataContext = GlobalSetting.GetInstance().PerformanceControl;
+            StatusBarItem2.DataContext = GlobalSetting.GetInstance().PerformanceControl;
 
             StatusBarItem3.DataContext = SoftwareConfig.ProjectConfig;
             StatusBarMqtt.DataContext = SoftwareConfig.MQTTControl;
