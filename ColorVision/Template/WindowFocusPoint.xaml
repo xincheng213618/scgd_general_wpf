@@ -99,7 +99,6 @@
                             </GroupBox>
                             <StackPanel Margin="5" Visibility="{Binding ElementName=RadioButtonMode2, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
                                 <xctk:PropertyGrid  x:Name="PropertyGridAutoFocus"  />
-                                <Button Content="寻找发光区" Click="Button_Click_1"/>
                             </StackPanel>
 
 

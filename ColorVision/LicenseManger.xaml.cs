@@ -44,8 +44,8 @@ namespace ColorVision
         {
             InitializeComponent();
             ListViewLicense.ItemsSource = LicenseConfigs;
-            LicenseConfigs.Add(new LicenseConfig() { Name = "ColorVision", Sn = "4060005EAD286752E9BF44AD08D2325E", Tag = $"许可给 fuzzes ally\n\r订阅将于 July 2, 2023过期\n\r您拥有此版本的永久回退许可证" });
-            LicenseConfigs.Add(new LicenseConfig() { Name = "VIDCamera", Sn = "409D2B7555605C0B7ABABD5D31ECA47D", Tag = $"许可给 fuzzes ally\n\r订阅将于 July 9, 2023过期\n\r您拥有此版本的永久回退许可证" });
+            LicenseConfigs.Add(new LicenseConfig() { Name = "ColorVision", Sn = "4060005EAD286752E9BF44AD08D2325E", Tag = $"许可给 fuzzes ally\n\r订阅将于 July 2, 2023过期" });
+            LicenseConfigs.Add(new LicenseConfig() { Name = "VIDCamera", Sn = "409D2B7555605C0B7ABABD5D31ECA47D", Tag = $"许可给 fuzzes ally\n\r订阅将于 July 9, 2023过期" });
             ListViewLicense.SelectedIndex = 0;
         }
 
@@ -65,7 +65,7 @@ namespace ColorVision
 
 
             dateTime = dateTime.AddYears(1);
-            LicenseConfigs[ListViewLicense.SelectedIndex].Tag = $"许可给 fuzzes ally\n\r订阅将于{dateTime:yyyy年MM月dd日}过期\n\r您拥有此版本的永久回退许可证";
+            LicenseConfigs[ListViewLicense.SelectedIndex].Tag = $"许可给 fuzzes ally\n\r订阅将于{dateTime:yyyy年MM月dd日}过期\n\r";
         }
 
         private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)

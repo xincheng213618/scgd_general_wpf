@@ -455,6 +455,11 @@ namespace ColorVision.Template
             }
             this.Closed += (s, e) =>
             {
+                if (ImageShow.Source == null)
+                {
+                    PoiParam.Width = 0;
+                    PoiParam.Height = 0;
+                }
                 PoiParam.PoiPoints.Clear();
                 foreach (var item in DrawingVisualLists)
                 {
@@ -472,7 +477,6 @@ namespace ColorVision.Template
                             PixHeight = circle.Radius,
                         };
                         PoiParam.PoiPoints.Add(poiParamData);
-
                     }
                     else if (drawAttributeBase is RectangleAttribute rectangle)
                     {
