@@ -22,6 +22,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
+using ColorVision.Theme;
 
 namespace ColorVision
 {
@@ -43,11 +44,20 @@ namespace ColorVision
 
         private async void Window_Initialized(object sender, EventArgs e)
         {
+            bool isHighContrast = SystemParameters.HighContrast;
+
+            if (isHighContrast||!ThemeManager.AppsUseLightTheme()||!ThemeManager.SystemUsesLightTheme())
+            {
+                this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
+            }
+
+
             if (WindowConfig.IsExist)
             {
                 this.Icon = WindowConfig.Icon ?? this.Icon;
                 this.Title = WindowConfig.Title ?? this.Title;
             }
+
             Application.Current.MainWindow = this;
             TemplateControl = TemplateControl.GetInstance();
 

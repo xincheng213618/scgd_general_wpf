@@ -25,7 +25,6 @@ namespace ColorVision
                         stream.Seek(0, SeekOrigin.Begin);
 
                         var image = new BitmapImage();
-
                         image.BeginInit();
                         image.StreamSource = stream;
                         image.CacheOption = BitmapCacheOption.OnLoad;
@@ -33,7 +32,6 @@ namespace ColorVision
                         return image;
                     }
                     return new BitmapImage(new Uri(iconPath));
-
                 }
                 return null;
             }

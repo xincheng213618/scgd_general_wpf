@@ -189,7 +189,7 @@ namespace ColorVision.Template
                         if (ListConfigs[listView.SelectedIndex].Value is FlowParam flowParam)
                         {
                             flowParam.Name ??= ListConfigs[listView.SelectedIndex].Name;
-                            new FlowEngine.WindowFlowEngine(flowParam) { Owner = Application.Current.MainWindow }.Show();
+                            new ColorVision.WindowFlowEngine(flowParam) { Owner = Application.Current.MainWindow }.Show();
                         }
                         break;
                 }
