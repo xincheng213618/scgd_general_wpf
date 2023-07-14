@@ -83,6 +83,9 @@
     <Reference Include="HslCommunication">
       <HintPath>..\DLL\HslCommunication.dll</HintPath>
     </Reference>
+    <Reference Include="OpenH264Lib">
+      <HintPath>..\DLL\OpenH264Lib.dll</HintPath>
+    </Reference>
     <Reference Include="ST.Library.UI">
       <HintPath>..\DLL\ST.Library.UI.dll</HintPath>
     </Reference>

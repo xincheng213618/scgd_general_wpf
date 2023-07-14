@@ -23,6 +23,9 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
 using ColorVision.Theme;
+using ColorVision.Util;
+using System.Windows.Forms.Integration;
+using OpenCvSharp.Flann;
 
 namespace ColorVision
 {
@@ -931,11 +934,100 @@ namespace ColorVision
             //MessageBox.Show("流程执行完成");
             window.Close();
         }
+        private const string H264DllName = "openh264-2.3.1-win64.dll";
+        private OpenH264Lib.Decoder decoder;
+        private H264Reader h264Reader;
+        private void Button4_Click(object sender, RoutedEventArgs e)
+        {
+            decoder = new OpenH264Lib.Decoder(H264DllName);
+            h264Reader = new H264Reader();
+            string locateIP = "192.168.3.182"; //本机IP
+            int locatePort = 9002;   //发送端口
+
+            //var windowsFormsHost1 = new WindowsFormsHost();
+            //pictureBox = new System.Windows.Forms.PictureBox();
+            //windowsFormsHost1.Child = pictureBox;
+            //Window window = new Window() { Width=1280,Height=720};
+            //window.Content = windowsFormsHost1;
+            //window.Show();
+            UDPClientRecv udpClient = new UDPClientRecv(locateIP, locatePort);
+            udpClient.UDPMessageReceived += UdpClient_UDPMessageReceived;
+        }
+        System.Windows.Forms.PictureBox pictureBox;
+        private void UdpClient_UDPMessageReceived(UdpStateEventArgs args)
+        {
+            if (args.buffer.Length > 0)
+            {
+                byte[] bytes = h264Reader.AddPacket(args.buffer);
+                if (bytes != null)
+                {
+                    var bmp = decoder.Decode(bytes, bytes.Length);
+                    if (bmp != null)
+                    {
+
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            WriteableBitmap writeableBitmap = BitmapToWriteableBitmap(bmp);
+                            ImageShow.Source = writeableBitmap;
+                        });
+
+                        //pictureBox.Image = (System.Drawing.Bitmap)bmp.Clone();
+                        Console.WriteLine("Display BMP / {0}", args.buffer[3]);
+                        bmp.Dispose();
+                    }
+                }
+            }
+        }
 
 
-
-
-
+        public static WriteableBitmap BitmapToWriteableBitmap(System.Drawing.Bitmap src)
+        {
+            var wb = CreateCompatibleWriteableBitmap(src);
+            System.Drawing.Imaging.PixelFormat format = src.PixelFormat;
+            if (wb == null)
+            {
+                wb = new WriteableBitmap(src.Width, src.Height, 0, 0, System.Windows.Media.PixelFormats.Bgra32, null);
+                format = System.Drawing.Imaging.PixelFormat.Format32bppArgb;
+            }
+            BitmapCopyToWriteableBitmap(src, wb, new System.Drawing.Rectangle(0, 0, src.Width, src.Height), 0, 0, format);
+            return wb;
+        }
+        //创建尺寸和格式与Bitmap兼容的WriteableBitmap
+        public static WriteableBitmap CreateCompatibleWriteableBitmap(System.Drawing.Bitmap src)
+        {
+            System.Windows.Media.PixelFormat format;
+            switch (src.PixelFormat)
+            {
+                case System.Drawing.Imaging.PixelFormat.Format16bppRgb555:
+                    format = System.Windows.Media.PixelFormats.Bgr555;
+                    break;
+                case System.Drawing.Imaging.PixelFormat.Format16bppRgb565:
+                    format = System.Windows.Media.PixelFormats.Bgr565;
+                    break;
+                case System.Drawing.Imaging.PixelFormat.Format24bppRgb:
+                    format = System.Windows.Media.PixelFormats.Bgr24;
+                    break;
+                case System.Drawing.Imaging.PixelFormat.Format32bppRgb:
+                    format = System.Windows.Media.PixelFormats.Bgr32;
+                    break;
+                case System.Drawing.Imaging.PixelFormat.Format32bppPArgb:
+                    format = System.Windows.Media.PixelFormats.Pbgra32;
+                    break;
+                case System.Drawing.Imaging.PixelFormat.Format32bppArgb:
+                    format = System.Windows.Media.PixelFormats.Bgra32;
+                    break;
+                default:
+                    return null;
+            }
+            return new WriteableBitmap(src.Width, src.Height, 0, 0, format, null);
+        }
+        //将Bitmap数据写入WriteableBitmap中
+        public static void BitmapCopyToWriteableBitmap(System.Drawing.Bitmap src, WriteableBitmap dst, System.Drawing.Rectangle srcRect, int destinationX, int destinationY, System.Drawing.Imaging.PixelFormat srcPixelFormat)
+        {
+            var data = src.LockBits(new System.Drawing.Rectangle(new System.Drawing.Point(0, 0), src.Size), System.Drawing.Imaging.ImageLockMode.ReadOnly, srcPixelFormat);
+            dst.WritePixels(new Int32Rect(srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height), data.Scan0, data.Height * data.Stride, data.Stride, destinationX, destinationY);
+            src.UnlockBits(data);
+        }
     }
 
 

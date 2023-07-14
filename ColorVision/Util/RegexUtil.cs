@@ -77,9 +77,7 @@ namespace ColorVision.Util
 
         public static bool IsColorHex(string str) => Regex.IsMatch(str, @"#([a-fA-F0-9]{3,6})");
 
-
         public static bool IsExistProtocol(string str) => Regex.IsMatch(str, @"[a-zA-Z]+:\/\/");
-
 
     }
 }

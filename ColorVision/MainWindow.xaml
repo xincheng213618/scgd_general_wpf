@@ -381,6 +381,7 @@
                                         <Button Content="绘制测试图形"  Margin="10,0"  Click="Button1_Click"/>
                                         <Button Content="加载流程引擎"  Margin="10,0"  Click="Button2_Click"/>
                                         <Button Content="执行测试"  Margin="10,0"   Click="Button3_Click"/>
+                                        <Button Content="视频测试"  Margin="10,0"   Click="Button4_Click"/>
 
                                     </UniformGrid>
                                 </StackPanel>
@@ -574,8 +575,8 @@
                         <StatusBarItem MouseLeftButtonDown="TextBlock_MouseLeftButtonDown" Visibility="{Binding IsUseMQTT,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="MQTT">
                             <ToggleButton  x:Name="StatusBarMqtt" d:DataContext="{d:DesignInstance mqtt:MQTTControl}"  Style="{StaticResource ButtonDrawingImageMQTT}"  Height="20"  Margin="0,-10" IsChecked="{Binding IsConnect,Mode=OneWay}" IsEnabled="False" />
                         </StatusBarItem>
-                        <StatusBarItem  x:Name="StatusBarItem1" Visibility="Collapsed" d:DataContext="{d:DesignInstance  local:PerformanceControl}"  Content="{Binding Path=MemoryThis}"/>
-                        <StatusBarItem  x:Name="StatusBarItem2" d:DataContext="{d:DesignInstance  local:PerformanceControl}"  Content="{Binding Time}"/>
+                        <StatusBarItem  x:Name="StatusBarItem1" Visibility="Collapsed"  Content="{Binding Path=MemoryThis}"/>
+                        <StatusBarItem  x:Name="StatusBarItem2"   Content="{Binding Time}"/>
                     </DockPanel>
                 </StatusBarItem>
 
