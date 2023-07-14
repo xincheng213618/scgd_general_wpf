@@ -79,6 +79,7 @@ namespace ColorVision
             StatusBarGrid.DataContext = SoftwareConfig;
             MenuStatusBar.DataContext = SoftwareConfig;
             SiderBarGrid.DataContext = SoftwareConfig;
+            
         }
 
 
