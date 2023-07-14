@@ -86,13 +86,19 @@ namespace ColorVision
 
         }
 
-        private async void Copy_Click(object sender, RoutedEventArgs e)
+        private void Copy_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
+                ButtonContentChange(button, "已复制");
+        }
+
+        private async void ButtonContentChange(Button button,string Content)
+        {
+            if (button.Content.ToString() != Content)
             {
                 Clipboard.SetText(TextBoxSn.Text);
                 var temp = button.Content;
-                button.Content = "已复制";
+                button.Content = Content;
                 await Task.Delay(1000);
                 button.Content = temp;
             }

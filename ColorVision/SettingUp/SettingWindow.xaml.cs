@@ -79,29 +79,39 @@ namespace ColorVision.SettingUp
             File.WriteAllText("Hotkey", Json);
         }
 
-        private async void SetProjectDefault__Click(object sender, RoutedEventArgs e)
+        private void SetProjectDefault__Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
             {
                 SoftwareConfig.ProjectConfig.ProjectControl.DefaultSaveName = "yyyy/dd/MM HH:mm:ss";
-                var temp = button.Content;
-                button.Content = "已重制";
-                await Task.Delay(1000);
-                button.Content = temp;
+                ButtonContentChange(button, "已重置");
             }
 
         }
 
-        private async void SetProjectDefaultCreatName_Click(object sender, RoutedEventArgs e)
+        private void SetProjectDefaultCreatName_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
             {
                 SoftwareConfig.ProjectConfig.ProjectControl.DefaultCreatName = "新建工程";
+                ButtonContentChange(button, "已重置");
+            }
+        }
+
+        private static async void ButtonContentChange(Button button, string Content)
+        {
+            if (button.Content.ToString() != Content)
+            {
                 var temp = button.Content;
-                button.Content = "已重制";
+                button.Content = Content;
                 await Task.Delay(1000);
                 button.Content = temp;
             }
+        }
+
+        private void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            FocusManager.SetFocusedElement(this, null);
         }
     }
 }

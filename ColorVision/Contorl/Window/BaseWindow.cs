@@ -123,6 +123,15 @@ namespace ColorVision.Controls
             if (IsDragMoveEnabled && e.ButtonState == MouseButtonState.Pressed)
                 DragMove();
         }
+        protected override void OnPreviewKeyDown(KeyEventArgs e)
+        {
+            base.OnPreviewKeyDown(e);
+            if (IsBlurEnabled&&e.Key == Key.Escape)
+            {
+                this.Close();
+                e.Handled = true;
+            }
+        }
 
 
         #region 快捷键

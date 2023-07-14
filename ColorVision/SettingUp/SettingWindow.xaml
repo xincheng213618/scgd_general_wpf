@@ -53,7 +53,7 @@
     </Window.Resources>
     <Grid>
 
-        <TabControl TabStripPlacement="Left" Background="Transparent">
+        <TabControl TabStripPlacement="Left" Background="Transparent" SelectionChanged="TabControl_SelectionChanged">
             <TabItem  Header="通用设置" Width="100" Background="Transparent">
                 <ScrollViewer   Background="#F2F2F2" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" >
                     <StackPanel>
@@ -64,7 +64,7 @@
                             <StackPanel>
                                 <Border Style="{StaticResource BorderModuleArea}" Background="#FFFFFF" CornerRadius="8">
                                     <StackPanel Margin="5">
-                                        <DockPanel Margin="5">
+                                        <DockPanel Margin="5" ToolTip="模板数据保存Mysql数据库">
                                             <ToggleButton DockPanel.Dock="Right" Height="20" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsUseMySql}"/>
                                             <TextBlock Text="启用数据库"/>
                                         </DockPanel>
