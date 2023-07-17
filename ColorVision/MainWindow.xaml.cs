@@ -935,7 +935,7 @@ namespace ColorVision
             window.Close();
         }
         private const string H264DllName = "openh264-2.3.1-win64.dll";
-        private OpenH264Lib.Decoder decoder;
+        public OpenH264Lib.Decoder decoder { get; set; }
         private H264Reader h264Reader;
         private void Button4_Click(object sender, RoutedEventArgs e)
         {
@@ -953,12 +953,11 @@ namespace ColorVision
             UDPClientRecv udpClient = new UDPClientRecv(locateIP, locatePort);
             udpClient.UDPMessageReceived += UdpClient_UDPMessageReceived;
         }
-        System.Windows.Forms.PictureBox pictureBox;
         private void UdpClient_UDPMessageReceived(UdpStateEventArgs args)
         {
-            if (args.buffer.Length > 0)
+            if (args.Buffer.Length > 0)
             {
-                byte[] bytes = h264Reader.AddPacket(args.buffer);
+                byte[] bytes = h264Reader.AddPacket(args.Buffer);
                 if (bytes != null)
                 {
                     var bmp = decoder.Decode(bytes, bytes.Length);
@@ -972,7 +971,7 @@ namespace ColorVision
                         });
 
                         //pictureBox.Image = (System.Drawing.Bitmap)bmp.Clone();
-                        Console.WriteLine("Display BMP / {0}", args.buffer[3]);
+                        Console.WriteLine("Display BMP / {0}", args.Buffer[3]);
                         bmp.Dispose();
                     }
                 }
@@ -993,7 +992,7 @@ namespace ColorVision
             return wb;
         }
         //创建尺寸和格式与Bitmap兼容的WriteableBitmap
-        public static WriteableBitmap CreateCompatibleWriteableBitmap(System.Drawing.Bitmap src)
+        public static WriteableBitmap? CreateCompatibleWriteableBitmap(System.Drawing.Bitmap src)
         {
             System.Windows.Media.PixelFormat format;
             switch (src.PixelFormat)
@@ -1017,7 +1016,7 @@ namespace ColorVision
                     format = System.Windows.Media.PixelFormats.Bgra32;
                     break;
                 default:
-                    return null;
+                    return default;
             }
             return new WriteableBitmap(src.Width, src.Height, 0, 0, format, null);
         }

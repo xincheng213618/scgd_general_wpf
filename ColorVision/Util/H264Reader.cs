@@ -19,7 +19,7 @@ namespace ColorVision.Util
             packets = new Dictionary<int, List<byte[]>>();
             headLen = 4;
         }
-        public byte[] AddPacket(byte[] buffer)
+        public byte[]? AddPacket(byte[] buffer)
         {
             byte[] bytes;
             Console.WriteLine("{0} => UDPMessageReceived={1}", DateTime.Now.ToString("mm:ss.ffff"), buffer[3]);
@@ -40,7 +40,7 @@ namespace ColorVision.Util
                     packets.Add(buffer[0], new List<byte[]>());
                 }
                 packets[buffer[0]].Add(bytes);
-                //Console.WriteLine("key={0},list={1},head={2}/{3}", args.buffer[0], data[args.buffer[0]].Count, args.buffer[1], args.buffer[2]);
+                //Console.WriteLine("key={0},list={1},head={2}/{3}", args.Buffer[0], data[args.Buffer[0]].Count, args.Buffer[1], args.Buffer[2]);
                 if (packets[buffer[0]].Count == buffer[1])
                 {
                     int totalLen = 0;

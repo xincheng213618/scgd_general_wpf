@@ -10,16 +10,16 @@ namespace ColorVision.Util
 {
     public class UdpStateEventArgs : EventArgs 
     { 
-        public IPEndPoint remoteEndPoint;
-        public byte[] buffer = null;
+        public IPEndPoint RemoteEndPoint { get; set; }
+        public byte[] Buffer { get; set; }
     }
 
-    public delegate void UDPReceivedEventHandler(UdpStateEventArgs args);
+    public delegate void UDPReceivedEvent(UdpStateEventArgs args);
 
-    public class UDPClientRecv
+    public class UDPClientRecv:IDisposable
     {
         private UdpClient udpClient;
-        public event UDPReceivedEventHandler UDPMessageReceived;
+        public event UDPReceivedEvent UDPMessageReceived;
 
         public UDPClientRecv(string locateIP, int locatePort)
         {
@@ -38,8 +38,8 @@ namespace ColorVision.Util
                     {
                         IPEndPoint remotePoint = new IPEndPoint(IPAddress.Parse("1.1.1.1"), 1);
                         var received = udpClient.Receive(ref remotePoint);
-                        udpReceiveState.remoteEndPoint = remotePoint;
-                        udpReceiveState.buffer = received;
+                        udpReceiveState.RemoteEndPoint = remotePoint;
+                        udpReceiveState.Buffer = received;
                         UDPMessageReceived?.Invoke(udpReceiveState);
                     }
                     else
@@ -48,6 +48,11 @@ namespace ColorVision.Util
                     }
                 }
             });
+        }
+
+        public void Dispose()
+        {
+            GC.SuppressFinalize(this);
         }
     }
 }
