@@ -54,7 +54,8 @@ namespace ColorVision.Controls
             {
                 if (IsBlurEnabled)
                 {
-                    //IsDragMoveEnabled = true;
+                    //Win11这里要开，要不拖不动
+                    IsDragMoveEnabled = true;
                     wac = new(this, false, (c) =>
                     {
                         //没有可用的模糊特效
@@ -69,7 +70,7 @@ namespace ColorVision.Controls
 
                     if (osVersion >= windows10_1809 && osVersion <= windows11)
                     {
-                        //这里逻辑好像不一样
+                        //这里逻辑不一样
                         IsDragMoveEnabled = false;
                         this.WindowStyle = WindowStyle.None;
                     }
