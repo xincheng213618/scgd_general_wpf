@@ -10,7 +10,7 @@ using System.Windows.Forms;
 
 namespace ColorVision.Util
 {
-    class CSVFileHelper
+    class CsvHelper
     {
         /// <summary>
         /// 将DataTable中数据写入到CSV文件中

@@ -63,12 +63,8 @@ namespace ColorVision.Controls
                         Background = new SolidColorBrush(c);
                     });
 
-                    var osVersion = Environment.OSVersion.Version;
-                    var windows10_1809 = new Version(10, 0, 17763);
-                    var windows10 = new Version(10, 0);
-                    var windows11 = new Version(10, 0, 22621);
 
-                    if (osVersion >= windows10_1809 && osVersion <= windows11)
+                    if (IsWin10)
                     {
                         //这里逻辑不一样
                         IsDragMoveEnabled = false;
