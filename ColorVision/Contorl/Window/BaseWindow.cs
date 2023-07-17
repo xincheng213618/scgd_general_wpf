@@ -50,6 +50,35 @@ namespace ColorVision.Controls
         public BaseWindow()
         {
             CommandInitialized();
+            this.Loaded += (s, e) =>
+            {
+                if (IsBlurEnabled)
+                {
+                    //IsDragMoveEnabled = true;
+                    wac = new(this, false, (c) =>
+                    {
+                        //没有可用的模糊特效
+                        c.A = 255;
+                        Background = new SolidColorBrush(c);
+                    });
+
+                    var osVersion = Environment.OSVersion.Version;
+                    var windows10_1809 = new Version(10, 0, 17763);
+                    var windows10 = new Version(10, 0);
+                    var windows11 = new Version(10, 0, 22621);
+
+                    if (osVersion >= windows10_1809 && osVersion <= windows11)
+                    {
+                        //这里逻辑好像不一样
+                        IsDragMoveEnabled = false;
+                        this.WindowStyle = WindowStyle.None;
+                    }
+
+
+                    wac.Color = (bool)false ? Color.FromArgb(180, 0, 0, 0) : Color.FromArgb(200, 255, 255, 255);
+                    wac.IsEnabled = true;
+                }
+            };
         }
 
         public static readonly bool IsWin11 = Environment.OSVersion.Version >= new Version(10, 0, 21996);
@@ -126,7 +155,8 @@ namespace ColorVision.Controls
         protected override void OnPreviewKeyDown(KeyEventArgs e)
         {
             base.OnPreviewKeyDown(e);
-            if (IsBlurEnabled&&e.Key == Key.Escape)
+
+            if (IsBlurEnabled && e.Key == Key.Escape)
             {
                 this.Close();
                 e.Handled = true;
@@ -162,31 +192,6 @@ namespace ColorVision.Controls
             }
             IntPtr handle = new WindowInteropHelper(this).Handle;
             HwndSource.FromHwnd(handle).AddHook(new HwndSourceHook(WndProc));
-            if (IsBlurEnabled)
-            {
-                IsDragMoveEnabled = true;
-                wac = new(this, false, (c) =>
-                {
-                    //没有可用的模糊特效
-                    c.A = 255;
-                    Background = new SolidColorBrush(c);
-                });
-
-                var osVersion = Environment.OSVersion.Version;
-                var windows10_1809 = new Version(10, 0, 17763);
-                var windows10 = new Version(10, 0);
-                var windows11 = new Version(10, 0, 22621);
-
-                if (osVersion >= windows10_1809&& osVersion<= windows11)
-                {
-                    this.WindowStyle = WindowStyle.None;
-                }
-
-
-                wac.Color = (bool)false ? Color.FromArgb(180, 0, 0, 0) : Color.FromArgb(200, 255, 255, 255);
-                wac.IsEnabled = true;
-            }
-
         }
 
         IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
