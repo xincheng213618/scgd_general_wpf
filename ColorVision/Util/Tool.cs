@@ -111,7 +111,9 @@ namespace ColorVision.Util
         public static string GetMD5(string str)
         {
             byte[] byteOld = Encoding.UTF8.GetBytes(str);
+            #pragma warning disable CA5351
             byte[] byteNew = MD5.HashData(byteOld);
+            #pragma warning restore CA5351
             StringBuilder sb = new(32);
             foreach (byte b in byteNew)
             {
@@ -122,14 +124,18 @@ namespace ColorVision.Util
 
         public static T DeepCopy<T>(T obj)
         {
+            if (obj is null)
+                return (T)new object();
             object retval;
             MemoryStream ms = new MemoryStream();
             BinaryFormatter bf = new BinaryFormatter();
             //序列化成流
+            #pragma warning disable SYSLIB0011
             bf.Serialize(ms, obj);
             ms.Seek(0, SeekOrigin.Begin);
             //反序列化成对象
             retval = bf.Deserialize(ms);
+            #pragma warning restore SYSLIB0011
             return (T)retval;
         }
     }
