@@ -18,26 +18,25 @@ namespace ColorVision.Util
 
     public class UDPClientRecv:IDisposable
     {
-        private UdpClient udpClient;
+        private UdpClient UdpClient { get; set; }
         public event UDPReceivedEvent UDPMessageReceived;
 
         public UDPClientRecv(string locateIP, int locatePort)
         {
             IPAddress locateIp = IPAddress.Parse(locateIP);
             IPEndPoint locatePoint = new IPEndPoint(locateIp, locatePort);
-            udpClient = new UdpClient(locatePoint);
+            UdpClient = new UdpClient(locatePoint);
 
-            //监听创建好后，创建一个线程，开始接收信息
             Task.Run(() =>
             {
                 while (true)
                 {
                     UdpStateEventArgs udpReceiveState = new UdpStateEventArgs();
 
-                    if (udpClient != null)
+                    if (UdpClient != null)
                     {
                         IPEndPoint remotePoint = new IPEndPoint(IPAddress.Parse("1.1.1.1"), 1);
-                        var received = udpClient.Receive(ref remotePoint);
+                        var received = UdpClient.Receive(ref remotePoint);
                         udpReceiveState.RemoteEndPoint = remotePoint;
                         udpReceiveState.Buffer = received;
                         UDPMessageReceived?.Invoke(udpReceiveState);

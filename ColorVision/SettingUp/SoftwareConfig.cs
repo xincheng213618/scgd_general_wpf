@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
@@ -32,6 +33,12 @@ namespace ColorVision.SettingUp
             MySqlConfig = new MySqlConfig();
             MySqlConfigs = new ObservableCollection<MySqlConfig>();
             MySqlControlLazy = new Lazy<MySqlControl>(() => MySqlControl.GetInstance());
+
+            CameraVideoConfig = new CameraVideoConfig();
+            CameraVideoConfigs = new ObservableCollection<CameraVideoConfig>();
+
+
+
         }
 
         public string Version { get; set; } = "0.0";
@@ -84,6 +91,11 @@ namespace ColorVision.SettingUp
         public UserConfig UserConfig { get; set; }
 
         public ProjectConfig ProjectConfig { get; set; }
+
+        public CameraVideoConfig CameraVideoConfig { get; set; }
+
+
+        public ObservableCollection<CameraVideoConfig> CameraVideoConfigs { get; set; }
 
     }
 }

@@ -53,6 +53,7 @@
                 <MenuItem Header="工具(_T)">
                     <MenuItem Header="流程引擎(_F)" Click="MenuItem9_Click"/>
                     <MenuItem Header="MQTT日志(_Q)" Click="MenuItem_Click"/>
+                    <MenuItem Header="相机视频配置(_V)" Click="MenuItem10_Click"/>
                     <Separator/>
                     <MenuItem Header="设置(_O)"  Click="MenuItem_Click_2"   InputGestureText="Ctrl + I"  >
                         <MenuItem.Icon >
@@ -376,13 +377,12 @@
                             <ToggleButton  x:Name="ToggleButton999"  Style="{StaticResource ButtonPageControl1}" Background="#F9F9F9"  Content="测试"  FontSize="15" Foreground="Black" IsChecked="True" />
                             <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton999,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
                                 <StackPanel Margin="5">
-                                    <UniformGrid >
+                                    <UniformGrid Columns="2" >
                                         <Button Content="打开测试图像"  Margin="10,0" Click="Button_Click"/>
                                         <Button Content="绘制测试图形"  Margin="10,0"  Click="Button1_Click"/>
                                         <Button Content="加载流程引擎"  Margin="10,0"  Click="Button2_Click"/>
                                         <Button Content="执行测试"  Margin="10,0"   Click="Button3_Click"/>
                                         <Button Content="视频测试"  Margin="10,0"   Click="Button4_Click"/>
-
                                     </UniformGrid>
                                 </StackPanel>
                             </Border>

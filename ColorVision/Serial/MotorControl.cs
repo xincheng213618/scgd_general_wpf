@@ -410,7 +410,7 @@ namespace ColorVision.Serial
                 }
             }
 
-            return (crc == (data[data.Length - 2] + (data[data.Length - 1] << 8)));
+            return crc == data[^2] + data[^1] << 8;
         }
 
 

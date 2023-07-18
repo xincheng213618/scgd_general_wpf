@@ -26,6 +26,11 @@ using ColorVision.Theme;
 using ColorVision.Util;
 using System.Windows.Forms.Integration;
 using OpenCvSharp.Flann;
+using ColorVision.Video;
+using ScottPlot.Drawing.Colormaps;
+using ScottPlot.Styles;
+using System.Drawing.Imaging;
+using HandyControl.Expression.Shapes;
 
 namespace ColorVision
 {
@@ -934,48 +939,39 @@ namespace ColorVision
             //MessageBox.Show("流程执行完成");
             window.Close();
         }
-        private const string H264DllName = "openh264-2.3.1-win64.dll";
-        public OpenH264Lib.Decoder decoder { get; set; }
-        private H264Reader h264Reader;
+        bool CameraOpen;
+
         private void Button4_Click(object sender, RoutedEventArgs e)
         {
-            decoder = new OpenH264Lib.Decoder(H264DllName);
-            h264Reader = new H264Reader();
-            string locateIP = "192.168.3.182"; //本机IP
-            int locatePort = 9002;   //发送端口
-
-            //var windowsFormsHost1 = new WindowsFormsHost();
-            //pictureBox = new System.Windows.Forms.PictureBox();
-            //windowsFormsHost1.Child = pictureBox;
-            //Window window = new Window() { Width=1280,Height=720};
-            //window.Content = windowsFormsHost1;
-            //window.Show();
-            UDPClientRecv udpClient = new UDPClientRecv(locateIP, locatePort);
-            udpClient.UDPMessageReceived += UdpClient_UDPMessageReceived;
-        }
-        private void UdpClient_UDPMessageReceived(UdpStateEventArgs args)
-        {
-            if (args.Buffer.Length > 0)
+            if (sender is Button button)
             {
-                byte[] bytes = h264Reader.AddPacket(args.Buffer);
-                if (bytes != null)
+                CameraVideoControl control = CameraVideoControl.GetInstance();
+                if (!CameraOpen)
                 {
-                    var bmp = decoder.Decode(bytes, bytes.Length);
-                    if (bmp != null)
+                    button.Content = "正在获取推流";
+                    control.Open();
+                    control.CameraVideoFrameReceived += (bmp) =>
                     {
-
-                        Application.Current.Dispatcher.Invoke(() =>
+                        button.Content = "关闭视频";
+                        if (ImageShow.Source is WriteableBitmap bitmap)
+                        {
+                            BitmapCopyToWriteableBitmap(bmp, bitmap, new System.Drawing.Rectangle(0, 0, bmp.Width, bmp.Height), 0, 0, bmp.PixelFormat);
+                        }
+                        else
                         {
                             WriteableBitmap writeableBitmap = BitmapToWriteableBitmap(bmp);
                             ImageShow.Source = writeableBitmap;
-                        });
-
-                        //pictureBox.Image = (System.Drawing.Bitmap)bmp.Clone();
-                        Console.WriteLine("Display BMP / {0}", args.Buffer[3]);
-                        bmp.Dispose();
-                    }
+                        }
+                    };
                 }
+                else
+                {
+                    button.Content = "启用视频模式";
+                    control.Close();
+                }
+                CameraOpen = !CameraOpen;
             }
+
         }
 
 
@@ -991,34 +987,41 @@ namespace ColorVision
             BitmapCopyToWriteableBitmap(src, wb, new System.Drawing.Rectangle(0, 0, src.Width, src.Height), 0, 0, format);
             return wb;
         }
-        //创建尺寸和格式与Bitmap兼容的WriteableBitmap
-        public static WriteableBitmap? CreateCompatibleWriteableBitmap(System.Drawing.Bitmap src)
+
+        public static System.Windows.Media.PixelFormat CoverFormat(System.Drawing.Bitmap src)
         {
-            System.Windows.Media.PixelFormat format;
-            switch (src.PixelFormat)
+            return src.PixelFormat switch
             {
-                case System.Drawing.Imaging.PixelFormat.Format16bppRgb555:
-                    format = System.Windows.Media.PixelFormats.Bgr555;
-                    break;
-                case System.Drawing.Imaging.PixelFormat.Format16bppRgb565:
-                    format = System.Windows.Media.PixelFormats.Bgr565;
-                    break;
-                case System.Drawing.Imaging.PixelFormat.Format24bppRgb:
-                    format = System.Windows.Media.PixelFormats.Bgr24;
-                    break;
-                case System.Drawing.Imaging.PixelFormat.Format32bppRgb:
-                    format = System.Windows.Media.PixelFormats.Bgr32;
-                    break;
-                case System.Drawing.Imaging.PixelFormat.Format32bppPArgb:
-                    format = System.Windows.Media.PixelFormats.Pbgra32;
-                    break;
-                case System.Drawing.Imaging.PixelFormat.Format32bppArgb:
-                    format = System.Windows.Media.PixelFormats.Bgra32;
-                    break;
-                default:
-                    return default;
-            }
-            return new WriteableBitmap(src.Width, src.Height, 0, 0, format, null);
+                System.Drawing.Imaging.PixelFormat.DontCare => throw new NotImplementedException(),
+                System.Drawing.Imaging.PixelFormat.Max => throw new NotImplementedException(),
+                System.Drawing.Imaging.PixelFormat.Indexed => throw new NotImplementedException(),
+                System.Drawing.Imaging.PixelFormat.Gdi => throw new NotImplementedException(),
+                System.Drawing.Imaging.PixelFormat.Format16bppRgb555 => PixelFormats.Bgr555,
+                System.Drawing.Imaging.PixelFormat.Format16bppRgb565 => PixelFormats.Bgr565,
+                System.Drawing.Imaging.PixelFormat.Format24bppRgb => PixelFormats.Bgr24,
+                System.Drawing.Imaging.PixelFormat.Format32bppRgb => PixelFormats.Bgr32,
+                System.Drawing.Imaging.PixelFormat.Format1bppIndexed => PixelFormats.Indexed1,
+                System.Drawing.Imaging.PixelFormat.Format4bppIndexed => PixelFormats.Indexed4,
+                System.Drawing.Imaging.PixelFormat.Format8bppIndexed => PixelFormats.Indexed8,
+                System.Drawing.Imaging.PixelFormat.Alpha => throw new NotImplementedException(),
+                System.Drawing.Imaging.PixelFormat.Format16bppArgb1555 => PixelFormats.Bgr101010,
+                System.Drawing.Imaging.PixelFormat.PAlpha => throw new NotImplementedException(),
+                System.Drawing.Imaging.PixelFormat.Format32bppPArgb => PixelFormats.Pbgra32,
+                System.Drawing.Imaging.PixelFormat.Extended => throw new NotImplementedException(),
+                System.Drawing.Imaging.PixelFormat.Format16bppGrayScale => PixelFormats.Gray16,
+                System.Drawing.Imaging.PixelFormat.Format48bppRgb => PixelFormats.Rgb48,
+                System.Drawing.Imaging.PixelFormat.Format64bppPArgb => PixelFormats.Prgba64,
+                System.Drawing.Imaging.PixelFormat.Canonical => throw new NotImplementedException(),
+                System.Drawing.Imaging.PixelFormat.Format32bppArgb => PixelFormats.Bgra32,
+                System.Drawing.Imaging.PixelFormat.Format64bppArgb => PixelFormats.Rgba64,
+                _ => PixelFormats.Default,
+            };;
+        }
+
+        //创建尺寸和格式与Bitmap兼容的WriteableBitmap
+        public static WriteableBitmap CreateCompatibleWriteableBitmap(System.Drawing.Bitmap src)
+        {
+            return new WriteableBitmap(src.Width, src.Height, 0, 0, CoverFormat(src), null);
         }
         //将Bitmap数据写入WriteableBitmap中
         public static void BitmapCopyToWriteableBitmap(System.Drawing.Bitmap src, WriteableBitmap dst, System.Drawing.Rectangle srcRect, int destinationX, int destinationY, System.Drawing.Imaging.PixelFormat srcPixelFormat)
@@ -1026,6 +1029,11 @@ namespace ColorVision
             var data = src.LockBits(new System.Drawing.Rectangle(new System.Drawing.Point(0, 0), src.Size), System.Drawing.Imaging.ImageLockMode.ReadOnly, srcPixelFormat);
             dst.WritePixels(new Int32Rect(srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height), data.Scan0, data.Height * data.Stride, data.Stride, destinationX, destinationY);
             src.UnlockBits(data);
+        }
+
+        private void MenuItem10_Click(object sender, RoutedEventArgs e)
+        {
+            new CameraVideoConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
     }
 
