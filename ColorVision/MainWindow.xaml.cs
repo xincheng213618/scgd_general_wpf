@@ -31,6 +31,7 @@ using ScottPlot.Drawing.Colormaps;
 using ScottPlot.Styles;
 using System.Drawing.Imaging;
 using HandyControl.Expression.Shapes;
+using Microsoft.Win32;
 
 namespace ColorVision
 {
@@ -54,8 +55,30 @@ namespace ColorVision
 
             if (isHighContrast||!ThemeManager.AppsUseLightTheme()||!ThemeManager.SystemUsesLightTheme())
             {
-                this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
+              this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
             }
+            SystemEvents.UserPreferenceChanged += (s, e) =>
+            {
+                if (isHighContrast || !ThemeManager.AppsUseLightTheme() || !ThemeManager.SystemUsesLightTheme())
+                {
+                    this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
+                }
+                else
+                {
+                    this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision.ico"));
+                }
+            };
+            SystemParameters.StaticPropertyChanged += (s, e) =>
+            {
+                if (isHighContrast || !ThemeManager.AppsUseLightTheme() || !ThemeManager.SystemUsesLightTheme())
+                {
+                    this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
+                }
+                else
+                {
+                    this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision.ico"));
+                }
+            };
 
 
             if (WindowConfig.IsExist)
@@ -182,6 +205,10 @@ namespace ColorVision
                 {
                     ImageGroupGrid.Visibility = Visibility.Visible;
                 }
+                Window wins = new Window();
+                wins.Show();
+                wins.Close();
+
 
             };
 
