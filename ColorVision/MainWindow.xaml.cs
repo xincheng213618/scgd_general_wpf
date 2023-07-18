@@ -120,12 +120,7 @@ namespace ColorVision
                         DrawingVisualLists.Remove(visual);
                 }
             };
-
-
         }
-
-
-
 
         private DrawingVisual ImageRuler = new DrawingVisual();
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -157,7 +152,6 @@ namespace ColorVision
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
 
-
         private void Button1_Click(object sender, RoutedEventArgs e)
         {
             for (int i = 0; i < 50; i++)
@@ -178,8 +172,19 @@ namespace ColorVision
             {
                 PropertyGrid2.Refresh();
             };
+            DrawingVisualLists.CollectionChanged += (s, e) =>
+            {
+                if (DrawingVisualLists.Count == 0)
+                {
+                    ImageGroupGrid.Visibility = Visibility.Collapsed;
+                }
+                else
+                {
+                    ImageGroupGrid.Visibility = Visibility.Visible;
+                }
 
-            ImageGroupGrid.Visibility = Visibility.Visible;
+            };
+
         }
 
         private DrawingVisual DrawingVisualGrid = new DrawingVisual();
