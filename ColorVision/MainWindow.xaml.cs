@@ -40,8 +40,6 @@ namespace ColorVision
     /// 
     public partial class MainWindow : Window
     {
-        public ImageInfo ImageInfo { get; set; } = new ImageInfo();
-
         public ToolBarTop ToolBarTop { get; set; }
 
         public MainWindow()
@@ -75,19 +73,55 @@ namespace ColorVision
             ToolBarTop = new ToolBarTop(Zoombox1, ImageShow);
             ToolBar1.DataContext = ToolBarTop;
             ListView1.ItemsSource = DrawingVisualLists;
+            StatusBarGrid.DataContext = GlobalSetting.GetInstance();
             SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
-
-            StatusBarItem1.DataContext = GlobalSetting.GetInstance().PerformanceControl;
-            StatusBarItem2.DataContext = GlobalSetting.GetInstance().PerformanceControl;
-
-            StatusBarItem3.DataContext = SoftwareConfig.ProjectConfig;
-            StatusBarMqtt.DataContext = SoftwareConfig.MQTTControl;
-            StatusBarMysql.DataContext = SoftwareConfig.MySqlControl;
-
-            StatusBarGrid.DataContext = SoftwareConfig;
             MenuStatusBar.DataContext = SoftwareConfig;
             SiderBarGrid.DataContext = SoftwareConfig;
-            
+
+
+
+            ImageShow.VisualsAdd += (s, e) =>
+            {
+                if (s is IDrawingVisual visual && !DrawingVisualLists.Contains(visual) && s is Visual visual1)
+                {
+                    DrawingVisualLists.Add(visual);
+                    visual.GetAttribute().PropertyChanged += (s1, e1) =>
+                    {
+                        if (e1.PropertyName == "IsShow")
+                        {
+                            ListView1.ScrollIntoView(visual);
+                            ListView1.SelectedIndex = DrawingVisualLists.IndexOf(visual);
+                            if (visual.GetAttribute().IsShow == true)
+                            {
+                                if (!ImageShow.ContainsVisual(visual1))
+                                {
+                                    ImageShow.AddVisual(visual1);
+                                }
+                            }
+                            else
+                            {
+                                if (ImageShow.ContainsVisual(visual1))
+                                {
+                                    ImageShow.RemoveVisual(visual1);
+                                }
+                            }
+                        }
+                    };
+
+                }
+            };
+
+            //如果是不显示
+            ImageShow.VisualsRemove += (s, e) =>
+            {
+                if (s is IDrawingVisual visual)
+                {
+                    if (visual.GetAttribute().IsShow)
+                        DrawingVisualLists.Remove(visual);
+                }
+            };
+
+
         }
 
 
@@ -117,46 +151,7 @@ namespace ColorVision
                 Zoombox1.ZoomUniform();
                 ToolBar1.Visibility = Visibility.Visible;
 
-                ImageShow.VisualsAdd += (s, e) =>
-                {
-                    if (s is IDrawingVisual visual && !DrawingVisualLists.Contains(visual) && s is Visual visual1)
-                    {
-                        DrawingVisualLists.Add(visual);
-                        visual.GetAttribute().PropertyChanged += (s1, e1) =>
-                        {
-                            if (e1.PropertyName == "IsShow")
-                            {
-                                ListView1.ScrollIntoView(visual);
-                                ListView1.SelectedIndex = DrawingVisualLists.IndexOf(visual);
-                                if (visual.GetAttribute().IsShow == true)
-                                {
-                                    if (!ImageShow.ContainsVisual(visual1))
-                                    {
-                                        ImageShow.AddVisual(visual1);
-                                    }
-                                }
-                                else
-                                {
-                                    if (ImageShow.ContainsVisual(visual1))
-                                    {
-                                        ImageShow.RemoveVisual(visual1);
-                                    }
-                                }
-                            }
-                        };
 
-                    }
-                };
-
-                //如果是不显示
-                ImageShow.VisualsRemove += (s, e) =>
-                {
-                    if (s is IDrawingVisual visual)
-                    {
-                        if (visual.GetAttribute().IsShow)
-                            DrawingVisualLists.Remove(visual);
-                    }
-                };
             }
         }
 
@@ -493,23 +488,24 @@ namespace ColorVision
 
                     var bitPoint = new Point(point.X.ToInt32(), point.Y.ToInt32());
 
-
                     if (point.X.ToInt32() >= 0 && point.X.ToInt32() < bitmapImage.PixelWidth && point.Y.ToInt32() >= 0 && point.Y.ToInt32() < bitmapImage.PixelHeight)
                     {
                         var color = bitmapImage.GetPixelColor(point.X.ToInt32(), point.Y.ToInt32());
-                        ImageInfo.X = point.X.ToInt32();
-                        ImageInfo.Y = point.Y.ToInt32();
-                        ImageInfo.X1 = point.X;
-                        ImageInfo.Y1 = point.Y;
+                        ToolBarTop.DrawImage(actPoint, bitPoint, new ImageInfo
+                        {
+                            X = point.X.ToInt32(),
+                            Y = point.Y.ToInt32(),
+                            X1 = point.X,
+                            Y1 = point.Y,
 
-                        ImageInfo.R = color.R;
-                        ImageInfo.G = color.G;
-                        ImageInfo.B = color.B;
-
-                        ImageInfo.Color = new SolidColorBrush(color);
-                        ImageInfo.Hex = color.ToHex();
+                            R = color.R,
+                            G = color.G,
+                            B = color.B,
+                            Color = new SolidColorBrush(color),
+                            Hex = color.ToHex()
+                        });
                     }
-                    ToolBarTop.DrawImage(actPoint, bitPoint, ImageInfo);
+
                 }
                 LastMouseMove = point;
             }

@@ -546,7 +546,7 @@
             <GridSplitter Grid.Column="0"  Width="1" />
             <GridSplitter  Grid.Column="2"  Width="1" HorizontalAlignment="Left" />
         </Grid>
-        <Grid Grid.Row="2" x:Name="StatusBarGrid" d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}" Visibility="{Binding IsOpenStatusBar,Converter={StaticResource bool2VisibilityConverter}}" >
+        <Grid Grid.Row="2" x:Name="StatusBarGrid" d:DataContext="{d:DesignInstance SettingUp:GlobalSetting}" Visibility="{Binding IsOpenStatusBar,Converter={StaticResource bool2VisibilityConverter}}" >
             <StatusBar>
                 <StatusBar.ItemsPanel>
                     <ItemsPanelTemplate>
@@ -558,10 +558,10 @@
                         </Grid>
                     </ItemsPanelTemplate>
                 </StatusBar.ItemsPanel>
-                <StatusBarItem  x:Name="StatusBarItem3" d:DataContext="{d:DesignInstance  SettingUp:ProjectConfig}">
+                <StatusBarItem  x:Name="StatusBarItem3">
                     <DockPanel>
                         <TextBlock Text="当前工程: "/>
-                        <TextBlock Text="{Binding ProjectName}"  MouseLeftButtonDown="TextBlock_MouseLeftButtonDown2"/>
+                        <TextBlock Text="{Binding  SoftwareConfig.ProjectConfig.ProjectName}"  MouseLeftButtonDown="TextBlock_MouseLeftButtonDown2"/>
                     </DockPanel>
                 </StatusBarItem>
                 <StatusBarItem Grid.Column="1" >
@@ -569,14 +569,14 @@
                         <DockPanel.Resources>
                             <ResourceDictionary Source="/Theme/Icons.xaml"/>
                         </DockPanel.Resources>
-                        <StatusBarItem  MouseLeftButtonDown="TextBlock_MouseLeftButtonDown1" Visibility="{Binding IsUseMySql,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="MySql" >
-                            <ToggleButton x:Name="StatusBarMysql" d:DataContext="{d:DesignInstance mqtt:MQTTControl}" Style="{StaticResource ButtonDrawingImageMysql}"  Height="20"  Margin="0,-10" IsChecked="{Binding IsConnect,Mode=OneWay}"  IsEnabled="False"/>
+                        <StatusBarItem  MouseLeftButtonDown="TextBlock_MouseLeftButtonDown1" Visibility="{Binding SoftwareConfig.IsUseMySql,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="MySql" >
+                            <ToggleButton x:Name="StatusBarMysql" Style="{StaticResource ButtonDrawingImageMysql}"  Height="20"  Margin="0,-10" IsChecked="{Binding SoftwareConfig.MySqlControl.IsConnect,Mode=OneWay}"  IsEnabled="False"/>
                         </StatusBarItem>
-                        <StatusBarItem MouseLeftButtonDown="TextBlock_MouseLeftButtonDown" Visibility="{Binding IsUseMQTT,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="MQTT">
-                            <ToggleButton  x:Name="StatusBarMqtt" d:DataContext="{d:DesignInstance mqtt:MQTTControl}"  Style="{StaticResource ButtonDrawingImageMQTT}"  Height="20"  Margin="0,-10" IsChecked="{Binding IsConnect,Mode=OneWay}" IsEnabled="False" />
+                        <StatusBarItem MouseLeftButtonDown="TextBlock_MouseLeftButtonDown" Visibility="{Binding SoftwareConfig.IsUseMQTT,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="MQTT">
+                            <ToggleButton  x:Name="StatusBarMqtt"   Style="{StaticResource ButtonDrawingImageMQTT}"  Height="20"  Margin="0,-10" IsChecked="{Binding SoftwareConfig.MQTTControl.IsConnect,Mode=OneWay}" IsEnabled="False" />
                         </StatusBarItem>
-                        <StatusBarItem  x:Name="StatusBarItem1" Visibility="Collapsed"  Content="{Binding Path=MemoryThis}"/>
-                        <StatusBarItem  x:Name="StatusBarItem2"   Content="{Binding Time}"/>
+                        <StatusBarItem  x:Name="StatusBarItem1" Visibility="Collapsed"  Content="{Binding PerformanceControl.MemoryThis}"/>
+                        <StatusBarItem  x:Name="StatusBarItem2"   Content="{Binding PerformanceControl.Time}"/>
                     </DockPanel>
                 </StatusBarItem>
 
