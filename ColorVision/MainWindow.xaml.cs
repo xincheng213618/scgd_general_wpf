@@ -941,7 +941,7 @@ namespace ColorVision
         {
             decoder = new OpenH264Lib.Decoder(H264DllName);
             h264Reader = new H264Reader();
-            string locateIP = "192.168.3.182"; //本机IP
+            string locateIP = "0.0.0.0"; //本机IP
             int locatePort = 9002;   //发送端口
 
             //var windowsFormsHost1 = new WindowsFormsHost();
