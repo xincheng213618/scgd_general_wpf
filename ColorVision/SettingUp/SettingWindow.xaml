@@ -72,6 +72,10 @@
                                             <ToggleButton DockPanel.Dock="Right" Height="20" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsUseMQTT}"/>
                                             <TextBlock Text="启用MQTT"/>
                                         </DockPanel>
+                                        <DockPanel x:Name="AutoRunDock" Margin="5"  d:DataContext="{d:DesignInstance local:GlobalSetting}">
+                                            <ToggleButton DockPanel.Dock="Right" Height="20" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsAutoRun}"/>
+                                            <TextBlock Text="开机自动启动(可能会不成功)"/>
+                                        </DockPanel>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>

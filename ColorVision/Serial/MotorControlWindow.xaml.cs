@@ -78,12 +78,10 @@ namespace ColorVision.Serial
 
         private void Button5_Click(object sender, RoutedEventArgs e)
         {
-            int speed;
-            if (!int.TryParse(TextboxMotorSpeed.Text, out speed))
+            if (!int.TryParse(TextboxMotorSpeed.Text, out int speed))
                 speed = 30;
 
-            int length;
-            if (!int.TryParse(TextboxMotorLenght.Text, out length))
+            if (!int.TryParse(TextboxMotorLenght.Text, out int length))
                 length = 360;
 
             MotorControl.Move(length, speed);

@@ -302,7 +302,6 @@ namespace ColorVision
                     drawing.GetAttribute().IsShow = false;
                 };
                 MenuItem menuIte2 = new MenuItem() { Header = "删除(_D)" };
-
                 menuIte2.Click += (s, e) =>
                 {
                     ImageShow.RemoveVisual(DrawingVisual);

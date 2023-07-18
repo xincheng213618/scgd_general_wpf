@@ -23,7 +23,7 @@ namespace ColorVision.Video
 
     public class CameraVideoControl
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(MySqlControl));
+        private static readonly ILog log = LogManager.GetLogger(typeof(CameraVideoControl));
 
         private static CameraVideoControl _instance;
         private static readonly object _locker = new();
@@ -51,7 +51,7 @@ namespace ColorVision.Video
         private Dictionary<int, List<byte[]>> packets;
         private int headLen;
 
-        bool OpenVideo = false;
+        bool OpenVideo;
         public bool Open()
         {
             try
@@ -104,7 +104,8 @@ namespace ColorVision.Video
                     }
                 });
                 return true;
-            }catch(Exception ex)
+            }
+            catch(Exception ex)
             {
                 OpenVideo = false;
                 log.Error(ex);

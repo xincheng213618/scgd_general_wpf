@@ -35,6 +35,10 @@ namespace ColorVision.Util
         /// <returns></returns>
         public static T? Load<T>(string cfgFile)
         {
+            if (File.Exists(AppDomain.CurrentDomain.BaseDirectory + cfgFile))
+                cfgFile = AppDomain.CurrentDomain.BaseDirectory + cfgFile;
+
+
             if (File.Exists(cfgFile))
             {
                 try 

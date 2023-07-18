@@ -13,9 +13,13 @@ namespace ColorVision.SettingUp
 {
     public static class GlobalConst
     {
-        public const string SoftwareConfigFileName = "Config\\SoftwareConfig.json";
+        public static string SoftwareConfigFileName { get; set; } = "Config\\SoftwareConfig.json";
         public const string SoftwareConfigAESKey= "ColorVision";
         public const string SoftwareConfigAESVector = "ColorVision";
+
+
+        public const string AutoRunRegPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
+        public const string AutoRunName = "ColorVisionAutoRun";
 
 
     }
@@ -24,7 +28,7 @@ namespace ColorVision.SettingUp
     /// <summary>
     /// 全局设置
     /// </summary>
-    public class GlobalSetting
+    public class GlobalSetting:ViewModelBase
     {
         private static GlobalSetting _instance;
         private static readonly object _locker = new();
@@ -34,6 +38,9 @@ namespace ColorVision.SettingUp
         {
             SoftwareConfigLazy = new Lazy<SoftwareConfig>(() =>
             {
+
+                GlobalConst.SoftwareConfigFileName = AppDomain.CurrentDomain.BaseDirectory + GlobalConst.SoftwareConfigFileName;
+
                 SoftwareConfig config = ReadConfig<SoftwareConfig>(GlobalConst.SoftwareConfigFileName);
                 if (config != null)
                 {
@@ -62,6 +69,8 @@ namespace ColorVision.SettingUp
 
             PerformanceControlLazy = new Lazy<PerformanceControl>(() => PerformanceControl.GetInstance());
         }
+
+        public bool IsAutoRun { get => Util.Tool.IsAutoRun(); set { Util.Tool.SetAutoRun(value); NotifyPropertyChanged(); } }
 
         [JsonIgnore]
         readonly Lazy<PerformanceControl> PerformanceControlLazy;

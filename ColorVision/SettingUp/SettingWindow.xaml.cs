@@ -35,6 +35,7 @@ namespace ColorVision.SettingUp
         {
             SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
             this.DataContext = SoftwareConfig;
+            AutoRunDock.DataContext = GlobalSetting.GetInstance();
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

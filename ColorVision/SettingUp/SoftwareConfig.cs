@@ -37,9 +37,8 @@ namespace ColorVision.SettingUp
             CameraVideoConfig = new CameraVideoConfig();
             CameraVideoConfigs = new ObservableCollection<CameraVideoConfig>();
 
-
-
         }
+
 
         public string Version { get; set; } = "0.0";
 

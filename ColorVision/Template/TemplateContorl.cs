@@ -52,8 +52,11 @@ namespace ColorVision.Template
 
         public TemplateControl()
         {
-            if (!Directory.Exists("cfg"))
-                Directory.CreateDirectory("cfg");
+            if (!Directory.Exists(AppDomain.CurrentDomain.BaseDirectory+ "cfg"))
+            {
+                Directory.CreateDirectory(AppDomain.CurrentDomain.BaseDirectory + "cfg");
+            }
+
 
             AoiParam param = new AoiParam
             {
