@@ -4,6 +4,7 @@ using ColorVision.Video;
 using log4net;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -137,6 +138,28 @@ namespace ColorVision.Util
             retval = bf.Deserialize(ms);
             #pragma warning restore SYSLIB0011
             return (T)retval;
+        }
+
+        public static bool IsHasDefaultProgram(string filePath)
+        {
+            if (string.IsNullOrEmpty(filePath))
+                return false;
+            if (!File.Exists(filePath))
+                return false;
+
+            bool hasDefaultProgram = false;
+            try
+            {
+                ProcessStartInfo psi = new ProcessStartInfo(filePath);
+                psi.UseShellExecute = true;
+                Process.Start(psi);
+                hasDefaultProgram = true;
+            }
+            catch (FileNotFoundException)
+            {
+                hasDefaultProgram = false;
+            }
+            return hasDefaultProgram;
         }
     }
 }

@@ -13,8 +13,8 @@ namespace ColorVision.SettingUp
 {
     public static class GlobalConst
     {
-        public static string SoftwareConfigFileName { get; set; } = "Config\\SoftwareConfig.json";
-        public const string SoftwareConfigAESKey= "ColorVision";
+        public const string SoftwareConfigFileName = "Config\\SoftwareConfig.json";
+        public const string SoftwareConfigAESKey = "ColorVision";
         public const string SoftwareConfigAESVector = "ColorVision";
 
 
@@ -36,12 +36,10 @@ namespace ColorVision.SettingUp
 
         public GlobalSetting()
         {
+            SoftwareConfigFileName = AppDomain.CurrentDomain.BaseDirectory + GlobalConst.SoftwareConfigFileName;
             SoftwareConfigLazy = new Lazy<SoftwareConfig>(() =>
             {
-
-                GlobalConst.SoftwareConfigFileName = AppDomain.CurrentDomain.BaseDirectory + GlobalConst.SoftwareConfigFileName;
-
-                SoftwareConfig config = ReadConfig<SoftwareConfig>(GlobalConst.SoftwareConfigFileName);
+                SoftwareConfig config = ReadConfig<SoftwareConfig>(SoftwareConfigFileName);
                 if (config != null)
                 {
                     config.MySqlConfig.UserPwd = AESUtil.AESDecrypt(config.MySqlConfig.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
@@ -70,13 +68,16 @@ namespace ColorVision.SettingUp
             PerformanceControlLazy = new Lazy<PerformanceControl>(() => PerformanceControl.GetInstance());
         }
 
+
+
         public bool IsAutoRun { get => Util.Tool.IsAutoRun(); set { Util.Tool.SetAutoRun(value); NotifyPropertyChanged(); } }
 
         [JsonIgnore]
         readonly Lazy<PerformanceControl> PerformanceControlLazy;
         [JsonIgnore]
         public PerformanceControl PerformanceControl { get => PerformanceControlLazy.Value; }
-
+        
+        public string SoftwareConfigFileName { get; set; }
 
         readonly Lazy<SoftwareConfig> SoftwareConfigLazy;
 

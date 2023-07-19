@@ -17,6 +17,8 @@ using System.Windows.Input;
 using ColorVision.MQTT;
 using ColorVision.MySql;
 using log4net;
+using log4net.Appender;
+using System.Diagnostics;
 
 namespace ColorVision
 {
@@ -270,10 +272,32 @@ namespace ColorVision
             var fileAppender = (log4net.Appender.FileAppender)LogManager.GetRepository().GetAppenders().FirstOrDefault(a => a is log4net.Appender.FileAppender);
             if (fileAppender != null)
             {
-                ;
                 System.Diagnostics.Process.Start("explorer.exe", $"{Path.GetDirectoryName(fileAppender.File)}");
             }
+        }
+        private void Setting_Click(object sender, RoutedEventArgs e)
+        {
+            bool hasDefaultProgram = false;
+            try
+            {
+                ProcessStartInfo psi = new ProcessStartInfo(GlobalSetting.GetInstance().SoftwareConfigFileName);
+                psi.UseShellExecute = true;
+                Process.Start(psi);
+                hasDefaultProgram = true;
+            }
+            catch (FileNotFoundException)
+            {
+                hasDefaultProgram = false;
+            }
+            if (hasDefaultProgram)
+            {
+                System.Diagnostics.Process.Start("explorer.exe", $"{GlobalSetting.GetInstance().SoftwareConfigFileName}");
+            }
+            else
+            {
+                System.Diagnostics.Process.Start("notepad.exe", GlobalSetting.GetInstance().SoftwareConfigFileName);
 
+            }
         }
     }
 }
