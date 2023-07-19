@@ -823,6 +823,7 @@ namespace ColorVision
                     if (ComboxCameraType.SelectedItem is KeyValuePair<CameraType, string> KeyValue && KeyValue.Key is CameraType cameraType)
                     {
                         MQTTCamera.Init(cameraType);
+                        CamerInitButton.Content = "正在初始化";
                     }
                 }
                 else
