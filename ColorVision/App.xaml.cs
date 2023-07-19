@@ -35,6 +35,8 @@ namespace ColorVision
         [GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
         public static void Main(string[] args)
         {
+            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+
             bool IsDebug = Debugger.IsAttached;
             if (args.Count()>0)
             {

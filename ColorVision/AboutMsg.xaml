@@ -18,11 +18,11 @@
             </Grid.RowDefinitions>
             <StackPanel>
                 <Image Source="/Image/ColorVision.png" Width="200" Margin="20" PreviewMouseDown="Image_PreviewMouseDown"/>
-                <TextBlock Margin="5,15,5,30"  FontWeight="Bold" Text="视彩（上海）光电技术有限公司是一家专注于光学视觉检测的高科技公司" HorizontalAlignment="Center"/>
+                <TextBlock Margin="5,15,5,30"  FontWeight="Bold" Text="视彩（上海）光电技术有限公司是s一家专注于光学视觉检测的高科技公司" HorizontalAlignment="Center"/>
                 <Button  x:Name="CloseButton" Content="确 定" FocusVisualStyle="{x:Null}" FontWeight="Bold" Click="Button_Click_1" Width="80" Height="25" Margin="0,0,0,0">
                     <Button.Template>
                         <ControlTemplate  TargetType="Button">
-                            <Border x:Name="border"  Background="#DDDDDD"  BorderBrush="#FED823" BorderThickness="2" CornerRadius="3">
+                            <Border x:Name="border"  Background="#33DDDDDD"  BorderBrush="#99FED823" BorderThickness="2" CornerRadius="3">
                                 <ContentPresenter x:Name="contentPresenter" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
                             </Border>
                             <ControlTemplate.Triggers>

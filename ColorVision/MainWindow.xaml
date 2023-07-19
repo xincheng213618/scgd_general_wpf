@@ -547,7 +547,7 @@
             <GridSplitter Grid.Column="0"  Width="1" />
             <GridSplitter  Grid.Column="2"  Width="1" HorizontalAlignment="Left" />
         </Grid>
-        <Grid Grid.Row="2" x:Name="StatusBarGrid" d:DataContext="{d:DesignInstance SettingUp:GlobalSetting}" Visibility="{Binding IsOpenStatusBar,Converter={StaticResource bool2VisibilityConverter}}" >
+        <Grid Grid.Row="2" x:Name="StatusBarGrid" d:DataContext="{d:DesignInstance SettingUp:GlobalSetting}" Visibility="{Binding SoftwareConfig.IsOpenStatusBar,Converter={StaticResource bool2VisibilityConverter}}" >
             <StatusBar>
                 <StatusBar.ItemsPanel>
                     <ItemsPanelTemplate>

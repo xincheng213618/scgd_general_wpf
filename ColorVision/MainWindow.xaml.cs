@@ -1062,12 +1062,7 @@ namespace ColorVision
         {
             new CameraVideoConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
-
-
     }
-
-
-
 
     public class ImageInfo : ViewModelBase
     {
