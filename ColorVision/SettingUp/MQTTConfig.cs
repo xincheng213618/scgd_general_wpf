@@ -7,6 +7,17 @@ using System.Threading.Tasks;
 
 namespace ColorVision.SettingUp
 {
+    public class MQTTSetting : ViewModelBase
+    {
+        /// <summary>
+        /// 是否显示心跳
+        /// </summary>
+        public bool IsShieldHeartbeat { get => _IsShieldHeartbeat; set { _IsShieldHeartbeat = value; NotifyPropertyChanged(); } }
+        private bool _IsShieldHeartbeat;
+
+    }
+
+
     /// <summary>
     /// MQTT配置
     /// </summary>

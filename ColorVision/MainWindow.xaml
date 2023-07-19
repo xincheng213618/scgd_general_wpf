@@ -135,7 +135,7 @@
                                 <StackPanel Margin="5">
                                     <DockPanel>
                                         <Label Content="相机类型："/>
-                                        <ComboBox  x:Name="ComboxCameraType"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20" Margin="0,0,10,0"/>
+                                        <ComboBox x:Name="ComboxCameraType"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20" Margin="0,0,10,0"/>
                                     </DockPanel>
                                     <Button  x:Name="CamerInitButton" Content="初始化" Click="MQTTCamera_Init_Click"/>
                                     <StackPanel x:Name="StackPanelOpen">

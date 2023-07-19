@@ -827,7 +827,11 @@ namespace ColorVision
                 }
                 else
                 {
-                    MQTTCamera.Close();
+                    MQTTCamera.UnInit();
+                    button.Content = "初始化";
+                    StackPanelOpen.Visibility = Visibility.Collapsed;
+                    StackPanelImage.Visibility = Visibility.Collapsed;
+                    CameraOpenButton.Visibility = Visibility.Collapsed;
                 }
             }
         }

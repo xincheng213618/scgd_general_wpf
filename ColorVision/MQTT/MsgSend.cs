@@ -20,7 +20,6 @@ namespace ColorVision.MQTT
         public string EventName { get; set; }
         public string ServiceName { get; set; }
         public ulong ServiceID { get; set; }
-        public Guid MsgID { get; set; }
         public int Code { get; set; }
         public string Msg { get; set; }
         [JsonProperty("data")]

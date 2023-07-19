@@ -26,9 +26,12 @@ namespace ColorVision.SettingUp
             PerformanceControlLazy = new Lazy<PerformanceControl>(() => PerformanceControl.GetInstance());
             TemplateControlLazy = new Lazy<TemplateControl>(() => TemplateControl.GetInstance());
 
+
+            MQTTSetting = new MQTTSetting();
             MQTTConfig = new MQTTConfig();
             MQTTConfigs = new ObservableCollection<MQTTConfig>();
             MQTTControlLazy = new Lazy<MQTTControl>(() => MQTTControl.GetInstance());
+
 
             MySqlConfig = new MySqlConfig();
             MySqlConfigs = new ObservableCollection<MySqlConfig>();
@@ -36,6 +39,7 @@ namespace ColorVision.SettingUp
 
             CameraVideoConfig = new CameraVideoConfig();
             CameraVideoConfigs = new ObservableCollection<CameraVideoConfig>();
+
 
         }
 
@@ -64,7 +68,7 @@ namespace ColorVision.SettingUp
         [JsonIgnore]
         public TemplateControl TemplateControl { get => TemplateControlLazy.Value; }
 
-
+        public MQTTSetting MQTTSetting { get; set; }
         public MQTTConfig MQTTConfig { get; set; }
 
         public ObservableCollection<MQTTConfig> MQTTConfigs { get; set; } 

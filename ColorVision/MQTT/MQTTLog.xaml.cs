@@ -1,18 +1,23 @@
 ﻿#pragma warning disable CS4014
 using ColorVision.MQTT;
 using ColorVision.MVVM;
+using ColorVision.SettingUp;
 using ColorVision.Util;
+using HandyControl.Expression.Shapes;
 using MQTTnet.Client;
 using MQTTnet.Server;
+using Newtonsoft.Json;
 using ScottPlot.Drawing.Colormaps;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 using System.Windows.Media;
 
 namespace ColorVision
@@ -21,13 +26,18 @@ namespace ColorVision
     {
 
         MQTTControl MQTTControl { get; set; }
+
+        public SoftwareConfig SoftwareConfig { get; set; }
+        public MQTTSetting MQTTSetting { get => SoftwareConfig.MQTTSetting; }
+
         public MQTTLog()
         {
             InitializeComponent();
             MQTTControl = MQTTControl.GetInstance();
             MQTTControl.MQTTMsgChanged += ShowLog;
             TopicListView.ItemsSource = MQTTControl.SubscribeTopic;
-            this.DataContext = MQTTControl;
+            SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
+            this.DataContext = GlobalSetting.GetInstance();
             this.Title += $"  {MQTTControl.MQTTConfig.Host}_{MQTTControl.MQTTConfig.Port}";
         }
 
@@ -38,10 +48,18 @@ namespace ColorVision
         {
             Application.Current.Dispatcher.BeginInvoke(new Action(() =>
             {
+                if (MQTTSetting.IsShieldHeartbeat && !string.IsNullOrWhiteSpace(resultData_MQTT.Payload.ToString()))
+                {
+                    MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(resultData_MQTT.Payload.ToString() ?? string.Empty);
+                    if (json != null && json.EventName == "Heartbeat")
+                        return;
+                }
                 TextBox textBox = new TextBox() { BorderThickness = new Thickness(0),Text = resultData_MQTT.ResultMsg,Tag = resultData_MQTT,Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#f5f5f5")) };
-                
+
                 if (!string.IsNullOrWhiteSpace(resultData_MQTT.Payload.ToString()))
                 {
+
+
                     ContextMenu contextMenu = new ContextMenu();
                     MenuItem menuItem2 = new MenuItem() { Header = "复制Payload" };
                     menuItem2.Click += (s, e) => { NativeMethods.Clipboard.SetText(resultData_MQTT.Payload.ToString() ?? string.Empty); };

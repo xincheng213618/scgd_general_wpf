@@ -34,13 +34,12 @@ namespace ColorVision.Video
 
         private const string H264DllName = "openh264-2.3.1-win64.dll";
         public OpenH264Lib.Decoder Decoder { get; set; }
-        public H264Reader H264Reader { get; set; }
+
         public event CameraVideoFrameHandler CameraVideoFrameReceived;
         private CameraVideoControl()
         {
             SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
             Decoder = new OpenH264Lib.Decoder(H264DllName);
-            H264Reader = new H264Reader();
 
 
         }
