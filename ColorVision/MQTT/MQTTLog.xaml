@@ -22,7 +22,11 @@
                         <StackPanel Margin="5">
                             <DockPanel >
                                 <ToggleButton HorizontalAlignment="Left" Height="16" Margin="2" Style="{StaticResource ToggleButtonSwitch}"  IsChecked="{Binding SoftwareConfig.MQTTSetting.IsShieldHeartbeat}"/>
-                                <TextBlock   HorizontalAlignment="Left" Text="屏蔽心跳信号"/>
+                                <TextBlock  HorizontalAlignment="Left" Text="屏蔽心跳信号"/>
+                            </DockPanel>
+                            <DockPanel >
+                                <ToggleButton HorizontalAlignment="Left" Height="16" Margin="2" Style="{StaticResource ToggleButtonSwitch}"  IsChecked="{Binding SoftwareConfig.MQTTSetting.ShowSelect}"/>
+                                <TextBlock  HorizontalAlignment="Left" Text="只显示选中的服务日志"/>
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>

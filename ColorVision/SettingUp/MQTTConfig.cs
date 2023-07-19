@@ -15,6 +15,12 @@ namespace ColorVision.SettingUp
         public bool IsShieldHeartbeat { get => _IsShieldHeartbeat; set { _IsShieldHeartbeat = value; NotifyPropertyChanged(); } }
         private bool _IsShieldHeartbeat;
 
+        /// <summary>
+        /// 只显示选中的
+        /// </summary>
+        public bool ShowSelect { get => _ShowSelect; set { _ShowSelect = value; NotifyPropertyChanged(); } }
+        private bool _ShowSelect;
+
     }
 
 

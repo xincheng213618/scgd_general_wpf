@@ -54,6 +54,11 @@ namespace ColorVision
                     if (json != null && json.EventName == "Heartbeat")
                         return;
                 }
+                if (MQTTSetting.ShowSelect && (TopicListView.SelectedIndex<0 ||(TopicListView.SelectedIndex >-1&&resultData_MQTT.Topic.ToString()!= MQTTControl.SubscribeTopic[TopicListView.SelectedIndex])))
+                {
+                    return;
+                }
+
                 TextBox textBox = new TextBox() { BorderThickness = new Thickness(0),Text = resultData_MQTT.ResultMsg,Tag = resultData_MQTT,Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#f5f5f5")) };
 
                 if (!string.IsNullOrWhiteSpace(resultData_MQTT.Payload.ToString()))
