@@ -136,6 +136,8 @@
                                     <DockPanel Margin="5">
                                         <TextBlock Text="连接状态："/>
                                         <TextBlock Text="{Binding IsAlive}"/>
+                                        <TextBlock Text="  上次心跳"/>
+                                        <TextBlock Text="{Binding LastAliveTime}"/>
                                     </DockPanel>
                                     <DockPanel Margin="5">
                                         <Label Content="相机类型："/>
