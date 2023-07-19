@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Documents;
 
-namespace ColorVision.MySql.service
+namespace ColorVision.MySql.Service
 {
     public class PoiService
     {

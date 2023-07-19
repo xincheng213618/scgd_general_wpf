@@ -1,6 +1,6 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.MySql.DAO;
-using ColorVision.MySql.service;
+using ColorVision.MySql.Service;
 using ColorVision.SettingUp;
 using ColorVision.Util;
 using cvColorVision;

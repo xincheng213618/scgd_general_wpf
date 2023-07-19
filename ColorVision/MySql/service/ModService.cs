@@ -7,7 +7,7 @@ using System.Windows.Documents;
 using ColorVision.MySql.DAO;
 using ColorVision.Template;
 
-namespace ColorVision.MySql.service
+namespace ColorVision.MySql.Service
 {
     public class ModMasterType
     {
