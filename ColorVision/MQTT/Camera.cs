@@ -77,11 +77,10 @@ namespace ColorVision.MQTT
 
         public MQTTCamera() : base()
         {
-            MQTTControl = MQTTControl.GetInstance();
             SendTopic = "Camera";
             SubscribeTopic = "CameraService";
+
             MQTTControl.SubscribeCache(SubscribeTopic);
-            MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
         }
 
 

@@ -14,6 +14,8 @@ namespace ColorVision.MQTT
         public dynamic Params { get; set; }
     }
 
+    public delegate void MsgReturnHandler(MsgReturn msg);
+
     public class MsgReturn
     {
         public string Version { get; set; }

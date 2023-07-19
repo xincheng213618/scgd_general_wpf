@@ -1,8 +1,10 @@
 ﻿using ColorVision.MVVM;
 using ColorVision.SettingUp;
+using MQTTnet.Client;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace ColorVision.MQTT
@@ -11,13 +13,44 @@ namespace ColorVision.MQTT
     {
         public BaseService()
         {
+            MQTTControl = MQTTControl.GetInstance();
+            MQTTControl.ApplicationMessageReceivedAsync +=  (arg) =>
+            {
+
+                if (arg.ApplicationMessage.Topic == SubscribeTopic)
+                {
+                    string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
+                    try
+                    {
+                        MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg);
+                        if (json == null)
+                            return Task.CompletedTask;
+                        MsgReturnChanged?.Invoke(json);
+                    }
+                    catch
+                    {
+                        return Task.CompletedTask;
+                    }
+                }
+                return Task.CompletedTask;
+            };
+
             var timer = new System.Timers.Timer
             {
-                Interval = TimeSpan.FromSeconds(30).TotalMilliseconds,
+                Interval = TimeSpan.FromSeconds(1).TotalMilliseconds,
                 AutoReset = true,
             };
             timer.Elapsed += Timer_Elapsed;
             timer.Start();
+
+            MsgReturnChanged += (e) =>
+            {
+                if (e.EventName == "Heartbeat")
+                {
+                    LastAliveTime = DateTime.Now;
+                    IsAlive = true;
+                }
+            };
         }
         public static MQTTSetting MQTTSetting { get => GlobalSetting.GetInstance().SoftwareConfig.MQTTSetting; }
 
@@ -32,8 +65,9 @@ namespace ColorVision.MQTT
                 IsAlive = true;
             }
         }
+        public MsgReturnHandler MsgReturnChanged { get; set; }
 
-        
+
 
         public string SubscribeTopic { get; set; }
         public string SendTopic { get; set; }

@@ -25,7 +25,7 @@ using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
 namespace ColorVision.MQTT
 {
-    public delegate void MQTTMsgHandle(MQMsg resultDataMQTT);
+    public delegate void MQTTMsgHandler(MQMsg resultDataMQTT);
 
     public class MQTTControl : ViewModelBase
     {
@@ -36,7 +36,7 @@ namespace ColorVision.MQTT
         private static readonly object _locker = new();
         public static MQTTControl GetInstance() { lock (_locker) { return _instance ??= new MQTTControl(); } }
 
-        public event MQTTMsgHandle MQTTMsgChanged;
+        public event MQTTMsgHandler MQTTMsgChanged;
 
         public SoftwareConfig SoftwareConfig { get; set; }
         public MQTTConfig MQTTConfig { get => SoftwareConfig.MQTTConfig; }
