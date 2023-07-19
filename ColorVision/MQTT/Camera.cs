@@ -73,10 +73,9 @@ namespace ColorVision.MQTT
         public event EventHandler OpenCameraSuccess;
         public event EventHandler CloseCameraSuccess;
 
-
         public CameraId? CameraID { get; set; }
 
-        public MQTTCamera()
+        public MQTTCamera() : base()
         {
             MQTTControl = MQTTControl.GetInstance();
             SendTopic = "Camera";
@@ -84,6 +83,7 @@ namespace ColorVision.MQTT
             MQTTControl.SubscribeCache(SubscribeTopic);
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
         }
+
 
 
         private Task MqttClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
@@ -97,7 +97,11 @@ namespace ColorVision.MQTT
                     if (json == null)
                         return Task.CompletedTask;
                     IsRun = false;
-                    
+                    if (json.EventName == "Heartbeat")
+                    {
+                        LastAliveTime = DateTime.Now;
+                        IsAlive = true;
+                    }
                     if (json.Code==0)
                     {
                         if (json.EventName == "Init")

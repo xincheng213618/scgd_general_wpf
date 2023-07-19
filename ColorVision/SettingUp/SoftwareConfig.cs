@@ -22,7 +22,7 @@ namespace ColorVision.SettingUp
         {
             UserConfig = new UserConfig();
             ProjectConfig = new ProjectConfig();
-            PerformanceConfig = new PerformanceConfig();
+            PerformancSetting = new PerformancSetting();
             PerformanceControlLazy = new Lazy<PerformanceControl>(() => PerformanceControl.GetInstance());
             TemplateControlLazy = new Lazy<TemplateControl>(() => TemplateControl.GetInstance());
 
@@ -61,7 +61,7 @@ namespace ColorVision.SettingUp
         [JsonIgnore]
         public PerformanceControl PerformanceControl { get => PerformanceControlLazy.Value; }
 
-        public PerformanceConfig PerformanceConfig { get; set; }
+        public PerformancSetting PerformancSetting { get; set; }
 
         [JsonIgnore]
         readonly Lazy<TemplateControl> TemplateControlLazy;

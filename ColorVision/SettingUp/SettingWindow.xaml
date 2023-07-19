@@ -163,7 +163,7 @@
                                         </DockPanel>
                                         <DockPanel Margin="5" Height="20">
                                             <TextBlock Text="日期格式:  " />
-                                            <TextBox Text="{Binding PerformanceConfig.DefaultTimeFormat}" HorizontalAlignment="Left" Width="200"/>
+                                            <TextBox Text="{Binding PerformancSetting.DefaultTimeFormat}" HorizontalAlignment="Left" Width="200"/>
                                         </DockPanel>
                                     </StackPanel>
                                 </Border>

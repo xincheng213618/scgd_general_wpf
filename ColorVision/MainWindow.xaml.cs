@@ -741,8 +741,8 @@ namespace ColorVision
         private MQTTCamera MQTTCamera { get; set; }
         private void StackPanelCamera_Initialized(object sender, EventArgs e)
         {
-
             MQTTCamera = new MQTTCamera();
+            StackPanelCamera.DataContext = MQTTCamera;
             MQTTCamera.FileHandler += OpenImage;
 
             ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()

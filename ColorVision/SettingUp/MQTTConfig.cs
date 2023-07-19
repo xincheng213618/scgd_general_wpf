@@ -21,6 +21,8 @@ namespace ColorVision.SettingUp
         public bool ShowSelect { get => _ShowSelect; set { _ShowSelect = value; NotifyPropertyChanged(); } }
         private bool _ShowSelect;
 
+        public int AliveTimeout { get => _AliveTimeout; set { _AliveTimeout = value; NotifyPropertyChanged(); } }
+        private int _AliveTimeout = 60;
     }
 
 

@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace ColorVision.SettingUp
 {
 
-    public class PerformanceConfig: ViewModelBase
+    public class PerformancSetting: ViewModelBase
     {
         public int UpdateSpeed { get => _UpdateSpeed; set { _UpdateSpeed = value; NotifyPropertyChanged(); } }
         private int _UpdateSpeed = 1000;
@@ -49,11 +49,11 @@ namespace ColorVision.SettingUp
             }    
         }
 
-        public PerformanceConfig Config { get; set; }
+        public PerformancSetting Config { get; set; }
 
         public PerformanceControl()
         {
-            Config = GlobalSetting.GetInstance().SoftwareConfig.PerformanceConfig;
+            Config = GlobalSetting.GetInstance().SoftwareConfig.PerformancSetting;
             Task.Run(() => 
             {
                 try

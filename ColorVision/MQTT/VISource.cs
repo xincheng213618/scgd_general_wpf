@@ -1,21 +1,54 @@
-﻿using MQTTnet.Client;
+﻿using ColorVision.MVVM;
+using ColorVision.SettingUp;
+using MQTTnet.Client;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
 
 namespace ColorVision.MQTT
 {
-    public class BaseService
+    public class BaseService:ViewModelBase
     {
+        public BaseService()
+        {
+            var timer = new System.Timers.Timer
+            {
+                Interval = TimeSpan.FromSeconds(30).TotalMilliseconds,
+                AutoReset = true,
+            };
+            timer.Elapsed += Timer_Elapsed;
+            timer.Start();
+        }
+        public static MQTTSetting MQTTSetting { get => GlobalSetting.GetInstance().SoftwareConfig.MQTTSetting; }
+
+        private void Timer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
+        {
+            if (DateTime.Now - LastAliveTime > TimeSpan.FromSeconds(MQTTSetting.AliveTimeout))
+            {
+                IsAlive = false;
+            }
+            else
+            {
+                IsAlive = true;
+            }
+        }
+
         public string SubscribeTopic { get; set; }
         public string SendTopic { get; set; }
         public MQTTControl MQTTControl { get; set; }
         public ulong ServiceID { get; set; }
 
         internal List<Guid> RunTimeUUID = new List<Guid> { Guid.NewGuid() };
+
+        public DateTime LastAliveTime { get; set; } = DateTime.MinValue;
+
+        public bool IsAlive { get => _IsAlive; set { if (value == _IsAlive) return;  _IsAlive = value; NotifyPropertyChanged(); } }
+        private bool _IsAlive;
 
         internal void PublishAsyncClient(MsgSend msg)
         {
