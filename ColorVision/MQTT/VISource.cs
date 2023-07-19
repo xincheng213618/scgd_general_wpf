@@ -1,5 +1,6 @@
 ﻿using MQTTnet.Client;
 using Newtonsoft.Json;
+using System;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -31,6 +32,11 @@ namespace ColorVision.MQTT
                     MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg);
                     if (json == null)
                         return Task.CompletedTask;
+                    if (json.EventName == "Heartbeat")
+                    {
+                        LastAliveTime = DateTime.Now;
+                        IsAlive = true;
+                    }
                     if (json.Code == 0)
                     {
                         if (json.EventName == "Init")
