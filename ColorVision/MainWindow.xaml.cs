@@ -32,6 +32,7 @@ using ScottPlot.Styles;
 using System.Drawing.Imaging;
 using HandyControl.Expression.Shapes;
 using Microsoft.Win32;
+using log4net;
 
 namespace ColorVision
 {
@@ -42,6 +43,7 @@ namespace ColorVision
     public partial class MainWindow : Window
     {
         public ToolBarTop ToolBarTop { get; set; }
+        private ILog log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
         public MainWindow()
         {
@@ -1067,6 +1069,8 @@ namespace ColorVision
         {
             new CameraVideoConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
+
+
     }
 
     public class ImageInfo : ViewModelBase

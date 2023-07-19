@@ -267,13 +267,17 @@ namespace ColorVision
         {
             new MySqlConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
-        private void Log_Click(object sender, RoutedEventArgs e)
+        private void LogF_Click(object sender, RoutedEventArgs e)
         {
             var fileAppender = (log4net.Appender.FileAppender)LogManager.GetRepository().GetAppenders().FirstOrDefault(a => a is log4net.Appender.FileAppender);
             if (fileAppender != null)
             {
                 System.Diagnostics.Process.Start("explorer.exe", $"{Path.GetDirectoryName(fileAppender.File)}");
             }
+        }
+        private void Log_Click(object sender, RoutedEventArgs e)
+        {
+            new WindowLog().Show();
         }
         private void Setting_Click(object sender, RoutedEventArgs e)
         {
