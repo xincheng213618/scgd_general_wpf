@@ -1,5 +1,4 @@
-﻿using ColorVision.Config;
-using ColorVision.Extension;
+﻿using ColorVision.Extension;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.SettingUp;

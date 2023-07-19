@@ -66,10 +66,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Config\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\cvColorVision\cvColorVision.csproj" />
   </ItemGroup>
 
