@@ -37,6 +37,7 @@ namespace ColorVision.Template
         private static string FileNameSxParms = "cfg\\SxParamSetup.cfg";
         private static string FileNamePoiParms = "cfg\\PoiParmSetup.cfg";
         private static string FileNameFlowParms = "cfg\\FlowParmSetup.cfg";
+        private static string FileNameCameraDeviceParams = "cfg\\CameraDeviceParmSetup.cfg";
 
         private PoiService poiService = new PoiService();
         private ModService modService = new ModService();
@@ -169,6 +170,9 @@ namespace ColorVision.Template
                 case WindowTemplateType.FlowParam:
                     SaveDefault(FileNameFlowParms, FlowParams);
                     break;
+                case WindowTemplateType.CameraDevice:
+                    SaveDefault(FileNameCameraDeviceParams, CameraDeviceParams);
+                    break;
                 default:
                     break;
             }
@@ -179,20 +183,13 @@ namespace ColorVision.Template
             poiService.Save(poiParam);
         }
 
+
+
         private static void SaveDefault<T>(string FileNameParams, ObservableCollection<KeyValuePair<string, T>> t)
         {
             CfgFile.Save(FileNameParams, t);
         }
 
-        private static Dictionary<string,T> ObservableCollectionToDictionary<T>(ObservableCollection<KeyValuePair<string, T>> keyValues)
-        {
-            var keys = new Dictionary<string, T>() { };
-            foreach (var key in keyValues)
-            {
-                keys.Add(key.Key, key.Value);
-            }
-            return keys;
-        }
 
         public ObservableCollection<KeyValuePair<string, PoiParam>> LoadPoiParam()
         {

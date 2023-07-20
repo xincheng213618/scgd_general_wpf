@@ -145,6 +145,7 @@ namespace ColorVision.Template
 
         public AoiParam(ModMasterModel aoiMaster, List<ModDetailModel> aoiDetail) : base(aoiMaster.Id,aoiDetail)
         {
+
         }
 
         public bool FilterByArea { set { SetValue(value.ToString()); } get => GetValue<bool>(); }

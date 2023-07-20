@@ -11,6 +11,7 @@
         xmlns:mqtt ="clr-namespace:ColorVision.MQTT"
         xmlns:SettingUp ="clr-namespace:ColorVision.SettingUp"
         xmlns:converter="clr-namespace:ColorVision.Converter"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:MainWindow}"
         Title="ColorVision" Height="720" Width="1280"  Initialized="Window_Initialized">
@@ -135,6 +136,7 @@
                             <ToggleButton  x:Name="ToggleButton1"  Style="{StaticResource ButtonPageControl1}" Background="#F9F9F9" Content="相机设置"  FontSize="15" Foreground="Black" IsChecked="True" />
                             <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton1,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
                                 <StackPanel Margin="5">
+                                    <TextBlock Text="{Binding NickName}" HorizontalAlignment="Center"/>
                                     <DockPanel Margin="5">
                                         <TextBlock Text="连接状态："/>
                                         <TextBlock Text="{Binding IsAlive}"/>
@@ -143,31 +145,31 @@
                                     </DockPanel>
                                     <DockPanel Margin="5">
                                         <Label Content="相机类型："/>
-                                        <ComboBox x:Name="ComboxCameraType"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20" Margin="0,0,10,0"/>
+                                        <hc:ComboBox x:Name="ComboxCameraType" Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20" Margin="0,0,10,0"/>
                                     </DockPanel>
                                     <Button  Margin="5" x:Name="CamerInitButton" Content="初始化" Click="MQTTCamera_Init_Click"/>
                                     <StackPanel x:Name="StackPanelOpen" Margin="5">
                                         <UniformGrid Columns="2">
                                             <DockPanel Margin="2">
                                                 <Label Content="相机ID："/>
-                                                <ComboBox  x:Name="ComboxCameraID" Height="20" Margin="0,0,10,0"/>
+                                                <hc:ComboBox  x:Name="ComboxCameraID"  Style="{StaticResource ComboBox.Small}"  Height="20" Margin="0,0,10,0"/>
                                             </DockPanel>
 
                                             <DockPanel  Margin="2">
                                                 <Label Content="通道数："/>
-                                                <ComboBox  x:Name="ComboxCameraChannel" SelectedIndex="1" Height="20" Margin="0,0,10,0">
+                                                <hc:ComboBox  x:Name="ComboxCameraChannel"  Style="{StaticResource ComboBox.Small}"  SelectedIndex="1" Height="20" Margin="0,0,10,0">
                                                     <ComboBoxItem Content="1"/>
                                                     <ComboBoxItem Content="3"/>
-                                                </ComboBox>
+                                                </hc:ComboBox>
                                             </DockPanel>
 
                                             <DockPanel Margin="2">
                                                 <Label Content="取图模式："/>
-                                                <ComboBox  x:Name="ComboxCameraTakeImageMode" SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20" Margin="0,0,10,0"/>
+                                                <ComboBox  x:Name="ComboxCameraTakeImageMode"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20" Margin="0,0,10,0"/>
                                             </DockPanel>
                                             <DockPanel  Margin="2">
                                                 <Label Content="Bpp："/>
-                                                <ComboBox  x:Name="ComboxCameraImageBpp" SelectedIndex="0" Height="20" Margin="0,0,10,0" >
+                                                <ComboBox  x:Name="ComboxCameraImageBpp"  Style="{StaticResource ComboBox.Small}"  SelectedIndex="0" Height="20" Margin="0,0,10,0" >
                                                     <ComboBoxItem Content="8"/>
                                                     <ComboBoxItem Content="16"/>
                                                 </ComboBox>
@@ -198,13 +200,13 @@
                                     <StackPanel  x:Name="StackPanelFilterWheel" Initialized="StackPanelFilterWheel_Initialized">
                                         <GroupBox Header="滤色轮">
                                             <StackPanel >
-                                                <ComboBox x:Name="ComboxFilterWheelChannel" Height="20" Margin="0,2,10,2"/>
+                                                <ComboBox x:Name="ComboxFilterWheelChannel"  Style="{StaticResource ComboBox.Small}"  Height="20" Margin="0,2,10,2"/>
                                                 <Button Content="切换通道" Margin="2" Click="FilterWheelSetPort_Click"/>
                                                 <Button Content="重置" Margin="2" Click="FilterWheelReset_Click" ToolTip="重置滤色轮"/>
                                                 <UniformGrid>
                                                     <DockPanel>
                                                         <Label Content="Index:"/>
-                                                        <ComboBox x:Name="ComboxFilterWheelChannel1" SelectedIndex="0" Height="20" Margin="0,2,10,2">
+                                                        <ComboBox x:Name="ComboxFilterWheelChannel1"  Style="{StaticResource ComboBox.Small}"  SelectedIndex="0" Height="20" Margin="0,2,10,2">
                                                             <ComboBoxItem Content="1"/>
                                                             <ComboBoxItem Content="2"/>
                                                             <ComboBoxItem Content="3"/>
@@ -218,7 +220,7 @@
                                                     </DockPanel>
                                                     <DockPanel>
                                                         <Label Content="通道:"/>
-                                                        <ComboBox x:Name="ComboxFilterWheelChannel2" SelectedIndex="0" Height="20" Margin="0,2,10,2">
+                                                        <ComboBox x:Name="ComboxFilterWheelChannel2"  Style="{StaticResource ComboBox.Small}"  SelectedIndex="0" Height="20" Margin="0,2,10,2">
                                                             <ComboBoxItem Content="1"/>
                                                             <ComboBoxItem Content="2"/>
                                                             <ComboBoxItem Content="3"/>

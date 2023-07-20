@@ -26,7 +26,6 @@ namespace ColorVision.SettingUp
         }
 
         public bool IsRestoreWindow { get; set; }
-        private bool _IsRestoreWindow { get; set; }
 
         public double Width { get; set; }
         public double Height { get; set; }
@@ -36,20 +35,39 @@ namespace ColorVision.SettingUp
 
 
 
-        //public Level Level { get => _Level; set { 
-        //        _Level = value;
-        //        NotifyPropertyChanged();
+        public string LogLevel
+        {
+            get => _LogLevel; set
+            {
+                _LogLevel = value;
+                NotifyPropertyChanged();
+                Level level = Level.All;
+                switch (LogLevel)
+                {
+                    case "info":
+                        level = Level.Info;
+                        break;
+                    case "debug":
+                        level = Level.Debug;
+                        break;
+                    case "warn":
+                        level = Level.Warn;
+                        break;
+                    case "error":
+                        level = Level.Error;
+                        break;
+                    default:
+                        level = Level.All;
+                        break;
+                }
 
-        //        var hierarchy = (Hierarchy)LogManager.GetRepository();
-
-        //        // 设置日志级别
-        //        hierarchy.Root.Level = value;
-
-        //        // 配置并激活log4net
-        //        log4net.Config.BasicConfigurator.Configure(hierarchy);
-        //        log.Info("更新log4Net" + value);
-        //    } }
-        //private Level _Level = Level.All;
+                var hierarchy = (Hierarchy)LogManager.GetRepository();
+                hierarchy.Root.Level = level;
+                log4net.Config.BasicConfigurator.Configure(hierarchy);
+                log.Info("更新log4Net" + value);
+            }
+        }
+        private string _LogLevel = GlobalConst.LogLevel[0];
     }
 
 

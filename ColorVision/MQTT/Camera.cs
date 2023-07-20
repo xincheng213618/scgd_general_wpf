@@ -77,69 +77,47 @@ namespace ColorVision.MQTT
 
         public MQTTCamera() : base()
         {
+            NickName = "相机1";
             SendTopic = "Camera";
             SubscribeTopic = "CameraService";
-
             MQTTControl.SubscribeCache(SubscribeTopic);
+            MsgReturnChanged += MQTTCamera_MsgReturnChanged;    
         }
 
-
-
-        private Task MqttClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
+        private void MQTTCamera_MsgReturnChanged(MsgReturn msg)
         {
-            if (arg.ApplicationMessage.Topic == SubscribeTopic)
+            IsRun = false;
+            if (msg.Code == 0)
             {
-                string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
-                try
+                if (msg.EventName == "Init")
                 {
-                    MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg);
-                    if (json == null)
-                        return Task.CompletedTask;
-                    IsRun = false;
-                    if (json.EventName == "Heartbeat")
-                    {
-                        LastAliveTime = DateTime.Now;
-                        IsAlive = true;
-                    }
-                    if (json.Code==0)
-                    {
-                        if (json.EventName == "Init")
-                        {
-                            string CameraId = json.Data.CameraId;
-                            ServiceID = json.ServiceID;
-                            CameraID = JsonConvert.DeserializeObject<CameraId>(CameraId);
-                            Application.Current.Dispatcher.Invoke(() => InitCameraSuccess.Invoke(this, new EventArgs()));
-                        }
-                        else if (json.EventName == "SetParam")
-                        {
-                            MessageBox.Show("SetParam");
-                        }
-                        else if (json.EventName == "Open")
-                        {
-                            Application.Current.Dispatcher.Invoke(() => OpenCameraSuccess.Invoke(this, new EventArgs()));
-                        }
-                        else if (json.EventName == "GatData")
-                        {
-                            string Filepath = json.Data.FilePath;
-                            Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(Filepath));
-                        }
-                        else if (json.EventName == "Close")
-                        {
-                            Application.Current.Dispatcher.Invoke(() => CloseCameraSuccess.Invoke(this, new EventArgs()));
-                        }
-                        else if (json.EventName == "Uninit")
-                        {
-                            MessageBox.Show("Uninit");
-                        }
-                    }
+                    string CameraId = msg.Data.CameraId;
+                    ServiceID = msg.ServiceID;
+                    CameraID = JsonConvert.DeserializeObject<CameraId>(CameraId);
+                    Application.Current.Dispatcher.Invoke(() => InitCameraSuccess.Invoke(this, new EventArgs()));
                 }
-                catch 
+                else if (msg.EventName == "SetParam")
                 {
-                    return Task.CompletedTask;
+                    MessageBox.Show("SetParam");
+                }
+                else if (msg.EventName == "Open")
+                {
+                    Application.Current.Dispatcher.Invoke(() => OpenCameraSuccess.Invoke(this, new EventArgs()));
+                }
+                else if (msg.EventName == "GatData")
+                {
+                    string Filepath = msg.Data.FilePath;
+                    Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(Filepath));
+                }
+                else if (msg.EventName == "Close")
+                {
+                    Application.Current.Dispatcher.Invoke(() => CloseCameraSuccess.Invoke(this, new EventArgs()));
+                }
+                else if (msg.EventName == "Uninit")
+                {
+                    MessageBox.Show("Uninit");
                 }
             }
-            IsRun = false;
-            return Task.CompletedTask;
         }
 
         public bool IsRun { get; set; }
@@ -185,12 +163,7 @@ namespace ColorVision.MQTT
             };
             PublishAsyncClient(msg);
         }
-        public enum ImageChannelType
-        {
-            X = 0,
-            Y = 1,
-            Z = 2
-        };
+
 
         public bool Calibration(CalibrationParam calibrationParam)
         {

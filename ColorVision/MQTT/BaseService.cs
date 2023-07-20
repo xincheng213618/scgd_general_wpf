@@ -52,7 +52,12 @@ namespace ColorVision.MQTT
                 }
             };
         }
+        public string NickName { get => _NickName; set { _NickName = value; NotifyPropertyChanged(); } }
+        private string _NickName = string.Empty;
+
+
         public static MQTTSetting MQTTSetting { get => GlobalSetting.GetInstance().SoftwareConfig.MQTTSetting; }
+        public static int AliveTimeout { get => MQTTSetting.AliveTimeout; }
 
         private void Timer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
         {
