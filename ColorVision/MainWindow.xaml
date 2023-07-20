@@ -87,7 +87,8 @@
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                     <StackPanel >
 
-                        <StackPanel Margin="0,5" x:Name="StackPanelPG" Initialized="StackPanelPG_Initialized">
+                        <StackPanel Margin="0,5" x:Name="StackPanelPG" d:DataContext="{d:DesignInstance mqtt:MQTTPG}" Initialized="StackPanelPG_Initialized">
+
                             <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Background="#F9F9F9"  Content="PG"  FontSize="15" Foreground="Black" IsChecked="False" />
                             <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
                                 <StackPanel Margin="5">
@@ -98,6 +99,13 @@
                                     <Template:PG x:Name="PG1" />
                                     <GroupBox Header="MQTT Test">
                                         <StackPanel Visibility="Visible" >
+                                            <TextBlock Text="{Binding NickName}" HorizontalAlignment="Center"/>
+                                            <DockPanel Margin="5">
+                                                <TextBlock Text="连接状态："/>
+                                                <TextBlock Text="{Binding IsAlive}"/>
+                                                <TextBlock Text="  上次心跳: " Visibility="{Binding IsAlive,Converter={StaticResource bool2VisibilityConverter1}}"/>
+                                                <TextBlock Text="{Binding LastAliveTime, StringFormat=HH:mm:ss}" Visibility="{Binding IsAlive,Converter={StaticResource bool2VisibilityConverter1}}"/>
+                                            </DockPanel>
                                             <UniformGrid>
                                                 <ComboBox  x:Name="ComboxPGType"   SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,2,10,2"/>
                                                 <ComboBox  x:Name="ComboxPGCommunicateType"  SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,2,10,2"/>
@@ -149,23 +157,21 @@
                                     </DockPanel>
                                     <Button  Margin="5" x:Name="CamerInitButton" Content="初始化" Click="MQTTCamera_Init_Click"/>
                                     <StackPanel x:Name="StackPanelOpen" Margin="5">
+                                        <DockPanel Margin="2">
+                                            <Label Content="相机ID："/>
+                                            <hc:ComboBox  x:Name="ComboxCameraID"  Style="{StaticResource ComboBox.Small}"  Height="20" Margin="0,0,10,0"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="2">
+                                            <Label Content="取图模式："/>
+                                            <ComboBox  x:Name="ComboxCameraTakeImageMode"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20" Margin="0,0,10,0"/>
+                                        </DockPanel>
                                         <UniformGrid Columns="2">
-                                            <DockPanel Margin="2">
-                                                <Label Content="相机ID："/>
-                                                <hc:ComboBox  x:Name="ComboxCameraID"  Style="{StaticResource ComboBox.Small}"  Height="20" Margin="0,0,10,0"/>
-                                            </DockPanel>
-
                                             <DockPanel  Margin="2">
                                                 <Label Content="通道数："/>
                                                 <hc:ComboBox  x:Name="ComboxCameraChannel"  Style="{StaticResource ComboBox.Small}"  SelectedIndex="1" Height="20" Margin="0,0,10,0">
                                                     <ComboBoxItem Content="1"/>
                                                     <ComboBoxItem Content="3"/>
                                                 </hc:ComboBox>
-                                            </DockPanel>
-
-                                            <DockPanel Margin="2">
-                                                <Label Content="取图模式："/>
-                                                <ComboBox  x:Name="ComboxCameraTakeImageMode"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20" Margin="0,0,10,0"/>
                                             </DockPanel>
                                             <DockPanel  Margin="2">
                                                 <Label Content="Bpp："/>
