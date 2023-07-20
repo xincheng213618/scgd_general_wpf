@@ -41,7 +41,7 @@ namespace ColorVision.Template
 
         private PoiService poiService = new PoiService();
         private ModService modService = new ModService();
-        private ResourceService resourceService = new ResourceService();
+        private SysResourceService resourceService = new SysResourceService();
 
         public TemplateControl()
         {
@@ -347,7 +347,7 @@ namespace ColorVision.Template
             DeviceParams.Clear();
             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
             {
-                List<ResourceModel> devices = resourceService.GetAllDevices(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                List<SysResourceModel> devices = resourceService.GetAllDevices(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
                 foreach (var dbModel in devices)
                 {
                     KeyValuePair<string, CameraDeviceParam> item = new KeyValuePair<string, CameraDeviceParam>(dbModel.Name ?? "default", new CameraDeviceParam(dbModel));
@@ -362,7 +362,7 @@ namespace ColorVision.Template
             ServiceParams.Clear();
             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
             {
-                List<ResourceModel> devices = resourceService.GetAllServices(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                List<SysResourceModel> devices = resourceService.GetAllServices(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
                 foreach (var dbModel in devices)
                 {
                     KeyValuePair<string, CameraDeviceParam> item = new KeyValuePair<string, CameraDeviceParam>(dbModel.Name ?? "default", new CameraDeviceParam(dbModel));

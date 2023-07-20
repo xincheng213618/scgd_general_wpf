@@ -7,21 +7,21 @@ using System.Threading.Tasks;
 
 namespace ColorVision.MySql.Service
 {
-    public class ResourceService
+    public class SysResourceService
     {
-        private ResourceDao resourceDao;
+        private SysResourceDao resourceDao;
 
-        public ResourceService()
+        public SysResourceService()
         {
-            this.resourceDao = new ResourceDao();
+            this.resourceDao = new SysResourceDao();
         }
 
-        internal List<ResourceModel> GetAllDevices(int tenantId)
+        internal List<SysResourceModel> GetAllDevices(int tenantId)
         {
             return resourceDao.GetPidIsNotNull(tenantId);
         }
 
-        internal List<ResourceModel> GetAllServices(int tenantId)
+        internal List<SysResourceModel> GetAllServices(int tenantId)
         {
             return resourceDao.GetPidIsNull(tenantId);
         }
