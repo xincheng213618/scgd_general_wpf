@@ -307,6 +307,20 @@ namespace ColorVision.MySql
             return d_info;
         }
 
+        public virtual DataTable GetTablePidIsNullByTenantId(int tenantId)
+        {
+            string sql = $"select * from {GetTableName()} where tenant_id={tenantId} and ( pid is null or pid=-1)" + GetDelSQL(true);
+            DataTable d_info = GetData(sql);
+            return d_info;
+        }
+
+        public virtual DataTable GetTablePidIsNotNullByTenantId(int tenantId)
+        {
+            string sql = $"select * from {GetTableName()} where tenant_id={tenantId} and pid > 0" + GetDelSQL(true);
+            DataTable d_info = GetData(sql);
+            return d_info;
+        }
+
         public virtual DataTable GetTableAllByPid(int pid)
         {
             string sql = $"select * from {GetTableName()} where pid={pid}" + GetDelSQL(true);
@@ -336,6 +350,36 @@ namespace ColorVision.MySql
             {
                 T? model = GetModel(item);
                 if(model != null)
+                {
+                    list.Add(model);
+                }
+            }
+            return list;
+        }
+
+        public List<T> GetPidIsNotNull(int tenantId)
+        {
+            List<T> list = new List<T>();
+            DataTable d_info = GetTablePidIsNotNullByTenantId(tenantId);
+            foreach (var item in d_info.AsEnumerable())
+            {
+                T? model = GetModel(item);
+                if (model != null)
+                {
+                    list.Add(model);
+                }
+            }
+            return list;
+        }
+
+        public List<T> GetPidIsNull(int tenantId)
+        {
+            List<T> list = new List<T>();
+            DataTable d_info = GetTablePidIsNullByTenantId(tenantId);
+            foreach (var item in d_info.AsEnumerable())
+            {
+                T? model = GetModel(item);
+                if (model != null)
                 {
                     list.Add(model);
                 }

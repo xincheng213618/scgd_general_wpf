@@ -48,7 +48,8 @@ namespace ColorVision.Template
         SxParm,
         PoiParam,
         FlowParam,
-        CameraDevice
+        Devices,
+        Services
     }
 
 

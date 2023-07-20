@@ -1,4 +1,6 @@
-﻿using System;
+﻿using ColorVision.MySql.DAO;
+using ColorVision.MySql.Service;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,13 +18,17 @@ using System.Windows.Shapes;
 namespace ColorVision.Template
 {
     /// <summary>
-    /// CameraDevice.xaml 的交互逻辑
+    /// ServicesUserControl.xaml 的交互逻辑
     /// </summary>
-    public partial class CameraDevice : UserControl
+    public partial class ServicesUserControl : UserControl
     {
-        public CameraDevice()
+        public ServicesUserControl()
         {
             InitializeComponent();
+
+            SysDictionaryService sysDictionary = new SysDictionaryService();
+            List<SysDictionaryModel> svrs = sysDictionary.GetAllServiceType();
+            svrs.ForEach(service => { System.Console.WriteLine(service.Id); });
         }
     }
 }

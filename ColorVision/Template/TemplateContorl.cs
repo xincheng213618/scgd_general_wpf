@@ -8,6 +8,7 @@ using ScottPlot.Styles;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel.Design;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
@@ -76,8 +77,8 @@ namespace ColorVision.Template
             FlowParams = IDefault(FileNameFlowParms, new FlowParam());
 
             PoiParams = new ObservableCollection<KeyValuePair<string, PoiParam>>();
-
-            CameraDeviceParams = new ObservableCollection<KeyValuePair<string, CameraDeviceParam>>();
+            DeviceParams = new ObservableCollection<KeyValuePair<string, CameraDeviceParam>>();
+            ServiceParams = new ObservableCollection<KeyValuePair<string, CameraDeviceParam>>();
 
             Application.Current.MainWindow.Closed += (s, e) =>
             {
@@ -169,8 +170,8 @@ namespace ColorVision.Template
                 case WindowTemplateType.FlowParam:
                     SaveDefault(FileNameFlowParms, FlowParams);
                     break;
-                case WindowTemplateType.CameraDevice:
-                    SaveDefault(FileNameCameraDeviceParams, CameraDeviceParams);
+                case WindowTemplateType.Devices:
+                    SaveDefault(FileNameCameraDeviceParams, DeviceParams);
                     break;
                 default:
                     break;
@@ -341,19 +342,34 @@ namespace ColorVision.Template
             return AoiParams;
         }
 
-        internal ObservableCollection<KeyValuePair<string, CameraDeviceParam>> LoadCameraDeviceParam()
+        internal ObservableCollection<KeyValuePair<string, CameraDeviceParam>> LoadDeviceParams()
         {
-            CameraDeviceParams.Clear();
+            DeviceParams.Clear();
             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
             {
-                List<ResourceModel> devices = resourceService.GetByType(CameraDeviceParam.ValueType, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                List<ResourceModel> devices = resourceService.GetAllDevices(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
                 foreach (var dbModel in devices)
                 {
                     KeyValuePair<string, CameraDeviceParam> item = new KeyValuePair<string, CameraDeviceParam>(dbModel.Name ?? "default", new CameraDeviceParam(dbModel));
-                    CameraDeviceParams.Add(item);
+                    DeviceParams.Add(item);
                 }
             }
-            return CameraDeviceParams;
+            return DeviceParams;
+        }
+
+        internal ObservableCollection<KeyValuePair<string, CameraDeviceParam>> LoadServiceParams()
+        {
+            ServiceParams.Clear();
+            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+            {
+                List<ResourceModel> devices = resourceService.GetAllServices(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                foreach (var dbModel in devices)
+                {
+                    KeyValuePair<string, CameraDeviceParam> item = new KeyValuePair<string, CameraDeviceParam>(dbModel.Name ?? "default", new CameraDeviceParam(dbModel));
+                    ServiceParams.Add(item);
+                }
+            }
+            return ServiceParams;
         }
 
         internal int PoiMasterDeleteById(int id)
@@ -382,7 +398,8 @@ namespace ColorVision.Template
             modService.Save(flowParam);
         }
 
-        public ObservableCollection<KeyValuePair<string, CameraDeviceParam>> CameraDeviceParams { get; set; }
+        public ObservableCollection<KeyValuePair<string, CameraDeviceParam>> ServiceParams { get; set; }
+        public ObservableCollection<KeyValuePair<string, CameraDeviceParam>> DeviceParams { get; set; }
         public ObservableCollection<KeyValuePair<string, AoiParam>> AoiParams { get; set; }
         public ObservableCollection<KeyValuePair<string, CalibrationParam>> CalibrationParams { get; set; } 
         public ObservableCollection<KeyValuePair<string, PGParam>> PGParams { get; set; }

@@ -319,7 +319,7 @@ namespace ColorVision.Template
 
     public class CameraDeviceParam : ParamBase
     {
-        public static int ValueType { get; set; } = 1;
+        public static int TypeValue = 1;
         public CameraDeviceParam() : base(-1)
         {
         }
