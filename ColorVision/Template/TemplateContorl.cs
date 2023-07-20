@@ -37,26 +37,13 @@ namespace ColorVision.Template
         private static string FileNamePoiParms = "cfg\\PoiParmSetup.cfg";
         private static string FileNameFlowParms = "cfg\\FlowParmSetup.cfg";
 
-
-        private bool IsOldAoiParams;
-        private bool IsOldCalibrationParams;
-        private bool IsOldPGParams;
-        private bool IsOldLedJudgeParams;
-        private bool IsOldSxParams;
-        private bool IsOldPoiParams;
-        private bool IsOldFlowParams;
-
         private PoiService poiService = new PoiService();
         private ModService modService = new ModService();
 
         public TemplateControl()
         {
             if (!Directory.Exists(AppDomain.CurrentDomain.BaseDirectory+ "cfg"))
-            {
                 Directory.CreateDirectory(AppDomain.CurrentDomain.BaseDirectory + "cfg");
-            }
-
-
             AoiParam param = new AoiParam
             {
                 FilterByArea = true,
@@ -77,14 +64,14 @@ namespace ColorVision.Template
                 Bottom = 5
             };
 
-            AoiParams = IDefault(FileNameAoiParams, param, ref IsOldAoiParams);
-            CalibrationParams = IDefault(FileNameCalibrationParams, new CalibrationParam(),ref IsOldCalibrationParams);
-            PGParams = IDefault(FileNamePGParams, new PGParam(), ref IsOldPGParams);
+            AoiParams = IDefault(FileNameAoiParams, param);
+            CalibrationParams = IDefault(FileNameCalibrationParams, new CalibrationParam());
+            PGParams = IDefault(FileNamePGParams, new PGParam());
 
-            LedReusltParams = IDefault(FileNameLedJudgeParams, new LedReusltParam(), ref IsOldLedJudgeParams);
-            SxParams = IDefault(FileNameSxParms, new SxParam(), ref IsOldSxParams);
+            LedReusltParams = IDefault(FileNameLedJudgeParams, new LedReusltParam());
+            SxParams = IDefault(FileNameSxParms, new SxParam());
 
-            FlowParams = IDefault(FileNameFlowParms, new FlowParam(), ref IsOldFlowParams);
+            FlowParams = IDefault(FileNameFlowParms, new FlowParam());
 
 
 
@@ -96,31 +83,16 @@ namespace ColorVision.Template
             };
         }
         /// 这里是初始化模板的封装，因为模板的代码高度统一，所以使用泛型T来设置具体的模板参数。
-        /// 又因为需要兼容之前的代码写法，所以在中间层做了一个转换逻辑，让代码可以读之前的，也可以读现在的，读之前的也保存之前的 <summary>
-        /// 这里是初始化模板的封装，因为模板的代码高度统一，所以使用泛型T来设置具体的模板参数。
         /// 最后在给模板的每一个元素加上一个切换的效果，即当某一个模板启用时，关闭其他已经启用的模板；
         /// 同一类型，只能存在一个启用的模板
-        private static ObservableCollection<KeyValuePair<string, T>> IDefault<T>(string FileName ,T Default , ref bool IsOldParams) where T : ParamBase
+        private static ObservableCollection<KeyValuePair<string, T>> IDefault<T>(string FileName ,T Default) where T : ParamBase
         {
             ObservableCollection<KeyValuePair<string, T>> Params = new ObservableCollection<KeyValuePair<string, T>>();
 
-            Dictionary<string, T> ParamsOld = CfgFile.Load<Dictionary<string, T>>(FileName) ?? new Dictionary<string, T>();
-            if (ParamsOld.Count != 0)
+            Params = CfgFile.Load<ObservableCollection<KeyValuePair<string, T>>>(FileName) ?? new ObservableCollection<KeyValuePair<string, T>>();
+            if (Params.Count == 0)
             {
-                IsOldParams = true;
-                Params = new ObservableCollection<KeyValuePair<string, T>>();
-                foreach (var item in ParamsOld)
-                {
-                    Params.Add(item);
-                }
-            }
-            else
-            {
-                Params = CfgFile.Load<ObservableCollection<KeyValuePair<string, T>>>(FileName) ?? new ObservableCollection<KeyValuePair<string, T>>();
-                if (Params.Count == 0)
-                {
-                    Params.Add(new KeyValuePair<string, T>("default", Default));
-                }
+                Params.Add(new KeyValuePair<string, T>("default", Default));
             }
 
             foreach (var item in Params)
@@ -156,14 +128,15 @@ namespace ColorVision.Template
 
         public void Save()
         {
-            SaveDefault(FileNameAoiParams, AoiParams,IsOldAoiParams);
-            SaveDefault(FileNameCalibrationParams, CalibrationParams, IsOldCalibrationParams);
-            SaveDefault(FileNamePGParams, PGParams, IsOldPGParams);
-            SaveDefault(FileNameLedJudgeParams, LedReusltParams, IsOldLedJudgeParams);
-            SaveDefault(FileNameSxParms, SxParams, IsOldSxParams);
-            if (!GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
-                SaveDefault(FileNamePoiParms, PoiParams, IsOldPoiParams);
-            SaveDefault(FileNameFlowParms, FlowParams, IsOldFlowParams);
+            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+                return;
+            SaveDefault(FileNameAoiParams, AoiParams);
+            SaveDefault(FileNameCalibrationParams, CalibrationParams);
+            SaveDefault(FileNamePGParams, PGParams);
+            SaveDefault(FileNameLedJudgeParams, LedReusltParams);
+            SaveDefault(FileNameSxParms, SxParams);
+            SaveDefault(FileNamePoiParms, PoiParams);
+            SaveDefault(FileNameFlowParms, FlowParams);
         }
 
 
@@ -173,26 +146,26 @@ namespace ColorVision.Template
             {
                 case WindowTemplateType.AoiParam:
                     if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql) SaveAoi2DB(AoiParams);
-                    else SaveDefault(FileNameAoiParams, AoiParams, IsOldAoiParams);
+                    else SaveDefault(FileNameAoiParams, AoiParams);
                     break;
                 case WindowTemplateType.Calibration:
-                    SaveDefault(FileNameCalibrationParams, CalibrationParams, IsOldCalibrationParams);
+                    SaveDefault(FileNameCalibrationParams, CalibrationParams);
                     break;
                 case WindowTemplateType.PGParam:
-                    SaveDefault(FileNamePGParams, PGParams, IsOldPGParams);
+                    SaveDefault(FileNamePGParams, PGParams);
                     break;
                 case WindowTemplateType.LedReuslt:
-                    SaveDefault(FileNameLedJudgeParams, LedReusltParams, IsOldLedJudgeParams);
+                    SaveDefault(FileNameLedJudgeParams, LedReusltParams);
                     break;
                 case WindowTemplateType.SxParm:
-                    SaveDefault(FileNameSxParms, SxParams, IsOldSxParams);
+                    SaveDefault(FileNameSxParms, SxParams);
                     break;
                 case WindowTemplateType.PoiParam:
                     if (!GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
-                        SaveDefault(FileNamePoiParms, PoiParams, IsOldPoiParams);
+                        SaveDefault(FileNamePoiParms, PoiParams);
                     break;
                 case WindowTemplateType.FlowParam:
-                    SaveDefault(FileNameFlowParms, FlowParams, IsOldFlowParams);
+                    SaveDefault(FileNameFlowParms, FlowParams);
                     break;
                 default:
                     break;
@@ -204,12 +177,9 @@ namespace ColorVision.Template
             poiService.Save(poiParam);
         }
 
-        private static void SaveDefault<T>(string FileNameParams, ObservableCollection<KeyValuePair<string, T>> t, bool IsOldParams)
+        private static void SaveDefault<T>(string FileNameParams, ObservableCollection<KeyValuePair<string, T>> t)
         {
-            if (IsOldParams)
-                CfgFile.Save(FileNameParams, ObservableCollectionToDictionary(t));
-            else
-                CfgFile.Save(FileNameParams, t);
+            CfgFile.Save(FileNameParams, t);
         }
 
         private static Dictionary<string,T> ObservableCollectionToDictionary<T>(ObservableCollection<KeyValuePair<string, T>> keyValues)
@@ -238,7 +208,7 @@ namespace ColorVision.Template
             {
                 PoiParams.Clear();
                 if (PoiParams.Count == 0)
-                    PoiParams = IDefault(FileNamePoiParms, new PoiParam(), ref IsOldPoiParams);
+                    PoiParams = IDefault(FileNamePoiParms, new PoiParam());
             }
 
             return PoiParams;
@@ -329,7 +299,7 @@ namespace ColorVision.Template
             }
             else
             {
-                FlowParams = IDefault(FileNameFlowParms, new FlowParam(), ref IsOldFlowParams);
+                FlowParams = IDefault(FileNameFlowParms, new FlowParam());
             }
             return FlowParams;
         }
@@ -369,7 +339,7 @@ namespace ColorVision.Template
                     Top = 5,
                     Bottom = 5
                 };
-                AoiParams = IDefault(FileNameAoiParams, param, ref IsOldAoiParams);
+                AoiParams = IDefault(FileNameAoiParams, param);
             }
             return AoiParams;
         }
