@@ -7,31 +7,30 @@ using System.Threading.Tasks;
 
 namespace ColorVision.MySql.DAO
 {
-    public class ResourceModel : PKModel
+    public class SysDictionaryModel : PKModel
     {
         public string? Name { get; set; }
         public string? Code { get; set; }
         public int Type { get; set; }
-        public int? Pid { get; set; }
-        public string? Value { get; set; }
+        public int Pid { get; set; }
+        public int Value { get; set; }
         public int TenantId { get; set; }
     }
-    public class ResourceDao : BaseDaoMaster<ResourceModel>
+    public class SysDictionaryDao : BaseDaoMaster<SysDictionaryModel>
     {
-        public ResourceDao() : base(string.Empty, "t_scgd_sys_resource", "id", true)
+        public SysDictionaryDao() : base("v_scgd_sys_dictionary", "t_scgd_sys_dictionary", "id", true)
         {
         }
 
-        public override ResourceModel GetModel(DataRow item)
+        public override SysDictionaryModel GetModel(DataRow item)
         {
-            ResourceModel model = new ResourceModel
+            SysDictionaryModel model = new SysDictionaryModel
             {
                 Id = item.Field<int>("id"),
                 Name = item.Field<string>("name"),
                 Code = item.Field<string>("code"),
-                Type = item.Field<int>("type"),
-                Pid = item.Field<int?>("pid"),
-                Value = item.Field<string>("txt_value"),
+                Pid = item.Field<int>("pid"),
+                Value = item.Field<int>("val"),
                 TenantId = item.Field<int>("tenant_id"),
             };
             return model;

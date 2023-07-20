@@ -1,4 +1,6 @@
-﻿using System;
+﻿using ColorVision.MySql.DAO;
+using ColorVision.MySql.Service;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -23,6 +25,10 @@ namespace ColorVision.Template
         public ServicesUserControl()
         {
             InitializeComponent();
+
+            SysDictionaryService sysDictionary = new SysDictionaryService();
+            List<SysDictionaryModel> svrs = sysDictionary.GetAllServiceType();
+            svrs.ForEach(service => { System.Console.WriteLine(service.Id); });
         }
     }
 }
