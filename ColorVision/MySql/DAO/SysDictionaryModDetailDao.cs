@@ -14,7 +14,7 @@ namespace ColorVision.MySql.DAO
         public string? DefaultValue { get; set; }
         public short ValueType { get; set; }
     }
-    public class SysDictionaryModDetailDao : BaseServiceMaster<SysDictionaryModDetaiModel>
+    public class SysDictionaryModDetailDao : BaseDaoMaster<SysDictionaryModDetaiModel>
     {
         public SysDictionaryModDetailDao() : base("v_scgd_sys_dictionary_mod_item", "t_scgd_sys_dictionary_mod_item", "id", true)
         {

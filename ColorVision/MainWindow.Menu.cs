@@ -78,7 +78,8 @@ namespace ColorVision
                     case "CameraDevice":
                         CameraDevice cameraDevice = new CameraDevice();
                         windowTemplate = new WindowTemplate(WindowTemplateType.CameraDevice, cameraDevice) { Title = "相机设备设置" };
-                        TemplateAbb(windowTemplate, TemplateControl.AoiParams);
+                        TemplateControl.LoadCameraDeviceParam();
+                        TemplateAbb(windowTemplate, TemplateControl.CameraDeviceParams);
                         break;
                     default:
                         HandyControl.Controls.Growl.Info("开发中");

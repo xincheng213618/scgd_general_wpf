@@ -316,4 +316,20 @@ namespace ColorVision.Template
     }
 
 
+    public class CameraDeviceParam : ParamBase
+    {
+        public static int ValueType = 1;
+        public CameraDeviceParam() : base(-1)
+        {
+        }
+
+        public CameraDeviceParam(ResourceModel dbModel) : base(dbModel.Id)
+        {
+            JsonValue = dbModel.Value;
+        }
+
+        public string? JsonValue { get; set; }
+        public string? Code { get; set; }
+    }
+
 }

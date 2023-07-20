@@ -49,7 +49,7 @@ namespace ColorVision.MySql.DAO
     }
 
 
-    public class PoiDetailDao : BaseServiceMaster<PoiDetailModel>
+    public class PoiDetailDao : BaseDaoMaster<PoiDetailModel>
     {
         public PoiDetailDao() : base(string.Empty, "t_scgd_cfg_poi_detail", "id", true)
         {
