@@ -43,12 +43,37 @@ namespace ColorVision
     public partial class MainWindow : Window
     {
         public ToolBarTop ToolBarTop { get; set; }
-        private ILog log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
-
+        public GlobalSetting GlobalSetting { get; set; }
+        public SoftwareSetting SoftwareSetting { get
+            {
+                if (GlobalSetting.SoftwareConfig.SoftwareSetting == null)
+                {
+                    GlobalSetting.SoftwareConfig.SoftwareSetting = new SoftwareSetting();
+                }
+                return GlobalSetting.SoftwareConfig.SoftwareSetting;
+            }
+        }
         public MainWindow()
         {
             InitializeComponent();
-            this.Closed += (s, e) => Environment.Exit(0);
+            GlobalSetting = GlobalSetting.GetInstance();
+            this.Closed += (s, e) => {
+
+                SoftwareSetting.Top = this.Top;
+                SoftwareSetting.Left = this.Left;
+                SoftwareSetting.Height = this.Height;
+                SoftwareSetting.Width = this.Width;
+                SoftwareSetting.WindowState = (int)this.WindowState;
+                Environment.Exit(0);
+            };
+            if (SoftwareSetting.IsRestoreWindow && SoftwareSetting.Height != 0&& SoftwareSetting.Width != 0)
+            {
+                this.Top = SoftwareSetting.Top;
+                this.Left = SoftwareSetting.Left;
+                this.Height = SoftwareSetting.Height;
+                this.Width = SoftwareSetting.Width;
+                this.WindowState = (WindowState)SoftwareSetting.WindowState;
+            }
         }
 
         private async void Window_Initialized(object sender, EventArgs e)
