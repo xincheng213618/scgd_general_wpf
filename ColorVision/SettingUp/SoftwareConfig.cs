@@ -36,20 +36,20 @@ namespace ColorVision.SettingUp
 
 
 
-        //public Level Level { get => _Level; set { 
-        //        _Level = value;
+        //public string LogLevel
+        //{
+        //    get => _LogLevel; set
+        //    {
+        //        _LogLevel = value;
         //        NotifyPropertyChanged();
 
         //        var hierarchy = (Hierarchy)LogManager.GetRepository();
-
-        //        // 设置日志级别
-        //        hierarchy.Root.Level = value;
-
-        //        // 配置并激活log4net
+        //        //hierarchy.Root.Level = value;
         //        log4net.Config.BasicConfigurator.Configure(hierarchy);
         //        log.Info("更新log4Net" + value);
-        //    } }
-        //private Level _Level = Level.All;
+        //    }
+        //}
+        //private string _LogLevel = "info";
     }
 
 

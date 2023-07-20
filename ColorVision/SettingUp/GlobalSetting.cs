@@ -22,6 +22,7 @@ namespace ColorVision.SettingUp
         public const string AutoRunName = "ColorVisionAutoRun";
 
 
+        public static readonly List<string> LogLevel = new() { "debug", "info", "warning", "error", "none" };
     }
 
 

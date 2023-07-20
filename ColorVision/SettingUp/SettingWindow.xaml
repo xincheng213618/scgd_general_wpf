@@ -63,14 +63,26 @@
                             </GroupBox.Header>
                             <StackPanel>
                                 <Border Style="{StaticResource BorderModuleArea}" Background="#FFFFFF" CornerRadius="8">
+                                    <Border.Resources>
+                                        <ResourceDictionary Source="/Theme/Icons.xaml"/>
+                                    </Border.Resources>
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="5" ToolTip="模板数据保存Mysql数据库">
                                             <ToggleButton DockPanel.Dock="Right" Height="20" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsUseMySql}"/>
-                                            <TextBlock Text="启用数据库"/>
+                                            <TextBlock Text="启用数据库    "/>
+                                            <DockPanel  MouseLeftButtonDown="TextBlock_MouseLeftButtonDown1" Visibility="{Binding IsUseMySql,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="MySql" >
+                                                <ToggleButton x:Name="StatusBarMysql" Style="{StaticResource ButtonDrawingImageMysql}"  Height="20"  Margin="0,-10" IsChecked="{Binding MySqlControl.IsConnect,Mode=OneWay}"  IsEnabled="False"/>
+                                            </DockPanel>
+                                            <TextBlock Text="  (启用数据库后，模板等信息会从数据库中读取)" Visibility="{Binding IsUseMySql,Converter={StaticResource bool2VisibilityConverter1}}"  FontSize="8" Margin="0,3,0,0" />
                                         </DockPanel>
+
                                         <DockPanel Margin="5">
                                             <ToggleButton DockPanel.Dock="Right" Height="20" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsUseMQTT}"/>
-                                            <TextBlock Text="启用MQTT"/>
+                                            <TextBlock Text="启用MQTT    "/>
+                                            <DockPanel MouseLeftButtonDown="TextBlock_MouseLeftButtonDown" Visibility="{Binding IsUseMQTT,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="MQTT">
+                                                <ToggleButton  x:Name="StatusBarMqtt"   Style="{StaticResource ButtonDrawingImageMQTT}"  Height="20"  Margin="0,-10" IsChecked="{Binding MQTTControl.IsConnect,Mode=OneWay}" IsEnabled="False" />
+                                            </DockPanel>
+                                            <TextBlock Text="  (这里必须要配置，后续可能更改成本地)" Visibility="{Binding IsUseMQTT,Converter={StaticResource bool2VisibilityConverter1}}"  FontSize="8" Margin="0,3,0,0" />
                                         </DockPanel>
                                         <DockPanel x:Name="AutoRunDock" Margin="5"  d:DataContext="{d:DesignInstance local:GlobalSetting}">
                                             <ToggleButton DockPanel.Dock="Right" Height="20" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsAutoRun}"/>
@@ -79,6 +91,10 @@
                                         <DockPanel  Margin="5">
                                             <ToggleButton DockPanel.Dock="Right" Height="20" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding SoftwareSetting.IsRestoreWindow}"/>
                                             <TextBlock Text="启动恢复界面布局"/>
+                                        </DockPanel>
+                                        <DockPanel  Margin="5">
+                                            <hc:ComboBox x:Name="cmbloglevel" hc:InfoElement.Placeholder="Level"  DockPanel.Dock="Right"  Style="{StaticResource ComboBox.Small}" Width="100"  />
+                                            <TextBlock Text="日志级别"/>
                                         </DockPanel>
                                     </StackPanel>
                                 </Border>
