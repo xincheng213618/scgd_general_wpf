@@ -50,9 +50,12 @@ namespace ColorVision.MQTT
                     LastAliveTime = DateTime.Now;
                     IsAlive = true;
                 }
+
             };
         }
+
         public static MQTTSetting MQTTSetting { get => GlobalSetting.GetInstance().SoftwareConfig.MQTTSetting; }
+        public static int AliveTimeout { get => MQTTSetting.AliveTimeout; }
 
         private void Timer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
         {

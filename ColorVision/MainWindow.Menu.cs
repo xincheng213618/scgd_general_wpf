@@ -19,6 +19,7 @@ using ColorVision.MySql;
 using log4net;
 using log4net.Appender;
 using System.Diagnostics;
+using ColorVision.Video;
 
 namespace ColorVision
 {
@@ -273,6 +274,10 @@ namespace ColorVision
         {
             new MySqlConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
+        private void MenuItem10_Click(object sender, RoutedEventArgs e)
+        {
+            new CameraVideoConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
         private void LogF_Click(object sender, RoutedEventArgs e)
         {
             var fileAppender = (log4net.Appender.FileAppender)LogManager.GetRepository().GetAppenders().FirstOrDefault(a => a is log4net.Appender.FileAppender);
@@ -285,6 +290,16 @@ namespace ColorVision
         {
             new WindowLog().Show();
         }
+
+        private void MenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            new MQTTLog() { Owner = this }.Show();
+        }
+        private void About_Click(object sender, RoutedEventArgs e)
+        {
+            new AboutMsgWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+
         private void Setting_Click(object sender, RoutedEventArgs e)
         {
             bool hasDefaultProgram = false;

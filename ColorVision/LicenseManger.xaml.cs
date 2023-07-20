@@ -62,8 +62,6 @@ namespace ColorVision
                 string Key = File.ReadAllText(openFileDialog.FileName);
             }
 
-
-
             dateTime = dateTime.AddYears(1);
             LicenseConfigs[ListViewLicense.SelectedIndex].Tag = $"许可给 fuzzes ally\n\r订阅将于{dateTime:yyyy年MM月dd日}过期\n\r";
         }

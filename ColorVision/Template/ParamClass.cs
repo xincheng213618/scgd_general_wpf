@@ -145,6 +145,7 @@ namespace ColorVision.Template
 
         public AoiParam(ModMasterModel aoiMaster, List<ModDetailModel> aoiDetail) : base(aoiMaster.Id,aoiDetail)
         {
+
         }
 
         public bool FilterByArea { set { SetValue(value.ToString()); } get => GetValue<bool>(); }
@@ -318,7 +319,7 @@ namespace ColorVision.Template
 
     public class CameraDeviceParam : ParamBase
     {
-        public static int ValueType = 1;
+        public static int ValueType { get; set; } = 1;
         public CameraDeviceParam() : base(-1)
         {
         }
