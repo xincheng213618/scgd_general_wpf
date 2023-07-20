@@ -54,7 +54,7 @@ namespace ColorVision
             hierarchy.Root.AddAppender(textBoxAppender);
 
             // 设置日志级别
-            hierarchy.Root.Level = log4net.Core.Level.All;
+            hierarchy.Root.Level = log4net.Core.Level.Warn;
 
             // 配置并激活log4net
             log4net.Config.BasicConfigurator.Configure(hierarchy);

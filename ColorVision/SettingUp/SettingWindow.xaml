@@ -76,6 +76,10 @@
                                             <ToggleButton DockPanel.Dock="Right" Height="20" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsAutoRun}"/>
                                             <TextBlock Text="开机自动启动(可能会不成功)"/>
                                         </DockPanel>
+                                        <DockPanel  Margin="5">
+                                            <ToggleButton DockPanel.Dock="Right" Height="20" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding SoftwareSetting.IsRestoreWindow}"/>
+                                            <TextBlock Text="启动恢复界面布局"/>
+                                        </DockPanel>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>

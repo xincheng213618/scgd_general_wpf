@@ -2,6 +2,10 @@
 using ColorVision.MVVM;
 using ColorVision.MySql;
 using ColorVision.Template;
+using log4net;
+using log4net.Core;
+using log4net.Layout;
+using log4net.Repository.Hierarchy;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -13,6 +17,42 @@ using System.Threading.Tasks;
 
 namespace ColorVision.SettingUp
 {
+    public class SoftwareSetting :ViewModelBase
+    {
+        private static readonly ILog log = LogManager.GetLogger(typeof(SoftwareSetting));
+
+        public SoftwareSetting()
+        {
+        }
+
+        public bool IsRestoreWindow { get; set; }
+        private bool _IsRestoreWindow { get; set; }
+
+        public double Width { get; set; }
+        public double Height { get; set; }
+        public double Left { get; set; }
+        public double Top { get; set; }
+        public int WindowState { get; set; }
+
+
+
+        //public Level Level { get => _Level; set { 
+        //        _Level = value;
+        //        NotifyPropertyChanged();
+
+        //        var hierarchy = (Hierarchy)LogManager.GetRepository();
+
+        //        // 设置日志级别
+        //        hierarchy.Root.Level = value;
+
+        //        // 配置并激活log4net
+        //        log4net.Config.BasicConfigurator.Configure(hierarchy);
+        //        log.Info("更新log4Net" + value);
+        //    } }
+        //private Level _Level = Level.All;
+    }
+
+
     /// <summary>
     /// 软件配置
     /// </summary>
@@ -20,6 +60,8 @@ namespace ColorVision.SettingUp
     {
         public SoftwareConfig()
         {
+            SoftwareSetting = new SoftwareSetting();
+
             UserConfig = new UserConfig();
             ProjectConfig = new ProjectConfig();
             PerformancSetting = new PerformancSetting();
@@ -39,21 +81,16 @@ namespace ColorVision.SettingUp
 
             CameraVideoConfig = new CameraVideoConfig();
             CameraVideoConfigs = new ObservableCollection<CameraVideoConfig>();
-
-
         }
 
 
         public string Version { get; set; } = "0.0";
-
         public bool IsUseMySql { get; set; } = true;
-
-
         public bool IsUseMQTT { get; set; } = true;
-
         public bool IsOpenStatusBar { get; set; }
-
         public bool IsOpenSidebar { get; set; } = true;
+
+        public SoftwareSetting SoftwareSetting { get; set; }
 
 
         [JsonIgnore]
