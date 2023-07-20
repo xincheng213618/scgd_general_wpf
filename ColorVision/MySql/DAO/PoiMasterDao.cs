@@ -81,7 +81,7 @@ namespace ColorVision.MySql.DAO
         public int TenantId { get; set; }
     }
 
-    internal class PoiMasterDao : BaseServiceMaster<PoiMasterModel>
+    internal class PoiMasterDao : BaseDaoMaster<PoiMasterModel>
     {
         public PoiMasterDao() : base("", "t_scgd_cfg_poi_master", "id", true)
         {

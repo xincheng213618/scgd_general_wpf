@@ -13,7 +13,7 @@ namespace ColorVision.MySql.DAO
         public string? Name { get; set; }
         public int TenantId { get; set; }
     }
-    public class SysDictionaryModDao : BaseServiceMaster<SysDictionaryModModel>
+    public class SysDictionaryModDao : BaseDaoMaster<SysDictionaryModModel>
     {
         public SysDictionaryModDao() : base(string.Empty, "t_scgd_sys_dictionary_mod_master", "id", true)
         {

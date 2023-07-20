@@ -48,6 +48,7 @@ namespace ColorVision.Template
 
         private PoiService poiService = new PoiService();
         private ModService modService = new ModService();
+        private ResourceService resourceService = new ResourceService();
 
         public TemplateControl()
         {
@@ -86,9 +87,9 @@ namespace ColorVision.Template
 
             FlowParams = IDefault(FileNameFlowParms, new FlowParam(), ref IsOldFlowParams);
 
-
-
             PoiParams = new ObservableCollection<KeyValuePair<string, PoiParam>>();
+
+            CameraDeviceParams = new ObservableCollection<KeyValuePair<string, CameraDeviceParam>>();
 
             Application.Current.MainWindow.Closed += (s, e) =>
             {
@@ -334,7 +335,6 @@ namespace ColorVision.Template
             return FlowParams;
         }
 
-
         internal ObservableCollection<KeyValuePair<string, AoiParam>> LoadAoiParam()
         {
             AoiParams.Clear();
@@ -374,6 +374,21 @@ namespace ColorVision.Template
             return AoiParams;
         }
 
+        internal ObservableCollection<KeyValuePair<string, CameraDeviceParam>> LoadCameraDeviceParam()
+        {
+            CameraDeviceParams.Clear();
+            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+            {
+                List<ResourceModel> devices = resourceService.GetByType(CameraDeviceParam.ValueType, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                foreach (var dbModel in devices)
+                {
+                    KeyValuePair<string, CameraDeviceParam> item = new KeyValuePair<string, CameraDeviceParam>(dbModel.Name ?? "default", new CameraDeviceParam(dbModel));
+                    CameraDeviceParams.Add(item);
+                }
+            }
+            return CameraDeviceParams;
+        }
+
         internal int PoiMasterDeleteById(int id)
         {
             return poiService.MasterDeleteById(id);
@@ -400,6 +415,7 @@ namespace ColorVision.Template
             modService.Save(flowParam);
         }
 
+        public ObservableCollection<KeyValuePair<string, CameraDeviceParam>> CameraDeviceParams { get; set; }
         public ObservableCollection<KeyValuePair<string, AoiParam>> AoiParams { get; set; }
         public ObservableCollection<KeyValuePair<string, CalibrationParam>> CalibrationParams { get; set; } 
         public ObservableCollection<KeyValuePair<string, PGParam>> PGParams { get; set; }
