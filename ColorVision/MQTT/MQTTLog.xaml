@@ -52,7 +52,7 @@
                             </DockPanel>
                             <DockPanel Margin="5,2">
                                 <TextBlock Text="发送:" VerticalAlignment="Center" Width="50"/>
-                                <TextBox x:Name="TextBoxSend"  TextWrapping="NoWrap" AcceptsReturn="True" Text="topic1" BorderThickness="0,0,0,1" />
+                                <TextBox x:Name="TextBoxSend"  TextWrapping="NoWrap" Height="45" AcceptsReturn="True" Text="topic1" BorderThickness="0,0,0,1" />
                             </DockPanel>
                             <CheckBox x:Name="CheckBoxRetained" IsEnabled="False"  HorizontalAlignment="Right" Margin="5,2" Content="消息保留" VerticalAlignment="Center" ToolTip="是否保留"/>
 
