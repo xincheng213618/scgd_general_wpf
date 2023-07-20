@@ -46,7 +46,8 @@
                     <MenuItem Header="_PG通讯模板设置" Tag="PGParam"  Click="MenuItem_Template"/>
                     <MenuItem Header="数据判断模板设置(_J)" Tag="LedReusltParams"  Click="MenuItem_Template"/>
                     <MenuItem Header="源表模板设置(_V)"  Tag="SxParms" Click="MenuItem_Template"/>
-                    <MenuItem Header="相机设备设置(_D)"  Tag="CameraDevice" Click="MenuItem_Template"/>
+                    <MenuItem Header="服务设置(_S)"  Tag="ServiceParams" Click="MenuItem_Template"/>
+                    <MenuItem Header="设备设置(_D)"  Tag="DeviceParams" Click="MenuItem_Template"/>
                 </MenuItem>
                 <MenuItem  x:Name="MenuStatusBar"  d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  Header="视图(_V)">
                     <MenuItem Header="侧边栏(_M)"  IsChecked="{Binding IsOpenSidebar}"  Click="MenuStatusBar_Click"/>

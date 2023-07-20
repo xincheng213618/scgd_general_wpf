@@ -18,9 +18,9 @@ namespace ColorVision.Template
     /// <summary>
     /// CameraDevice.xaml 的交互逻辑
     /// </summary>
-    public partial class CameraDevice : UserControl
+    public partial class DevicesUserControl : UserControl
     {
-        public CameraDevice()
+        public DevicesUserControl()
         {
             InitializeComponent();
         }

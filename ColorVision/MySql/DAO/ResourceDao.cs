@@ -21,28 +21,6 @@ namespace ColorVision.MySql.DAO
         {
         }
 
-        public DataTable GetTableAllByType(int type, int tenantId)
-        {
-            string sql = $"select * from {GetTableName()} where type={type} and pid is null and tenant_id={tenantId}" + GetDelSQL(true);
-            DataTable d_info = GetData(sql);
-            return d_info;
-        }
-
-        internal List<ResourceModel> GetAllByType(int type, int tenantId)
-        {
-            List<ResourceModel> list = new List<ResourceModel>();
-            DataTable d_info = GetTableAllByType(type, tenantId);
-            foreach (var item in d_info.AsEnumerable())
-            {
-                ResourceModel? model = GetModel(item);
-                if (model != null)
-                {
-                    list.Add(model);
-                }
-            }
-            return list;
-        }
-
         public override ResourceModel GetModel(DataRow item)
         {
             ResourceModel model = new ResourceModel

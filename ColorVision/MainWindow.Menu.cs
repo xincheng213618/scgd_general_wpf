@@ -76,11 +76,17 @@ namespace ColorVision
                         TemplateControl.LoadFlowParam();
                         TemplateAbb(windowTemplate, TemplateControl.FlowParams);
                         break;
-                    case "CameraDevice":
-                        CameraDevice cameraDevice = new CameraDevice();
-                        windowTemplate = new WindowTemplate(WindowTemplateType.CameraDevice, cameraDevice) { Title = "相机设备设置" };
-                        TemplateControl.LoadCameraDeviceParam();
-                        TemplateAbb(windowTemplate, TemplateControl.CameraDeviceParams);
+                    case "DeviceParams":
+                        DevicesUserControl devicesControl = new DevicesUserControl();
+                        windowTemplate = new WindowTemplate(WindowTemplateType.Devices, devicesControl) { Title = "设备设置" };
+                        TemplateControl.LoadDeviceParams();
+                        TemplateAbb(windowTemplate, TemplateControl.DeviceParams);
+                        break;
+                    case "ServiceParams":
+                        ServicesUserControl servicesControl = new ServicesUserControl();
+                        windowTemplate = new WindowTemplate(WindowTemplateType.Services, servicesControl) { Title = "服务设置" };
+                        TemplateControl.LoadServiceParams();
+                        TemplateAbb(windowTemplate, TemplateControl.ServiceParams);
                         break;
                     default:
                         HandyControl.Controls.Growl.Info("开发中");

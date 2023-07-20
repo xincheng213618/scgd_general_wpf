@@ -16,15 +16,14 @@ namespace ColorVision.MySql.Service
             this.resourceDao = new ResourceDao();
         }
 
-        public List<ResourceModel> GetByType(int type,int tenantId)
+        internal List<ResourceModel> GetAllDevices(int tenantId)
         {
-            List<ResourceModel> result = new List<ResourceModel>();
-            List<ResourceModel> tps = resourceDao.GetAllByType(type, tenantId);
-            foreach (var dbModel in tps)
-            {
-                result.AddRange(resourceDao.GetAllByPid(dbModel.Id));
-            }
-            return result;
+            return resourceDao.GetPidIsNotNull(tenantId);
+        }
+
+        internal List<ResourceModel> GetAllServices(int tenantId)
+        {
+            return resourceDao.GetPidIsNull(tenantId);
         }
     }
 }
