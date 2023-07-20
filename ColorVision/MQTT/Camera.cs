@@ -77,6 +77,7 @@ namespace ColorVision.MQTT
 
         public MQTTCamera() : base()
         {
+            NickName = "相机1";
             SendTopic = "Camera";
             SubscribeTopic = "CameraService";
             MQTTControl.SubscribeCache(SubscribeTopic);
@@ -162,12 +163,7 @@ namespace ColorVision.MQTT
             };
             PublishAsyncClient(msg);
         }
-        public enum ImageChannelType
-        {
-            X = 0,
-            Y = 1,
-            Z = 2
-        };
+
 
         public bool Calibration(CalibrationParam calibrationParam)
         {

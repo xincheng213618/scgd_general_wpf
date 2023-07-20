@@ -182,20 +182,13 @@ namespace ColorVision.Template
             poiService.Save(poiParam);
         }
 
+
+
         private static void SaveDefault<T>(string FileNameParams, ObservableCollection<KeyValuePair<string, T>> t)
         {
             CfgFile.Save(FileNameParams, t);
         }
 
-        private static Dictionary<string,T> ObservableCollectionToDictionary<T>(ObservableCollection<KeyValuePair<string, T>> keyValues)
-        {
-            var keys = new Dictionary<string, T>() { };
-            foreach (var key in keyValues)
-            {
-                keys.Add(key.Key, key.Value);
-            }
-            return keys;
-        }
 
         public ObservableCollection<KeyValuePair<string, PoiParam>> LoadPoiParam()
         {

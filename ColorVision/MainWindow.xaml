@@ -136,6 +136,7 @@
                             <ToggleButton  x:Name="ToggleButton1"  Style="{StaticResource ButtonPageControl1}" Background="#F9F9F9" Content="相机设置"  FontSize="15" Foreground="Black" IsChecked="True" />
                             <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton1,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
                                 <StackPanel Margin="5">
+                                    <TextBlock Text="{Binding NickName}" HorizontalAlignment="Center"/>
                                     <DockPanel Margin="5">
                                         <TextBlock Text="连接状态："/>
                                         <TextBlock Text="{Binding IsAlive}"/>

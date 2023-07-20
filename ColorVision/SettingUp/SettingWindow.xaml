@@ -93,7 +93,7 @@
                                             <TextBlock Text="启动恢复界面布局"/>
                                         </DockPanel>
                                         <DockPanel  Margin="5">
-                                            <hc:ComboBox x:Name="cmbloglevel" hc:InfoElement.Placeholder="Level"  DockPanel.Dock="Right"  Style="{StaticResource ComboBox.Small}" Width="100"  />
+                                            <hc:ComboBox x:Name="cmbloglevel" Text="{Binding SoftwareSetting.LogLevel}" hc:InfoElement.Placeholder="Level"  DockPanel.Dock="Right"  Style="{StaticResource ComboBox.Small}" Width="100"  />
                                             <TextBlock Text="日志级别"/>
                                         </DockPanel>
                                     </StackPanel>

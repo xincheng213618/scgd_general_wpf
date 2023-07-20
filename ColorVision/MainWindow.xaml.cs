@@ -751,7 +751,7 @@ namespace ColorVision
 
             ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()
                                            select new KeyValuePair<CameraType, string>(e1, e1.ToDescription());
-            ComboxCameraType.SelectedIndex = 2;
+            ComboxCameraType.SelectedIndex = 1;
 
             ComboxCameraType.SelectionChanged += (s, e) =>
             {
@@ -849,6 +849,11 @@ namespace ColorVision
         {
             if (ComboxCameraTakeImageMode.SelectedItem is KeyValuePair<TakeImageMode, string> KeyValue && KeyValue.Key is TakeImageMode takeImageMode)
             {
+                if (string.IsNullOrEmpty(ComboxCameraID.Text))
+                {
+                    MessageBox.Show("找不到相机");
+                    return;
+                }
                 MQTTCamera.Open(ComboxCameraID.Text.ToString(), takeImageMode, int.Parse(ComboxCameraImageBpp.Text));
             }
         }

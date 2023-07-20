@@ -50,9 +50,11 @@ namespace ColorVision.MQTT
                     LastAliveTime = DateTime.Now;
                     IsAlive = true;
                 }
-
             };
         }
+        public string NickName { get => _NickName; set { _NickName = value; NotifyPropertyChanged(); } }
+        private string _NickName = string.Empty;
+
 
         public static MQTTSetting MQTTSetting { get => GlobalSetting.GetInstance().SoftwareConfig.MQTTSetting; }
         public static int AliveTimeout { get => MQTTSetting.AliveTimeout; }
