@@ -47,7 +47,8 @@ namespace ColorVision.Template
         LedReuslt,
         SxParm,
         PoiParam,
-        FlowParam
+        FlowParam,
+        CameraDevice
     }
 
 
