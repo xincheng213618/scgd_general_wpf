@@ -137,8 +137,8 @@
                                     <DockPanel Margin="5">
                                         <TextBlock Text="连接状态："/>
                                         <TextBlock Text="{Binding IsAlive}"/>
-                                        <TextBlock Text="  上次心跳"/>
-                                        <TextBlock Text="{Binding LastAliveTime}"/>
+                                        <TextBlock Text="  上次心跳: " Visibility="{Binding IsAlive,Converter={StaticResource bool2VisibilityConverter1}}"/>
+                                        <TextBlock Text="{Binding LastAliveTime, StringFormat=HH:mm:ss}" Visibility="{Binding IsAlive,Converter={StaticResource bool2VisibilityConverter1}}"/>
                                     </DockPanel>
                                     <DockPanel Margin="5">
                                         <Label Content="相机类型："/>
