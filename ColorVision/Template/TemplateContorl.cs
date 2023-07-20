@@ -8,6 +8,7 @@ using ScottPlot.Styles;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel.Design;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
@@ -349,7 +350,7 @@ namespace ColorVision.Template
             CameraDeviceParams.Clear();
             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
             {
-                List<ResourceModel> devices = resourceService.GetByType(CameraDeviceParam.ValueType, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                List<ResourceModel> devices = resourceService.GetByType(CameraDeviceParam.TypeValue, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
                 foreach (var dbModel in devices)
                 {
                     KeyValuePair<string, CameraDeviceParam> item = new KeyValuePair<string, CameraDeviceParam>(dbModel.Name ?? "default", new CameraDeviceParam(dbModel));

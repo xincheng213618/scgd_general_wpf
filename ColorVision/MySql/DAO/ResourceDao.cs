@@ -23,7 +23,7 @@ namespace ColorVision.MySql.DAO
 
         public DataTable GetTableAllByType(int type, int tenantId)
         {
-            string sql = $"select * from {GetTableName()} where type={type} and tenant_id={tenantId}" + GetDelSQL(true);
+            string sql = $"select * from {GetTableName()} where type={type} and pid is null and tenant_id={tenantId}" + GetDelSQL(true);
             DataTable d_info = GetData(sql);
             return d_info;
         }
