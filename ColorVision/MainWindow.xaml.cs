@@ -33,6 +33,7 @@ using System.Drawing.Imaging;
 using HandyControl.Expression.Shapes;
 using Microsoft.Win32;
 using log4net;
+using System.Security.RightsManagement;
 
 namespace ColorVision
 {
@@ -745,7 +746,7 @@ namespace ColorVision
         private MQTTCamera MQTTCamera { get; set; }
         private void StackPanelCamera_Initialized(object sender, EventArgs e)
         {
-            MQTTCamera = new MQTTCamera();
+            MQTTCamera = MQTTManager.GetInstance().MQTTCameras[0].Value;
             StackPanelCamera.DataContext = MQTTCamera;
             MQTTCamera.FileHandler += OpenImage;
 
@@ -1014,6 +1015,21 @@ namespace ColorVision
                 CameraOpen = !CameraOpen;
             }
 
+        }
+
+        private void MQTTCamera_1_Click(object sender, RoutedEventArgs e)
+        {
+            MQTTCamera.GetAllLicense();
+        }
+
+        private void MQTTCamera_2_Click(object sender, RoutedEventArgs e)
+        {
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
+            openFileDialog.RestoreDirectory = true;
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                MQTTCamera.SetLicense(MQTTCamera.MD5[0],File.ReadAllText(openFileDialog.FileName));
+            }
         }
     }
 

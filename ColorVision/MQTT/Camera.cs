@@ -1,5 +1,6 @@
 ﻿using ColorVision.MVVM;
 using ColorVision.Template;
+using HslCommunication.MQTT;
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -75,20 +76,31 @@ namespace ColorVision.MQTT
 
         public CameraId? CameraID { get; set; }
 
-        public MQTTCamera() : base()
+        public MQTTCamera(string NickName = "相机1",string SendTopic = "Camera",string SubscribeTopic = "CameraService") : base()
         {
-            NickName = "相机1";
-            SendTopic = "Camera";
-            SubscribeTopic = "CameraService";
+            this.NickName = NickName;
+            this.SendTopic = SendTopic;
+            this.SubscribeTopic = SubscribeTopic;
             MQTTControl.SubscribeCache(SubscribeTopic);
-            MsgReturnChanged += MQTTCamera_MsgReturnChanged;    
+            MsgReturnChanged += MQTTCamera_MsgReturnChanged;
+            GetAllLicense();
         }
+        public List<string> MD5 { get; set; } = new List<string>();
+
 
         private void MQTTCamera_MsgReturnChanged(MsgReturn msg)
         {
             IsRun = false;
             if (msg.Code == 0)
             {
+                if (msg.EventName == "CM_GetAllCameraID")
+                {
+                        string CameraMD5 = msg.Data;
+                    var CameraID = JsonConvert.DeserializeObject<CameraId>(CameraMD5);
+                    CameraID?.IDs.ForEach(x => MD5.Add(x));
+                }
+
+
                 if (msg.EventName == "Init")
                 {
                     string CameraId = msg.Data.CameraId;
@@ -201,6 +213,28 @@ namespace ColorVision.MQTT
             {
                 EventName = "GetData",
                 Params = new Dictionary<string, object>() { { "expTime", expTime }, { "gain", gain }, { "saveFileName", saveFileName } }
+            };
+            PublishAsyncClient(msg);
+            return true;
+        }
+
+        public bool GetAllLicense()
+        {
+              MsgSend msg = new MsgSend
+              {
+                EventName = "CM_GetAllCameraID",
+                Params = new Dictionary<string, object>() { { "CameraID", "" }, { "eType", 0 } }
+              };
+            PublishAsyncClient(msg);
+            return true;
+        }
+
+        public bool SetLicense(string md5,string FileData)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "SaveLicense",
+                Params = new Dictionary<string, object>() { { "eType", 0}, { "FileName", md5 }, { "FileData", FileData } }
             };
             PublishAsyncClient(msg);
             return true;

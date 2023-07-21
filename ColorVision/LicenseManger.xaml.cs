@@ -44,8 +44,9 @@ namespace ColorVision
         {
             InitializeComponent();
             ListViewLicense.ItemsSource = LicenseConfigs;
-            LicenseConfigs.Add(new LicenseConfig() { Name = "ColorVision", Sn = "4060005EAD286752E9BF44AD08D2325E", Tag = $"许可给 fuzzes ally\n\r订阅将于 July 2, 2023过期" });
-            LicenseConfigs.Add(new LicenseConfig() { Name = "VIDCamera", Sn = "409D2B7555605C0B7ABABD5D31ECA47D", Tag = $"许可给 fuzzes ally\n\r订阅将于 July 9, 2023过期" });
+            LicenseConfigs.Add(new LicenseConfig() { Name = "ColorVision", Sn = "0000005EAD286752E9BF44AD08D23250", Tag = $"免费版\n\r永久有效" });
+            
+            LicenseConfigs.Add(new LicenseConfig() { Name = "Camera", Sn = "409D2B7555605C0B7ABABD5D31ECA47D", Tag = $"许可给 fuzzes ally\n\r订阅将于 July 9, 2023过期" });
             ListViewLicense.SelectedIndex = 0;
         }
 
