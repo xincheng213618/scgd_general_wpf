@@ -37,9 +37,10 @@
                     <Separator/>
                     <MenuItem Header="退出(_X)" InputGestureText="Alt + F4" Click="MenuItem_Exit"/>
                 </MenuItem>
-                <MenuItem Header="管理(_G)">
+                <MenuItem Header="配置(_S)">
                     <MenuItem Header="服务设置(_S)"  Tag="ServiceParams" Click="MenuItem_Template"/>
                     <MenuItem Header="设备设置(_D)"  Tag="DeviceParams" Click="MenuItem_Template"/>
+                    <MenuItem Header="相机视频配置(_V)" Click="MenuItem10_Click"/>
                 </MenuItem>
                 <MenuItem Header="模板(_M)">
                     <MenuItem Header="流程引擎模板(_F)" Tag="FlowParam"  Click="MenuItem_Template"/>
@@ -58,7 +59,6 @@
                 <MenuItem Header="工具(_T)">
                     <MenuItem Header="流程引擎(_F)" Click="MenuItem9_Click"/>
                     <MenuItem Header="MQTT日志(_Q)" Click="MenuItem_Click"/>
-                    <MenuItem Header="相机视频配置(_V)" Click="MenuItem10_Click"/>
                     <Separator/>
                     <MenuItem Header="设置(_O)"  Click="MenuItem_Click_2"   InputGestureText="Ctrl + I"  >
                         <MenuItem.Icon >
