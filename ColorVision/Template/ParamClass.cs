@@ -324,7 +324,7 @@ namespace ColorVision.Template
         {
         }
 
-        public CameraDeviceParam(ResourceModel dbModel) : base(dbModel.Id)
+        public CameraDeviceParam(SysResourceModel dbModel) : base(dbModel.Id)
         {
             JsonValue = dbModel.Value;
         }

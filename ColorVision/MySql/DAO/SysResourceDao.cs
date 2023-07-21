@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.MySql.DAO
 {
-    public class ResourceModel : PKModel
+    public class SysResourceModel : PKModel
     {
         public string? Name { get; set; }
         public string? Code { get; set; }
@@ -16,15 +16,15 @@ namespace ColorVision.MySql.DAO
         public string? Value { get; set; }
         public int TenantId { get; set; }
     }
-    public class ResourceDao : BaseDaoMaster<ResourceModel>
+    public class SysResourceDao : BaseDaoMaster<SysResourceModel>
     {
-        public ResourceDao() : base(string.Empty, "t_scgd_sys_resource", "id", true)
+        public SysResourceDao() : base(string.Empty, "t_scgd_sys_resource", "id", true)
         {
         }
 
-        public override ResourceModel GetModel(DataRow item)
+        public override SysResourceModel GetModel(DataRow item)
         {
-            ResourceModel model = new ResourceModel
+            SysResourceModel model = new SysResourceModel
             {
                 Id = item.Field<int>("id"),
                 Name = item.Field<string>("name"),
