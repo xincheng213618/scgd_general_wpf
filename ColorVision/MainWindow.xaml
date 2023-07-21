@@ -37,6 +37,10 @@
                     <Separator/>
                     <MenuItem Header="退出(_X)" InputGestureText="Alt + F4" Click="MenuItem_Exit"/>
                 </MenuItem>
+                <MenuItem Header="管理(_G)">
+                    <MenuItem Header="服务设置(_S)"  Tag="ServiceParams" Click="MenuItem_Template"/>
+                    <MenuItem Header="设备设置(_D)"  Tag="DeviceParams" Click="MenuItem_Template"/>
+                </MenuItem>
                 <MenuItem Header="模板(_M)">
                     <MenuItem Header="流程引擎模板(_F)" Tag="FlowParam"  Click="MenuItem_Template"/>
                     <MenuItem Header="关注点模板设置(_P)" Tag="FocusParm" Click="MenuItem_Template"/>
@@ -46,8 +50,6 @@
                     <MenuItem Header="_PG通讯模板设置" Tag="PGParam"  Click="MenuItem_Template"/>
                     <MenuItem Header="数据判断模板设置(_J)" Tag="LedReusltParams"  Click="MenuItem_Template"/>
                     <MenuItem Header="源表模板设置(_V)"  Tag="SxParms" Click="MenuItem_Template"/>
-                    <MenuItem Header="服务设置(_S)"  Tag="ServiceParams" Click="MenuItem_Template"/>
-                    <MenuItem Header="设备设置(_D)"  Tag="DeviceParams" Click="MenuItem_Template"/>
                 </MenuItem>
                 <MenuItem  x:Name="MenuStatusBar"  d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  Header="视图(_V)">
                     <MenuItem Header="侧边栏(_M)"  IsChecked="{Binding IsOpenSidebar}"  Click="MenuStatusBar_Click"/>
@@ -204,7 +206,7 @@
                                             <TextBox x:Name="TextFilePath" BorderThickness="0,0,0,1"  Margin="5"/>
                                         </DockPanel>
                                     </StackPanel>
-                                    <StackPanel  x:Name="StackPanelFilterWheel" Initialized="StackPanelFilterWheel_Initialized">
+                                    <StackPanel  x:Name="StackPanelFilterWheel" Initialized="StackPanelFilterWheel_Initialized" Visibility="Collapsed">
                                         <GroupBox Header="滤色轮">
                                             <StackPanel >
                                                 <ComboBox x:Name="ComboxFilterWheelChannel"  Style="{StaticResource ComboBox.Small}"  Height="20" Margin="0,2,10,2"/>

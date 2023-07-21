@@ -788,7 +788,6 @@ namespace ColorVision
                 ComboxCameraID.ItemsSource = MQTTCamera.CameraID?.IDs;
                 ComboxCameraID.SelectedIndex = 0;
                 StackPanelOpen.Visibility = Visibility.Visible;
-                StackPanelImage.Visibility = Visibility.Visible;
                 CameraOpenButton.Visibility = Visibility.Visible;
                 CamerInitButton.Content = "断开初始化";
             };
@@ -796,11 +795,13 @@ namespace ColorVision
             {
                 CameraCloseButton.Visibility = Visibility.Visible;
                 CameraOpenButton.Visibility = Visibility.Collapsed;
+                StackPanelImage.Visibility = Visibility.Visible;
             };
             MQTTCamera.CloseCameraSuccess += (s, e) =>
             {
                 CameraCloseButton.Visibility = Visibility.Collapsed;
                 CameraOpenButton.Visibility = Visibility.Visible;
+                StackPanelImage.Visibility = Visibility.Collapsed;
             };
         }
 
