@@ -9,7 +9,7 @@ namespace ColorVision.MySql.Service
 {
     public class SysDictionaryService
     {
-        public static string service_type_code = "service_type";
+        public static string ServiceTypeCode { get; set; } = "service_type";
 
         private SysDictionaryDao sysDictionaryDao;
 
@@ -20,7 +20,7 @@ namespace ColorVision.MySql.Service
 
         public List<SysDictionaryModel> GetAllServiceType()
         {
-            return sysDictionaryDao.GetAllByPcode(service_type_code);
+            return sysDictionaryDao.GetAllByPcode(ServiceTypeCode);
         }
     }
 }

@@ -50,9 +50,16 @@ namespace ColorVision
             {
                 if (MQTTSetting.IsShieldHeartbeat && !string.IsNullOrWhiteSpace(resultData_MQTT.Payload.ToString()))
                 {
-                    MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(resultData_MQTT.Payload.ToString() ?? string.Empty);
-                    if (json != null && json.EventName == "Heartbeat")
-                        return;
+                    try
+                    {
+                        MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(resultData_MQTT.Payload.ToString() ?? string.Empty);
+                        if (json != null && json.EventName == "Heartbeat")
+                            return;
+                    }catch 
+                    {
+                        
+                    }
+
                 }
                 if (MQTTSetting.ShowSelect && (TopicListView.SelectedIndex<0 ||(TopicListView.SelectedIndex >-1&&resultData_MQTT.Topic.ToString()!= MQTTControl.SubscribeTopic[TopicListView.SelectedIndex])))
                 {

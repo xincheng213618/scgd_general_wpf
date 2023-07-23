@@ -74,7 +74,7 @@ namespace ColorVision.MQTT
         public event EventHandler OpenCameraSuccess;
         public event EventHandler CloseCameraSuccess;
 
-        public CameraId? CameraID { get; set; }
+        public CameraId? CameraIDs { get; set; }
 
         public MQTTCamera(string NickName = "相机1",string SendTopic = "Camera",string SubscribeTopic = "CameraService") : base()
         {
@@ -95,9 +95,14 @@ namespace ColorVision.MQTT
             {
                 if (msg.EventName == "CM_GetAllCameraID")
                 {
-                        string CameraMD5 = msg.Data;
-                    var CameraID = JsonConvert.DeserializeObject<CameraId>(CameraMD5);
-                    CameraID?.IDs.ForEach(x => MD5.Add(x));
+                    JArray CameraID = msg.Data.CameraID;
+                    JArray MD5ID = msg.Data.MD5ID;
+                    foreach (var item in MD5ID)
+                    {
+                        MD5.Add(item.ToString());
+                    }
+
+                    //var CameraIDs = JsonConvert.DeserializeObject<cameralince>(CameraMD5);
                 }
 
 
@@ -105,7 +110,7 @@ namespace ColorVision.MQTT
                 {
                     string CameraId = msg.Data.CameraId;
                     ServiceID = msg.ServiceID;
-                    CameraID = JsonConvert.DeserializeObject<CameraId>(CameraId);
+                    CameraIDs = JsonConvert.DeserializeObject<CameraId>(CameraId);
                     Application.Current.Dispatcher.Invoke(() => InitCameraSuccess.Invoke(this, new EventArgs()));
                 }
                 else if (msg.EventName == "SetParam")
@@ -198,6 +203,7 @@ namespace ColorVision.MQTT
         }
         public bool Open(string CameraID,TakeImageMode TakeImageMode,int ImageBpp)
         {
+            this.CameraID = CameraID;
             MsgSend msg = new MsgSend
             {
                 EventName = "Open",

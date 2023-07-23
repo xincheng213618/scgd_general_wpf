@@ -9,6 +9,7 @@ namespace ColorVision.MQTT
         public string EventName { get; set; }
         public string ServiceName { get; set; }
         public ulong ServiceID { get; set; }
+        public string CameraID { get; set; }
         public Guid MsgID { get; set; }
         [JsonProperty("params")]
         public dynamic Params { get; set; }

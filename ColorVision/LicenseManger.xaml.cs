@@ -45,8 +45,11 @@ namespace ColorVision
             InitializeComponent();
             ListViewLicense.ItemsSource = LicenseConfigs;
             LicenseConfigs.Add(new LicenseConfig() { Name = "ColorVision", Sn = "0000005EAD286752E9BF44AD08D23250", Tag = $"免费版\n\r永久有效" });
-            
-            LicenseConfigs.Add(new LicenseConfig() { Name = "Camera", Sn = "409D2B7555605C0B7ABABD5D31ECA47D", Tag = $"许可给 fuzzes ally\n\r订阅将于 July 9, 2023过期" });
+
+            MQTT.MQTTManager.GetInstance().MQTTCameras[0].Value.MD5.ForEach(x => 
+            {
+                LicenseConfigs.Add(new LicenseConfig() { Name = "Camera", Sn = x, Tag = $"无" });
+            });
             ListViewLicense.SelectedIndex = 0;
         }
 
@@ -56,15 +59,15 @@ namespace ColorVision
         private void Import_Click(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png,*.tif) | *.jpg; *.jpeg; *.png;*.tif";
             openFileDialog.RestoreDirectory = true;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 string Key = File.ReadAllText(openFileDialog.FileName);
+                LicenseConfigs[ListViewLicense.SelectedIndex].Tag = $"{Key}";
+                MQTT.MQTTManager.GetInstance().MQTTCameras[0].Value.SetLicense(LicenseConfigs[ListViewLicense.SelectedIndex].Sn, Key);
+
             }
 
-            dateTime = dateTime.AddYears(1);
-            LicenseConfigs[ListViewLicense.SelectedIndex].Tag = $"许可给 fuzzes ally\n\r订阅将于{dateTime:yyyy年MM月dd日}过期\n\r";
         }
 
         private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)

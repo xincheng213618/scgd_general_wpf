@@ -64,9 +64,10 @@ namespace ColorVision.Template
 #pragma warning disable CA1507
     public class PGParam : ParamBase
     {
-        public PGParam() : base(-1)
+        public PGParam()
         {
         }
+
         public PGParam(ModMasterModel pgMaster, List<ModDetailModel> pgDetail) : base(pgMaster.Id,pgDetail)
         {
 

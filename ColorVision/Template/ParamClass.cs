@@ -37,11 +37,13 @@ namespace ColorVision.Template
 
         private Dictionary<string, ModDetailModel> parameters;
 
-        public ParamBase(int id)
+        public ParamBase()
         {
-            this.ID = id;
+            this.ID = -1;
             this.parameters = new Dictionary<string, ModDetailModel>();
         }
+
+
         public ParamBase(int id,List<ModDetailModel> detail)
         {
             this.ID = id;
@@ -101,7 +103,7 @@ namespace ColorVision.Template
     /// </summary>
     public class FlowParam : ParamBase
     {
-        public FlowParam():base(-1) {
+        public FlowParam() {
         }
         public FlowParam(ModMasterModel dbModel, List<ModDetailModel> flowDetail) : base(dbModel.Id,flowDetail)
         {
@@ -122,7 +124,7 @@ namespace ColorVision.Template
 
     public class AoiParam: ParamBase
     {
-        public AoiParam() : base(-1)
+        public AoiParam() 
         {
             this.FilterByArea = true;
             this.MaxArea = 6000;
@@ -171,7 +173,7 @@ namespace ColorVision.Template
     }
     public class LedReusltParam : ParamBase
     {
-        public LedReusltParam() : base(-1)
+        public LedReusltParam() 
         {
         }
 
@@ -319,13 +321,16 @@ namespace ColorVision.Template
 
     public class CameraDeviceParam : ParamBase
     {
-        public static int TypeValue = 1;
-        public CameraDeviceParam() : base(-1)
+        public static int TypeValue { get; set; } = 1;
+
+        public CameraDeviceParam()
         {
+
         }
 
-        public CameraDeviceParam(SysResourceModel dbModel) : base(dbModel.Id)
+        public CameraDeviceParam(SysResourceModel dbModel) 
         {
+            this.ID =dbModel.Id;
             JsonValue = dbModel.Value;
         }
 

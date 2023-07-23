@@ -1,5 +1,6 @@
 ﻿using ColorVision.MVVM;
 using ColorVision.SettingUp;
+using log4net;
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using System;
@@ -11,6 +12,8 @@ namespace ColorVision.MQTT
 {
     public class BaseService:ViewModelBase
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(BaseService));
+
         public BaseService()
         {
             MQTTControl = MQTTControl.GetInstance();
@@ -27,8 +30,9 @@ namespace ColorVision.MQTT
                             return Task.CompletedTask;
                         MsgReturnChanged?.Invoke(json);
                     }
-                    catch
+                    catch(Exception ex)
                     {
+                        log.Warn(ex);
                         return Task.CompletedTask;
                     }
                 }
@@ -78,6 +82,7 @@ namespace ColorVision.MQTT
         public string SendTopic { get; set; }
         public MQTTControl MQTTControl { get; set; }
         public ulong ServiceID { get; set; }
+        public string CameraID { get; set; }
 
         internal List<Guid> RunTimeUUID = new List<Guid> { Guid.NewGuid() };
 
@@ -95,7 +100,7 @@ namespace ColorVision.MQTT
             msg.ServiceName = SendTopic;
             msg.MsgID = guid;
             msg.ServiceID = ServiceID;
-
+            msg.CameraID = CameraID;
             string json = JsonConvert.SerializeObject(msg, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
             Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, json, false));
         }
