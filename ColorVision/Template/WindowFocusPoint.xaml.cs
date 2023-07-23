@@ -1143,10 +1143,11 @@ namespace ColorVision.Template
         }
         private void MenuItem_DrawingVisual_Delete(object sender, RoutedEventArgs e)
         {
-            if (sender is MenuItem menuItem && menuItem.Tag is Visual visual)
+            if (sender is MenuItem menuItem && menuItem.Tag is Visual visual &&visual is IDrawingVisual drawing)
             {
                 PropertyGrid2.SelectedObject = null;
                 ImageShow.RemoveVisual(visual);
+                DrawingVisualLists.Remove(drawing);
             }
         }
 

@@ -101,7 +101,6 @@ namespace ColorVision.MQTT
                     {
                         MD5.Add(item.ToString());
                     }
-
                     //var CameraIDs = JsonConvert.DeserializeObject<cameralince>(CameraMD5);
                 }
 

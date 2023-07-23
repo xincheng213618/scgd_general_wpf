@@ -25,8 +25,8 @@
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
-            <Grid x:Name="GridContent"  Grid.Column="1" >
-                <Border  d:DataContext="{d:DesignInstance local:LicenseConfig}" BorderBrush="#E0E0E0"  BorderThickness="1,0,0,0" Background="#F2F2F2">
+            <Grid x:Name="GridContent" d:DataContext="{d:DesignInstance local:LicenseConfig}"   Grid.Column="1" >
+                <Border  BorderBrush="#E0E0E0"  BorderThickness="1,0,0,0" Background="#F2F2F2">
                     <StackPanel Margin="5,10,5,5">
                         <DockPanel Margin="5">
                             <Button DockPanel.Dock="Right" Content="复制序列号" Click="Copy_Click"  Width="80"/>
@@ -37,7 +37,7 @@
                     </StackPanel>
 
                 </Border>
-                <UniformGrid  Columns="1" Width="100" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="10">
+                <UniformGrid  Columns="1" Width="100" Visibility="{Binding IsCanImport,Converter={StaticResource bool2VisibilityConverter}}" HorizontalAlignment="Right"  VerticalAlignment="Bottom" Margin="10">
                     <Button Content="导入许可证"  Click="Import_Click" Width="80" Grid.Row="1"/>
                 </UniformGrid>
             </Grid>

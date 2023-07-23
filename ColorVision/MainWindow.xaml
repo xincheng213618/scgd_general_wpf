@@ -38,8 +38,8 @@
                     <MenuItem Header="退出(_X)" InputGestureText="Alt + F4" Click="MenuItem_Exit"/>
                 </MenuItem>
                 <MenuItem Header="配置(_S)">
-                    <MenuItem Header="服务设置(_S)"  Tag="ServiceParams" Click="MenuItem_Template"/>
-                    <MenuItem Header="设备设置(_D)"  Tag="DeviceParams" Click="MenuItem_Template"/>
+                    <MenuItem Header="服务配置(_S)"  Tag="ServiceParams" Click="MenuItem_Template"/>
+                    <MenuItem Header="设备配置(_D)"  Tag="DeviceParams" Click="MenuItem_Template"/>
                     <MenuItem Header="相机视频配置(_V)" Click="MenuItem10_Click"/>
                 </MenuItem>
                 <MenuItem Header="模板(_M)">
@@ -66,14 +66,14 @@
                         </MenuItem.Icon>
                     </MenuItem>
                 </MenuItem>
-                <MenuItem Header="标定(_A)">
+                <!--<MenuItem Header="标定(_A)">
                     <MenuItem Header="四色校正" Click="MenuItem_Click8"/>
-                </MenuItem>
+                </MenuItem>-->
                 
                 <MenuItem Header="帮助(_H)">
-                    <MenuItem Header="打开日志文件夹(_F)"  Click="LogF_Click"/>
-                    <MenuItem Header="打开配置文件(_S)"  Click="Setting_Click"/>
                     <MenuItem Header="打开日志(_L)"  Click="Log_Click"/>
+                    <MenuItem Header="打开配置文件(_S)"  Click="Setting_Click"/>
+                    <MenuItem Header="打开日志文件夹(_F)"  Click="LogF_Click"/>
                     <Separator/>
                     <MenuItem Header="检查更新(_U)" Click="Update_Click"/>
                     <MenuItem Header="我的许可证(_R)"  Click="License_Click"/>

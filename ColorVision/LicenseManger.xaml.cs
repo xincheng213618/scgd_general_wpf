@@ -31,6 +31,9 @@ namespace ColorVision
         public string ActivationCode { get => _ActivationCode; set { _ActivationCode = value; NotifyPropertyChanged(); } }
         private string _ActivationCode;
 
+        public bool IsCanImport { get => _IsCanImport; set { _IsCanImport = value; NotifyPropertyChanged(); } }
+        private bool _IsCanImport = true;
+
         public object? Value { set; get; }
     }
 
@@ -44,11 +47,11 @@ namespace ColorVision
         {
             InitializeComponent();
             ListViewLicense.ItemsSource = LicenseConfigs;
-            LicenseConfigs.Add(new LicenseConfig() { Name = "ColorVision", Sn = "0000005EAD286752E9BF44AD08D23250", Tag = $"免费版\n\r永久有效" });
+            LicenseConfigs.Add(new LicenseConfig() { Name = "ColorVision", Sn = "0000005EAD286752E9BF44AD08D23250", Tag = $"免费版\n\r永久有效", IsCanImport =false });
 
             MQTT.MQTTManager.GetInstance().MQTTCameras[0].Value.MD5.ForEach(x => 
             {
-                LicenseConfigs.Add(new LicenseConfig() { Name = "Camera", Sn = x, Tag = $"无" });
+                LicenseConfigs.Add(new LicenseConfig() { Name = "相机", Sn = x, Tag = $"业务还在开发中" });
             });
             ListViewLicense.SelectedIndex = 0;
         }
