@@ -1037,6 +1037,8 @@ namespace ColorVision
             HeartbeatWindow heartbeatWindow = new HeartbeatWindow();    
             heartbeatWindow.Show();
         }
+
+
     }
 
     public class ImageInfo : ViewModelBase
