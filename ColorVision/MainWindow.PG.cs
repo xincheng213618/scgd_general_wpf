@@ -20,7 +20,7 @@ namespace ColorVision
 
         private void StackPanelPG_Initialized(object sender, EventArgs e)
         {
-            MQTTPG = new MQTTPG();
+            MQTTPG = MQTTManager.GetInstance().MQTTPGs.FirstOrDefault().Value;
             StackPanelPG.DataContext = MQTTPG;
             ComboxPGTemplate.ItemsSource = TemplateControl.GetInstance().PGParams;
             ComboxPGTemplate.SelectionChanged += (s, e) =>

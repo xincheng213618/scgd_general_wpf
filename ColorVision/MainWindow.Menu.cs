@@ -306,6 +306,7 @@ namespace ColorVision
             new AboutMsgWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
+
         private void Setting_Click(object sender, RoutedEventArgs e)
         {
             bool hasDefaultProgram = false;

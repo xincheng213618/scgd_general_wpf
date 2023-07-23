@@ -16,7 +16,7 @@ namespace ColorVision.SettingUp
         private int _UpdateSpeed = 1000;
 
         public string DefaultTimeFormat { get => _DefaultTimeFormat; set { _DefaultTimeFormat = value; NotifyPropertyChanged(); } }
-        private string _DefaultTimeFormat = "yyyy/dd/MM HH:mm:ss";
+        private string _DefaultTimeFormat = "yyyy/MM/dd HH:mm:ss";
     }
 
 

@@ -18,11 +18,27 @@ namespace ColorVision.MQTT
         public MQTTManager()
         {
             MQTTControl = MQTTControl.GetInstance();
+            ServiceHeartbeats = new ObservableCollection<IServiceHeartbeat>();
+
             MQTTCameras = new ObservableCollection<KeyValuePair<string, MQTTCamera>>();
-            MQTTCameras.Add(new KeyValuePair<string, MQTTCamera>("camera", new MQTTCamera("camera")));
+            MQTTPGs = new ObservableCollection<KeyValuePair<string, MQTTPG>>();
+
+            MQTTCamera Camera = new MQTTCamera("相机1");
+            MQTTCameras.Add(new KeyValuePair<string, MQTTCamera>("camera", Camera));
+            ServiceHeartbeats.Add(Camera);
+
+
+            MQTTPG PG =  new MQTTPG("PG1");
+            MQTTPGs.Add(new KeyValuePair<string, MQTTPG>("PG", PG));
+            ServiceHeartbeats.Add(PG);
+
+
         }
 
         public ObservableCollection<KeyValuePair<string, MQTTCamera>> MQTTCameras { get; set; }
+        public ObservableCollection<KeyValuePair<string, MQTTPG>> MQTTPGs { get; set; }
+
+        public ObservableCollection<IServiceHeartbeat> ServiceHeartbeats { get; set; }
 
 
     }

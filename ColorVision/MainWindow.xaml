@@ -59,6 +59,8 @@
                 <MenuItem Header="工具(_T)">
                     <MenuItem Header="流程引擎(_F)" Click="MenuItem9_Click"/>
                     <MenuItem Header="MQTT日志(_Q)" Click="MenuItem_Click"/>
+                    <MenuItem Header="MQTT心跳(_Q)" Click="MenuItem11_Click"/>
+
                     <Separator/>
                     <MenuItem Header="设置(_O)"  Click="MenuItem_Click_2"   InputGestureText="Ctrl + I"  >
                         <MenuItem.Icon >
@@ -147,13 +149,6 @@
                             <ToggleButton  x:Name="ToggleButton1"  Style="{StaticResource ButtonPageControl1}" Background="#F9F9F9" Content="相机设置"  FontSize="15" Foreground="Black" IsChecked="True" />
                             <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton1,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
                                 <StackPanel Margin="5">
-                                    <TextBlock Text="{Binding NickName}" HorizontalAlignment="Center"/>
-                                    <DockPanel Margin="5">
-                                        <TextBlock Text="连接状态："/>
-                                        <TextBlock Text="{Binding IsAlive}"/>
-                                        <TextBlock Text="  上次心跳: " Visibility="{Binding IsAlive,Converter={StaticResource bool2VisibilityConverter1}}"/>
-                                        <TextBlock Text="{Binding LastAliveTime, StringFormat=HH:mm:ss}" Visibility="{Binding IsAlive,Converter={StaticResource bool2VisibilityConverter1}}"/>
-                                    </DockPanel>
                                     <DockPanel Margin="5">
                                         <Label Content="相机类型："/>
                                         <hc:ComboBox x:Name="ComboxCameraType" Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20" Margin="0,0,10,0"/>

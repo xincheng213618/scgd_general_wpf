@@ -10,7 +10,19 @@ using System.Threading.Tasks;
 
 namespace ColorVision.MQTT
 {
-    public class BaseService:ViewModelBase
+
+    public interface IServiceHeartbeat
+    {
+        public string NickName { get; set; }
+
+        public DateTime LastAliveTime { get; set; }
+
+        public bool IsAlive { get; set; }
+
+    }
+
+
+    public class BaseService:ViewModelBase, IServiceHeartbeat
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseService));
 
@@ -61,7 +73,6 @@ namespace ColorVision.MQTT
 
 
         public static MQTTSetting MQTTSetting { get => GlobalSetting.GetInstance().SoftwareConfig.MQTTSetting; }
-        public static int AliveTimeout { get => MQTTSetting.AliveTimeout; }
 
         private void Timer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
         {

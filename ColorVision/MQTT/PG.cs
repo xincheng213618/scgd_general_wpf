@@ -33,11 +33,12 @@ namespace ColorVision.MQTT
         };
 
 
-        public MQTTPG()
+        public MQTTPG(string NickName = "PG1", string SendTopic = "PG", string SubscribeTopic = "PGService") : base()
         {
+            this.NickName = NickName;
+            this.SendTopic = SendTopic;
+            this.SubscribeTopic = SubscribeTopic;
             MQTTControl = MQTTControl.GetInstance();
-            SendTopic = "PG";
-            SubscribeTopic = "PGService";
             MQTTControl.SubscribeCache(SubscribeTopic);
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
         }

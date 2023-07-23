@@ -1031,6 +1031,12 @@ namespace ColorVision
                 MQTTCamera.SetLicense(MQTTCamera.MD5[0],File.ReadAllText(openFileDialog.FileName));
             }
         }
+
+        private void MenuItem11_Click(object sender, RoutedEventArgs e)
+        {
+            HeartbeatWindow heartbeatWindow = new HeartbeatWindow();    
+            heartbeatWindow.Show();
+        }
     }
 
     public class ImageInfo : ViewModelBase
