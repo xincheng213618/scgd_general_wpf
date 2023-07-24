@@ -79,37 +79,44 @@ namespace ColorVision
         {
             if (WindowConfig.IsExist)
             {
-                this.Icon = WindowConfig.Icon ?? this.Icon;
+                if (WindowConfig.Icon == null)
+                {
+                    if (!ThemeManager.AppsUseLightTheme() || !ThemeManager.SystemUsesLightTheme())
+                    {
+                        this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
+                    }
+                    SystemEvents.UserPreferenceChanged += (s, e) =>
+                    {
+                        if (!ThemeManager.AppsUseLightTheme() || !ThemeManager.SystemUsesLightTheme())
+                        {
+                            this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
+                        }
+                        else
+                        {
+                            this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision.ico"));
+                        }
+                    };
+                    SystemParameters.StaticPropertyChanged += (s, e) =>
+                    {
+                        if (!ThemeManager.AppsUseLightTheme() || !ThemeManager.SystemUsesLightTheme())
+                        {
+                            this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
+                        }
+                        else
+                        {
+                            this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision.ico"));
+                        }
+                    };
+                }
+                else
+                {
+                    this.Icon = WindowConfig.Icon;
+                }
                 this.Title = WindowConfig.Title ?? this.Title;
             }
             else
             {
-                if (!ThemeManager.AppsUseLightTheme() || !ThemeManager.SystemUsesLightTheme())
-                {
-                    this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
-                }
-                SystemEvents.UserPreferenceChanged += (s, e) =>
-                {
-                    if (!ThemeManager.AppsUseLightTheme() || !ThemeManager.SystemUsesLightTheme())
-                    {
-                        this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
-                    }
-                    else
-                    {
-                        this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision.ico"));
-                    }
-                };
-                SystemParameters.StaticPropertyChanged += (s, e) =>
-                {
-                    if (!ThemeManager.AppsUseLightTheme() || !ThemeManager.SystemUsesLightTheme())
-                    {
-                        this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
-                    }
-                    else
-                    {
-                        this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision.ico"));
-                    }
-                };
+
             }
 
             Application.Current.MainWindow = this;

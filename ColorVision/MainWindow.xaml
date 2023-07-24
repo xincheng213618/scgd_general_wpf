@@ -53,8 +53,8 @@
                     <MenuItem Header="源表模板设置(_V)"  Tag="SxParms" Click="MenuItem_Template"/>
                 </MenuItem>
                 <MenuItem  x:Name="MenuStatusBar"  d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  Header="视图(_V)">
-                    <MenuItem Header="侧边栏(_M)"  IsChecked="{Binding IsOpenSidebar}"  Click="MenuStatusBar_Click"/>
-                    <MenuItem Header="状态栏(_S)" IsChecked="{Binding IsOpenStatusBar}"  Click="MenuStatusBar_Click" />
+                    <MenuItem Header="侧边栏(_M)"  IsChecked="{Binding SoftwareSetting.IsOpenSidebar}"  Click="MenuStatusBar_Click"/>
+                    <MenuItem Header="状态栏(_S)" IsChecked="{Binding SoftwareSetting.IsOpenStatusBar}"  Click="MenuStatusBar_Click" />
                 </MenuItem>
                 <MenuItem Header="工具(_T)">
                     <MenuItem Header="流程引擎(_F)" Click="MenuItem9_Click"/>
@@ -87,12 +87,10 @@
                 <ColumnDefinition Width="auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <Grid  Grid.Row="0" Background="#F9F9F9" Width="300" x:Name="SiderBarGrid" d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}" Visibility="{Binding IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" >
+            <Grid  Grid.Row="0" Background="#F9F9F9" Width="300" x:Name="SiderBarGrid" d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}" Visibility="{Binding SoftwareSetting.IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" >
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                    <StackPanel >
-
+                    <StackPanel>
                         <StackPanel Margin="0,5" x:Name="StackPanelPG" d:DataContext="{d:DesignInstance mqtt:MQTTPG}" Initialized="StackPanelPG_Initialized">
-
                             <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Background="#F9F9F9"  Content="PG"  FontSize="15" Foreground="Black" IsChecked="False" />
                             <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
                                 <StackPanel Margin="5">
@@ -104,12 +102,6 @@
                                     <GroupBox Header="MQTT Test">
                                         <StackPanel Visibility="Visible" >
                                             <TextBlock Text="{Binding NickName}" HorizontalAlignment="Center"/>
-                                            <DockPanel Margin="5">
-                                                <TextBlock Text="连接状态："/>
-                                                <TextBlock Text="{Binding IsAlive}"/>
-                                                <TextBlock Text="  上次心跳: " Visibility="{Binding IsAlive,Converter={StaticResource bool2VisibilityConverter1}}"/>
-                                                <TextBlock Text="{Binding LastAliveTime, StringFormat=HH:mm:ss}" Visibility="{Binding IsAlive,Converter={StaticResource bool2VisibilityConverter1}}"/>
-                                            </DockPanel>
                                             <UniformGrid>
                                                 <ComboBox  x:Name="ComboxPGType"   SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,2,10,2"/>
                                                 <ComboBox  x:Name="ComboxPGCommunicateType"  SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,2,10,2"/>
@@ -560,7 +552,7 @@
             <GridSplitter Grid.Column="0"  Width="1" />
             <GridSplitter  Grid.Column="2"  Width="1" HorizontalAlignment="Left" />
         </Grid>
-        <Grid Grid.Row="2" x:Name="StatusBarGrid" d:DataContext="{d:DesignInstance SettingUp:GlobalSetting}" Visibility="{Binding SoftwareConfig.IsOpenStatusBar,Converter={StaticResource bool2VisibilityConverter}}" >
+        <Grid Grid.Row="2" x:Name="StatusBarGrid" d:DataContext="{d:DesignInstance SettingUp:GlobalSetting}" Visibility="{Binding SoftwareConfig.SoftwareSetting.IsOpenStatusBar,Converter={StaticResource bool2VisibilityConverter}}" >
             <StatusBar>
                 <StatusBar.ItemsPanel>
                     <ItemsPanelTemplate>

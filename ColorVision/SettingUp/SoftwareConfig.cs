@@ -33,6 +33,10 @@ namespace ColorVision.SettingUp
         public double Top { get; set; }
         public int WindowState { get; set; }
 
+        public bool IsOpenStatusBar { get => _IsOpenStatusBar; set { _IsOpenStatusBar = value; NotifyPropertyChanged(); } }
+        private bool _IsOpenStatusBar = true;
+        public bool IsOpenSidebar { get => _IsOpenSidebar; set { _IsOpenSidebar = value; NotifyPropertyChanged(); } }
+        private bool _IsOpenSidebar = true;
 
 
         public string LogLevel
@@ -70,11 +74,12 @@ namespace ColorVision.SettingUp
         private string _LogLevel = GlobalConst.LogLevel[0];
     }
 
+    public delegate void UseMySqlHandler(bool IsUseMySql);
 
     /// <summary>
     /// 软件配置
     /// </summary>
-    public class SoftwareConfig
+    public class SoftwareConfig : ViewModelBase
     {
         public SoftwareConfig()
         {
@@ -102,11 +107,18 @@ namespace ColorVision.SettingUp
         }
 
 
-        public string Version { get; set; } = "0.0";
-        public bool IsUseMySql { get; set; } = true;
-        public bool IsUseMQTT { get; set; } = true;
-        public bool IsOpenStatusBar { get; set; }
-        public bool IsOpenSidebar { get; set; } = true;
+        public string Version { get; set; } = "1.0";
+        public bool IsUseMySql { get => _IsUseMySql; set { _IsUseMySql = value; NotifyPropertyChanged(); UseMySqlChanged?.Invoke(value); } }
+        private bool _IsUseMySql = true;
+
+        public event UseMySqlHandler UseMySqlChanged;
+
+
+        public bool IsUseMQTT { get => _IsUseMQTT; set { _IsUseMQTT = value; NotifyPropertyChanged(); } } 
+        private bool _IsUseMQTT = true;
+
+
+
 
         public SoftwareSetting SoftwareSetting { get; set; }
 
