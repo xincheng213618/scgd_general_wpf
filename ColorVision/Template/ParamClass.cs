@@ -82,14 +82,6 @@ namespace ColorVision.Template
             return true;
         }
 
-        public void SetProperty(string? value, [CallerMemberName] string propertyName = "")
-        {
-            if (parameters.ContainsKey(propertyName))
-            {
-                parameters[propertyName].ValueB = parameters[propertyName].ValueA;
-                parameters[propertyName].ValueA = value;
-            }
-        }
 
 
         protected void SetProperty<T>(T value, [CallerMemberName] string propertyName = "")
@@ -132,31 +124,6 @@ namespace ColorVision.Template
             return storage;
         }
 
-        public T? GetValue<T>([CallerMemberName] string propertyName = "")
-        {
-            string val = "";
-            if (parameters.ContainsKey(propertyName)) val = parameters[propertyName].ValueA;
-            if (typeof(T) == typeof(int))
-            {
-                if (string.IsNullOrEmpty(val)) val = "0";
-                return (T)(object)int.Parse(val);
-            }
-            else if (typeof(T) == typeof(string))
-            {
-                return (T)(object)val;
-            }
-            else if (typeof(T) == typeof(bool))
-            {
-                if (string.IsNullOrEmpty(val)) val = "False";
-                return (T)(object)bool.Parse(val);
-            }
-            else if (typeof(T) == typeof(float))
-            {
-                if (string.IsNullOrEmpty(val)) val = "0.0";
-                return (T)(object)float.Parse(val);
-            }
-            return (T)(object)val;
-        }
     }
 
 
@@ -454,7 +421,7 @@ namespace ColorVision.Template
         private float _LLDetectionFDW;
 
         [Category("参数DW判断配置"), DefaultValue(1.8), DisplayName("DW上限检测阈值百分比")]
-        public float HLDetectionPDW { set { SetProperty(value); } get => GetValue(_HLDetectionPDW); }
+        public float HLDetectionPDW { set { SetProperty(ref _HLDetectionPDW,value); } get => GetValue(_HLDetectionPDW); }
         private float _HLDetectionPDW;
 
         [Category("参数DW判断配置"), DefaultValue(float.MaxValue), DisplayName("DW上限检测阈值固定值")]

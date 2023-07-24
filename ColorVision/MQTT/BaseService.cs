@@ -24,7 +24,7 @@ namespace ColorVision.MQTT
 
     public class BaseService:ViewModelBase, IServiceHeartbeat
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(BaseService));
+        internal static readonly ILog log = LogManager.GetLogger(typeof(BaseService));
 
         public BaseService()
         {

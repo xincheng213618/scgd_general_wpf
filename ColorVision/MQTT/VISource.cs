@@ -13,11 +13,12 @@ namespace ColorVision.MQTT
 
     public class MQTTVISource: BaseService
     {
-        public MQTTVISource()
+        public MQTTVISource(string NickName = "VISource1", string SendTopic = "Pss_Sx", string SubscribeTopic = "Pss_SxService") : base()
         {
+            this.NickName = NickName;
+            this.SendTopic = SendTopic;
+            this.SubscribeTopic = SubscribeTopic;
             MQTTControl = MQTTControl.GetInstance();
-            SendTopic = "VISource";
-            SubscribeTopic = "VISourceService";
             MQTTControl.SubscribeCache(SubscribeTopic);
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
         }

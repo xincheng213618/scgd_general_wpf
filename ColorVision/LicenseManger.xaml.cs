@@ -58,7 +58,6 @@ namespace ColorVision
 
 
 
-        DateTime dateTime = DateTime.Now;
         private void Import_Click(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
