@@ -73,7 +73,7 @@
                                             <DockPanel  MouseLeftButtonDown="TextBlock_MouseLeftButtonDown1" Visibility="{Binding IsUseMySql,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="MySql" >
                                                 <ToggleButton x:Name="StatusBarMysql" Style="{StaticResource ButtonDrawingImageMysql}"  Height="20"  Margin="0,-10" IsChecked="{Binding MySqlControl.IsConnect,Mode=OneWay}"  IsEnabled="False"/>
                                             </DockPanel>
-                                            <TextBlock Text="  (启用数据库后，模板等信息会从数据库中读取)" Visibility="{Binding IsUseMySql,Converter={StaticResource bool2VisibilityConverter1}}"  FontSize="8" Margin="0,3,0,0" />
+                                            <TextBlock Text="  (启用数据库后，模板等信息会从数据库中读取,后续会做成本地可以上传到云端)" Visibility="{Binding IsUseMySql,Converter={StaticResource bool2VisibilityConverter1}}"  FontSize="8" Margin="0,3,0,0" />
                                         </DockPanel>
 
                                         <DockPanel Margin="5">
@@ -82,7 +82,7 @@
                                             <DockPanel MouseLeftButtonDown="TextBlock_MouseLeftButtonDown" Visibility="{Binding IsUseMQTT,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="MQTT">
                                                 <ToggleButton  x:Name="StatusBarMqtt"   Style="{StaticResource ButtonDrawingImageMQTT}"  Height="20"  Margin="0,-10" IsChecked="{Binding MQTTControl.IsConnect,Mode=OneWay}" IsEnabled="False" />
                                             </DockPanel>
-                                            <TextBlock Text="  (这里必须要配置，后续可能更改成本地)" Visibility="{Binding IsUseMQTT,Converter={StaticResource bool2VisibilityConverter1}}"  FontSize="8" Margin="0,3,0,0" />
+                                            <TextBlock Text="  (这里必须要配置，后续本地和局域网都支持)" Visibility="{Binding IsUseMQTT,Converter={StaticResource bool2VisibilityConverter1}}"  FontSize="8" Margin="0,3,0,0" />
                                         </DockPanel>
                                         <DockPanel x:Name="AutoRunDock" Margin="5"  d:DataContext="{d:DesignInstance local:GlobalSetting}">
                                             <ToggleButton DockPanel.Dock="Right" Height="20" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsAutoRun}"/>

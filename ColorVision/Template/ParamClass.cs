@@ -4,6 +4,7 @@ using ColorVision.SettingUp;
 using Google.Protobuf.WellKnownTypes;
 using HslCommunication.Secs.Types;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -72,10 +73,10 @@ namespace ColorVision.Template
 
             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
             {
-                if (parameters.ContainsKey(propertyName))
+                if (parameters.TryGetValue(propertyName,out ModDetailModel modDetailModel))
                 {
-                    parameters[propertyName].ValueB = parameters[propertyName].ValueA;
-                    parameters[propertyName].ValueA = value?.ToString();
+                    modDetailModel.ValueB = modDetailModel.ValueA;
+                    modDetailModel.ValueA = value?.ToString();
                 }
             }
             NotifyPropertyChanged(propertyName);
@@ -86,10 +87,10 @@ namespace ColorVision.Template
 
         protected void SetProperty<T>(T value, [CallerMemberName] string propertyName = "")
         {
-            if (parameters.ContainsKey(propertyName))
+            if (parameters.TryGetValue(propertyName, out ModDetailModel modDetailModel))
             {
-                parameters[propertyName].ValueB = parameters[propertyName].ValueA;
-                parameters[propertyName].ValueA = value?.ToString();
+                modDetailModel.ValueB = modDetailModel.ValueA;
+                modDetailModel.ValueA = value?.ToString();
             }
         }
 
@@ -99,7 +100,10 @@ namespace ColorVision.Template
             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
             {
                 string val = "";
-                if (parameters.ContainsKey(propertyName)) val = parameters[propertyName].ValueA;
+                if (parameters.TryGetValue(propertyName, out ModDetailModel modDetailModel))
+                {
+                    val = modDetailModel.ValueA;
+                }
                 if (typeof(T) == typeof(int))
                 {
                     if (string.IsNullOrEmpty(val)) val = "0";

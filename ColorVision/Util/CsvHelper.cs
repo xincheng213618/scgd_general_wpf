@@ -10,7 +10,7 @@ using System.Windows.Forms;
 
 namespace ColorVision.Util
 {
-    class CsvHelper
+    public class CsvHelper
     {
         /// <summary>
         /// 导出报表为Csv

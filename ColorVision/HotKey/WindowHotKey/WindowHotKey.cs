@@ -56,7 +56,7 @@ namespace ColorVision.HotKey.WindowHotKey
                 ControlHookKeyMap.Add(control, new Dictionary<int, HotKeyCallBackHanlder>());
             }
             int vk = hotkey.ToInt();
-            if (AllKeyMap.ContainsKey(vk))
+            if (AllKeyMap.TryGetValue(vk,out HotKeyCallBackHanlder hotKeyCallBackHanlder))
             {
                 return false;
             }
