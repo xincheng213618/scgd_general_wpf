@@ -47,44 +47,48 @@ namespace ColorVision.Template
         {
             if (!Directory.Exists(AppDomain.CurrentDomain.BaseDirectory+ "cfg"))
                 Directory.CreateDirectory(AppDomain.CurrentDomain.BaseDirectory + "cfg");
-            AoiParam param = new AoiParam
-            {
-                FilterByArea = true,
-                MaxArea = 6000,
-                MinArea = 10,
-                FilterByContrast = true,
-                MaxContrast = 1.7f,
-                MinContrast = 0.3f,
-                ContrastBrightness = 1.0f,
-                ContrastDarkness = 0.5f,
-                BlurSize = 19,
-                MinContourSize = 5,
-                ErodeSize = 5,
-                DilateSize = 5,
-                Left = 5,
-                Right = 5,
-                Top = 5,
-                Bottom = 5
-            };
 
-            AoiParams = IDefault(FileNameAoiParams, param);
-            CalibrationParams = IDefault(FileNameCalibrationParams, new CalibrationParam());
-            PGParams = IDefault(FileNamePGParams, new PGParam());
 
-            LedReusltParams = IDefault(FileNameLedJudgeParams, new LedReusltParam());
-            SxParams = IDefault(FileNameSxParms, new SxParam());
-
-            FlowParams = IDefault(FileNameFlowParms, new FlowParam());
-
+            AoiParams = new ObservableCollection<KeyValuePair<string, AoiParam>>();
+            CalibrationParams = new ObservableCollection<KeyValuePair<string, CalibrationParam>>();
+            PGParams = new ObservableCollection<KeyValuePair<string, PGParam>>();
+            LedReusltParams = new ObservableCollection<KeyValuePair<string, LedReusltParam>>();
+            SxParams = new ObservableCollection<KeyValuePair<string, SxParam>>();
+            FlowParams = new ObservableCollection<KeyValuePair<string, FlowParam>>();
             PoiParams = new ObservableCollection<KeyValuePair<string, PoiParam>>();
             DeviceParams = new ObservableCollection<KeyValuePair<string, CameraDeviceParam>>();
             ServiceParams = new ObservableCollection<KeyValuePair<string, CameraDeviceParam>>();
 
+
+            GlobalSetting.GetInstance().SoftwareConfig.UseMySqlChanged += (s) =>
+            {
+                Init();
+            };
+            Init();
             Application.Current.MainWindow.Closed += (s, e) =>
             {
                 Save();
             };
         }
+        private void Init()
+        {
+            CalibrationParams = IDefault(FileNameCalibrationParams, new CalibrationParam());
+            PGParams = IDefault(FileNamePGParams, new PGParam());
+            LedReusltParams = IDefault(FileNameLedJudgeParams, new LedReusltParam());
+            SxParams = IDefault(FileNameSxParms, new SxParam());
+            FlowParams = IDefault(FileNameFlowParms, new FlowParam());
+
+            LoadPoiParam();
+            LoadAoiParam();
+            LoadFlowParam();
+            LoadServiceParams();
+            LoadDeviceParams();
+        }
+
+
+
+
+
         /// 这里是初始化模板的封装，因为模板的代码高度统一，所以使用泛型T来设置具体的模板参数。
         /// 最后在给模板的每一个元素加上一个切换的效果，即当某一个模板启用时，关闭其他已经启用的模板；
         /// 同一类型，只能存在一个启用的模板
@@ -318,26 +322,7 @@ namespace ColorVision.Template
             }
             else
             {
-                AoiParam param = new AoiParam
-                {
-                    FilterByArea = true,
-                    MaxArea = 6000,
-                    MinArea = 10,
-                    FilterByContrast = true,
-                    MaxContrast = 1.7f,
-                    MinContrast = 0.3f,
-                    ContrastBrightness = 1.0f,
-                    ContrastDarkness = 0.5f,
-                    BlurSize = 19,
-                    MinContourSize = 5,
-                    ErodeSize = 5,
-                    DilateSize = 5,
-                    Left = 5,
-                    Right = 5,
-                    Top = 5,
-                    Bottom = 5
-                };
-                AoiParams = IDefault(FileNameAoiParams, param);
+                AoiParams = IDefault(FileNameAoiParams, new AoiParam());
             }
             return AoiParams;
         }
