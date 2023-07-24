@@ -24,7 +24,7 @@ namespace ColorVision.MQTT
         public string ServiceName { get; set; }
         public ulong ServiceID { get; set; }
         public int Code { get; set; }
-        public string Msg { get; set; }
+        public string MsgID { get; set; }
         [JsonProperty("data")]
         public dynamic Data { get; set; }
     }

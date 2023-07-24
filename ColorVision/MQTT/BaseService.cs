@@ -7,6 +7,9 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using System.Timers;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision.MQTT
 {
@@ -40,6 +43,14 @@ namespace ColorVision.MQTT
                         MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg);
                         if (json == null)
                             return Task.CompletedTask;
+                        lock (_locker) {
+                            if (timers.TryGetValue(json.MsgID, out var value))
+                            {
+                                value.Enabled = false;
+                                timers.Remove(json.MsgID);
+                            }
+                        }
+
                         MsgReturnChanged?.Invoke(json);
                     }
                     catch(Exception ex)
@@ -103,10 +114,31 @@ namespace ColorVision.MQTT
         public bool IsAlive { get => _IsAlive; set { if (value == _IsAlive) return;  _IsAlive = value; NotifyPropertyChanged(); } }
         private bool _IsAlive;
 
+
+        private static Dictionary<string, Timer> timers = new Dictionary<string, Timer>();
+
+        private static readonly object _locker = new();
         internal void PublishAsyncClient(MsgSend msg)
         {
             Guid guid = Guid.NewGuid();
             RunTimeUUID.Add(guid);
+
+            if (timers.TryGetValue(guid.ToString(), out var value))
+            {
+                value.Enabled = false;
+                timers.Remove(guid.ToString());
+            }
+            Timer timer = new Timer(10000);
+            timer.Elapsed += (s,e)=>
+            {
+                timer.Enabled = false;
+                lock (_locker) { timers.Remove(guid.ToString()); }
+                MessageBox.Show(guid +"超时");
+            };
+            timer.AutoReset = false;
+            timer.Enabled = true;
+            timer.Start();
+            timers.Add(guid.ToString(), timer);
 
             msg.ServiceName = SendTopic;
             msg.MsgID = guid;

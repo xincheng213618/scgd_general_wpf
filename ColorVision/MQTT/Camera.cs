@@ -155,7 +155,6 @@ namespace ColorVision.MQTT
         public CameraType CurrentCameraType { get; set; }
         public bool Init(CameraType CameraType)
         {
-
             CurrentCameraType = CameraType;
             MsgSend msg = new MsgSend
             {
