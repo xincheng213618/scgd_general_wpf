@@ -797,6 +797,7 @@ namespace ColorVision
                 ComboxCameraID.SelectedIndex = 0;
                 StackPanelOpen.Visibility = Visibility.Visible;
                 CameraOpenButton.Visibility = Visibility.Visible;
+                CameraCloseButton.Visibility = Visibility.Collapsed;
                 CamerInitButton.Content = "断开初始化";
             };
             MQTTCamera.OpenCameraSuccess += (s, e) =>

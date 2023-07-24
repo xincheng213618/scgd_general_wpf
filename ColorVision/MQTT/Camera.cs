@@ -134,6 +134,21 @@ namespace ColorVision.MQTT
                     MessageBox.Show("Uninit");
                 }
             }
+            else
+            {
+                switch (msg.EventName)
+                {
+                    case "GatData":
+                        MessageBox.Show("取图失败");
+                        break;
+                    case "Close":
+                        MessageBox.Show("关闭相机失败");
+                        break;
+                    default:
+                        MessageBox.Show("相机操作失败");
+                        break;
+                }
+            }
         }
 
         public bool IsRun { get; set; }
@@ -212,12 +227,12 @@ namespace ColorVision.MQTT
             return true;
         }
          
-        public bool GetData(double expTime,double gain,string saveFileName = "")
+        public bool GetData(double expTime,double gain,string saveFileName = "1.tif")
         {
             MsgSend msg = new MsgSend
             {
                 EventName = "GetData",
-                Params = new Dictionary<string, object>() { { "expTime", expTime }, { "gain", gain }, { "saveFileName", saveFileName } }
+                Params = new Dictionary<string, object>() { { "expTime", expTime }, { "gain", gain }, { "savefilename", saveFileName } }
             };
             PublishAsyncClient(msg);
             return true;
