@@ -23,6 +23,9 @@ namespace ColorVision.SettingUp
 
         public int AliveTimeout { get => _AliveTimeout; set { _AliveTimeout = value; NotifyPropertyChanged(); } }
         private int _AliveTimeout = 60;
+
+        public int SendTimeout { get => _SendTimeout; set { _SendTimeout = value; NotifyPropertyChanged(); } }
+        private int _SendTimeout = 10;
     }
 
 
