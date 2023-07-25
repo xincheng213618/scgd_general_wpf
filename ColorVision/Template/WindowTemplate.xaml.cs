@@ -275,7 +275,11 @@ namespace ColorVision.Template
                         if (flowParam != null) CreateNewTemplate(TemplateControl.FlowParams, TextBox1.Text, flowParam);
                         else MessageBox.Show("数据库创建流程模板失败");
                     break;
-
+                case WindowTemplateType.Services:
+                    CameraDeviceParam? param = TemplateControl.AddFServiceParam(TextBox1.Text,"");
+                    if (param != null) CreateNewTemplate(TemplateControl.ServiceParams, TextBox1.Text, param);
+                    else MessageBox.Show("数据库创建服务失败");
+                    break;
             }
         }
 

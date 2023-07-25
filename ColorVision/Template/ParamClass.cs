@@ -479,7 +479,6 @@ namespace ColorVision.Template
         private int _JudgingWayMul;
     }
 
-
     public class CameraDeviceParam : ParamBase
     {
         public static int TypeValue { get; set; } = 1;
@@ -498,5 +497,4 @@ namespace ColorVision.Template
         public string? JsonValue { get; set; }
         public string? Code { get; set; }
     }
-
 }
