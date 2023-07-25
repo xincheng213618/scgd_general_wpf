@@ -50,10 +50,6 @@ namespace ColorVision.MQTT
                             }
                         }
                         ///这里是因为这里先加载相机上，所以加在这里
-                        if (json.EventName == "CM_GetAllCameraID")
-                        {
-                            return Task.CompletedTask;
-                        }
                         MsgReturnChanged?.Invoke(json);
                     }
                     catch(Exception ex)
@@ -127,34 +123,29 @@ namespace ColorVision.MQTT
             Guid guid = Guid.NewGuid();
             RunTimeUUID.Add(guid);
 
-
-
             msg.ServiceName = SendTopic;
             msg.MsgID = guid;
             msg.ServiceID = ServiceID;
             msg.CameraID = CameraID;
             string json = JsonConvert.SerializeObject(msg, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
 
+            Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, json, false));
 
-            if (timers.TryGetValue(guid.ToString(), out var value))
-            {
-                value.Enabled = false;
-                timers.Remove(guid.ToString());
-            }
+            if (msg.EventName == "CM_GetAllCameraID")
+                return;
+
             Timer timer = new Timer(10000);
             timer.Elapsed += (s, e) =>
             {
                 timer.Enabled = false;
                 lock (_locker) { timers.Remove(guid.ToString()); }
-                MessageBox.Show(SendTopic +"超时"+ guid + Environment.NewLine + json);
+                MessageBox.Show(SendTopic + "超时" + guid + Environment.NewLine + json);
             };
             timer.AutoReset = false;
             timer.Enabled = true;
             timer.Start();
             timers.Add(guid.ToString(), timer);
             keyValuePairs.Add(guid.ToString(), msg);
-
-            Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, json, false));
         }
 
 
