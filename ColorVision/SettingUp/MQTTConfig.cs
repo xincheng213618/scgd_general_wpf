@@ -1,4 +1,5 @@
-﻿using ColorVision.MQTT;
+﻿using ColorVision.Extension;
+using ColorVision.MQTT;
 using ColorVision.MVVM;
 using OpenCvSharp;
 using System;
@@ -31,7 +32,7 @@ namespace ColorVision.SettingUp
                     // 移除旧的对象
                     for (int i = 0; i < itemsToRemoveCount; i++)
                     {
-                        MsgRecords.RemoveAt(0); // 移除第一个元素
+                        MsgRecords.RemoveAt(MsgRecords.Count-1); // 移除第一个元素
                     }
                 }
             };

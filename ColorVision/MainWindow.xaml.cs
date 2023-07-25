@@ -1042,11 +1042,13 @@ namespace ColorVision
 
         private void MenuItem11_Click(object sender, RoutedEventArgs e)
         {
-            HeartbeatWindow heartbeatWindow = new HeartbeatWindow();    
-            heartbeatWindow.Show();
+            new HeartbeatWindow() { Owner = this }.Show();
         }
 
-
+        private void MenuItem12_Click(object sender, RoutedEventArgs e)
+        {
+            new MQTTList() { Owner = this }.Show();
+        }
     }
 
     public class ImageInfo : ViewModelBase

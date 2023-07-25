@@ -1,0 +1,65 @@
+﻿<Window x:Class="ColorVision.MQTT.MQTTList"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.MQTT"
+        mc:Ignorable="d"
+        Title="MQTTList" Height="450" Width="800" Initialized="Window_Initialized">
+    <Grid>
+        <ListView  x:Name="ListView1"  Background="White" ScrollViewer.HorizontalScrollBarVisibility="Auto"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback">
+            <ListView.View>
+                <GridView >
+                    <GridViewColumn  Header="MsgID">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:MsgRecord}">
+                                <TextBlock Text="{ Binding MsgID}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+
+                    <GridViewColumn  Header="SendTime">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:MsgRecord}">
+                                <TextBlock Text="{ Binding  SendTime,StringFormat=yyyy/MM/dd HH:mm:ss}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="ReciveTime">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:MsgRecord}">
+                                <TextBlock Text="{ Binding  ReciveTime,StringFormat=yyyy/MM/dd HH:mm:ss}" Visibility="{Binding IsSucess,Converter={StaticResource bool2VisibilityConverter}}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="MsgRecordState">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:MsgRecord}">
+                                <TextBlock Text="{ Binding  MsgRecordState}" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="MsgSend">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:MsgRecord}">
+                                <StackPanel PreviewMouseLeftButtonUp="StackPanel_PreviewMouseLeftButtonUp" Tag="{Binding MsgSend}">
+                                    <TextBlock Text="{ Binding  MsgSend}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="MsgReturn">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:MsgRecord}" >
+                                <StackPanel PreviewMouseLeftButtonUp="StackPanel_PreviewMouseLeftButtonUp" Tag="{Binding MsgReturn}">
+                                    <TextBlock Text="{ Binding  MsgReturn}"  Visibility="{Binding IsSucess,Converter={StaticResource bool2VisibilityConverter}}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+
+        </ListView>
+    </Grid>
+</Window>

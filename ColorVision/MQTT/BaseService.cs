@@ -143,7 +143,7 @@ namespace ColorVision.MQTT
                 return;
 
             MsgRecord msgRecord = new MsgRecord { MsgID = guid.ToString(), SendTime = DateTime.Now, MsgSend = msg,MsgRecordState = MsgRecordState.Send};
-            MQTTSetting.MsgRecords.Add(msgRecord);
+            MQTTSetting.MsgRecords.Insert(0,msgRecord);
 
             Timer timer = new Timer(10000);
             timer.Elapsed += (s, e) =>
@@ -160,15 +160,26 @@ namespace ColorVision.MQTT
         }
     }
 
-    public class MsgRecord
+    public class MsgRecord:ViewModelBase
     { 
         public string MsgID { get; set; }
-        public DateTime SendTime { get; set; }
-        public DateTime ReciveTime { get; set; }
+        public DateTime SendTime { get => _SendTime; set { _SendTime = value; NotifyPropertyChanged(); } }
+        private DateTime _SendTime;
+        public DateTime ReciveTime { get => _ReciveTime; set { _ReciveTime = value; NotifyPropertyChanged(); } }
+        private DateTime _ReciveTime;
         public MsgSend MsgSend { get; set; }
         public MsgReturn MsgReturn { get; set; }
 
-        public MsgRecordState MsgRecordState { get; set; }
+        public MsgRecordState MsgRecordState { get => _MsgRecordState; set 
+            { _MsgRecordState = value;
+                NotifyPropertyChanged();
+                NotifyPropertyChanged(nameof(IsSend));
+                NotifyPropertyChanged(nameof(IsSucess));
+                NotifyPropertyChanged(nameof(IsTimeout));
+            }
+        }
+        private MsgRecordState _MsgRecordState { get; set; }
+
 
         public bool IsSend { get => MsgRecordState == MsgRecordState.Send; }
         public bool IsSucess { get => MsgRecordState == MsgRecordState.Success; }
