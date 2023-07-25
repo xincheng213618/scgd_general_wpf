@@ -98,14 +98,11 @@ namespace ColorVision.MQTT
         public MsgReturnHandler MsgReturnChanged { get; set; }
 
 
-
         public string SubscribeTopic { get; set; }
         public string SendTopic { get; set; }
         public MQTTControl MQTTControl { get; set; }
         public ulong ServiceID { get; set; }
         public string CameraID { get; set; }
-
-        internal List<Guid> RunTimeUUID = new List<Guid> { Guid.NewGuid() };
 
         public DateTime LastAliveTime { get => _LastAliveTime; set { _LastAliveTime = value; NotifyPropertyChanged(); } } 
         private DateTime _LastAliveTime = DateTime.MinValue;
@@ -121,7 +118,6 @@ namespace ColorVision.MQTT
         internal void PublishAsyncClient(MsgSend msg)
         {
             Guid guid = Guid.NewGuid();
-            RunTimeUUID.Add(guid);
 
             msg.ServiceName = SendTopic;
             msg.MsgID = guid;
@@ -148,6 +144,7 @@ namespace ColorVision.MQTT
             keyValuePairs.Add(guid.ToString(), msg);
         }
 
-
     }
+
+
 }

@@ -26,6 +26,10 @@ namespace ColorVision.SettingUp
 
         public int SendTimeout { get => _SendTimeout; set { _SendTimeout = value; NotifyPropertyChanged(); } }
         private int _SendTimeout = 10;
+
+        public int CacheLength { get => _CacheLength; set { _CacheLength = value; NotifyPropertyChanged(); } }
+        private int _CacheLength = 1000;
+
     }
 
 

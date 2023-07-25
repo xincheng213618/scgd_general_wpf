@@ -50,6 +50,8 @@ namespace ColorVision.Controls
         public BaseWindow()
         {
             CommandInitialized();
+
+            Closing += (sender, e) => Owner?.Activate();
             this.Loaded += (s, e) =>
             {
                 if (IsBlurEnabled)

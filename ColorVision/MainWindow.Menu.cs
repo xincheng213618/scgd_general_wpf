@@ -224,8 +224,10 @@ namespace ColorVision
 
         private void OpenSetting()
         {
-            new SettingWindow() { Owner =this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            new SettingWindow() { Owner =this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
+
+
         RecentFileList SolutionHistory = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
 
         private void Menu_Initialized(object sender, EventArgs e)
@@ -233,8 +235,8 @@ namespace ColorVision
 
             Application.Current.MainWindow.AddHotKeys(new HotKeys("打开工程", new Hotkey(Key.O, ModifierKeys.Control), OpenSolution));
             Application.Current.MainWindow.AddHotKeys(new HotKeys("新建工程", new Hotkey(Key.N, ModifierKeys.Control), NewCreatSolution));
-            Application.Current.MainWindow.AddHotKeys(new HotKeys("全局设置", new Hotkey(Key.I, ModifierKeys.Control), OpenSetting));
-
+            Application.Current.MainWindow.AddHotKeys(new HotKeys("设置", new Hotkey(Key.I, ModifierKeys.Control), OpenSetting));
+            Application.Current.MainWindow.AddHotKeys(new HotKeys("关于", new Hotkey(Key.F1, ModifierKeys.Control), AboutMsg));
 
             MenuItem RecentListMenuItem = null;
 
@@ -285,7 +287,7 @@ namespace ColorVision
         }
         private void License_Click(object sender, RoutedEventArgs e)
         {
-            new LicenseManger() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            new LicenseManger() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         private void MenuItem_Exit(object sender, RoutedEventArgs e)
@@ -316,7 +318,7 @@ namespace ColorVision
         }
         private void Log_Click(object sender, RoutedEventArgs e)
         {
-            new WindowLog().Show();
+            new WindowLog() { Owner = this }.Show();
         }
 
         private void MenuItem_Click(object sender, RoutedEventArgs e)
@@ -324,6 +326,11 @@ namespace ColorVision
             new MQTTLog() { Owner = this }.Show();
         }
         private void About_Click(object sender, RoutedEventArgs e)
+        {
+            AboutMsg();
+        }
+
+        private void AboutMsg()
         {
             new AboutMsgWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }

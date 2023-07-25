@@ -164,6 +164,43 @@
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
+            
+            <TabItem  Header="MQTT" Background="Transparent">
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" Background="#F2F2F2" VerticalScrollBarVisibility="Auto" >
+                    <StackPanel>
+                        <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
+                            <GroupBox.Header>
+                                <TextBlock Text="MQTT" FontSize="20"/>
+                            </GroupBox.Header>
+                            <StackPanel>
+                                <Border Style="{StaticResource BorderModuleArea}" Background="White" CornerRadius="8">
+                                    <StackPanel Margin="5">
+                                        <DockPanel Margin="5" Height="20">
+                                            <ToggleButton DockPanel.Dock="Right" Height="20" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding MQTTSetting.IsShieldHeartbeat}"/>
+                                            <TextBlock Text="开机自动启动(可能会不成功)"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="5" Height="20">
+                                            <TextBox DockPanel.Dock="Right" Height="20" Text="{Binding MQTTSetting.AliveTimeout}"/>
+                                            <TextBlock Text="心跳检测失败时间"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="5" Height="20">
+                                            <TextBox DockPanel.Dock="Right" Height="20" Text="{Binding MQTTSetting.SendTimeout}"/>
+                                            <TextBlock Text="指令超时时间"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="5" Height="20">
+                                            <TextBox DockPanel.Dock="Right" Height="20" Text="{Binding MQTTSetting.CacheLength}"/>
+                                            <TextBlock Text="指令缓存数据长度"/>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+
+                        </GroupBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+
 
 
             <TabItem  Header="性能检测" Background="Transparent">
