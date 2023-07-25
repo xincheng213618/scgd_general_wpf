@@ -479,16 +479,16 @@ namespace ColorVision.Template
         private int _JudgingWayMul;
     }
 
-    public class CameraDeviceParam : ParamBase
+    public class ResourceParam : ParamBase
     {
         public static int TypeValue { get; set; } = 1;
 
-        public CameraDeviceParam()
+        public ResourceParam()
         {
 
         }
 
-        public CameraDeviceParam(SysResourceModel dbModel) 
+        public ResourceParam(SysResourceModel dbModel) 
         {
             this.ID =dbModel.Id;
             JsonValue = dbModel.Value;

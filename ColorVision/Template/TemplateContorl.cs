@@ -42,6 +42,7 @@ namespace ColorVision.Template
         private PoiService poiService = new PoiService();
         private ModService modService = new ModService();
         private SysResourceService resourceService = new SysResourceService();
+        private SysDictionaryService dictionaryService = new SysDictionaryService();
 
         public TemplateControl()
         {
@@ -56,8 +57,8 @@ namespace ColorVision.Template
             SxParams = new ObservableCollection<KeyValuePair<string, SxParam>>();
             FlowParams = new ObservableCollection<KeyValuePair<string, FlowParam>>();
             PoiParams = new ObservableCollection<KeyValuePair<string, PoiParam>>();
-            DeviceParams = new ObservableCollection<KeyValuePair<string, CameraDeviceParam>>();
-            ServiceParams = new ObservableCollection<KeyValuePair<string, CameraDeviceParam>>();
+            DeviceParams = new ObservableCollection<KeyValuePair<string, ResourceParam>>();
+            ServiceParams = new ObservableCollection<KeyValuePair<string, ResourceParam>>();
 
 
             GlobalSetting.GetInstance().SoftwareConfig.UseMySqlChanged += (s) =>
@@ -264,9 +265,9 @@ namespace ColorVision.Template
             return null;
         }
 
-        internal CameraDeviceParam? AddFServiceParam(string name,string code)
+        internal ResourceParam? AddDeviceParam(string name, string code, int type, int pid)
         {
-            SysResourceModel sysResource = new SysResourceModel(name, code, 1, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            SysResourceModel sysResource = new SysResourceModel(name, code, type,pid, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
             resourceService.Save(sysResource);
             int pkId = sysResource.GetPK();
             if (pkId > 0)
@@ -276,10 +277,22 @@ namespace ColorVision.Template
             return null;
         }
 
-        private CameraDeviceParam? LoadServiceParamById(int pkId)
+        internal ResourceParam? AddServiceParam(string name,string code,int type)
+        {
+            SysResourceModel sysResource = new SysResourceModel(name, code, type, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            resourceService.Save(sysResource);
+            int pkId = sysResource.GetPK();
+            if (pkId > 0)
+            {
+                return LoadServiceParamById(pkId);
+            }
+            return null;
+        }
+
+        private ResourceParam? LoadServiceParamById(int pkId)
         {
             SysResourceModel model = resourceService.GetMasterById(pkId);
-            if (model != null) return new CameraDeviceParam(model);
+            if (model != null) return new ResourceParam(model);
             else return null;
         }
 
@@ -346,7 +359,7 @@ namespace ColorVision.Template
             return AoiParams;
         }
 
-        internal ObservableCollection<KeyValuePair<string, CameraDeviceParam>> LoadDeviceParams()
+        internal ObservableCollection<KeyValuePair<string, ResourceParam>> LoadDeviceParams()
         {
             DeviceParams.Clear();
             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
@@ -354,14 +367,19 @@ namespace ColorVision.Template
                 List<SysResourceModel> devices = resourceService.GetAllDevices(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
                 foreach (var dbModel in devices)
                 {
-                    KeyValuePair<string, CameraDeviceParam> item = new KeyValuePair<string, CameraDeviceParam>(dbModel.Name ?? "default", new CameraDeviceParam(dbModel));
+                    KeyValuePair<string, ResourceParam> item = new KeyValuePair<string, ResourceParam>(dbModel.Name ?? "default", new ResourceParam(dbModel));
                     DeviceParams.Add(item);
                 }
             }
             return DeviceParams;
         }
 
-        internal ObservableCollection<KeyValuePair<string, CameraDeviceParam>> LoadServiceParams()
+        internal List<SysResourceModel> LoadAllServices()
+        {
+            return resourceService.GetAllServices(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+        }
+
+        internal ObservableCollection<KeyValuePair<string, ResourceParam>> LoadServiceParams()
         {
             ServiceParams.Clear();
             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
@@ -369,7 +387,7 @@ namespace ColorVision.Template
                 List<SysResourceModel> devices = resourceService.GetAllServices(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
                 foreach (var dbModel in devices)
                 {
-                    KeyValuePair<string, CameraDeviceParam> item = new KeyValuePair<string, CameraDeviceParam>(dbModel.Name ?? "default", new CameraDeviceParam(dbModel));
+                    KeyValuePair<string, ResourceParam> item = new KeyValuePair<string, ResourceParam>(dbModel.Name ?? "default", new ResourceParam(dbModel));
                     ServiceParams.Add(item);
                 }
             }
@@ -402,10 +420,18 @@ namespace ColorVision.Template
             modService.Save(flowParam);
         }
 
+        internal List<SysDictionaryModel> LoadServiceType()
+        {
+            return dictionaryService.GetAllServiceType();
+        }
 
+        internal int ResourceDeleteById(int id)
+        {
+            return resourceService.DeleteById(id);
+        }
 
-        public ObservableCollection<KeyValuePair<string, CameraDeviceParam>> ServiceParams { get; set; }
-        public ObservableCollection<KeyValuePair<string, CameraDeviceParam>> DeviceParams { get; set; }
+        public ObservableCollection<KeyValuePair<string, ResourceParam>> ServiceParams { get; set; }
+        public ObservableCollection<KeyValuePair<string, ResourceParam>> DeviceParams { get; set; }
         public ObservableCollection<KeyValuePair<string, AoiParam>> AoiParams { get; set; }
         public ObservableCollection<KeyValuePair<string, CalibrationParam>> CalibrationParams { get; set; } 
         public ObservableCollection<KeyValuePair<string, PGParam>> PGParams { get; set; }

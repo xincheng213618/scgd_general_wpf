@@ -10,12 +10,23 @@ namespace ColorVision.MySql.DAO
     public class SysResourceModel : PKModel
     {
         public SysResourceModel() { }
+        public SysResourceModel(string name, string code, int tp, int pid, int tenantId)
+        {
+            this.Name = name;
+            this.Code = code;
+            this.TenantId = tenantId;
+            this.Type = tp;
+            this.Pid = pid;
+            this.CreateDate = DateTime.Now;
+        }
+
         public SysResourceModel(string name, string code, int tp, int tenantId)
         {
             this.Name = name;
             this.Code = code;
             this.TenantId = tenantId;
             this.Type = tp;
+            this.CreateDate = DateTime.Now;
         }
 
         public string? Name { get; set; }
@@ -23,6 +34,7 @@ namespace ColorVision.MySql.DAO
         public int Type { get; set; }
         public int? Pid { get; set; }
         public string? Value { get; set; }
+        public DateTime CreateDate { get; set; }
         public int TenantId { get; set; }
     }
     public class SysResourceDao : BaseDaoMaster<SysResourceModel>
@@ -41,6 +53,7 @@ namespace ColorVision.MySql.DAO
                 Type = item.Field<int>("type"),
                 Pid = item.Field<int?>("pid"),
                 Value = item.Field<string>("txt_value"),
+                CreateDate = item.Field<DateTime>("create_date"),
                 TenantId = item.Field<int>("tenant_id"),
             };
             return model;
@@ -52,9 +65,12 @@ namespace ColorVision.MySql.DAO
             {
                 if (item.Id > 0) row["id"] = item.Id;
                 if (item.Name != null) row["name"] = item.Name;
+                if (item.Code != null) row["code"] = item.Code;
+                if (item.Pid != null) row["pid"] = item.Pid;
                 if (item.Type >= 0) row["type"] = item.Type;
                 row["tenant_id"] = item.TenantId;
-            }
+                row["create_date"] = item.CreateDate;
+           }
             return row;
         }
     }
