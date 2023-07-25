@@ -78,14 +78,12 @@ namespace ColorVision
                         TemplateAbb(windowTemplate, TemplateControl.FlowParams);
                         break;
                     case "DeviceParams":
-                        DevicesUserControl devicesControl = new DevicesUserControl();
-                        windowResource = new WindowResource(WindowTemplateType.Devices, devicesControl) { Title = "设备设置" };
+                        windowResource = new WindowResource(WindowTemplateType.Devices, new UserControl()) { Title = "设备设置" };
                         TemplateControl.LoadDeviceParams();
                         ResourceAbb(windowResource, TemplateControl.DeviceParams);
                         break;
                     case "ServiceParams":
-                        ServicesUserControl servicesControl = new ServicesUserControl();
-                        windowResource = new WindowResource(WindowTemplateType.Services, servicesControl) { Title = "服务设置" };
+                        windowResource = new WindowResource(WindowTemplateType.Services, new UserControl()) { Title = "服务设置" };
                         TemplateControl.LoadServiceParams();
                         ResourceAbb(windowResource, TemplateControl.ServiceParams);
                         break;

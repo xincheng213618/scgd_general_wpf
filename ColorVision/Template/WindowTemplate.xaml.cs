@@ -53,9 +53,6 @@ namespace ColorVision.Template
     }
 
 
-
-
-
     /// <summary>
     /// WindowTemplate.xaml 的交互逻辑
     /// </summary>

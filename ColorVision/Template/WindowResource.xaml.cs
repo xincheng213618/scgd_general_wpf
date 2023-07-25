@@ -17,6 +17,16 @@ using System.Windows.Shapes;
 
 namespace ColorVision.Template
 {
+
+    public class ServiceSetting
+    {
+        public string ServiceName { get; set; }
+        public string UserTopic { get; set; }
+        public string ServiceTopic { get; set; }
+        public int ServiceType { get; set; }
+    }
+
+
     public class ResourceTypeConfig
     {
         public string Name { get; set; }
@@ -55,11 +65,7 @@ namespace ColorVision.Template
             this.TemplateType = windowTemplateType;
             this.TemplateControl = TemplateControl.GetInstance();
             InitializeComponent();
-
-            this.GridProperty.Children.Clear();
-
             this.UserControl = userControl;
-            this.GridProperty.Children.Add(UserControl);
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -103,15 +109,7 @@ namespace ColorVision.Template
         {
             if (!string.IsNullOrEmpty(TextBox_Name.Text))
             {
-                if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
-                {
-                    CreateNewTemplateFromDB();
-                }
-                else
-                {
-                    //CreateNewTemplateFromCsv();
-                }
-                //TextBox_Name.Text = NewCreateFileName("default");
+                CreateNewTemplateFromDB();
             }
             else
             {
@@ -135,7 +133,7 @@ namespace ColorVision.Template
                 case WindowTemplateType.Devices:
                     ResourceParam? paramDev = TemplateControl.AddDeviceParam(TextBox_Name.Text, TextBox_Code.Text, (int)((ResourceTypeConfig)TextBox_Type.SelectedItem).Type, ((ResourceTypeConfig)TextBox_Type.SelectedItem).Value);
                     if (paramDev != null) CreateNewTemplate(TemplateControl.DeviceParams, TextBox_Name.Text, paramDev);
-                    else MessageBox.Show("数据库创建服务失败");
+                    else MessageBox.Show("数据库创建设备失败");
                     break;
                 case WindowTemplateType.Services:
                     ResourceParam? param = TemplateControl.AddServiceParam(TextBox_Name.Text, TextBox_Code.Text, ((ResourceTypeConfig)TextBox_Type.SelectedItem).Value);

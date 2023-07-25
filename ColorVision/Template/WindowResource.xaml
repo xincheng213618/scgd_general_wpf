@@ -71,45 +71,40 @@
 
         </GroupBox>
 
-        <Grid Grid.Row="0" Grid.Column="1"  x:Name="GridProperty" Margin="0,15,0,5">
-            <!--<Grid.Resources>
-                <ResourceDictionary>
-                    <ResourceDictionary.MergedDictionaries>
-                        <ResourceDictionary Source="/HandyControl;component/themes/basic/colors/light.xaml"/>
-                        <ResourceDictionary Source="/HandyControl;component/Themes/Theme.xaml"/>
-                    </ResourceDictionary.MergedDictionaries>
-                </ResourceDictionary>
-            </Grid.Resources>
-            <hc:PropertyGrid x:Name="PropertyGrid1"/>
-
-            <xctk:PropertyGrid   x:Name="PropertyGrid1" /> -->
+        <Grid Grid.Row="0" Grid.Column="1" Margin="0,15,0,5">
 
 
         </Grid>
 
-        <StackPanel x:Name="CreateGrid"  Grid.Column="1" Grid.Row="1" HorizontalAlignment="Center">
-            <DockPanel  >
-                <Label Content="类型"/>
-                <ComboBox x:Name="TextBox_Type" SelectedValuePath="Name"  DisplayMemberPath="Name" Margin="3,3,0,3"/>
+        <StackPanel x:Name="CreateGrid"  Grid.Column="1" Grid.Row="1">
+            <DockPanel Margin="5" >
+                <TextBlock Text="类型" Width="60"/>
+                <ComboBox x:Name="TextBox_Type" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Name"  DisplayMemberPath="Name" />
             </DockPanel>
-            <DockPanel  >
-                <Label Content="标识"/>
-                <TextBox x:Name="TextBox_Code" Margin="3,3,0,3"/>
+            <DockPanel Margin="5" >
+                <TextBlock Text="标识" Width="60"/>
+                <TextBox x:Name="TextBox_Code"/>
             </DockPanel>
-            <DockPanel  >
-                <Label Content="名称"/>
-                <TextBox x:Name="TextBox_Name" Margin="3,3,0,3"/>
+            <DockPanel Margin="5" >
+                <TextBlock Text="名称" Width="60"/>
+                <TextBox x:Name="TextBox_Name" />
             </DockPanel>
-            <UniformGrid x:Name="FunctionGrid" Columns="3" Margin="0,8"  Width="345"  HorizontalAlignment="Center">
+            <DockPanel Margin="5" >
+                <TextBlock Text="发送Topic" Width="60"/>
+                <TextBox  />
+            </DockPanel>
+            <DockPanel Margin="5" >
+                <TextBlock Text="接收Topic" Width="60"/>
+                <TextBox />
+            </DockPanel>
+            <UniformGrid x:Name="FunctionGrid" Columns="2" Margin="0,8"  Width="300" >
                 <Button Width="80"  Click="Button_New_Click" HorizontalAlignment="Left">
-                    <TextBlock Text="{Binding ElementName=TemplateGrid,Path=Header,StringFormat='新建{0}'}"/>
+                    <TextBlock Text="{Binding ElementName=TemplateGrid,Path=Header,StringFormat='添加{0}'}"/>
                 </Button>
                 <Button  Width="80"   Click="Button_Del_Click" >
                     <TextBlock Text="{Binding ElementName=TemplateGrid,Path=Header,StringFormat='删除{0}'}"/>
                 </Button>
-                <Button  Width="80" HorizontalAlignment="Right"  Click="Button_Save_Click" >
-                    <TextBlock Text="{Binding ElementName=TemplateGrid,Path=Header,StringFormat='保存{0}'}"/>
-                </Button>
+
 
             </UniformGrid>
         </StackPanel>
