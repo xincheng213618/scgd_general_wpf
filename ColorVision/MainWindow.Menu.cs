@@ -36,6 +36,7 @@ namespace ColorVision
             {
                 SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
                 WindowTemplate windowTemplate;
+                WindowResource windowResource;
                 if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
                 {
                     MessageBox.Show("数据库连接失败，请先连接数据库在操作");
@@ -78,21 +79,42 @@ namespace ColorVision
                         break;
                     case "DeviceParams":
                         DevicesUserControl devicesControl = new DevicesUserControl();
-                        windowTemplate = new WindowTemplate(WindowTemplateType.Devices, devicesControl) { Title = "设备设置" };
+                        windowResource = new WindowResource(WindowTemplateType.Devices, devicesControl) { Title = "设备设置" };
                         TemplateControl.LoadDeviceParams();
-                        TemplateAbb(windowTemplate, TemplateControl.DeviceParams);
+                        ResourceAbb(windowResource, TemplateControl.DeviceParams);
                         break;
                     case "ServiceParams":
                         ServicesUserControl servicesControl = new ServicesUserControl();
-                        windowTemplate = new WindowTemplate(WindowTemplateType.Services, servicesControl) { Title = "服务设置" };
+                        windowResource = new WindowResource(WindowTemplateType.Services, servicesControl) { Title = "服务设置" };
                         TemplateControl.LoadServiceParams();
-                        TemplateAbb(windowTemplate, TemplateControl.ServiceParams);
+                        ResourceAbb(windowResource, TemplateControl.ServiceParams);
                         break;
                     default:
                         HandyControl.Controls.Growl.Info("开发中");
                         break;
                 }
             }
+        }
+
+        private void ResourceAbb<T>(WindowResource windowResource, ObservableCollection<KeyValuePair<string, T>> keyValuePairs)
+        {
+            windowResource.Owner = this;
+            int id = 1;
+            windowResource.ListConfigs.Clear();
+            foreach (var item in keyValuePairs)
+            {
+                ListConfig listConfig = new ListConfig();
+                listConfig.ID = id++;
+                listConfig.Name = item.Key;
+                listConfig.Value = item.Value;
+                if (item.Value is PoiParam poiParam)
+                {
+                    listConfig.Tag = $"{poiParam.Width}*{poiParam.Height}{(GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql ? "" : $"_{poiParam.PoiPoints.Count}")}";
+                }
+
+                windowResource.ListConfigs.Add(listConfig);
+            }
+            windowResource.ShowDialog();
         }
 
         private void TemplateAbb<T>(WindowTemplate windowTemplate, ObservableCollection<KeyValuePair<string, T>> keyValuePairs)

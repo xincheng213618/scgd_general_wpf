@@ -264,6 +264,25 @@ namespace ColorVision.Template
             return null;
         }
 
+        internal CameraDeviceParam? AddFServiceParam(string name,string code)
+        {
+            SysResourceModel sysResource = new SysResourceModel(name, code, 1, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            resourceService.Save(sysResource);
+            int pkId = sysResource.GetPK();
+            if (pkId > 0)
+            {
+                return LoadServiceParamById(pkId);
+            }
+            return null;
+        }
+
+        private CameraDeviceParam? LoadServiceParamById(int pkId)
+        {
+            SysResourceModel model = resourceService.GetMasterById(pkId);
+            if (model != null) return new CameraDeviceParam(model);
+            else return null;
+        }
+
         internal PoiParam? LoadPoiParamById(int pkId)
         {
             PoiMasterModel poiMaster = poiService.GetMasterById(pkId);
@@ -382,6 +401,8 @@ namespace ColorVision.Template
         {
             modService.Save(flowParam);
         }
+
+
 
         public ObservableCollection<KeyValuePair<string, CameraDeviceParam>> ServiceParams { get; set; }
         public ObservableCollection<KeyValuePair<string, CameraDeviceParam>> DeviceParams { get; set; }

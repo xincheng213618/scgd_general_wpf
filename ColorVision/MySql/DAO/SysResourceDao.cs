@@ -9,6 +9,15 @@ namespace ColorVision.MySql.DAO
 {
     public class SysResourceModel : PKModel
     {
+        public SysResourceModel() { }
+        public SysResourceModel(string name, string code, int tp, int tenantId)
+        {
+            this.Name = name;
+            this.Code = code;
+            this.TenantId = tenantId;
+            this.Type = tp;
+        }
+
         public string? Name { get; set; }
         public string? Code { get; set; }
         public int Type { get; set; }
@@ -35,6 +44,18 @@ namespace ColorVision.MySql.DAO
                 TenantId = item.Field<int>("tenant_id"),
             };
             return model;
+        }
+
+        public override DataRow Model2Row(SysResourceModel item, DataRow row)
+        {
+            if (item != null)
+            {
+                if (item.Id > 0) row["id"] = item.Id;
+                if (item.Name != null) row["name"] = item.Name;
+                if (item.Type >= 0) row["type"] = item.Type;
+                row["tenant_id"] = item.TenantId;
+            }
+            return row;
         }
     }
 }
