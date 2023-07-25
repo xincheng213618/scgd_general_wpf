@@ -14,6 +14,8 @@ namespace ColorVision.SettingUp
     public static class GlobalConst
     {
         public const string SoftwareConfigFileName = "Config\\SoftwareConfig.json";
+        public const string MQTTMsgRecordsFileName = "Config\\MsgRecords.json";
+
         public const string SoftwareConfigAESKey = "ColorVision";
         public const string SoftwareConfigAESVector = "ColorVision";
 

@@ -5,6 +5,9 @@ using MQTTnet.Client;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
@@ -21,16 +24,20 @@ namespace ColorVision.MQTT
         public DateTime LastAliveTime { get; set; }
 
         public bool IsAlive { get; set; }
-
     }
+
 
     public class BaseService:ViewModelBase, IServiceHeartbeat
     {
         internal static readonly ILog log = LogManager.GetLogger(typeof(BaseService));
+        public MQTTConfig MQTTConfig { get; set; }
+        public MQTTSetting MQTTSetting { get; set; }
 
         public BaseService()
         {
             MQTTControl = MQTTControl.GetInstance();
+            MQTTConfig = MQTTControl.MQTTConfig;
+            MQTTSetting = MQTTControl.MQTTSetting;
             MQTTControl.ApplicationMessageReceivedAsync +=  (arg) =>
             {
 
@@ -42,11 +49,28 @@ namespace ColorVision.MQTT
                         MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg);
                         if (json == null)
                             return Task.CompletedTask;
+
+                        if (json.EventName == "Heartbeat")
+                        {
+                            LastAliveTime = DateTime.Now;
+                            IsAlive = true;
+                            return Task.CompletedTask;
+                        }
+
                         lock (_locker) {
+
+
                             if (timers.TryGetValue(json.MsgID, out var value))
                             {
                                 value.Enabled = false;
                                 timers.Remove(json.MsgID);
+                            }
+                            MsgRecord foundMsgRecord = MQTTSetting.MsgRecords.FirstOrDefault(record => record.MsgID == json.MsgID);
+                            if (foundMsgRecord != null)
+                            {
+                                foundMsgRecord.ReciveTime = DateTime.Now;
+                                foundMsgRecord.MsgReturn = json;
+                                foundMsgRecord.MsgRecordState = json.Code==0? MsgRecordState.Success: MsgRecordState.Fail;
                             }
                         }
                         ///这里是因为这里先加载相机上，所以加在这里
@@ -68,21 +92,10 @@ namespace ColorVision.MQTT
             };
             timer.Elapsed += Timer_Elapsed;
             timer.Start();
-
-            MsgReturnChanged += (e) =>
-            {
-                if (e.EventName == "Heartbeat")
-                {
-                    LastAliveTime = DateTime.Now;
-                    IsAlive = true;
-                }
-            };
         }
         public string NickName { get => _NickName; set { _NickName = value; NotifyPropertyChanged(); } }
         private string _NickName = string.Empty;
 
-
-        public static MQTTSetting MQTTSetting { get => GlobalSetting.GetInstance().SoftwareConfig.MQTTSetting; }
 
         private void Timer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
         {
@@ -112,7 +125,6 @@ namespace ColorVision.MQTT
 
 
         private static Dictionary<string, Timer> timers = new Dictionary<string, Timer>();
-        private static Dictionary<string, MsgSend> keyValuePairs = new Dictionary<string, MsgSend>();
 
         private static readonly object _locker = new();
         internal void PublishAsyncClient(MsgSend msg)
@@ -130,21 +142,47 @@ namespace ColorVision.MQTT
             if (msg.EventName == "CM_GetAllCameraID")
                 return;
 
+            MsgRecord msgRecord = new MsgRecord { MsgID = guid.ToString(), SendTime = DateTime.Now, MsgSend = msg,MsgRecordState = MsgRecordState.Send};
+            MQTTSetting.MsgRecords.Add(msgRecord);
+
             Timer timer = new Timer(10000);
             timer.Elapsed += (s, e) =>
             {
                 timer.Enabled = false;
                 lock (_locker) { timers.Remove(guid.ToString()); }
-                MessageBox.Show(SendTopic + "超时" + guid + Environment.NewLine + json);
+                msgRecord.MsgRecordState = MsgRecordState.Timeout;
             };
             timer.AutoReset = false;
             timer.Enabled = true;
             timer.Start();
             timers.Add(guid.ToString(), timer);
-            keyValuePairs.Add(guid.ToString(), msg);
+
         }
+    }
+
+    public class MsgRecord
+    { 
+        public string MsgID { get; set; }
+        public DateTime SendTime { get; set; }
+        public DateTime ReciveTime { get; set; }
+        public MsgSend MsgSend { get; set; }
+        public MsgReturn MsgReturn { get; set; }
+
+        public MsgRecordState MsgRecordState { get; set; }
+
+        public bool IsSend { get => MsgRecordState == MsgRecordState.Send; }
+        public bool IsSucess { get => MsgRecordState == MsgRecordState.Success; }
+        public bool IsTimeout { get => MsgRecordState == MsgRecordState.Timeout; }
 
     }
+    public enum MsgRecordState
+    {
+        Send,
+        Success,
+        Fail,
+        Timeout
+    }
+
 
 
 }

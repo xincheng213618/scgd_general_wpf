@@ -39,6 +39,7 @@ namespace ColorVision.MQTT
 
         public SoftwareConfig SoftwareConfig { get; set; }
         public MQTTConfig MQTTConfig { get => SoftwareConfig.MQTTConfig; }
+        public MQTTSetting MQTTSetting { get => SoftwareConfig.MQTTSetting; }
 
         public IMqttClient MQTTClient { get; set; }
 

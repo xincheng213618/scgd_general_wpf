@@ -170,15 +170,11 @@
                     <StackPanel>
                         <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
                             <GroupBox.Header>
-                                <TextBlock Text="MQTT" FontSize="20"/>
+                                <TextBlock Text="MQTT设置" FontSize="20"/>
                             </GroupBox.Header>
                             <StackPanel>
                                 <Border Style="{StaticResource BorderModuleArea}" Background="White" CornerRadius="8">
                                     <StackPanel Margin="5">
-                                        <DockPanel Margin="5" Height="20">
-                                            <ToggleButton DockPanel.Dock="Right" Height="20" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding MQTTSetting.IsShieldHeartbeat}"/>
-                                            <TextBlock Text="开机自动启动(可能会不成功)"/>
-                                        </DockPanel>
                                         <DockPanel Margin="5" Height="20">
                                             <TextBox DockPanel.Dock="Right" Height="20" Text="{Binding MQTTSetting.AliveTimeout}"/>
                                             <TextBlock Text="心跳检测失败时间"/>
