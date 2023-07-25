@@ -90,7 +90,7 @@
         <StackPanel x:Name="CreateGrid"  Grid.Column="1" Grid.Row="1" HorizontalAlignment="Center">
             <DockPanel  >
                 <Label Content="类型"/>
-                <ComboBox x:Name="TextBox_Type" Margin="3,3,0,3"/>
+                <ComboBox x:Name="TextBox_Type" SelectedValuePath="Name"  DisplayMemberPath="Name" Margin="3,3,0,3"/>
             </DockPanel>
             <DockPanel  >
                 <Label Content="标识"/>
