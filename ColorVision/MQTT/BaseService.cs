@@ -24,7 +24,6 @@ namespace ColorVision.MQTT
 
     }
 
-
     public class BaseService:ViewModelBase, IServiceHeartbeat
     {
         internal static readonly ILog log = LogManager.GetLogger(typeof(BaseService));
@@ -50,7 +49,11 @@ namespace ColorVision.MQTT
                                 timers.Remove(json.MsgID);
                             }
                         }
-
+                        ///这里是因为这里先加载相机上，所以加在这里
+                        if (json.EventName == "CM_GetAllCameraID")
+                        {
+                            return Task.CompletedTask;
+                        }
                         MsgReturnChanged?.Invoke(json);
                     }
                     catch(Exception ex)
@@ -116,6 +119,7 @@ namespace ColorVision.MQTT
 
 
         private static Dictionary<string, Timer> timers = new Dictionary<string, Timer>();
+        private static Dictionary<string, MsgSend> keyValuePairs = new Dictionary<string, MsgSend>();
 
         private static readonly object _locker = new();
         internal void PublishAsyncClient(MsgSend msg)
@@ -123,29 +127,36 @@ namespace ColorVision.MQTT
             Guid guid = Guid.NewGuid();
             RunTimeUUID.Add(guid);
 
-            if (timers.TryGetValue(guid.ToString(), out var value))
-            {
-                value.Enabled = false;
-                timers.Remove(guid.ToString());
-            }
-            Timer timer = new Timer(10000);
-            timer.Elapsed += (s,e)=>
-            {
-                timer.Enabled = false;
-                lock (_locker) { timers.Remove(guid.ToString()); }
-                MessageBox.Show(guid +"超时");
-            };
-            timer.AutoReset = false;
-            timer.Enabled = true;
-            timer.Start();
-            timers.Add(guid.ToString(), timer);
+
 
             msg.ServiceName = SendTopic;
             msg.MsgID = guid;
             msg.ServiceID = ServiceID;
             msg.CameraID = CameraID;
             string json = JsonConvert.SerializeObject(msg, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+
+
+            if (timers.TryGetValue(guid.ToString(), out var value))
+            {
+                value.Enabled = false;
+                timers.Remove(guid.ToString());
+            }
+            Timer timer = new Timer(10000);
+            timer.Elapsed += (s, e) =>
+            {
+                timer.Enabled = false;
+                lock (_locker) { timers.Remove(guid.ToString()); }
+                MessageBox.Show(SendTopic +"超时"+ guid + Environment.NewLine + json);
+            };
+            timer.AutoReset = false;
+            timer.Enabled = true;
+            timer.Start();
+            timers.Add(guid.ToString(), timer);
+            keyValuePairs.Add(guid.ToString(), msg);
+
             Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, json, false));
         }
+
+
     }
 }

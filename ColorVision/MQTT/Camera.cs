@@ -144,6 +144,9 @@ namespace ColorVision.MQTT
                     case "Close":
                         MessageBox.Show("关闭相机失败");
                         break;
+                    case "Open":
+                        MessageBox.Show("没有许可证");
+                        break;
                     default:
                         MessageBox.Show("相机操作失败");
                         break;
