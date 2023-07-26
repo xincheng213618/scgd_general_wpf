@@ -28,7 +28,6 @@ namespace ColorVision.Template
         public double StopMeasureVal { get; set; } = 3;
         public int Number { get; set; } = 100;
         public double LmtVal { get; set; }
-        [JsonProperty("isSourceV")]
         public bool IsSourceV { get; set; }
 
     }

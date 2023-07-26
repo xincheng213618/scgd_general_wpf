@@ -107,7 +107,7 @@ namespace ColorVision
                 }
                 else
                 {
-                    if (MessageBox.Show("您是否保存", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                    if (MessageBox.Show("您是否保存流程", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                     {
                         System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
                         ofd.Filter = "*.stn|*.stn";
