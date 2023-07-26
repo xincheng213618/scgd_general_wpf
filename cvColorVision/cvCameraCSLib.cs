@@ -755,6 +755,13 @@ namespace cvColorVision
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetDeviceMode", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private unsafe static extern void C_CM_GetDeviceMode_Gen(IntPtr handle, StringBuilder mode, int len);
 
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "LedCheckYaQi",
+            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern double LedCheckYaQi(bool isdebug, int checkChannel, UInt32 w, UInt32 h, UInt32 bpp, UInt32 channels, byte[] imgdata
+            , int isguding, int gudingrid, int lunkuomianji, int pointNum, double hegexishu, int erzhihuapiancha, double[] databanjin
+            , int[] datazuobiaoX, int[] datazuobiaoY, int picwid
+            , int pichig, int[] 关注范围, int 发光区二值化补正, int boundry, double[] LengthCheck, double[] LengthRange, double[] LengthResult, bool isuseLocalRdPoint, float[] localRdMark, double[] PointX, double[] PointY);
+
 
         public static string CM_GetDeviceMode(IntPtr handle)
         {

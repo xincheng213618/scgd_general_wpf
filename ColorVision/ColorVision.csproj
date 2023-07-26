@@ -53,7 +53,9 @@
     <PackageReference Include="MySql.Data" Version="8.0.33" />
     <PackageReference Include="MySqlConnector" Version="2.2.6" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="OpenCvSharp4" Version="4.7.0.20230115" />
+    <PackageReference Include="NPOI" Version="2.6.1" />
+    <PackageReference Include="OpenCvSharp4" Version="4.8.0.20230708" />
+    <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.8.0.20230708" />
     <PackageReference Include="ScottPlot.WPF" Version="4.1.64" />
     <PackageReference Include="System.IO.Ports" Version="7.0.0" />
     <PackageReference Include="System.Text.Encoding.CodePages" Version="7.0.0" />
