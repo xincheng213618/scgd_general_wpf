@@ -1000,7 +1000,7 @@ namespace ColorVision
                 CameraVideoControl control = CameraVideoControl.GetInstance();
                 if (!CameraOpen)
                 {
-                    button.Content = "正在获取推流";
+                    button.Content = "正在获取推流";  
                     control.Open();
                     control.CameraVideoFrameReceived += (bmp) =>
                     {
@@ -1061,7 +1061,6 @@ namespace ColorVision
                 if (!string.IsNullOrWhiteSpace(loader.GetStartNodeName()))
                 {
                     flowControl = new FlowControl(MQTTControl.GetInstance(), loader.GetStartNodeName());
-
                 }
             }
         }
