@@ -30,7 +30,7 @@ namespace ColorVision.Template
     public class ResourceTypeConfig
     {
         public string Name { get; set; }
-        public int? Type { get; set; }
+        public int Type { get; set; }
         public int Value { get; set; }
 
         public ResourceTypeConfig(string name,int val) {
@@ -77,11 +77,11 @@ namespace ColorVision.Template
             {
                 case WindowTemplateType.Devices:
                     List<SysResourceModel> res = TemplateControl.LoadAllServices();
-                    res.ForEach(item => { ResourceTypes.Add(new ResourceTypeConfig(item.Name, item.Id,item.Type)); });
+                    res.ForEach(item => { ResourceTypes.Add(new ResourceTypeConfig(item.Name ?? string.Empty, item.Id,item.Type)); });
                     break;
                 case WindowTemplateType.Services:
                     List<SysDictionaryModel> svrs = TemplateControl.LoadServiceType();
-                    svrs.ForEach(item => { ResourceTypes.Add(new ResourceTypeConfig(item.Name, item.Value)); });
+                    svrs.ForEach(item => { ResourceTypes.Add(new ResourceTypeConfig(item.Name ?? string.Empty, item.Value)); });
                     break;
                 default:
                     break;
@@ -131,7 +131,7 @@ namespace ColorVision.Template
             switch (TemplateType)
             {
                 case WindowTemplateType.Devices:
-                    ResourceParam? paramDev = TemplateControl.AddDeviceParam(TextBox_Name.Text, TextBox_Code.Text, (int)((ResourceTypeConfig)TextBox_Type.SelectedItem).Type, ((ResourceTypeConfig)TextBox_Type.SelectedItem).Value);
+                    ResourceParam? paramDev = TemplateControl.AddDeviceParam(TextBox_Name.Text, TextBox_Code.Text, ((ResourceTypeConfig)TextBox_Type.SelectedItem).Type, ((ResourceTypeConfig)TextBox_Type.SelectedItem).Value);
                     if (paramDev != null) CreateNewTemplate(TemplateControl.DeviceParams, TextBox_Name.Text, paramDev);
                     else MessageBox.Show("数据库创建设备失败");
                     break;

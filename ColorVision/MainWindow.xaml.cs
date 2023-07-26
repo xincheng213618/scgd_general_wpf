@@ -1071,7 +1071,7 @@ namespace ColorVision
             ObservableCollection<KeyValuePair<string, FlowParam>> flows = TemplateControl.GetInstance().FlowParams;
             foreach (var item in flows)
             {
-                flowTemps.Add(new KeyValuePair<string, string>(item.Value.Name, item.Value.FileName));
+                flowTemps.Add(new KeyValuePair<string, string>(item.Value.Name, item.Value.FileName ?? string.Empty));
             }
             FlowTemplate.ItemsSource = flowTemps;
             FlowTemplate.SelectedIndex = 0;
