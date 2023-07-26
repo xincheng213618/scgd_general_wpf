@@ -28,7 +28,7 @@ namespace ColorVision.MySql.Service
 
         internal List<SysResourceModel> GetAllServices(int tenantId)
         {
-            return resourceDao.GetPidIsNull(tenantId);
+            return resourceDao.GetServices(tenantId);
         }
 
         internal SysResourceModel GetByCode(string code)

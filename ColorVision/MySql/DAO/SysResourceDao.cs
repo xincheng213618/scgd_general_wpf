@@ -39,7 +39,7 @@ namespace ColorVision.MySql.DAO
     }
     public class SysResourceDao : BaseDaoMaster<SysResourceModel>
     {
-        public SysResourceDao() : base(string.Empty, "t_scgd_sys_resource", "id", true)
+        public SysResourceDao() : base("v_scgd_sys_resource", "t_scgd_sys_resource", "id", true)
         {
         }
 
@@ -84,6 +84,36 @@ namespace ColorVision.MySql.DAO
             };
             DataTable d_info = GetData(sql, param);
             return d_info.Rows.Count == 1 ? GetModel(d_info.Rows[0]) : default;
+        }
+
+        internal List<SysResourceModel> GetServices(int tenantId)
+        {
+            List<SysResourceModel> list = new List<SysResourceModel>();
+            DataTable d_info = GetTablePidIsNullByPPcodeAndTenantId(tenantId);
+            foreach (var item in d_info.AsEnumerable())
+            {
+                SysResourceModel? model = GetModel(item);
+                if (model != null)
+                {
+                    list.Add(model);
+                }
+            }
+            return list;
+        }
+
+        public virtual DataTable GetTablePidIsNullByPPcodeAndTenantId(int tenantId)
+        {
+            string ppcode = "service_type";
+            string sql = $"select * from {GetTableName()} where tenant_id={tenantId} and ( pid is null or pid=-1) and ppcode='{ppcode}'" + GetDelSQL(true);
+            DataTable d_info = GetData(sql);
+            return d_info;
+        }
+
+        internal int DeleteInCodes(string[] codes)
+        {
+            string sqlCode= string.Join(',', codes);
+            string sql = $"update {TableName} set is_delete=1 where code in ('{sqlCode}')";
+            return ExecuteNonQuery(sql);
         }
     }
 }

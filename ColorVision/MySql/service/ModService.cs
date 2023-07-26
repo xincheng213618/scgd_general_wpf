@@ -56,7 +56,22 @@ namespace ColorVision.MySql.Service
 
         internal int MasterDeleteById(int id)
         {
-           return masterFlowDao.DeleteById(id);
+            List<ModDetailModel> de = detailDao.GetAllByPid(id);
+            int ret = masterFlowDao.DeleteById(id);
+            detailDao.DeleteAllByPid(id);
+            if(de != null && de.Count>0)
+            {
+                string[] codes = new string[de.Count];
+                int idx = 0;
+                foreach (ModDetailModel model in de)
+                {
+                    string code = AESUtil.GetMd5FromString(model.ValueA + model.Id);
+                    codes[idx++] = code;
+                }
+                resourceDao.DeleteInCodes(codes);
+            }
+
+            return ret;
         }
 
         internal int Save(ModMasterModel flowMaster)

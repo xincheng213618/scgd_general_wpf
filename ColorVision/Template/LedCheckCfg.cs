@@ -7,6 +7,11 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Template
 {
+    public class LedPicData 
+    {
+        [Category("LED检测图片路径"), Browsable(false)]
+        public string picUrl { set; get; }
+    }
     public class LedCheckCfg
     {
         [Category("灯珠检测配置"), Browsable(false)]
