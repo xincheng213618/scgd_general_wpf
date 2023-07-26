@@ -52,7 +52,7 @@
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:MsgRecord}" >
                                 <StackPanel PreviewMouseLeftButtonUp="StackPanel_PreviewMouseLeftButtonUp" Tag="{Binding MsgReturn}">
-                                    <TextBlock Text="{ Binding  MsgReturn}"  Visibility="{Binding IsSucess,Converter={StaticResource bool2VisibilityConverter}}"/>
+                                    <TextBlock Text="{ Binding  MsgReturn}"  Visibility="{Binding IsRecive,Converter={StaticResource bool2VisibilityConverter}}"/>
                                 </StackPanel>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>

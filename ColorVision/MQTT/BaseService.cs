@@ -1,5 +1,6 @@
 ﻿using ColorVision.MVVM;
 using ColorVision.SettingUp;
+using Google.Protobuf.WellKnownTypes;
 using log4net;
 using MQTTnet.Client;
 using Newtonsoft.Json;
@@ -169,20 +170,34 @@ namespace ColorVision.MQTT
         private DateTime _ReciveTime;
         public MsgSend MsgSend { get; set; }
         public MsgReturn MsgReturn { get; set; }
+        //private MsgReturn _MsgReturn;
+
 
         public MsgRecordState MsgRecordState { get => _MsgRecordState; set 
             { _MsgRecordState = value;
                 NotifyPropertyChanged();
+                if (value == MsgRecordState.Success ||  value == MsgRecordState.Fail)
+                {
+                    NotifyPropertyChanged(nameof(IsRecive));
+                    NotifyPropertyChanged(nameof(MsgReturn));
+                }
+                else if (value == MsgRecordState.Timeout)
+                {
+                    NotifyPropertyChanged(nameof(IsTimeout));
+                }
+                else
+                {
+                    NotifyPropertyChanged(nameof(MsgReturn));
+                }
+
                 NotifyPropertyChanged(nameof(IsSend));
-                NotifyPropertyChanged(nameof(IsSucess));
-                NotifyPropertyChanged(nameof(IsTimeout));
+
             }
         }
         private MsgRecordState _MsgRecordState { get; set; }
 
-
         public bool IsSend { get => MsgRecordState == MsgRecordState.Send; }
-        public bool IsSucess { get => MsgRecordState == MsgRecordState.Success; }
+        public bool IsRecive { get => MsgRecordState == MsgRecordState.Success || MsgRecordState == MsgRecordState.Fail; }
         public bool IsTimeout { get => MsgRecordState == MsgRecordState.Timeout; }
 
     }
