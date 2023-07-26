@@ -67,11 +67,23 @@ namespace ColorVision.MySql.DAO
                 if (item.Name != null) row["name"] = item.Name;
                 if (item.Code != null) row["code"] = item.Code;
                 if (item.Pid != null) row["pid"] = item.Pid;
+                if (item.Value != null) row["txt_value"] = item.Value;
                 if (item.Type >= 0) row["type"] = item.Type;
                 row["tenant_id"] = item.TenantId;
                 row["create_date"] = item.CreateDate;
            }
             return row;
+        }
+
+        internal SysResourceModel GetByCode(string code)
+        {
+            string sql = $"select * from {GetTableName()} where code=@code" + GetDelSQL(true);
+            Dictionary<string, object> param = new Dictionary<string, object>
+            {
+                { "code", code }
+            };
+            DataTable d_info = GetData(sql, param);
+            return d_info.Rows.Count == 1 ? GetModel(d_info.Rows[0]) : default;
         }
     }
 }

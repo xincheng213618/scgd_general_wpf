@@ -328,6 +328,18 @@ namespace ColorVision.Template
                 {
                     List<ModDetailModel> flowDetails = modService.GetDetailByPid(dbModel.Id);
                     KeyValuePair<string, FlowParam> item = new KeyValuePair<string, FlowParam>(dbModel.Name ?? "default", new FlowParam(dbModel, flowDetails));
+                    ModDetailModel fn = item.Value.GetParameter(FlowParam.FileNameKey);
+                    if (fn != null)
+                    {
+                        string code1 = AESUtil.GetMd5FromString("default4.stn" + 98);
+                        string code = AESUtil.GetMd5FromString(fn.ValueA + fn.Id);
+                        SysResourceModel res = resourceService.GetByCode(code);
+                        if (res != null)
+                        {
+                            item.Value.DataBase64 = res.Value;
+                            Base64StringToFile(item.Value.DataBase64, GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectFullName, item.Value.FileName);
+                        }
+                    }
                     FlowParams.Add(item);
                 }
             }
@@ -421,7 +433,68 @@ namespace ColorVision.Template
         }
         internal void SaveFlow2DB(FlowParam flowParam)
         {
+            string fileName = GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectFullName + "\\" + flowParam.FileName;
+            flowParam.DataBase64 = Base64FileToString(fileName);
             modService.Save(flowParam);
+        }
+
+        public string Base64FileToString(string fileName)
+        {
+            FileStream fsForRead = new FileStream(fileName, FileMode.Open);//文件路径
+            string base64Str = "";
+            try
+            {
+                //读写指针移到距开头10个字节处
+                fsForRead.Seek(0, SeekOrigin.Begin);
+                byte[] bs = new byte[fsForRead.Length];
+                int log = Convert.ToInt32(fsForRead.Length);
+                //从文件中读取10个字节放到数组bs中
+                fsForRead.Read(bs, 0, log);
+                base64Str = Convert.ToBase64String(bs);
+                return base64Str;
+            }
+            catch (Exception ex)
+            {
+                Console.Write(ex.Message);
+                Console.ReadLine();
+                return base64Str;
+            }
+            finally
+            {
+                fsForRead.Close();
+            }
+        }
+
+        /// <summary>
+        /// Base64字符串转文件并保存
+        /// </summary>
+        /// <param name="base64String">base64字符串</param>
+        /// /// <param name="fileFullPath">保存的文件路径</param>
+        /// <param name="fileName">保存的文件名</param>
+        /// <returns>是否转换并保存成功</returns>
+        public bool Base64StringToFile(string base64String, string fileFullPath, string fileName)
+        {
+            bool opResult = false;
+            try
+            {
+
+                if (!Directory.Exists(fileFullPath))
+                {
+                    Directory.CreateDirectory(fileFullPath);
+                }
+                MemoryStream stream = new MemoryStream(Convert.FromBase64String(base64String));
+                FileStream fs = new FileStream(fileFullPath + "\\" + fileName, FileMode.OpenOrCreate, FileAccess.Write);
+                byte[] b = stream.ToArray();
+                fs.Write(b, 0, b.Length);
+                fs.Close();
+
+                opResult = true;
+            }
+            catch (Exception e)
+            {
+
+            }
+            return opResult;
         }
 
         internal List<SysDictionaryModel> LoadServiceType()
