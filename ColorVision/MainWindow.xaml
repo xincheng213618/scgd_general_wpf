@@ -338,7 +338,7 @@
 
                                     <DockPanel Margin="2">
                                         <TextBlock Text="模板：" VerticalAlignment="Center" Width="40"/>
-                                        <ComboBox  x:Name="ComboxVITemplate"  SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,0,30,0"/>
+                                        <ComboBox  x:Name="ComboxVITemplate"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,0,30,0"/>
                                     </DockPanel>
                                     <StackPanel  x:Name="StackPanelVITemplate"  d:DataContext="{d:DesignInstance Type=Template:SxParam}" >
                                         <DockPanel Margin="2" >
@@ -403,8 +403,6 @@
                                     <UniformGrid Columns="2" >
                                         <Button Content="打开测试图像"  Margin="10,0" Click="Button_Click"/>
                                         <Button Content="绘制测试图形"  Margin="10,0"  Click="Button1_Click"/>
-                                        <Button Content="加载流程引擎"  Margin="10,0"  Click="Button2_Click"/>
-                                        <Button Content="执行测试"  Margin="10,0"   Click="Button3_Click"/>
                                         <Button Content="视频测试"  Margin="10,0"   Click="Button4_Click"/>
                                     </UniformGrid>
                                 </StackPanel>

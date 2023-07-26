@@ -960,30 +960,6 @@ namespace ColorVision
             flowControl = new FlowControl(MQTTControl.GetInstance(), loader.GetStartNodeName());
         }
         Window window;
-        private void Button3_Click(object sender, RoutedEventArgs e)
-        {
-            window = new Window() { Width = 400, Height = 400, Title = "流程返回信息", Owner = this,ResizeMode =ResizeMode.NoResize , WindowStyle =WindowStyle.None, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            TextBox textBox = new TextBox() { IsReadOnly = true,Background =Brushes.Black, Foreground =Brushes.White, TextWrapping = TextWrapping.Wrap, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
-
-            Grid grid = new Grid(); 
-            grid.Children.Add(textBox);
-
-            grid.Children.Add(new Controls.ProgressRing() { Margin =  new Thickness(100,100,100,100)});
-
-            window.Content = grid;
-
-            textBox.Text = "TTL:" + "0";
-            flowControl.FlowData += (s, e) =>
-            {
-                if (s is FlowControlData msg)
-                {
-                    textBox.Text = "TTL:" + msg.Params.TTL.ToString();
-                }
-            };
-            flowControl.FlowCompleted += FlowControl_FlowCompleted;
-            flowControl.Start();
-            window.Show();
-        }
 
         private void FlowControl_FlowCompleted(object? sender, EventArgs e)
         {
@@ -1026,10 +1002,6 @@ namespace ColorVision
 
         }
 
-        private void MQTTCamera_1_Click(object sender, RoutedEventArgs e)
-        {
-            MQTTCamera.GetAllLicense();
-        }
 
         private void MQTTCamera_2_Click(object sender, RoutedEventArgs e)
         {
@@ -1053,16 +1025,41 @@ namespace ColorVision
 
         private void Button_FlowRun_Click(object sender, RoutedEventArgs e)
         {
-            object fileName = FlowTemplate.SelectedValue;
-            if (File.Exists(fileName.ToString()))
+            if (FlowTemplate.SelectedValue is FlowParam flowParam)
             {
-                loader.Load(fileName.ToString());
-                MessageBox.Show(loader.GetStartNodeName());
-                if (!string.IsNullOrWhiteSpace(loader.GetStartNodeName()))
+                if (File.Exists(GlobalSetting.SoftwareConfig.ProjectConfig.GetFullFileName(flowParam.FileName)))
                 {
-                    flowControl = new FlowControl(MQTTControl.GetInstance(), loader.GetStartNodeName());
+                    loader.Load(GlobalSetting.SoftwareConfig.ProjectConfig.GetFullFileName(flowParam.FileName));
+                    if (!string.IsNullOrWhiteSpace(loader.GetStartNodeName()))
+                    {
+                        flowControl = new FlowControl(MQTTControl.GetInstance(), loader.GetStartNodeName());
+
+                        window = new Window() { Width = 400, Height = 400, Title = "流程返回信息", Owner = this, ResizeMode = ResizeMode.NoResize, WindowStyle = WindowStyle.None, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                        TextBox textBox = new TextBox() { IsReadOnly = true, Background = Brushes.Black, Foreground = Brushes.White, TextWrapping = TextWrapping.Wrap, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+
+                        Grid grid = new Grid();
+                        grid.Children.Add(textBox);
+
+                        grid.Children.Add(new Controls.ProgressRing() { Margin = new Thickness(100, 100, 100, 100) });
+
+                        window.Content = grid;
+
+                        textBox.Text = "TTL:" + "0";
+                        flowControl.FlowData += (s, e) =>
+                        {
+                            if (s is FlowControlData msg)
+                            {
+                                textBox.Text = "TTL:" + msg.Params.TTL.ToString();
+                            }
+                        };
+                        flowControl.FlowCompleted += FlowControl_FlowCompleted;
+                        flowControl.Start();
+                        window.Show();
+
+                    }
                 }
             }
+
         }
 
         private void StackPanelFlow_Initialized(object sender, EventArgs e)
