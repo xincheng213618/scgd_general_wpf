@@ -78,8 +78,8 @@
                                     </UniformGrid>
                                     <UniformGrid Columns="3">
                                         <Button  Content="默认画布" Click="OpenCAD_Click"  Margin="2"/>
-                                        <Button x:Name="button1" Content="图像导入" Click="Button1_Click" Margin="2"/>
                                         <Button  Content="视频导入" Click="Button1_Click" Margin="2"/>
+                                        <Button x:Name="button1" Content="图像导入" Click="Button1_Click"/>
                                     </UniformGrid>
                                 </StackPanel>
                             </GroupBox>
@@ -98,7 +98,33 @@
                                 </StackPanel>
                             </GroupBox>
                             <StackPanel Margin="5" Visibility="{Binding ElementName=RadioButtonMode2, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
-                                <xctk:PropertyGrid  x:Name="PropertyGridAutoFocus"  />
+                                <Button  Content="导入配置文件" Click="Button_Click_2"  Margin="1"/>
+                                <Button  Content="保存配置文件" Click="Button_Click_3"  Margin="1"/>
+                                <xctk:PropertyGrid  x:Name="PropertyGridAutoFocus"/>
+                                <GroupBox x:Name="GridMark" Header="灯珠像素边长" Margin="5" >
+                                    <StackPanel>
+                                        <StackPanel  x:Name="StackPanelLedLen"   d:DataContext="{d:DesignInstance Template:DatumArea}" Margin="5">
+                                            <UniformGrid Columns="2">
+                                                <DockPanel  Margin="2">
+                                                    <TextBlock Text="上边长:" />
+                                                    <TextBox  Text="{Binding DatumArea.LedLen1}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                </DockPanel>
+                                                <DockPanel Margin="2" >
+                                                    <TextBlock Text="下边长:" />
+                                                    <TextBox   Text="{Binding DatumArea.LedLen2}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                </DockPanel>
+                                                <DockPanel  Margin="2">
+                                                    <TextBlock Text="左边长:" />
+                                                    <TextBox  Text="{Binding DatumArea.LedLen3}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                </DockPanel>
+                                                <DockPanel Margin="2" >
+                                                    <TextBlock Text="右边长:" />
+                                                    <TextBox   Text="{Binding DatumArea.LedLen4}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                </DockPanel>
+                                            </UniformGrid>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </GroupBox>
                             </StackPanel>
 
 
@@ -440,7 +466,7 @@
                 </Border>
 
             </Border>
-            
+
         </Grid>
     </Grid>
 </Window>

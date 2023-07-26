@@ -33,6 +33,7 @@ namespace ColorVision.Solution
                 DirectoryInfo Info = new DirectoryInfo(item);
                 if (Info.Exists)
                 {
+                    SolutionHistory.RemoveFile(item);
                     SolutionInfos.Add(new SolutionInfo() { Name = Info.Name, FullName = Info.FullName, CreationTime = Info.CreationTime.ToString("yyyy/MM/dd H:mm") });
                 }
             }
