@@ -1,12 +1,73 @@
-﻿using ColorVision.MVVM;
+﻿using ColorVision.Extension;
+using ColorVision.MQTT;
+using ColorVision.MVVM;
+using OpenCvSharp;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace ColorVision.SettingUp
 {
+    public class MQTTSetting : ViewModelBase
+    {
+        public MQTTSetting()
+        {
+            if (File.Exists(GlobalConst.MQTTMsgRecordsFileName))
+                MsgRecords = JsonSerializer.Deserialize<ObservableCollection<MsgRecord>>(File.ReadAllText(GlobalConst.MQTTMsgRecordsFileName), new JsonSerializerOptions()) ?? new ObservableCollection<MsgRecord>();
+            else
+                MsgRecords = new ObservableCollection<MsgRecord>();
+            MsgRecords.CollectionChanged += (s, e) =>
+            {
+                if (MsgRecords.Count > CacheLength)
+                {
+                    int itemsToRemoveCount = MsgRecords.Count - CacheLength;
+
+                    // 移除旧的对象
+                    for (int i = 0; i < itemsToRemoveCount; i++)
+                    {
+                        MsgRecords.RemoveAt(MsgRecords.Count-1); // 移除第一个元素
+                    }
+                }
+            };
+            AppDomain.CurrentDomain.ProcessExit += (s, e) =>
+            {
+                string jsonString = JsonSerializer.Serialize(MsgRecords, new JsonSerializerOptions() { WriteIndented = true });
+                File.WriteAllText(GlobalConst.MQTTMsgRecordsFileName, jsonString);
+            };
+        }
+        /// <summary>
+        /// 是否显示心跳
+        /// </summary>
+        public bool IsShieldHeartbeat { get => _IsShieldHeartbeat; set { _IsShieldHeartbeat = value; NotifyPropertyChanged(); } }
+        private bool _IsShieldHeartbeat;
+
+        /// <summary>
+        /// 只显示选中的
+        /// </summary>
+        public bool ShowSelect { get => _ShowSelect; set { _ShowSelect = value; NotifyPropertyChanged(); } }
+        private bool _ShowSelect;
+
+        public int AliveTimeout { get => _AliveTimeout; set { _AliveTimeout = value; NotifyPropertyChanged(); } }
+        private int _AliveTimeout = 60;
+
+        public int SendTimeout { get => _SendTimeout; set { _SendTimeout = value; NotifyPropertyChanged(); } }
+        private int _SendTimeout = 10;
+
+        public int CacheLength { get => _CacheLength; set { _CacheLength = value; NotifyPropertyChanged(); } }
+        private int _CacheLength = 1000;
+
+        [JsonIgnore]
+        public ObservableCollection<MsgRecord> MsgRecords { get; set; }
+    }
+
+
     /// <summary>
     /// MQTT配置
     /// </summary>

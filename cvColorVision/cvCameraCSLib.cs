@@ -1222,7 +1222,7 @@ namespace cvColorVision
     };
 
 
-    enum CVOLED_ERROR
+    public enum CVOLED_ERROR
     {
         CVOLED_SUCCESS = 0,
         CVOLED_PARAM_E,   //参数错误
@@ -1234,14 +1234,14 @@ namespace cvColorVision
         ALGORITHM_E,      //算法错误
         MORIE_E, //       摩尔纹
     };
-    enum CVLED_COLOR
+    public enum CVLED_COLOR
     {
         BLUE = 0,
         GREEN = 1,
         RED = 2,
     };
 
-    class CvOledDLL
+    public class CvOledDLL
     {
         private const string LIBRARY_CVOLED = "cvOled.dll";
         [DllImport(LIBRARY_CVOLED, EntryPoint = "CvOledInit",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
@@ -1262,7 +1262,7 @@ namespace cvColorVision
         [DllImport(LIBRARY_CVOLED, EntryPoint = "morieFilter", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern CVOLED_ERROR morieFilter(int w, int h, byte[] imgdata, int type, string path);
     }
-    class KBDLL
+    public class KBDLL
     {
         private const string LIBRARY_KB = "cvCameraKb.dll";
         [DllImport(LIBRARY_KB, EntryPoint = "createResultCsv", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]

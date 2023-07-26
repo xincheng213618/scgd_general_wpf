@@ -39,7 +39,7 @@ namespace ColorVision
 
         private Pen _Pen;
 
-        [Category("DrawingVisual"), DisplayName("笔刷"), BrowsableAttribute(false)]
+        [Category("DrawingVisual"), DisplayName("笔刷")]
         public Pen Pen { get => _Pen; set { _Pen = value; NotifyPropertyChanged(); } }
 
     }

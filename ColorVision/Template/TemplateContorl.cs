@@ -8,6 +8,7 @@ using ScottPlot.Styles;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel.Design;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
@@ -36,91 +37,70 @@ namespace ColorVision.Template
         private static string FileNameSxParms = "cfg\\SxParamSetup.cfg";
         private static string FileNamePoiParms = "cfg\\PoiParmSetup.cfg";
         private static string FileNameFlowParms = "cfg\\FlowParmSetup.cfg";
-
-
-        private bool IsOldAoiParams;
-        private bool IsOldCalibrationParams;
-        private bool IsOldPGParams;
-        private bool IsOldLedJudgeParams;
-        private bool IsOldSxParams;
-        private bool IsOldPoiParams;
-        private bool IsOldFlowParams;
+        private static string FileNameCameraDeviceParams = "cfg\\CameraDeviceParmSetup.cfg";
 
         private PoiService poiService = new PoiService();
         private ModService modService = new ModService();
+        private SysResourceService resourceService = new SysResourceService();
+        private SysDictionaryService dictionaryService = new SysDictionaryService();
 
         public TemplateControl()
         {
             if (!Directory.Exists(AppDomain.CurrentDomain.BaseDirectory+ "cfg"))
-            {
                 Directory.CreateDirectory(AppDomain.CurrentDomain.BaseDirectory + "cfg");
-            }
 
 
-            AoiParam param = new AoiParam
-            {
-                FilterByArea = true,
-                MaxArea = 6000,
-                MinArea = 10,
-                FilterByContrast = true,
-                MaxContrast = 1.7f,
-                MinContrast = 0.3f,
-                ContrastBrightness = 1.0f,
-                ContrastDarkness = 0.5f,
-                BlurSize = 19,
-                MinContourSize = 5,
-                ErodeSize = 5,
-                DilateSize = 5,
-                Left = 5,
-                Right = 5,
-                Top = 5,
-                Bottom = 5
-            };
-
-            AoiParams = IDefault(FileNameAoiParams, param, ref IsOldAoiParams);
-            CalibrationParams = IDefault(FileNameCalibrationParams, new CalibrationParam(),ref IsOldCalibrationParams);
-            PGParams = IDefault(FileNamePGParams, new PGParam(), ref IsOldPGParams);
-
-            LedReusltParams = IDefault(FileNameLedJudgeParams, new LedReusltParam(), ref IsOldLedJudgeParams);
-            SxParams = IDefault(FileNameSxParms, new SxParam(), ref IsOldSxParams);
-
-            FlowParams = IDefault(FileNameFlowParms, new FlowParam(), ref IsOldFlowParams);
-
-
-
+            AoiParams = new ObservableCollection<KeyValuePair<string, AoiParam>>();
+            CalibrationParams = new ObservableCollection<KeyValuePair<string, CalibrationParam>>();
+            PGParams = new ObservableCollection<KeyValuePair<string, PGParam>>();
+            LedReusltParams = new ObservableCollection<KeyValuePair<string, LedReusltParam>>();
+            SxParams = new ObservableCollection<KeyValuePair<string, SxParam>>();
+            FlowParams = new ObservableCollection<KeyValuePair<string, FlowParam>>();
             PoiParams = new ObservableCollection<KeyValuePair<string, PoiParam>>();
+            DeviceParams = new ObservableCollection<KeyValuePair<string, ResourceParam>>();
+            ServiceParams = new ObservableCollection<KeyValuePair<string, ResourceParam>>();
 
+
+            GlobalSetting.GetInstance().SoftwareConfig.UseMySqlChanged += (s) =>
+            {
+                Init();
+            };
+            Init();
             Application.Current.MainWindow.Closed += (s, e) =>
             {
                 Save();
             };
         }
-        /// 这里是初始化模板的封装，因为模板的代码高度统一，所以使用泛型T来设置具体的模板参数。
-        /// 又因为需要兼容之前的代码写法，所以在中间层做了一个转换逻辑，让代码可以读之前的，也可以读现在的，读之前的也保存之前的 <summary>
+        private void Init()
+        {
+            CalibrationParams = IDefault(FileNameCalibrationParams, new CalibrationParam());
+            PGParams = IDefault(FileNamePGParams, new PGParam());
+            LedReusltParams = IDefault(FileNameLedJudgeParams, new LedReusltParam());
+            SxParams = IDefault(FileNameSxParms, new SxParam());
+            FlowParams = IDefault(FileNameFlowParms, new FlowParam());
+
+            LoadPoiParam();
+            LoadAoiParam();
+            LoadFlowParam();
+            LoadServiceParams();
+            LoadDeviceParams();
+        }
+
+
+
+
+
         /// 这里是初始化模板的封装，因为模板的代码高度统一，所以使用泛型T来设置具体的模板参数。
         /// 最后在给模板的每一个元素加上一个切换的效果，即当某一个模板启用时，关闭其他已经启用的模板；
         /// 同一类型，只能存在一个启用的模板
-        private static ObservableCollection<KeyValuePair<string, T>> IDefault<T>(string FileName ,T Default , ref bool IsOldParams) where T : ParamBase
+        private static ObservableCollection<KeyValuePair<string, T>> IDefault<T>(string FileName ,T Default) where T : ParamBase
         {
             ObservableCollection<KeyValuePair<string, T>> Params = new ObservableCollection<KeyValuePair<string, T>>();
 
-            Dictionary<string, T> ParamsOld = CfgFile.Load<Dictionary<string, T>>(FileName) ?? new Dictionary<string, T>();
-            if (ParamsOld.Count != 0)
+            Params = CfgFile.Load<ObservableCollection<KeyValuePair<string, T>>>(FileName) ?? new ObservableCollection<KeyValuePair<string, T>>();
+            if (Params.Count == 0)
             {
-                IsOldParams = true;
-                Params = new ObservableCollection<KeyValuePair<string, T>>();
-                foreach (var item in ParamsOld)
-                {
-                    Params.Add(item);
-                }
-            }
-            else
-            {
-                Params = CfgFile.Load<ObservableCollection<KeyValuePair<string, T>>>(FileName) ?? new ObservableCollection<KeyValuePair<string, T>>();
-                if (Params.Count == 0)
-                {
-                    Params.Add(new KeyValuePair<string, T>("default", Default));
-                }
+                Params.Add(new KeyValuePair<string, T>("default", Default));
             }
 
             foreach (var item in Params)
@@ -156,14 +136,15 @@ namespace ColorVision.Template
 
         public void Save()
         {
-            SaveDefault(FileNameAoiParams, AoiParams,IsOldAoiParams);
-            SaveDefault(FileNameCalibrationParams, CalibrationParams, IsOldCalibrationParams);
-            SaveDefault(FileNamePGParams, PGParams, IsOldPGParams);
-            SaveDefault(FileNameLedJudgeParams, LedReusltParams, IsOldLedJudgeParams);
-            SaveDefault(FileNameSxParms, SxParams, IsOldSxParams);
-            if (!GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
-                SaveDefault(FileNamePoiParms, PoiParams, IsOldPoiParams);
-            SaveDefault(FileNameFlowParms, FlowParams, IsOldFlowParams);
+            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+                return;
+            SaveDefault(FileNameAoiParams, AoiParams);
+            SaveDefault(FileNameCalibrationParams, CalibrationParams);
+            SaveDefault(FileNamePGParams, PGParams);
+            SaveDefault(FileNameLedJudgeParams, LedReusltParams);
+            SaveDefault(FileNameSxParms, SxParams);
+            SaveDefault(FileNamePoiParms, PoiParams);
+            SaveDefault(FileNameFlowParms, FlowParams);
         }
 
 
@@ -173,26 +154,28 @@ namespace ColorVision.Template
             {
                 case WindowTemplateType.AoiParam:
                     if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql) SaveAoi2DB(AoiParams);
-                    else SaveDefault(FileNameAoiParams, AoiParams, IsOldAoiParams);
+                    else SaveDefault(FileNameAoiParams, AoiParams);
                     break;
                 case WindowTemplateType.Calibration:
-                    SaveDefault(FileNameCalibrationParams, CalibrationParams, IsOldCalibrationParams);
+                    SaveDefault(FileNameCalibrationParams, CalibrationParams);
                     break;
                 case WindowTemplateType.PGParam:
-                    SaveDefault(FileNamePGParams, PGParams, IsOldPGParams);
+                    SaveDefault(FileNamePGParams, PGParams);
                     break;
                 case WindowTemplateType.LedReuslt:
-                    SaveDefault(FileNameLedJudgeParams, LedReusltParams, IsOldLedJudgeParams);
+                    SaveDefault(FileNameLedJudgeParams, LedReusltParams);
                     break;
                 case WindowTemplateType.SxParm:
-                    SaveDefault(FileNameSxParms, SxParams, IsOldSxParams);
+                    SaveDefault(FileNameSxParms, SxParams);
                     break;
                 case WindowTemplateType.PoiParam:
-                    if (!GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
-                        SaveDefault(FileNamePoiParms, PoiParams, IsOldPoiParams);
+                    SaveDefault(FileNamePoiParms, PoiParams);
                     break;
                 case WindowTemplateType.FlowParam:
-                    SaveDefault(FileNameFlowParms, FlowParams, IsOldFlowParams);
+                    SaveDefault(FileNameFlowParms, FlowParams);
+                    break;
+                case WindowTemplateType.Devices:
+                    SaveDefault(FileNameCameraDeviceParams, DeviceParams);
                     break;
                 default:
                     break;
@@ -204,23 +187,13 @@ namespace ColorVision.Template
             poiService.Save(poiParam);
         }
 
-        private static void SaveDefault<T>(string FileNameParams, ObservableCollection<KeyValuePair<string, T>> t, bool IsOldParams)
+
+
+        private static void SaveDefault<T>(string FileNameParams, ObservableCollection<KeyValuePair<string, T>> t)
         {
-            if (IsOldParams)
-                CfgFile.Save(FileNameParams, ObservableCollectionToDictionary(t));
-            else
-                CfgFile.Save(FileNameParams, t);
+            CfgFile.Save(FileNameParams, t);
         }
 
-        private static Dictionary<string,T> ObservableCollectionToDictionary<T>(ObservableCollection<KeyValuePair<string, T>> keyValues)
-        {
-            var keys = new Dictionary<string, T>() { };
-            foreach (var key in keyValues)
-            {
-                keys.Add(key.Key, key.Value);
-            }
-            return keys;
-        }
 
         public ObservableCollection<KeyValuePair<string, PoiParam>> LoadPoiParam()
         {
@@ -238,7 +211,7 @@ namespace ColorVision.Template
             {
                 PoiParams.Clear();
                 if (PoiParams.Count == 0)
-                    PoiParams = IDefault(FileNamePoiParms, new PoiParam(), ref IsOldPoiParams);
+                    PoiParams = IDefault(FileNamePoiParms, new PoiParam());
             }
 
             return PoiParams;
@@ -291,6 +264,37 @@ namespace ColorVision.Template
             return null;
         }
 
+        internal ResourceParam? AddDeviceParam(string name, string code, int type, int pid)
+        {
+            SysResourceModel sysResource = new SysResourceModel(name, code, type,pid, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            resourceService.Save(sysResource);
+            int pkId = sysResource.GetPK();
+            if (pkId > 0)
+            {
+                return LoadServiceParamById(pkId);
+            }
+            return null;
+        }
+
+        internal ResourceParam? AddServiceParam(string name,string code,int type)
+        {
+            SysResourceModel sysResource = new SysResourceModel(name, code, type, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            resourceService.Save(sysResource);
+            int pkId = sysResource.GetPK();
+            if (pkId > 0)
+            {
+                return LoadServiceParamById(pkId);
+            }
+            return null;
+        }
+
+        private ResourceParam? LoadServiceParamById(int pkId)
+        {
+            SysResourceModel model = resourceService.GetMasterById(pkId);
+            if (model != null) return new ResourceParam(model);
+            else return null;
+        }
+
         internal PoiParam? LoadPoiParamById(int pkId)
         {
             PoiMasterModel poiMaster = poiService.GetMasterById(pkId);
@@ -324,16 +328,30 @@ namespace ColorVision.Template
                 {
                     List<ModDetailModel> flowDetails = modService.GetDetailByPid(dbModel.Id);
                     KeyValuePair<string, FlowParam> item = new KeyValuePair<string, FlowParam>(dbModel.Name ?? "default", new FlowParam(dbModel, flowDetails));
+                    ModDetailModel fn = item.Value.GetParameter(FlowParam.FileNameKey);
+                    if (fn != null)
+                    {
+                        string code1 = AESUtil.GetMd5FromString("default4.stn" + 98);
+                        string code = AESUtil.GetMd5FromString(fn.ValueA + fn.Id);
+                        SysResourceModel res = resourceService.GetByCode(code);
+                        if (res != null)
+                        {
+                            item.Value.DataBase64 = res.Value;
+                            Base64StringToFile(item.Value.DataBase64, GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectFullName, item.Value.FileName);
+                        }
+                    }
                     FlowParams.Add(item);
                 }
             }
             else
             {
-                FlowParams = IDefault(FileNameFlowParms, new FlowParam(), ref IsOldFlowParams);
+                var keyValuePairs = IDefault(FileNameFlowParms, new FlowParam());
+                foreach (var item in keyValuePairs)
+                    FlowParams.Add(item);
+
             }
             return FlowParams;
         }
-
 
         internal ObservableCollection<KeyValuePair<string, AoiParam>> LoadAoiParam()
         {
@@ -350,28 +368,46 @@ namespace ColorVision.Template
             }
             else
             {
-                AoiParam param = new AoiParam
-                {
-                    FilterByArea = true,
-                    MaxArea = 6000,
-                    MinArea = 10,
-                    FilterByContrast = true,
-                    MaxContrast = 1.7f,
-                    MinContrast = 0.3f,
-                    ContrastBrightness = 1.0f,
-                    ContrastDarkness = 0.5f,
-                    BlurSize = 19,
-                    MinContourSize = 5,
-                    ErodeSize = 5,
-                    DilateSize = 5,
-                    Left = 5,
-                    Right = 5,
-                    Top = 5,
-                    Bottom = 5
-                };
-                AoiParams = IDefault(FileNameAoiParams, param, ref IsOldAoiParams);
+                var keyValuePairs = IDefault(FileNameAoiParams, new AoiParam());
+                foreach (var item in keyValuePairs)
+                    AoiParams.Add(item);
             }
             return AoiParams;
+        }
+
+        internal ObservableCollection<KeyValuePair<string, ResourceParam>> LoadDeviceParams()
+        {
+            DeviceParams.Clear();
+            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+            {
+                List<SysResourceModel> devices = resourceService.GetAllDevices(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                foreach (var dbModel in devices)
+                {
+                    KeyValuePair<string, ResourceParam> item = new KeyValuePair<string, ResourceParam>(dbModel.Name ?? "default", new ResourceParam(dbModel));
+                    DeviceParams.Add(item);
+                }
+            }
+            return DeviceParams;
+        }
+
+        internal List<SysResourceModel> LoadAllServices()
+        {
+            return resourceService.GetAllServices(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+        }
+
+        internal ObservableCollection<KeyValuePair<string, ResourceParam>> LoadServiceParams()
+        {
+            ServiceParams.Clear();
+            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+            {
+                List<SysResourceModel> devices = resourceService.GetAllServices(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                foreach (var dbModel in devices)
+                {
+                    KeyValuePair<string, ResourceParam> item = new KeyValuePair<string, ResourceParam>(dbModel.Name ?? "default", new ResourceParam(dbModel));
+                    ServiceParams.Add(item);
+                }
+            }
+            return ServiceParams;
         }
 
         internal int PoiMasterDeleteById(int id)
@@ -397,9 +433,82 @@ namespace ColorVision.Template
         }
         internal void SaveFlow2DB(FlowParam flowParam)
         {
+            string fileName = GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectFullName + "\\" + flowParam.FileName;
+            flowParam.DataBase64 = Base64FileToString(fileName);
             modService.Save(flowParam);
         }
 
+        public string Base64FileToString(string fileName)
+        {
+            FileStream fsForRead = new FileStream(fileName, FileMode.Open);//文件路径
+            string base64Str = "";
+            try
+            {
+                //读写指针移到距开头10个字节处
+                fsForRead.Seek(0, SeekOrigin.Begin);
+                byte[] bs = new byte[fsForRead.Length];
+                int log = Convert.ToInt32(fsForRead.Length);
+                //从文件中读取10个字节放到数组bs中
+                fsForRead.Read(bs, 0, log);
+                base64Str = Convert.ToBase64String(bs);
+                return base64Str;
+            }
+            catch (Exception ex)
+            {
+                Console.Write(ex.Message);
+                Console.ReadLine();
+                return base64Str;
+            }
+            finally
+            {
+                fsForRead.Close();
+            }
+        }
+
+        /// <summary>
+        /// Base64字符串转文件并保存
+        /// </summary>
+        /// <param name="base64String">base64字符串</param>
+        /// /// <param name="fileFullPath">保存的文件路径</param>
+        /// <param name="fileName">保存的文件名</param>
+        /// <returns>是否转换并保存成功</returns>
+        public bool Base64StringToFile(string base64String, string fileFullPath, string fileName)
+        {
+            bool opResult = false;
+            try
+            {
+
+                if (!Directory.Exists(fileFullPath))
+                {
+                    Directory.CreateDirectory(fileFullPath);
+                }
+                MemoryStream stream = new MemoryStream(Convert.FromBase64String(base64String));
+                FileStream fs = new FileStream(fileFullPath + "\\" + fileName, FileMode.OpenOrCreate, FileAccess.Write);
+                byte[] b = stream.ToArray();
+                fs.Write(b, 0, b.Length);
+                fs.Close();
+
+                opResult = true;
+            }
+            catch (Exception e)
+            {
+
+            }
+            return opResult;
+        }
+
+        internal List<SysDictionaryModel> LoadServiceType()
+        {
+            return dictionaryService.GetAllServiceType();
+        }
+
+        internal int ResourceDeleteById(int id)
+        {
+            return resourceService.DeleteById(id);
+        }
+
+        public ObservableCollection<KeyValuePair<string, ResourceParam>> ServiceParams { get; set; }
+        public ObservableCollection<KeyValuePair<string, ResourceParam>> DeviceParams { get; set; }
         public ObservableCollection<KeyValuePair<string, AoiParam>> AoiParams { get; set; }
         public ObservableCollection<KeyValuePair<string, CalibrationParam>> CalibrationParams { get; set; } 
         public ObservableCollection<KeyValuePair<string, PGParam>> PGParams { get; set; }

@@ -1,5 +1,7 @@
 ﻿using ColorVision.Controls;
 using ColorVision.HotKey;
+using ColorVision.MQTT;
+using ColorVision.MySql;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -36,6 +38,10 @@ namespace ColorVision.SettingUp
             SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
             this.DataContext = SoftwareConfig;
             AutoRunDock.DataContext = GlobalSetting.GetInstance();
+            GlobalConst.LogLevel.ForEach(it =>
+            {
+                cmbloglevel.Items.Add(it);
+            });
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -113,6 +119,16 @@ namespace ColorVision.SettingUp
         private void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             FocusManager.SetFocusedElement(this, null);
+        }
+
+        private void TextBlock_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            new MQTTConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+
+        private void TextBlock_MouseLeftButtonDown1(object sender, MouseButtonEventArgs e)
+        {
+            new MySqlConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
     }
 }

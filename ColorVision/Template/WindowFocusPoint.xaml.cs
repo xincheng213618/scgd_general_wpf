@@ -39,14 +39,15 @@ namespace ColorVision.Template
     public class PoiParam : ParamBase
     {
         private static int No = 1;
-        public PoiParam():base(No++)
+        public PoiParam()
         {
+            this.ID = No++;
         }
-        public PoiParam(int id) : base(id)
+
+        public PoiParam(PoiMasterModel dbModel)
         {
-        }
-        public PoiParam(PoiMasterModel dbModel) : base(dbModel.Id)
-        {
+            this.ID = dbModel.Id;
+
             this.PoiName = dbModel.Name ?? string.Empty;
             this.Width = dbModel.Width ?? 0;
             this.Height = dbModel.Height ?? 0;
@@ -1283,10 +1284,11 @@ namespace ColorVision.Template
         }
         private void MenuItem_DrawingVisual_Delete(object sender, RoutedEventArgs e)
         {
-            if (sender is MenuItem menuItem && menuItem.Tag is Visual visual)
+            if (sender is MenuItem menuItem && menuItem.Tag is Visual visual &&visual is IDrawingVisual drawing)
             {
                 PropertyGrid2.SelectedObject = null;
                 ImageShow.RemoveVisual(visual);
+                DrawingVisualLists.Remove(drawing);
             }
         }
 

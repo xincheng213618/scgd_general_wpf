@@ -1,5 +1,6 @@
 ﻿using ColorVision.MVVM;
 using ColorVision.Template;
+using HslCommunication.MQTT;
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -73,77 +74,90 @@ namespace ColorVision.MQTT
         public event EventHandler OpenCameraSuccess;
         public event EventHandler CloseCameraSuccess;
 
+        public CameraId? CameraIDs { get; set; }
 
-        public CameraId? CameraID { get; set; }
-
-        public MQTTCamera()
+        public MQTTCamera(string NickName = "相机1",string SendTopic = "Camera",string SubscribeTopic = "CameraService") : base()
         {
-            MQTTControl = MQTTControl.GetInstance();
-            SendTopic = "Camera";
-            SubscribeTopic = "CameraService";
+            this.NickName = NickName;
+            this.SendTopic = SendTopic;
+            this.SubscribeTopic = SubscribeTopic;
             MQTTControl.SubscribeCache(SubscribeTopic);
-            MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
+            MsgReturnChanged += MQTTCamera_MsgReturnChanged;
+            GetAllLicense();
         }
+        public List<string> MD5 { get; set; } = new List<string>();
 
 
-        private Task MqttClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
+        private void MQTTCamera_MsgReturnChanged(MsgReturn msg)
         {
-            if (arg.ApplicationMessage.Topic == SubscribeTopic)
+            IsRun = false;
+            if (msg.Code == 0)
             {
-                string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
-                try
+                if (msg.EventName == "CM_GetAllCameraID")
                 {
-                    MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg);
-                    if (json == null)
-                        return Task.CompletedTask;
-                    IsRun = false;
-                    
-                    if (json.Code==0)
+                    JArray CameraID = msg.Data.CameraID;
+                    JArray MD5ID = msg.Data.MD5ID;
+                    foreach (var item in MD5ID)
                     {
-                        if (json.EventName == "Init")
-                        {
-                            string CameraId = json.Data.CameraId;
-                            ServiceID = json.ServiceID;
-                            CameraID = JsonConvert.DeserializeObject<CameraId>(CameraId);
-                            Application.Current.Dispatcher.Invoke(() => InitCameraSuccess.Invoke(this, new EventArgs()));
-                        }
-                        else if (json.EventName == "SetParam")
-                        {
-                            MessageBox.Show("SetParam");
-                        }
-                        else if (json.EventName == "Open")
-                        {
-                            Application.Current.Dispatcher.Invoke(() => OpenCameraSuccess.Invoke(this, new EventArgs()));
-                        }
-                        else if (json.EventName == "GatData")
-                        {
-                            string Filepath = json.Data.FilePath;
-                            Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(Filepath));
-                        }
-                        else if (json.EventName == "Close")
-                        {
-                            Application.Current.Dispatcher.Invoke(() => CloseCameraSuccess.Invoke(this, new EventArgs()));
-                        }
-                        else if (json.EventName == "Uninit")
-                        {
-                            MessageBox.Show("Uninit");
-                        }
+                        MD5.Add(item.ToString());
                     }
+                    //var CameraIDs = JsonConvert.DeserializeObject<cameralince>(CameraMD5);
                 }
-                catch 
+
+
+                if (msg.EventName == "Init")
                 {
-                    return Task.CompletedTask;
+                    string CameraId = msg.Data.CameraId;
+                    ServiceID = msg.ServiceID;
+                    CameraIDs = JsonConvert.DeserializeObject<CameraId>(CameraId);
+                    Application.Current.Dispatcher.Invoke(() => InitCameraSuccess.Invoke(this, new EventArgs()));
+                }
+                else if (msg.EventName == "SetParam")
+                {
+                    MessageBox.Show("SetParam");
+                }
+                else if (msg.EventName == "Open")
+                {
+                    Application.Current.Dispatcher.Invoke(() => OpenCameraSuccess.Invoke(this, new EventArgs()));
+                }
+                else if (msg.EventName == "GatData")
+                {
+                    string Filepath = msg.Data.FilePath;
+                    Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(Filepath));
+                }
+                else if (msg.EventName == "Close")
+                {
+                    Application.Current.Dispatcher.Invoke(() => CloseCameraSuccess.Invoke(this, new EventArgs()));
+                }
+                else if (msg.EventName == "Uninit")
+                {
+                    MessageBox.Show("Uninit");
                 }
             }
-            IsRun = false;
-            return Task.CompletedTask;
+            else
+            {
+                switch (msg.EventName)
+                {
+                    case "GatData":
+                        MessageBox.Show("取图失败");
+                        break;
+                    case "Close":
+                        MessageBox.Show("关闭相机失败");
+                        break;
+                    case "Open":
+                        MessageBox.Show("没有许可证");
+                        break;
+                    default:
+                        MessageBox.Show("相机操作失败");
+                        break;
+                }
+            }
         }
 
         public bool IsRun { get; set; }
         public CameraType CurrentCameraType { get; set; }
         public bool Init(CameraType CameraType)
         {
-
             CurrentCameraType = CameraType;
             MsgSend msg = new MsgSend
             {
@@ -182,12 +196,7 @@ namespace ColorVision.MQTT
             };
             PublishAsyncClient(msg);
         }
-        public enum ImageChannelType
-        {
-            X = 0,
-            Y = 1,
-            Z = 2
-        };
+
 
         public bool Calibration(CalibrationParam calibrationParam)
         {
@@ -210,6 +219,7 @@ namespace ColorVision.MQTT
         }
         public bool Open(string CameraID,TakeImageMode TakeImageMode,int ImageBpp)
         {
+            this.CameraID = CameraID;
             MsgSend msg = new MsgSend
             {
                 EventName = "Open",
@@ -219,12 +229,34 @@ namespace ColorVision.MQTT
             return true;
         }
          
-        public bool GetData(double expTime,double gain,string saveFileName = "")
+        public bool GetData(double expTime,double gain,string saveFileName = "1.tif")
         {
             MsgSend msg = new MsgSend
             {
                 EventName = "GetData",
-                Params = new Dictionary<string, object>() { { "expTime", expTime }, { "gain", gain }, { "saveFileName", saveFileName } }
+                Params = new Dictionary<string, object>() { { "expTime", expTime }, { "gain", gain }, { "savefilename", saveFileName } }
+            };
+            PublishAsyncClient(msg);
+            return true;
+        }
+
+        public bool GetAllLicense()
+        {
+              MsgSend msg = new MsgSend
+              {
+                EventName = "CM_GetAllCameraID",
+                Params = new Dictionary<string, object>() { { "CameraID", "" }, { "eType", 0 } }
+              };
+            PublishAsyncClient(msg);
+            return true;
+        }
+
+        public bool SetLicense(string md5,string FileData)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "SaveLicense",
+                Params = new Dictionary<string, object>() { { "eType", 0}, { "FileName", md5 }, { "FileData", FileData } }
             };
             PublishAsyncClient(msg);
             return true;

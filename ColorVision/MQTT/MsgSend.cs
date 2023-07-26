@@ -9,10 +9,13 @@ namespace ColorVision.MQTT
         public string EventName { get; set; }
         public string ServiceName { get; set; }
         public ulong ServiceID { get; set; }
+        public string CameraID { get; set; }
         public Guid MsgID { get; set; }
         [JsonProperty("params")]
         public dynamic Params { get; set; }
     }
+
+    public delegate void MsgReturnHandler(MsgReturn msg);
 
     public class MsgReturn
     {
@@ -20,9 +23,8 @@ namespace ColorVision.MQTT
         public string EventName { get; set; }
         public string ServiceName { get; set; }
         public ulong ServiceID { get; set; }
-        public Guid MsgID { get; set; }
         public int Code { get; set; }
-        public string Msg { get; set; }
+        public string MsgID { get; set; }
         [JsonProperty("data")]
         public dynamic Data { get; set; }
     }

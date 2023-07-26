@@ -31,6 +31,9 @@ namespace ColorVision
         public string ActivationCode { get => _ActivationCode; set { _ActivationCode = value; NotifyPropertyChanged(); } }
         private string _ActivationCode;
 
+        public bool IsCanImport { get => _IsCanImport; set { _IsCanImport = value; NotifyPropertyChanged(); } }
+        private bool _IsCanImport = true;
+
         public object? Value { set; get; }
     }
 
@@ -44,28 +47,29 @@ namespace ColorVision
         {
             InitializeComponent();
             ListViewLicense.ItemsSource = LicenseConfigs;
-            LicenseConfigs.Add(new LicenseConfig() { Name = "ColorVision", Sn = "4060005EAD286752E9BF44AD08D2325E", Tag = $"许可给 fuzzes ally\n\r订阅将于 July 2, 2023过期" });
-            LicenseConfigs.Add(new LicenseConfig() { Name = "VIDCamera", Sn = "409D2B7555605C0B7ABABD5D31ECA47D", Tag = $"许可给 fuzzes ally\n\r订阅将于 July 9, 2023过期" });
+            LicenseConfigs.Add(new LicenseConfig() { Name = "ColorVision", Sn = "0000005EAD286752E9BF44AD08D23250", Tag = $"免费版\n\r永久有效", IsCanImport =false });
+
+            MQTT.MQTTManager.GetInstance().MQTTCameras[0].Value.MD5.ForEach(x => 
+            {
+                LicenseConfigs.Add(new LicenseConfig() { Name = "相机", Sn = x, Tag = $"业务还在开发中" });
+            });
             ListViewLicense.SelectedIndex = 0;
         }
 
 
 
-        DateTime dateTime = DateTime.Now;
         private void Import_Click(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png,*.tif) | *.jpg; *.jpeg; *.png;*.tif";
             openFileDialog.RestoreDirectory = true;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 string Key = File.ReadAllText(openFileDialog.FileName);
+                LicenseConfigs[ListViewLicense.SelectedIndex].Tag = $"{Key}";
+                MQTT.MQTTManager.GetInstance().MQTTCameras[0].Value.SetLicense(LicenseConfigs[ListViewLicense.SelectedIndex].Sn, Key);
+
             }
 
-
-
-            dateTime = dateTime.AddYears(1);
-            LicenseConfigs[ListViewLicense.SelectedIndex].Tag = $"许可给 fuzzes ally\n\r订阅将于{dateTime:yyyy年MM月dd日}过期\n\r";
         }
 
         private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)

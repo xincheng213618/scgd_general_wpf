@@ -6,6 +6,7 @@ using FlowEngineLib;
 using HandyControl.Expression.Shapes;
 using HandyControl.Tools.Extension;
 using log4net;
+using Microsoft.VisualBasic.Logging;
 using MQTTnet;
 using MQTTnet.Client;
 using MQTTnet.Packets;
@@ -24,21 +25,21 @@ using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
 namespace ColorVision.MQTT
 {
-    public delegate void MQTTMsgHandle(MQMsg resultDataMQTT);
+    public delegate void MQTTMsgHandler(MQMsg resultDataMQTT);
 
     public class MQTTControl : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MQTTControl));
 
-
         private static MQTTControl _instance;
         private static readonly object _locker = new();
         public static MQTTControl GetInstance() { lock (_locker) { return _instance ??= new MQTTControl(); } }
 
-        public event MQTTMsgHandle MQTTMsgChanged;
+        public event MQTTMsgHandler MQTTMsgChanged;
 
         public SoftwareConfig SoftwareConfig { get; set; }
         public MQTTConfig MQTTConfig { get => SoftwareConfig.MQTTConfig; }
+        public MQTTSetting MQTTSetting { get => SoftwareConfig.MQTTSetting; }
 
         public IMqttClient MQTTClient { get; set; }
 

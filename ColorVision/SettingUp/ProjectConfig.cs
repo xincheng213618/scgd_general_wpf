@@ -33,5 +33,10 @@ namespace ColorVision.SettingUp
         public ProjectControl ProjectControl { get; set; } = new ProjectControl();
 
 
+        public string GetFullFileName(string fileName)
+        {
+            if(string.IsNullOrWhiteSpace(fileName))return string.Empty;
+            return _ProjectFullName +"\\"+ fileName;
+        }
     }
 }

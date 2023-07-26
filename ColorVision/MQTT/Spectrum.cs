@@ -20,11 +20,13 @@ namespace ColorVision.MQTT
     {
         public event MQTTSpectrumDataHandler DataHandlerEvent;
 
-        public MQTTSpectrum()
+        public MQTTSpectrum(string NickName = "Spectrum1", string SendTopic = "Spectrum", string SubscribeTopic = "SpectrumService") : base()
         {
+            this.NickName = NickName;
+            this.SendTopic = SendTopic;
+            this.SubscribeTopic = SubscribeTopic;
+
             MQTTControl = MQTTControl.GetInstance();
-            SendTopic = "Spectrum";
-            SubscribeTopic = "SpectrumService";
             MQTTControl.SubscribeCache(SubscribeTopic);
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
 

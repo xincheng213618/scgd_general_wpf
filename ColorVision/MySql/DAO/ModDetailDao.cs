@@ -24,7 +24,7 @@ namespace ColorVision.MySql.DAO
         public bool? IsDelete { get; set; } = false;
     }
 
-    public class ModDetailDao : BaseServiceMaster<ModDetailModel>
+    public class ModDetailDao : BaseDaoMaster<ModDetailModel>
     {
         public ModDetailDao() : base("v_scgd_mod_detail", "t_scgd_mod_param_detail", "id", true)
         {

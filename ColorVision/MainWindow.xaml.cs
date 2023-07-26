@@ -32,6 +32,8 @@ using ScottPlot.Styles;
 using System.Drawing.Imaging;
 using HandyControl.Expression.Shapes;
 using Microsoft.Win32;
+using log4net;
+using System.Security.RightsManagement;
 
 namespace ColorVision
 {
@@ -42,56 +44,87 @@ namespace ColorVision
     public partial class MainWindow : Window
     {
         public ToolBarTop ToolBarTop { get; set; }
-
+        public GlobalSetting GlobalSetting { get; set; }
+        public SoftwareSetting SoftwareSetting { get
+            {
+                if (GlobalSetting.SoftwareConfig.SoftwareSetting == null)
+                    GlobalSetting.SoftwareConfig.SoftwareSetting = new SoftwareSetting();
+                return GlobalSetting.SoftwareConfig.SoftwareSetting;
+            }
+        }
         public MainWindow()
         {
             InitializeComponent();
-            this.Closed += (s, e) => Environment.Exit(0);
+            GlobalSetting = GlobalSetting.GetInstance();
+            this.Closed += (s, e) => {
+
+                SoftwareSetting.Top = this.Top;
+                SoftwareSetting.Left = this.Left;
+                SoftwareSetting.Height = this.Height;
+                SoftwareSetting.Width = this.Width;
+                SoftwareSetting.WindowState = (int)this.WindowState;
+                Environment.Exit(0);
+            };
+            if (SoftwareSetting.IsRestoreWindow && SoftwareSetting.Height != 0&& SoftwareSetting.Width != 0)
+            {
+                this.Top = SoftwareSetting.Top;
+                this.Left = SoftwareSetting.Left;
+                this.Height = SoftwareSetting.Height;
+                this.Width = SoftwareSetting.Width;
+                this.WindowState = (WindowState)SoftwareSetting.WindowState;
+            }
         }
 
         private async void Window_Initialized(object sender, EventArgs e)
         {
-            bool isHighContrast = SystemParameters.HighContrast;
-
-            if (isHighContrast||!ThemeManager.AppsUseLightTheme()||!ThemeManager.SystemUsesLightTheme())
-            {
-              this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
-            }
-            SystemEvents.UserPreferenceChanged += (s, e) =>
-            {
-                if (isHighContrast || !ThemeManager.AppsUseLightTheme() || !ThemeManager.SystemUsesLightTheme())
-                {
-                    this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
-                }
-                else
-                {
-                    this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision.ico"));
-                }
-            };
-            SystemParameters.StaticPropertyChanged += (s, e) =>
-            {
-                if (isHighContrast || !ThemeManager.AppsUseLightTheme() || !ThemeManager.SystemUsesLightTheme())
-                {
-                    this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
-                }
-                else
-                {
-                    this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision.ico"));
-                }
-            };
-
-
             if (WindowConfig.IsExist)
             {
-                this.Icon = WindowConfig.Icon ?? this.Icon;
+                if (WindowConfig.Icon == null)
+                {
+                    if (!ThemeManager.AppsUseLightTheme() || !ThemeManager.SystemUsesLightTheme())
+                    {
+                        this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
+                    }
+                    SystemEvents.UserPreferenceChanged += (s, e) =>
+                    {
+                        if (!ThemeManager.AppsUseLightTheme() || !ThemeManager.SystemUsesLightTheme())
+                        {
+                            this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
+                        }
+                        else
+                        {
+                            this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision.ico"));
+                        }
+                    };
+                    SystemParameters.StaticPropertyChanged += (s, e) =>
+                    {
+                        if (!ThemeManager.AppsUseLightTheme() || !ThemeManager.SystemUsesLightTheme())
+                        {
+                            this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
+                        }
+                        else
+                        {
+                            this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision.ico"));
+                        }
+                    };
+                }
+                else
+                {
+                    this.Icon = WindowConfig.Icon;
+                }
                 this.Title = WindowConfig.Title ?? this.Title;
+            }
+            else
+            {
+
             }
 
             Application.Current.MainWindow = this;
-            TemplateControl = TemplateControl.GetInstance();
 
+            TemplateControl = TemplateControl.GetInstance();
             await Task.Delay(30);
             ToolBar1.Visibility = Visibility.Collapsed;
+            loader = new FlowEngineLib.STNodeLoader("FlowEngineLib.dll");
 
             ToolBarTop = new ToolBarTop(Zoombox1, ImageShow);
             ToolBar1.DataContext = ToolBarTop;
@@ -100,8 +133,6 @@ namespace ColorVision
             SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
             MenuStatusBar.DataContext = SoftwareConfig;
             SiderBarGrid.DataContext = SoftwareConfig;
-
-
 
             ImageShow.VisualsAdd += (s, e) =>
             {
@@ -143,6 +174,7 @@ namespace ColorVision
                         DrawingVisualLists.Remove(visual);
                 }
             };
+
         }
 
         private DrawingVisual ImageRuler = new DrawingVisual();
@@ -205,11 +237,6 @@ namespace ColorVision
                 {
                     ImageGroupGrid.Visibility = Visibility.Visible;
                 }
-                Window wins = new Window();
-                wins.Show();
-                wins.Close();
-
-
             };
 
         }
@@ -646,10 +673,6 @@ namespace ColorVision
 
         private void CheckBox_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is CheckBox checkBox && checkBox.Tag is Visual visual && visual is IDrawingVisual iDdrawingVisual)
-            {
-
-            }
         }
 
         private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)
@@ -657,16 +680,7 @@ namespace ColorVision
             e.Handled = true;
         }
 
-        private void MenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            new MQTTLog() { Owner = this }.Show();
-        }
 
-
-        private void About_Click(object sender, RoutedEventArgs e)
-        {
-            new AboutMsgWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
 
 
         private void Button8_Click(object sender, RoutedEventArgs e)
@@ -741,13 +755,13 @@ namespace ColorVision
         private MQTTCamera MQTTCamera { get; set; }
         private void StackPanelCamera_Initialized(object sender, EventArgs e)
         {
-
-            MQTTCamera = new MQTTCamera();
+            MQTTCamera = MQTTManager.GetInstance().MQTTCameras[0].Value;
+            StackPanelCamera.DataContext = MQTTCamera;
             MQTTCamera.FileHandler += OpenImage;
 
             ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()
                                            select new KeyValuePair<CameraType, string>(e1, e1.ToDescription());
-            ComboxCameraType.SelectedIndex = 2;
+            ComboxCameraType.SelectedIndex = 1;
 
             ComboxCameraType.SelectionChanged += (s, e) =>
             {
@@ -781,22 +795,24 @@ namespace ColorVision
 
             MQTTCamera.InitCameraSuccess += (s, e) =>
             {
-                ComboxCameraID.ItemsSource = MQTTCamera.CameraID?.IDs;
+                ComboxCameraID.ItemsSource = MQTTCamera.CameraIDs?.IDs;
                 ComboxCameraID.SelectedIndex = 0;
                 StackPanelOpen.Visibility = Visibility.Visible;
-                StackPanelImage.Visibility = Visibility.Visible;
                 CameraOpenButton.Visibility = Visibility.Visible;
+                CameraCloseButton.Visibility = Visibility.Collapsed;
                 CamerInitButton.Content = "断开初始化";
             };
             MQTTCamera.OpenCameraSuccess += (s, e) =>
             {
                 CameraCloseButton.Visibility = Visibility.Visible;
                 CameraOpenButton.Visibility = Visibility.Collapsed;
+                StackPanelImage.Visibility = Visibility.Visible;
             };
             MQTTCamera.CloseCameraSuccess += (s, e) =>
             {
                 CameraCloseButton.Visibility = Visibility.Collapsed;
                 CameraOpenButton.Visibility = Visibility.Visible;
+                StackPanelImage.Visibility = Visibility.Collapsed;
             };
         }
 
@@ -823,11 +839,16 @@ namespace ColorVision
                     if (ComboxCameraType.SelectedItem is KeyValuePair<CameraType, string> KeyValue && KeyValue.Key is CameraType cameraType)
                     {
                         MQTTCamera.Init(cameraType);
+                        CamerInitButton.Content = "正在初始化";
                     }
                 }
                 else
                 {
-                    MQTTCamera.Close();
+                    MQTTCamera.UnInit();
+                    button.Content = "初始化";
+                    StackPanelOpen.Visibility = Visibility.Collapsed;
+                    StackPanelImage.Visibility = Visibility.Collapsed;
+                    CameraOpenButton.Visibility = Visibility.Collapsed;
                 }
             }
         }
@@ -840,6 +861,11 @@ namespace ColorVision
         {
             if (ComboxCameraTakeImageMode.SelectedItem is KeyValuePair<TakeImageMode, string> KeyValue && KeyValue.Key is TakeImageMode takeImageMode)
             {
+                if (string.IsNullOrEmpty(ComboxCameraID.Text))
+                {
+                    MessageBox.Show("找不到相机");
+                    return;
+                }
                 MQTTCamera.Open(ComboxCameraID.Text.ToString(), takeImageMode, int.Parse(ComboxCameraImageBpp.Text));
             }
         }
@@ -929,36 +955,11 @@ namespace ColorVision
             ofd.Filter = "*.stn|*.stn";
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
-            loader = new FlowEngineLib.STNodeLoader("FlowEngineLib.dll");
             loader.Load(ofd.FileName);
 
             flowControl = new FlowControl(MQTTControl.GetInstance(), loader.GetStartNodeName());
         }
         Window window;
-        private void Button3_Click(object sender, RoutedEventArgs e)
-        {
-            window = new Window() { Width = 400, Height = 400, Title = "流程返回信息", Owner = this,ResizeMode =ResizeMode.NoResize , WindowStyle =WindowStyle.None, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            TextBox textBox = new TextBox() { IsReadOnly = true,Background =Brushes.Black, Foreground =Brushes.White, TextWrapping = TextWrapping.Wrap, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
-
-            Grid grid = new Grid(); 
-            grid.Children.Add(textBox);
-
-            grid.Children.Add(new Controls.ProgressRing() { Margin =  new Thickness(100,100,100,100)});
-
-            window.Content = grid;
-
-            textBox.Text = "TTL:" + "0";
-            flowControl.FlowData += (s, e) =>
-            {
-                if (s is FlowControlData msg)
-                {
-                    textBox.Text = "TTL:" + msg.Params.TTL.ToString();
-                }
-            };
-            flowControl.FlowCompleted += FlowControl_FlowCompleted;
-            flowControl.Start();
-            window.Show();
-        }
 
         private void FlowControl_FlowCompleted(object? sender, EventArgs e)
         {
@@ -975,18 +976,18 @@ namespace ColorVision
                 CameraVideoControl control = CameraVideoControl.GetInstance();
                 if (!CameraOpen)
                 {
-                    button.Content = "正在获取推流";
+                    button.Content = "正在获取推流";  
                     control.Open();
                     control.CameraVideoFrameReceived += (bmp) =>
                     {
                         button.Content = "关闭视频";
                         if (ImageShow.Source is WriteableBitmap bitmap)
                         {
-                            BitmapCopyToWriteableBitmap(bmp, bitmap, new System.Drawing.Rectangle(0, 0, bmp.Width, bmp.Height), 0, 0, bmp.PixelFormat);
+                            ImageUtil.BitmapCopyToWriteableBitmap(bmp, bitmap, new System.Drawing.Rectangle(0, 0, bmp.Width, bmp.Height), 0, 0, bmp.PixelFormat);
                         }
                         else
                         {
-                            WriteableBitmap writeableBitmap = BitmapToWriteableBitmap(bmp);
+                            WriteableBitmap writeableBitmap = ImageUtil.BitmapToWriteableBitmap(bmp);
                             ImageShow.Source = writeableBitmap;
                         }
                     };
@@ -1002,65 +1003,69 @@ namespace ColorVision
         }
 
 
-        public static WriteableBitmap BitmapToWriteableBitmap(System.Drawing.Bitmap src)
+        private void MQTTCamera_2_Click(object sender, RoutedEventArgs e)
         {
-            var wb = CreateCompatibleWriteableBitmap(src);
-            System.Drawing.Imaging.PixelFormat format = src.PixelFormat;
-            if (wb == null)
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
+            openFileDialog.RestoreDirectory = true;
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-                wb = new WriteableBitmap(src.Width, src.Height, 0, 0, System.Windows.Media.PixelFormats.Bgra32, null);
-                format = System.Drawing.Imaging.PixelFormat.Format32bppArgb;
+                MQTTCamera.SetLicense(MQTTCamera.MD5[0],File.ReadAllText(openFileDialog.FileName));
             }
-            BitmapCopyToWriteableBitmap(src, wb, new System.Drawing.Rectangle(0, 0, src.Width, src.Height), 0, 0, format);
-            return wb;
         }
 
-        public static System.Windows.Media.PixelFormat CoverFormat(System.Drawing.Bitmap src)
+        private void MenuItem11_Click(object sender, RoutedEventArgs e)
         {
-            return src.PixelFormat switch
+            new HeartbeatWindow() { Owner = this }.Show();
+        }
+
+        private void MenuItem12_Click(object sender, RoutedEventArgs e)
+        {
+            new MQTTList() { Owner = this }.Show();
+        }
+
+        private void Button_FlowRun_Click(object sender, RoutedEventArgs e)
+        {
+            if (FlowTemplate.SelectedValue is FlowParam flowParam)
             {
-                System.Drawing.Imaging.PixelFormat.DontCare => throw new NotImplementedException(),
-                System.Drawing.Imaging.PixelFormat.Max => throw new NotImplementedException(),
-                System.Drawing.Imaging.PixelFormat.Indexed => throw new NotImplementedException(),
-                System.Drawing.Imaging.PixelFormat.Gdi => throw new NotImplementedException(),
-                System.Drawing.Imaging.PixelFormat.Format16bppRgb555 => PixelFormats.Bgr555,
-                System.Drawing.Imaging.PixelFormat.Format16bppRgb565 => PixelFormats.Bgr565,
-                System.Drawing.Imaging.PixelFormat.Format24bppRgb => PixelFormats.Bgr24,
-                System.Drawing.Imaging.PixelFormat.Format32bppRgb => PixelFormats.Bgr32,
-                System.Drawing.Imaging.PixelFormat.Format1bppIndexed => PixelFormats.Indexed1,
-                System.Drawing.Imaging.PixelFormat.Format4bppIndexed => PixelFormats.Indexed4,
-                System.Drawing.Imaging.PixelFormat.Format8bppIndexed => PixelFormats.Indexed8,
-                System.Drawing.Imaging.PixelFormat.Alpha => throw new NotImplementedException(),
-                System.Drawing.Imaging.PixelFormat.Format16bppArgb1555 => PixelFormats.Bgr101010,
-                System.Drawing.Imaging.PixelFormat.PAlpha => throw new NotImplementedException(),
-                System.Drawing.Imaging.PixelFormat.Format32bppPArgb => PixelFormats.Pbgra32,
-                System.Drawing.Imaging.PixelFormat.Extended => throw new NotImplementedException(),
-                System.Drawing.Imaging.PixelFormat.Format16bppGrayScale => PixelFormats.Gray16,
-                System.Drawing.Imaging.PixelFormat.Format48bppRgb => PixelFormats.Rgb48,
-                System.Drawing.Imaging.PixelFormat.Format64bppPArgb => PixelFormats.Prgba64,
-                System.Drawing.Imaging.PixelFormat.Canonical => throw new NotImplementedException(),
-                System.Drawing.Imaging.PixelFormat.Format32bppArgb => PixelFormats.Bgra32,
-                System.Drawing.Imaging.PixelFormat.Format64bppArgb => PixelFormats.Rgba64,
-                _ => PixelFormats.Default,
-            };;
+                if (File.Exists(GlobalSetting.SoftwareConfig.ProjectConfig.GetFullFileName(flowParam.FileName)))
+                {
+                    loader.Load(GlobalSetting.SoftwareConfig.ProjectConfig.GetFullFileName(flowParam.FileName));
+                    if (!string.IsNullOrWhiteSpace(loader.GetStartNodeName()))
+                    {
+                        flowControl = new FlowControl(MQTTControl.GetInstance(), loader.GetStartNodeName());
+
+                        window = new Window() { Width = 400, Height = 400, Title = "流程返回信息", Owner = this, ResizeMode = ResizeMode.NoResize, WindowStyle = WindowStyle.None, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                        TextBox textBox = new TextBox() { IsReadOnly = true, Background = Brushes.Black, Foreground = Brushes.White, TextWrapping = TextWrapping.Wrap, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+
+                        Grid grid = new Grid();
+                        grid.Children.Add(textBox);
+
+                        grid.Children.Add(new Controls.ProgressRing() { Margin = new Thickness(100, 100, 100, 100) });
+
+                        window.Content = grid;
+
+                        textBox.Text = "TTL:" + "0";
+                        flowControl.FlowData += (s, e) =>
+                        {
+                            if (s is FlowControlData msg)
+                            {
+                                textBox.Text = "TTL:" + msg.Params.TTL.ToString();
+                            }
+                        };
+                        flowControl.FlowCompleted += FlowControl_FlowCompleted;
+                        flowControl.Start();
+                        window.Show();
+
+                    }
+                }
+            }
+
         }
 
-        //创建尺寸和格式与Bitmap兼容的WriteableBitmap
-        public static WriteableBitmap CreateCompatibleWriteableBitmap(System.Drawing.Bitmap src)
+        private void StackPanelFlow_Initialized(object sender, EventArgs e)
         {
-            return new WriteableBitmap(src.Width, src.Height, 0, 0, CoverFormat(src), null);
-        }
-        //将Bitmap数据写入WriteableBitmap中
-        public static void BitmapCopyToWriteableBitmap(System.Drawing.Bitmap src, WriteableBitmap dst, System.Drawing.Rectangle srcRect, int destinationX, int destinationY, System.Drawing.Imaging.PixelFormat srcPixelFormat)
-        {
-            var data = src.LockBits(new System.Drawing.Rectangle(new System.Drawing.Point(0, 0), src.Size), System.Drawing.Imaging.ImageLockMode.ReadOnly, srcPixelFormat);
-            dst.WritePixels(new Int32Rect(srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height), data.Scan0, data.Height * data.Stride, data.Stride, destinationX, destinationY);
-            src.UnlockBits(data);
-        }
-
-        private void MenuItem10_Click(object sender, RoutedEventArgs e)
-        {
-            new CameraVideoConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            FlowTemplate.ItemsSource = TemplateControl.GetInstance().FlowParams;
+            FlowTemplate.SelectedIndex = 0;
         }
     }
 

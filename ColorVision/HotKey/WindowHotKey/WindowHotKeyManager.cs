@@ -35,9 +35,9 @@ namespace ColorVision.HotKey.WindowHotKey
         {
             lock (locker)
             {
-                if (Instances.ContainsKey(control))
+                if (Instances.TryGetValue(control,out WindowHotKeyManager window))
                 {
-                    return Instances[control];
+                    return window;
                 }
                 else
                 {

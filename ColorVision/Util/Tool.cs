@@ -140,7 +140,7 @@ namespace ColorVision.Util
             return (T)retval;
         }
 
-        public static bool IsHasDefaultProgram(string filePath)
+        public static bool IsHasDefaultOpenWay(string filePath)
         {
             if (string.IsNullOrEmpty(filePath))
                 return false;

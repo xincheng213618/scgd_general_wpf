@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using System.Windows.Documents;
 using ColorVision.MySql.DAO;
 using ColorVision.Template;
+using ColorVision.Util;
+using Org.BouncyCastle.Crypto.Parameters;
 
 namespace ColorVision.MySql.Service
 {
@@ -21,14 +23,15 @@ namespace ColorVision.MySql.Service
         private ModDetailDao detailDao;
         private SysDictionaryModDetailDao sysDao;
         private SysDictionaryModDao sysDicDao;
-
+        private SysResourceDao resourceDao;
         public ModService()
         {
-            masterFlowDao = new ModMasterDao(ModMasterType.Flow);
-            masterAoiDao = new ModMasterDao(ModMasterType.Aoi);
-            detailDao = new ModDetailDao();
-            sysDao = new SysDictionaryModDetailDao();
-            sysDicDao = new SysDictionaryModDao();
+            this.masterFlowDao = new ModMasterDao(ModMasterType.Flow);
+            this.masterAoiDao = new ModMasterDao(ModMasterType.Aoi);
+            this.detailDao = new ModDetailDao();
+            this.sysDao = new SysDictionaryModDetailDao();
+            this.sysDicDao = new SysDictionaryModDao();
+            this.resourceDao = new SysResourceDao();
         }
 
         internal List<ModDetailModel> GetDetailByPid(int pkId)
@@ -80,6 +83,25 @@ namespace ColorVision.MySql.Service
             List<ModDetailModel> list = new List<ModDetailModel>();
             flowParam.GetDetail(list);
             detailDao.UpdateByPid(flowParam.ID,list);
+            ModDetailModel fn = flowParam.GetParameter(FlowParam.FileNameKey);
+            string code = AESUtil.GetMd5FromString(fn.ValueA + fn.Id);
+            SysResourceModel res = resourceDao.GetByCode(code);
+            if(res != null)
+            {
+                res.Code = code;
+                res.Name = flowParam.Name;
+                res.Value = flowParam.DataBase64;
+                resourceDao.Save(res);
+            }
+            else
+            {
+                res = new SysResourceModel();
+                res.Code = code;
+                res.Name = flowParam.Name;
+                res.Type = 101;
+                res.Value = flowParam.DataBase64;
+                resourceDao.Save(res);
+            }
         }
 
         internal void Save(AoiParam aoiParam)

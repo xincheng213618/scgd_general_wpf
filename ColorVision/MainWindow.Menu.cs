@@ -19,6 +19,7 @@ using ColorVision.MySql;
 using log4net;
 using log4net.Appender;
 using System.Diagnostics;
+using ColorVision.Video;
 
 namespace ColorVision
 {
@@ -35,6 +36,7 @@ namespace ColorVision
             {
                 SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
                 WindowTemplate windowTemplate;
+                WindowResource windowResource;
                 if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
                 {
                     MessageBox.Show("数据库连接失败，请先连接数据库在操作");
@@ -75,11 +77,42 @@ namespace ColorVision
                         TemplateControl.LoadFlowParam();
                         TemplateAbb(windowTemplate, TemplateControl.FlowParams);
                         break;
+                    case "DeviceParams":
+                        windowResource = new WindowResource(WindowTemplateType.Devices, new UserControl()) { Title = "设备设置" };
+                        TemplateControl.LoadDeviceParams();
+                        ResourceAbb(windowResource, TemplateControl.DeviceParams);
+                        break;
+                    case "ServiceParams":
+                        windowResource = new WindowResource(WindowTemplateType.Services, new UserControl()) { Title = "服务设置" };
+                        TemplateControl.LoadServiceParams();
+                        ResourceAbb(windowResource, TemplateControl.ServiceParams);
+                        break;
                     default:
                         HandyControl.Controls.Growl.Info("开发中");
                         break;
                 }
             }
+        }
+
+        private void ResourceAbb<T>(WindowResource windowResource, ObservableCollection<KeyValuePair<string, T>> keyValuePairs)
+        {
+            windowResource.Owner = this;
+            int id = 1;
+            windowResource.ListConfigs.Clear();
+            foreach (var item in keyValuePairs)
+            {
+                ListConfig listConfig = new ListConfig();
+                listConfig.ID = id++;
+                listConfig.Name = item.Key;
+                listConfig.Value = item.Value;
+                if (item.Value is PoiParam poiParam)
+                {
+                    listConfig.Tag = $"{poiParam.Width}*{poiParam.Height}{(GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql ? "" : $"_{poiParam.PoiPoints.Count}")}";
+                }
+
+                windowResource.ListConfigs.Add(listConfig);
+            }
+            windowResource.ShowDialog();
         }
 
         private void TemplateAbb<T>(WindowTemplate windowTemplate, ObservableCollection<KeyValuePair<string, T>> keyValuePairs)
@@ -189,8 +222,10 @@ namespace ColorVision
 
         private void OpenSetting()
         {
-            new SettingWindow() { Owner =this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            new SettingWindow() { Owner =this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
+
+
         RecentFileList SolutionHistory = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
 
         private void Menu_Initialized(object sender, EventArgs e)
@@ -198,8 +233,8 @@ namespace ColorVision
 
             Application.Current.MainWindow.AddHotKeys(new HotKeys("打开工程", new Hotkey(Key.O, ModifierKeys.Control), OpenSolution));
             Application.Current.MainWindow.AddHotKeys(new HotKeys("新建工程", new Hotkey(Key.N, ModifierKeys.Control), NewCreatSolution));
-            Application.Current.MainWindow.AddHotKeys(new HotKeys("全局设置", new Hotkey(Key.I, ModifierKeys.Control), OpenSetting));
-
+            Application.Current.MainWindow.AddHotKeys(new HotKeys("设置", new Hotkey(Key.I, ModifierKeys.Control), OpenSetting));
+            Application.Current.MainWindow.AddHotKeys(new HotKeys("关于", new Hotkey(Key.F1, ModifierKeys.Control), AboutMsg));
 
             MenuItem RecentListMenuItem = null;
 
@@ -250,7 +285,7 @@ namespace ColorVision
         }
         private void License_Click(object sender, RoutedEventArgs e)
         {
-            new LicenseManger() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            new LicenseManger() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         private void MenuItem_Exit(object sender, RoutedEventArgs e)
@@ -267,7 +302,11 @@ namespace ColorVision
         {
             new MySqlConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
-        private void Log_Click(object sender, RoutedEventArgs e)
+        private void MenuItem10_Click(object sender, RoutedEventArgs e)
+        {
+            new CameraVideoConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+        private void LogF_Click(object sender, RoutedEventArgs e)
         {
             var fileAppender = (log4net.Appender.FileAppender)LogManager.GetRepository().GetAppenders().FirstOrDefault(a => a is log4net.Appender.FileAppender);
             if (fileAppender != null)
@@ -275,6 +314,26 @@ namespace ColorVision
                 System.Diagnostics.Process.Start("explorer.exe", $"{Path.GetDirectoryName(fileAppender.File)}");
             }
         }
+        private void Log_Click(object sender, RoutedEventArgs e)
+        {
+            new WindowLog() { Owner = this }.Show();
+        }
+
+        private void MenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            new MQTTLog() { Owner = this }.Show();
+        }
+        private void About_Click(object sender, RoutedEventArgs e)
+        {
+            AboutMsg();
+        }
+
+        private void AboutMsg()
+        {
+            new AboutMsgWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+
+
         private void Setting_Click(object sender, RoutedEventArgs e)
         {
             bool hasDefaultProgram = false;

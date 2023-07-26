@@ -47,11 +47,10 @@ namespace ColorVision.Template
         LedReuslt,
         SxParm,
         PoiParam,
-        FlowParam
+        FlowParam,
+        Devices,
+        Services
     }
-
-
-
 
 
     /// <summary>
@@ -273,7 +272,6 @@ namespace ColorVision.Template
                         if (flowParam != null) CreateNewTemplate(TemplateControl.FlowParams, TextBox1.Text, flowParam);
                         else MessageBox.Show("数据库创建流程模板失败");
                     break;
-
             }
         }
 

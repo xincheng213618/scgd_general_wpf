@@ -5,52 +5,69 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision"
         mc:Ignorable="d"
-        Title="MQTT日志" Height="450" Width="800">
+        xmlns:SettingUp ="clr-namespace:ColorVision.SettingUp"
+        d:DataContext="{d:DesignInstance SettingUp:GlobalSetting}"
+        Title="MQTT日志" Height="550" Width="800">
     <Window.Resources>
     </Window.Resources>
     <Grid Background="#F9F9F9">
         <Grid.RowDefinitions>
-            <RowDefinition Height="200"/>
+            <RowDefinition Height="300"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <DockPanel  Grid.Row="0">
             <Grid Width="300">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="AUTO"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                <Border  Grid.Row="0"  Background="#F3F3F3" BorderBrush="#EAEAEA" BorderThickness="1" Margin="5" CornerRadius="5">
-                    <StackPanel Margin="5">
-                        <DockPanel Margin="5">
-                            <TextBlock Text="主题:" VerticalAlignment="Center" Width="50"/>
-                            <TextBox x:Name="TextBoxSubscribe"  ToolTip="订阅的主题"  VerticalAlignment="Center" TextWrapping="Wrap" Text="topic1"  BorderThickness="0,0,0,1" />
-                        </DockPanel>
-                        <UniformGrid Columns="3">
-                            <Grid/>
-                            <Button  Content="订阅" Click="Subscribe_Click" Width="80" Margin="2"/>
-                            <Button  Content="退订" Click="UnSubscribe_Click" Width="80" Margin="2"/>
-                        </UniformGrid>
-                    </StackPanel>
-                </Border>
-                <Border  Grid.Row="1"  Background="#F3F3F3" BorderBrush="#EAEAEA" BorderThickness="1" Margin="5" CornerRadius="5">
-                    <StackPanel Orientation="Vertical" Margin="5">
-                        <DockPanel Margin="5,2">
-                            <TextBlock Text="主题:" VerticalAlignment="Center" Width="50"/>
-                            <TextBox x:Name="TextBoxSubscribe1" ToolTip="发送的主题" TextWrapping="NoWrap" AcceptsReturn="True" Text="topic1" BorderThickness="0,0,0,1" />
-                        </DockPanel>
-                        <DockPanel Margin="5,2">
-                            <TextBlock Text="发送:" VerticalAlignment="Center" Width="50"/>
-                            <TextBox x:Name="TextBoxSend"  TextWrapping="NoWrap" AcceptsReturn="True" Text="topic1" BorderThickness="0,0,0,1" />
-                        </DockPanel>
-                        <CheckBox x:Name="CheckBoxRetained" IsEnabled="False"  HorizontalAlignment="Right" Margin="5,2" Content="消息保留" VerticalAlignment="Center" ToolTip="是否保留"/>
+                <StackPanel>
+                    <GroupBox Header="设置" Margin="5">
+                        <StackPanel Margin="5">
+                            <DockPanel >
+                                <ToggleButton HorizontalAlignment="Left" Height="16" Margin="2" Style="{StaticResource ToggleButtonSwitch}"  IsChecked="{Binding SoftwareConfig.MQTTSetting.IsShieldHeartbeat}"/>
+                                <TextBlock  HorizontalAlignment="Left" Text="屏蔽心跳信号"/>
+                            </DockPanel>
+                            <DockPanel >
+                                <ToggleButton HorizontalAlignment="Left" Height="16" Margin="2" Style="{StaticResource ToggleButtonSwitch}"  IsChecked="{Binding SoftwareConfig.MQTTSetting.ShowSelect}"/>
+                                <TextBlock  HorizontalAlignment="Left" Text="只显示选中的服务日志"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </GroupBox>
 
-                        <UniformGrid Margin="5" Columns="3">
-                            <Grid/>
-                            <Grid/>
-                            <Button  Content="发送" Click="Send_Click"  Margin="2"  Width="80"/>
-                        </UniformGrid>
-                    </StackPanel>
-                </Border>
+                    <Border  Grid.Row="0"  Background="#F3F3F3" BorderBrush="#EAEAEA" BorderThickness="1" Margin="5" CornerRadius="5">
+                        <StackPanel Margin="5">
+                            <DockPanel Margin="5">
+                                <TextBlock Text="主题:" VerticalAlignment="Center" Width="50"/>
+                                <TextBox x:Name="TextBoxSubscribe"  ToolTip="订阅的主题"  VerticalAlignment="Center" TextWrapping="Wrap" Text="topic1"  BorderThickness="0,0,0,1" />
+                            </DockPanel>
+                            <UniformGrid Columns="3">
+                                <Grid/>
+                                <Button  Content="订阅" Click="Subscribe_Click" Width="80" Margin="2"/>
+                                <Button  Content="退订" Click="UnSubscribe_Click" Width="80" Margin="2"/>
+                            </UniformGrid>
+                        </StackPanel>
+                    </Border>
+                    <Border  Grid.Row="1"  Background="#F3F3F3" BorderBrush="#EAEAEA" BorderThickness="1" Margin="5" CornerRadius="5">
+                        <StackPanel Orientation="Vertical" Margin="5">
+                            <DockPanel Margin="5,2">
+                                <TextBlock Text="主题:" VerticalAlignment="Center" Width="50"/>
+                                <TextBox x:Name="TextBoxSubscribe1" ToolTip="发送的主题" TextWrapping="NoWrap" AcceptsReturn="True" Text="topic1" BorderThickness="0,0,0,1" />
+                            </DockPanel>
+                            <DockPanel Margin="5,2">
+                                <TextBlock Text="发送:" VerticalAlignment="Center" Width="50"/>
+                                <TextBox x:Name="TextBoxSend"  TextWrapping="NoWrap" Height="40" AcceptsReturn="True" Text="topic1" BorderThickness="0,0,0,1" />
+                            </DockPanel>
+                            <CheckBox x:Name="CheckBoxRetained" IsEnabled="False"  HorizontalAlignment="Right" Margin="5,2" Content="消息保留" VerticalAlignment="Center" ToolTip="是否保留"/>
+
+                            <UniformGrid Margin="5" Columns="3">
+                                <Grid/>
+                                <Grid/>
+                                <Button  Content="发送" Click="Send_Click"  Margin="2"  Width="80"/>
+                            </UniformGrid>
+                        </StackPanel>
+                    </Border>
+
+                </StackPanel>
+
+
+
 
 
             </Grid>

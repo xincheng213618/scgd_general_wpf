@@ -1,0 +1,39 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ColorVision.MySql.DAO
+{
+    public class SysDictionaryModel : PKModel
+    {
+        public string? Name { get; set; }
+        public string? Code { get; set; }
+        public int Type { get; set; }
+        public int Pid { get; set; }
+        public int Value { get; set; }
+        public int TenantId { get; set; }
+    }
+    public class SysDictionaryDao : BaseDaoMaster<SysDictionaryModel>
+    {
+        public SysDictionaryDao() : base("v_scgd_sys_dictionary", "t_scgd_sys_dictionary", "id", true)
+        {
+        }
+
+        public override SysDictionaryModel GetModel(DataRow item)
+        {
+            SysDictionaryModel model = new SysDictionaryModel
+            {
+                Id = item.Field<int>("id"),
+                Name = item.Field<string>("name"),
+                Code = item.Field<string>("code"),
+                Pid = item.Field<int>("pid"),
+                Value = item.Field<int>("val"),
+                TenantId = item.Field<int>("tenant_id"),
+            };
+            return model;
+        }
+    }
+}
