@@ -1054,8 +1054,16 @@ namespace ColorVision
         private void Button_FlowRun_Click(object sender, RoutedEventArgs e)
         {
             object fileName = FlowTemplate.SelectedValue;
-            loader.Load(fileName.ToString());
-            flowControl = new FlowControl(MQTTControl.GetInstance(), loader.GetStartNodeName());
+            if (File.Exists(fileName.ToString()))
+            {
+                loader.Load(fileName.ToString());
+                MessageBox.Show(loader.GetStartNodeName());
+                if (!string.IsNullOrWhiteSpace(loader.GetStartNodeName()))
+                {
+                    flowControl = new FlowControl(MQTTControl.GetInstance(), loader.GetStartNodeName());
+
+                }
+            }
         }
 
         public ObservableCollection<KeyValuePair<string,string>> flowTemps { get; set; } = new ObservableCollection<KeyValuePair<string, string>>();
