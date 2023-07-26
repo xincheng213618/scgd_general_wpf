@@ -1,4 +1,5 @@
 ﻿using ColorVision.MQTT;
+using ColorVision.SettingUp;
 using ColorVision.Template;
 using FlowEngineLib;
 using FlowEngineLib.Start;
@@ -32,9 +33,10 @@ namespace ColorVision
         public WindowFlowEngine(string FileName)
         {
             InitializeComponent();
-            if (File.Exists(FileName))
+            string fileNameFull = GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.GetFullFileName(FileName);
+            if (File.Exists(fileNameFull))
             {
-                OpenFlow(FileName);
+                OpenFlow(fileNameFull);
                 ButtonOpen.Visibility = Visibility.Collapsed;   
                 ButtonNew.Visibility = Visibility.Collapsed;
             }
@@ -47,29 +49,10 @@ namespace ColorVision
             }
         }
         FlowParam FlowParam { get; set; }
-        public WindowFlowEngine(FlowParam flowParam)
+        public WindowFlowEngine(FlowParam flowParam) : this(flowParam.FileName)
         {
             FlowParam = flowParam;
-            InitializeComponent();
-
-
-            if (File.Exists(flowParam.FileName))
-            {
-                OpenFlow(flowParam.FileName);
-                ButtonOpen.Visibility = Visibility.Collapsed;
-                ButtonNew.Visibility = Visibility.Collapsed;
-            }
-            else
-            {
-                this.FileName = flowParam.Name;
-                ButtonOpen.Visibility = Visibility.Collapsed;
-                ButtonNew.Visibility = Visibility.Collapsed;
-                IsSave = false;
-            }
         }
-
-
-
 
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -160,15 +143,14 @@ namespace ColorVision
             }
             else if (!IsSave)
             {
-
-
                 System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
                 ofd.Filter = "*.stn|*.stn";
                 ofd.FileName = FileName;
+                ofd.InitialDirectory = GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectFullName;
                 if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
                 if (FlowParam != null)
                 {
-                    FlowParam.FileName = ofd.FileName;
+                    FlowParam.FileName = System.IO.Path.GetFileName(ofd.FileName);
                 }
                 SaveFlow(ofd.FileName,true);
                 IsSave = true;

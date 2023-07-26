@@ -62,6 +62,18 @@ namespace ColorVision.Template
         {
             parameters.Add(key, value);
         }
+
+        public ModDetailModel? GetParameter(string key)
+        {
+            if (parameters.ContainsKey(key))
+            {
+                return parameters[key];
+            }
+            else
+            {
+                return null;
+            }
+        }
         internal void GetDetail(List<ModDetailModel> list)
         {
             list.AddRange(parameters.Values.ToList());
@@ -136,6 +148,7 @@ namespace ColorVision.Template
     /// </summary>
     public class FlowParam : ParamBase
     {
+        public const string FileNameKey = "filename";
         public FlowParam() {
         }
         public FlowParam(ModMasterModel dbModel, List<ModDetailModel> flowDetail) : base(dbModel.Id,flowDetail)
@@ -146,13 +159,16 @@ namespace ColorVision.Template
         private string name;
         public string Name { get => name; set { name = value; } }
 
+        private string dataBase64;
+        public string DataBase64 { get => dataBase64; set { dataBase64 = value; } }
+
         /// <summary>
         /// 流程文件名称
         /// </summary>
         public string? FileName
         {
-            set { SetProperty(ref _FileName, value?.ToString(), "filename"); }
-            get => GetValue(_FileName, "filename");
+            set { SetProperty(ref _FileName, value?.ToString(), FileNameKey); }
+            get => GetValue(_FileName, FileNameKey);
         }
         private string? _FileName;
     }

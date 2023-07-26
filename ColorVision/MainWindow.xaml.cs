@@ -1068,7 +1068,7 @@ namespace ColorVision
         public ObservableCollection<KeyValuePair<string,string>> flowTemps { get; set; } = new ObservableCollection<KeyValuePair<string, string>>();
         private void StackPanelFlow_Initialized(object sender, EventArgs e)
         {
-            ObservableCollection<KeyValuePair<string, FlowParam>> flows = TemplateControl.GetInstance().LoadFlowParam();
+            ObservableCollection<KeyValuePair<string, FlowParam>> flows = TemplateControl.GetInstance().FlowParams;
             foreach (var item in flows)
             {
                 flowTemps.Add(new KeyValuePair<string, string>(item.Value.Name, item.Value.FileName));

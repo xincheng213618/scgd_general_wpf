@@ -31,6 +31,11 @@ namespace ColorVision.MySql.Service
             return resourceDao.GetPidIsNull(tenantId);
         }
 
+        internal SysResourceModel GetByCode(string code)
+        {
+            return resourceDao.GetByCode(code);
+        }
+
         internal SysResourceModel? GetMasterById(int pkId)
         {
             return resourceDao.GetByID(pkId);

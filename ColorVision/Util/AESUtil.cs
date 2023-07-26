@@ -110,5 +110,22 @@ namespace ColorVision.Util
                 return Array.Empty<byte>();
             }
         }
+
+        /// <summary>
+        /// 生成字符串的MD5码
+        /// </summary>
+        /// <param name="sInput"></param>
+        /// <returns></returns>
+        public static string GetMd5FromString(string sInput)
+        {
+            var lstData = Encoding.GetEncoding("utf-8").GetBytes(sInput);
+            var lstHash = MD5.Create().ComputeHash(lstData);
+            var result = new StringBuilder(32);
+            for (int i = 0; i < lstHash.Length; i++)
+            {
+                result.Append(lstHash[i].ToString("x2").ToUpper());
+            }
+            return result.ToString();
+        }
     }
 }
