@@ -31,7 +31,8 @@ namespace ColorVision.MySql
         public MySqlControl()
         {
             SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
-            Task.Run(() => Connect());
+            //Task.Run(() => Connect());
+            Connect();
         }
 
         public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; NotifyPropertyChanged(); } }

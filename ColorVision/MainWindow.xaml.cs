@@ -124,6 +124,7 @@ namespace ColorVision
             TemplateControl = TemplateControl.GetInstance();
             await Task.Delay(30);
             ToolBar1.Visibility = Visibility.Collapsed;
+            loader = new FlowEngineLib.STNodeLoader("FlowEngineLib.dll");
 
             ToolBarTop = new ToolBarTop(Zoombox1, ImageShow);
             ToolBar1.DataContext = ToolBarTop;
@@ -173,6 +174,7 @@ namespace ColorVision
                         DrawingVisualLists.Remove(visual);
                 }
             };
+
         }
 
         private DrawingVisual ImageRuler = new DrawingVisual();
@@ -953,7 +955,6 @@ namespace ColorVision
             ofd.Filter = "*.stn|*.stn";
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
-            loader = new FlowEngineLib.STNodeLoader("FlowEngineLib.dll");
             loader.Load(ofd.FileName);
 
             flowControl = new FlowControl(MQTTControl.GetInstance(), loader.GetStartNodeName());
@@ -1048,6 +1049,25 @@ namespace ColorVision
         private void MenuItem12_Click(object sender, RoutedEventArgs e)
         {
             new MQTTList() { Owner = this }.Show();
+        }
+
+        private void Button_FlowRun_Click(object sender, RoutedEventArgs e)
+        {
+            object fileName = FlowTemplate.SelectedValue;
+            loader.Load(fileName.ToString());
+            flowControl = new FlowControl(MQTTControl.GetInstance(), loader.GetStartNodeName());
+        }
+
+        public ObservableCollection<KeyValuePair<string,string>> flowTemps { get; set; } = new ObservableCollection<KeyValuePair<string, string>>();
+        private void StackPanelFlow_Initialized(object sender, EventArgs e)
+        {
+            ObservableCollection<KeyValuePair<string, FlowParam>> flows = TemplateControl.GetInstance().LoadFlowParam();
+            foreach (var item in flows)
+            {
+                flowTemps.Add(new KeyValuePair<string, string>(item.Value.Name, item.Value.FileName));
+            }
+            FlowTemplate.ItemsSource = flowTemps;
+            FlowTemplate.SelectedIndex = 0;
         }
     }
 
