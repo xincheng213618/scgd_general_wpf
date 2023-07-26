@@ -331,7 +331,6 @@ namespace ColorVision.Template
                     ModDetailModel fn = item.Value.GetParameter(FlowParam.FileNameKey);
                     if (fn != null)
                     {
-                        string code1 = AESUtil.GetMd5FromString("default4.stn" + 98);
                         string code = AESUtil.GetMd5FromString(fn.ValueA + fn.Id);
                         SysResourceModel res = resourceService.GetByCode(code);
                         if (res != null)
@@ -482,6 +481,7 @@ namespace ColorVision.Template
                 {
                     Directory.CreateDirectory(fileFullPath);
                 }
+
                 MemoryStream stream = new MemoryStream(Convert.FromBase64String(base64String));
                 FileStream fs = new FileStream(fileFullPath + "\\" + fileName, FileMode.OpenOrCreate, FileAccess.Write);
                 byte[] b = stream.ToArray();
