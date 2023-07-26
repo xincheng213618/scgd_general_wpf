@@ -1,4 +1,5 @@
 ﻿using ColorVision.MQTT;
+using ColorVision.SettingUp;
 using ColorVision.Template;
 using FlowEngineLib;
 using FlowEngineLib.Start;
@@ -94,12 +95,9 @@ namespace ColorVision
             softNumerical = new HslCommunication.BasicFramework.SoftNumericalOrder("CV", "yyyyMMddHH", 5, Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\softNumerical.txt");
             TextBoxsn.Text = softNumerical.GetNumericalOrder();
 
-            string iPStr = "192.168.3.225";
-            int port = 1883;
-            string uName = "";
-            string uPwd = "";
 
-            FlowEngineLib.MQTTHelper.SetDefaultCfg(iPStr, port, uName, uPwd, false, null);
+            MQTTConfig mQTTConfig = GlobalSetting.GetInstance().SoftwareConfig.MQTTConfig;
+            FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
 
             this.Closed +=(s,e)=>
             {
@@ -114,6 +112,7 @@ namespace ColorVision
                         System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
                         ofd.Filter = "*.stn|*.stn";
                         ofd.FileName = FileName;
+                        ofd.InitialDirectory = GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectFullName;
                         if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
                         if (FlowParam != null)
                         {
