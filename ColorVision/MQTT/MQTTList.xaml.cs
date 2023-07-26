@@ -50,11 +50,11 @@ namespace ColorVision.MQTT
             {
                 if (stackPanel.Tag is MsgReturn msgReturn)
                 {
-                    MessageBox.Show(JsonSerializer.Serialize(msgReturn, new JsonSerializerOptions() { WriteIndented = true }));
+                    MessageBox.Show(JsonSerializer.Serialize(msgReturn, new JsonSerializerOptions() { WriteIndented = true }),"ColorVision");
                 }
                 else if (stackPanel.Tag is MsgSend msgSend)
                 {
-                    MessageBox.Show(JsonSerializer.Serialize(msgSend, new JsonSerializerOptions() { WriteIndented = true }));
+                    MessageBox.Show(JsonSerializer.Serialize(msgSend, new JsonSerializerOptions() { WriteIndented = true }), "ColorVision");
 
                 }
             }

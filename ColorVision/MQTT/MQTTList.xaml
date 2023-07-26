@@ -5,15 +5,15 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.MQTT"
         mc:Ignorable="d"
-        Title="MQTTList" Height="450" Width="800" Initialized="Window_Initialized">
+        Title="MQTTList" Height="450" Width="1280" Initialized="Window_Initialized">
     <Grid>
         <ListView  x:Name="ListView1"  Background="White" ScrollViewer.HorizontalScrollBarVisibility="Auto"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback">
-            <ListView.View>
-                <GridView >
+            <ListView.View >
+                <GridView>
                     <GridViewColumn  Header="MsgID">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:MsgRecord}">
-                                <TextBlock Text="{ Binding MsgID}"/>
+                                <TextBlock Text="{ Binding MsgID}"  FontWeight="Bold" FontFamily="Consolas" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
@@ -28,7 +28,7 @@
                     <GridViewColumn  Header="ReciveTime">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:MsgRecord}">
-                                <TextBlock Text="{ Binding  ReciveTime,StringFormat=yyyy/MM/dd HH:mm:ss}" Visibility="{Binding IsSucess,Converter={StaticResource bool2VisibilityConverter}}"/>
+                                <TextBlock Text="{ Binding  ReciveTime,StringFormat=yyyy/MM/dd HH:mm:ss}" Visibility="{Binding IsRecive,Converter={StaticResource bool2VisibilityConverter}}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
