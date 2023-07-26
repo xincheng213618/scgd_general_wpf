@@ -146,7 +146,7 @@ namespace ColorVision.MQTT
             MsgRecord msgRecord = new MsgRecord { MsgID = guid.ToString(), SendTime = DateTime.Now, MsgSend = msg,MsgRecordState = MsgRecordState.Send};
             MQTTSetting.MsgRecords.Insert(0,msgRecord);
 
-            Timer timer = new Timer(10000);
+            Timer timer = new Timer(MQTTSetting.SendTimeout*1000);
             timer.Elapsed += (s, e) =>
             {
                 timer.Enabled = false;
