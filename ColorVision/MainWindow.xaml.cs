@@ -175,6 +175,8 @@ namespace ColorVision
                 }
             };
 
+            MQTTConfig mQTTConfig = GlobalSetting.GetInstance().SoftwareConfig.MQTTConfig;
+            FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
         }
 
         private DrawingVisual ImageRuler = new DrawingVisual();
@@ -864,12 +866,14 @@ namespace ColorVision
         {
             if (FlowTemplate.SelectedValue is FlowParam flowParam)
             {
-                if (File.Exists(GlobalSetting.SoftwareConfig.ProjectConfig.GetFullFileName(flowParam.FileName)))
+                string fileName = GlobalSetting.SoftwareConfig.ProjectConfig.GetFullFileName(flowParam.FileName);
+                if (File.Exists(fileName))
                 {
-                    loader.Load(GlobalSetting.SoftwareConfig.ProjectConfig.GetFullFileName(flowParam.FileName));
-                    if (!string.IsNullOrWhiteSpace(loader.GetStartNodeName()))
+                    loader.Load(fileName);
+                    string startNode = loader.GetStartNodeName();
+                    if (!string.IsNullOrWhiteSpace(startNode))
                     {
-                        flowControl = new FlowControl(MQTTControl.GetInstance(), loader.GetStartNodeName());
+                        flowControl = new FlowControl(MQTTControl.GetInstance(), startNode);
 
                         window = new Window() { Width = 400, Height = 400, Title = "流程返回信息", Owner = this, ResizeMode = ResizeMode.NoResize, WindowStyle = WindowStyle.None, WindowStartupLocation = WindowStartupLocation.CenterOwner };
                         TextBox textBox = new TextBox() { IsReadOnly = true, Background = Brushes.Black, Foreground = Brushes.White, TextWrapping = TextWrapping.Wrap, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
