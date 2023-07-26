@@ -1065,15 +1065,9 @@ namespace ColorVision
             }
         }
 
-        public ObservableCollection<KeyValuePair<string,string>> flowTemps { get; set; } = new ObservableCollection<KeyValuePair<string, string>>();
         private void StackPanelFlow_Initialized(object sender, EventArgs e)
         {
-            ObservableCollection<KeyValuePair<string, FlowParam>> flows = TemplateControl.GetInstance().LoadFlowParam();
-            foreach (var item in flows)
-            {
-                flowTemps.Add(new KeyValuePair<string, string>(item.Value.Name, item.Value.FileName ?? string.Empty));
-            }
-            FlowTemplate.ItemsSource = flowTemps;
+            FlowTemplate.ItemsSource = TemplateControl.GetInstance().FlowParams;
             FlowTemplate.SelectedIndex = 0;
         }
     }

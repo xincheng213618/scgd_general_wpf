@@ -169,8 +169,7 @@ namespace ColorVision.Template
                     SaveDefault(FileNameSxParms, SxParams);
                     break;
                 case WindowTemplateType.PoiParam:
-                    if (!GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
-                        SaveDefault(FileNamePoiParms, PoiParams);
+                    SaveDefault(FileNamePoiParms, PoiParams);
                     break;
                 case WindowTemplateType.FlowParam:
                     SaveDefault(FileNameFlowParms, FlowParams);
@@ -334,7 +333,10 @@ namespace ColorVision.Template
             }
             else
             {
-                FlowParams = IDefault(FileNameFlowParms, new FlowParam());
+                var keyValuePairs = IDefault(FileNameFlowParms, new FlowParam());
+                foreach (var item in keyValuePairs)
+                    FlowParams.Add(item);
+
             }
             return FlowParams;
         }
@@ -354,7 +356,9 @@ namespace ColorVision.Template
             }
             else
             {
-                AoiParams = IDefault(FileNameAoiParams, new AoiParam());
+                var keyValuePairs = IDefault(FileNameAoiParams, new AoiParam());
+                foreach (var item in keyValuePairs)
+                    AoiParams.Add(item);
             }
             return AoiParams;
         }
