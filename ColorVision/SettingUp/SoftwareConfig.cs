@@ -86,7 +86,7 @@ namespace ColorVision.SettingUp
             SoftwareSetting = new SoftwareSetting();
 
             UserConfig = new UserConfig();
-            ProjectConfig = new ProjectConfig();
+            SolutionConfig = new SolutionConfig();
             PerformancSetting = new PerformancSetting();
             PerformanceControlLazy = new Lazy<PerformanceControl>(() => PerformanceControl.GetInstance());
             TemplateControlLazy = new Lazy<TemplateControl>(() => TemplateControl.GetInstance());
@@ -160,7 +160,7 @@ namespace ColorVision.SettingUp
 
         public UserConfig UserConfig { get; set; }
 
-        public ProjectConfig ProjectConfig { get; set; }
+        public SolutionConfig SolutionConfig { get; set; }
 
         public CameraVideoConfig CameraVideoConfig { get; set; }
 

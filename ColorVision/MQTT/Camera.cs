@@ -57,7 +57,7 @@ namespace ColorVision.MQTT
     };
 
 
-    public class CameraId
+    public class CameraIIDList
     {
         [JsonProperty("number")]
         public int Number { get; set; }
@@ -74,7 +74,7 @@ namespace ColorVision.MQTT
         public event EventHandler OpenCameraSuccess;
         public event EventHandler CloseCameraSuccess;
 
-        public CameraId? CameraIDs { get; set; }
+        public CameraIIDList? CameraIIDList { get; set; }
 
         public MQTTCamera(string NickName = "相机1",string SendTopic = "Camera/CMD/0", string SubscribeTopic = "Camera/STATUS/0") : base()
         {
@@ -82,7 +82,7 @@ namespace ColorVision.MQTT
             this.SendTopic = SendTopic;
             this.SubscribeTopic = SubscribeTopic;
             MQTTControl.SubscribeCache(SubscribeTopic);
-            MsgReturnChanged += MQTTCamera_MsgReturnChanged;
+            MsgReturnReceived += MQTTCamera_MsgReturnChanged;
             GetAllLicense();
         }
         public List<string> MD5 { get; set; } = new List<string>();
@@ -101,15 +101,14 @@ namespace ColorVision.MQTT
                     {
                         MD5.Add(item.ToString());
                     }
-                    //var CameraIDs = JsonConvert.DeserializeObject<cameralince>(CameraMD5);
+                    //var CameraIIDList = JsonConvert.DeserializeObject<cameralince>(CameraMD5);
                 }
-
 
                 if (msg.EventName == "Init")
                 {
                     string CameraId = msg.Data.CameraId;
                     ServiceID = msg.ServiceID;
-                    CameraIDs = JsonConvert.DeserializeObject<CameraId>(CameraId);
+                    CameraIIDList = JsonConvert.DeserializeObject<CameraIIDList>(CameraId);
                     Application.Current.Dispatcher.Invoke(() => InitCameraSuccess.Invoke(this, new EventArgs()));
                 }
                 else if (msg.EventName == "SetParam")

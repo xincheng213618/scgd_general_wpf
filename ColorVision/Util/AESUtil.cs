@@ -114,18 +114,37 @@ namespace ColorVision.Util
         /// <summary>
         /// 生成字符串的MD5码
         /// </summary>
-        /// <param name="sInput"></param>
-        /// <returns></returns>
-        public static string GetMd5FromString(string sInput)
+        public static string GetMd5Hash(string input)
         {
-            var lstData = Encoding.GetEncoding("utf-8").GetBytes(sInput);
-            var lstHash = MD5.Create().ComputeHash(lstData);
-            var result = new StringBuilder(32);
-            for (int i = 0; i < lstHash.Length; i++)
+            #pragma warning disable CA5351
+            using MD5 md5 = MD5.Create();
+            #pragma warning restore CA5351
+            byte[] inputBytes = Encoding.UTF8.GetBytes(input);
+            byte[] hashBytes = md5.ComputeHash(inputBytes);
+
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < hashBytes.Length; i++)
             {
-                result.Append(lstHash[i].ToString("x2").ToUpper());
+                sb.Append(hashBytes[i].ToString("x2"));
             }
-            return result.ToString();
+
+            return sb.ToString();
         }
+
+        public static string GetSha256Hash(string input)
+        {
+            using SHA256 sha256 = SHA256.Create();
+            byte[] inputBytes = Encoding.UTF8.GetBytes(input);
+            byte[] hashBytes = sha256.ComputeHash(inputBytes);
+
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < hashBytes.Length; i++)
+            {
+                sb.Append(hashBytes[i].ToString("x2"));
+            }
+
+            return sb.ToString();
+        }
+
     }
 }

@@ -21,6 +21,33 @@ namespace ColorVision.Util
         private static readonly ILog log = LogManager.GetLogger(typeof(Tool));
 
 
+        public static string FileToBase64(string fileName)
+        {
+            if (File.Exists(fileName))
+            {
+                byte[] fileBytes = File.ReadAllBytes(fileName);
+                string base64String = Convert.ToBase64String(fileBytes);
+                return base64String;
+            }
+            else
+            {
+                return string.Empty;
+            }
+        }
+
+        public static bool Base64ToFile(string base64String, string fileFullPath, string fileName)
+        {
+            try
+            {
+                byte[] fileBytes = Convert.FromBase64String(base64String);
+                File.WriteAllBytes($"{fileFullPath}\\{fileName}", fileBytes);
+                return true;
+            }
+            catch { return false; }
+        }
+
+
+
         /// <summary>
         /// 开机自动启动
         /// </summary>

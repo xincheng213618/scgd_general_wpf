@@ -73,7 +73,7 @@ namespace ColorVision
 
             MQTTCamera.InitCameraSuccess += (s, e) =>
             {
-                ComboxCameraID.ItemsSource = MQTTCamera.CameraIDs?.IDs;
+                ComboxCameraID.ItemsSource = MQTTCamera.CameraIIDList?.IDs;
                 ComboxCameraID.SelectedIndex = 0;
                 StackPanelOpen.Visibility = Visibility.Visible;
                 CameraOpenButton.Visibility = Visibility.Visible;

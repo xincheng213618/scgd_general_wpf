@@ -64,9 +64,8 @@
                         <TextBlock  Text="曝光" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
                         <Slider x:Name="SliderexpTime"  Template="{ StaticResource LM_SliderControlTemplate2}" TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="100" Maximum="6000"/>
                     </DockPanel>
+                    <Button Content="设置自动曝光" Click="SendDemo5_Click"/>
                     <Button Content="取图" Click="SendDemo3_Click"/>
-                    <Button Content="取图" Click="SendDemo5_Click"/>
-
                     <DockPanel>
                         <Button Content="存图" Click="SendDemo3_Click" Width="80"/>
                         <TextBox x:Name="TextFilePath" BorderThickness="0,0,0,1"  Margin="5"/>

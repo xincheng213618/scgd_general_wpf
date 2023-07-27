@@ -75,7 +75,7 @@ namespace ColorVision.MQTT
                             }
                         }
                         ///这里是因为这里先加载相机上，所以加在这里
-                        MsgReturnChanged?.Invoke(json);
+                        MsgReturnReceived?.Invoke(json);
                     }
                     catch(Exception ex)
                     {
@@ -109,7 +109,7 @@ namespace ColorVision.MQTT
                 IsAlive = true;
             }
         }
-        public MsgReturnHandler MsgReturnChanged { get; set; }
+        public MsgReturnHandler MsgReturnReceived { get; set; }
 
 
         public string SubscribeTopic { get; set; }

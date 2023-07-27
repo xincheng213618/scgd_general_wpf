@@ -22,8 +22,6 @@ namespace ColorVision.Solution
 {
     public class NewCreateViewMode : ViewModelBase
     {
-
-
         public RecentFileList RecentNewCreateCache { get; set; } = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\RecentNewCreateCache") };
 
         public NewCreateViewMode()
@@ -47,7 +45,7 @@ namespace ColorVision.Solution
 
 
             DirectoryPath = RecentNewCreateCacheList[0];
-            this.Name = NewCreateFileName(GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectControl.DefaultCreatName);
+            this.Name = NewCreateFileName(GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.SolutionSetting.DefaultCreatName);
             RecentNewCreateNameCacheList.Add(Name);
         }
 
@@ -159,7 +157,7 @@ namespace ColorVision.Solution
             if (sender is ComboBox comboBox && comboBox.SelectedIndex>-1)
             {
                 NewCreateViewMode.DirectoryPath = NewCreateViewMode.RecentNewCreateCacheList[comboBox.SelectedIndex];
-                NewCreateViewMode.Name = NewCreateViewMode.NewCreateFileName(GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectControl.DefaultCreatName);
+                NewCreateViewMode.Name = NewCreateViewMode.NewCreateFileName(GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.SolutionSetting.DefaultCreatName);
 
             }
         }

@@ -33,7 +33,7 @@ namespace ColorVision
         public WindowFlowEngine(string FileName)
         {
             InitializeComponent();
-            string fileNameFull = GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.GetFullFileName(FileName);
+            string fileNameFull = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.GetFullFileName(FileName);
             if (File.Exists(fileNameFull))
             {
                 OpenFlow(fileNameFull);
@@ -49,7 +49,7 @@ namespace ColorVision
             }
         }
         FlowParam FlowParam { get; set; }
-        public WindowFlowEngine(FlowParam flowParam) : this(flowParam.FileName)
+        public WindowFlowEngine(FlowParam flowParam) : this(flowParam.FileName??string.Empty)
         {
             FlowParam = flowParam;
         }
@@ -94,7 +94,7 @@ namespace ColorVision
                         System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
                         ofd.Filter = "*.stn|*.stn";
                         ofd.FileName = FileName;
-                        ofd.InitialDirectory = GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectFullName;
+                        ofd.InitialDirectory = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.SolutionFullName;
                         if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
                         if (FlowParam != null)
                         {
@@ -144,7 +144,7 @@ namespace ColorVision
                 System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
                 ofd.Filter = "*.stn|*.stn";
                 ofd.FileName = FileName;
-                ofd.InitialDirectory = GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectFullName;
+                ofd.InitialDirectory = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.SolutionFullName;
                 if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
                 if (FlowParam != null)
                 {

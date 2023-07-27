@@ -1151,14 +1151,14 @@ namespace ColorVision.Template
                             for (int m = 0; m < testdata; m++)
                             {
                                 row = (IRow)sheet.GetRow(m + 1);
-                                RDdata[m] = row.GetCell(2).ToString();
-                                PointX[m] = double.Parse(row.GetCell(3).ToString());
-                                PointY[m] = double.Parse(row.GetCell(4).ToString());
+                                RDdata[m] = row.GetCell(2).ToString()??string.Empty;
+                                _ = double.TryParse(row.GetCell(3).ToString(), out PointX[m]);
+                                _ = double.TryParse(row.GetCell(4).ToString(), out PointY[m]);
                             }
                             for (int m = 0; m < 4; m++)
                             {
-                                localRDMark[2 * m + 0] = float.Parse(sheet.GetRow(m + 1).GetCell(6).ToString());
-                                localRDMark[2 * m + 1] = float.Parse(sheet.GetRow(m + 1).GetCell(7).ToString());
+                                _ = float.TryParse(sheet.GetRow(m + 1).GetCell(6).ToString(), out localRDMark[2 * m + 0]);
+                                _ = float.TryParse(sheet.GetRow(m + 1).GetCell(7).ToString(), out localRDMark[2 * m + 1]);
                             }
                             workbook.Close();
                         }
@@ -1533,11 +1533,15 @@ namespace ColorVision.Template
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 string filePath = openFileDialog.FileName;
-                ledCheckCfg = CfgFile.Load<LedCheckCfg>(filePath);
-                if (ledCheckCfg == null)
+                var Cfg = CfgFile.Load<LedCheckCfg>(filePath);
+                if (Cfg == null)
                 {
                     MessageBox.Show("读取配置文件失败");
                     ledCheckCfg = new LedCheckCfg();
+                }
+                else
+                {
+                    ledCheckCfg = Cfg;
                 }
                 PropertyGridAutoFocus.SelectedObject = ledCheckCfg;
             }

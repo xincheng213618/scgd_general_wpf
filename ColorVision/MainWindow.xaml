@@ -485,7 +485,7 @@
                 <StatusBarItem  x:Name="StatusBarItem3">
                     <DockPanel>
                         <TextBlock Text="当前工程: "/>
-                        <TextBlock Text="{Binding  SoftwareConfig.ProjectConfig.ProjectName}"  MouseLeftButtonDown="TextBlock_MouseLeftButtonDown2"/>
+                        <TextBlock Text="{Binding  SoftwareConfig.SolutionConfig.SolutionName}"  MouseLeftButtonDown="TextBlock_MouseLeftButtonDown2"/>
                     </DockPanel>
                 </StatusBarItem>
                 <StatusBarItem Grid.Column="1" >

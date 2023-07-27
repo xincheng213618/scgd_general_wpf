@@ -75,7 +75,7 @@ namespace ColorVision.MySql.DAO
             return row;
         }
 
-        internal SysResourceModel GetByCode(string code)
+        internal SysResourceModel? GetByCode(string code)
         {
             string sql = $"select * from {GetTableName()} where code=@code" + GetDelSQL(true);
             Dictionary<string, object> param = new Dictionary<string, object>

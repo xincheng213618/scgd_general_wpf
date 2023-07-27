@@ -908,7 +908,7 @@ namespace ColorVision
             {
                 if (FlowTemplate.SelectedValue is FlowParam flowParam)
                 {
-                    string fileName = GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.GetFullFileName(flowParam.FileName);
+                    string fileName = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.GetFullFileName(flowParam.FileName?? string.Empty);
                     if (File.Exists(fileName))
                     {
                         loader.Load(fileName);

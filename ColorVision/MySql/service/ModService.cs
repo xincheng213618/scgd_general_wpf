@@ -65,7 +65,7 @@ namespace ColorVision.MySql.Service
                 int idx = 0;
                 foreach (ModDetailModel model in de)
                 {
-                    string code = AESUtil.GetMd5FromString(model.ValueA + model.Id);
+                    string code = AESUtil.GetMd5Hash(model.ValueA + model.Id);
                     codes[idx++] = code;
                 }
                 resourceDao.DeleteInCodes(codes);
@@ -99,7 +99,11 @@ namespace ColorVision.MySql.Service
             flowParam.GetDetail(list);
             detailDao.UpdateByPid(flowParam.ID,list);
             ModDetailModel fn = flowParam.GetParameter(FlowParam.FileNameKey);
-            string code = AESUtil.GetMd5FromString(fn.ValueA + fn.Id);
+            if (fn == null)
+            {
+                return;
+            }
+            string code = AESUtil.GetMd5Hash(fn.ValueA ?? string.Empty + fn.Id ?? string.Empty);
             SysResourceModel res = resourceDao.GetByCode(code);
             if(res != null)
             {

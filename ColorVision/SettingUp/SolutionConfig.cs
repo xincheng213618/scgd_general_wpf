@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.SettingUp
 {
-    public class ProjectControl: ViewModelBase
+    public class SolutionSetting: ViewModelBase
     {
         public string DefaultCreatName { get => _DefaultCreatName; set { _DefaultCreatName = value; NotifyPropertyChanged(); } }
         private string _DefaultCreatName = "新建工程";
@@ -17,9 +17,35 @@ namespace ColorVision.SettingUp
     }
 
     /// <summary>
+    /// 解决方案配置
+    /// </summary>
+    public class SolutionConfig : ViewModelBase
+    {
+        public string SolutionName { get => _SolutionName; set { _SolutionName = value; NotifyPropertyChanged(); } }
+        private string _SolutionName;
+
+        public string SolutionFullName { get => _SolutionFullName; set { _SolutionFullName = value; NotifyPropertyChanged(); } }
+        private string _SolutionFullName;
+
+        public string CachePath { get => _CachePath; set { _CachePath = value; NotifyPropertyChanged(); } }
+        private string _CachePath;
+
+        public SolutionSetting SolutionSetting { get; set; } = new SolutionSetting();
+
+
+        public string GetFullFileName(string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(fileName)) return string.Empty;
+            return _SolutionFullName + "\\" + fileName;
+        }
+    }
+
+
+
+    /// <summary>
     /// 工程配置
     /// </summary>
-    public class ProjectConfig: ViewModelBase
+    public class ProjectConfig : ViewModelBase
     {
         public string ProjectName { get => _ProjectName; set { _ProjectName = value; NotifyPropertyChanged(); } }
         private string _ProjectName;
@@ -30,13 +56,12 @@ namespace ColorVision.SettingUp
         public string CachePath { get => _CachePath; set { _CachePath = value; NotifyPropertyChanged(); } }
         private string _CachePath;
 
-        public ProjectControl ProjectControl { get; set; } = new ProjectControl();
-
 
         public string GetFullFileName(string fileName)
         {
-            if(string.IsNullOrWhiteSpace(fileName))return string.Empty;
-            return _ProjectFullName +"\\"+ fileName;
+            if (string.IsNullOrWhiteSpace(fileName)) return string.Empty;
+            return _ProjectFullName + "\\" + fileName;
         }
     }
+
 }

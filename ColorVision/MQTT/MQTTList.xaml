@@ -10,10 +10,10 @@
         <ListView  x:Name="ListView1"  Background="White" ScrollViewer.HorizontalScrollBarVisibility="Auto"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback">
             <ListView.View >
                 <GridView>
-                    <GridViewColumn  Header="MsgID">
+                    <GridViewColumn  Header="ServiceName">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:MsgRecord}">
-                                <TextBlock Text="{ Binding MsgID}"  FontWeight="Bold" FontFamily="Consolas" />
+                                <TextBlock Text="{ Binding  MsgSend.ServiceName,StringFormat=yyyy/MM/dd HH:mm:ss}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>

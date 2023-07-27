@@ -163,7 +163,7 @@ namespace ColorVision
             TimeSpan elapsedTime = DateTime.Now - lastClickTime;
             if (elapsedTime.TotalMilliseconds <= 300) 
             {
-                System.Diagnostics.Process.Start("explorer.exe", $"{GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectFullName}");
+                System.Diagnostics.Process.Start("explorer.exe", $"{GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.SolutionFullName}");
             }
 
             lastClickTime = DateTime.Now;
@@ -180,12 +180,12 @@ namespace ColorVision
             openSolutionWindow.Closed += delegate
             {
                 string SolutionDirectoryPath = openSolutionWindow.FullName;
-                ProjectConfig ProjectConfig = GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig;
+                SolutionConfig ProjectConfig = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig;
                 if (Directory.Exists(SolutionDirectoryPath))
                 {
                     DirectoryInfo Info = new DirectoryInfo(SolutionDirectoryPath);
-                    ProjectConfig.ProjectName = Info.Name;
-                    ProjectConfig.ProjectFullName = Info.FullName;
+                    ProjectConfig.SolutionName = Info.Name;
+                    ProjectConfig.SolutionFullName = Info.FullName;
                     RecentFileList SolutionHistory = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
                     SolutionHistory.InsertFile(Info.FullName);
                 }
@@ -210,12 +210,12 @@ namespace ColorVision
 
         private void OpenSolution(string SolutionFullPath)
         {
-            ProjectConfig ProjectConfig = GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig;
+            SolutionConfig ProjectConfig = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig;
             if (Directory.Exists(SolutionFullPath))
             {
                 DirectoryInfo Info = new DirectoryInfo(SolutionFullPath);
-                ProjectConfig.ProjectName = Info.Name;
-                ProjectConfig.ProjectFullName = Info.FullName;
+                ProjectConfig.SolutionName = Info.Name;
+                ProjectConfig.SolutionFullName = Info.FullName;
                 SolutionHistory.InsertFile(Info.FullName);
             }
         }
