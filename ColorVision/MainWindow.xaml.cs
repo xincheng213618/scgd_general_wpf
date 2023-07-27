@@ -54,8 +54,12 @@ namespace ColorVision
         }
         public MainWindow()
         {
-            InitializeComponent();
             GlobalSetting = GlobalSetting.GetInstance();
+            MQTTConfig mQTTConfig = GlobalSetting.SoftwareConfig.MQTTConfig;
+            FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
+            this.loader = new FlowEngineLib.STNodeLoader("FlowEngineLib.dll");
+
+            InitializeComponent();
             this.Closed += (s, e) => {
 
                 SoftwareSetting.Top = this.Top;
@@ -124,7 +128,6 @@ namespace ColorVision
             TemplateControl = TemplateControl.GetInstance();
             await Task.Delay(30);
             ToolBar1.Visibility = Visibility.Collapsed;
-            loader = new FlowEngineLib.STNodeLoader("FlowEngineLib.dll");
 
             ToolBarTop = new ToolBarTop(Zoombox1, ImageShow);
             ToolBar1.DataContext = ToolBarTop;
@@ -174,7 +177,6 @@ namespace ColorVision
                         DrawingVisualLists.Remove(visual);
                 }
             };
-
         }
 
         private DrawingVisual ImageRuler = new DrawingVisual();
@@ -864,44 +866,55 @@ namespace ColorVision
         {
             if (FlowTemplate.SelectedValue is FlowParam flowParam)
             {
-                if (File.Exists(GlobalSetting.SoftwareConfig.ProjectConfig.GetFullFileName(flowParam.FileName)))
+                string startNode = loader.GetStartNodeName();
+                if (!string.IsNullOrWhiteSpace(startNode))
                 {
-                    loader.Load(GlobalSetting.SoftwareConfig.ProjectConfig.GetFullFileName(flowParam.FileName));
-                    if (!string.IsNullOrWhiteSpace(loader.GetStartNodeName()))
+                    flowControl = new FlowControl(MQTTControl.GetInstance(), startNode);
+
+                    window = new Window() { Width = 400, Height = 400, Title = "流程返回信息", Owner = this, ResizeMode = ResizeMode.NoResize, WindowStyle = WindowStyle.None, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                    TextBox textBox = new TextBox() { IsReadOnly = true, Background = Brushes.Black, Foreground = Brushes.White, TextWrapping = TextWrapping.Wrap, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+
+                    Grid grid = new Grid();
+                    grid.Children.Add(textBox);
+
+                    grid.Children.Add(new Controls.ProgressRing() { Margin = new Thickness(100, 100, 100, 100) });
+
+                    window.Content = grid;
+
+                    textBox.Text = "TTL:" + "0";
+                    flowControl.FlowData += (s, e) =>
                     {
-                        flowControl = new FlowControl(MQTTControl.GetInstance(), loader.GetStartNodeName());
-
-                        window = new Window() { Width = 400, Height = 400, Title = "流程返回信息", Owner = this, ResizeMode = ResizeMode.NoResize, WindowStyle = WindowStyle.None, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                        TextBox textBox = new TextBox() { IsReadOnly = true, Background = Brushes.Black, Foreground = Brushes.White, TextWrapping = TextWrapping.Wrap, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
-
-                        Grid grid = new Grid();
-                        grid.Children.Add(textBox);
-
-                        grid.Children.Add(new Controls.ProgressRing() { Margin = new Thickness(100, 100, 100, 100) });
-
-                        window.Content = grid;
-
-                        textBox.Text = "TTL:" + "0";
-                        flowControl.FlowData += (s, e) =>
+                        if (s is FlowControlData msg)
                         {
-                            if (s is FlowControlData msg)
-                            {
-                                textBox.Text = "TTL:" + msg.Params.TTL.ToString();
-                            }
-                        };
-                        flowControl.FlowCompleted += FlowControl_FlowCompleted;
-                        flowControl.Start();
-                        window.Show();
-
-                    }
+                            textBox.Text = "TTL:" + msg.Params.TTL.ToString();
+                        }
+                    };
+                    flowControl.FlowCompleted += FlowControl_FlowCompleted;
+                    flowControl.Start();
+                    window.Show();
+                }
+                else
+                {
+                    MessageBox.Show("流程模板为空，不能运行！！！");
                 }
             }
-
         }
 
         private void StackPanelFlow_Initialized(object sender, EventArgs e)
         {
             FlowTemplate.ItemsSource = TemplateControl.GetInstance().FlowParams;
+
+            FlowTemplate.SelectionChanged += (s, e) =>
+            {
+                if (FlowTemplate.SelectedValue is FlowParam flowParam)
+                {
+                    string fileName = GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.GetFullFileName(flowParam.FileName);
+                    if (File.Exists(fileName))
+                    {
+                        loader.Load(fileName);
+                    }
+                }
+            };
             FlowTemplate.SelectedIndex = 0;
         }
 
