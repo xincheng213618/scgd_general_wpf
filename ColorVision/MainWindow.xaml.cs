@@ -933,6 +933,17 @@ namespace ColorVision
         {
             //MQTTCamera.Calibration(Calibration1.CalibrationParam);
         }
+
+        private void StackPanelMQTTPGs_Initialized(object sender, EventArgs e)
+        {
+            if (sender is StackPanel stackPanel)
+            {
+
+                MQTTPGControl Control = new MQTTPGControl(MQTTManager.GetInstance().MQTTPGs[0].Value);
+                stackPanel.Children.Add(Control);
+            }
+          
+        }
     }
 
     public class ImageInfo : ViewModelBase

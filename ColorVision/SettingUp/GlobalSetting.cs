@@ -45,13 +45,13 @@ namespace ColorVision.SettingUp
                 SoftwareConfig config = ReadConfig<SoftwareConfig>(SoftwareConfigFileName);
                 if (config != null)
                 {
-                    config.MySqlConfig.UserPwd = Encrypt.AESDecrypt(config.MySqlConfig.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
-                    config.MQTTConfig.UserPwd = Encrypt.AESDecrypt(config.MQTTConfig.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
-                    config.UserConfig.UserPwd = Encrypt.AESDecrypt(config.UserConfig.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
+                    config.MySqlConfig.UserPwd = Cryptography.AESDecrypt(config.MySqlConfig.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
+                    config.MQTTConfig.UserPwd = Cryptography.AESDecrypt(config.MQTTConfig.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
+                    config.UserConfig.UserPwd = Cryptography.AESDecrypt(config.UserConfig.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
                     foreach (var item in config.MySqlConfigs)
-                        item.UserPwd = Encrypt.AESDecrypt(item.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
+                        item.UserPwd = Cryptography.AESDecrypt(item.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
                     foreach (var item in config.MQTTConfigs)
-                        item.UserPwd = Encrypt.AESDecrypt(item.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
+                        item.UserPwd = Cryptography.AESDecrypt(item.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
 
 
                     return config;
@@ -93,22 +93,22 @@ namespace ColorVision.SettingUp
             string Temp1 = SoftwareConfig.MQTTConfig.UserPwd;
             string Temp2 = SoftwareConfig.UserConfig.UserPwd;
 
-            SoftwareConfig.MySqlConfig.UserPwd = Encrypt.AESEncrypt(SoftwareConfig.MySqlConfig.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
-            SoftwareConfig.MQTTConfig.UserPwd = Encrypt.AESEncrypt(SoftwareConfig.MQTTConfig.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
-            SoftwareConfig.UserConfig.UserPwd = Encrypt.AESEncrypt(SoftwareConfig.UserConfig.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
+            SoftwareConfig.MySqlConfig.UserPwd = Cryptography.AESEncrypt(SoftwareConfig.MySqlConfig.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
+            SoftwareConfig.MQTTConfig.UserPwd = Cryptography.AESEncrypt(SoftwareConfig.MQTTConfig.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
+            SoftwareConfig.UserConfig.UserPwd = Cryptography.AESEncrypt(SoftwareConfig.UserConfig.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
 
             List<string> MySqlConfigsPwd = new List<string>();
             foreach (var item in SoftwareConfig.MySqlConfigs)
             {
                 MySqlConfigsPwd.Add(item.UserPwd);
-                item.UserPwd = Encrypt.AESEncrypt(item.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
+                item.UserPwd = Cryptography.AESEncrypt(item.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
             }
 
             List<string> MQTTConfigsPwd = new List<string>();
             foreach (var item in SoftwareConfig.MQTTConfigs)
             {
                 MQTTConfigsPwd.Add(item.UserPwd);
-                item.UserPwd = Encrypt.AESEncrypt(item.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
+                item.UserPwd = Cryptography.AESEncrypt(item.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
             }
 
             WriteConfig(GlobalConst.SoftwareConfigFileName, SoftwareConfig);

@@ -92,51 +92,10 @@
             <Grid  Grid.Row="0" Background="#F9F9F9" Width="300" x:Name="SiderBarGrid" d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}" Visibility="{Binding SoftwareSetting.IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" >
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                     <StackPanel>
-                        <StackPanel Margin="0,5" x:Name="StackPanelPG" d:DataContext="{d:DesignInstance mqtt:MQTTPG}" Initialized="StackPanelPG_Initialized">
-                            <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Background="#F9F9F9"  Content="PG"  FontSize="15" Foreground="Black" IsChecked="False" />
-                            <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
-                                <StackPanel Margin="5">
-                                    <DockPanel>
-                                        <Label Content="模板："/>
-                                        <ComboBox  x:Name="ComboxPGTemplate"  SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,0,10,0"/>
-                                    </DockPanel>
-                                    <Template:PG x:Name="PG1" />
-                                    <GroupBox Header="MQTT Test">
-                                        <StackPanel Visibility="Visible" >
-                                            <TextBlock Text="{Binding NickName}" HorizontalAlignment="Center"/>
-                                            <UniformGrid>
-                                                <ComboBox  x:Name="ComboxPGType"   SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,2,10,2"/>
-                                                <ComboBox  x:Name="ComboxPGCommunicateType"  SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,2,10,2"/>
-                                                <Button Margin="2" Content="InitPG"  Click="PGInit"/>
-                                                <Button Margin="2"  Content="UnInitPG" Click="PGUnInit"/>
-                                            </UniformGrid>
-                                            <UniformGrid>
-                                                <DockPanel Margin="2">
-                                                    <TextBlock  x:Name="TextBlockPGIP"   Text="IP:"/>
-                                                    <TextBox  x:Name="TextBoxPGIP" Height="16" BorderThickness="0,0,0,1"/>
-                                                </DockPanel>
-                                                <DockPanel Margin="2"  >
-                                                    <TextBlock  x:Name="TextBlockPGPort"  Text="Port:"/>
-                                                    <TextBox  x:Name="TextBoxPGPort" Height="16" BorderThickness="0,0,0,1"/>
-                                                </DockPanel>
-                                                <Button Margin="2"  Content="打开PG" Click="PGOpen"/>
-                                                <Button Margin="2" Content="关闭PG" Click="PGClose"/>
-                                            </UniformGrid>
-                                            <UniformGrid Columns="2">
-                                                <Button Margin="2"  Content="Start" Click="PGStartPG"/>
-                                                <Button Margin="2"  Content="Stop" Click="PGStopPG"/>
-                                                <Button Margin="2" Content="ReSet" Click="PGReSetPG"/>
-                                                <Grid/>
-                                                <Button Margin="2"  Content="SwitchUp" Click="PGSwitchUpPG"/>
-                                                <Button  Margin="2" Content="SwitchDown" Click="PGSwitchDownPG"/>
-                                                <TextBox VerticalContentAlignment="Center"  BorderThickness="0,0,0,1" Margin="0,3" x:Name="PGFrameText" Text="0"/>
-                                                <Button  Margin="2" Content="SwitchFrame" Click="PGSwitchFramePG"/>
-                                            </UniformGrid>
-                                        </StackPanel>
-                                    </GroupBox>
-                                </StackPanel>
-                            </Border>
+                        <StackPanel x:Name="StackPanelMQTTPGs" Initialized="StackPanelMQTTPGs_Initialized">
+
                         </StackPanel>
+
                         <StackPanel x:Name="StackPanelMQTTCameras" Initialized="StackPanelMQTTCameras_Initialized">
                             
                         </StackPanel>

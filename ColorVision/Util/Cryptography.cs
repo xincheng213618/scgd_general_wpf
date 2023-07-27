@@ -6,7 +6,10 @@ using System.Windows;
 
 namespace ColorVision.Util
 {
-    public static class Encrypt
+    /// <summary>
+    /// 密码相关
+    /// </summary>
+    public static class Cryptography
     {
         public static class RSA
         {

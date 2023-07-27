@@ -331,7 +331,7 @@ namespace ColorVision.Template
                     ModDetailModel fn = item.Value.GetParameter(FlowParam.FileNameKey);
                     if (fn != null)
                     {
-                        string code = Encrypt.GetMd5Hash(fn.ValueA + fn.Id);
+                        string code = Cryptography.GetMd5Hash(fn.ValueA + fn.Id);
                         SysResourceModel res = resourceService.GetByCode(code);
                         if (res != null)
                         {
