@@ -29,6 +29,10 @@ namespace ColorVision.MQTT
             MQTTCameras.Add(new KeyValuePair<string, MQTTCamera>("camera", Camera));
             ServiceHeartbeats.Add(Camera);
 
+            MQTTCamera Camera1 = new MQTTCamera("相机2", "Camera1", "Camera1Service");
+            MQTTCameras.Add(new KeyValuePair<string, MQTTCamera>("camera", Camera1));
+            ServiceHeartbeats.Add(Camera1);
+
 
             MQTTPG PG =  new MQTTPG("PG1");
             MQTTPGs.Add(new KeyValuePair<string, MQTTPG>("PG", PG));

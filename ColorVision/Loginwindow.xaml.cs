@@ -15,13 +15,23 @@ using System.Windows.Shapes;
 namespace ColorVision
 {
     /// <summary>
-    /// Loginwindow.xaml 的交互逻辑
+    /// LoginWindow.xaml 的交互逻辑
     /// </summary>
-    public partial class Loginwindow : Window
+    public partial class LoginWindow : Window
     {
-        public Loginwindow()
+        public LoginWindow()
         {
             InitializeComponent();
+        }
+
+        private void Window_Initialized(object sender, EventArgs e)
+        {
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+
+            this.Close();
         }
     }
 }

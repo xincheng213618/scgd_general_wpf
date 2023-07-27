@@ -909,9 +909,10 @@ namespace ColorVision
         {
             if (sender is StackPanel stackPanel)
             {
-                MQTTCameraControl mQTTCameraControl = new MQTTCameraControl();
+                
+                MQTTCameraControl mQTTCameraControl = new MQTTCameraControl(MQTTManager.GetInstance().MQTTCameras[0].Value);
                 stackPanel.Children.Add(mQTTCameraControl);
-                MQTTCameraControl mQTTCameraControl1 = new MQTTCameraControl();
+                MQTTCameraControl mQTTCameraControl1 = new MQTTCameraControl(MQTTManager.GetInstance().MQTTCameras[1].Value);
                 stackPanel.Children.Add(mQTTCameraControl1);
             }
         }

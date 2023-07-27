@@ -23,14 +23,16 @@ namespace ColorVision
     /// </summary>
     public partial class MQTTCameraControl : UserControl
     {
-        public MQTTCameraControl()
+        private MQTTCamera MQTTCamera { get; set; }
+
+        public MQTTCameraControl(MQTTCamera mQTTCamera)
         {
-            MQTTCamera = MQTTManager.GetInstance().MQTTCameras[0].Value;
+            MQTTCamera = mQTTCamera;
             InitializeComponent();
             StackPanelCamera.DataContext = MQTTCamera;
+            MQTTCamera = mQTTCamera;
         }
 
-        private MQTTCamera MQTTCamera { get; set; }
         private void StackPanelCamera_Initialized(object sender, EventArgs e)
         {
             //MQTTCamera.FileHandler += OpenImage;
