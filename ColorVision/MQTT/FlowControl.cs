@@ -1,5 +1,7 @@
 ﻿using ColorVision.MVVM;
+using ColorVision.MySql;
 using HslCommunication.MQTT;
+using log4net;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -39,6 +41,8 @@ namespace ColorVision.MQTT
 
     public class FlowControl
     {
+        private static readonly ILog logger = LogManager.GetLogger(typeof(FlowControl));
+
         string svrName = "FlowControl";
         public FlowControlData FlowControlData { get; set; }
 
@@ -51,8 +55,8 @@ namespace ColorVision.MQTT
         public FlowControl(MQTTControl mQTTControl,string topic)
         {
             this.MQTTControl = mQTTControl;
-            this.SendTopic = "SYS/CMD/" +topic;
-            this.SubscribeTopic = "SYS/STATUS/" + topic;
+            this.SendTopic = "FLOW/CMD/" +topic;
+            this.SubscribeTopic = "FLOW/STATUS/" + topic;
             MQTTControl.SubscribeCache(SubscribeTopic);
             MQTTControl.ApplicationMessageReceivedAsync += MQTTControl_ApplicationMessageReceivedAsync;
         }
@@ -78,6 +82,7 @@ namespace ColorVision.MQTT
 
         private Task MQTTControl_ApplicationMessageReceivedAsync(MQTTnet.Client.MqttApplicationMessageReceivedEventArgs arg)
         {
+            logger.Debug(JsonConvert.SerializeObject(arg));
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {
                 string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);

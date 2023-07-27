@@ -54,8 +54,12 @@ namespace ColorVision
         }
         public MainWindow()
         {
-            InitializeComponent();
             GlobalSetting = GlobalSetting.GetInstance();
+            MQTTConfig mQTTConfig = GlobalSetting.SoftwareConfig.MQTTConfig;
+            FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
+            this.loader = new FlowEngineLib.STNodeLoader("FlowEngineLib.dll");
+
+            InitializeComponent();
             this.Closed += (s, e) => {
 
                 SoftwareSetting.Top = this.Top;
@@ -124,7 +128,6 @@ namespace ColorVision
             TemplateControl = TemplateControl.GetInstance();
             await Task.Delay(30);
             ToolBar1.Visibility = Visibility.Collapsed;
-            loader = new FlowEngineLib.STNodeLoader("FlowEngineLib.dll");
 
             ToolBarTop = new ToolBarTop(Zoombox1, ImageShow);
             ToolBar1.DataContext = ToolBarTop;
@@ -174,9 +177,6 @@ namespace ColorVision
                         DrawingVisualLists.Remove(visual);
                 }
             };
-
-            MQTTConfig mQTTConfig = GlobalSetting.GetInstance().SoftwareConfig.MQTTConfig;
-            FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
         }
 
         private DrawingVisual ImageRuler = new DrawingVisual();
@@ -866,10 +866,10 @@ namespace ColorVision
         {
             if (FlowTemplate.SelectedValue is FlowParam flowParam)
             {
-                string fileName = GlobalSetting.SoftwareConfig.ProjectConfig.GetFullFileName(flowParam.FileName);
-                if (File.Exists(fileName))
+                //string fileName = GlobalSetting.SoftwareConfig.ProjectConfig.GetFullFileName(flowParam.FileName);
+                //if (File.Exists(fileName))
                 {
-                    loader.Load(fileName);
+                    //loader.Load(fileName);
                     string startNode = loader.GetStartNodeName();
                     if (!string.IsNullOrWhiteSpace(startNode))
                     {
@@ -906,6 +906,21 @@ namespace ColorVision
         private void StackPanelFlow_Initialized(object sender, EventArgs e)
         {
             FlowTemplate.ItemsSource = TemplateControl.GetInstance().FlowParams;
+
+            FlowTemplate.SelectionChanged += (s, e) =>
+            {
+                if (FlowTemplate.SelectedValue is FlowParam flowParam)
+                {
+                    //if (GlobalSetting != null)
+                    {
+                        string fileName = GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.GetFullFileName(flowParam.FileName);
+                        if (File.Exists(fileName))
+                        {
+                            loader.Load(fileName);
+                        }
+                    }
+                }
+            };
             FlowTemplate.SelectedIndex = 0;
         }
 
