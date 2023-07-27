@@ -177,6 +177,9 @@ namespace ColorVision
             ComboxFilterWheelChannel.SelectedIndex = 0;
         }
 
-
+        private void SendDemo5_Click(object sender, RoutedEventArgs e)
+        {
+            MQTTCamera.SetCfwport();
+        }
     }
 }

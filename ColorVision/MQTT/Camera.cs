@@ -76,7 +76,7 @@ namespace ColorVision.MQTT
 
         public CameraId? CameraIDs { get; set; }
 
-        public MQTTCamera(string NickName = "相机1",string SendTopic = "Camera",string SubscribeTopic = "CameraService") : base()
+        public MQTTCamera(string NickName = "相机1",string SendTopic = "Camera/CMD/0", string SubscribeTopic = "Camera/STATUS/0") : base()
         {
             this.NickName = NickName;
             this.SendTopic = SendTopic;
@@ -247,6 +247,32 @@ namespace ColorVision.MQTT
                 EventName = "CM_GetAllCameraID",
                 Params = new Dictionary<string, object>() { { "CameraID", "" }, { "eType", 0 } }
               };
+            PublishAsyncClient(msg);
+            return true;
+        }
+
+        public bool SetCfwport()
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "GetAutoExpTime",
+                Params = new Dictionary<string, object>() { 
+                    {
+                        "SetCfwport", new List<Dictionary<string, object>>()
+                        {
+                            new Dictionary<string, object>() {
+                                { "nIndex",0},{ "nPort",2},{"eImgChlType",0 }
+                            },
+                            new Dictionary<string, object>() {
+                                { "nIndex",1},{ "nPort",2},{"eImgChlType",0 }
+                            },
+                            new Dictionary<string, object>() {
+                                { "nIndex",2},{ "nPort",2},{"eImgChlType",0 }
+                            },
+                        }
+                    } 
+                }
+            };
             PublishAsyncClient(msg);
             return true;
         }

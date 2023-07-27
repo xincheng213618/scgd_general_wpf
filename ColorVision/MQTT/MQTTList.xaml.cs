@@ -1,4 +1,5 @@
 ﻿using HslCommunication;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -11,6 +12,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
@@ -50,11 +52,22 @@ namespace ColorVision.MQTT
             {
                 if (stackPanel.Tag is MsgReturn msgReturn)
                 {
-                    MessageBox.Show(JsonSerializer.Serialize(msgReturn, new JsonSerializerOptions() { WriteIndented = true }),"ColorVision");
+                    JsonSerializerSettings settings = new JsonSerializerSettings
+                    {
+                        Formatting = Formatting.Indented
+                    }; 
+                    string text = JsonConvert.SerializeObject(msgReturn, settings);
+                    MessageBox.Show(text, "ColorVision");
                 }
                 else if (stackPanel.Tag is MsgSend msgSend)
                 {
-                    MessageBox.Show(JsonSerializer.Serialize(msgSend, new JsonSerializerOptions() { WriteIndented = true }), "ColorVision");
+                    JsonSerializerSettings settings = new JsonSerializerSettings
+                    {
+                        Formatting = Formatting.Indented
+                    };
+                    string text = JsonConvert.SerializeObject(msgSend, settings);
+                    MessageBox.Show(text, "ColorVision");
+
 
                 }
             }

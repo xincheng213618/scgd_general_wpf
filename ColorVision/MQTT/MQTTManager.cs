@@ -25,7 +25,7 @@ namespace ColorVision.MQTT
             MQTTSpectrums = new ObservableCollection<KeyValuePair<string, MQTTSpectrum>>();
             MQTTVISources = new ObservableCollection<KeyValuePair<string, MQTTVISource>>();
             Algorithms = new ObservableCollection<KeyValuePair<string, Algorithm>>();
-            MQTTCamera Camera = new MQTTCamera("相机1");
+            MQTTCamera Camera = new MQTTCamera("相机1", "Camera", "CameraService");
             MQTTCameras.Add(new KeyValuePair<string, MQTTCamera>("camera", Camera));
             ServiceHeartbeats.Add(Camera);
 
