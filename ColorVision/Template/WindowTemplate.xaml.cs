@@ -48,8 +48,9 @@ namespace ColorVision.Template
         SxParm,
         PoiParam,
         FlowParam,
-        Devices,
-        Services
+        MeasureParm,
+        Device,
+        Service
     }
 
 
