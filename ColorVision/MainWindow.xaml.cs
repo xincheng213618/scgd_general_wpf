@@ -890,7 +890,8 @@ namespace ColorVision
                         }
                     };
                     flowControl.FlowCompleted += FlowControl_FlowCompleted;
-                    flowControl.Start();
+                    string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+                    flowControl.Start(sn);
                     window.Show();
                 }
                 else
@@ -922,7 +923,6 @@ namespace ColorVision
         {
             if (sender is StackPanel stackPanel)
             {
-                
                 MQTTCameraControl mQTTCameraControl = new MQTTCameraControl(MQTTManager.GetInstance().MQTTCameras[0].Value);
                 stackPanel.Children.Add(mQTTCameraControl);
                 MQTTCameraControl mQTTCameraControl1 = new MQTTCameraControl(MQTTManager.GetInstance().MQTTCameras[1].Value);
