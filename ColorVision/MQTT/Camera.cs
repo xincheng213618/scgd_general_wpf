@@ -18,6 +18,7 @@ using System.Windows;
 
 namespace ColorVision.MQTT
 {
+
     public enum CameraType 
     {
         [Description("CV_Q")]
@@ -57,13 +58,62 @@ namespace ColorVision.MQTT
     };
 
 
-    public class CameraIIDList
+    public class CameraIDList
     {
         [JsonProperty("number")]
         public int Number { get; set; }
         [JsonProperty("ID")]
         public List<string> IDs { get; set; }
     }
+
+    /// <summary>
+    /// 基础硬件配置信息
+    /// </summary>
+    public class BaseHardwareConfig : ViewModelBase
+    {
+        /// <summary>
+        /// 序号
+        /// </summary>
+        public int No { get => _No; set { _No = value; NotifyPropertyChanged(); } }
+        private int _No;
+
+        /// <summary>
+        /// 名称
+        /// </summary>
+        public string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
+        private string _Name;
+
+        /// <summary>
+        /// 是否存活
+        /// </summary>
+        public bool IsAlive { get => _IsAlive; set { _IsAlive = value; NotifyPropertyChanged(); } }
+        private bool _IsAlive;
+
+    }
+
+    /// <summary>
+    /// 相机配置
+    /// </summary>
+    public class CameraConfig: BaseHardwareConfig
+    {
+        public CameraConfig()
+        { 
+        }
+
+        public string CameraID { get => _CameraID; set { _CameraID = value;  NotifyPropertyChanged(); } }
+        private string _CameraID;
+        public CameraType CameraType { get; set; }
+
+        public TakeImageMode TakeImageMode { get; set; }
+
+        public int ImageBpp { get; set; }
+
+        public string MD5 { get; set; }
+    }
+
+
+
+
 
     public delegate void MQTTCameraFileHandler(string? FilePath);
 
@@ -74,7 +124,7 @@ namespace ColorVision.MQTT
         public event EventHandler OpenCameraSuccess;
         public event EventHandler CloseCameraSuccess;
 
-        public CameraIIDList? CameraIIDList { get; set; }
+        public CameraIDList? CameraIDList { get; set; }
 
         public MQTTCamera(string NickName = "相机1",string SendTopic = "Camera/CMD/0", string SubscribeTopic = "Camera/STATUS/0") : base()
         {
@@ -83,7 +133,6 @@ namespace ColorVision.MQTT
             this.SubscribeTopic = SubscribeTopic;
             MQTTControl.SubscribeCache(SubscribeTopic);
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
-            GetAllLicense();
         }
         public List<string> MD5 { get; set; } = new List<string>();
 
@@ -101,14 +150,14 @@ namespace ColorVision.MQTT
                     {
                         MD5.Add(item.ToString());
                     }
-                    //var CameraIIDList = JsonConvert.DeserializeObject<cameralince>(CameraMD5);
+                    //var CameraIDList = JsonConvert.DeserializeObject<cameralince>(CameraMD5);
                 }
 
                 if (msg.EventName == "Init")
                 {
                     string CameraId = msg.Data.CameraId;
                     ServiceID = msg.ServiceID;
-                    CameraIIDList = JsonConvert.DeserializeObject<CameraIIDList>(CameraId);
+                    CameraIDList = JsonConvert.DeserializeObject<CameraIDList>(CameraId);
                     Application.Current.Dispatcher.Invoke(() => InitCameraSuccess.Invoke(this, new EventArgs()));
                 }
                 else if (msg.EventName == "SetParam")
@@ -300,12 +349,6 @@ namespace ColorVision.MQTT
 
         private bool CheckIsRun()
         {
-            if (ServiceID == 0)
-            {
-                MessageBox.Show("请先初始化");
-                return false;
-            }
-
             if (!MQTTControl.IsConnect)
                 return true;
 
