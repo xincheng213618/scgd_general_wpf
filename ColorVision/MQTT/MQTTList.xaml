@@ -8,6 +8,17 @@
         Title="MQTTList" Height="450" Width="1280" Initialized="Window_Initialized">
     <Grid>
         <ListView  x:Name="ListView1"  Background="White" ScrollViewer.HorizontalScrollBarVisibility="Auto"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback">
+            <ListView.Resources >
+                <ContextMenu x:Key="ContextMenuItem">
+                    <MenuItem Header="ReSend"  Click="MenuItem_Click" Tag="{Binding .}" />
+                    <MenuItem Header="ReRecive"  Click="MenuItem_Click1" Tag="{Binding .}"  />
+                </ContextMenu>
+            </ListView.Resources>
+            <ListView.ItemContainerStyle>
+                <Style TargetType="{x:Type ListViewItem}">
+                    <Setter Property="ContextMenu" Value="{StaticResource ContextMenuItem}"/>
+                </Style>
+            </ListView.ItemContainerStyle>
             <ListView.View >
                 <GridView>
                     <GridViewColumn  Header="ServiceName">

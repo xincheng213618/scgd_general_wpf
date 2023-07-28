@@ -199,7 +199,6 @@ namespace ColorVision
 
         PassSxSource passSxSource;
 
-
         private MQTTVISource MQTTVISource { get; set; }
         private void StackPanelVI_Initialized(object sender, EventArgs e)
         {

@@ -128,7 +128,12 @@ namespace ColorVision.MQTT
         private static Dictionary<string, Timer> timers = new Dictionary<string, Timer>();
 
         private static readonly object _locker = new();
-        internal void PublishAsyncClient(MsgSend msg)
+
+        /// <summary>
+        /// 这里修改成可以继承的
+        /// </summary>
+        /// <param name="msg"></param>
+        internal virtual void PublishAsyncClient(MsgSend msg)
         {
             Guid guid = Guid.NewGuid();
 
@@ -143,7 +148,7 @@ namespace ColorVision.MQTT
             if (msg.EventName == "CM_GetAllCameraID")
                 return;
 
-            MsgRecord msgRecord = new MsgRecord { MsgID = guid.ToString(), SendTime = DateTime.Now, MsgSend = msg,MsgRecordState = MsgRecordState.Send};
+            MsgRecord msgRecord = new MsgRecord {SendTopic=SendTopic,SubscribeTopic =SubscribeTopic ,MsgID = guid.ToString(), SendTime = DateTime.Now, MsgSend = msg,MsgRecordState = MsgRecordState.Send};
             MQTTSetting.MsgRecords.Insert(0,msgRecord);
 
             Timer timer = new Timer(MQTTSetting.SendTimeout*1000);
@@ -162,7 +167,10 @@ namespace ColorVision.MQTT
     }
 
     public class MsgRecord:ViewModelBase
-    { 
+    {
+        public string SubscribeTopic { get; set; }
+        public string SendTopic { get; set; }
+
         public string MsgID { get; set; }
         public DateTime SendTime { get => _SendTime; set { _SendTime = value; NotifyPropertyChanged(); } }
         private DateTime _SendTime;
@@ -170,8 +178,6 @@ namespace ColorVision.MQTT
         private DateTime _ReciveTime;
         public MsgSend MsgSend { get; set; }
         public MsgReturn MsgReturn { get; set; }
-        //private MsgReturn _MsgReturn;
-
 
         public MsgRecordState MsgRecordState { get => _MsgRecordState; set 
             { _MsgRecordState = value;

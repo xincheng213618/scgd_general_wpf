@@ -111,10 +111,6 @@ namespace ColorVision.MQTT
         public string MD5 { get; set; }
     }
 
-
-
-
-
     public delegate void MQTTCameraFileHandler(string? FilePath);
 
     public class MQTTCamera :BaseService
@@ -123,8 +119,12 @@ namespace ColorVision.MQTT
         public event EventHandler InitCameraSuccess;
         public event EventHandler OpenCameraSuccess;
         public event EventHandler CloseCameraSuccess;
+        public event EventHandler UnInitCameraSuccess;
+
+        public CameraConfig CameraConfig { get; set; }
 
         public CameraIDList? CameraIDList { get; set; }
+        public string DeviceID { get => CameraConfig.CameraID; }
 
         public MQTTCamera(string NickName = "相机1",string SendTopic = "Camera/CMD/0", string SubscribeTopic = "Camera/STATUS/0") : base()
         {
@@ -133,53 +133,54 @@ namespace ColorVision.MQTT
             this.SubscribeTopic = SubscribeTopic;
             MQTTControl.SubscribeCache(SubscribeTopic);
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
+            CameraConfig = new CameraConfig();
         }
-        public List<string> MD5 { get; set; } = new List<string>();
 
+        public List<string> MD5 { get; set; } = new List<string>();
 
         private void MQTTCamera_MsgReturnChanged(MsgReturn msg)
         {
             IsRun = false;
             if (msg.Code == 0)
             {
-                if (msg.EventName == "CM_GetAllCameraID")
+                switch (msg.EventName)
                 {
-                    JArray CameraID = msg.Data.CameraID;
-                    JArray MD5ID = msg.Data.MD5ID;
-                    foreach (var item in MD5ID)
-                    {
-                        MD5.Add(item.ToString());
-                    }
-                    //var CameraIDList = JsonConvert.DeserializeObject<cameralince>(CameraMD5);
-                }
-
-                if (msg.EventName == "Init")
-                {
-                    string CameraId = msg.Data.CameraId;
-                    ServiceID = msg.ServiceID;
-                    CameraIDList = JsonConvert.DeserializeObject<CameraIDList>(CameraId);
-                    Application.Current.Dispatcher.Invoke(() => InitCameraSuccess.Invoke(this, new EventArgs()));
-                }
-                else if (msg.EventName == "SetParam")
-                {
-                    MessageBox.Show("SetParam");
-                }
-                else if (msg.EventName == "Open")
-                {
-                    Application.Current.Dispatcher.Invoke(() => OpenCameraSuccess.Invoke(this, new EventArgs()));
-                }
-                else if (msg.EventName == "GatData")
-                {
-                    string Filepath = msg.Data.FilePath;
-                    Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(Filepath));
-                }
-                else if (msg.EventName == "Close")
-                {
-                    Application.Current.Dispatcher.Invoke(() => CloseCameraSuccess.Invoke(this, new EventArgs()));
-                }
-                else if (msg.EventName == "Uninit")
-                {
-                    MessageBox.Show("Uninit");
+                    case "CM_GetAllCameraID":
+                        JArray CameraID = msg.Data.CameraID;
+                        JArray MD5ID = msg.Data.MD5ID;
+                        foreach (var item in MD5ID)
+                        {
+                            MD5.Add(item.ToString());
+                        }
+                        //var CameraIDList = JsonConvert.DeserializeObject<cameralince>(CameraMD5);
+                        break;
+                    case "Init":
+                        string CameraId = msg.Data.CameraId;
+                        ServiceID = msg.ServiceID;
+                        CameraIDList = JsonConvert.DeserializeObject<CameraIDList>(CameraId);
+                        Application.Current.Dispatcher.Invoke(() => InitCameraSuccess.Invoke(this, new EventArgs()));
+                        break;
+                    case "Uninit":
+                        Application.Current.Dispatcher.Invoke(() => UnInitCameraSuccess.Invoke(this, new EventArgs()));
+                        break;
+                    case "SetParam":
+                        MessageBox.Show("SetParam");
+                        break;
+                    case "Close":
+                        Application.Current.Dispatcher.Invoke(() => CloseCameraSuccess.Invoke(this, new EventArgs()));
+                        break;
+                    case "Open":
+                        Application.Current.Dispatcher.Invoke(() => OpenCameraSuccess.Invoke(this, new EventArgs()));
+                        break;
+                    case "GatData":
+                        string Filepath = msg.Data.FilePath;
+                        Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(Filepath));
+                        break;
+                    case "GetAutoExpTime":
+                        break;
+                    default:
+                        MessageBox.Show("未定义数据");
+                        break;
                 }
             }
             else
@@ -190,10 +191,13 @@ namespace ColorVision.MQTT
                         MessageBox.Show("取图失败");
                         break;
                     case "Close":
-                        MessageBox.Show("关闭相机失败");
+                        Application.Current.Dispatcher.Invoke(() => CloseCameraSuccess.Invoke(this, new EventArgs()));
                         break;
                     case "Open":
                         MessageBox.Show("没有许可证");
+                        break;
+                    case "Uninit":
+                        Application.Current.Dispatcher.Invoke(() => UnInitCameraSuccess.Invoke(this, new EventArgs()));
                         break;
                     default:
                         MessageBox.Show("相机操作失败");
@@ -204,6 +208,7 @@ namespace ColorVision.MQTT
 
         public bool IsRun { get; set; }
         public CameraType CurrentCameraType { get; set; }
+
         public bool Init(CameraType CameraType)
         {
             CurrentCameraType = CameraType;
@@ -216,14 +221,8 @@ namespace ColorVision.MQTT
             return true;
         }
 
-
         public bool UnInit()
         {
-            if (ServiceID == 0)
-            {
-                MessageBox.Show("请先初始化");
-                return false;
-            }
             if (CheckIsRun())
                 return false;
             MsgSend msg = new MsgSend
@@ -245,14 +244,9 @@ namespace ColorVision.MQTT
             PublishAsyncClient(msg);
         }
 
-
         public bool Calibration(CalibrationParam calibrationParam)
         {
-            if (ServiceID == 0)
-            {
-                MessageBox.Show("请先初始化");
-                return false;
-            }
+
             if (CheckIsRun())
                 return false;
             IsRun = false;

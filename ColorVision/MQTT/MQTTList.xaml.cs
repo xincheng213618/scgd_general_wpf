@@ -72,5 +72,29 @@ namespace ColorVision.MQTT
                 }
             }
         }
+
+        private void MenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem)
+            {
+                if (menuItem.Tag is MsgRecord msgRecord)
+                {
+                    string json = JsonConvert.SerializeObject(msgRecord.MsgSend, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+                    Task.Run(() => MQTTControl.PublishAsyncClient(msgRecord.SendTopic, json, false));
+                }
+            }
+        }
+
+        private void MenuItem_Click1(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem)
+            {
+                if (menuItem.Tag is MsgRecord msgRecord)
+                {
+                    string json = JsonConvert.SerializeObject(msgRecord.MsgReturn, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+                    Task.Run(() => MQTTControl.PublishAsyncClient(msgRecord.SubscribeTopic, json, false));
+                }
+            }
+        }
     }
 }
