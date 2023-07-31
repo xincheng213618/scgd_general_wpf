@@ -29,11 +29,11 @@ namespace ColorVision
         {
             this.Topmost = true;
             CloseButton.Focus();
-#if (DEBUG == true)
+            #if (DEBUG == true)
             TextBlockVision.Text = $"ColorVision{(DebugBuild(Assembly.GetExecutingAssembly())? " (Debug) " : "(Release)")}{(Debugger.IsAttached ? " (调试中) " : "")} ({(IntPtr.Size == 4 ? "32" : "64")}位) - {System.Reflection.Assembly.GetExecutingAssembly().GetName().Version} - Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy.MM.dd}";
-#else
+            #else
             TextBlockVision.Text = $"ColorVision{(DebugBuild(Assembly.GetExecutingAssembly()) ? " (Debug)" : "")}{(Debugger.IsAttached ? " (调试中) " : "")} ({(IntPtr.Size == 4 ? "32" : "64")}位) -  {System.Reflection.Assembly.GetExecutingAssembly().GetName().Version} - Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy/MM/dd})";
-#endif
+            #endif
             Icon = null;
 
 
@@ -49,30 +49,6 @@ namespace ColorVision
 
                 }
             };
-
-
-            //for (int i = 0; i < 100; i++)
-            //{
-            //    Grid1.Background = Brushes.Red;
-            //    await Task.Delay(350);
-            //    Grid1.Background = Brushes.DarkRed;
-            //    await Task.Delay(350);
-            //    Grid1.Background = Brushes.Orange;
-            //    await Task.Delay(350);
-            //    Grid1.Background = Brushes.Yellow;
-            //    await Task.Delay(350);
-            //    Grid1.Background = Brushes.Green;
-            //    await Task.Delay(350);
-            //    Grid1.Background = Brushes.DarkGreen;
-            //    await Task.Delay(350);
-            //    Grid1.Background = Brushes.Blue;
-            //    await Task.Delay(350);
-            //    Grid1.Background = Brushes.DarkBlue;
-            //    await Task.Delay(350);
-            //    Grid1.Background = Brushes.Violet;
-            //    await Task.Delay(350);
-            //}
-
         }
 
         private static SolidColorBrush RainbowAnimation()
@@ -95,7 +71,8 @@ namespace ColorVision
             return background;
         }
 
-            private static bool DebugBuild(Assembly assembly)
+
+        private static bool DebugBuild(Assembly assembly)
         {
             foreach (object attribute in assembly.GetCustomAttributes(false))
             {

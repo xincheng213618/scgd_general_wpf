@@ -120,6 +120,9 @@ namespace ColorVision.Solution
                 this.Close();
                 return;
             }
+
+
+
             string SolutionDirectoryPath = NewCreateViewMode.DirectoryPath + "\\" + NewCreateViewMode.Name;
 
 
@@ -128,7 +131,18 @@ namespace ColorVision.Solution
                 MessageBox.Show("工程名不能包含特殊字符", "ColorVision");
                 return;
             }
-
+            if (!Directory.Exists(NewCreateViewMode.DirectoryPath))
+            {
+                if (MessageBox.Show("不存在父目录，是否创建", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                {
+                    Directory.CreateDirectory(NewCreateViewMode.DirectoryPath);
+                }
+                else
+                {
+                    this.Close();
+                    return;
+                }
+            }
 
             if (Directory.Exists(SolutionDirectoryPath))
             {

@@ -100,7 +100,7 @@ namespace ColorVision
         {
             if (button.Content.ToString() != Content)
             {
-                Clipboard.SetText(TextBoxSn.Text);
+                NativeMethods.Clipboard.SetText(TextBoxSn.Text);
                 var temp = button.Content;
                 button.Content = Content;
                 await Task.Delay(1000);
