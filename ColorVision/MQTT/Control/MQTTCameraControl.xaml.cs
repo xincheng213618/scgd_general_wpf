@@ -16,10 +16,11 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace ColorVision
+namespace ColorVision.MQTT.Control
 {
+
     /// <summary>
-    /// MQTTCameraControl.xaml 的交互逻辑
+    /// 根据服务的MQTT相机
     /// </summary>
     public partial class MQTTCameraControl : UserControl
     {
@@ -71,7 +72,7 @@ namespace ColorVision
             CameraCloseButton.Visibility = Visibility.Collapsed;
             CameraOpenButton.Visibility = Visibility.Collapsed;
 
-            MQTTCamera.InitCameraSuccess += (s, e) =>
+            MQTTCamera.InitCameraSuccess += (s) =>
             {
                 ComboxCameraID.ItemsSource = MQTTCamera.CameraIDList?.IDs;
                 ComboxCameraID.SelectedIndex = 0;
@@ -80,13 +81,13 @@ namespace ColorVision
                 CameraCloseButton.Visibility = Visibility.Collapsed;
                 CamerInitButton.Content = "断开初始化";
             };
-            MQTTCamera.OpenCameraSuccess += (s, e) =>
+            MQTTCamera.OpenCameraSuccess += (s) =>
             {
                 CameraCloseButton.Visibility = Visibility.Visible;
                 CameraOpenButton.Visibility = Visibility.Collapsed;
                 StackPanelImage.Visibility = Visibility.Visible;
             };
-            MQTTCamera.CloseCameraSuccess += (s, e) =>
+            MQTTCamera.CloseCameraSuccess += (s) =>
             {
                 CameraCloseButton.Visibility = Visibility.Collapsed;
                 CameraOpenButton.Visibility = Visibility.Visible;

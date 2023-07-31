@@ -34,6 +34,7 @@ using HandyControl.Expression.Shapes;
 using Microsoft.Win32;
 using log4net;
 using System.Security.RightsManagement;
+using ColorVision.MQTT.Control;
 
 namespace ColorVision
 {
@@ -923,7 +924,7 @@ namespace ColorVision
             if (sender is StackPanel stackPanel)
             {
                 
-                MQTTCameraControl mQTTCameraControl = new MQTTCameraControl(MQTTManager.GetInstance().MQTTCameras[0].Value);
+                MQTTCameraControl1 mQTTCameraControl = new MQTTCameraControl1(MQTTManager.GetInstance().MQTTCameras[0].Value);
                 stackPanel.Children.Add(mQTTCameraControl);
                 MQTTCameraControl mQTTCameraControl1 = new MQTTCameraControl(MQTTManager.GetInstance().MQTTCameras[1].Value);
                 stackPanel.Children.Add(mQTTCameraControl1);
@@ -938,7 +939,6 @@ namespace ColorVision
         {
             if (sender is StackPanel stackPanel)
             {
-
                 MQTTPGControl Control = new MQTTPGControl(MQTTManager.GetInstance().MQTTPGs[0].Value);
                 stackPanel.Children.Add(Control);
             }

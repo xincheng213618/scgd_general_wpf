@@ -7,7 +7,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision
+namespace ColorVision.MQTT.Control
 {
     /// <summary>
     /// MQTTPGControl.xaml 的交互逻辑

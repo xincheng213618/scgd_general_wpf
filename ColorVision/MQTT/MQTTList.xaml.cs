@@ -57,6 +57,7 @@ namespace ColorVision.MQTT
                         Formatting = Formatting.Indented
                     }; 
                     string text = JsonConvert.SerializeObject(msgReturn, settings);
+                    NativeMethods.Clipboard.SetText(text);
                     MessageBox.Show(text, "ColorVision");
                 }
                 else if (stackPanel.Tag is MsgSend msgSend)
@@ -66,6 +67,7 @@ namespace ColorVision.MQTT
                         Formatting = Formatting.Indented
                     };
                     string text = JsonConvert.SerializeObject(msgSend, settings);
+                    NativeMethods.Clipboard.SetText(text);
                     MessageBox.Show(text, "ColorVision");
 
                 }
@@ -99,6 +101,7 @@ namespace ColorVision.MQTT
                     Formatting = Formatting.Indented
                 };
                 string text = JsonConvert.SerializeObject(msgRecord.MsgSend, settings);
+                NativeMethods.Clipboard.SetText(text);
                 MessageBox.Show(text, "ColorVision");
             }
 
@@ -108,12 +111,13 @@ namespace ColorVision.MQTT
         {
             if (sender is MenuItem menuItem && menuItem.Tag is MsgRecord msgRecord)
             {
-                    JsonSerializerSettings settings = new JsonSerializerSettings
-                    {
-                        Formatting = Formatting.Indented
-                    };
-                    string text = JsonConvert.SerializeObject(msgRecord.MsgReturn, settings);
-                    MessageBox.Show(text, "ColorVision");
+                JsonSerializerSettings settings = new JsonSerializerSettings
+                {
+                    Formatting = Formatting.Indented
+                };
+                string text = JsonConvert.SerializeObject(msgRecord.MsgReturn, settings);
+                NativeMethods.Clipboard.SetText(text);
+                MessageBox.Show(text, "ColorVision");
             }
         }
 

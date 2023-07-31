@@ -100,6 +100,9 @@ namespace ColorVision.MQTT
         { 
         }
 
+        public string SubscribeTopic { get; set; }
+        public string SendTopic { get; set; }
+
         public string CameraID { get => _CameraID; set { _CameraID = value;  NotifyPropertyChanged(); } }
         private string _CameraID;
         public CameraType CameraType { get; set; }
@@ -113,13 +116,15 @@ namespace ColorVision.MQTT
 
     public delegate void MQTTCameraFileHandler(string? FilePath);
 
+
+
     public class MQTTCamera :BaseService
     {
         public event MQTTCameraFileHandler FileHandler;
-        public event EventHandler InitCameraSuccess;
-        public event EventHandler OpenCameraSuccess;
-        public event EventHandler CloseCameraSuccess;
-        public event EventHandler UnInitCameraSuccess;
+        public event MsgReturnHandler InitCameraSuccess;
+        public event MsgReturnHandler OpenCameraSuccess;
+        public event MsgReturnHandler CloseCameraSuccess;
+        public event MsgReturnHandler UnInitCameraSuccess;
 
         public CameraConfig CameraConfig { get; set; }
 
@@ -128,12 +133,24 @@ namespace ColorVision.MQTT
 
         public MQTTCamera(string NickName = "相机1",string SendTopic = "Camera/CMD/0", string SubscribeTopic = "Camera/STATUS/0") : base()
         {
+            CameraConfig = new CameraConfig();
+            CameraConfig.SendTopic = SendTopic;
+            CameraConfig.SubscribeTopic = SubscribeTopic;
+
             this.NickName = NickName;
             this.SendTopic = SendTopic;
             this.SubscribeTopic = SubscribeTopic;
             MQTTControl.SubscribeCache(SubscribeTopic);
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
-            CameraConfig = new CameraConfig();
+        }
+
+        public MQTTCamera(CameraConfig CameraConfig)
+        {
+            this.CameraConfig = CameraConfig;
+            this.SendTopic = CameraConfig.SendTopic;
+            this.SubscribeTopic = CameraConfig.SubscribeTopic;
+            MQTTControl.SubscribeCache(SubscribeTopic);
+            MsgReturnReceived += MQTTCamera_MsgReturnChanged;
         }
 
         public List<string> MD5 { get; set; } = new List<string>();
@@ -158,19 +175,19 @@ namespace ColorVision.MQTT
                         string CameraId = msg.Data.CameraId;
                         ServiceID = msg.ServiceID;
                         CameraIDList = JsonConvert.DeserializeObject<CameraIDList>(CameraId);
-                        Application.Current.Dispatcher.Invoke(() => InitCameraSuccess.Invoke(this, new EventArgs()));
+                        Application.Current.Dispatcher.Invoke(() => InitCameraSuccess.Invoke(msg));
                         break;
                     case "Uninit":
-                        Application.Current.Dispatcher.Invoke(() => UnInitCameraSuccess.Invoke(this, new EventArgs()));
+                        Application.Current.Dispatcher.Invoke(() => UnInitCameraSuccess.Invoke(msg));
                         break;
                     case "SetParam":
                         MessageBox.Show("SetParam");
                         break;
                     case "Close":
-                        Application.Current.Dispatcher.Invoke(() => CloseCameraSuccess.Invoke(this, new EventArgs()));
+                        Application.Current.Dispatcher.Invoke(() => CloseCameraSuccess.Invoke(msg));
                         break;
                     case "Open":
-                        Application.Current.Dispatcher.Invoke(() => OpenCameraSuccess.Invoke(this, new EventArgs()));
+                        Application.Current.Dispatcher.Invoke(() => OpenCameraSuccess.Invoke(msg));
                         break;
                     case "GatData":
                         string Filepath = msg.Data.FilePath;
@@ -191,13 +208,13 @@ namespace ColorVision.MQTT
                         MessageBox.Show("取图失败");
                         break;
                     case "Close":
-                        Application.Current.Dispatcher.Invoke(() => CloseCameraSuccess.Invoke(this, new EventArgs()));
+                        Application.Current.Dispatcher.Invoke(() => CloseCameraSuccess.Invoke(msg));
                         break;
                     case "Open":
                         MessageBox.Show("没有许可证");
                         break;
                     case "Uninit":
-                        Application.Current.Dispatcher.Invoke(() => UnInitCameraSuccess.Invoke(this, new EventArgs()));
+                        Application.Current.Dispatcher.Invoke(() => UnInitCameraSuccess.Invoke(msg));
                         break;
                     default:
                         MessageBox.Show("相机操作失败");
