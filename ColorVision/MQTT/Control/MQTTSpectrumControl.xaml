@@ -1,0 +1,55 @@
+﻿<UserControl x:Class="ColorVision.MQTT.Control.MQTTSpectrumControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ColorVision.MQTT.Control" xmlns:hc="https://handyorg.github.io/handycontrol"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="300">
+    
+    <StackPanel Margin="0,5" x:Name="StackPanelSpectrum"  Initialized="StackPanelSpectrum_Initialized">
+        <ToggleButton  x:Name="ToggleButton3"  Style="{StaticResource ButtonPageControl1}" Background="#F9F9F9"   Content="光谱仪操作"  FontSize="15" Foreground="Black" IsChecked="True" />
+        <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton3,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
+            <StackPanel Margin="5">
+                <DockPanel>
+                    <TextBlock  Text="AveNum" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                    <hc:PreviewSlider x:Name="SpectrumSliderAveNum"  TickFrequency ="0.1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="1" Maximum="100">
+                        <hc:PreviewSlider.PreviewContent>
+                            <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0.00"/>
+                        </hc:PreviewSlider.PreviewContent>
+                        </hc:PreviewSlider>
+                </DockPanel>
+                <DockPanel>
+                    <TextBlock  Text="积分时间" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                    <hc:PreviewSlider x:Name="SpectrumSliderIntTime"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="100" Maximum="6000">
+                        <hc:PreviewSlider.PreviewContent>
+                            <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0.00"/>
+                        </hc:PreviewSlider.PreviewContent>
+                    </hc:PreviewSlider>
+                </DockPanel>
+                <GroupBox Header="DLL Test">
+                    <StackPanel Visibility="Visible">
+                        <UniformGrid Columns="3">
+                            <Button Content="连接光谱仪" Click="SpectrumIni" />
+                            <Button Content="单次校0" Click="Spectrum0" />
+                            <Button Content="单次测试" Click="SpectrumSingleTest" />
+                        </UniformGrid>
+                    </StackPanel>
+                </GroupBox>
+                <GroupBox Header="MQTT Test">
+                    <StackPanel Visibility="Visible">
+                        <UniformGrid Columns="2">
+                            <Button  Content="初始化" Click="Button_Click_1"/>
+                            <Button  Content="打开" Click="Button_Click_2"/>
+                            <Button  Content="关闭" Click="Button_Click_5"/>
+                            <Button  Content="单次获取数据"  Click="Button_Click_4"/>
+
+                        </UniformGrid>
+
+                    </StackPanel>
+                </GroupBox>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+
+</UserControl>

@@ -944,6 +944,15 @@ namespace ColorVision
             }
           
         }
+
+        private void StackPanelMQTTSpectrums_Initialized(object sender, EventArgs e)
+        {
+            if (sender is StackPanel stackPanel)
+            {
+                MQTTSpectrumControl Control = new MQTTSpectrumControl(MQTTManager.GetInstance().MQTTSpectrums[0].Value);
+                stackPanel.Children.Add(Control);
+            }
+        }
     }
 
     public class ImageInfo : ViewModelBase

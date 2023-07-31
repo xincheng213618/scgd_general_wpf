@@ -141,44 +141,10 @@
                                 </StackPanel>
                             </Border>
                         </StackPanel>
+                        <StackPanel x:Name="StackPanelMQTTSpectrums" Initialized="StackPanelMQTTSpectrums_Initialized">
 
-                        <StackPanel Margin="0,5" x:Name="StackPanelSpectrum"  Initialized="StackPanelSpectrum_Initialized">
-                            <ToggleButton  x:Name="ToggleButton3"  Style="{StaticResource ButtonPageControl1}" Background="#F9F9F9"  Content="光谱仪操作"  FontSize="15" Foreground="Black" IsChecked="False" />
-                            <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton3,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
-                                <StackPanel Margin="5">
-                                    <DockPanel>
-                                        <TextBlock  Text="AveNum" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
-                                        <Slider x:Name="SpectrumSliderAveNum"  Template="{ StaticResource LM_SliderControlTemplate2}" TickFrequency ="0.1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="1" Maximum="100"/>
-                                    </DockPanel>
-                                    <DockPanel>
-                                        <TextBlock  Text="积分时间" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
-                                        <Slider x:Name="SpectrumSliderIntTime"  Template="{ StaticResource LM_SliderControlTemplate2}" TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="100" Maximum="6000"/>
-                                    </DockPanel>
-
-                                    <GroupBox Header="DLL Test">
-                                        <StackPanel Visibility="Visible">
-                                            <UniformGrid Columns="3">
-                                                <Button Content="连接光谱仪" Click="SpectrumIni" />
-                                                <Button Content="单次校0" Click="Spectrum0" />
-                                                <Button Content="单次测试" Click="SpectrumSingleTest" />
-                                            </UniformGrid>
-                                        </StackPanel>
-                                    </GroupBox>
-                                    <GroupBox Header="MQTT Test">
-                                        <StackPanel Visibility="Visible">
-                                            <UniformGrid Columns="2">
-                                                <Button  Content="初始化" Click="Button_Click_1"/>
-                                                <Button  Content="打开" Click="Button_Click_2"/>
-                                                <Button  Content="关闭" Click="Button_Click_5"/>
-                                                <Button  Content="单次获取数据"  Click="Button_Click_4"/>
-
-                                            </UniformGrid>
-
-                                        </StackPanel>
-                                    </GroupBox>
-                                </StackPanel>
-                            </Border>
                         </StackPanel>
+
 
                         <StackPanel Margin="0,5">
                             <ToggleButton  x:Name="ToggleButton4"  Style="{StaticResource ButtonPageControl1}" Background="#F9F9F9"  Content="源表设置"  FontSize="15" Foreground="Black" IsChecked="True" />
