@@ -23,16 +23,19 @@
                 <Border x:Name="ListViewMySqlBorder" Background="#F9F9F9"  BorderBrush="#EAEAEA" BorderThickness="1" Visibility="Collapsed" Width="170"  Margin="5" CornerRadius="10,10,5,5">
                     <Grid>
                         <ListView x:Name="ListViewMySql"  Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" SelectionChanged="ListView1_SelectionChanged">
+                            <ListView.Resources >
+                                <ContextMenu x:Key="ContextMenuItem">
+                                    <MenuItem Header="删除"  Click="MenuItem_Click_Delete" Tag="{Binding .}" />
+                                </ContextMenu>
+                            </ListView.Resources>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}">
+                                    <Setter Property="ContextMenu" Value="{StaticResource ContextMenuItem}"/>
+                                </Style>
+                            </ListView.ItemContainerStyle>
                             <ListView.ItemTemplate>
                                 <DataTemplate DataType="{x:Type setting:MySqlConfig}" >
-                                    <Border>
-                                        <Border.ContextMenu>
-                                            <ContextMenu>
-                                                <MenuItem  Header="删除" Click="MenuItem_Click_Delete" Tag="{Binding .}"/>
-                                            </ContextMenu>
-                                        </Border.ContextMenu>
-                                        <TextBlock  Text="{Binding Name}" TextTrimming = "CharacterEllipsis"/>
-                                    </Border>
+                                    <TextBlock  Text="{Binding Name}" TextTrimming = "CharacterEllipsis"/>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </ListView>

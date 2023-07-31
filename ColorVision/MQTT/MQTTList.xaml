@@ -15,7 +15,7 @@
                 </ContextMenu>
             </ListView.Resources>
             <ListView.ItemContainerStyle>
-                <Style TargetType="{x:Type ListViewItem}">
+                <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}">
                     <Setter Property="ContextMenu" Value="{StaticResource ContextMenuItem}"/>
                 </Style>
             </ListView.ItemContainerStyle>
@@ -28,7 +28,6 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-
                     <GridViewColumn  Header="SendTime">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:MsgRecord}">
