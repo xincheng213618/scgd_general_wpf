@@ -5,13 +5,16 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.MQTT"
         mc:Ignorable="d"
-        Title="MQTTList" Height="450" Width="1280" Initialized="Window_Initialized">
+        Title="MQTT记录测试窗口(仅供测试)" Height="450" Width="1280" Initialized="Window_Initialized">
     <Grid>
         <ListView  x:Name="ListView1"  Background="White" ScrollViewer.HorizontalScrollBarVisibility="Auto"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback">
             <ListView.Resources >
                 <ContextMenu x:Key="ContextMenuItem">
-                    <MenuItem Header="ReSend"  Click="MenuItem_Click" Tag="{Binding .}" />
-                    <MenuItem Header="ReRecive"  Click="MenuItem_Click1" Tag="{Binding .}"  />
+                    <MenuItem Header="模拟发送"  Click="MenuItem_Click" Tag="{Binding .}" />
+                    <MenuItem Header="模拟接受"  Click="MenuItem_Click1" Tag="{Binding .}"  />
+                    <MenuItem Header="查看发送数据"  Click="MenuItem_Click2" Tag="{Binding .}"  />
+                    <MenuItem Header="查看接受数据"  Click="MenuItem_Click3" Tag="{Binding .}"  />
+                    <MenuItem Header="删除"  Click="MenuItem_Click4" Tag="{Binding .}"  />
                 </ContextMenu>
             </ListView.Resources>
             <ListView.ItemContainerStyle>
@@ -25,6 +28,13 @@
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:MsgRecord}">
                                 <TextBlock Text="{ Binding  MsgSend.ServiceName,StringFormat=yyyy/MM/dd HH:mm:ss}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="EventName">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:MsgRecord}">
+                                <TextBlock Text="{ Binding  MsgSend.EventName,StringFormat=yyyy/MM/dd HH:mm:ss}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>

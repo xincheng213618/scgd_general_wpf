@@ -68,32 +68,60 @@ namespace ColorVision.MQTT
                     string text = JsonConvert.SerializeObject(msgSend, settings);
                     MessageBox.Show(text, "ColorVision");
 
-
                 }
             }
         }
 
         private void MenuItem_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is MenuItem menuItem)
+            if (sender is MenuItem menuItem && menuItem.Tag is MsgRecord msgRecord)
             {
-                if (menuItem.Tag is MsgRecord msgRecord)
-                {
-                    string json = JsonConvert.SerializeObject(msgRecord.MsgSend, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-                    Task.Run(() => MQTTControl.PublishAsyncClient(msgRecord.SendTopic, json, false));
-                }
+                string json = JsonConvert.SerializeObject(msgRecord.MsgSend, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+                Task.Run(() => MQTTControl.PublishAsyncClient(msgRecord.SendTopic, json, false));
             }
         }
 
         private void MenuItem_Click1(object sender, RoutedEventArgs e)
         {
-            if (sender is MenuItem menuItem)
+            if (sender is MenuItem menuItem && menuItem.Tag is MsgRecord msgRecord)
             {
-                if (menuItem.Tag is MsgRecord msgRecord)
+                string json = JsonConvert.SerializeObject(msgRecord.MsgReturn, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+                Task.Run(() => MQTTControl.PublishAsyncClient(msgRecord.SubscribeTopic, json, false));
+            }
+        }
+
+        private void MenuItem_Click2(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Tag is MsgRecord msgRecord)
+            {
+                JsonSerializerSettings settings = new JsonSerializerSettings
                 {
-                    string json = JsonConvert.SerializeObject(msgRecord.MsgReturn, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-                    Task.Run(() => MQTTControl.PublishAsyncClient(msgRecord.SubscribeTopic, json, false));
-                }
+                    Formatting = Formatting.Indented
+                };
+                string text = JsonConvert.SerializeObject(msgRecord.MsgSend, settings);
+                MessageBox.Show(text, "ColorVision");
+            }
+
+        }
+
+        private void MenuItem_Click3(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Tag is MsgRecord msgRecord)
+            {
+                    JsonSerializerSettings settings = new JsonSerializerSettings
+                    {
+                        Formatting = Formatting.Indented
+                    };
+                    string text = JsonConvert.SerializeObject(msgRecord.MsgReturn, settings);
+                    MessageBox.Show(text, "ColorVision");
+            }
+        }
+
+        private void MenuItem_Click4(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Tag is MsgRecord msgRecord)
+            {
+                MsgRecords.Remove(msgRecord);
             }
         }
     }

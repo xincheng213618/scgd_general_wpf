@@ -16,7 +16,7 @@
 
     <StackPanel x:Name="StackPanelCamera" d:DataContext="{d:DesignInstance mqtt:MQTTCamera}" Margin="0,5"  Initialized="StackPanelCamera_Initialized">
         <ToggleButton  x:Name="ToggleButton1"  Style="{StaticResource ButtonPageControl1}" Background="#F9F9F9" Content="相机设置"  FontSize="15" Foreground="Black" IsChecked="True" />
-        <Border Style="{DynamicResource BorderModuleArea}" IsEnabled="{Binding IsAlive}"   Visibility="{Binding ElementName=ToggleButton1,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
+        <Border Style="{DynamicResource BorderModuleArea}"   Visibility="{Binding ElementName=ToggleButton1,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="5">
                 <DockPanel Margin="5">
                     <Label Content="相机类型："/>
@@ -58,11 +58,11 @@
                 <StackPanel x:Name="StackPanelImage">
                     <DockPanel>
                         <TextBlock  Text="增益" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0" />
-                        <Slider x:Name="SliderGain" Template="{ StaticResource LM_SliderControlTemplate2}" TickFrequency ="0.1" IsSnapToTickEnabled="True"  SmallChange ="0.1" Value="1" Maximum="10"  />
+                        <Slider x:Name="SliderGain"  Style="{StaticResource SliderBaseStyle}" TickFrequency ="0.1" IsSnapToTickEnabled="True"  SmallChange ="0.1" Value="1" Maximum="10"  />
                     </DockPanel>
                     <DockPanel>
                         <TextBlock  Text="曝光" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
-                        <Slider x:Name="SliderexpTime"  Template="{ StaticResource LM_SliderControlTemplate2}" TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="100" Maximum="6000"/>
+                        <Slider x:Name="SliderexpTime"  Style="{StaticResource SliderBaseStyle}" TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="100" Maximum="6000"/>
                     </DockPanel>
                     <Button Content="设置自动曝光" Click="SendDemo5_Click"/>
                     <Button Content="取图" Click="SendDemo3_Click"/>

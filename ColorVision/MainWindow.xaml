@@ -12,6 +12,7 @@
         xmlns:SettingUp ="clr-namespace:ColorVision.SettingUp"
         xmlns:converter="clr-namespace:ColorVision.Converter"
         xmlns:hc="https://handyorg.github.io/handycontrol"
+        xmlns:co="clr-namespace:ColorVision.Controls"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:MainWindow}"
         Title="ColorVision" Height="720" Width="1280"  Initialized="Window_Initialized">
@@ -21,6 +22,19 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
+        <Grid x:Name="WaitControl" Grid.Row="0" Grid.RowSpan="3" Panel.ZIndex="9" Visibility="Collapsed">
+            <Grid   Background="Black"  Opacity="0.3"/>
+            <Border   Background="#F9F9F9"  Height="250" Width="250"  CornerRadius="10">
+                <Border Background="#F3F3F3" BorderBrush="#EAEAEA" BorderThickness="1" CornerRadius="5" Margin="5">
+                    <Grid>
+                        <co:ProgressRing  BorderBrush="Red" Margin="30" />
+                        <TextBlock x:Name="WaitControlText" Text="正在计算" HorizontalAlignment="Center" FontSize="16"/>
+                        <ProgressBar x:Name="WaitControlProgressBar" Visibility="Collapsed" BorderThickness="0"  Maximum="100" Minimum="0"  Height="20" Margin="5" VerticalAlignment="Bottom" />
+                    </Grid>
+                </Border>
+
+            </Border>
+        </Grid>
         <Grid Grid.Row="0">
             <Menu x:Name="Menu1" Height ="24" Background="#F3F3F3"  Initialized="Menu_Initialized">
                 <MenuItem x:Name="FileMenuItem" Header="文件(_F)">
