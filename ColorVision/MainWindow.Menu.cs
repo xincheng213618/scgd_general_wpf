@@ -88,7 +88,8 @@ namespace ColorVision
                         ResourceAbb(windowResource, TemplateControl.ServiceParams);
                         break;
                     case "MeasureParm":
-                        windowTemplate = new WindowTemplate(WindowTemplateType.MeasureParm, new UserControl()) { Title = "测量设置" };
+                        MeasureParamControl measure = new MeasureParamControl();
+                        windowTemplate = new WindowTemplate(WindowTemplateType.MeasureParm, measure) { Title = "测量设置" };
                         TemplateControl.LoadMeasureParams();
                         TemplateAbb(windowTemplate, TemplateControl.MeasureParams);
                         break;

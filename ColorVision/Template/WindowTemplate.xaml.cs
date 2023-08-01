@@ -162,7 +162,7 @@ namespace ColorVision.Template
         public ObservableCollection<ListConfig> ListConfigs { get; set; } = new ObservableCollection<ListConfig>();
         private void Window_Initialized(object sender, EventArgs e)
         {
-            ListConfigs = new ObservableCollection<ListConfig>();
+            //ListConfigs = new ObservableCollection<ListConfig>();
             ListView1.ItemsSource = ListConfigs;
         }
 
@@ -223,6 +223,17 @@ namespace ColorVision.Template
                             pg.PGParam = pGparam;
                         }
                         break;
+                    case WindowTemplateType.MeasureParm:
+                        if (UserControl is MeasureParamControl mpc && ListConfigs[listView.SelectedIndex].Value is MeasureParam mp)
+                        {
+                            List<MeasureDetailModel> des = TemplateControl.LoadMeasureDetail(mp.ID);
+                            mpc.ListConfigs.Clear();
+                            foreach (MeasureDetailModel model in des)
+                            {
+                                mpc.ListConfigs.Add(new MParamConfig(model));
+                            }
+                        }
+                        break;
 
                 }
             }
@@ -272,6 +283,11 @@ namespace ColorVision.Template
                         FlowParam? flowParam = TemplateControl.AddFlowParam(TextBox1.Text);
                         if (flowParam != null) CreateNewTemplate(TemplateControl.FlowParams, TextBox1.Text, flowParam);
                         else MessageBox.Show("数据库创建流程模板失败");
+                    break;
+                case WindowTemplateType.MeasureParm:
+                    MeasureParam? measureParam = TemplateControl.AddMeasureParam(TextBox1.Text);
+                    if (measureParam != null) CreateNewTemplate(TemplateControl.MeasureParams, TextBox1.Text, measureParam);
+                    else MessageBox.Show("数据库创建流程模板失败");
                     break;
             }
         }
