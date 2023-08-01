@@ -1,4 +1,5 @@
 ﻿using HslCommunication;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -11,6 +12,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
@@ -50,13 +52,80 @@ namespace ColorVision.MQTT
             {
                 if (stackPanel.Tag is MsgReturn msgReturn)
                 {
-                    MessageBox.Show(JsonSerializer.Serialize(msgReturn, new JsonSerializerOptions() { WriteIndented = true }),"ColorVision");
+                    JsonSerializerSettings settings = new JsonSerializerSettings
+                    {
+                        Formatting = Formatting.Indented
+                    }; 
+                    string text = JsonConvert.SerializeObject(msgReturn, settings);
+                    NativeMethods.Clipboard.SetText(text);
+                    MessageBox.Show(text, "ColorVision");
                 }
                 else if (stackPanel.Tag is MsgSend msgSend)
                 {
-                    MessageBox.Show(JsonSerializer.Serialize(msgSend, new JsonSerializerOptions() { WriteIndented = true }), "ColorVision");
+                    JsonSerializerSettings settings = new JsonSerializerSettings
+                    {
+                        Formatting = Formatting.Indented
+                    };
+                    string text = JsonConvert.SerializeObject(msgSend, settings);
+                    NativeMethods.Clipboard.SetText(text);
+                    MessageBox.Show(text, "ColorVision");
 
                 }
+            }
+        }
+
+        private void MenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Tag is MsgRecord msgRecord)
+            {
+                string json = JsonConvert.SerializeObject(msgRecord.MsgSend, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+                Task.Run(() => MQTTControl.PublishAsyncClient(msgRecord.SendTopic, json, false));
+            }
+        }
+
+        private void MenuItem_Click1(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Tag is MsgRecord msgRecord)
+            {
+                string json = JsonConvert.SerializeObject(msgRecord.MsgReturn, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+                Task.Run(() => MQTTControl.PublishAsyncClient(msgRecord.SubscribeTopic, json, false));
+            }
+        }
+
+        private void MenuItem_Click2(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Tag is MsgRecord msgRecord)
+            {
+                JsonSerializerSettings settings = new JsonSerializerSettings
+                {
+                    Formatting = Formatting.Indented
+                };
+                string text = JsonConvert.SerializeObject(msgRecord.MsgSend, settings);
+                NativeMethods.Clipboard.SetText(text);
+                MessageBox.Show(text, "ColorVision");
+            }
+
+        }
+
+        private void MenuItem_Click3(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Tag is MsgRecord msgRecord)
+            {
+                JsonSerializerSettings settings = new JsonSerializerSettings
+                {
+                    Formatting = Formatting.Indented
+                };
+                string text = JsonConvert.SerializeObject(msgRecord.MsgReturn, settings);
+                NativeMethods.Clipboard.SetText(text);
+                MessageBox.Show(text, "ColorVision");
+            }
+        }
+
+        private void MenuItem_Click4(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Tag is MsgRecord msgRecord)
+            {
+                MsgRecords.Remove(msgRecord);
             }
         }
     }

@@ -1,17 +1,9 @@
-﻿using ColorVision.Extension;
-using ColorVision.MQTT;
+﻿using ColorVision.MQTT;
 using ColorVision.MVVM;
-using OpenCvSharp;
+using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
-using System.Windows;
 
 namespace ColorVision.SettingUp
 {
@@ -19,8 +11,8 @@ namespace ColorVision.SettingUp
     {
         public MQTTSetting()
         {
-            if (File.Exists(GlobalConst.MQTTMsgRecordsFileName))
-                MsgRecords = JsonSerializer.Deserialize<ObservableCollection<MsgRecord>>(File.ReadAllText(GlobalConst.MQTTMsgRecordsFileName), new JsonSerializerOptions()) ?? new ObservableCollection<MsgRecord>();
+            if (File.Exists(GlobalConst.MQTTMsgRecordsFileName)) 
+                MsgRecords = Newtonsoft.Json.JsonConvert.DeserializeObject<ObservableCollection<MsgRecord>>(File.ReadAllText(GlobalConst.MQTTMsgRecordsFileName)) ??  new ObservableCollection<MsgRecord>(); 
             else
                 MsgRecords = new ObservableCollection<MsgRecord>();
             MsgRecords.CollectionChanged += (s, e) =>
@@ -34,11 +26,15 @@ namespace ColorVision.SettingUp
                     {
                         MsgRecords.RemoveAt(MsgRecords.Count-1); // 移除第一个元素
                     }
-                }
+                }  
             };
             AppDomain.CurrentDomain.ProcessExit += (s, e) =>
             {
-                string jsonString = JsonSerializer.Serialize(MsgRecords, new JsonSerializerOptions() { WriteIndented = true });
+                JsonSerializerSettings settings = new JsonSerializerSettings
+                {
+                    Formatting = Formatting.Indented
+                };
+                string jsonString = JsonConvert.SerializeObject(MsgRecords, settings);
                 File.WriteAllText(GlobalConst.MQTTMsgRecordsFileName, jsonString);
             };
         }
@@ -63,7 +59,7 @@ namespace ColorVision.SettingUp
         public int CacheLength { get => _CacheLength; set { _CacheLength = value; NotifyPropertyChanged(); } }
         private int _CacheLength = 1000;
 
-        [JsonIgnore]
+        [System.Text.Json.Serialization.JsonIgnore]
         public ObservableCollection<MsgRecord> MsgRecords { get; set; }
     }
 

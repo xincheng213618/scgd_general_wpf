@@ -34,6 +34,7 @@ using HandyControl.Expression.Shapes;
 using Microsoft.Win32;
 using log4net;
 using System.Security.RightsManagement;
+using ColorVision.MQTT.Control;
 
 namespace ColorVision
 {
@@ -909,7 +910,7 @@ namespace ColorVision
             {
                 if (FlowTemplate.SelectedValue is FlowParam flowParam)
                 {
-                    string fileName = GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.GetFullFileName(flowParam.FileName);
+                    string fileName = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.GetFullFileName(flowParam.FileName?? string.Empty);
                     if (File.Exists(fileName))
                     {
                         loader.Load(fileName);
@@ -923,7 +924,8 @@ namespace ColorVision
         {
             if (sender is StackPanel stackPanel)
             {
-                MQTTCameraControl mQTTCameraControl = new MQTTCameraControl(MQTTManager.GetInstance().MQTTCameras[0].Value);
+                
+                MQTTCameraControl1 mQTTCameraControl = new MQTTCameraControl1(MQTTManager.GetInstance().MQTTCameras[0].Value);
                 stackPanel.Children.Add(mQTTCameraControl);
                 MQTTCameraControl mQTTCameraControl1 = new MQTTCameraControl(MQTTManager.GetInstance().MQTTCameras[1].Value);
                 stackPanel.Children.Add(mQTTCameraControl1);
@@ -932,6 +934,35 @@ namespace ColorVision
         private void SendDemo1_Click(object sender, RoutedEventArgs e)
         {
             //MQTTCamera.Calibration(Calibration1.CalibrationParam);
+        }
+
+        private void StackPanelMQTTPGs_Initialized(object sender, EventArgs e)
+        {
+            if (sender is StackPanel stackPanel)
+            {
+                MQTTPGControl Control = new MQTTPGControl(MQTTManager.GetInstance().MQTTPGs[0].Value);
+                stackPanel.Children.Add(Control);
+            }
+          
+        }
+
+        private void StackPanelMQTTSpectrums_Initialized(object sender, EventArgs e)
+        {
+            if (sender is StackPanel stackPanel)
+            {
+                MQTTSpectrumControl Control = new MQTTSpectrumControl(MQTTManager.GetInstance().MQTTSpectrums[0].Value);
+                stackPanel.Children.Add(Control);
+            }
+        }
+
+        private void StackPanelMQTTVIs_Initialized(object sender, EventArgs e)
+        {
+            if (sender is StackPanel stackPanel)
+            {
+                MQTTVISourceControl Control = new MQTTVISourceControl(MQTTManager.GetInstance().MQTTVISources[0].Value);
+                stackPanel.Children.Add(Control);
+            }
+            
         }
     }
 

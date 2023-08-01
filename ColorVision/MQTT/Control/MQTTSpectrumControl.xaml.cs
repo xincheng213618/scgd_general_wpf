@@ -1,78 +1,68 @@
-﻿using System;
+﻿using cvColorVision;
+using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.Json.Nodes;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
-using System.Windows.Forms.Integration;
-using System.Windows.Markup;
-using ColorVision.MQTT;
-using ColorVision.Template;
-using ColorVision.Util;
-using cvColorVision;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
 using static cvColorVision.GCSDLL;
 
-namespace ColorVision
+namespace ColorVision.MQTT.Control
 {
     /// <summary>
-    /// 光谱仪
+    /// MQTTSpectrumControl.xaml 的交互逻辑
     /// </summary>
-    public partial class MainWindow
+    public partial class MQTTSpectrumControl : UserControl
     {
-        private MQTTSpectrum MQTTSpectrum { get; set; }
-
+        public MQTTSpectrum Spectrum { get; set; }
+        public MQTTSpectrumControl(MQTTSpectrum spectrum)
+        {
+            this.Spectrum = spectrum;
+            InitializeComponent();
+        }
         private void StackPanelSpectrum_Initialized(object sender, EventArgs e)
         {
-            MQTTSpectrum = new MQTTSpectrum();
-            MQTTSpectrum.DataHandlerEvent += (e)=> 
+            Spectrum.DataHandlerEvent += (e) =>
             {
-                WindowSpectrum ??= new WindowSpectrum();
-                WindowSpectrum.Owner = this;
+                WindowSpectrum WindowSpectrum = new WindowSpectrum();
                 WindowSpectrum.Show();
                 WindowSpectrum.spectrumResult.SpectrumDrawPlot(e);
-            };
-            this.Closed += (s, e) =>
-            {
-                if (MQTTSpectrum.ServiceID != 0)
-                {
-                    MQTTSpectrum.Close();
-                    MQTTSpectrum.UnInit();
-                }
             };
         }
 
         #region MQTT
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            MQTTSpectrum.Init();
+            Spectrum.Init();
         }
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
-            MQTTSpectrum.Open();
+            Spectrum.Open();
         }
 
         private void Button_Click_3(object sender, RoutedEventArgs e)
         {
-            MQTTSpectrum.SetParam();
+            Spectrum.SetParam();
         }
 
         private void Button_Click_4(object sender, RoutedEventArgs e)
         {
-            MQTTSpectrum.GetData(100,1);
+            Spectrum.GetData(100, 1);
         }
 
         private void Button_Click_5(object sender, RoutedEventArgs e)
         {
-            MQTTSpectrum.Close();
-            MQTTSpectrum.UnInit();
+            Spectrum.Close();
+            Spectrum.UnInit();
         }
         #endregion
         #region Spectrum
@@ -141,7 +131,6 @@ namespace ColorVision
         {
             GCSDLL.CVOneTest(SpectrumData, (float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value, false, false);
             WindowSpectrum ??= new WindowSpectrum();
-            WindowSpectrum.Owner = this;
             WindowSpectrum.Show();
         }
 
@@ -165,5 +154,4 @@ namespace ColorVision
 
 
     }
-
 }

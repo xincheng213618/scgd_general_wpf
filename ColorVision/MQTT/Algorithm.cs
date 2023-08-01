@@ -15,7 +15,7 @@ namespace ColorVision.MQTT
             this.SubscribeTopic = SubscribeTopic;
             MQTTControl.SubscribeCache(SubscribeTopic);
             MQTTControl = MQTTControl.GetInstance();
-            MsgReturnChanged+= Algorithm_MsgReturnChanged;
+            MsgReturnReceived+= Algorithm_MsgReturnChanged;
         }
 
         private void Algorithm_MsgReturnChanged(MsgReturn msg)

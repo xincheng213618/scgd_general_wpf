@@ -4,20 +4,24 @@ using ColorVision.Template;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using static ColorVision.MQTT.MQTTPG;
+using System.Windows.Controls;
 
-namespace ColorVision
+namespace ColorVision.MQTT.Control
 {
     /// <summary>
-    /// PG操作
+    /// MQTTPGControl.xaml 的交互逻辑
     /// </summary>
-    public partial class MainWindow
+    public partial class MQTTPGControl : UserControl
     {
         private MQTTPG MQTTPG { get; set; }
 
+        public MQTTPGControl(MQTTPG pg)
+        {
+            MQTTPG = pg;
+            InitializeComponent();
+            this.DataContext = MQTTPG;
+        }
         private void StackPanelPG_Initialized(object sender, EventArgs e)
         {
             MQTTPG = MQTTManager.GetInstance().MQTTPGs.FirstOrDefault().Value;
@@ -33,25 +37,25 @@ namespace ColorVision
             };
             ComboxPGTemplate.SelectedIndex = 0;
 
-            ComboxPGType.ItemsSource = from e1 in Enum.GetValues(typeof(MQTTPG.PGType)).Cast<MQTTPG.PGType>()
-                                                    select new KeyValuePair<string,MQTTPG.PGType >(e1.ToDescription(),e1);
+            ComboxPGType.ItemsSource = from e1 in Enum.GetValues(typeof(PGType)).Cast<PGType>()
+                                       select new KeyValuePair<string, PGType>(e1.ToDescription(), e1);
             ComboxPGType.SelectedIndex = 0;
 
 
-            ComboxPGCommunicateType.ItemsSource = from e1 in Enum.GetValues(typeof(MQTTPG.CommunicateType)).Cast<MQTTPG.CommunicateType>()
-                                                       select new KeyValuePair<string,MQTTPG.CommunicateType>( e1.ToDescription(), e1);
+            ComboxPGCommunicateType.ItemsSource = from e1 in Enum.GetValues(typeof(CommunicateType)).Cast<CommunicateType>()
+                                                  select new KeyValuePair<string, CommunicateType>(e1.ToDescription(), e1);
             ComboxPGCommunicateType.SelectedIndex = 0;
             ComboxPGCommunicateType.SelectionChanged += (s, e) =>
             {
-                if (ComboxPGCommunicateType.SelectedItem is KeyValuePair<string, MQTTPG.CommunicateType> KeyValue && KeyValue.Value is MQTTPG.CommunicateType communicateType)
+                if (ComboxPGCommunicateType.SelectedItem is KeyValuePair<string, CommunicateType> KeyValue && KeyValue.Value is CommunicateType communicateType)
                 {
                     switch (communicateType)
                     {
                         case CommunicateType.Tcp:
-                            TextBlockPGIP.Text ="IP";
+                            TextBlockPGIP.Text = "IP";
                             TextBlockPGPort.Text = "Port";
                             break;
-                            case CommunicateType.Serial:
+                        case CommunicateType.Serial:
                             TextBlockPGIP.Text = "ComName";
                             TextBlockPGPort.Text = "BaudRate"; break;
                     }
@@ -64,9 +68,9 @@ namespace ColorVision
 
         private void PGInit(object sender, RoutedEventArgs e)
         {
-            if (ComboxPGType.SelectedItem is KeyValuePair<string, MQTTPG.PGType > KeyValue && KeyValue.Value is MQTTPG.PGType pGType)
+            if (ComboxPGType.SelectedItem is KeyValuePair<string, PGType> KeyValue && KeyValue.Value is PGType pGType)
             {
-                if (ComboxPGCommunicateType.SelectedItem is KeyValuePair<string, MQTTPG.CommunicateType> KeyValue1 && KeyValue1.Value is MQTTPG.CommunicateType communicateType)
+                if (ComboxPGCommunicateType.SelectedItem is KeyValuePair<string, CommunicateType> KeyValue1 && KeyValue1.Value is CommunicateType communicateType)
                 {
                     MQTTPG.Init(pGType, communicateType);
                 }
@@ -78,15 +82,15 @@ namespace ColorVision
         }
         private void PGOpen(object sender, RoutedEventArgs e)
         {
-            if (ComboxPGCommunicateType.SelectedItem is KeyValuePair<string, MQTTPG.CommunicateType> KeyValue1 && KeyValue1.Value is MQTTPG.CommunicateType communicateType)
+            if (ComboxPGCommunicateType.SelectedItem is KeyValuePair<string, CommunicateType> KeyValue1 && KeyValue1.Value is CommunicateType communicateType)
             {
                 int port;
-                if (!int.TryParse(TextBoxPGPort.Text,out port))
+                if (!int.TryParse(TextBoxPGPort.Text, out port))
                 {
                     MessageBox.Show("端口配置错误");
                     return;
                 }
-                
+
                 MQTTPG.Open(communicateType, TextBoxPGIP.Text, port);
             }
         }

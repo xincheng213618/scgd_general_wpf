@@ -9,30 +9,29 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Media.Media3D;
-using static cvColorVision.GCSDLL;
 
 namespace ColorVision.MQTT
 {
 
+    public enum PGType
+    {
+        [Description("GX09C_LCM")]
+        GX09CLCM,
+        [Description("SKYCODE")]
+        SKYCODE,
+    };
+
+    public enum CommunicateType
+    {
+        [Description("TCP")]
+        Tcp,
+        [Description("串口")]
+        Serial,
+    };
+
+
     public class MQTTPG: BaseService
     {
-        public enum PGType
-        {
-            [Description("GX09C_LCM")]
-            GX09CLCM,
-            [Description("SKYCODE")]
-            SKYCODE,
-        };
-
-        public enum CommunicateType
-        {
-            [Description("TCP")]
-            Tcp,
-            [Description("串口")]
-            Serial,
-        };
-
-
         public MQTTPG(string NickName = "PG1", string SendTopic = "PG", string SubscribeTopic = "PGService") : base()
         {
             this.NickName = NickName;

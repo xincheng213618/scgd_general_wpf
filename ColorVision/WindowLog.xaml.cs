@@ -68,7 +68,10 @@ namespace ColorVision
         private TextBox _textBox;
         protected override void Append(LoggingEvent loggingEvent)
         {
-            _textBox.AppendText(loggingEvent.RenderedMessage + Environment.NewLine);
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                _textBox.AppendText(loggingEvent.RenderedMessage + Environment.NewLine);
+            });
         }
     }
 }

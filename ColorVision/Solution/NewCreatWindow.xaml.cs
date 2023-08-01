@@ -22,8 +22,6 @@ namespace ColorVision.Solution
 {
     public class NewCreateViewMode : ViewModelBase
     {
-
-
         public RecentFileList RecentNewCreateCache { get; set; } = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\RecentNewCreateCache") };
 
         public NewCreateViewMode()
@@ -47,7 +45,7 @@ namespace ColorVision.Solution
 
 
             DirectoryPath = RecentNewCreateCacheList[0];
-            this.Name = NewCreateFileName(GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectControl.DefaultCreatName);
+            this.Name = NewCreateFileName(GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.SolutionSetting.DefaultCreatName);
             RecentNewCreateNameCacheList.Add(Name);
         }
 
@@ -122,6 +120,9 @@ namespace ColorVision.Solution
                 this.Close();
                 return;
             }
+
+
+
             string SolutionDirectoryPath = NewCreateViewMode.DirectoryPath + "\\" + NewCreateViewMode.Name;
 
 
@@ -130,7 +131,18 @@ namespace ColorVision.Solution
                 MessageBox.Show("工程名不能包含特殊字符", "ColorVision");
                 return;
             }
-
+            if (!Directory.Exists(NewCreateViewMode.DirectoryPath))
+            {
+                if (MessageBox.Show("不存在父目录，是否创建", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                {
+                    Directory.CreateDirectory(NewCreateViewMode.DirectoryPath);
+                }
+                else
+                {
+                    this.Close();
+                    return;
+                }
+            }
 
             if (Directory.Exists(SolutionDirectoryPath))
             {
@@ -159,7 +171,7 @@ namespace ColorVision.Solution
             if (sender is ComboBox comboBox && comboBox.SelectedIndex>-1)
             {
                 NewCreateViewMode.DirectoryPath = NewCreateViewMode.RecentNewCreateCacheList[comboBox.SelectedIndex];
-                NewCreateViewMode.Name = NewCreateViewMode.NewCreateFileName(GlobalSetting.GetInstance().SoftwareConfig.ProjectConfig.ProjectControl.DefaultCreatName);
+                NewCreateViewMode.Name = NewCreateViewMode.NewCreateFileName(GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.SolutionSetting.DefaultCreatName);
 
             }
         }
