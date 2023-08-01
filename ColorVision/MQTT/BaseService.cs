@@ -20,7 +20,10 @@ namespace ColorVision.MQTT
 
     public interface IServiceHeartbeat
     {
-        public string NickName { get; set; }
+        public string SubscribeTopic { get; set; }
+
+        public string SendTopic { get; set; }
+
 
         public DateTime LastAliveTime { get; set; }
 
@@ -202,8 +205,11 @@ namespace ColorVision.MQTT
         }
         private MsgRecordState _MsgRecordState { get; set; }
 
+        [JsonIgnore]
         public bool IsSend { get => MsgRecordState == MsgRecordState.Send; }
+        [JsonIgnore]
         public bool IsRecive { get => MsgRecordState == MsgRecordState.Success || MsgRecordState == MsgRecordState.Fail; }
+        [JsonIgnore]
         public bool IsTimeout { get => MsgRecordState == MsgRecordState.Timeout; }
 
     }

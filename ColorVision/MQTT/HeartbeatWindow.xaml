@@ -10,10 +10,10 @@
         <ListView  x:Name="ListView1" Background="White" Loaded="ListView1_Loaded"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback">
             <ListView.View>
                 <GridView >
-                    <GridViewColumn  Header="NickeName">
+                    <GridViewColumn  Header="SubscribeTopic">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:IServiceHeartbeat}">
-                                <TextBlock Text="{ Binding NickName}"/>
+                                <TextBlock Text="{ Binding SubscribeTopic}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
@@ -28,7 +28,7 @@
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:IServiceHeartbeat}">
                                 <DockPanel>
-                                    <TextBlock  Text="{ Binding LastAliveTime}" />
+                                    <TextBlock  Text="{ Binding LastAliveTime,StringFormat=yyyy-MM-dd HH:mm:ss}" />
                                 </DockPanel>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>

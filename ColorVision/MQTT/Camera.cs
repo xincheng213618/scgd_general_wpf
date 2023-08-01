@@ -167,7 +167,10 @@ namespace ColorVision.MQTT
                         JArray MD5ID = msg.Data.MD5ID;
                         foreach (var item in MD5ID)
                         {
-                            MD5.Add(item.ToString());
+                            if (!MD5.Contains(item.ToString()))
+                            {
+                                MD5.Add(item.ToString());
+                            }
                         }
                         //var CameraIDList = JsonConvert.DeserializeObject<cameralince>(CameraMD5);
                         break;
@@ -177,7 +180,7 @@ namespace ColorVision.MQTT
                         CameraIDList = JsonConvert.DeserializeObject<CameraIDList>(CameraId);
                         Application.Current.Dispatcher.Invoke(() => InitCameraSuccess.Invoke(msg));
                         break;
-                    case "Uninit":
+                    case "UnInit":
                         Application.Current.Dispatcher.Invoke(() => UnInitCameraSuccess.Invoke(msg));
                         break;
                     case "SetParam":
@@ -196,7 +199,7 @@ namespace ColorVision.MQTT
                     case "GetAutoExpTime":
                         break;
                     default:
-                        MessageBox.Show("未定义数据");
+                        MessageBox.Show("未定义EventName");
                         break;
                 }
             }
