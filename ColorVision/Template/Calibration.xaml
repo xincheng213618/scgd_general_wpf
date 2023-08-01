@@ -20,13 +20,13 @@
                 <TextBlock DockPanel.Dock="Left" Text="暗噪声" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="5,0,5,0" />
                 <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding SelectedDarkNoise}"   Margin="5,0"/>
                 <Button DockPanel.Dock="Right" Content="..." Click="Button_Click" Tag="DarkNoise" Width="40"  Margin="5,0"/>
-                <TextBox BorderThickness="1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding FileNameDarkNoise}" />
+                <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding FileNameDarkNoise}" />
             </DockPanel>
             <DockPanel  Margin="0,2">
                 <TextBlock DockPanel.Dock="Left" Text="DSNU" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="5,0,5,0" />
                 <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding SelectedDSNU}"   Margin="5,0"/>
                 <Button DockPanel.Dock="Right" Content="..." Click="Button_Click" Tag="DSNU" Width="40"  Margin="5,0"/>
-                <TextBox BorderThickness="1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding FileNameDSNU}" />
+                <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding FileNameDSNU}" />
             </DockPanel>
             <DockPanel  Margin="0,2">
                 <TextBlock DockPanel.Dock="Left" Text="缺陷点(亮)" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="5,0,5,0" />

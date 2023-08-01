@@ -953,6 +953,16 @@ namespace ColorVision
                 stackPanel.Children.Add(Control);
             }
         }
+
+        private void StackPanelMQTTVIs_Initialized(object sender, EventArgs e)
+        {
+            if (sender is StackPanel stackPanel)
+            {
+                MQTTVISourceControl Control = new MQTTVISourceControl(MQTTManager.GetInstance().MQTTVISources[0].Value);
+                stackPanel.Children.Add(Control);
+            }
+            
+        }
     }
 
     public class ImageInfo : ViewModelBase

@@ -1,7 +1,4 @@
-﻿using ColorVision.MQTT;
-using ColorVision.Template;
-using cvColorVision;
-using ScottPlot;
+﻿using ColorVision.Template;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -11,15 +8,30 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
 
-namespace ColorVision
+namespace ColorVision.MQTT.Control
 {
     /// <summary>
-    /// 滤色轮
+    /// MQTTVISourceControl.xaml 的交互逻辑
     /// </summary>
-    public partial class MainWindow
+    public partial class MQTTVISourceControl : UserControl
     {
+        private MQTTVISource MQTTVISource { get; set; }
+
+
+        public MQTTVISourceControl(MQTTVISource Source)
+        {
+            this.MQTTVISource = Source;
+            InitializeComponent();
+        }
+
         private void ButtonSourceMeter1_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
@@ -165,7 +177,8 @@ namespace ColorVision
             {
                 plt.SetAxisLimitsX(xMin, xMax);
                 plt.SetAxisLimitsY(yMin, yMax);
-            }catch  { }
+            }
+            catch { }
             new ScottPlot.WpfPlotViewer(plt).Show();
         }
 
@@ -199,7 +212,6 @@ namespace ColorVision
 
         PassSxSource passSxSource;
 
-        private MQTTVISource MQTTVISource { get; set; }
         private void StackPanelVI_Initialized(object sender, EventArgs e)
         {
             MQTTVISource = new MQTTVISource();
@@ -237,7 +249,5 @@ namespace ColorVision
         {
             MQTTVISource.GetData();
         }
-
-
     }
 }
