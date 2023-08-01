@@ -75,11 +75,11 @@ namespace ColorVision.Template
 
             switch (TemplateType)
             {
-                case WindowTemplateType.Devices:
+                case WindowTemplateType.Device:
                     List<SysResourceModel> res = TemplateControl.LoadAllServices();
                     res.ForEach(item => { ResourceTypes.Add(new ResourceTypeConfig(item.Name ?? string.Empty, item.Id,item.Type)); });
                     break;
-                case WindowTemplateType.Services:
+                case WindowTemplateType.Service:
                     List<SysDictionaryModel> svrs = TemplateControl.LoadServiceType();
                     svrs.ForEach(item => { ResourceTypes.Add(new ResourceTypeConfig(item.Name ?? string.Empty, item.Value)); });
                     break;
@@ -130,12 +130,12 @@ namespace ColorVision.Template
         {
             switch (TemplateType)
             {
-                case WindowTemplateType.Devices:
+                case WindowTemplateType.Device:
                     ResourceParam? paramDev = TemplateControl.AddDeviceParam(TextBox_Name.Text, TextBox_Code.Text, ((ResourceTypeConfig)TextBox_Type.SelectedItem).Type, ((ResourceTypeConfig)TextBox_Type.SelectedItem).Value);
                     if (paramDev != null) CreateNewTemplate(TemplateControl.DeviceParams, TextBox_Name.Text, paramDev);
                     else MessageBox.Show("数据库创建设备失败");
                     break;
-                case WindowTemplateType.Services:
+                case WindowTemplateType.Service:
                     ResourceParam? param = TemplateControl.AddServiceParam(TextBox_Name.Text, TextBox_Code.Text, ((ResourceTypeConfig)TextBox_Type.SelectedItem).Value);
                     if (param != null) CreateNewTemplate(TemplateControl.ServiceParams, TextBox_Name.Text, param);
                     else MessageBox.Show("数据库创建服务失败");
@@ -151,12 +151,12 @@ namespace ColorVision.Template
                 {
                     switch (TemplateType)
                     {
-                        case WindowTemplateType.Devices:
+                        case WindowTemplateType.Device:
                             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
                                 TemplateControl.ResourceDeleteById(TemplateControl.DeviceParams[ListView1.SelectedIndex].Value.ID);
                             TemplateControl.DeviceParams.RemoveAt(ListView1.SelectedIndex);
                             break;
-                        case WindowTemplateType.Services:
+                        case WindowTemplateType.Service:
                             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
                                 TemplateControl.ResourceDeleteById(TemplateControl.ServiceParams[ListView1.SelectedIndex].Value.ID);
                             TemplateControl.ServiceParams.RemoveAt(ListView1.SelectedIndex);

@@ -890,7 +890,8 @@ namespace ColorVision
                         }
                     };
                     flowControl.FlowCompleted += FlowControl_FlowCompleted;
-                    flowControl.Start();
+                    string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+                    flowControl.Start(sn);
                     window.Show();
                 }
                 else

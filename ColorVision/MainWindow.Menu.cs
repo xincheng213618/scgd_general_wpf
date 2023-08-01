@@ -77,15 +77,20 @@ namespace ColorVision
                         TemplateControl.LoadFlowParam();
                         TemplateAbb(windowTemplate, TemplateControl.FlowParams);
                         break;
-                    case "DeviceParams":
-                        windowResource = new WindowResource(WindowTemplateType.Devices, new UserControl()) { Title = "设备设置" };
+                    case "DeviceParam":
+                        windowResource = new WindowResource(WindowTemplateType.Device, new UserControl()) { Title = "设备设置" };
                         TemplateControl.LoadDeviceParams();
                         ResourceAbb(windowResource, TemplateControl.DeviceParams);
                         break;
-                    case "ServiceParams":
-                        windowResource = new WindowResource(WindowTemplateType.Services, new UserControl()) { Title = "服务设置" };
+                    case "ServiceParam":
+                        windowResource = new WindowResource(WindowTemplateType.Service, new UserControl()) { Title = "服务设置" };
                         TemplateControl.LoadServiceParams();
                         ResourceAbb(windowResource, TemplateControl.ServiceParams);
+                        break;
+                    case "MeasureParm":
+                        windowTemplate = new WindowTemplate(WindowTemplateType.MeasureParm, new UserControl()) { Title = "测量设置" };
+                        TemplateControl.LoadMeasureParams();
+                        TemplateAbb(windowTemplate, TemplateControl.MeasureParams);
                         break;
                     default:
                         HandyControl.Controls.Growl.Info("开发中");

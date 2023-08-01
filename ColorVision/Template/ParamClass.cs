@@ -495,6 +495,13 @@ namespace ColorVision.Template
         private int _JudgingWayMul;
     }
 
+
+    public class MeasureParam : ParamBase
+    {
+        public MeasureParam(MeasureMasterModel dbModel)
+        {
+        }
+    }
     public class ResourceParam : ParamBase
     {
         public static int TypeValue { get; set; } = 1;

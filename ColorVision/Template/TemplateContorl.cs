@@ -43,6 +43,7 @@ namespace ColorVision.Template
         private ModService modService = new ModService();
         private SysResourceService resourceService = new SysResourceService();
         private SysDictionaryService dictionaryService = new SysDictionaryService();
+        private MeasureService measureService = new MeasureService();
 
         public TemplateControl()
         {
@@ -59,6 +60,7 @@ namespace ColorVision.Template
             PoiParams = new ObservableCollection<KeyValuePair<string, PoiParam>>();
             DeviceParams = new ObservableCollection<KeyValuePair<string, ResourceParam>>();
             ServiceParams = new ObservableCollection<KeyValuePair<string, ResourceParam>>();
+            MeasureParams = new ObservableCollection<KeyValuePair<string, MeasureParam>>();
 
 
             GlobalSetting.GetInstance().SoftwareConfig.UseMySqlChanged += (s) =>
@@ -174,7 +176,7 @@ namespace ColorVision.Template
                 case WindowTemplateType.FlowParam:
                     SaveDefault(FileNameFlowParms, FlowParams);
                     break;
-                case WindowTemplateType.Devices:
+                case WindowTemplateType.Device:
                     SaveDefault(FileNameCameraDeviceParams, DeviceParams);
                     break;
                 default:
@@ -409,6 +411,21 @@ namespace ColorVision.Template
             return ServiceParams;
         }
 
+        internal ObservableCollection<KeyValuePair<string, MeasureParam>> LoadMeasureParams()
+        {
+            MeasureParams.Clear();
+            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+            {
+                List<MeasureMasterModel> devices = measureService.GetAll(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                foreach (var dbModel in devices)
+                {
+                    KeyValuePair<string, MeasureParam> item = new KeyValuePair<string, MeasureParam>(dbModel.Name ?? "default", new MeasureParam(dbModel));
+                    MeasureParams.Add(item);
+                }
+            }
+            return MeasureParams;
+        }
+
         internal int PoiMasterDeleteById(int id)
         {
             return poiService.MasterDeleteById(id);
@@ -447,6 +464,8 @@ namespace ColorVision.Template
             return resourceService.DeleteById(id);
         }
 
+
+        public ObservableCollection<KeyValuePair<string, MeasureParam>> MeasureParams { get; set; }
         public ObservableCollection<KeyValuePair<string, ResourceParam>> ServiceParams { get; set; }
         public ObservableCollection<KeyValuePair<string, ResourceParam>> DeviceParams { get; set; }
         public ObservableCollection<KeyValuePair<string, AoiParam>> AoiParams { get; set; }

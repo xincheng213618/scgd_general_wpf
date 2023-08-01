@@ -62,9 +62,8 @@ namespace ColorVision.MQTT
         }
 
 
-        public void Start()
+        public void Start(string sn)
         {
-            string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             FlowEngineLib.CVBaseDataFlow baseEvent = new FlowEngineLib.CVBaseDataFlow(svrName, "Start", sn);
 
             string Msg = JsonConvert.SerializeObject(baseEvent);
