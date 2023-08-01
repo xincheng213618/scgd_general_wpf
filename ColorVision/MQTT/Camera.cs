@@ -167,7 +167,10 @@ namespace ColorVision.MQTT
                         JArray MD5ID = msg.Data.MD5ID;
                         foreach (var item in MD5ID)
                         {
-                            MD5.Add(item.ToString());
+                            if (!MD5.Contains(item.ToString()))
+                            {
+                                MD5.Add(item.ToString());
+                            }
                         }
                         //var CameraIDList = JsonConvert.DeserializeObject<cameralince>(CameraMD5);
                         break;

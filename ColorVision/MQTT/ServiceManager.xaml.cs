@@ -23,15 +23,6 @@ namespace ColorVision.MQTT
         public ServiceManager()
         {
             InitializeComponent();
-            App.Current.Exit += (s,e)=>
-            {
-                foreach (var item in ServiceDictionary)
-                {
-                    item.Value.Kill();
-                    item.Value.Close();
-                    item.Value.Dispose();
-                }
-            };
         }
 
         public static Dictionary<string, Process> ServiceDictionary { get; set; } = new Dictionary<string, Process>();
@@ -78,6 +69,8 @@ namespace ColorVision.MQTT
                     process1.Start();
                     ServiceDictionary.Add(exePath, process1);
                     button.Content ="关闭" + button.Tag.ToString();
+
+  
                 }
 
 

@@ -7,7 +7,7 @@
         xmlns:base ="clr-namespace:ColorVision.Controls"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
-       IsBlurEnabled="True"  Background="Transparent" Height="400"  ResizeMode="NoResize"  Width="600">
+       IsBlurEnabled="True"  Background="Transparent" Height="400"  ResizeMode="NoResize"  Width="600" Initialized="BaseWindow_Initialized">
     <Grid>
         <Grid>
             <Grid.ColumnDefinitions>

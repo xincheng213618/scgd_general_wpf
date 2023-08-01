@@ -68,7 +68,6 @@ namespace ColorVision
                 SoftwareSetting.Height = this.Height;
                 SoftwareSetting.Width = this.Width;
                 SoftwareSetting.WindowState = (int)this.WindowState;
-                Environment.Exit(0);
             };
             if (SoftwareSetting.IsRestoreWindow && SoftwareSetting.Height != 0&& SoftwareSetting.Width != 0)
             {

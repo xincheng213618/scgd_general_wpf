@@ -1,4 +1,5 @@
-﻿using ColorVision.NativeMethods;
+﻿using ColorVision.MQTT;
+using ColorVision.NativeMethods;
 using ColorVision.SettingUp;
 using HslCommunication.Profinet.MegMeet;
 using log4net;
@@ -121,6 +122,13 @@ namespace ColorVision
         private void Application_Exit(object sender, ExitEventArgs e)
         {
             log.Info("程序关闭");
+
+            foreach (var item in ServiceManager.ServiceDictionary)
+            {
+                item.Value.Kill();
+                item.Value.Close();
+                item.Value.Dispose();
+            }
             Environment.Exit(0);
         }
     }
