@@ -500,6 +500,8 @@ namespace ColorVision.Template
     {
         public MeasureParam(MeasureMasterModel dbModel)
         {
+            this.ID = dbModel.Id;
+            this.IsEnable = dbModel.IsEnable;
         }
     }
     public class ResourceParam : ParamBase

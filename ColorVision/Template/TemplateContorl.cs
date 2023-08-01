@@ -4,6 +4,7 @@ using ColorVision.MySql.Service;
 using ColorVision.SettingUp;
 using ColorVision.Util;
 using cvColorVision;
+using NPOI.SS.Formula.Functions;
 using ScottPlot.Styles;
 using System;
 using System.Collections.Generic;
@@ -290,6 +291,23 @@ namespace ColorVision.Template
             return null;
         }
 
+        internal MeasureParam? AddMeasureParam(string name)
+        {
+            MeasureMasterModel model = new MeasureMasterModel(name, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            measureService.Save(model);
+            int pkId = model.GetPK();
+            if (pkId > 0)
+            {
+                return LoadMeasureParamById(pkId);
+            }
+            return null;
+        }
+        private MeasureParam? LoadMeasureParamById(int pkId)
+        {
+            MeasureMasterModel model = measureService.GetMasterById(pkId);
+            if (model != null) return new MeasureParam(model);
+            else return null;
+        }
         private ResourceParam? LoadServiceParamById(int pkId)
         {
             SysResourceModel model = resourceService.GetMasterById(pkId);
@@ -464,6 +482,10 @@ namespace ColorVision.Template
             return resourceService.DeleteById(id);
         }
 
+        internal List<MeasureDetailModel> LoadMeasureDetail(int pid)
+        {
+            return measureService.GetDetailByPid(pid);
+        }
 
         public ObservableCollection<KeyValuePair<string, MeasureParam>> MeasureParams { get; set; }
         public ObservableCollection<KeyValuePair<string, ResourceParam>> ServiceParams { get; set; }
