@@ -99,7 +99,6 @@ namespace ColorVision.MQTT
         public CameraConfig()
         { 
         }
-
         public string SubscribeTopic { get; set; }
         public string SendTopic { get; set; }
 
@@ -197,6 +196,8 @@ namespace ColorVision.MQTT
                         Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(Filepath));
                         break;
                     case "GetAutoExpTime":
+                        break;
+                    case "SaveLicense":
                         break;
                     default:
                         MessageBox.Show("未定义EventName");
