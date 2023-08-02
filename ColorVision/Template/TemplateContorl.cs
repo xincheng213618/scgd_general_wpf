@@ -42,6 +42,7 @@ namespace ColorVision.Template
 
         private PoiService poiService = new PoiService();
         private ModService modService = new ModService();
+        private SysModMasterService sysModService = new SysModMasterService();
         private SysResourceService resourceService = new SysResourceService();
         private SysDictionaryService dictionaryService = new SysDictionaryService();
         private MeasureService measureService = new MeasureService();
@@ -486,6 +487,26 @@ namespace ColorVision.Template
         internal List<MeasureDetailModel> LoadMeasureDetail(int pid)
         {
             return measureService.GetDetailByPid(pid);
+        }
+
+        internal List<SysModMasterModel> LoadSysModMaster()
+        {
+            return sysModService.GetAll(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+        }
+
+        internal List<ModMasterModel> LoadModMasterByPid(int pid)
+        {
+            return modService.GetMasterByPid(pid);
+        }
+
+        internal int Save(MeasureDetailModel detailModel)
+        {
+            return measureService.Save(detailModel);
+        }
+
+        internal int ModMDetailDeleteById(int id)
+        {
+           return measureService.DetailDeleteById(id);
         }
 
         public ObservableCollection<KeyValuePair<string, MeasureParam>> MeasureParams { get; set; }

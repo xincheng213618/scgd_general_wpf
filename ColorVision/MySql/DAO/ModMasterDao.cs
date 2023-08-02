@@ -1,4 +1,5 @@
-﻿using OpenCvSharp.Flann;
+﻿using NPOI.SS.Formula.Functions;
+using OpenCvSharp.Flann;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -35,6 +36,11 @@ namespace ColorVision.MySql.DAO
         public ModMasterDao(string code) : base("v_scgd_mod_master", "t_scgd_mod_param_master", "id", true)
         {
             _code = code;
+        }
+
+        public ModMasterDao() : base("v_scgd_mod_master", "t_scgd_mod_param_master", "id", true)
+        {
+            _code = string.Empty;
         }
 
         public override DataTable GetTableAllByTenantId(int tenantId)
