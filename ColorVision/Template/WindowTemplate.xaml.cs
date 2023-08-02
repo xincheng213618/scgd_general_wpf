@@ -226,11 +226,15 @@ namespace ColorVision.Template
                     case WindowTemplateType.MeasureParm:
                         if (UserControl is MeasureParamControl mpc && ListConfigs[listView.SelectedIndex].Value is MeasureParam mp)
                         {
+                            mpc.MasterID = mp.ID;
                             List<MeasureDetailModel> des = TemplateControl.LoadMeasureDetail(mp.ID);
-                            mpc.ListConfigs.Clear();
-                            foreach (MeasureDetailModel model in des)
+                            mpc.reload(des);
+                            mpc.ModTypeConfigs.Clear();
+                            mpc.ModTypeConfigs.Add(new MParamConfig(-1,"关注点","POI"));
+                            List<SysModMasterModel> sysModMaster = TemplateControl.LoadSysModMaster();
+                            foreach (SysModMasterModel model in sysModMaster)
                             {
-                                mpc.ListConfigs.Add(new MParamConfig(model));
+                                mpc.ModTypeConfigs.Add(new MParamConfig(model));
                             }
                         }
                         break;

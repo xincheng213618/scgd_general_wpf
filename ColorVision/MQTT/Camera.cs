@@ -181,7 +181,7 @@ namespace ColorVision.MQTT
                         Application.Current.Dispatcher.Invoke(() => InitCameraSuccess.Invoke(msg));
                         break;
                     case "UnInit":
-                        Application.Current.Dispatcher.Invoke(() => UnInitCameraSuccess.Invoke(msg));
+                        if(UnInitCameraSuccess!=null) Application.Current.Dispatcher.Invoke(() => UnInitCameraSuccess.Invoke(msg));
                         break;
                     case "SetParam":
                         MessageBox.Show("SetParam");

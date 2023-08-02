@@ -10,7 +10,8 @@ namespace ColorVision.MySql.DAO
     public class MeasureDetailModel : PKModel
     {
         public string Name { get; set; }
-        public string Pcode { get; set; }
+        public string PCode { get; set; }
+        public string PName { get; set; }
         public int? TID { get; set; }
         public int TType { get; set; }
         public int Pid { get; set; }
@@ -32,7 +33,8 @@ namespace ColorVision.MySql.DAO
                 TType = item.Field<SByte>("t_type"),
                 Pid = item.Field<int>("pid"),
                 Name = item.Field<string>("name"),
-                Pcode = item.Field<string>("pcode"),
+                PCode = item.Field<string>("pcode"),
+                PName = item.Field<string>("pname"),
                 IsEnable = item.Field<SByte>("is_enable") == 1 ? true : false,
                 IsDelete = item.Field<SByte>("is_delete") == 1 ? true : false,
             };

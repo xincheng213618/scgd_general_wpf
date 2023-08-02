@@ -20,6 +20,7 @@ namespace ColorVision.MySql.Service
     {
         private ModMasterDao masterFlowDao;
         private ModMasterDao masterAoiDao;
+        private ModMasterDao masterModDao;
         private ModDetailDao detailDao;
         private SysDictionaryModDetailDao sysDao;
         private SysDictionaryModDao sysDicDao;
@@ -28,6 +29,7 @@ namespace ColorVision.MySql.Service
         {
             this.masterFlowDao = new ModMasterDao(ModMasterType.Flow);
             this.masterAoiDao = new ModMasterDao(ModMasterType.Aoi);
+            this.masterModDao = new ModMasterDao();
             this.detailDao = new ModDetailDao();
             this.sysDao = new SysDictionaryModDetailDao();
             this.sysDicDao = new SysDictionaryModDao();
@@ -128,6 +130,11 @@ namespace ColorVision.MySql.Service
             List<ModDetailModel> list = new List<ModDetailModel>();
             aoiParam.GetDetail(list);
             detailDao.UpdateByPid(aoiParam.ID, list);
+        }
+
+        internal List<ModMasterModel> GetMasterByPid(int pid)
+        {
+           return masterModDao.GetAllByPid(pid);
         }
     }
 }

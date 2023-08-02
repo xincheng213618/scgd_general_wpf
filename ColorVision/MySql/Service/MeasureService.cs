@@ -19,6 +19,11 @@ namespace ColorVision.MySql.Service
             this.measureDetail = new MeasureDetailDao();
         }
 
+        internal int DetailDeleteById(int id)
+        {
+            return measureDetail.DeleteById(id);
+        }
+
         internal List<MeasureMasterModel> GetAll(int tenantId)
         {
             return measureMaster.GetAll(tenantId);
@@ -34,9 +39,14 @@ namespace ColorVision.MySql.Service
             return measureMaster.GetByID(pkId);
         }
 
-        internal void Save(MeasureMasterModel model)
+        internal int Save(MeasureMasterModel model)
         {
-            measureMaster.Save(model);
+            return measureMaster.Save(model);
+        }
+
+        internal int Save(MeasureDetailModel detailModel)
+        {
+            return measureDetail.Save(detailModel);
         }
     }
 }
