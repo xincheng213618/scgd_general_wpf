@@ -37,6 +37,7 @@ namespace ColorVision.MQTT
         public MQTTConfig MQTTConfig { get; set; }
         public MQTTSetting MQTTSetting { get; set; }
 
+        public event EventHandler Connected;
         public BaseService()
         {
             MQTTControl = MQTTControl.GetInstance();
@@ -57,6 +58,10 @@ namespace ColorVision.MQTT
                         if (json.EventName == "Heartbeat")
                         {
                             LastAliveTime = DateTime.Now;
+                            if (!IsAlive) 
+                            {
+                                Connected?.Invoke(this, new EventArgs());
+                            }
                             IsAlive = true;
                             return Task.CompletedTask;
                         }

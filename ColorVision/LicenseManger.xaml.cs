@@ -52,7 +52,7 @@ namespace ColorVision
         private async void BaseWindow_Initialized(object sender, EventArgs e)
         {
             ListViewLicense.ItemsSource = LicenseConfigs;
-            MQTTManager.GetInstance().MQTTCameras[0].Value.GetAllLicense();
+            MQTTManager.GetInstance().MQTTCameras[0].Value.GetAllCameraID();
 
             await Task.Delay(1000);
 
