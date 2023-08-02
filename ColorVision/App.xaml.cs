@@ -112,8 +112,8 @@ namespace ColorVision
             System.Windows.Forms.Application.EnableVisualStyles();
             System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
 
-            MainWindow mainWindow = new MainWindow();
-            mainWindow.Show();
+            StartWindow StartWindow = new StartWindow();
+            StartWindow.Show();
         }
 
         /// <summary>

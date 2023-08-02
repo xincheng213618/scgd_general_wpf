@@ -200,10 +200,10 @@ namespace ColorVision.MQTT
                         MessageBox.Show("SetParam");
                         break;
                     case "Close":
-                        Application.Current.Dispatcher.Invoke(() => CloseCameraSuccess.Invoke(this, msg));
+                        Application.Current.Dispatcher.Invoke(() => CloseCameraSuccess?.Invoke(this, msg));
                         break;
                     case "Open":
-                        Application.Current.Dispatcher.Invoke(() => OpenCameraSuccess.Invoke(this, msg));
+                        Application.Current.Dispatcher.Invoke(() => OpenCameraSuccess?.Invoke(this, msg));
                         break;
                     case "GatData":
                         string Filepath = msg.Data.FilePath;
@@ -226,16 +226,16 @@ namespace ColorVision.MQTT
                         MessageBox.Show("取图失败");
                         break;
                     case "Close":
-                        Application.Current.Dispatcher.Invoke(() => CloseCameraSuccess.Invoke(this,msg));
+                        Application.Current.Dispatcher.Invoke(() => CloseCameraSuccess?.Invoke(this,msg));
                         break;
                     case "Open":
                         MessageBox.Show("没有许可证");
                         break;
                     case "Uninit":
-                        Application.Current.Dispatcher.Invoke(() => UnInitCameraSuccess.Invoke(this,msg));
+                        Application.Current.Dispatcher.Invoke(() => UnInitCameraSuccess?.Invoke(this,msg));
                         break;
                     default:
-                        MessageBox.Show("相机操作失败");
+                        MessageBox.Show("未定义EventName");
                         break;
                 }
             }
@@ -394,17 +394,17 @@ namespace ColorVision.MQTT
 
         public class CalibrationParamMQTT : ViewModelBase
         {
-            public CalibrationParamMQTT(CalibrationParam calibrationParam)
+            public CalibrationParamMQTT(CalibrationParam item)
             {
-                this.Luminance = SetPath(calibrationParam.SelectedLuminance, calibrationParam.FileNameLuminance);
-                this.LumOneColor = SetPath(calibrationParam.SelectedColorOne, calibrationParam.FileNameColorOne);
-                this.LumFourColor = SetPath(calibrationParam.SelectedColorFour, calibrationParam.FileNameColorFour);
-                this.LumMultiColor = SetPath(calibrationParam.SelectedColorMulti, calibrationParam.FileNameColorMulti);
-                this.DarkNoise = SetPath(calibrationParam.SelectedDarkNoise, calibrationParam.FileNameDarkNoise);
-                this.DSNU = SetPath(calibrationParam.SelectedDSNU, calibrationParam.FileNameDSNU);
-                this.Distortion = SetPath(calibrationParam.SelectedDistortion, calibrationParam.FileNameDistortion);
-                this.DefectWPoint = SetPath(calibrationParam.SelectedDefectWPoint, calibrationParam.FileNameDefectWPoint);
-                this.DefectBPoint = SetPath(calibrationParam.SelectedDefectBPoint, calibrationParam.FileNameDefectBPoint);
+                this.Luminance = SetPath(item.SelectedLuminance, item.FileNameLuminance);
+                this.LumOneColor = SetPath(item.SelectedColorOne, item.FileNameColorOne);
+                this.LumFourColor = SetPath(item.SelectedColorFour, item.FileNameColorFour);
+                this.LumMultiColor = SetPath(item.SelectedColorMulti, item.FileNameColorMulti);
+                this.DarkNoise = SetPath(item.SelectedDarkNoise, item.FileNameDarkNoise);
+                this.DSNU = SetPath(item.SelectedDSNU, item.FileNameDSNU);
+                this.Distortion = SetPath(item.SelectedDistortion, item.FileNameDistortion);
+                this.DefectWPoint = SetPath(item.SelectedDefectWPoint, item.FileNameDefectWPoint);
+                this.DefectBPoint = SetPath(item.SelectedDefectBPoint, item.FileNameDefectBPoint);
             }
             private static string? SetPath(bool Check, string Name)
             {

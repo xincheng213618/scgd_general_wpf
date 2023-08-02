@@ -1,0 +1,35 @@
+﻿<Window x:Class="ColorVision.StartWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision"
+        mc:Ignorable="d"
+        Title="StartWindow"  Height="200" Width="600" BorderThickness="0" AllowsTransparency="True" Background="Transparent"  WindowStyle="None" Initialized="Window_Initialized">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="20"/>
+            <RowDefinition Height="70"/>
+            <RowDefinition Height="*"/>
+
+        </Grid.RowDefinitions>
+
+        <Border  Grid.Row="1" CornerRadius="10,10,0,0" Background="#2D333A">
+            <StackPanel Margin="10,0">
+                <Label Content="ColorVision" HorizontalAlignment="Left" Foreground="White" VerticalAlignment="Center"  FontSize="20"/>
+                <Label x:Name="labelVersion" Content="1.0.1.13" HorizontalAlignment="Left" Foreground="White"  />
+            </StackPanel>
+        </Border>
+        <Border  Grid.Row="2" Height="100" CornerRadius="0,0,10,10" Background="#373B41" Margin="0,10,0,0">
+            <Border Background="#484d4f"  Margin="10" CornerRadius="4">
+                <Grid>
+                    <TextBox Margin="5,5,5,20"  Name="TextBoxMsg"  Text="软件加载中" Foreground="White"  Background="Transparent" BorderThickness="0"  TextChanged="TextBoxMsg_TextChanged"/>
+                    <!--<Label  Content="软件加载中" HorizontalAlignment="Center" Foreground="White" VerticalAlignment="Center" FontSize="40"/>-->
+                    <ProgressBar IsIndeterminate="True" Height="10"  Foreground="#B41515" Background="#242627" BorderThickness="0" Margin="5" VerticalAlignment="Bottom" />
+                </Grid>
+            </Border>
+
+        </Border>
+    </Grid>
+
+</Window>
