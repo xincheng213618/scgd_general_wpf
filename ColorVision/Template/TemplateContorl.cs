@@ -88,6 +88,7 @@ namespace ColorVision.Template
             LoadFlowParam();
             LoadServiceParams();
             LoadDeviceParams();
+
         }
 
 

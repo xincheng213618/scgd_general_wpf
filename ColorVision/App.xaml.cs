@@ -1,4 +1,5 @@
 ﻿using ColorVision.MQTT;
+using ColorVision.MySql;
 using ColorVision.NativeMethods;
 using ColorVision.SettingUp;
 using HslCommunication.Profinet.MegMeet;
@@ -106,14 +107,20 @@ namespace ColorVision
         {
             GlobalSetting.GetInstance();
 
+            MQTTControl.GetInstance();
+            MySqlControl.GetInstance();
+
             //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en");
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("zh-Hans");
 
+            //这里的代码是因为WPF中引用了WinForm的控件，所以需要先初始化
             System.Windows.Forms.Application.EnableVisualStyles();
             System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
 
-            MainWindow mainWindow = new MainWindow();
-            mainWindow.Show();
+
+            //代码先进入启动窗口
+            StartWindow StartWindow = new StartWindow();
+            StartWindow.Show();
         }
 
         /// <summary>

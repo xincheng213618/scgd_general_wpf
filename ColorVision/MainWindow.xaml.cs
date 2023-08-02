@@ -939,7 +939,7 @@ namespace ColorVision
         {
             if (sender is StackPanel stackPanel)
             {
-                MQTTPGControl Control = new MQTTPGControl(MQTTManager.GetInstance().MQTTPGs[0].Value);
+                  MQTTPGControl Control = new MQTTPGControl(MQTTManager.GetInstance().MQTTPGs[0].Value);
                 stackPanel.Children.Add(Control);
             }
           

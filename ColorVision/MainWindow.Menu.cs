@@ -20,6 +20,7 @@ using log4net;
 using log4net.Appender;
 using System.Diagnostics;
 using ColorVision.Video;
+using NPOI.XSSF.UserModel;
 
 namespace ColorVision
 {
@@ -69,23 +70,18 @@ namespace ColorVision
                         break;
                     case "FocusParm":
                         windowTemplate = new WindowTemplate(WindowTemplateType.PoiParam) { Title = "关注点设置" };
-                        TemplateControl.LoadPoiParam();
                         TemplateAbb(windowTemplate, TemplateControl.PoiParams);
                         break;
                     case "FlowParam":
                         windowTemplate = new WindowTemplate(WindowTemplateType.FlowParam) { Title = "流程引擎" };
-                        TemplateControl.LoadFlowParam();
                         TemplateAbb(windowTemplate, TemplateControl.FlowParams);
                         break;
                     case "DeviceParam":
                         windowResource = new WindowResource(WindowTemplateType.Device, new UserControl()) { Title = "设备设置" };
-                        TemplateControl.LoadDeviceParams();
                         ResourceAbb(windowResource, TemplateControl.DeviceParams);
                         break;
                     case "ServiceParam":
-                        windowResource = new WindowResource(WindowTemplateType.Service, new UserControl()) { Title = "服务设置" };
-                        TemplateControl.LoadServiceParams();
-                        ResourceAbb(windowResource, TemplateControl.ServiceParams);
+                        new WindowService() { Owner =this,WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
                         break;
                     case "MeasureParm":
                         MeasureParamControl measure = new MeasureParamControl();

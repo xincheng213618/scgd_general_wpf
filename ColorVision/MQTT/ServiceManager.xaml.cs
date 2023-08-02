@@ -27,7 +27,6 @@ namespace ColorVision.MQTT
 
         public static Dictionary<string, Process> ServiceDictionary { get; set; } = new Dictionary<string, Process>();
 
-
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)

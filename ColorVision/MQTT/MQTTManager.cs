@@ -27,20 +27,26 @@ namespace ColorVision.MQTT
             Algorithms = new ObservableCollection<KeyValuePair<string, Algorithm>>();
 
             CameraConfig cameraConfig = new CameraConfig();
-
+            cameraConfig.Name = "相机0";
             cameraConfig.CameraID = "58366c49967393afe";
             cameraConfig.SendTopic = "Camera";
             cameraConfig.SubscribeTopic = "CameraService";
+            cameraConfig.CameraType = CameraType.CVQ;
+            cameraConfig.TakeImageMode = TakeImageMode.Normal;
             cameraConfig.Name = "CV";
+            cameraConfig.ImageBpp = 8;
             MQTTCamera Camera = new MQTTCamera(cameraConfig);
             MQTTCameras.Add(new KeyValuePair<string, MQTTCamera>("camera", Camera));
             ServiceHeartbeats.Add(Camera);
 
             CameraConfig cameraConfig1 = new CameraConfig();
-
+            cameraConfig1.Name = "相机1";
             cameraConfig1.CameraID = "e29b14429bc375b1";
             cameraConfig1.SendTopic = "Camera";
             cameraConfig1.SubscribeTopic = "CameraService";
+            cameraConfig1.CameraType = CameraType.LVQ;
+            cameraConfig1.TakeImageMode = TakeImageMode.Normal;
+            cameraConfig1.ImageBpp = 8;
             cameraConfig1.Name = "BV";
 
             MQTTCamera Camera1 = new MQTTCamera(cameraConfig1);
@@ -48,7 +54,7 @@ namespace ColorVision.MQTT
             ServiceHeartbeats.Add(Camera1);
 
 
-            MQTTPG PG =  new MQTTPG("PG1");
+            MQTTPG PG = new MQTTPG("PG1");
             MQTTPGs.Add(new KeyValuePair<string, MQTTPG>("PG", PG));
             ServiceHeartbeats.Add(PG);
 
@@ -60,11 +66,11 @@ namespace ColorVision.MQTT
             MQTTVISources.Add(new KeyValuePair<string, MQTTVISource>("源表", VISource));
             ServiceHeartbeats.Add(VISource);
 
-            Algorithm Algorithm = new Algorithm("Algorithm");
-            Algorithms.Add(new KeyValuePair<string, Algorithm>("Algorithm", Algorithm));
-            ServiceHeartbeats.Add(Algorithm);
+            //Algorithm Algorithm = new Algorithm("Algorithm");
+            //Algorithms.Add(new KeyValuePair<string, Algorithm>("Algorithm", Algorithm));
+            //ServiceHeartbeats.Add(Algorithm);
 
-            
+
         }
 
         public ObservableCollection<KeyValuePair<string, MQTTCamera>> MQTTCameras { get; set; }
