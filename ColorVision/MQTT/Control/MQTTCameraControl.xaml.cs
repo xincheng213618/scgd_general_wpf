@@ -74,7 +74,7 @@ namespace ColorVision.MQTT.Control
 
             MQTTCamera.InitCameraSuccess += (s,e) =>
             {
-                ComboxCameraID.ItemsSource = MQTTCamera.CameraIDList?.IDs;
+                ComboxCameraID.ItemsSource = MQTTCamera.CameraIDs;
                 ComboxCameraID.SelectedIndex = 0;
                 StackPanelOpen.Visibility = Visibility.Visible;
                 CameraOpenButton.Visibility = Visibility.Visible;
@@ -103,7 +103,7 @@ namespace ColorVision.MQTT.Control
                 {
                     if (ComboxCameraType.SelectedItem is KeyValuePair<CameraType, string> KeyValue && KeyValue.Key is CameraType cameraType)
                     {
-                        MQTTCamera.Init(cameraType);
+                        MQTTCamera.Init(cameraType, ComboxCameraID.Text.ToString());
                         CamerInitButton.Content = "正在初始化";
                     }
                 }

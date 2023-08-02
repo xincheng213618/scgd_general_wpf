@@ -38,6 +38,7 @@ namespace ColorVision.MQTT
         public MQTTSetting MQTTSetting { get; set; }
 
         public event EventHandler Connected;
+
         public BaseService()
         {
             MQTTControl = MQTTControl.GetInstance();

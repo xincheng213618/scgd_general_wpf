@@ -49,16 +49,12 @@ namespace ColorVision
             InitializeComponent();
 
         }
-        private async void BaseWindow_Initialized(object sender, EventArgs e)
+        private void BaseWindow_Initialized(object sender, EventArgs e)
         {
             ListViewLicense.ItemsSource = LicenseConfigs;
-            MQTTManager.GetInstance().MQTTCameras[0].Value.GetAllCameraID();
-
-            await Task.Delay(1000);
 
             LicenseConfigs.Add(new LicenseConfig() { Name = "ColorVision", Sn = "0000005EAD286752E9BF44AD08D23250", Tag = $"免费版\n\r永久有效", IsCanImport = false });
-
-            MQTT.MQTTManager.GetInstance().MQTTCameras[0].Value.MD5.ForEach(x =>
+            MQTTCamera.MD5.ForEach(x =>
             {
                 LicenseConfigs.Add(new LicenseConfig() { Name = "相机", Sn = x, Tag = $"业务还在开发中" });
             });

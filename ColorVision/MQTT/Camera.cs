@@ -57,15 +57,6 @@ namespace ColorVision.MQTT
         FastExt
     };
 
-
-    public class CameraIDList
-    {
-        [JsonProperty("number")]
-        public int Number { get; set; }
-        [JsonProperty("ID")]
-        public List<string> IDs { get; set; }
-    }
-
     /// <summary>
     /// 基础硬件配置信息
     /// </summary>
@@ -126,16 +117,14 @@ namespace ColorVision.MQTT
         public event MQTTCameraMsgHandler CloseCameraSuccess;
         public event MQTTCameraMsgHandler UnInitCameraSuccess;
 
-        public CameraConfig CameraConfig { get; set; }
-
-        public CameraIDList? CameraIDList { get; set; }
-        public string DeviceID { get => CameraConfig.CameraID; }
+        public CameraConfig Config { get; set; }
+        public string DeviceID { get => Config.CameraID; }
 
         public MQTTCamera(string NickName = "相机1",string SendTopic = "Camera/CMD/0", string SubscribeTopic = "Camera/STATUS/0") : base()
         {
-            CameraConfig = new CameraConfig();
-            CameraConfig.SendTopic = SendTopic;
-            CameraConfig.SubscribeTopic = SubscribeTopic;
+            Config = new CameraConfig();
+            Config.SendTopic = SendTopic;
+            Config.SubscribeTopic = SubscribeTopic;
 
             this.NickName = NickName;
             this.SendTopic = SendTopic;
@@ -143,7 +132,7 @@ namespace ColorVision.MQTT
             MQTTControl.SubscribeCache(SubscribeTopic);
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
 
-            Connected += (s, e) =>
+            this.Connected += (s, e) =>
             {
                 GetAllCameraID();
             };
@@ -151,38 +140,57 @@ namespace ColorVision.MQTT
 
         public MQTTCamera(CameraConfig CameraConfig)
         {
-            this.CameraConfig = CameraConfig;
+            this.Config = CameraConfig;
             this.SendTopic = CameraConfig.SendTopic;
             this.SubscribeTopic = CameraConfig.SubscribeTopic;
             MQTTControl.SubscribeCache(SubscribeTopic);
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
+            this.Connected += (s, e) =>
+            {
+                GetAllCameraID();
+            };
         }
 
-        public List<string> MD5 { get; set; } = new List<string>();
+        public static List<string> MD5 { get; set; } = new List<string>();
+        public static List<string> CameraIDs { get; set; } = new List<string>();
+
 
         private void MQTTCamera_MsgReturnChanged(MsgReturn msg)
         {
             IsRun = false;
+            switch (msg.EventName)
+            {
+                case "CM_GetAllCameraID":
+                    JArray CameraID = msg.Data.CameraID;
+                    JArray MD5ID = msg.Data.MD5ID;
+                    foreach (var item in MD5ID)
+                    {
+                        if (!MD5.Contains(item.ToString()))
+                        {
+                            MD5.Add(item.ToString());
+                        }
+                    }
+                    foreach (var item in CameraID)
+                    {
+                        if (!CameraIDs.Contains(item.ToString()))
+                        {
+                            CameraIDs.Add(item.ToString());
+                        }
+                    }
+                    return;
+            }
+            if (msg.CameraID != Config.CameraID)
+            {
+                return;
+            }
+
             if (msg.Code == 0)
             {
+
                 switch (msg.EventName)
                 {
-                    case "CM_GetAllCameraID":
-                        JArray CameraID = msg.Data.CameraID;
-                        JArray MD5ID = msg.Data.MD5ID;
-                        foreach (var item in MD5ID)
-                        {
-                            if (!MD5.Contains(item.ToString()))
-                            {
-                                MD5.Add(item.ToString());
-                            }
-                        }
-                        //var CameraIDList = JsonConvert.DeserializeObject<cameralince>(CameraMD5);
-                        break;
                     case "Init":
-                        string CameraId = msg.Data.CameraId;
                         ServiceID = msg.ServiceID;
-                        CameraIDList = JsonConvert.DeserializeObject<CameraIDList>(CameraId);
                         Application.Current.Dispatcher.Invoke(() => InitCameraSuccess?.Invoke(this,msg));
                         break;
                     case "UnInit":
@@ -236,13 +244,14 @@ namespace ColorVision.MQTT
         public bool IsRun { get; set; }
         public CameraType CurrentCameraType { get; set; }
 
-        public bool Init(CameraType CameraType)
+        public bool Init(CameraType CameraType,string CameraID)
         {
             CurrentCameraType = CameraType;
+            this.CameraID = CameraID;
             MsgSend msg = new MsgSend
             {
                 EventName = "Init",
-                Params = new Dictionary<string, object>() { { "CameraType", (int)CameraType } }
+                Params = new Dictionary<string, object>() { { "CameraType", (int)CameraType },{ "CameraID", CameraID } }
             };
             PublishAsyncClient(msg);
             return true;
@@ -288,7 +297,6 @@ namespace ColorVision.MQTT
         }
         public bool Open(string CameraID,TakeImageMode TakeImageMode,int ImageBpp)
         {
-            this.CameraID = CameraID;
             MsgSend msg = new MsgSend
             {
                 EventName = "Open",
