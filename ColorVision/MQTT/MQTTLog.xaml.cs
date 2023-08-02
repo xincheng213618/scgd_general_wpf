@@ -70,8 +70,6 @@ namespace ColorVision
 
                 if (!string.IsNullOrWhiteSpace(resultData_MQTT.Payload.ToString()))
                 {
-
-
                     ContextMenu contextMenu = new ContextMenu();
                     MenuItem menuItem2 = new MenuItem() { Header = "复制Payload" };
                     menuItem2.Click += (s, e) => { NativeMethods.Clipboard.SetText(resultData_MQTT.Payload.ToString() ?? string.Empty); };

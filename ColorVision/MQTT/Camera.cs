@@ -89,6 +89,7 @@ namespace ColorVision.MQTT
     {
         public CameraConfig()
         { 
+
         }
         public string SubscribeTopic { get; set; }
         public string SendTopic { get; set; }

@@ -12,14 +12,15 @@
              xmlns:converter="clr-namespace:ColorVision.Converter"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="300">
+             d:DataContext="{d:DesignInstance mqtt:MQTTCamera}"
+             d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized">
 
-    <StackPanel x:Name="StackPanelCamera" d:DataContext="{d:DesignInstance mqtt:MQTTCamera}" Margin="0,5"  Initialized="StackPanelCamera_Initialized">
-        <ToggleButton  x:Name="ToggleButton1"  Style="{StaticResource ButtonPageControl1}" Background="#F9F9F9" Content="相机设置"  FontSize="15" Foreground="Black" IsChecked="True" />
+    <StackPanel x:Name="StackPanelCamera"  Margin="0,5"  Initialized="StackPanelCamera_Initialized">
+        <ToggleButton  x:Name="ToggleButton1"  Style="{StaticResource ButtonPageControl1}" Background="#F9F9F9" Content="{Binding Config.Name}"  FontSize="15" Foreground="Black" IsChecked="True" />
         <Border Style="{DynamicResource BorderModuleArea}"  IsEnabled="{Binding IsAlive}"  Visibility="{Binding ElementName=ToggleButton1,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="5">
                 <DockPanel Margin="5"  Visibility="Collapsed">
-                    <Label Content="相机类型："/>
+                    <Label Content=""/>
                     <hc:ComboBox x:Name="ComboxCameraType" Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20" Margin="0,0,10,0"/>
                 </DockPanel>
                 <Button  Margin="5" x:Name="CamerInitButton" Content="初始化" Click="MQTTCamera_Init_Click"/>
