@@ -24,7 +24,6 @@
             <Border Background="#484d4f"  Margin="10" CornerRadius="4">
                 <Grid>
                     <TextBox Margin="5,5,5,20"  Name="TextBoxMsg"  Text="软件加载中" Foreground="White"  Background="Transparent" BorderThickness="0"  TextChanged="TextBoxMsg_TextChanged"/>
-                    <!--<Label  Content="软件加载中" HorizontalAlignment="Center" Foreground="White" VerticalAlignment="Center" FontSize="40"/>-->
                     <ProgressBar IsIndeterminate="True" Height="10"  Foreground="#B41515" Background="#242627" BorderThickness="0" Margin="5" VerticalAlignment="Bottom" />
                 </Grid>
             </Border>

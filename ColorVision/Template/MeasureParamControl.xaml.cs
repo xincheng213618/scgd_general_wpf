@@ -58,9 +58,9 @@ namespace ColorVision.Template
         }
 
         public int ID { get; set; }
-        public string Name { get; set; }
-        public string Type { get; set; }
-        public string TypeName { get; set; }
+        public string? Name { get; set; }
+        public string? Type { get; set; }
+        public string? TypeName { get; set; }
     }
     /// <summary>
     /// MeasureParamControl.xaml 的交互逻辑
@@ -91,7 +91,7 @@ namespace ColorVision.Template
             {
                 ModMasterConfigs.Clear();
                 MParamConfig config = (MParamConfig)Mod_Type.SelectedItem;
-                if (config.Type.Equals("POI"))
+                if (config.Type != null && config.Type.Equals("POI", StringComparison.Ordinal))
                 {
                     templateControl.LoadPoiParam();
                     foreach (var item in templateControl.PoiParams)
@@ -115,7 +115,7 @@ namespace ColorVision.Template
             {
                 MeasureDetailModel detailModel = new MeasureDetailModel();
                 MParamConfig config = (MParamConfig)Mod_Type.SelectedItem;
-                if (config.Type.Equals("POI"))
+                if (config.Type!=null&&config.Type.Equals("POI", StringComparison.Ordinal))
                 {
                     detailModel.TType = 0;
                 }

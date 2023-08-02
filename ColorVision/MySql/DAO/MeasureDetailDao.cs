@@ -9,14 +9,14 @@ namespace ColorVision.MySql.DAO
 {
     public class MeasureDetailModel : PKModel
     {
-        public string Name { get; set; }
-        public string PCode { get; set; }
-        public string PName { get; set; }
+        public string? Name { get; set; }
+        public string? PCode { get; set; }
+        public string? PName { get; set; }
         public int? TID { get; set; }
         public int TType { get; set; }
         public int Pid { get; set; }
         public bool IsEnable { get; set; } = true;
-        public bool IsDelete { get; set; } = false;
+        public bool IsDelete { get; set; }
     }
     public class MeasureDetailDao : BaseDaoMaster<MeasureDetailModel>
     {
