@@ -20,6 +20,7 @@ using System.Windows.Shapes;
 using ColorVision.MySql;
 using ColorVision.MQTT;
 using ColorVision.SettingUp;
+using System.Reflection;
 
 namespace ColorVision
 {
@@ -38,18 +39,31 @@ namespace ColorVision
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            labelVersion.Content = string.Format("V1.0.1.13 - {0}", File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath).ToString("yyyy/MM/dd"));
+#if (DEBUG == true)
+            labelVersion.Content = $"{(DebugBuild(Assembly.GetExecutingAssembly()) ? " (Debug) " : "(Release)")}{(Debugger.IsAttached ? " (调试中) " : "")} ({(IntPtr.Size == 4 ? "32" : "64")}位) - {System.Reflection.Assembly.GetExecutingAssembly().GetName().Version} - Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy.MM.dd}";
+#else
+            labelVersion.Content = $"{(DebugBuild(Assembly.GetExecutingAssembly()) ? " (Debug)" : "")}{(Debugger.IsAttached ? " (调试中) " : "")} ({(IntPtr.Size == 4 ? "32" : "64")}位) -  {System.Reflection.Assembly.GetExecutingAssembly().GetName().Version} - Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy/MM/dd})";
+#endif
+
             Dispatcher.BeginInvoke(new Action(async () => await InitializedOver()));
+        }
+        private static bool DebugBuild(Assembly assembly)
+        {
+            foreach (object attribute in assembly.GetCustomAttributes(false))
+            {
+                if (attribute is DebuggableAttribute _attribute)
+                {
+                    return _attribute.IsJITTrackingEnabled;
+                }
+            }
+            return false;
         }
 
         private async Task InitializedOver()
         {
-            MQTTControl.GetInstance();
-            MySqlControl.GetInstance();
             SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
-
-            TextBoxMsg.Text += Environment.NewLine + "检测服务连接情况"; 
-            await Task.Delay(400);
+            TextBoxMsg.Text += Environment.NewLine + "检测服务连接情况";
+            await Task.Delay(100);
 
             TextBoxMsg.Text += Environment.NewLine + "MQTT连接" + MQTTControl.GetInstance().IsConnect;
             TextBoxMsg.Text += Environment.NewLine + "MySql连接" + MySqlControl.GetInstance().IsConnect;
