@@ -72,7 +72,7 @@ namespace ColorVision.MQTT.Control
             CameraCloseButton.Visibility = Visibility.Collapsed;
             CameraOpenButton.Visibility = Visibility.Collapsed;
 
-            MQTTCamera.InitCameraSuccess += (s) =>
+            MQTTCamera.InitCameraSuccess += (s,e) =>
             {
                 ComboxCameraID.ItemsSource = MQTTCamera.CameraIDList?.IDs;
                 ComboxCameraID.SelectedIndex = 0;
@@ -81,13 +81,13 @@ namespace ColorVision.MQTT.Control
                 CameraCloseButton.Visibility = Visibility.Collapsed;
                 CamerInitButton.Content = "断开初始化";
             };
-            MQTTCamera.OpenCameraSuccess += (s) =>
+            MQTTCamera.OpenCameraSuccess += (s, e) =>
             {
                 CameraCloseButton.Visibility = Visibility.Visible;
                 CameraOpenButton.Visibility = Visibility.Collapsed;
                 StackPanelImage.Visibility = Visibility.Visible;
             };
-            MQTTCamera.CloseCameraSuccess += (s) =>
+            MQTTCamera.CloseCameraSuccess += (s, e) =>
             {
                 CameraCloseButton.Visibility = Visibility.Collapsed;
                 CameraOpenButton.Visibility = Visibility.Visible;

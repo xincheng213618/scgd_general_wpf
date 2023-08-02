@@ -1,6 +1,7 @@
 ﻿using ColorVision.Extension;
 using ColorVision.MQTT;
 using ColorVision.Template;
+using cvColorVision;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -67,7 +68,7 @@ namespace ColorVision.MQTT.Control
             CameraCloseButton.Visibility = Visibility.Collapsed;
             CameraOpenButton.Visibility = Visibility.Collapsed;
 
-            MQTTCamera.InitCameraSuccess += (s) =>
+            MQTTCamera.InitCameraSuccess += (s, e) =>
             {
                 ComboxCameraID.ItemsSource = MQTTCamera.CameraIDList?.IDs;
                 ComboxCameraID.SelectedIndex = 0;
@@ -76,18 +77,18 @@ namespace ColorVision.MQTT.Control
                 CameraCloseButton.Visibility = Visibility.Collapsed;
                 CamerInitButton.Content = "断开初始化";
             };
-            MQTTCamera.OpenCameraSuccess += (s) =>
+            MQTTCamera.OpenCameraSuccess += (s,e) =>
             {
-                if (s.CameraID == MQTTCamera.CameraConfig.CameraID)
+                if (e.CameraID == MQTTCamera.CameraConfig.CameraID)
                 {
                     CameraCloseButton.Visibility = Visibility.Visible;
                     CameraOpenButton.Visibility = Visibility.Collapsed;
                     StackPanelImage.Visibility = Visibility.Visible;
                 }
             };
-            MQTTCamera.CloseCameraSuccess += (s) =>
+            MQTTCamera.CloseCameraSuccess += (s,e) =>
             {
-                if (s.CameraID == MQTTCamera.CameraConfig.CameraID)
+                if (e.CameraID == MQTTCamera.CameraConfig.CameraID)
                 {
                     CameraCloseButton.Visibility = Visibility.Collapsed;
                     CameraOpenButton.Visibility = Visibility.Visible;
@@ -129,7 +130,6 @@ namespace ColorVision.MQTT.Control
                     MessageBox.Show("找不到相机");
                     return;
                 }
-                MQTTCamera.Open(ComboxCameraID.Text.ToString(), takeImageMode, int.Parse(ComboxCameraImageBpp.Text));
             }
         }
 

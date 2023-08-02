@@ -27,6 +27,7 @@ namespace ColorVision.MQTT
 {
     public delegate void MQTTMsgHandler(MQMsg resultDataMQTT);
 
+
     public class MQTTControl : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MQTTControl));

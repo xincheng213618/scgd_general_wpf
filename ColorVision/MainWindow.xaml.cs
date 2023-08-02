@@ -926,7 +926,7 @@ namespace ColorVision
                 
                 MQTTCameraControl1 mQTTCameraControl = new MQTTCameraControl1(MQTTManager.GetInstance().MQTTCameras[0].Value);
                 stackPanel.Children.Add(mQTTCameraControl);
-                MQTTCameraControl mQTTCameraControl1 = new MQTTCameraControl(MQTTManager.GetInstance().MQTTCameras[1].Value);
+                MQTTCameraControl1 mQTTCameraControl1 = new MQTTCameraControl1(MQTTManager.GetInstance().MQTTCameras[1].Value);
                 stackPanel.Children.Add(mQTTCameraControl1);
             }
         }

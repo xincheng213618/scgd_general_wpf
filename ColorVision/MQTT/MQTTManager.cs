@@ -31,12 +31,19 @@ namespace ColorVision.MQTT
             cameraConfig.CameraID = "58366c49967393afe";
             cameraConfig.SendTopic = "Camera";
             cameraConfig.SubscribeTopic = "CameraService";
-
+            cameraConfig.Name = "CV";
             MQTTCamera Camera = new MQTTCamera(cameraConfig);
             MQTTCameras.Add(new KeyValuePair<string, MQTTCamera>("camera", Camera));
             ServiceHeartbeats.Add(Camera);
 
-            MQTTCamera Camera1 = new MQTTCamera("相机2", "Camera1", "Camera1Service");
+            CameraConfig cameraConfig1 = new CameraConfig();
+
+            cameraConfig1.CameraID = "e29b14429bc375b1";
+            cameraConfig1.SendTopic = "Camera";
+            cameraConfig1.SubscribeTopic = "CameraService";
+            cameraConfig1.Name = "BV";
+
+            MQTTCamera Camera1 = new MQTTCamera(cameraConfig1);
             MQTTCameras.Add(new KeyValuePair<string, MQTTCamera>("camera", Camera1));
             ServiceHeartbeats.Add(Camera1);
 
