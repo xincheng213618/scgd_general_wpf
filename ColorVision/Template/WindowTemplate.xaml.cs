@@ -238,7 +238,6 @@ namespace ColorVision.Template
                             }
                         }
                         break;
-
                 }
             }
         }
@@ -388,9 +387,22 @@ namespace ColorVision.Template
                                 TemplateControl.ModMasterDeleteById(TemplateControl.FlowParams[ListView1.SelectedIndex].Value.ID);
                             TemplateControl.FlowParams.RemoveAt(ListView1.SelectedIndex);
                             break;
+                        case WindowTemplateType.MeasureParm:
+                            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+                            {
+                                TemplateControl.MeasureMasterDeleteById(TemplateControl.MeasureParams[ListView1.SelectedIndex].Value.ID);
+                            }
+                            TemplateControl.MeasureParams.RemoveAt(ListView1.SelectedIndex);
+                            break;
                     }
                     ListConfigs.RemoveAt(ListView1.SelectedIndex);
                     ListView1.SelectedIndex = ListConfigs.Count - 1;
+                    if (ListView1.SelectedIndex < 0)
+                    {
+                        if (UserControl is MeasureParamControl mpc){
+                            mpc.ListConfigs.Clear();
+                        }
+                    }
                 }
             }
             else
