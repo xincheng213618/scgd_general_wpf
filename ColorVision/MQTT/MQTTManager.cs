@@ -48,7 +48,7 @@ namespace ColorVision.MQTT
             ServiceHeartbeats.Add(Camera1);
 
 
-            MQTTPG PG =  new MQTTPG("PG1");
+            MQTTPG PG = new MQTTPG("PG1");
             MQTTPGs.Add(new KeyValuePair<string, MQTTPG>("PG", PG));
             ServiceHeartbeats.Add(PG);
 
@@ -60,11 +60,11 @@ namespace ColorVision.MQTT
             MQTTVISources.Add(new KeyValuePair<string, MQTTVISource>("源表", VISource));
             ServiceHeartbeats.Add(VISource);
 
-            Algorithm Algorithm = new Algorithm("Algorithm");
-            Algorithms.Add(new KeyValuePair<string, Algorithm>("Algorithm", Algorithm));
-            ServiceHeartbeats.Add(Algorithm);
+            //Algorithm Algorithm = new Algorithm("Algorithm");
+            //Algorithms.Add(new KeyValuePair<string, Algorithm>("Algorithm", Algorithm));
+            //ServiceHeartbeats.Add(Algorithm);
 
-            
+
         }
 
         public ObservableCollection<KeyValuePair<string, MQTTCamera>> MQTTCameras { get; set; }
