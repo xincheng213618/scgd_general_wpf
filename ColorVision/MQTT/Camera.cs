@@ -82,17 +82,27 @@ namespace ColorVision.MQTT
 
     }
 
+    public class ServiceConfig
+    {
+        public string SubscribeTopic { get; set; }
+        public string SendTopic { get; set; }
+
+    }
+
+
     /// <summary>
     /// 相机配置
     /// </summary>
     public class CameraConfig: BaseHardwareConfig
     {
-        public CameraConfig()
-        { 
 
+        public ServiceConfig ServiceConfig { get; set; }
+        public CameraConfig(ServiceConfig ServiceConfig)
+        {
+            this.ServiceConfig = ServiceConfig;
         }
-        public string SubscribeTopic { get; set; }
-        public string SendTopic { get; set; }
+        public string SubscribeTopic { get => ServiceConfig.SubscribeTopic; }
+        public string SendTopic { get => ServiceConfig.SendTopic; }
 
         public string CameraID { get => _CameraID; set { _CameraID = value;  NotifyPropertyChanged(); } }
         private string _CameraID;
@@ -123,9 +133,11 @@ namespace ColorVision.MQTT
 
         public MQTTCamera(string NickName = "相机1",string SendTopic = "Camera/CMD/0", string SubscribeTopic = "Camera/STATUS/0") : base()
         {
-            Config = new CameraConfig();
-            Config.SendTopic = SendTopic;
-            Config.SubscribeTopic = SubscribeTopic;
+            ServiceConfig serviceConfig = new ServiceConfig();
+            serviceConfig.SubscribeTopic = SubscribeTopic;
+            serviceConfig.SendTopic = SendTopic;
+            Config = new CameraConfig(serviceConfig);
+
 
             this.NickName = NickName;
             this.SendTopic = SendTopic;

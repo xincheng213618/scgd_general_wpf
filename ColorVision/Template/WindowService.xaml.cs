@@ -1,8 +1,10 @@
 ﻿using ColorVision.Extension;
+using ColorVision.MQTT;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.SettingUp;
+using Newtonsoft.Json;
 using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
@@ -78,6 +80,10 @@ namespace ColorVision.Template
             VisualChildren.Remove(baseObject);
         }
 
+        public virtual void Save()
+        {
+        }
+
     }
 
     public class MQTTDevice : BaseObject
@@ -98,13 +104,33 @@ namespace ColorVision.Template
         }
     }
 
+
+
+
+
     public class MQTTService : BaseObject
     {
         public SysResourceModel SysResourceModel { get; set; }
         private SysResourceService resourceService = new SysResourceService();
 
-        public MQTTService() : base()
+        public ServiceConfig ServiceConfig { get; set; }
+
+        public RelayCommand SaveCommand { get; set; }
+
+        public MQTTService(SysResourceModel sysResourceModel) : base()
         {
+            SysResourceModel = sysResourceModel;
+            Name = sysResourceModel.Name ?? string.Empty;
+
+
+            if (string.IsNullOrEmpty(SysResourceModel.Value))
+            {
+                ServiceConfig ??= new ServiceConfig();
+            }
+            else
+            {
+                ServiceConfig = JsonConvert.DeserializeObject<ServiceConfig>(SysResourceModel.Value) ?? new ServiceConfig();
+            }
             ContextMenu = new ContextMenu();
             MenuItem menuItem = new MenuItem() { Header = "删除服务" };
             menuItem.Click += (s, e) =>
@@ -113,7 +139,22 @@ namespace ColorVision.Template
                 resourceService.DeleteById(SysResourceModel.Id);
             };
             ContextMenu.Items.Add(menuItem);
+
+            SaveCommand = new RelayCommand(a => Save());
         }
+
+
+        public override void Save()
+        {
+            base.Save();
+            SysResourceModel.Value = JsonConvert.SerializeObject(ServiceConfig);
+            resourceService.Save(SysResourceModel);
+        }
+
+
+
+
+
     }
 
 
@@ -123,8 +164,6 @@ namespace ColorVision.Template
         public MQTTServiceKind() : base()
         {
         }
-
-
     }
 
 
@@ -165,10 +204,9 @@ namespace ColorVision.Template
                 {
                     if (item1.Type == item.Value)
                     {
-                        MQTTService mQTTService = new MQTTService();
+                        MQTTService mQTTService = new MQTTService(item1);
                         mQTTService.Name = item1.Name ?? string.Empty;
-                        mQTTService.SysResourceModel = item1;
-
+                        resourceService.Save(item1);
                         foreach (var item2 in devices)
                         {
                             if (item2.Pid == item1.Id)
@@ -228,12 +266,18 @@ namespace ColorVision.Template
             //}
 
             SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, ((MQTTServiceKind)TextBox_Type.SelectedItem).SysDictionaryModel.Value, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+
+            ServiceConfig ServiceConfig = new ServiceConfig();
+            ServiceConfig.SendTopic = SendTopicAdd.Text;
+            ServiceConfig.SubscribeTopic = SubscribeTopicAdd.Text;
+            sysResource.Value = JsonConvert.SerializeObject(ServiceConfig);
+
             resourceService.Save(sysResource);
             int pkId = sysResource.GetPK();
             if (pkId > 0)
             {
                 SysResourceModel model = resourceService.GetMasterById(pkId);
-                MQTTServices[0].AddChild(new MQTTService() { Name = model.Name, SysResourceModel = model });
+                MQTTServices[0].AddChild(new MQTTService(model));
             }
 
 

@@ -1,4 +1,5 @@
-﻿using HslCommunication.Profinet.Panasonic.Helper;
+﻿using HslCommunication.MQTT;
+using HslCommunication.Profinet.Panasonic.Helper;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -26,11 +27,14 @@ namespace ColorVision.MQTT
             MQTTVISources = new ObservableCollection<KeyValuePair<string, MQTTVISource>>();
             Algorithms = new ObservableCollection<KeyValuePair<string, Algorithm>>();
 
-            CameraConfig cameraConfig = new CameraConfig();
+
+            ServiceConfig serviceConfig = new ServiceConfig();
+            serviceConfig.SubscribeTopic = "Camera";
+            serviceConfig.SendTopic = "CameraService";
+
+            CameraConfig cameraConfig = new CameraConfig(serviceConfig);
             cameraConfig.Name = "相机0";
             cameraConfig.CameraID = "58366c49967393afe";
-            cameraConfig.SendTopic = "Camera";
-            cameraConfig.SubscribeTopic = "CameraService";
             cameraConfig.CameraType = CameraType.CVQ;
             cameraConfig.TakeImageMode = TakeImageMode.Normal;
             cameraConfig.Name = "CV";
@@ -39,11 +43,10 @@ namespace ColorVision.MQTT
             MQTTCameras.Add(new KeyValuePair<string, MQTTCamera>("camera", Camera));
             ServiceHeartbeats.Add(Camera);
 
-            CameraConfig cameraConfig1 = new CameraConfig();
+
+            CameraConfig cameraConfig1 = new CameraConfig(serviceConfig);
             cameraConfig1.Name = "相机1";
             cameraConfig1.CameraID = "e29b14429bc375b1";
-            cameraConfig1.SendTopic = "Camera";
-            cameraConfig1.SubscribeTopic = "CameraService";
             cameraConfig1.CameraType = CameraType.LVQ;
             cameraConfig1.TakeImageMode = TakeImageMode.Normal;
             cameraConfig1.ImageBpp = 8;

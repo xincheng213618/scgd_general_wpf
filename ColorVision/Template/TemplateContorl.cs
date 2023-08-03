@@ -62,7 +62,6 @@ namespace ColorVision.Template
             PoiParams = new ObservableCollection<KeyValuePair<string, PoiParam>>();
             MeasureParams = new ObservableCollection<KeyValuePair<string, MeasureParam>>();
 
-
             GlobalSetting.GetInstance().SoftwareConfig.UseMySqlChanged += (s) =>
             {
                 Init();
