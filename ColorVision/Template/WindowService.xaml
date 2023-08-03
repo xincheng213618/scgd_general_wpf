@@ -12,7 +12,7 @@
             <ColumnDefinition Width="200"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        <TreeView x:Name="TreeView1" Background="#E6E6E6">
+        <TreeView x:Name="TreeView1" Background="#E6E6E6"  SelectedItemChanged="TreeView1_SelectedItemChanged ">
             <TreeView.Resources>
                 <HierarchicalDataTemplate DataType="{x:Type local:MQTTServiceKind}" ItemsSource="{Binding VisualChildren}" >
                     <StackPanel >
@@ -41,8 +41,8 @@
 
         </TreeView>
 
-        <StackPanel Grid.Column="1">
-
+        <StackPanel x:Name="StackPanelShow" Grid.Column="1">
+            <TextBlock Text="{Binding Name}"/>
             <StackPanel x:Name="CreateGrid"  Grid.Column="1" Grid.Row="1">
                 <DockPanel Margin="5" >
                     <TextBlock Text="类型" Width="60"/>

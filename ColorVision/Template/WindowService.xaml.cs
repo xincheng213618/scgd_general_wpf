@@ -88,7 +88,7 @@ namespace ColorVision.Template
         public MQTTDevice() : base()
         {
             ContextMenu = new ContextMenu();
-            MenuItem menuItem = new MenuItem() { Header = "删除资源1" };
+            MenuItem menuItem = new MenuItem() { Header = "删除设备" };
             menuItem.Click += (s, e) =>
             {
                 this.Parent.RemoveChild(this);
@@ -106,7 +106,7 @@ namespace ColorVision.Template
         public MQTTService() : base()
         {
             ContextMenu = new ContextMenu();
-            MenuItem menuItem = new MenuItem() { Header = "删除资源" };
+            MenuItem menuItem = new MenuItem() { Header = "删除服务" };
             menuItem.Click += (s, e) =>
             {
                 this.Parent.RemoveChild(this);
@@ -192,6 +192,30 @@ namespace ColorVision.Template
             TextBox_Type.ItemsSource = MQTTServices;
         }
 
+        private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        {
+            if (TreeView1.SelectedItem is MQTTServiceKind MQTTServiceKind)
+            {
+                StackPanelShow.DataContext = MQTTServiceKind;
+                TextBox_Type.ItemsSource = MQTTServices;
+                TextBox_Type.SelectedItem = MQTTServiceKind;
+                CreateGrid.Visibility = Visibility.Visible;
+            }
+            else if (TreeView1.SelectedItem is MQTTService me)
+            {
+                StackPanelShow.DataContext = me;
+                TextBox_Type.ItemsSource = me.Parent.VisualChildren;
+                TextBox_Type.SelectedItem = me;
+                CreateGrid.Visibility = Visibility.Visible;
+
+            }
+            else if (TreeView1.SelectedItem is MQTTDevice mQTTDevice)
+            {
+                StackPanelShow.DataContext = mQTTDevice;
+                CreateGrid.Visibility = Visibility.Collapsed;
+            }
+        }
+
         private void Button_New_Click(object sender, RoutedEventArgs e)
         {
             //SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, ((MQTTService)TextBox_Type.SelectedItem).SysResourceModel.Type, ((MQTTService)TextBox_Type.SelectedItem).SysResourceModel.Id, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
@@ -203,7 +227,7 @@ namespace ColorVision.Template
             //    MQTTServices[0].VisualChildren[0].AddChild(new MQTTDevice() { Name = model.Name, SysResourceModel = model });
             //}
 
-            SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, ((MQTTServiceKind)TextBox_Type.SelectedItem).SysDictionaryModel.Type, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, ((MQTTServiceKind)TextBox_Type.SelectedItem).SysDictionaryModel.Value, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
             resourceService.Save(sysResource);
             int pkId = sysResource.GetPK();
             if (pkId > 0)
@@ -224,5 +248,7 @@ namespace ColorVision.Template
         {
 
         }
+
+
     }
 }
