@@ -3,11 +3,13 @@ using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.SettingUp;
+using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Design;
 using System.Linq;
+using System.Security.AccessControl;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -42,6 +44,8 @@ namespace ColorVision.Template
 
     public class BaseObject : ViewModelBase
     {
+
+        public ContextMenu ContextMenu { get; set; }
         public  ObservableCollection<BaseObject> VisualChildren { get; set; }
         public BaseObject()
         {
@@ -67,26 +71,57 @@ namespace ColorVision.Template
             baseObject.Parent = this;
             VisualChildren.SortedAdd(baseObject);
         }
+        public virtual void RemoveChild(BaseObject baseObject)
+        {
+            if (baseObject == null) return;
+            baseObject.Parent = null;
+            VisualChildren.Remove(baseObject);
+        }
 
     }
 
     public class MQTTDevice : BaseObject
     {
-        public ResourceParam ResourceParam { get; set; }
+        public SysResourceModel SysResourceModel { get; set; }
+        private SysResourceService resourceService = new SysResourceService();
 
         public MQTTDevice() : base()
         {
-
+            ContextMenu = new ContextMenu();
+            MenuItem menuItem = new MenuItem() { Header = "删除资源1" };
+            menuItem.Click += (s, e) =>
+            {
+                this.Parent.RemoveChild(this);
+                resourceService.DeleteById(SysResourceModel.Id);
+            };
+            ContextMenu.Items.Add(menuItem);
         }
     }
 
     public class MQTTService : BaseObject
     {
-        public ResourceParam ResourceParam { get; set; }
+        public SysResourceModel SysResourceModel { get; set; }
+        private SysResourceService resourceService = new SysResourceService();
 
         public MQTTService() : base()
         {
+            ContextMenu = new ContextMenu();
+            MenuItem menuItem = new MenuItem() { Header = "删除资源" };
+            menuItem.Click += (s, e) =>
+            {
+                this.Parent.RemoveChild(this);
+                resourceService.DeleteById(SysResourceModel.Id);
+            };
+            ContextMenu.Items.Add(menuItem);
+        }
+    }
 
+
+    public class MQTTServiceKind : BaseObject
+    {
+        public SysDictionaryModel SysDictionaryModel { get; set; }
+        public MQTTServiceKind() : base()
+        {
         }
 
 
@@ -106,38 +141,41 @@ namespace ColorVision.Template
         {
             InitializeComponent();
         }
-        public ObservableCollection<MQTTService> MQTTServices { get; set; }
+        public ObservableCollection<MQTTServiceKind> MQTTServices { get; set; }
 
         private SysResourceService resourceService = new SysResourceService();
         private SysDictionaryService dictionaryService = new SysDictionaryService();
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            MQTTServices = new ObservableCollection<MQTTService>();
+            MQTTServices = new ObservableCollection<MQTTServiceKind>();
 
             TemplateControl = TemplateControl.GetInstance();
 
 
             List<SysResourceModel> Services = resourceService.GetAllServices(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
             List<SysResourceModel> devices = resourceService.GetAllDevices(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            
             foreach (var item in dictionaryService.GetAllServiceType())
             {
-                MQTTService mQTTServicetype = new MQTTService();
+                MQTTServiceKind mQTTServicetype = new MQTTServiceKind();
                 mQTTServicetype.Name = item.Name ?? string.Empty;
+                mQTTServicetype.SysDictionaryModel = item;
                 foreach (var item1 in Services)
                 {
                     if (item1.Type == item.Value)
                     {
                         MQTTService mQTTService = new MQTTService();
                         mQTTService.Name = item1.Name ?? string.Empty;
-
+                        mQTTService.SysResourceModel = item1;
 
                         foreach (var item2 in devices)
                         {
-                            if (item2.Type == item1.Type)
-                            {
+                            if (item2.Pid == item1.Id)
+                            {    
                                 MQTTDevice device = new MQTTDevice();
                                 device.Name = item2.Name ?? string.Empty; ;
+                                device.SysResourceModel = item2;
                                 mQTTService.AddChild(device);
                             }
                         }
@@ -150,7 +188,41 @@ namespace ColorVision.Template
 
             }
             TreeView1.ItemsSource = MQTTServices;
+
+            TextBox_Type.ItemsSource = MQTTServices;
         }
 
+        private void Button_New_Click(object sender, RoutedEventArgs e)
+        {
+            //SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, ((MQTTService)TextBox_Type.SelectedItem).SysResourceModel.Type, ((MQTTService)TextBox_Type.SelectedItem).SysResourceModel.Id, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            //resourceService.Save(sysResource);
+            //int pkId = sysResource.GetPK();
+            //if (pkId > 0)
+            //{
+            //    SysResourceModel model = resourceService.GetMasterById(pkId);
+            //    MQTTServices[0].VisualChildren[0].AddChild(new MQTTDevice() { Name = model.Name, SysResourceModel = model });
+            //}
+
+            SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, ((MQTTServiceKind)TextBox_Type.SelectedItem).SysDictionaryModel.Type, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            resourceService.Save(sysResource);
+            int pkId = sysResource.GetPK();
+            if (pkId > 0)
+            {
+                SysResourceModel model = resourceService.GetMasterById(pkId);
+                MQTTServices[0].AddChild(new MQTTService() { Name = model.Name, SysResourceModel = model });
+            }
+
+
+        }
+
+        private void Button_Del_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void MenuItem_Click4(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }

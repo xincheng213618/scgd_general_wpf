@@ -12,10 +12,13 @@
             <ColumnDefinition Width="200"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-
-
         <TreeView x:Name="TreeView1" Background="#E6E6E6">
             <TreeView.Resources>
+                <HierarchicalDataTemplate DataType="{x:Type local:MQTTServiceKind}" ItemsSource="{Binding VisualChildren}" >
+                    <StackPanel >
+                        <TextBlock Text="{Binding Name}"/>
+                    </StackPanel>
+                </HierarchicalDataTemplate>
                 <HierarchicalDataTemplate DataType="{x:Type local:MQTTService}" ItemsSource="{Binding VisualChildren}" >
                     <StackPanel >
                         <TextBlock Text="{Binding Name}"/>
@@ -26,8 +29,51 @@
                         <TextBlock Text="{Binding Name}"/>
                     </StackPanel>
                 </HierarchicalDataTemplate>
+                <ContextMenu x:Key="ContextMenuItem" >
+                    <MenuItem Header="删除"  Click="MenuItem_Click4" Tag="{Binding .}"  />
+                </ContextMenu>
             </TreeView.Resources>
+            <TreeView.ItemContainerStyle>
+                <Style TargetType="{x:Type TreeViewItem}" BasedOn="{StaticResource TreeViewItemBaseStyle}">
+                    <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                </Style>
+            </TreeView.ItemContainerStyle>
 
         </TreeView>
+
+        <StackPanel Grid.Column="1">
+
+            <StackPanel x:Name="CreateGrid"  Grid.Column="1" Grid.Row="1">
+                <DockPanel Margin="5" >
+                    <TextBlock Text="类型" Width="60"/>
+                    <ComboBox x:Name="TextBox_Type" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Name"  DisplayMemberPath="Name" />
+                </DockPanel>
+                <DockPanel Margin="5" >
+                    <TextBlock Text="标识" Width="60"/>
+                    <TextBox x:Name="TextBox_Code"/>
+                </DockPanel>
+                <DockPanel Margin="5" >
+                    <TextBlock Text="名称" Width="60"/>
+                    <TextBox x:Name="TextBox_Name" />
+                </DockPanel>
+                <DockPanel Margin="5" >
+                    <TextBlock Text="发送Topic" Width="60"/>
+                    <TextBox  />
+                </DockPanel>
+                <DockPanel Margin="5" >
+                    <TextBlock Text="接收Topic" Width="60"/>
+                    <TextBox />
+                </DockPanel>
+                <UniformGrid x:Name="FunctionGrid" Columns="2" Margin="0,8"  Width="300" >
+                    <Button Width="80"  Click="Button_New_Click" HorizontalAlignment="Left">
+                        <TextBlock Text="添加资源"/>
+                    </Button>
+                    <Button  Width="80"   Click="Button_Del_Click" >
+                        <TextBlock Text="删除资源'}"/>
+                    </Button>
+                </UniformGrid>
+            </StackPanel>
+
+        </StackPanel>
     </Grid>
 </Window>
