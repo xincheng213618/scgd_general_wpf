@@ -17,15 +17,15 @@
             <StackPanel Margin="5">
                 <DockPanel>
                     <Label Content="模板："/>
-                    <ComboBox  x:Name="ComboxPGTemplate"  SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,0,10,0"/>
+                    <ComboBox  x:Name="ComboxPGTemplate"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,0,10,0"/>
                 </DockPanel>
                 <Template:PG x:Name="PG1" />
                 <GroupBox Header="MQTT Test">
                     <StackPanel Visibility="Visible" >
                         <TextBlock Text="{Binding NickName}" HorizontalAlignment="Center"/>
                         <UniformGrid>
-                            <ComboBox  x:Name="ComboxPGType"   SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,2,10,2"/>
-                            <ComboBox  x:Name="ComboxPGCommunicateType"  SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,2,10,2"/>
+                            <ComboBox  x:Name="ComboxPGType"   Style="{StaticResource ComboBox.Small}"   SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,2,10,2"/>
+                            <ComboBox  x:Name="ComboxPGCommunicateType"  Style="{StaticResource ComboBox.Small}"   SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,2,10,2"/>
                             <Button Margin="2" Content="InitPG"  Click="PGInit"/>
                             <Button Margin="2"  Content="UnInitPG" Click="PGUnInit"/>
                         </UniformGrid>

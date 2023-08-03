@@ -13,6 +13,7 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
+
         <ListView  x:Name="ListView1"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  SelectionChanged="ListView1_SelectionChanged">
             <ListView.Resources >
                 <ContextMenu x:Key="ContextMenuItem">
@@ -45,6 +46,15 @@
                 </GridView>
             </ListView.View>
         </ListView>
+        <TreeView>
+            <TreeViewItem Header="相机服务">
+                <TreeViewItem Header="设备1"/>
+                <TreeViewItem Header="设备2"/>
+            </TreeViewItem>
+            <TreeViewItem Header="2222"/>
+            <TreeViewItem Header="2222"/>
+            <TreeViewItem Header="2222"/>
 
+        </TreeView>
     </Grid>
 </Window>

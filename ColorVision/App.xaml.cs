@@ -117,7 +117,6 @@ namespace ColorVision
             System.Windows.Forms.Application.EnableVisualStyles();
             System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
 
-
             //代码先进入启动窗口
             StartWindow StartWindow = new StartWindow();
             StartWindow.Show();
