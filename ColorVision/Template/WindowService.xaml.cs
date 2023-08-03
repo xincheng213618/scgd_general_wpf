@@ -129,7 +129,14 @@ namespace ColorVision.Template
             }
             else
             {
-                ServiceConfig = JsonConvert.DeserializeObject<ServiceConfig>(SysResourceModel.Value) ?? new ServiceConfig();
+                try
+                {
+                    ServiceConfig = JsonConvert.DeserializeObject<ServiceConfig>(SysResourceModel.Value) ?? new ServiceConfig();
+                }
+                catch
+                {
+                    ServiceConfig = new ServiceConfig();
+                }
             }
             ContextMenu = new ContextMenu();
             MenuItem menuItem = new MenuItem() { Header = "删除服务" };
@@ -234,51 +241,65 @@ namespace ColorVision.Template
         {
             if (TreeView1.SelectedItem is MQTTServiceKind MQTTServiceKind)
             {
+                type = false;
                 StackPanelShow.DataContext = MQTTServiceKind;
                 TextBox_Type.ItemsSource = MQTTServices;
                 TextBox_Type.SelectedItem = MQTTServiceKind;
                 CreateGrid.Visibility = Visibility.Visible;
+                MQTTServiceStackPanel.Visibility = Visibility.Collapsed;
             }
             else if (TreeView1.SelectedItem is MQTTService me)
             {
+                type = true;
                 StackPanelShow.DataContext = me;
                 TextBox_Type.ItemsSource = me.Parent.VisualChildren;
                 TextBox_Type.SelectedItem = me;
                 CreateGrid.Visibility = Visibility.Visible;
-
+                MQTTServiceStackPanel.Visibility = Visibility.Visible;
             }
             else if (TreeView1.SelectedItem is MQTTDevice mQTTDevice)
             {
                 StackPanelShow.DataContext = mQTTDevice;
                 CreateGrid.Visibility = Visibility.Collapsed;
+                MQTTServiceStackPanel.Visibility = Visibility.Collapsed;
             }
         }
 
+
+        bool type;
+
         private void Button_New_Click(object sender, RoutedEventArgs e)
         {
-            //SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, ((MQTTService)TextBox_Type.SelectedItem).SysResourceModel.Type, ((MQTTService)TextBox_Type.SelectedItem).SysResourceModel.Id, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            //resourceService.Save(sysResource);
-            //int pkId = sysResource.GetPK();
-            //if (pkId > 0)
-            //{
-            //    SysResourceModel model = resourceService.GetMasterById(pkId);
-            //    MQTTServices[0].VisualChildren[0].AddChild(new MQTTDevice() { Name = model.Name, SysResourceModel = model });
-            //}
-
-            SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, ((MQTTServiceKind)TextBox_Type.SelectedItem).SysDictionaryModel.Value, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
-
-            ServiceConfig ServiceConfig = new ServiceConfig();
-            ServiceConfig.SendTopic = SendTopicAdd.Text;
-            ServiceConfig.SubscribeTopic = SubscribeTopicAdd.Text;
-            sysResource.Value = JsonConvert.SerializeObject(ServiceConfig);
-
-            resourceService.Save(sysResource);
-            int pkId = sysResource.GetPK();
-            if (pkId > 0)
+            if (type)
             {
-                SysResourceModel model = resourceService.GetMasterById(pkId);
-                MQTTServices[0].AddChild(new MQTTService(model));
+                SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, ((MQTTService)TextBox_Type.SelectedItem).SysResourceModel.Type, ((MQTTService)TextBox_Type.SelectedItem).SysResourceModel.Id, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                resourceService.Save(sysResource);
+                int pkId = sysResource.GetPK();
+                if (pkId > 0)
+                {
+                    SysResourceModel model = resourceService.GetMasterById(pkId);
+                    MQTTServices[0].VisualChildren[0].AddChild(new MQTTDevice() { Name = model.Name, SysResourceModel = model });
+                }
             }
+            else
+            {
+                SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, ((MQTTServiceKind)TextBox_Type.SelectedItem).SysDictionaryModel.Value, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                ServiceConfig ServiceConfig = new ServiceConfig();
+                ServiceConfig.SendTopic = SendTopicAdd.Text;
+                ServiceConfig.SubscribeTopic = SubscribeTopicAdd.Text;
+                sysResource.Value = JsonConvert.SerializeObject(ServiceConfig);
+
+                resourceService.Save(sysResource);
+                int pkId = sysResource.GetPK();
+                if (pkId > 0)
+                {
+                    SysResourceModel model = resourceService.GetMasterById(pkId);
+                    MQTTServices[0].AddChild(new MQTTService(model));
+                }
+            }
+
+
+
 
 
         }

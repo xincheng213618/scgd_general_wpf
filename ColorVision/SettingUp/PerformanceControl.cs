@@ -20,6 +20,7 @@ namespace ColorVision.SettingUp
     }
 
 
+
     public class PerformanceControl : ViewModelBase, IDisposable
     {
         private static PerformanceControl _instance;

@@ -39,19 +39,22 @@
         </TreeView>
 
         <StackPanel x:Name="StackPanelShow" Grid.Column="1">
-            <DockPanel Margin="5" >
-                <TextBlock Text="服务名称" Width="120"/>
-                <TextBlock Text="{Binding Name}"/>
-            </DockPanel>
-            <DockPanel Margin="5" >
-                <TextBlock Text="SendTopic" Width="120"/>
-                <TextBox Text="{Binding ServiceConfig.SendTopic}"/>
-            </DockPanel>
-            <DockPanel Margin="5" >
-                <TextBlock Text="SubscribeTopic" Width="120"/>
-                <TextBox Text="{Binding ServiceConfig.SubscribeTopic}"/>
-            </DockPanel>
-            <Button Width="80"  Content="保存"  Command="{Binding SaveCommand}" HorizontalAlignment="Left"/>
+            <StackPanel x:Name="MQTTServiceStackPanel">
+                <DockPanel Margin="5" >
+                    <TextBlock Text="服务名称" Width="120"/>
+                    <TextBlock Text="{Binding Name}"/>
+                </DockPanel>
+                <DockPanel Margin="5" >
+                    <TextBlock Text="SendTopic" Width="120"/>
+                    <TextBox Text="{Binding ServiceConfig.SendTopic}"/>
+                </DockPanel>
+                <DockPanel Margin="5" >
+                    <TextBlock Text="SubscribeTopic" Width="120"/>
+                    <TextBox Text="{Binding ServiceConfig.SubscribeTopic}"/>
+                </DockPanel>
+                <Button Width="80"  Content="保存"  Command="{Binding SaveCommand}" HorizontalAlignment="Left"/>
+            </StackPanel>
+
 
             <StackPanel x:Name="CreateGrid"  Grid.Column="1" Grid.Row="1">
                 <DockPanel Margin="5" >

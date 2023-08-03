@@ -73,7 +73,7 @@ namespace ColorVision.MySql
 
         public static string GetConnectionString(MySqlConfig MySqlConfig,int timeout =3 )
         {
-            string connStr = $"server={MySqlConfig.Host};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};Connect Timeout={timeout}";
+            string connStr = $"server={MySqlConfig.Host};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset=utf8;Connect Timeout={timeout}";
             return connStr;
         }
 
