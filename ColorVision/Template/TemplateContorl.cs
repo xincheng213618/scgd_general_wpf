@@ -60,8 +60,6 @@ namespace ColorVision.Template
             SxParams = new ObservableCollection<KeyValuePair<string, SxParam>>();
             FlowParams = new ObservableCollection<KeyValuePair<string, FlowParam>>();
             PoiParams = new ObservableCollection<KeyValuePair<string, PoiParam>>();
-            DeviceParams = new ObservableCollection<KeyValuePair<string, ResourceParam>>();
-            ServiceParams = new ObservableCollection<KeyValuePair<string, ResourceParam>>();
             MeasureParams = new ObservableCollection<KeyValuePair<string, MeasureParam>>();
 
 
@@ -86,8 +84,6 @@ namespace ColorVision.Template
             LoadPoiParam();
             LoadAoiParam();
             LoadFlowParam();
-            LoadServiceParams();
-            LoadDeviceParams();
 
         }
 
@@ -178,9 +174,6 @@ namespace ColorVision.Template
                     break;
                 case WindowTemplateType.FlowParam:
                     SaveDefault(FileNameFlowParms, FlowParams);
-                    break;
-                case WindowTemplateType.Device:
-                    SaveDefault(FileNameCameraDeviceParams, DeviceParams);
                     break;
                 default:
                     break;
@@ -396,40 +389,12 @@ namespace ColorVision.Template
             return AoiParams;
         }
 
-        internal ObservableCollection<KeyValuePair<string, ResourceParam>> LoadDeviceParams()
-        {
-            DeviceParams.Clear();
-            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
-            {
-                List<SysResourceModel> devices = resourceService.GetAllDevices(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
-                foreach (var dbModel in devices)
-                {
-                    KeyValuePair<string, ResourceParam> item = new KeyValuePair<string, ResourceParam>(dbModel.Name ?? "default", new ResourceParam(dbModel));
-                    DeviceParams.Add(item);
-                }
-            }
-            return DeviceParams;
-        }
 
         internal List<SysResourceModel> LoadAllServices()
         {
             return resourceService.GetAllServices(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
         }
 
-        internal ObservableCollection<KeyValuePair<string, ResourceParam>> LoadServiceParams()
-        {
-            ServiceParams.Clear();
-            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
-            {
-                List<SysResourceModel> devices = resourceService.GetAllServices(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
-                foreach (var dbModel in devices)
-                {
-                    KeyValuePair<string, ResourceParam> item = new KeyValuePair<string, ResourceParam>(dbModel.Name ?? "default", new ResourceParam(dbModel));
-                    ServiceParams.Add(item);
-                }
-            }
-            return ServiceParams;
-        }
 
         internal ObservableCollection<KeyValuePair<string, MeasureParam>> LoadMeasureParams()
         {
@@ -515,8 +480,6 @@ namespace ColorVision.Template
         }
 
         public ObservableCollection<KeyValuePair<string, MeasureParam>> MeasureParams { get; set; }
-        public ObservableCollection<KeyValuePair<string, ResourceParam>> ServiceParams { get; set; }
-        public ObservableCollection<KeyValuePair<string, ResourceParam>> DeviceParams { get; set; }
         public ObservableCollection<KeyValuePair<string, AoiParam>> AoiParams { get; set; }
         public ObservableCollection<KeyValuePair<string, CalibrationParam>> CalibrationParams { get; set; } 
         public ObservableCollection<KeyValuePair<string, PGParam>> PGParams { get; set; }
