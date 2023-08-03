@@ -39,6 +39,16 @@ namespace ColorVision.MySql.Service
             return measureMaster.GetByID(pkId);
         }
 
+        internal int MasterDeleteById(int id)
+        {
+            int ret = measureMaster.DeleteById(id);
+            if (ret == 1)
+            {
+               int iret =  measureDetail.DeleteAllByPid(id);
+            }
+            return ret;
+        }
+
         internal int Save(MeasureMasterModel model)
         {
             return measureMaster.Save(model);

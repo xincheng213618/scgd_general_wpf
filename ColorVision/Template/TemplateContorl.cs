@@ -509,6 +509,11 @@ namespace ColorVision.Template
            return measureService.DetailDeleteById(id);
         }
 
+        internal int MeasureMasterDeleteById(int id)
+        {
+            return measureService.MasterDeleteById(id);
+        }
+
         public ObservableCollection<KeyValuePair<string, MeasureParam>> MeasureParams { get; set; }
         public ObservableCollection<KeyValuePair<string, ResourceParam>> ServiceParams { get; set; }
         public ObservableCollection<KeyValuePair<string, ResourceParam>> DeviceParams { get; set; }
