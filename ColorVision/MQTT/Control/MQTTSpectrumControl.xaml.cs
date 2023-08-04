@@ -44,7 +44,7 @@ namespace ColorVision.MQTT.Control
             Spectrum.Init();
         }
 
-        private void Button_Click_2(object sender, RoutedEventArgs e)
+        private void Button_Click_Open(object sender, RoutedEventArgs e)
         {
             Spectrum.Open();
         }
@@ -62,7 +62,7 @@ namespace ColorVision.MQTT.Control
         private void Button_Click_5(object sender, RoutedEventArgs e)
         {
             Spectrum.Close();
-            Spectrum.UnInit();
+            //Spectrum.UnInit();
         }
         #endregion
         #region Spectrum

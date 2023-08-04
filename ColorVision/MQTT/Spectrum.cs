@@ -20,7 +20,7 @@ namespace ColorVision.MQTT
     {
         public event MQTTSpectrumDataHandler DataHandlerEvent;
 
-        public MQTTSpectrum(string NickName = "Spectrum1", string SendTopic = "Spectrum", string SubscribeTopic = "SpectrumService") : base()
+        public MQTTSpectrum(string NickName = "Spectrum1", string SendTopic = "Spectum/CMD/chen_sp1", string SubscribeTopic = "Spectum/STATUS/chen_sp1") : base()
         {
             this.NickName = NickName;
             this.SendTopic = SendTopic;
@@ -124,11 +124,11 @@ namespace ColorVision.MQTT
 
         public bool Open()
         {
-            if (ServiceID == 0)
-            {
-                MessageBox.Show("请先初始化");
-                return false;
-            }
+            //if (ServiceID == 0)
+            //{
+            //    MessageBox.Show("请先初始化");
+            //    return false;
+            //}
             MsgSend msg = new MsgSend
             {
                 EventName = "Open"
@@ -161,11 +161,11 @@ namespace ColorVision.MQTT
 
         public bool Close()
         {
-            if (ServiceID == 0)
-            {
-                MessageBox.Show("请先初始化");
-                return false;
-            }
+            //if (ServiceID == 0)
+            //{
+            //    MessageBox.Show("请先初始化");
+            //    return false;
+            //}
             MsgSend msg = new MsgSend
             {
                 EventName = "Close"
