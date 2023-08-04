@@ -37,7 +37,6 @@ namespace ColorVision
             {
                 SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
                 WindowTemplate windowTemplate;
-                WindowResource windowResource;
                 if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
                 {
                     MessageBox.Show("数据库连接失败，请先连接数据库在操作");
@@ -76,10 +75,6 @@ namespace ColorVision
                         windowTemplate = new WindowTemplate(WindowTemplateType.FlowParam) { Title = "流程引擎" };
                         TemplateAbb(windowTemplate, TemplateControl.FlowParams);
                         break;
-                    case "DeviceParam":
-                        windowResource = new WindowResource(WindowTemplateType.Device, new UserControl()) { Title = "设备设置" };
-                        ResourceAbb(windowResource, TemplateControl.DeviceParams);
-                        break;
                     case "ServiceParam":
                         new WindowService() { Owner =this,WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
                         break;
@@ -95,28 +90,6 @@ namespace ColorVision
                 }
             }
         }
-
-        private void ResourceAbb<T>(WindowResource windowResource, ObservableCollection<KeyValuePair<string, T>> keyValuePairs)
-        {
-            windowResource.Owner = this;
-            int id = 1;
-            windowResource.ListConfigs.Clear();
-            foreach (var item in keyValuePairs)
-            {
-                ListConfig listConfig = new ListConfig();
-                listConfig.ID = id++;
-                listConfig.Name = item.Key;
-                listConfig.Value = item.Value;
-                if (item.Value is PoiParam poiParam)
-                {
-                    listConfig.Tag = $"{poiParam.Width}*{poiParam.Height}{(GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql ? "" : $"_{poiParam.PoiPoints.Count}")}";
-                }
-
-                windowResource.ListConfigs.Add(listConfig);
-            }
-            windowResource.ShowDialog();
-        }
-
         private void TemplateAbb<T>(WindowTemplate windowTemplate, ObservableCollection<KeyValuePair<string, T>> keyValuePairs)
         {
             windowTemplate.Owner = this;

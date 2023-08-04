@@ -529,10 +529,7 @@ namespace ColorVision.Template
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 string filePath = openFileDialog.FileName;
-                if (ledPicData==null)
-                {
-                    ledPicData = new LedPicData();
-                }
+                ledPicData ??= new LedPicData();
                 ledPicData.picUrl = filePath;
                 OpenImage(filePath);
             }

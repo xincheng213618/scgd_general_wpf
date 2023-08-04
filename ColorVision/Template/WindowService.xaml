@@ -29,9 +29,6 @@
                         <TextBlock Text="{Binding Name}"/>
                     </StackPanel>
                 </HierarchicalDataTemplate>
-                <ContextMenu x:Key="ContextMenuItem" >
-                    <MenuItem Header="删除"  Click="MenuItem_Click4" Tag="{Binding .}"  />
-                </ContextMenu>
             </TreeView.Resources>
             <TreeView.ItemContainerStyle>
                 <Style TargetType="{x:Type TreeViewItem}" BasedOn="{StaticResource TreeViewItemBaseStyle}">
@@ -42,7 +39,20 @@
         </TreeView>
 
         <StackPanel x:Name="StackPanelShow" Grid.Column="1">
-            <TextBlock Text="{Binding Name}"/>
+            <DockPanel Margin="5" >
+                <TextBlock Text="服务名称" Width="120"/>
+                <TextBlock Text="{Binding Name}"/>
+            </DockPanel>
+            <DockPanel Margin="5" >
+                <TextBlock Text="SendTopic" Width="120"/>
+                <TextBox Text="{Binding ServiceConfig.SendTopic}"/>
+            </DockPanel>
+            <DockPanel Margin="5" >
+                <TextBlock Text="SubscribeTopic" Width="120"/>
+                <TextBox Text="{Binding ServiceConfig.SubscribeTopic}"/>
+            </DockPanel>
+            <Button Width="80"  Content="保存"  Command="{Binding SaveCommand}" HorizontalAlignment="Left"/>
+
             <StackPanel x:Name="CreateGrid"  Grid.Column="1" Grid.Row="1">
                 <DockPanel Margin="5" >
                     <TextBlock Text="类型" Width="60"/>
@@ -58,18 +68,15 @@
                 </DockPanel>
                 <DockPanel Margin="5" >
                     <TextBlock Text="发送Topic" Width="60"/>
-                    <TextBox  />
+                    <TextBox x:Name="SendTopicAdd"  />
                 </DockPanel>
                 <DockPanel Margin="5" >
                     <TextBlock Text="接收Topic" Width="60"/>
-                    <TextBox />
+                    <TextBox  x:Name="SubscribeTopicAdd"  />
                 </DockPanel>
                 <UniformGrid x:Name="FunctionGrid" Columns="2" Margin="0,8"  Width="300" >
                     <Button Width="80"  Click="Button_New_Click" HorizontalAlignment="Left">
                         <TextBlock Text="添加资源"/>
-                    </Button>
-                    <Button  Width="80"   Click="Button_Del_Click" >
-                        <TextBlock Text="删除资源'}"/>
                     </Button>
                 </UniformGrid>
             </StackPanel>
