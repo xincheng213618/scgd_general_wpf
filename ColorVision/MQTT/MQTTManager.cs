@@ -16,6 +16,8 @@ namespace ColorVision.MQTT
         public static MQTTManager GetInstance() { lock (_locker) { return _instance ??= new MQTTManager(); } }
 
         public MQTTControl MQTTControl { get; set; }
+
+        public event EventHandler DeviceSettingChanged;
         public MQTTManager()
         {
             MQTTControl = MQTTControl.GetInstance();
@@ -26,7 +28,6 @@ namespace ColorVision.MQTT
             MQTTSpectrums = new ObservableCollection<KeyValuePair<string, MQTTSpectrum>>();
             MQTTVISources = new ObservableCollection<KeyValuePair<string, MQTTVISource>>();
             Algorithms = new ObservableCollection<KeyValuePair<string, Algorithm>>();
-
 
             ServiceConfig serviceConfig = new ServiceConfig();
             serviceConfig.SubscribeTopic = "Camera";
@@ -72,11 +73,16 @@ namespace ColorVision.MQTT
             //Algorithm Algorithm = new Algorithm("Algorithm");
             //Algorithms.Add(new KeyValuePair<string, Algorithm>("Algorithm", Algorithm));
             //ServiceHeartbeats.Add(Algorithm);
-
-
         }
 
-        public ObservableCollection<KeyValuePair<string, MQTTCamera>> MQTTCameras { get; set; }
+
+        public void Reload()
+        {
+            DeviceSettingChanged?.Invoke(this, new EventArgs());
+        }
+
+
+    public ObservableCollection<KeyValuePair<string, MQTTCamera>> MQTTCameras { get; set; }
         public ObservableCollection<KeyValuePair<string, MQTTPG>> MQTTPGs { get; set; }
         public ObservableCollection<KeyValuePair<string, MQTTSpectrum>> MQTTSpectrums { get; set; }
 

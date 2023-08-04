@@ -923,11 +923,15 @@ namespace ColorVision
         {
             if (sender is StackPanel stackPanel)
             {
-                
-                MQTTCameraControl1 mQTTCameraControl = new MQTTCameraControl1(MQTTManager.GetInstance().MQTTCameras[0].Value);
-                stackPanel.Children.Add(mQTTCameraControl);
-                MQTTCameraControl1 mQTTCameraControl1 = new MQTTCameraControl1(MQTTManager.GetInstance().MQTTCameras[1].Value);
-                stackPanel.Children.Add(mQTTCameraControl1);
+                MQTTManager.DeviceSettingChanged += (s, e) =>
+                {
+                    stackPanel.Children.Clear();
+                    foreach (var item in MQTTManager.MQTTCameras)
+                    {
+                        MQTTCameraControl1 Control = new MQTTCameraControl1(item.Value);
+                        stackPanel.Children.Add(Control);
+                    }
+                };
             }
         }
         private void SendDemo1_Click(object sender, RoutedEventArgs e)
@@ -939,18 +943,38 @@ namespace ColorVision
         {
             if (sender is StackPanel stackPanel)
             {
-                  MQTTPGControl Control = new MQTTPGControl(MQTTManager.GetInstance().MQTTPGs[0].Value);
+                MQTTPGControl Control = new MQTTPGControl(MQTTManager.GetInstance().MQTTPGs[0].Value);
                 stackPanel.Children.Add(Control);
+
+                MQTTManager.DeviceSettingChanged += (s, e) =>
+                {
+                    stackPanel.Children.Clear();
+                    foreach (var item in MQTTManager.MQTTPGs)
+                    {
+                        MQTTPGControl Control = new MQTTPGControl(item.Value);
+                        stackPanel.Children.Add(Control);
+                    }
+                };
             }
           
         }
 
+        public MQTTManager MQTTManager { get; set; } = MQTTManager.GetInstance();
         private void StackPanelMQTTSpectrums_Initialized(object sender, EventArgs e)
         {
             if (sender is StackPanel stackPanel)
             {
                 MQTTSpectrumControl Control = new MQTTSpectrumControl(MQTTManager.GetInstance().MQTTSpectrums[0].Value);
                 stackPanel.Children.Add(Control);
+                MQTTManager.DeviceSettingChanged += (s, e) =>
+                {
+                    stackPanel.Children.Clear();
+                    foreach (var item in MQTTManager.MQTTSpectrums)
+                    {
+                        MQTTSpectrumControl Control = new MQTTSpectrumControl(item.Value);
+                        stackPanel.Children.Add(Control);
+                    }
+                };
             }
         }
 
@@ -960,8 +984,22 @@ namespace ColorVision
             {
                 MQTTVISourceControl Control = new MQTTVISourceControl(MQTTManager.GetInstance().MQTTVISources[0].Value);
                 stackPanel.Children.Add(Control);
+
+                MQTTManager.DeviceSettingChanged += (s, e) =>
+                {
+                    stackPanel.Children.Clear();
+                    foreach (var item in MQTTManager.MQTTVISources)
+                    {
+                        MQTTVISourceControl Control = new MQTTVISourceControl(item.Value);
+                        stackPanel.Children.Add(Control);
+                    }
+                };
             }
-            
+
+
+
+
+
         }
 
         private void MenuItem13_Click(object sender, RoutedEventArgs e)

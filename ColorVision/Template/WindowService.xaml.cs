@@ -275,38 +275,49 @@ namespace ColorVision.Template
         {
             if (type)
             {
-                SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, ((MQTTService)TextBox_Type.SelectedItem).SysResourceModel.Type, ((MQTTService)TextBox_Type.SelectedItem).SysResourceModel.Id, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
-                resourceService.Save(sysResource);
-                int pkId = sysResource.GetPK();
-                if (pkId > 0)
+                if (TextBox_Type.SelectedItem is MQTTService mQTTService)
                 {
-                    SysResourceModel model = resourceService.GetMasterById(pkId);
-                    MQTTServices[0].VisualChildren[0].AddChild(new MQTTDevice() { Name = model.Name, SysResourceModel = model });
+                    SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, mQTTService.SysResourceModel.Type, mQTTService.SysResourceModel.Id, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                    resourceService.Save(sysResource);
+                    int pkId = sysResource.GetPK();
+                    if (pkId > 0)
+                    {
+                        SysResourceModel model = resourceService.GetMasterById(pkId);
+                        mQTTService.AddChild(new MQTTService(model));
+                    }
                 }
             }
             else
             {
-                SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, ((MQTTServiceKind)TextBox_Type.SelectedItem).SysDictionaryModel.Value, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
-                ServiceConfig ServiceConfig = new ServiceConfig();
-                ServiceConfig.SendTopic = SendTopicAdd.Text;
-                ServiceConfig.SubscribeTopic = SubscribeTopicAdd.Text;
-                sysResource.Value = JsonConvert.SerializeObject(ServiceConfig);
-
-                resourceService.Save(sysResource);
-                int pkId = sysResource.GetPK();
-                if (pkId > 0)
+                if (TextBox_Type.SelectedItem is MQTTServiceKind mQTTServiceKind)
                 {
-                    SysResourceModel model = resourceService.GetMasterById(pkId);
-                    MQTTServices[0].AddChild(new MQTTService(model));
+                    SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, mQTTServiceKind.SysDictionaryModel.Value, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                    ServiceConfig ServiceConfig = new ServiceConfig();
+                    ServiceConfig.SendTopic = SendTopicAdd.Text;
+                    ServiceConfig.SubscribeTopic = SubscribeTopicAdd.Text;
+                    sysResource.Value = JsonConvert.SerializeObject(ServiceConfig);
+
+                    resourceService.Save(sysResource);
+                    int pkId = sysResource.GetPK();
+                    if (pkId > 0)
+                    {
+                        SysResourceModel model = resourceService.GetMasterById(pkId);
+                        foreach (var item in MQTTServices)
+                        {
+                            if (item.SysDictionaryModel.Value == model.Type)
+                            {
+                                item.AddChild(new MQTTDevice() { Name = model.Name, SysResourceModel = model });
+                                break;
+                            }
+                        }
+                    }
                 }
             }
-
-
-
-
-
         }
 
-
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            MQTTManager.GetInstance().Reload();
+        }
     }
 }
