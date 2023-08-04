@@ -90,7 +90,6 @@
 
             </StackPanel>
         </Grid>
-
         <Border  Grid.Row="1">
             <StackPanel>
                 <Button Content="重置窗口布局"  Click="Button_Click"/>

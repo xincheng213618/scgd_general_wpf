@@ -995,11 +995,6 @@ namespace ColorVision
                     }
                 };
             }
-
-
-
-
-
         }
 
         private void MenuItem13_Click(object sender, RoutedEventArgs e)

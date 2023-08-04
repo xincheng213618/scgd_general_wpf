@@ -1,6 +1,4 @@
-﻿using ColorVision.Extension;
-using ColorVision.MQTT;
-using ColorVision.MVVM;
+﻿using ColorVision.MQTT;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.SettingUp;
@@ -15,7 +13,6 @@ using System.Security.AccessControl;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
@@ -25,162 +22,6 @@ using System.Windows.Shapes;
 
 namespace ColorVision.Template
 {
-
-    public static class BaseObjectExtensions
-    {
-        /// <summary>
-        /// 得到指定数据类型的祖先节点。
-        /// </summary>
-        public static T? GetAncestor<T>(this BaseObject This) where T : BaseObject
-        {
-            if (This is T t)
-                return t;
-
-            if (This.Parent == null)
-                return null;
-
-            return This.Parent.GetAncestor<T>();
-        }
-    }
-
-
-    public class BaseObject : ViewModelBase
-    {
-
-        public ContextMenu ContextMenu { get; set; }
-        public  ObservableCollection<BaseObject> VisualChildren { get; set; }
-        public BaseObject()
-        {
-            VisualChildren = new ObservableCollection<BaseObject>();
-        }
-        public BaseObject Parent
-        {
-            get { return _Parent; }
-            set
-            {
-                _Parent = value;
-                NotifyPropertyChanged();
-            }
-        }
-        private BaseObject _Parent;
-
-        public virtual string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
-        private string _Name;
-
-        public virtual void AddChild(BaseObject baseObject)
-        {
-            if (baseObject == null) return;
-            baseObject.Parent = this;
-            VisualChildren.SortedAdd(baseObject);
-        }
-        public virtual void RemoveChild(BaseObject baseObject)
-        {
-            if (baseObject == null) return;
-            baseObject.Parent = null;
-            VisualChildren.Remove(baseObject);
-        }
-
-        public virtual void Save()
-        {
-        }
-
-    }
-
-    public class MQTTDevice : BaseObject
-    {
-        public SysResourceModel SysResourceModel { get; set; }
-        private SysResourceService resourceService = new SysResourceService();
-        public override string Name
-        {
-            get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; NotifyPropertyChanged(); }
-        }
-
-
-        public MQTTDevice() : base()
-        {
-            ContextMenu = new ContextMenu();
-            MenuItem menuItem = new MenuItem() { Header = "删除设备" };
-            menuItem.Click += (s, e) =>
-            {
-                this.Parent.RemoveChild(this);
-                resourceService.DeleteById(SysResourceModel.Id);
-            };
-            ContextMenu.Items.Add(menuItem);
-        }
-    }
-
-
-
-
-
-    public class MQTTService : BaseObject
-    {
-        public SysResourceModel SysResourceModel { get; set; }
-        private SysResourceService resourceService = new SysResourceService();
-
-        public ServiceConfig ServiceConfig { get; set; }
-
-        public RelayCommand SaveCommand { get; set; }
-
-        public override string Name{get=> SysResourceModel.Name ?? string.Empty;set{ SysResourceModel.Name = value; NotifyPropertyChanged(); }
-}
-
-        public MQTTService(SysResourceModel sysResourceModel) : base()
-        {
-            SysResourceModel = sysResourceModel;
-            if (string.IsNullOrEmpty(SysResourceModel.Value))
-            {
-                ServiceConfig ??= new ServiceConfig();
-            }
-            else
-            {
-                try
-                {
-                    ServiceConfig = JsonConvert.DeserializeObject<ServiceConfig>(SysResourceModel.Value) ?? new ServiceConfig();
-                }
-                catch
-                {
-                    ServiceConfig = new ServiceConfig();
-                }
-            }
-            ContextMenu = new ContextMenu();
-            MenuItem menuItem = new MenuItem() { Header = "删除服务" };
-            menuItem.Click += (s, e) =>
-            {
-                this.Parent.RemoveChild(this);
-                resourceService.DeleteById(SysResourceModel.Id);
-            };
-            ContextMenu.Items.Add(menuItem);
-
-            SaveCommand = new RelayCommand(a => Save());
-        }
-
-
-        public override void Save()
-        {
-            base.Save();
-            SysResourceModel.Value = JsonConvert.SerializeObject(ServiceConfig);
-            resourceService.Save(SysResourceModel);
-        }
-
-
-
-
-
-    }
-
-
-    public class MQTTServiceKind : BaseObject
-    {
-        public SysDictionaryModel SysDictionaryModel { get; set; }
-        public MQTTServiceKind() : base()
-        {
-        }
-    }
-
-
-
-
     /// <summary>
     /// WindowService.xaml 的交互逻辑
     /// </summary>
@@ -283,7 +124,7 @@ namespace ColorVision.Template
                     if (pkId > 0)
                     {
                         SysResourceModel model = resourceService.GetMasterById(pkId);
-                        mQTTService.AddChild(new MQTTService(model));
+                        mQTTService.AddChild(new MQTTDevice() { Name = model.Name, SysResourceModel = model });
                     }
                 }
             }
@@ -302,14 +143,7 @@ namespace ColorVision.Template
                     if (pkId > 0)
                     {
                         SysResourceModel model = resourceService.GetMasterById(pkId);
-                        foreach (var item in MQTTServices)
-                        {
-                            if (item.SysDictionaryModel.Value == model.Type)
-                            {
-                                item.AddChild(new MQTTDevice() { Name = model.Name, SysResourceModel = model });
-                                break;
-                            }
-                        }
+                        mQTTServiceKind.AddChild(new MQTTService(model));
                     }
                 }
             }
