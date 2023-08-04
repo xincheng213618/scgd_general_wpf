@@ -39,8 +39,8 @@
                 <GroupBox Header="MQTT Test">
                     <StackPanel Visibility="Visible">
                         <UniformGrid Columns="2">
-                            <Button  Content="初始化" Click="Button_Click_1"/>
-                            <Button  Content="打开" Click="Button_Click_2"/>
+                            <!--<Button  Content="初始化" Click="Button_Click_1"/>-->
+                            <Button  Content="打开" Click="Button_Click_Open"/>
                             <Button  Content="关闭" Click="Button_Click_5"/>
                             <Button  Content="单次获取数据"  Click="Button_Click_4"/>
 
