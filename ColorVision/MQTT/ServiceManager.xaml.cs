@@ -27,17 +27,60 @@ namespace ColorVision.MQTT
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            string processName = "CameraService"; // 替换为要关闭的进程的名称
-            Process[] processes = Process.GetProcessesByName(processName);
-            foreach (var item in processes)
+
+            Dictionary<string, string> keyValuePairs = new Dictionary<string, string>()
+           {
+               { "CameraService" ,"CameraService.exe" },
+               { "SpectrumService","SpectrumService.exe" },
+               { "PGService","PGService.exe" },
+               { "Pss_SxService","Pss_SxService.exe"},
+           };
+
+            foreach (var item in keyValuePairs)
             {
-                if (item.ProcessName == "CameraService")
+                string processName = item.Key; // 替换为要关闭的进程的名称
+                Process[] processes = Process.GetProcessesByName(processName);
+                Button button = new Button();
+                foreach (var item1 in processes)
                 {
-                    ServiceDictionary.Add("CameraService.exe", item);
-                    CameraButton.Content = "关闭相机服务";
-                    break;
+                    if (item1.ProcessName == item.Key)
+                    {
+                        ServiceDictionary.Add(item.Key, item1);
+                        button.Content = "关闭" + item.Key;
+                        break;
+                    }
                 }
+                if (button.Content ==null)
+                {
+                    button.Content = "打开" + item.Key;
+                }
+
+                button.Click += (s, e) =>
+                {
+                    if (ServiceDictionary.TryGetValue(item.Key, out Process process))
+                    {
+                        ServiceDictionary.Remove(item.Key);
+                        process.Kill();
+                        process.Close();
+                        process.Dispose();
+                        button.Content = "打开" + item.Key;
+
+                    }
+                    else
+                    {
+                        Process process1 = new Process();
+                        process1.StartInfo.FileName = item.Value;
+                        process1.StartInfo.UseShellExecute = false;
+                        process1.StartInfo.CreateNoWindow = true;
+                        process1.Start();
+                        ServiceDictionary.Add(item.Key, process1);
+                        button.Content = "关闭" + item.Key;
+                    }
+                };
+                ServiceManagerUniformGrid.Children.Add(button);
             }
+
+
         }
 
         public static Dictionary<string, Process> ServiceDictionary { get; set; } = new Dictionary<string, Process>();

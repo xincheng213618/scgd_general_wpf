@@ -8,13 +8,7 @@
         Title="ServiceManager" Height="450" Width="800" Background="#f9f9f9" Initialized="Window_Initialized">
     <Grid>
         <StackPanel>
-            <UniformGrid   Columns="5">
-                <Button x:Name="CameraButton"  Margin="5" Content="打开相机服务"  Click="Button_Click" Tag="CameraService"/>
-                <Button  Margin="5" Content="打开光谱仪服务" Click="Button_Click" Tag="SpectrumService"/>
-                <Button  Margin="5" Content="打开PG服务" Click="Button_Click" Tag="PGService"/>
-                <Button  Margin="5" Content="打开源表服务" Click="Button_Click" Tag="Pss_SxService"/>
-                <Button  Margin="5" Content="打开滤色轮服务" Click="Button_Click" />
-                <Button  Margin="5" Content="打开算法服务" Click="Button_Click" Tag="Algorithm"/>
+            <UniformGrid x:Name="ServiceManagerUniformGrid"  Columns="5">
             </UniformGrid>
         </StackPanel>
 
