@@ -9,7 +9,7 @@
     <Grid>
         <StackPanel>
             <UniformGrid   Columns="5">
-                <Button  Margin="5" Content="打开相机服务"  Click="Button_Click" Tag="CameraService"/>
+                <Button x:Name="CameraButton"  Margin="5" Content="打开相机服务"  Click="Button_Click" Tag="CameraService"/>
                 <Button  Margin="5" Content="打开光谱仪服务" Click="Button_Click" Tag="SpectrumService"/>
                 <Button  Margin="5" Content="打开PG服务" Click="Button_Click" Tag="PGService"/>
                 <Button  Margin="5" Content="打开源表服务" Click="Button_Click" Tag="Pss_SxService"/>

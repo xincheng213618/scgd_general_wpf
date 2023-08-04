@@ -9,10 +9,27 @@
              d:DataContext="{d:DesignInstance local:MQTTDeviceCamera}"
              d:DesignHeight="400" d:DesignWidth="600" Initialized="UserControl_Initialized">
     <StackPanel Margin="5">
-        <DockPanel Margin="5,2" >
+        <DockPanel Margin="0,5" >
             <Label Content="相机ID："/>
             <TextBox Text="{Binding CameraConfig.CameraID}"/>
         </DockPanel>
+        <DockPanel Margin="0,5">
+            <TextBlock  Text="增益" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0" />
+            <hc:PreviewSlider x:Name="SliderGain"   TickFrequency ="0.1" IsSnapToTickEnabled="True"  SmallChange ="0.1" Value="1" Maximum="10"  >
+                <hc:PreviewSlider.PreviewContent>
+                    <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0.00"/>
+                </hc:PreviewSlider.PreviewContent>
+            </hc:PreviewSlider>
+        </DockPanel>
+        <DockPanel Margin="0,5">
+            <TextBlock  Text="曝光" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+            <hc:PreviewSlider x:Name="SliderexpTime"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="100" Maximum="6000">
+                <hc:PreviewSlider.PreviewContent>
+                    <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0.00"/>
+                </hc:PreviewSlider.PreviewContent>
+            </hc:PreviewSlider>
+        </DockPanel>
+
         <Button   Content="保存"  Command="{Binding SaveCommand}" />
 
 

@@ -33,7 +33,8 @@ namespace ColorVision.MQTT
             {
                 if (item.ProcessName == "CameraService")
                 {
-                    ServiceDictionary.Add("CameraService",item);
+                    ServiceDictionary.Add("CameraService.exe", item);
+                    CameraButton.Content = "关闭相机服务";
                     break;
                 }
             }
