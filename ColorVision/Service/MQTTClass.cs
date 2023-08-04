@@ -5,8 +5,30 @@ using ColorVision.MySql.Service;
 using Newtonsoft.Json;
 using System.Windows.Controls;
 
-namespace ColorVision.Template
+namespace ColorVision.Service
 {
+    public class MQTTDevice : BaseObject
+    {
+        public SysResourceModel SysResourceModel { get; set; }
+        private SysResourceService resourceService = new SysResourceService();
+        public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
+        public MQTTDevice(SysResourceModel sysResourceModel) : base()
+        {
+            SysResourceModel = sysResourceModel;
+
+            ContextMenu = new ContextMenu();
+            MenuItem menuItem = new MenuItem() { Header = "删除设备" };
+            menuItem.Click += (s, e) =>
+            {
+                this.Parent.RemoveChild(this);
+                if (SysResourceModel != null)
+                    resourceService.DeleteById(SysResourceModel.Id);
+
+            };
+            ContextMenu.Items.Add(menuItem);
+        }
+    }
+
     public class MQTTService : BaseObject
     {
         public SysResourceModel SysResourceModel { get; set; }
@@ -16,7 +38,7 @@ namespace ColorVision.Template
 
         public RelayCommand SaveCommand { get; set; }
 
-        public override string Name{get=> SysResourceModel.Name ?? string.Empty;set{ SysResourceModel.Name = value; NotifyPropertyChanged(); }}
+        public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
 
         public MQTTService(SysResourceModel sysResourceModel) : base()
         {
@@ -56,10 +78,13 @@ namespace ColorVision.Template
             SysResourceModel.Value = JsonConvert.SerializeObject(ServiceConfig);
             resourceService.Save(SysResourceModel);
         }
+    }
 
-
-
-
-
+    public class MQTTServiceKind : BaseObject
+    {
+        public SysDictionaryModel SysDictionaryModel { get; set; }
+        public MQTTServiceKind() : base()
+        {
+        }
     }
 }
