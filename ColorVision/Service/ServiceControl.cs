@@ -14,6 +14,7 @@ namespace ColorVision.Service
         private static readonly object _locker = new();
         public static ServiceControl GetInstance() { lock (_locker) { return _instance ??= new ServiceControl(); } }
 
+
         public ObservableCollection<MQTTServiceKind> MQTTServices { get; set; }
 
         public SysResourceService ResourceService { get; set; }
@@ -28,9 +29,8 @@ namespace ColorVision.Service
             MQTTServices = new ObservableCollection<MQTTServiceKind>();
             UserConfig = GlobalSetting.GetInstance().SoftwareConfig.UserConfig;
 
-
-            List<SysResourceModel> Services = ResourceService.GetAllServices(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            List<SysResourceModel> devices = ResourceService.GetAllDevices(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            List<SysResourceModel> Services = ResourceService.GetAllServices(UserConfig.TenantId);
+            List<SysResourceModel> devices = ResourceService.GetAllDevices(UserConfig.TenantId);
 
             foreach (var item in DictionaryService.GetAllServiceType())
             {
@@ -46,8 +46,19 @@ namespace ColorVision.Service
                         {
                             if (item2.Pid == item1.Id)
                             {
-                                MQTTDevice device = new MQTTDevice(item2);
-                                mQTTService.AddChild(device);
+                                if (item2.Type == 1)
+                                {
+                                    MQTTDeviceCamera device = new MQTTDeviceCamera(mQTTService.ServiceConfig, item2);
+                                    mQTTService.AddChild(device);
+                                }
+                                else
+                                {
+                                    MQTTDevice device = new MQTTDevice(item2);
+                                    mQTTService.AddChild(device);
+                                }
+
+
+ 
                             }
                         }
                         mQTTServicetype.AddChild(mQTTService);

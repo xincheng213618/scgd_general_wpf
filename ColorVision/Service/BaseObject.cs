@@ -27,6 +27,8 @@ namespace ColorVision.Service
 
         public ContextMenu ContextMenu { get; set; }
         public  ObservableCollection<BaseObject> VisualChildren { get; set; }
+
+        public ServiceControl ServiceControl { get; set; }
         public BaseObject()
         {
             VisualChildren = new ObservableCollection<BaseObject>();

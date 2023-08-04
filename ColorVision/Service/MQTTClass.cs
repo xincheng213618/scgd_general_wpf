@@ -3,6 +3,7 @@ using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using Newtonsoft.Json;
+using System.ComponentModel.Design;
 using System.Windows.Controls;
 
 namespace ColorVision.Service
@@ -10,7 +11,6 @@ namespace ColorVision.Service
     public class MQTTDevice : BaseObject
     {
         public SysResourceModel SysResourceModel { get; set; }
-        private SysResourceService resourceService = new SysResourceService();
         public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
         public MQTTDevice(SysResourceModel sysResourceModel) : base()
         {
@@ -22,18 +22,53 @@ namespace ColorVision.Service
             {
                 this.Parent.RemoveChild(this);
                 if (SysResourceModel != null)
-                    resourceService.DeleteById(SysResourceModel.Id);
+                    ServiceControl.GetInstance().ResourceService.DeleteById(SysResourceModel.Id);
 
             };
             ContextMenu.Items.Add(menuItem);
         }
     }
 
+    public class MQTTDeviceCamera : MQTTDevice
+    {
+        public CameraConfig CameraConfig { get; set; }
+        public RelayCommand SaveCommand { get; set; }
+
+        public MQTTDeviceCamera(ServiceConfig ServiceConfig, SysResourceModel sysResourceModel) : base(sysResourceModel)
+        {
+            if (string.IsNullOrEmpty(SysResourceModel.Value))
+            {
+                CameraConfig = new CameraConfig(ServiceConfig);
+            }
+            else
+            {
+                try
+                {
+                    CameraConfig = JsonConvert.DeserializeObject<CameraConfig>(SysResourceModel.Value) ?? new CameraConfig(ServiceConfig);
+                }
+                catch
+                {
+                    CameraConfig = new CameraConfig(ServiceConfig);
+                }
+            }
+
+            SaveCommand = new RelayCommand(a => Save());
+
+        }
+
+        public override void Save()
+        {
+            base.Save();
+            SysResourceModel.Value = JsonConvert.SerializeObject(CameraConfig);
+            ServiceControl.GetInstance().ResourceService.Save(SysResourceModel);
+        }
+    }
+
+
+
     public class MQTTService : BaseObject
     {
         public SysResourceModel SysResourceModel { get; set; }
-        private SysResourceService resourceService = new SysResourceService();
-
         public ServiceConfig ServiceConfig { get; set; }
 
         public RelayCommand SaveCommand { get; set; }
@@ -64,7 +99,7 @@ namespace ColorVision.Service
             {
                 this.Parent.RemoveChild(this);
                 if (SysResourceModel != null)
-                    resourceService.DeleteById(SysResourceModel.Id);
+                    ServiceControl.GetInstance().ResourceService.DeleteById(SysResourceModel.Id);
             };
             ContextMenu.Items.Add(menuItem);
 
@@ -76,7 +111,7 @@ namespace ColorVision.Service
         {
             base.Save();
             SysResourceModel.Value = JsonConvert.SerializeObject(ServiceConfig);
-            resourceService.Save(SysResourceModel);
+            ServiceControl.GetInstance().ResourceService.Save(SysResourceModel);
         }
     }
 

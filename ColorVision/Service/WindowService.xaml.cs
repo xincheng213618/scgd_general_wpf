@@ -24,8 +24,26 @@ namespace ColorVision.Service
         private void Window_Initialized(object sender, EventArgs e)
         {
             MQTTServices = ServiceControl.GetInstance().MQTTServices;
-
             TreeView1.ItemsSource = MQTTServices;
+
+            //ServiceConfig serviceConfig = new ServiceConfig();
+            //serviceConfig.SendTopic = "Camera";
+            //serviceConfig.SubscribeTopic = "CameraService";
+            //CameraConfig cameraConfig1 = new CameraConfig(serviceConfig);
+            //cameraConfig1.Name = "相机1";
+            //cameraConfig1.CameraID = "e29b14429bc375b1";
+            //cameraConfig1.CameraType = CameraType.LVQ;
+            //cameraConfig1.TakeImageMode = TakeImageMode.Normal;
+            //cameraConfig1.ImageBpp = 8;
+            //cameraConfig1.Name = "BV";
+
+            //MQTTCamera Camera1 = new MQTTCamera(cameraConfig1);
+
+            //MQTTManager.GetInstance().MQTTCameras.Clear();
+            //MQTTManager.GetInstance().ServiceHeartbeats.Clear();
+            //MQTTManager.GetInstance().MQTTCameras.Add(new KeyValuePair<string, MQTTCamera>("camera", Camera1));
+            //MQTTManager.GetInstance().ServiceHeartbeats.Add(Camera1);
+
         }
 
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
@@ -40,9 +58,13 @@ namespace ColorVision.Service
             {
                 StackPanelShow.Children.Add(new MQTTServiceControl(mQTTService));
             }
+            else if (TreeView1.SelectedItem is MQTTDeviceCamera  mQTTDeviceCamera)
+            {
+                StackPanelShow.Children.Add(new MQTTDeviceCameraControl(mQTTDeviceCamera));
+            }
             else if (TreeView1.SelectedItem is MQTTDevice mQTTDevice)
             {
-
+                StackPanelShow.Children.Add(new MQTTDeviceControl(mQTTDevice));
             }
         }
 

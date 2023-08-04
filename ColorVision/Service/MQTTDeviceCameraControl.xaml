@@ -1,0 +1,22 @@
+﻿<UserControl x:Class="ColorVision.Service.MQTTDeviceCameraControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ColorVision.Service"
+             mc:Ignorable="d" 
+             xmlns:hc="https://handyorg.github.io/handycontrol"
+             d:DataContext="{d:DesignInstance local:MQTTDeviceCamera}"
+             d:DesignHeight="400" d:DesignWidth="600" Initialized="UserControl_Initialized">
+    <StackPanel Margin="5">
+        <DockPanel Margin="5,2" >
+            <Label Content="相机ID："/>
+            <TextBox Text="{Binding CameraConfig.CameraID}"/>
+        </DockPanel>
+        <Button   Content="保存"  Command="{Binding SaveCommand}" />
+
+
+
+
+    </StackPanel>
+</UserControl>

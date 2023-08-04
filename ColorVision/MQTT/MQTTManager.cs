@@ -30,8 +30,8 @@ namespace ColorVision.MQTT
             Algorithms = new ObservableCollection<KeyValuePair<string, Algorithm>>();
 
             ServiceConfig serviceConfig = new ServiceConfig();
-            serviceConfig.SubscribeTopic = "Camera";
-            serviceConfig.SendTopic = "CameraService";
+            serviceConfig.SendTopic = "Camera";
+            serviceConfig.SubscribeTopic = "CameraService";
 
             CameraConfig cameraConfig = new CameraConfig(serviceConfig);
             cameraConfig.Name = "相机0";
@@ -65,14 +65,6 @@ namespace ColorVision.MQTT
             MQTTSpectrum Spectrum = new MQTTSpectrum("MQTTSpectrum");
             MQTTSpectrums.Add(new KeyValuePair<string, MQTTSpectrum>("Spectrum", Spectrum));
             ServiceHeartbeats.Add(Spectrum);
-
-            MQTTVISource VISource = new MQTTVISource("源表", "Pss_Sx", "Pss_SxService");
-            MQTTVISources.Add(new KeyValuePair<string, MQTTVISource>("源表", VISource));
-            ServiceHeartbeats.Add(VISource);
-
-            //Algorithm Algorithm = new Algorithm("Algorithm");
-            //Algorithms.Add(new KeyValuePair<string, Algorithm>("Algorithm", Algorithm));
-            //ServiceHeartbeats.Add(Algorithm);
         }
 
 

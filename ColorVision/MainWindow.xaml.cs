@@ -982,9 +982,6 @@ namespace ColorVision
         {
             if (sender is StackPanel stackPanel)
             {
-                MQTTVISourceControl Control = new MQTTVISourceControl(MQTTManager.GetInstance().MQTTVISources[0].Value);
-                stackPanel.Children.Add(Control);
-
                 MQTTManager.DeviceSettingChanged += (s, e) =>
                 {
                     stackPanel.Children.Clear();

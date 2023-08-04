@@ -1,4 +1,5 @@
-﻿using ColorVision.MySql.DAO;
+﻿using ColorVision.MQTT;
+using ColorVision.MySql.DAO;
 using ColorVision.SettingUp;
 using ColorVision.Template;
 using System;
@@ -26,6 +27,7 @@ namespace ColorVision.Service
     {
         public MQTTService MQTTService { get; set; }
         public ServiceControl ServiceControl { get; set; }
+
         public MQTTServiceControl(MQTTService mQTTService)
         {
             this.MQTTService = mQTTService;

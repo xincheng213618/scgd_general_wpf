@@ -28,7 +28,7 @@
                 <TextBlock Text="接收Topic" Width="60"/>
                 <TextBox  x:Name="SubscribeTopicAdd"  />
             </DockPanel>
-            <Button   Click="Button_New_Click" Content="添加资源" />
+            <Button   Click="Button_New_Click" Content="添加服务" />
 
         </StackPanel>
     </Grid>

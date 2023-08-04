@@ -25,6 +25,20 @@ namespace ColorVision.MQTT
             InitializeComponent();
         }
 
+        private void Window_Initialized(object sender, EventArgs e)
+        {
+            string processName = "CameraService"; // 替换为要关闭的进程的名称
+            Process[] processes = Process.GetProcessesByName(processName);
+            foreach (var item in processes)
+            {
+                if (item.ProcessName == "CameraService")
+                {
+                    ServiceDictionary.Add("CameraService",item);
+                    break;
+                }
+            }
+        }
+
         public static Dictionary<string, Process> ServiceDictionary { get; set; } = new Dictionary<string, Process>();
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -71,11 +85,9 @@ namespace ColorVision.MQTT
 
   
                 }
-
-
-
-
             }
         }
+
+
     }
 }
