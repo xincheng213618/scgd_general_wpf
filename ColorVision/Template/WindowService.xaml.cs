@@ -64,7 +64,7 @@ namespace ColorVision.Template
         }
         private BaseObject _Parent;
 
-        public string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
+        public virtual string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
         private string _Name;
 
         public virtual void AddChild(BaseObject baseObject)
@@ -90,6 +90,11 @@ namespace ColorVision.Template
     {
         public SysResourceModel SysResourceModel { get; set; }
         private SysResourceService resourceService = new SysResourceService();
+        public override string Name
+        {
+            get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; NotifyPropertyChanged(); }
+        }
+
 
         public MQTTDevice() : base()
         {
@@ -117,12 +122,12 @@ namespace ColorVision.Template
 
         public RelayCommand SaveCommand { get; set; }
 
+        public override string Name{get=> SysResourceModel.Name ?? string.Empty;set{ SysResourceModel.Name = value; NotifyPropertyChanged(); }
+}
+
         public MQTTService(SysResourceModel sysResourceModel) : base()
         {
             SysResourceModel = sysResourceModel;
-            Name = sysResourceModel.Name ?? string.Empty;
-
-
             if (string.IsNullOrEmpty(SysResourceModel.Value))
             {
                 ServiceConfig ??= new ServiceConfig();
@@ -212,14 +217,12 @@ namespace ColorVision.Template
                     if (item1.Type == item.Value)
                     {
                         MQTTService mQTTService = new MQTTService(item1);
-                        mQTTService.Name = item1.Name ?? string.Empty;
                         resourceService.Save(item1);
                         foreach (var item2 in devices)
                         {
                             if (item2.Pid == item1.Id)
                             {    
                                 MQTTDevice device = new MQTTDevice();
-                                device.Name = item2.Name ?? string.Empty; ;
                                 device.SysResourceModel = item2;
                                 mQTTService.AddChild(device);
                             }

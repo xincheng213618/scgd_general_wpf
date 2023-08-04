@@ -39,10 +39,10 @@
         </TreeView>
 
         <StackPanel x:Name="StackPanelShow" Grid.Column="1">
-            <StackPanel x:Name="MQTTServiceStackPanel">
+            <StackPanel x:Name="MQTTServiceStackPanel" Visibility="Collapsed">
                 <DockPanel Margin="5" >
                     <TextBlock Text="服务名称" Width="120"/>
-                    <TextBlock Text="{Binding Name}"/>
+                    <TextBox Text="{Binding Name}"/>
                 </DockPanel>
                 <DockPanel Margin="5" >
                     <TextBlock Text="SendTopic" Width="120"/>
@@ -56,7 +56,7 @@
             </StackPanel>
 
 
-            <StackPanel x:Name="CreateGrid"  Grid.Column="1" Grid.Row="1">
+            <StackPanel x:Name="CreateGrid"  Grid.Column="1" Grid.Row="1" Visibility="Collapsed">
                 <DockPanel Margin="5" >
                     <TextBlock Text="类型" Width="60"/>
                     <ComboBox x:Name="TextBox_Type" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Name"  DisplayMemberPath="Name" />

@@ -78,7 +78,7 @@ namespace ColorVision
                 MQTTConnect mQTTConnect = new MQTTConnect() { Owner = this };
                 mQTTConnect.ShowDialog();
             }
-            await Task.Delay(500);
+            await Task.Delay(100);
 
             MainWindow mainWindow = new MainWindow();
             mainWindow.Show();
