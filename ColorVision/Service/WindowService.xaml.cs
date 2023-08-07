@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision.Service
 {
@@ -27,6 +28,8 @@ namespace ColorVision.Service
 
             MQTTServices = ServiceControl.GetInstance().MQTTServices;
             TreeView1.ItemsSource = MQTTServices;
+
+
         }
 
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
@@ -79,6 +82,18 @@ namespace ColorVision.Service
             MQTTManager.ServiceHeartbeats.Add(Camera1);
 
             MQTTManager.Reload();
+        }
+
+        private void TreeView1_Loaded(object sender, RoutedEventArgs e)
+        {
+            TreeViewItem firstNode = TreeView1.ItemContainerGenerator.ContainerFromIndex(0) as TreeViewItem;
+
+            // 选中第一个节点
+            if (firstNode != null)
+            {
+                firstNode.IsSelected = true;
+                firstNode.Focus();
+            }
         }
     }
 }

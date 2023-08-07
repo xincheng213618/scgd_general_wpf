@@ -34,5 +34,17 @@ namespace ColorVision.Service
             ServiceControl = ServiceControl.GetInstance();
             this.DataContext = MQTTDeviceCamera;
         }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            MQTTEditContent.Visibility = Visibility.Collapsed;
+            MQTTShowContent.Visibility = Visibility.Visible;
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            MQTTShowContent.Visibility = Visibility.Collapsed;
+            MQTTEditContent.Visibility = Visibility.Visible;
+        }
     }
 }
