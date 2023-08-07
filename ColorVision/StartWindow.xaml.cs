@@ -46,6 +46,7 @@ namespace ColorVision
 #endif
 
             Dispatcher.BeginInvoke(new Action(async () => await InitializedOver()));
+
         }
         private static bool DebugBuild(Assembly assembly)
         {
@@ -61,6 +62,10 @@ namespace ColorVision
 
         private async Task InitializedOver()
         {
+            //检测服务连接情况，需要在界面启动之后，否则会出现问题。因为界面启动之后才会初始化MQTTControl和MySqlControl，所以代码上问题不大
+            MQTTControl.GetInstance();
+            MySqlControl.GetInstance();
+
             SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
             TextBoxMsg.Text += Environment.NewLine + "检测服务连接情况";
             await Task.Delay(100);

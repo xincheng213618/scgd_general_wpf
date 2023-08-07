@@ -107,9 +107,6 @@ namespace ColorVision
         {
             GlobalSetting.GetInstance();
 
-            MQTTControl.GetInstance();
-            MySqlControl.GetInstance();
-
             //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en");
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("zh-Hans");
 
