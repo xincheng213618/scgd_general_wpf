@@ -23,7 +23,6 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
 using ColorVision.Theme;
-using ColorVision.Util;
 using System.Windows.Forms.Integration;
 using OpenCvSharp.Flann;
 using ColorVision.Video;
@@ -35,6 +34,7 @@ using Microsoft.Win32;
 using log4net;
 using System.Security.RightsManagement;
 using ColorVision.MQTT.Control;
+using ColorVision.Util;
 
 namespace ColorVision
 {

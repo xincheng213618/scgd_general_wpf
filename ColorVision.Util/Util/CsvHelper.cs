@@ -24,7 +24,7 @@ namespace ColorVision.Util
             try
             {
                 string strBufferLine = "";
-                StreamWriter strmWriterObj = new StreamWriter(strFilePath, false, System.Text.Encoding.UTF8);
+                StreamWriter strmWriterObj = new StreamWriter(strFilePath, false, Encoding.UTF8);
                 strmWriterObj.WriteLine(tableheader);
                 strmWriterObj.WriteLine(columname);
                 for (int i = 0; i < dt.Rows.Count; i++)
@@ -54,7 +54,7 @@ namespace ColorVision.Util
         /// <param name="n">表示第n行是字段title,第n+1行是记录开始</param>
         public static DataTable Csv2dt(string filePath, int n, DataTable dt)
         {
-            StreamReader reader = new StreamReader(filePath, System.Text.Encoding.UTF8, false);
+            StreamReader reader = new StreamReader(filePath, Encoding.UTF8, false);
             int i = 0, m = 0;
             reader.Peek();
             while (reader.Peek() > 0)
@@ -65,7 +65,7 @@ namespace ColorVision.Util
                 {
                     string[] split = str.Split(',');
 
-                    System.Data.DataRow dr = dt.NewRow();
+                    DataRow dr = dt.NewRow();
                     for (i = 0; i < split.Length; i++)
                     {
                         dr[i] = split[i];

@@ -16,7 +16,7 @@ namespace ColorVision.Util
         {
             try
             {
-                string json = JsonConvert.SerializeObject(cfg,  Formatting.Indented);
+                string json = JsonConvert.SerializeObject(cfg, Formatting.Indented);
                 File.WriteAllText(cfgFile, json);
                 return true;
             }
@@ -41,7 +41,7 @@ namespace ColorVision.Util
 
             if (File.Exists(cfgFile))
             {
-                try 
+                try
                 {
                     return JsonConvert.DeserializeObject<T>(File.ReadAllText(cfgFile));
                 }

@@ -173,8 +173,8 @@ namespace ColorVision.Util
             }
         }
 
-        public static string AESEncrypt(string Data, string Key, string Vector) =>AES.Encrypt(Data, Key, Vector);
-        public static string AESDecrypt(string Data, string Key, string Vector) =>AES.Decrypt(Data, Key, Vector);
+        public static string AESEncrypt(string Data, string Key, string Vector) => AES.Encrypt(Data, Key, Vector);
+        public static string AESDecrypt(string Data, string Key, string Vector) => AES.Decrypt(Data, Key, Vector);
 
 
 
@@ -184,9 +184,9 @@ namespace ColorVision.Util
         /// </summary>
         public static string GetMd5Hash(string input)
         {
-            #pragma warning disable CA5351
+#pragma warning disable CA5351
             using MD5 md5 = MD5.Create();
-            #pragma warning restore CA5351
+#pragma warning restore CA5351
             byte[] inputBytes = Encoding.UTF8.GetBytes(input);
             byte[] hashBytes = md5.ComputeHash(inputBytes);
 
