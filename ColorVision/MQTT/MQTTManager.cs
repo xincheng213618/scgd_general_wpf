@@ -14,77 +14,71 @@ namespace ColorVision.MQTT
         private static MQTTManager _instance;
         private static readonly object _locker = new();
         public static MQTTManager GetInstance() { lock (_locker) { return _instance ??= new MQTTManager(); } }
-
         public MQTTControl MQTTControl { get; set; }
 
         public event EventHandler DeviceSettingChanged;
+
+        public ObservableCollection<MQTTCamera> MQTTCameras { get; set; }
+        public ObservableCollection<MQTTPG> MQTTPGs { get; set; }
+        public ObservableCollection<MQTTSpectrum> MQTTSpectrums { get; set; }
+
+        public ObservableCollection<MQTTVISource> MQTTVISources { get; set; }
+
+        public ObservableCollection<Algorithm> Algorithms { get; set; }
+        public ObservableCollection<IHeartbeat> ServiceHeartbeats { get; set; }
+
         public MQTTManager()
         {
             MQTTControl = MQTTControl.GetInstance();
-            ServiceHeartbeats = new ObservableCollection<IServiceHeartbeat>();
+            ServiceHeartbeats = new ObservableCollection<IHeartbeat>();
 
-            MQTTCameras = new ObservableCollection<KeyValuePair<string, MQTTCamera>>();
-            MQTTPGs = new ObservableCollection<KeyValuePair<string, MQTTPG>>();
-            MQTTSpectrums = new ObservableCollection<KeyValuePair<string, MQTTSpectrum>>();
-            MQTTVISources = new ObservableCollection<KeyValuePair<string, MQTTVISource>>();
-            Algorithms = new ObservableCollection<KeyValuePair<string, Algorithm>>();
+            MQTTCameras = new ObservableCollection<MQTTCamera>();
+            MQTTPGs = new ObservableCollection< MQTTPG>();
+            MQTTSpectrums = new ObservableCollection<MQTTSpectrum>();
+            MQTTVISources = new ObservableCollection<MQTTVISource>();
+            Algorithms = new ObservableCollection<Algorithm>();
 
-            ServiceConfig serviceConfig = new ServiceConfig();
-            serviceConfig.SendTopic = "Camera";
-            serviceConfig.SubscribeTopic = "CameraService";
 
-            CameraConfig cameraConfig = new CameraConfig(serviceConfig);
-            cameraConfig.Name = "相机0";
-            cameraConfig.CameraID = "58366c49967393afe";
-            cameraConfig.CameraType = CameraType.CVQ;
-            cameraConfig.TakeImageMode = TakeImageMode.Normal;
+            CameraConfig cameraConfig = new CameraConfig
+            {
+                SendTopic = "Camera",
+                SubscribeTopic = "CameraService",
+                Name = "相机0",
+                ID = "58366c49967393afe",
+                CameraType = CameraType.CVQ,
+                TakeImageMode = TakeImageMode.Normal
+            };
             cameraConfig.Name = "CV";
             cameraConfig.ImageBpp = 8;
+
+
             MQTTCamera Camera = new MQTTCamera(cameraConfig);
-            MQTTCameras.Add(new KeyValuePair<string, MQTTCamera>("camera", Camera));
+            MQTTCameras.Add(Camera);
             ServiceHeartbeats.Add(Camera);
 
+            CameraConfig cameraConfig1 = new CameraConfig
+            {
+                SendTopic = "Camera",
+                SubscribeTopic = "CameraService",
 
-            CameraConfig cameraConfig1 = new CameraConfig(serviceConfig);
-            cameraConfig1.Name = "相机1";
-            cameraConfig1.CameraID = "e29b14429bc375b1";
-            cameraConfig1.CameraType = CameraType.LVQ;
-            cameraConfig1.TakeImageMode = TakeImageMode.Normal;
-            cameraConfig1.ImageBpp = 8;
+                Name = "相机1",
+                ID = "e29b14429bc375b1",
+                CameraType = CameraType.LVQ,
+                TakeImageMode = TakeImageMode.Normal,
+                ImageBpp = 8
+            };
             cameraConfig1.Name = "BV";
 
             MQTTCamera Camera1 = new MQTTCamera(cameraConfig1);
-            MQTTCameras.Add(new KeyValuePair<string, MQTTCamera>("camera", Camera1));
+            MQTTCameras.Add(Camera1);
             ServiceHeartbeats.Add(Camera1);
-
-
-            MQTTPG PG = new MQTTPG("PG1");
-            MQTTPGs.Add(new KeyValuePair<string, MQTTPG>("PG", PG));
-            ServiceHeartbeats.Add(PG);
-
-            MQTTSpectrum Spectrum = new MQTTSpectrum("MQTTSpectrum");
-            MQTTSpectrums.Add(new KeyValuePair<string, MQTTSpectrum>("Spectrum", Spectrum));
-            ServiceHeartbeats.Add(Spectrum);
         }
-
 
         public void Reload()
         {
             DeviceSettingChanged?.Invoke(this, new EventArgs());
         }
-
-
-    public ObservableCollection<KeyValuePair<string, MQTTCamera>> MQTTCameras { get; set; }
-        public ObservableCollection<KeyValuePair<string, MQTTPG>> MQTTPGs { get; set; }
-        public ObservableCollection<KeyValuePair<string, MQTTSpectrum>> MQTTSpectrums { get; set; }
-
-        public ObservableCollection<KeyValuePair<string, MQTTVISource>> MQTTVISources { get; set; }
-
-        public ObservableCollection<KeyValuePair<string, Algorithm>> Algorithms { get; set; }
-
-
-        public ObservableCollection<IServiceHeartbeat> ServiceHeartbeats { get; set; }
-
+        
 
     }
 }

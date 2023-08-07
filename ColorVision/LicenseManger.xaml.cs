@@ -70,7 +70,7 @@ namespace ColorVision
             {
                 string Key = File.ReadAllText(openFileDialog.FileName);
                 LicenseConfigs[ListViewLicense.SelectedIndex].Tag = $"{Key}";
-                MQTT.MQTTManager.GetInstance().MQTTCameras[0].Value.SetLicense(LicenseConfigs[ListViewLicense.SelectedIndex].Sn, Key);
+                MQTT.MQTTManager.GetInstance().MQTTCameras[0].SetLicense(LicenseConfigs[ListViewLicense.SelectedIndex].Sn, Key);
 
             }
 

@@ -47,7 +47,7 @@ namespace ColorVision.MQTT.Control
 
             MQTTCamera.InitCameraSuccess += (s, e) =>
             {
-                if (e.CameraID == MQTTCamera.Config.CameraID)
+                if (e.DeviceID == MQTTCamera.Config.ID)
                 {
                     ComboxCameraID.ItemsSource = MQTTCamera.CameraIDs;
                     ComboxCameraID.SelectedIndex = 0;
@@ -59,7 +59,7 @@ namespace ColorVision.MQTT.Control
             };
             MQTTCamera.OpenCameraSuccess += (s,e) =>
             {
-                if (e.CameraID == MQTTCamera.Config.CameraID)
+                if (e.DeviceID == MQTTCamera.Config.ID)
                 {
                     CameraCloseButton.Visibility = Visibility.Visible;
                     CameraOpenButton.Visibility = Visibility.Collapsed;
@@ -68,7 +68,7 @@ namespace ColorVision.MQTT.Control
             };
             MQTTCamera.CloseCameraSuccess += (s,e) =>
             {
-                if (e.CameraID == MQTTCamera.Config.CameraID)
+                if (e.DeviceID == MQTTCamera.Config.ID)
                 {
                     CameraCloseButton.Visibility = Visibility.Collapsed;
                     CameraOpenButton.Visibility = Visibility.Visible;
@@ -83,7 +83,7 @@ namespace ColorVision.MQTT.Control
             {
                 if (button.Content.ToString() == "初始化")
                 {
-                    MQTTCamera.Init(MQTTCamera.Config.CameraType, MQTTCamera.Config.CameraID);
+                    MQTTCamera.Init(MQTTCamera.Config.CameraType, MQTTCamera.Config.ID);
                     CamerInitButton.Content = "正在初始化";
                 }
                 else
@@ -100,7 +100,7 @@ namespace ColorVision.MQTT.Control
 
         private void SendDemo2_Click(object sender, RoutedEventArgs e)
         {
-            MQTTCamera.Open(MQTTCamera.Config.CameraID, MQTTCamera.Config.TakeImageMode, MQTTCamera.Config.ImageBpp);
+            MQTTCamera.Open(MQTTCamera.Config.ID, MQTTCamera.Config.TakeImageMode, MQTTCamera.Config.ImageBpp);
         }
 
         private void SendDemo3_Click(object sender, RoutedEventArgs e)

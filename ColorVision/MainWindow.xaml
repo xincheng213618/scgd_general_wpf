@@ -139,7 +139,6 @@
                                         <ComboBox  x:Name="ComboxCalibrationTemplate" Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,0,10,0"/>
                                     </DockPanel>
                                     <Template:Calibration x:Name="Calibration1" />
-                                    <Button  Content="应用校正模板" Click="SendDemo1_Click"/>
                                 </StackPanel>
                             </Border>
                         </StackPanel>

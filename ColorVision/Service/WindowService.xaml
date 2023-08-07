@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Service"
         mc:Ignorable="d"
-        Title="WindowService" Height="450" Width="800" Initialized="Window_Initialized" >
+        Title="WindowService" Height="600" Width="800" Initialized="Window_Initialized" >
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>

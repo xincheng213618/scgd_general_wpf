@@ -12,21 +12,21 @@
                 <GridView >
                     <GridViewColumn  Header="SubscribeTopic">
                         <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:IServiceHeartbeat}">
+                            <DataTemplate  DataType="{x:Type local:IHeartbeat}">
                                 <TextBlock Text="{ Binding SubscribeTopic}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn  Header="IsAlive">
                         <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:IServiceHeartbeat}">
+                            <DataTemplate  DataType="{x:Type local:IHeartbeat}">
                                 <TextBlock  Text="{ Binding IsAlive}" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn  Header="LastAliveTime">
                         <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:IServiceHeartbeat}">
+                            <DataTemplate  DataType="{x:Type local:IHeartbeat}">
                                 <DockPanel>
                                     <TextBlock  Text="{ Binding LastAliveTime,StringFormat=yyyy-MM-dd HH:mm:ss}" />
                                 </DockPanel>

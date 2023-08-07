@@ -26,23 +26,7 @@ namespace ColorVision.Service
             MQTTServices = ServiceControl.GetInstance().MQTTServices;
             TreeView1.ItemsSource = MQTTServices;
 
-            //ServiceConfig serviceConfig = new ServiceConfig();
-            //serviceConfig.SendTopic = "Camera";
-            //serviceConfig.SubscribeTopic = "CameraService";
-            //CameraConfig cameraConfig1 = new CameraConfig(serviceConfig);
-            //cameraConfig1.Name = "相机1";
-            //cameraConfig1.CameraID = "e29b14429bc375b1";
-            //cameraConfig1.CameraType = CameraType.LVQ;
-            //cameraConfig1.TakeImageMode = TakeImageMode.Normal;
-            //cameraConfig1.ImageBpp = 8;
-            //cameraConfig1.Name = "BV";
 
-            //MQTTCamera Camera1 = new MQTTCamera(cameraConfig1);
-
-            //MQTTManager.GetInstance().MQTTCameras.Clear();
-            //MQTTManager.GetInstance().ServiceHeartbeats.Clear();
-            //MQTTManager.GetInstance().MQTTCameras.Add(new KeyValuePair<string, MQTTCamera>("camera", Camera1));
-            //MQTTManager.GetInstance().ServiceHeartbeats.Add(Camera1);
 
         }
 
@@ -70,6 +54,32 @@ namespace ColorVision.Service
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            CameraConfig cameraConfig1 = new CameraConfig
+            {
+                SendTopic = "Camera",
+                SubscribeTopic = "CameraService",
+                Name = "相机1",
+                ID = "e29b14429bc375b1",
+                CameraType = CameraType.LVQ,
+                TakeImageMode = TakeImageMode.Normal,
+                ImageBpp = 8
+            };
+            cameraConfig1.Name = "BV6000";
+
+            MQTTCamera Camera1 = new MQTTCamera(cameraConfig1);
+
+            foreach (var item in MQTTManager.GetInstance().MQTTCameras)
+            {
+                item.Dispose();
+            }
+
+
+            MQTTManager.GetInstance().MQTTCameras.Clear();
+            MQTTManager.GetInstance().ServiceHeartbeats.Clear();
+
+            MQTTManager.GetInstance().MQTTCameras.Add(Camera1);
+            MQTTManager.GetInstance().ServiceHeartbeats.Add(Camera1);
+
             MQTTManager.GetInstance().Reload();
         }
     }

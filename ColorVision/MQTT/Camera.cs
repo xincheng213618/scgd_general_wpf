@@ -18,49 +18,10 @@ using System.Windows;
 
 namespace ColorVision.MQTT
 {
-
-    public enum CameraType 
-    {
-        [Description("CV_Q")]
-        CVQ,
-        [Description("LV_Q")]
-        LVQ,
-        [Description("BV_Q")]
-        BVQ,
-        [Description("MIL_CL")]
-        MILCL,
-        [Description("MIL_CXP")]
-        MILCXP,
-        [Description("BV_H")]
-        BVH,
-        [Description("LV_H")]
-        LVH,
-        [Description("HK_CXP")]
-        HKCXP,
-        [Description("LV_MIL_CL")]
-        LVMILCL,
-        [Description("MIL_CXP_VIDEO")]
-        MILCXPVIDEO,
-        [Description("CameraType_Total")]
-        CameraTypeTotal,
-    };
-
-    public enum TakeImageMode
-    {
-        [Description("Measure_Normal")]
-        Normal = 0,
-        [Description("Live")]
-        Live,
-        [Description("Measure_Fast")]
-        Fast,
-        [Description("Measure_FastEx")]
-        FastExt
-    };
-
     /// <summary>
     /// 基础硬件配置信息
     /// </summary>
-    public class BaseHardwareConfig : ViewModelBase
+    public class BaseDeviceConfig : ViewModelBase
     {
         /// <summary>
         /// 序号
@@ -80,44 +41,70 @@ namespace ColorVision.MQTT
         public bool IsAlive { get => _IsAlive; set { _IsAlive = value; NotifyPropertyChanged(); } }
         private bool _IsAlive;
 
+
+        /// <summary>
+        /// 序号
+        /// </summary>
+        public string ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
+        private string _ID;
+
+        public string MD5 { get => _MD5; set { _MD5 = value; NotifyPropertyChanged(); } }
+        private string _MD5;
+
+        public bool IsRegister { get => _IsRegister; set { _IsRegister = value; NotifyPropertyChanged(); } }
+        private bool _IsRegister;
+
     }
 
-    public class ServiceConfig
+
+
+
+    public class ServiceConfig: IMQTTServiceConfig,IHeartbeat
     {
+        /// <summary>
+        /// 服务名称
+        /// </summary>
+        public string Name { get; set; }
+
+        /// <summary>
+        /// 服务类型
+        /// </summary>
+        public string Type { get; set; }
+
         public string SubscribeTopic { get; set; }
         public string SendTopic { get; set; }
 
+        public bool IsAlive { get; set; }
+        public DateTime LastAliveTime { get; set; }
     }
 
 
     /// <summary>
     /// 相机配置
     /// </summary>
-    public class CameraConfig: BaseHardwareConfig
+    public class CameraConfig: BaseDeviceConfig, IMQTTServiceConfig
     {
 
-        public ServiceConfig ServiceConfig { get; set; }
-        public CameraConfig(ServiceConfig ServiceConfig)
+        public CameraConfig()
         {
-            this.ServiceConfig = ServiceConfig;
         }
-        public string SubscribeTopic { get => ServiceConfig.SubscribeTopic; }
-        public string SendTopic { get => ServiceConfig.SendTopic; }
 
-        public string CameraID { get => _CameraID; set { _CameraID = value;  NotifyPropertyChanged(); } }
-        private string _CameraID;
+        public string SubscribeTopic { get; set; }
+        public string SendTopic { get; set; }
+
         public CameraType CameraType { get; set; }
 
         public TakeImageMode TakeImageMode { get; set; }
 
         public int ImageBpp { get; set; }
-
-        public string MD5 { get; set; }
     }
+
+
+
+
 
     public delegate void MQTTCameraFileHandler(object sender,string? FilePath);
     public delegate void MQTTCameraMsgHandler(object sender, MsgReturn msg);
-
 
 
     public class MQTTCamera :BaseService
@@ -128,17 +115,17 @@ namespace ColorVision.MQTT
         public event MQTTCameraMsgHandler CloseCameraSuccess;
         public event MQTTCameraMsgHandler UnInitCameraSuccess;
 
+        public static List<string> MD5 { get; set; } = new List<string>();
+        public static List<string> CameraIDs { get; set; } = new List<string>();
+
         public CameraConfig Config { get; set; }
-        public string DeviceID { get => Config.CameraID; }
+        public string DeviceID { get => Config.ID; }
 
         public MQTTCamera(string NickName = "相机1",string SendTopic = "Camera/CMD/0", string SubscribeTopic = "Camera/STATUS/0") : base()
         {
-            ServiceConfig serviceConfig = new ServiceConfig();
-            serviceConfig.SubscribeTopic = SubscribeTopic;
-            serviceConfig.SendTopic = SendTopic;
-            Config = new CameraConfig(serviceConfig);
-
-
+            Config = new CameraConfig();
+            Config.SendTopic = SendTopic;
+            Config.SubscribeTopic = SubscribeTopic;
             this.NickName = NickName;
             this.SendTopic = SendTopic;
             this.SubscribeTopic = SubscribeTopic;
@@ -164,8 +151,6 @@ namespace ColorVision.MQTT
             };
         }
 
-        public static List<string> MD5 { get; set; } = new List<string>();
-        public static List<string> CameraIDs { get; set; } = new List<string>();
 
 
         private void MQTTCamera_MsgReturnChanged(MsgReturn msg)
@@ -174,25 +159,27 @@ namespace ColorVision.MQTT
             switch (msg.EventName)
             {
                 case "CM_GetAllCameraID":
-                    JArray CameraID = msg.Data.CameraID;
-                    JArray MD5ID = msg.Data.MD5ID;
-                    foreach (var item in MD5ID)
+
+                    JArray CameraIDs = msg.Data.CameraID;
+                    JArray MD5IDs = msg.Data.MD5ID;
+                    for (int i = 0; i < CameraIDs.Count; i++)
                     {
-                        if (!MD5.Contains(item.ToString()))
-                        {
-                            MD5.Add(item.ToString());
-                        }
-                    }
-                    foreach (var item in CameraID)
-                    {
-                        if (!CameraIDs.Contains(item.ToString()))
-                        {
-                            CameraIDs.Add(item.ToString());
-                        }
+                        if (CameraIDs[i].ToString() ==CameraID)
+                            Config.MD5 = MD5IDs[i].ToString();
+
+                        if (!MQTTCamera.CameraIDs.Contains(CameraIDs[i].ToString()))
+                                MQTTCamera.CameraIDs.Add(CameraIDs[i].ToString());
+                        if (!MD5.Contains(MD5IDs[i].ToString()))
+                            MD5.Add(MD5IDs[i].ToString());
+
+
                     }
                     return;
             }
-            if (msg.CameraID != Config.CameraID)
+
+
+            //信息在这里添加一次过滤，让信息只能在对应的相机上显示,同时如果ID为空的话，就默认是服务端的信息，不进行过滤，这里后续在进行优化
+            if (Config.ID!=null&&msg.DeviceID != Config.ID)
             {
                 return;
             }
@@ -218,16 +205,16 @@ namespace ColorVision.MQTT
                     case "Open":
                         Application.Current.Dispatcher.Invoke(() => OpenCameraSuccess?.Invoke(this, msg));
                         break;
-                    case "GatData":
-                        string Filepath = msg.Data.FilePath;
-                        Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(this, Filepath));
+                    case "GetData":
+                        string SaveFileName = msg.Data.SaveFileName;
+                        Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(this, SaveFileName));
                         break;
                     case "GetAutoExpTime":
                         break;
                     case "SaveLicense":
                         break;
                     default:
-                        MessageBox.Show("未定义EventName");
+                        MessageBox.Show($"未定义{msg.EventName}");
                         break;
                 }
             }
@@ -235,20 +222,21 @@ namespace ColorVision.MQTT
             {
                 switch (msg.EventName)
                 {
-                    case "GatData":
-                        MessageBox.Show("取图失败");
+                    case "GetData":
+                        string SaveFileName = msg.Data.SaveFileName;
+                        Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(this, SaveFileName));
                         break;
                     case "Close":
                         Application.Current.Dispatcher.Invoke(() => CloseCameraSuccess?.Invoke(this,msg));
                         break;
                     case "Open":
-                        MessageBox.Show("没有许可证");
+                        MessageBox.Show("Open失败，没有许可证");
                         break;
                     case "Uninit":
                         Application.Current.Dispatcher.Invoke(() => UnInitCameraSuccess?.Invoke(this,msg));
                         break;
                     default:
-                        MessageBox.Show("未定义EventName");
+                        MessageBox.Show($"未定义{msg.EventName}");
                         break;
                 }
             }
@@ -446,5 +434,45 @@ namespace ColorVision.MQTT
         }
 
 
+
     }
+
+
+    public enum CameraType
+    {
+        [Description("CV_Q")]
+        CVQ,
+        [Description("LV_Q")]
+        LVQ,
+        [Description("BV_Q")]
+        BVQ,
+        [Description("MIL_CL")]
+        MILCL,
+        [Description("MIL_CXP")]
+        MILCXP,
+        [Description("BV_H")]
+        BVH,
+        [Description("LV_H")]
+        LVH,
+        [Description("HK_CXP")]
+        HKCXP,
+        [Description("LV_MIL_CL")]
+        LVMILCL,
+        [Description("MIL_CXP_VIDEO")]
+        MILCXPVIDEO,
+        [Description("CameraType_Total")]
+        CameraTypeTotal,
+    };
+
+    public enum TakeImageMode
+    {
+        [Description("Measure_Normal")]
+        Normal = 0,
+        [Description("Live")]
+        Live,
+        [Description("Measure_Fast")]
+        Fast,
+        [Description("Measure_FastEx")]
+        FastExt
+    };
 }

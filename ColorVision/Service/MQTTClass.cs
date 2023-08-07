@@ -34,21 +34,21 @@ namespace ColorVision.Service
         public CameraConfig CameraConfig { get; set; }
         public RelayCommand SaveCommand { get; set; }
 
-        public MQTTDeviceCamera(ServiceConfig ServiceConfig, SysResourceModel sysResourceModel) : base(sysResourceModel)
+        public MQTTDeviceCamera(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             if (string.IsNullOrEmpty(SysResourceModel.Value))
             {
-                CameraConfig = new CameraConfig(ServiceConfig);
+                CameraConfig = new CameraConfig();
             }
             else
             {
                 try
                 {
-                    CameraConfig = JsonConvert.DeserializeObject<CameraConfig>(SysResourceModel.Value) ?? new CameraConfig(ServiceConfig);
+                    CameraConfig = JsonConvert.DeserializeObject<CameraConfig>(SysResourceModel.Value) ?? new CameraConfig();
                 }
                 catch
                 {
-                    CameraConfig = new CameraConfig(ServiceConfig);
+                    CameraConfig = new CameraConfig();
                 }
             }
 
