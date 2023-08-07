@@ -109,7 +109,7 @@ namespace ColorVision.Util
         }
 
 
-        public static bool IsAutoRun(string AutoRunName, string AutoRunRegPath)
+        public static bool IsAutoRun(string AutoRunName ,string AutoRunRegPath)
         {
             try
             {
@@ -137,9 +137,9 @@ namespace ColorVision.Util
         public static string GetMD5(string str)
         {
             byte[] byteOld = Encoding.UTF8.GetBytes(str);
-#pragma warning disable CA5351
+            #pragma warning disable CA5351
             byte[] byteNew = MD5.HashData(byteOld);
-#pragma warning restore CA5351
+            #pragma warning restore CA5351
             StringBuilder sb = new(32);
             foreach (byte b in byteNew)
             {
@@ -156,12 +156,12 @@ namespace ColorVision.Util
             MemoryStream ms = new MemoryStream();
             BinaryFormatter bf = new BinaryFormatter();
             //序列化成流
-#pragma warning disable SYSLIB0011
+            #pragma warning disable SYSLIB0011
             bf.Serialize(ms, obj);
             ms.Seek(0, SeekOrigin.Begin);
             //反序列化成对象
             retval = bf.Deserialize(ms);
-#pragma warning restore SYSLIB0011
+            #pragma warning restore SYSLIB0011
             return (T)retval;
         }
 
