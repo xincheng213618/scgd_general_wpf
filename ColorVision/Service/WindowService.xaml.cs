@@ -15,7 +15,7 @@ namespace ColorVision.Service
     /// </summary>
     public partial class WindowService : Window
     {
-
+        public MQTTManager MQTTManager { get; set; }
         public WindowService()
         {
             InitializeComponent();
@@ -23,11 +23,10 @@ namespace ColorVision.Service
         public ObservableCollection<MQTTServiceKind> MQTTServices { get; set; }
         private void Window_Initialized(object sender, EventArgs e)
         {
+            MQTTManager = MQTTManager.GetInstance();
+
             MQTTServices = ServiceControl.GetInstance().MQTTServices;
             TreeView1.ItemsSource = MQTTServices;
-
-
-
         }
 
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
@@ -68,19 +67,18 @@ namespace ColorVision.Service
 
             MQTTCamera Camera1 = new MQTTCamera(cameraConfig1);
 
-            foreach (var item in MQTTManager.GetInstance().MQTTCameras)
+            foreach (var item in MQTTManager.MQTTCameras)
             {
                 item.Dispose();
             }
 
+            MQTTManager.MQTTCameras.Clear();
+            MQTTManager.ServiceHeartbeats.Clear();
 
-            MQTTManager.GetInstance().MQTTCameras.Clear();
-            MQTTManager.GetInstance().ServiceHeartbeats.Clear();
+            MQTTManager.MQTTCameras.Add(Camera1);
+            MQTTManager.ServiceHeartbeats.Add(Camera1);
 
-            MQTTManager.GetInstance().MQTTCameras.Add(Camera1);
-            MQTTManager.GetInstance().ServiceHeartbeats.Add(Camera1);
-
-            MQTTManager.GetInstance().Reload();
+            MQTTManager.Reload();
         }
     }
 }

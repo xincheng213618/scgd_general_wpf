@@ -126,7 +126,7 @@ namespace ColorVision
         {
             log.Info("程序关闭");
 
-            foreach (var item in ServiceManager.ServiceDictionary)
+            foreach (var item in ServiceManagerWindow.ServiceDictionary)
             {
                 item.Value.Kill();
                 item.Value.Close();

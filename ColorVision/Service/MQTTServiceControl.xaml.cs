@@ -40,6 +40,22 @@ namespace ColorVision.Service
             this.DataContext = MQTTService;
             TextBox_Type.ItemsSource = MQTTService.Parent.VisualChildren;
             TextBox_Type.SelectedItem = MQTTService;
+
+            if (MQTTService.VisualChildren.Count == 0)
+                ListViewService.Visibility = Visibility.Collapsed;
+            ListViewService.ItemsSource = MQTTService.VisualChildren;
+
+            MQTTService.VisualChildren.CollectionChanged += (s, e) =>
+            {
+                if (MQTTService.VisualChildren.Count == 0)
+                {
+                    ListViewService.Visibility = Visibility.Collapsed;
+                }
+                else
+                {
+                    ListViewService.Visibility = Visibility.Visible;
+                }
+            };
         }
 
         private void Button_New_Click(object sender, RoutedEventArgs e)
@@ -53,6 +69,18 @@ namespace ColorVision.Service
                     mQTTService.AddChild(new MQTTDevice(model));
 
             }
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            MQTTEditContent.Visibility = Visibility.Collapsed;
+            MQTTShowContent.Visibility = Visibility.Visible;
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            MQTTShowContent.Visibility = Visibility.Collapsed;
+            MQTTEditContent.Visibility = Visibility.Visible;
         }
     }
 }

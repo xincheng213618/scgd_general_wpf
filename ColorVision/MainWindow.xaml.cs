@@ -991,7 +991,7 @@ namespace ColorVision
 
         private void MenuItem13_Click(object sender, RoutedEventArgs e)
         {
-            new ServiceManager() { Owner = this }.Show();
+            new ServiceManagerWindow() { Owner = this }.Show();
         }
     }
 

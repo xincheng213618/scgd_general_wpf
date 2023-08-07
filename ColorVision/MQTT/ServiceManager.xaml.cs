@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Google.Protobuf.WellKnownTypes;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -15,19 +16,26 @@ using System.Windows.Shapes;
 
 namespace ColorVision.MQTT
 {
-    /// <summary>
-    /// ServiceManager.xaml 的交互逻辑
-    /// </summary>
-    public partial class ServiceManager : Window
+   
+    public class ServiceManager
     {
-        public ServiceManager()
+
+    }
+
+
+
+    /// <summary>
+    /// ServiceManagerWindow.xaml 的交互逻辑
+    /// </summary>
+    public partial class ServiceManagerWindow : Window
+    {
+        public ServiceManagerWindow()
         {
             InitializeComponent();
         }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-
             Dictionary<string, string> keyValuePairs = new Dictionary<string, string>()
            {
                { "CameraService" ,"CameraService.exe" },
@@ -43,17 +51,20 @@ namespace ColorVision.MQTT
                 Button button = new Button();
                 foreach (var item1 in processes)
                 {
-                    if (item1.ProcessName == item.Key)
+                    if (ServiceDictionary.TryGetValue(item.Key, out Process ss))
+                    {
+                        button.Content = "关闭" + item.Key;
+                        break;
+                    }
+
+                    if (item1.ProcessName == item.Key )
                     {
                         ServiceDictionary.Add(item.Key, item1);
                         button.Content = "关闭" + item.Key;
                         break;
                     }
                 }
-                if (button.Content ==null)
-                {
-                    button.Content = "打开" + item.Key;
-                }
+                button.Content ??= "打开" + item.Key;
 
                 button.Click += (s, e) =>
                 {

@@ -41,6 +41,22 @@ namespace ColorVision.Service
             this.DataContext = MQTTServiceKind;
             TextBox_Type.ItemsSource = ServiceControl.MQTTServices;
             TextBox_Type.SelectedItem = MQTTServiceKind;
+
+            if (MQTTServiceKind.VisualChildren.Count == 0)
+                ListViewService.Visibility = Visibility.Collapsed;
+            ListViewService.ItemsSource = MQTTServiceKind.VisualChildren;
+
+            MQTTServiceKind.VisualChildren.CollectionChanged += (s, e) =>
+            {
+                if (MQTTServiceKind.VisualChildren.Count == 0)
+                {
+                    ListViewService.Visibility = Visibility.Collapsed;
+                }
+                else
+                {
+                    ListViewService.Visibility = Visibility.Visible;
+                }
+            };
         }
 
         private void Button_New_Click(object sender, RoutedEventArgs e)

@@ -93,6 +93,7 @@ namespace ColorVision.Service
                     ServiceConfig = new ServiceConfig();
                 }
             }
+            ServiceConfig.Name = Name;
             ContextMenu = new ContextMenu();
             MenuItem menuItem = new MenuItem() { Header = "删除服务" };
             menuItem.Click += (s, e) =>

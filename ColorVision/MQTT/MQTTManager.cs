@@ -3,6 +3,7 @@ using HslCommunication.Profinet.Panasonic.Helper;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO.Ports;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,6 +19,7 @@ namespace ColorVision.MQTT
 
         public event EventHandler DeviceSettingChanged;
 
+        public ObservableCollection<HeartbeatService> HeartbeatServices { get; set; }
         public ObservableCollection<MQTTCamera> MQTTCameras { get; set; }
         public ObservableCollection<MQTTPG> MQTTPGs { get; set; }
         public ObservableCollection<MQTTSpectrum> MQTTSpectrums { get; set; }
@@ -25,6 +27,7 @@ namespace ColorVision.MQTT
         public ObservableCollection<MQTTVISource> MQTTVISources { get; set; }
 
         public ObservableCollection<Algorithm> Algorithms { get; set; }
+
         public ObservableCollection<IHeartbeat> ServiceHeartbeats { get; set; }
 
         public MQTTManager()

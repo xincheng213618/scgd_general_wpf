@@ -38,6 +38,24 @@ namespace ColorVision.MQTT
         public bool IsAlive { get; set; }
     }
 
+    public class HeartbeatService: BaseService
+    {
+        public ServiceConfig ServiceConfig { get; set; }
+        public HeartbeatService(ServiceConfig serviceConfig) : base()
+        {
+            ServiceConfig = serviceConfig;
+            MQTTControl.SubscribeCache(SubscribeTopic);
+        }
+        public override string SubscribeTopic { get => ServiceConfig.SubscribeTopic; set { ServiceConfig.SubscribeTopic = value; } }
+        public override string SendTopic { get => ServiceConfig.SendTopic; set { ServiceConfig.SendTopic = value; } }
+
+        public override bool IsAlive { get => ServiceConfig.IsAlive; set => ServiceConfig.IsAlive = value; }
+         
+        public override DateTime LastAliveTime { get => ServiceConfig.LastAliveTime; set => ServiceConfig.LastAliveTime = value; }
+
+
+    }
+
 
 
     public class BaseService:ViewModelBase, IHeartbeat, IMQTTServiceConfig, IDisposable
@@ -53,9 +71,7 @@ namespace ColorVision.MQTT
             MQTTControl = MQTTControl.GetInstance();
             MQTTConfig = MQTTControl.MQTTConfig;
             MQTTSetting = MQTTControl.MQTTSetting;
-
             MQTTControl.ApplicationMessageReceivedAsync += Processing;
-
             var timer = new System.Timers.Timer
             {
                 Interval = TimeSpan.FromSeconds(1).TotalMilliseconds,
@@ -138,16 +154,16 @@ namespace ColorVision.MQTT
         public MsgReturnHandler MsgReturnReceived { get; set; }
 
 
-        public string SubscribeTopic { get; set; }
-        public string SendTopic { get; set; }
+        public virtual string SubscribeTopic { get; set; }
+        public virtual string SendTopic { get; set; }
         public MQTTControl MQTTControl { get; set; }
         public ulong ServiceID { get; set; }
         public string CameraID { get; set; }
 
-        public DateTime LastAliveTime { get => _LastAliveTime; set { _LastAliveTime = value; NotifyPropertyChanged(); } } 
+        public virtual DateTime LastAliveTime { get => _LastAliveTime; set { _LastAliveTime = value; NotifyPropertyChanged(); } } 
         private DateTime _LastAliveTime = DateTime.MinValue;
 
-        public bool IsAlive { get => _IsAlive; set { if (value == _IsAlive) return;  _IsAlive = value; NotifyPropertyChanged(); } }
+        public virtual bool IsAlive { get => _IsAlive; set { if (value == _IsAlive) return;  _IsAlive = value; NotifyPropertyChanged(); } }
         private bool _IsAlive;
 
 

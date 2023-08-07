@@ -1,4 +1,5 @@
-﻿using ColorVision.MySql.DAO;
+﻿using ColorVision.MQTT;
+using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.SettingUp;
 using ColorVision.Template;
@@ -42,6 +43,8 @@ namespace ColorVision.Service
                     if (item1.Type == item.Value)
                     {
                         MQTTService mQTTService = new MQTTService(item1);
+                        MQTTManager.GetInstance().ServiceHeartbeats.Add(new HeartbeatService(mQTTService.ServiceConfig));
+
                         foreach (var item2 in devices)
                         {
                             if (item2.Pid == item1.Id)
