@@ -1,4 +1,6 @@
-﻿using MQTTnet.Client;
+﻿using ColorVision.MQTT.Control;
+using Google.Protobuf.WellKnownTypes;
+using MQTTnet.Client;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -10,15 +12,18 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Media.Media3D;
+using static ColorVision.MQTT.MQTTSpectrum;
 using static cvColorVision.GCSDLL;
 
 namespace ColorVision.MQTT
 {
     public delegate void MQTTSpectrumDataHandler(ColorParam colorPara);
+    public delegate void MQTTSpectrumHeartbeatHandler(HeartbeatParam heartbeat);
 
     public class MQTTSpectrum: BaseService
     {
         public event MQTTSpectrumDataHandler DataHandlerEvent;
+        public event MQTTSpectrumHeartbeatHandler HeartbeatHandlerEvent;
 
         public MQTTSpectrum(string NickName = "Spectrum1", string SendTopic = "Spectum/CMD/chen_sp1", string SubscribeTopic = "Spectum/STATUS/chen_sp1") : base()
         {
@@ -58,10 +63,15 @@ namespace ColorVision.MQTT
                         }
                         else if (json.EventName == "GetData")
                         {
-                            JObject data = json.Data.COLOR_PARA;
+                            JObject data = json.Data;
                             ColorParam colorParam = JsonConvert.DeserializeObject<ColorParam>(JsonConvert.SerializeObject(data));
                             Application.Current.Dispatcher.Invoke(() => DataHandlerEvent?.Invoke(colorParam));
 
+                        }
+                        else if (json.EventName == "Heartbeat")
+                        {
+                            HeartbeatParam heartbeat = JsonConvert.DeserializeObject<HeartbeatParam>(JsonConvert.SerializeObject(json.Data));
+                            Application.Current.Dispatcher.Invoke(() => HeartbeatHandlerEvent?.Invoke(heartbeat));
                         }
                         else if (json.EventName == "Close")
                         {
@@ -174,6 +184,60 @@ namespace ColorVision.MQTT
             return true;
         }
 
+        internal bool InitDark(float IntTime, int AveNum)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "InitDark",
+                Params = new InitDarkParamMQTT()
+                {
+                    IntTime = IntTime,
+                    AveNum = AveNum,
+                }
+            };
+            PublishAsyncClient(msg);
+            return true;
+        }
+
+        internal void GetDataAuto(float IntTime, int AveNum, bool bUseAutoIntTime, bool bUseAutoDark)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "GetDataAuto",
+                Params = new GetDataParamMQTT()
+                {
+                    IntTime = IntTime,
+                    AveNum = AveNum,
+                    BUseAutoIntTime = bUseAutoIntTime,
+                    BUseAutoDark = bUseAutoDark
+                }
+            };
+            PublishAsyncClient(msg);
+        }
+
+        internal void GetDataAutoStop()
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "GetDataAutoStop",
+            };
+            PublishAsyncClient(msg);
+        }
+
+        public class HeartbeatParam
+        {
+            public bool isOpen;
+            public bool isAutoGetData;
+            public string time;
+        }
+
+        public class InitDarkParamMQTT
+        {
+            [JsonProperty("fIntTime")]
+            public float IntTime { get; set; }
+            [JsonProperty("iAveNum")]
+            public int AveNum { get; set; }
+        }
 
         public class GetDataParamMQTT
         {
@@ -186,8 +250,5 @@ namespace ColorVision.MQTT
             [JsonProperty("bUseAutoDark")]
             public bool BUseAutoDark { get; set; }
         }
-
-
-
     }
 }

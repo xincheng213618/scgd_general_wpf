@@ -44,8 +44,8 @@ namespace cvColorVision
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 10000)]
             public float[] fPL;   //光谱数据
 
-            public float fRf;
-            public float fRg;
+            //public float fRf;
+            //public float fRg;
         };
 
         private const string LIBRARY_CVCAMERA = "cvCamera.dll";

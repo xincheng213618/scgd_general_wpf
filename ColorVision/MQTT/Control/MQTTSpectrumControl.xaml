@@ -12,8 +12,8 @@
         <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton3,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel >
                 <DockPanel Margin="5">
-                    <TextBlock  Text="AveNum" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
-                    <hc:PreviewSlider x:Name="SpectrumSliderAveNum"  TickFrequency ="0.1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="1" Maximum="100">
+                    <TextBlock  Text="平均次数" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                    <hc:PreviewSlider x:Name="SpectrumSliderAveNum"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="1" Maximum="100">
                         <hc:PreviewSlider.PreviewContent>
                             <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0.00"/>
                         </hc:PreviewSlider.PreviewContent>
@@ -27,7 +27,13 @@
                         </hc:PreviewSlider.PreviewContent>
                     </hc:PreviewSlider>
                 </DockPanel>
-                <GroupBox Header="DLL Test">
+                <StackPanel Visibility="Visible">
+                    <UniformGrid Columns="3">
+                        <CheckBox Content="自动积分" x:Name="AutoIntTime"/>
+                        <CheckBox Content="自适应校零" x:Name="AutoDark"/>
+                    </UniformGrid>
+                </StackPanel>
+                <!-- <GroupBox Header="DLL Test">
                     <StackPanel Visibility="Visible">
                         <UniformGrid Columns="3">
                             <Button Content="连接光谱仪" Click="SpectrumIni" />
@@ -35,14 +41,17 @@
                             <Button Content="单次测试" Click="SpectrumSingleTest" />
                         </UniformGrid>
                     </StackPanel>
-                </GroupBox>
+                </GroupBox> 
+                -->
                 <GroupBox Header="MQTT Test">
                     <StackPanel Visibility="Visible">
                         <UniformGrid Columns="2">
                             <!--<Button  Content="初始化" Click="Button_Click_1"/>-->
-                            <Button  Content="打开" Click="Button_Click_Open"/>
-                            <Button  Content="关闭" Click="Button_Click_5"/>
-                            <Button  Content="单次获取数据"  Click="Button_Click_4"/>
+                            <Button x:Name="connectBtn" Content="打开" Click="Button_Click_Open"/>
+                            <!--<Button  Content="关闭" Click="Button_Click_Close"/>-->
+                            <Button  Content="单次测试"  Click="Button_Click_OneTest"/>
+                            <Button  Content="单次校零"  Click="Button_Click_Init_Dark"/>
+                            <Button x:Name="autoTest" Content="自动测试"  Click="Button_Click_AutoTest"/>
 
                         </UniformGrid>
 
