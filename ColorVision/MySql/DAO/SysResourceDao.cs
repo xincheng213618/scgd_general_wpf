@@ -31,6 +31,7 @@ namespace ColorVision.MySql.DAO
 
         public string? Name { get; set; }
         public string? Code { get; set; }
+        public string? Pcode { get; set; }
         public int Type { get; set; }
         public int? Pid { get; set; }
         public string? Value { get; set; }
@@ -52,6 +53,7 @@ namespace ColorVision.MySql.DAO
                 Code = item.Field<string>("code"),
                 Type = item.Field<int>("type"),
                 Pid = item.Field<int?>("pid"),
+                Pcode = item.Field<string>("pcode"),
                 Value = item.Field<string>("txt_value"),
                 CreateDate = item.Field<DateTime>("create_date"),
                 TenantId = item.Field<int>("tenant_id"),
