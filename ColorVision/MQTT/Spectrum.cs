@@ -117,7 +117,7 @@ namespace ColorVision.MQTT
         }
 
 
-        public bool SetParam()
+        public bool SetParam(int iLimitTime, float fTimeB)
         {
             if (ServiceID == 0)
             {
@@ -126,7 +126,12 @@ namespace ColorVision.MQTT
             }
             MsgSend msg = new MsgSend
             {
-                EventName = "SetParam"
+                EventName = "SetParam",
+                Params = new AutoIntTimeParam()
+                {
+                    iLimitTime = iLimitTime,
+                    fTimeB = fTimeB
+                }
             };
             PublishAsyncClient(msg);
             return true;
@@ -226,9 +231,15 @@ namespace ColorVision.MQTT
 
         public class HeartbeatParam
         {
-            public bool isOpen;
-            public bool isAutoGetData;
-            public string time;
+            public bool isOpen { get; set; }
+            public bool isAutoGetData { get; set; }
+            public string time { get; set; }
+        }
+
+        public class AutoIntTimeParam
+        {
+            public int iLimitTime { get; set; }
+            public float fTimeB { get; set; }
         }
 
         public class InitDarkParamMQTT

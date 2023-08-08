@@ -1,4 +1,6 @@
-﻿using System;
+﻿using ColorVision.Extension;
+using ColorVision.MQTT;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -33,10 +35,24 @@ namespace ColorVision.Service
         {
             ServiceControl = ServiceControl.GetInstance();
             this.DataContext = MQTTDeviceCamera;
+
+            ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()
+                                           select new KeyValuePair<CameraType, string>(e1, e1.ToDescription());
+
+            ComboxCameraTakeImageMode.ItemsSource = from e1 in Enum.GetValues(typeof(TakeImageMode)).Cast<TakeImageMode>()
+                                                    select new KeyValuePair<TakeImageMode, string>(e1, e1.ToDescription());
+
+
+
+            ComboxCameraChannel.Text = MQTTDeviceCamera.CameraConfig.Channel.ToString();
+            ComboxCameraImageBpp.Text = MQTTDeviceCamera.CameraConfig.ImageBpp.ToString();
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            MQTTDeviceCamera.CameraConfig.Channel = int.Parse(ComboxCameraChannel.Text.ToString());
+            MQTTDeviceCamera.CameraConfig.ImageBpp = int.Parse(ComboxCameraImageBpp.Text.ToString());
+
             MQTTEditContent.Visibility = Visibility.Collapsed;
             MQTTShowContent.Visibility = Visibility.Visible;
         }
@@ -45,6 +61,7 @@ namespace ColorVision.Service
         {
             MQTTShowContent.Visibility = Visibility.Collapsed;
             MQTTEditContent.Visibility = Visibility.Visible;
+
         }
     }
 }

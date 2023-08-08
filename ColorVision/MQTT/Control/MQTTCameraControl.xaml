@@ -42,7 +42,7 @@
                         </DockPanel>
                         <DockPanel  Margin="2">
                             <Label Content="Bpp："/>
-                            <ComboBox  x:Name="ComboxCameraImageBpp"  Style="{StaticResource ComboBox.Small}"  SelectedIndex="0" Height="20" Margin="0,0,10,0" >
+                            <ComboBox  x:Name="ComboxCameraImageBpp"  Style="{StaticResource ComboBox.Small}"  Height="20" Margin="0,0,10,0" >
                                 <ComboBoxItem Content="8"/>
                                 <ComboBoxItem Content="16"/>
                             </ComboBox>

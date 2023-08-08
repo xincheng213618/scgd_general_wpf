@@ -20,11 +20,17 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel >
                             <TextBlock Text="{Binding Name}"/>
+                            <TextBlock Text="{Binding CameraConfig.Name}"/>
+                            <TextBlock Text="{Binding CameraConfig.ID}"/>
+                            <TextBlock Text="{Binding CameraConfig.MD5}"/>
                             <TextBlock Text="{Binding CameraConfig.SendTopic}"/>
                             <TextBlock Text="{Binding CameraConfig.SubscribeTopic}"/>
+                            <TextBlock Text="{Binding CameraConfig.CameraType}"/>
+                            <TextBlock Text="{Binding CameraConfig.ImageBpp}"/>
+                            <TextBlock Text="{Binding CameraConfig.TakeImageMode}"/>
                             <TextBlock Text="{Binding CameraConfig.IsAlive}"/>
                         </StackPanel>
-                        <Button  Grid.Column="1" Content="编辑参数"  Click="Button_Click_1"/>
+                        <Button  Grid.Column="1" Content="编辑"  Click="Button_Click_1"/>
                     </Grid>
                     <Grid  x:Name="MQTTEditContent" Visibility="Collapsed">
                         <Grid.ColumnDefinitions>
@@ -33,9 +39,42 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,5" >
+                                <Label Content="设备名称"/>
+                                <TextBox Text="{Binding Name}"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,5" >
+                                <Label Content="设备昵称"/>
+                                <TextBox Text="{Binding CameraConfig.Name}"/>
+                            </DockPanel>
+
+                            <DockPanel Margin="0,5" >
                                 <Label Content="相机ID："/>
                                 <TextBox Text="{Binding CameraConfig.ID}"/>
                             </DockPanel>
+                            <DockPanel Margin="5">
+                                <Label Content="相机类型："/>
+                                <hc:ComboBox x:Name="ComboxCameraType" Style="{StaticResource ComboBox.Small}"  SelectedValue="{Binding CameraConfig.CameraType}" SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20" Margin="0,0,10,0"/>
+                            </DockPanel>
+                            <DockPanel Margin="2">
+                                <Label Content="取图模式："/>
+                                <ComboBox  x:Name="ComboxCameraTakeImageMode"  Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding CameraConfig.TakeImageMode}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20" Margin="0,0,10,0"/>
+                            </DockPanel>
+                            <UniformGrid Columns="2">
+                                <DockPanel  Margin="2">
+                                    <Label Content="通道数："/>
+                                    <hc:ComboBox  x:Name="ComboxCameraChannel"  Style="{StaticResource ComboBox.Small}"  Height="20" Margin="0,0,10,0">
+                                        <ComboBoxItem Content="1"/>
+                                        <ComboBoxItem Content="3"/>
+                                    </hc:ComboBox>
+                                </DockPanel>
+                                <DockPanel  Margin="2">
+                                    <Label Content="Bpp："/>
+                                    <ComboBox  x:Name="ComboxCameraImageBpp"  Style="{StaticResource ComboBox.Small}"  Height="20" Margin="0,0,10,0" >
+                                        <ComboBoxItem Content="8"/>
+                                        <ComboBoxItem Content="16"/>
+                                    </ComboBox>
+                                </DockPanel>
+                            </UniformGrid>
                             <DockPanel Margin="0,5">
                                 <TextBlock  Text="增益" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0" />
                                 <hc:PreviewSlider x:Name="SliderGain"   TickFrequency ="0.1" IsSnapToTickEnabled="True"  SmallChange ="0.1" Value="1" Maximum="10"  >

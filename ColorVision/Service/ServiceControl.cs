@@ -38,26 +38,26 @@ namespace ColorVision.Service
                 MQTTServiceKind mQTTServicetype = new MQTTServiceKind();
                 mQTTServicetype.Name = item.Name ?? string.Empty;
                 mQTTServicetype.SysDictionaryModel = item;
-                foreach (var item1 in Services)
+                foreach (var service in Services)
                 {
-                    if (item1.Type == item.Value)
+                    if (service.Type == item.Value)
                     {
-                        MQTTService mQTTService = new MQTTService(item1);
+                        MQTTService mQTTService = new MQTTService(service);
                         MQTTManager.GetInstance().ServiceHeartbeats.Add(new HeartbeatService(mQTTService.ServiceConfig));
 
-                        foreach (var item2 in devices)
+                        foreach (var device in devices)
                         {
-                            if (item2.Pid == item1.Id)
+                            if (device.Pid == service.Id)
                             {
-                                if (item2.Type == 1)
+                                if (device.Type == 1)
                                 {
-                                    MQTTDeviceCamera device = new MQTTDeviceCamera(item2);
-                                    mQTTService.AddChild(device);
+                                    MQTTDeviceCamera camera = new MQTTDeviceCamera(device, service);
+                                    mQTTService.AddChild(camera);
                                 }
                                 else
                                 {
-                                    MQTTDevice device = new MQTTDevice(item2);
-                                    mQTTService.AddChild(device);
+                                    MQTTDevice other_device = new MQTTDevice(device, service);
+                                    mQTTService.AddChild(other_device);
                                 }
 
 

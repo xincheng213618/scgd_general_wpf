@@ -56,32 +56,39 @@ namespace ColorVision.Service
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            CameraConfig cameraConfig1 = new CameraConfig
-            {
-                SendTopic = "Camera",
-                SubscribeTopic = "CameraService",
-                Name = "相机1",
-                ID = "e29b14429bc375b1",
-                CameraType = CameraType.LVQ,
-                TakeImageMode = TakeImageMode.Normal,
-                ImageBpp = 8
-            };
-            cameraConfig1.Name = "BV6000";
-
-            MQTTCamera Camera1 = new MQTTCamera(cameraConfig1);
-
             foreach (var item in MQTTManager.MQTTCameras)
-            {
                 item.Dispose();
-            }
-
             MQTTManager.MQTTCameras.Clear();
             MQTTManager.ServiceHeartbeats.Clear();
 
-            MQTTManager.MQTTCameras.Add(Camera1);
-            MQTTManager.ServiceHeartbeats.Add(Camera1);
+            foreach (var mQTTServiceKind in MQTTServices)
+            {
+                foreach (var mQTTService in mQTTServiceKind.VisualChildren)
+                {
+                    foreach (var item in mQTTService.VisualChildren)
+                    {
+                        if (item is MQTTDeviceCamera deviceCamera)
+                        {
+                            MQTTCamera Camera1 = new MQTTCamera(deviceCamera.CameraConfig);
+                            MQTTManager.MQTTCameras.Add(Camera1);
+                            MQTTManager.ServiceHeartbeats.Add(Camera1);
+                        }
+                    }
+                }
+            }
+
+
+            foreach (var item in MQTTManager.MQTTSpectrums)
+                item.Dispose();
+            MQTTManager.MQTTSpectrums.Clear();
+
+            MQTTSpectrum mQTTSpectrum = new MQTTSpectrum();
+            MQTTManager.MQTTSpectrums.Add(mQTTSpectrum);
+
 
             MQTTManager.Reload();
+
+            this.Close();
         }
 
         private void TreeView1_Loaded(object sender, RoutedEventArgs e)
