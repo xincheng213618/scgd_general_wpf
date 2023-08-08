@@ -107,9 +107,6 @@ namespace ColorVision
         {
             GlobalSetting.GetInstance();
 
-            MQTTControl.GetInstance();
-            MySqlControl.GetInstance();
-
             //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en");
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("zh-Hans");
 
@@ -129,7 +126,7 @@ namespace ColorVision
         {
             log.Info("程序关闭");
 
-            foreach (var item in ServiceManager.ServiceDictionary)
+            foreach (var item in ServiceManagerWindow.ServiceDictionary)
             {
                 item.Value.Kill();
                 item.Value.Close();

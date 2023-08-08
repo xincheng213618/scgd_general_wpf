@@ -23,7 +23,6 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
 using ColorVision.Theme;
-using ColorVision.Util;
 using System.Windows.Forms.Integration;
 using OpenCvSharp.Flann;
 using ColorVision.Video;
@@ -35,6 +34,7 @@ using Microsoft.Win32;
 using log4net;
 using System.Security.RightsManagement;
 using ColorVision.MQTT.Control;
+using ColorVision.Util;
 
 namespace ColorVision
 {
@@ -197,7 +197,6 @@ namespace ColorVision
             if (filePath != null && File.Exists(filePath))
             {
                 BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
-
                 ImageShow.Source = bitmapImage;
                 DrawGridImage(DrawingVisualGrid, bitmapImage);
                 Zoombox1.ZoomUniform();
@@ -928,30 +927,28 @@ namespace ColorVision
                     stackPanel.Children.Clear();
                     foreach (var item in MQTTManager.MQTTCameras)
                     {
-                        MQTTCameraControl1 Control = new MQTTCameraControl1(item.Value);
+                        MQTTCameraControl1 Control = new MQTTCameraControl1(item);
+                        item.FileHandler += (s, e) =>
+                        {
+                            OpenImage(e);
+                        };
                         stackPanel.Children.Add(Control);
                     }
+
                 };
             }
-        }
-        private void SendDemo1_Click(object sender, RoutedEventArgs e)
-        {
-            //MQTTCamera.Calibration(Calibration1.CalibrationParam);
         }
 
         private void StackPanelMQTTPGs_Initialized(object sender, EventArgs e)
         {
             if (sender is StackPanel stackPanel)
             {
-                MQTTPGControl Control = new MQTTPGControl(MQTTManager.GetInstance().MQTTPGs[0].Value);
-                stackPanel.Children.Add(Control);
-
                 MQTTManager.DeviceSettingChanged += (s, e) =>
                 {
                     stackPanel.Children.Clear();
                     foreach (var item in MQTTManager.MQTTPGs)
                     {
-                        MQTTPGControl Control = new MQTTPGControl(item.Value);
+                        MQTTPGControl Control = new MQTTPGControl(item);
                         stackPanel.Children.Add(Control);
                     }
                 };
@@ -964,14 +961,12 @@ namespace ColorVision
         {
             if (sender is StackPanel stackPanel)
             {
-                MQTTSpectrumControl Control = new MQTTSpectrumControl(MQTTManager.GetInstance().MQTTSpectrums[0].Value);
-                stackPanel.Children.Add(Control);
                 MQTTManager.DeviceSettingChanged += (s, e) =>
                 {
                     stackPanel.Children.Clear();
                     foreach (var item in MQTTManager.MQTTSpectrums)
                     {
-                        MQTTSpectrumControl Control = new MQTTSpectrumControl(item.Value);
+                        MQTTSpectrumControl Control = new MQTTSpectrumControl(item);
                         stackPanel.Children.Add(Control);
                     }
                 };
@@ -982,29 +977,21 @@ namespace ColorVision
         {
             if (sender is StackPanel stackPanel)
             {
-                MQTTVISourceControl Control = new MQTTVISourceControl(MQTTManager.GetInstance().MQTTVISources[0].Value);
-                stackPanel.Children.Add(Control);
-
                 MQTTManager.DeviceSettingChanged += (s, e) =>
                 {
                     stackPanel.Children.Clear();
                     foreach (var item in MQTTManager.MQTTVISources)
                     {
-                        MQTTVISourceControl Control = new MQTTVISourceControl(item.Value);
+                        MQTTVISourceControl Control = new MQTTVISourceControl(item);
                         stackPanel.Children.Add(Control);
                     }
                 };
             }
-
-
-
-
-
         }
 
         private void MenuItem13_Click(object sender, RoutedEventArgs e)
         {
-            new ServiceManager() { Owner = this }.Show();
+            new ServiceManagerWindow() { Owner = this }.Show();
         }
     }
 

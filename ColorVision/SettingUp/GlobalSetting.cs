@@ -73,7 +73,7 @@ namespace ColorVision.SettingUp
 
 
 
-        public bool IsAutoRun { get => Util.Tool.IsAutoRun(); set { Util.Tool.SetAutoRun(value); NotifyPropertyChanged(); } }
+        public bool IsAutoRun { get => Tool.IsAutoRun(GlobalConst.AutoRunName,GlobalConst.AutoRunRegPath); set { Tool.SetAutoRun(value, GlobalConst.AutoRunName, GlobalConst.AutoRunRegPath); NotifyPropertyChanged(); } }
 
         [JsonIgnore]
         readonly Lazy<PerformanceControl> PerformanceControlLazy;

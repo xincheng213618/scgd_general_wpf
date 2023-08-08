@@ -87,7 +87,7 @@ namespace ColorVision.Util
         }
 
 
-        public static bool ReadValue(string path, string name,bool def )
+        public static bool ReadValue(string path, string name, bool def)
         {
             RegistryKey regKey = null;
             try

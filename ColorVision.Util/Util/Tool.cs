@@ -1,7 +1,4 @@
-﻿using ColorVision.MQTT;
-using ColorVision.SettingUp;
-using ColorVision.Video;
-using log4net;
+﻿using log4net;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -53,15 +50,15 @@ namespace ColorVision.Util
         /// </summary>
         /// <param name="run"></param>
         /// <returns></returns>
-        public static void SetAutoRun(bool run)
+        public static void SetAutoRun(bool run, string AutoRunName, string AutoRunRegPath)
         {
             try
             {
-                var autoRunName = $"{GlobalConst.AutoRunName}";
+                var autoRunName = $"{AutoRunName}";
 
 
                 //delete first
-                RegUtil.WriteValue(GlobalConst.AutoRunRegPath, autoRunName, "");
+                RegUtil.WriteValue(AutoRunRegPath, autoRunName, "");
                 if (IsAdministrator())
                 {
                     //AutoStart(autoRunName, "", "");
@@ -73,11 +70,11 @@ namespace ColorVision.Util
                     if (IsAdministrator())
                     {
                         //AutoStart(autoRunName, exePath, "");
-                        RegUtil.WriteValue(GlobalConst.AutoRunRegPath, autoRunName, exePath);
+                        RegUtil.WriteValue(AutoRunRegPath, autoRunName, exePath);
                     }
                     else
                     {
-                        RegUtil.WriteValue(GlobalConst.AutoRunRegPath, autoRunName, exePath);
+                        RegUtil.WriteValue(AutoRunRegPath, autoRunName, exePath);
                     }
                 }
             }
@@ -111,16 +108,16 @@ namespace ColorVision.Util
         }
 
 
-        public static bool IsAutoRun()
+        public static bool IsAutoRun(string AutoRunName, string AutoRunRegPath)
         {
             try
             {
-                if (string.IsNullOrEmpty(RegUtil.ReadValue(GlobalConst.AutoRunRegPath, GlobalConst.AutoRunName, "")))
+                if (string.IsNullOrEmpty(RegUtil.ReadValue(AutoRunRegPath, AutoRunName, "")))
                 {
-                    RegUtil.WriteValue(GlobalConst.AutoRunRegPath, GlobalConst.AutoRunName, "");
+                    RegUtil.WriteValue(AutoRunRegPath, AutoRunName, "");
                 }
 
-                string value = RegUtil.ReadValue(GlobalConst.AutoRunRegPath, GlobalConst.AutoRunName, "");
+                string value = RegUtil.ReadValue(AutoRunRegPath, AutoRunName, "");
                 string exePath = Environment.ProcessPath;
                 if (value == exePath || value == $"\"{exePath}\"")
                 {
@@ -139,9 +136,9 @@ namespace ColorVision.Util
         public static string GetMD5(string str)
         {
             byte[] byteOld = Encoding.UTF8.GetBytes(str);
-            #pragma warning disable CA5351
+#pragma warning disable CA5351
             byte[] byteNew = MD5.HashData(byteOld);
-            #pragma warning restore CA5351
+#pragma warning restore CA5351
             StringBuilder sb = new(32);
             foreach (byte b in byteNew)
             {
@@ -158,12 +155,12 @@ namespace ColorVision.Util
             MemoryStream ms = new MemoryStream();
             BinaryFormatter bf = new BinaryFormatter();
             //序列化成流
-            #pragma warning disable SYSLIB0011
+#pragma warning disable SYSLIB0011
             bf.Serialize(ms, obj);
             ms.Seek(0, SeekOrigin.Begin);
             //反序列化成对象
             retval = bf.Deserialize(ms);
-            #pragma warning restore SYSLIB0011
+#pragma warning restore SYSLIB0011
             return (T)retval;
         }
 

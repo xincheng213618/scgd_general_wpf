@@ -1,5 +1,4 @@
-﻿using OpenCvSharp;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -46,8 +45,8 @@ namespace ColorVision.Util
                     return false;//生日验证  
                 }
 
-                string[] arrVarifyCode = ("1,0,x,9,8,7,6,5,4,3,2").Split(',');
-                string[] Wi = ("7,9,10,5,8,4,2,1,6,3,7,9,10,5,8,4,2").Split(',');
+                string[] arrVarifyCode = "1,0,x,9,8,7,6,5,4,3,2".Split(',');
+                string[] Wi = "7,9,10,5,8,4,2,1,6,3,7,9,10,5,8,4,2".Split(',');
                 char[] Ai = IDcardNo.Remove(17).ToCharArray();
                 int sum = 0;
                 for (int i = 0; i < 17; i++)

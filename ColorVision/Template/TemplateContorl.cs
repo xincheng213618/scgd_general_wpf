@@ -38,7 +38,6 @@ namespace ColorVision.Template
         private static string FileNameSxParms = "cfg\\SxParamSetup.cfg";
         private static string FileNamePoiParms = "cfg\\PoiParmSetup.cfg";
         private static string FileNameFlowParms = "cfg\\FlowParmSetup.cfg";
-        private static string FileNameCameraDeviceParams = "cfg\\CameraDeviceParmSetup.cfg";
 
         private PoiService poiService = new PoiService();
         private ModService modService = new ModService();
