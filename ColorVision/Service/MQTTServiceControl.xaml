@@ -83,7 +83,7 @@
             </ListView.ItemContainerStyle>
             <ListView.View >
                 <GridView>
-                    <GridViewColumn  Header="服务名称">
+                    <GridViewColumn  Header="设备名称">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:MQTTService}">
                                 <TextBlock Text="{ Binding Name}"/>

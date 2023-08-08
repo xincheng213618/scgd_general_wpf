@@ -2,6 +2,7 @@
 using ColorVision.MySql.DAO;
 using ColorVision.SettingUp;
 using ColorVision.Template;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
@@ -63,10 +64,24 @@ namespace ColorVision.Service
             if (TextBox_Type.SelectedItem is MQTTService mQTTService)
             {
                 SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, mQTTService.SysResourceModel.Type, mQTTService.SysResourceModel.Id, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                
+                CameraConfig cameraConfig1 = new CameraConfig
+                {
+                    SendTopic = "Camera",
+                    SubscribeTopic = "CameraService",
+                    Name = "相机1",
+                    ID = "e29b14429bc375b1",
+                    CameraType = CameraType.LVQ,
+                    TakeImageMode = TakeImageMode.Normal,
+                    ImageBpp = 8
+                };
+                cameraConfig1.Name = "BV6000";
+
+                sysResource.Value = JsonConvert.SerializeObject(cameraConfig1);
                 ServiceControl.ResourceService.Save(sysResource);
                 int pkId = sysResource.GetPK();
                 if (pkId > 0 && ServiceControl.ResourceService.GetMasterById(pkId) is SysResourceModel model)
-                    mQTTService.AddChild(new MQTTDevice(model));
+                    mQTTService.AddChild(new MQTTDeviceCamera(model));
 
             }
         }

@@ -24,7 +24,7 @@
                             <TextBlock Text="{Binding CameraConfig.SubscribeTopic}"/>
                             <TextBlock Text="{Binding CameraConfig.IsAlive}"/>
                         </StackPanel>
-                        <Button  Grid.Column="1" Content="编辑"  Click="Button_Click_1"/>
+                        <Button  Grid.Column="1" Content="编辑参数"  Click="Button_Click_1"/>
                     </Grid>
                     <Grid  x:Name="MQTTEditContent" Visibility="Collapsed">
                         <Grid.ColumnDefinitions>
