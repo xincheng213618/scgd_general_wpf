@@ -75,12 +75,7 @@ namespace ColorVision.Service
                         }
                     }
                 }
-
             }
-
-
-
-
 
 
             foreach (var item in MQTTManager.MQTTSpectrums)
