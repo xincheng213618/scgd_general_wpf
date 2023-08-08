@@ -81,7 +81,7 @@ namespace ColorVision.Service
                 ServiceControl.ResourceService.Save(sysResource);
                 int pkId = sysResource.GetPK();
                 if (pkId > 0 && ServiceControl.ResourceService.GetMasterById(pkId) is SysResourceModel model)
-                    mQTTService.AddChild(new MQTTDeviceCamera(model));
+                    mQTTService.AddChild(new MQTTDeviceCamera(model, mQTTService.SysResourceModel));
 
             }
         }
