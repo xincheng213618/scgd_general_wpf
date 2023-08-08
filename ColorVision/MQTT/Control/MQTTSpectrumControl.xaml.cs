@@ -35,7 +35,6 @@ namespace ColorVision.MQTT.Control
             {
                 if(windowSpectrum!=null)
                 {
-                    //windowSpectrum.spectrumResult.colorParams.Clear();
                     windowSpectrum.spectrumResult.SpectrumDrawPlot(e);
                 }
             };

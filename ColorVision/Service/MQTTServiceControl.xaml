@@ -89,20 +89,6 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn  Header="发送信道">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:MQTTDevice}">
-                                <TextBlock Text="{ Binding  SendTopic}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn  Header="接收信道">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:MQTTDevice}">
-                                <TextBlock Text="{ Binding  SubscribeTopic}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
                     <GridViewColumn  Header="是否存活">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:MQTTDevice}">

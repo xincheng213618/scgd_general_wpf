@@ -12,12 +12,13 @@ namespace ColorVision.Service
     {
         public SysResourceModel SysResourceModel { get; set; }
         public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
+       
         public MQTTDevice(SysResourceModel device, SysResourceModel service) : base()
         {
             SysResourceModel = device;
 
             ContextMenu = new ContextMenu();
-            MenuItem menuItem = new MenuItem() { Header = "删除设备" };
+            MenuItem menuItem = new MenuItem() { Header = "删除资源" };
             menuItem.Click += (s, e) =>
             {
                 this.Parent.RemoveChild(this);
@@ -34,9 +35,6 @@ namespace ColorVision.Service
         public virtual string SendTopic { get; set; }
         public virtual string SubscribeTopic { get; set; }
         public virtual bool IsAlive { get; set; }
-
-
-
     }
 
     public class MQTTDeviceCamera : MQTTDevice

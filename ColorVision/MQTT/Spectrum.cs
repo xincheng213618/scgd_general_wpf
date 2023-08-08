@@ -25,17 +25,28 @@ namespace ColorVision.MQTT
         public event MQTTSpectrumDataHandler DataHandlerEvent;
         public event MQTTSpectrumHeartbeatHandler HeartbeatHandlerEvent;
 
-        public MQTTSpectrum(string NickName = "Spectrum1", string SendTopic = "Spectum/CMD/chen_sp1", string SubscribeTopic = "Spectum/STATUS/chen_sp1") : base()
+        public MQTTSpectrum(string SendTopic = "Spectum/CMD/chen_sp1", string SubscribeTopic = "Spectum/STATUS/chen_sp1") : base()
         {
-            this.NickName = NickName;
+            SpectrumConfig = new SpectrumConfig();
+            SpectrumConfig.SendTopic = SendTopic;
+            SpectrumConfig.SubscribeTopic = SubscribeTopic;
             this.SendTopic = SendTopic;
             this.SubscribeTopic = SubscribeTopic;
 
             MQTTControl = MQTTControl.GetInstance();
             MQTTControl.SubscribeCache(SubscribeTopic);
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
+        }
+        public SpectrumConfig SpectrumConfig { get; set; }
+
+
+        public MQTTSpectrum(SpectrumConfig spectrumConfig)
+        {
+
 
         }
+
+
 
         private Task MqttClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
         {

@@ -134,12 +134,6 @@ namespace ColorVision.MQTT
             return Task.CompletedTask;
         }
 
-
-
-        public string NickName { get => _NickName; set { _NickName = value; NotifyPropertyChanged(); } }
-        private string _NickName = string.Empty;
-
-
         private void Timer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
         {
             if (DateTime.Now - LastAliveTime > TimeSpan.FromSeconds(MQTTSetting.AliveTimeout))

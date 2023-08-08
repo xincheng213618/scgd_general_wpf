@@ -32,9 +32,8 @@ namespace ColorVision.MQTT
 
     public class MQTTPG: BaseService
     {
-        public MQTTPG(string NickName = "PG1", string SendTopic = "PG", string SubscribeTopic = "PGService") : base()
+        public MQTTPG(string SendTopic = "PG", string SubscribeTopic = "PGService") : base()
         {
-            this.NickName = NickName;
             this.SendTopic = SendTopic;
             this.SubscribeTopic = SubscribeTopic;
             MQTTControl = MQTTControl.GetInstance();
