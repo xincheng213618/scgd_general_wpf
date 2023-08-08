@@ -71,15 +71,24 @@ namespace ColorVision.Service
             MQTTCamera Camera1 = new MQTTCamera(cameraConfig1);
 
             foreach (var item in MQTTManager.MQTTCameras)
-            {
                 item.Dispose();
-            }
+
 
             MQTTManager.MQTTCameras.Clear();
             MQTTManager.ServiceHeartbeats.Clear();
 
             MQTTManager.MQTTCameras.Add(Camera1);
             MQTTManager.ServiceHeartbeats.Add(Camera1);
+
+            MQTTManager.MQTTCameras.Clear();
+
+            foreach (var item in MQTTManager.MQTTSpectrums)
+                item.Dispose();
+            MQTTManager.MQTTCameras.Clear();
+
+            MQTTSpectrum mQTTSpectrum = new MQTTSpectrum();
+            MQTTManager.MQTTSpectrums.Add(mQTTSpectrum);
+
 
             MQTTManager.Reload();
         }

@@ -27,6 +27,13 @@ namespace ColorVision.Service
             };
             ContextMenu.Items.Add(menuItem);
         }
+
+        public virtual string SendTopic { get; set; }
+        public virtual string SubscribeTopic { get; set; }
+        public virtual bool IsAlive { get; set; }
+
+
+
     }
 
     public class MQTTDeviceCamera : MQTTDevice
@@ -55,6 +62,10 @@ namespace ColorVision.Service
             SaveCommand = new RelayCommand(a => Save());
 
         }
+
+        public override string SendTopic { get =>CameraConfig.SendTopic; set { CameraConfig.SendTopic = value;  NotifyPropertyChanged(); } }
+        public override string SubscribeTopic { get =>CameraConfig.SubscribeTopic ; set { CameraConfig.SubscribeTopic = value; NotifyPropertyChanged(); } }
+        public override bool IsAlive { get => CameraConfig.IsAlive;set { CameraConfig.IsAlive = value; NotifyPropertyChanged(); } }
 
         public override void Save()
         {

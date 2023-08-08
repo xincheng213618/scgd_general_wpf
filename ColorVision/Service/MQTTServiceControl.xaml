@@ -85,29 +85,29 @@
                 <GridView>
                     <GridViewColumn  Header="设备名称">
                         <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:MQTTService}">
+                            <DataTemplate  DataType="{x:Type local:MQTTDevice}">
                                 <TextBlock Text="{ Binding Name}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn  Header="发送信道">
                         <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:MQTTService}">
-                                <TextBlock Text="{ Binding  ServiceConfig.SendTopic}"/>
+                            <DataTemplate  DataType="{x:Type local:MQTTDevice}">
+                                <TextBlock Text="{ Binding  SendTopic}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn  Header="接收信道">
                         <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:MQTTService}">
-                                <TextBlock Text="{ Binding  ServiceConfig.SubscribeTopic}"/>
+                            <DataTemplate  DataType="{x:Type local:MQTTDevice}">
+                                <TextBlock Text="{ Binding  SubscribeTopic}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn  Header="是否存活">
                         <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:MQTTService}">
-                                <TextBlock Text="{ Binding  ServiceConfig.IsAlive}"/>
+                            <DataTemplate  DataType="{x:Type local:MQTTDevice}">
+                                <TextBlock Text="{ Binding  IsAlive}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
