@@ -20,6 +20,7 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel >
                             <TextBlock Text="{Binding Name}"/>
+                            <TextBlock Text="{Binding CameraConfig.Name}"/>
                             <TextBlock Text="{Binding CameraConfig.ID}"/>
                             <TextBlock Text="{Binding CameraConfig.MD5}"/>
                             <TextBlock Text="{Binding CameraConfig.SendTopic}"/>
@@ -37,6 +38,15 @@
                             <ColumnDefinition Width="50"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel Margin="5">
+                            <DockPanel Margin="0,5" >
+                                <Label Content="设备名称"/>
+                                <TextBox Text="{Binding Name}"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,5" >
+                                <Label Content="设备昵称"/>
+                                <TextBox Text="{Binding CameraConfig.Name}"/>
+                            </DockPanel>
+
                             <DockPanel Margin="0,5" >
                                 <Label Content="相机ID："/>
                                 <TextBox Text="{Binding CameraConfig.ID}"/>
