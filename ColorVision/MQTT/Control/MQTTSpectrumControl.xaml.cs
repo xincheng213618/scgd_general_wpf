@@ -126,7 +126,11 @@ namespace ColorVision.MQTT.Control
         }
         private void Button_Click_Init_Dark(object sender, RoutedEventArgs e)
         {
-            Spectrum.InitDark(100, 1);
+            Spectrum.InitDark((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value);
+        }
+        private void Button_Click_GetParam(object sender, RoutedEventArgs e)
+        {
+            Spectrum.GetParam();
         }
         #endregion
         #region Spectrum
