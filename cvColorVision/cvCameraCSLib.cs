@@ -11,6 +11,7 @@ using System.Threading;
 using System.Windows;
 using ColorVision.Util;
 using System.Diagnostics;
+using System.IO;
 
 namespace cvColorVision
 {
@@ -1351,7 +1352,7 @@ namespace cvColorVision
         /// <returns></returns>
         public bool FOV(CameraType connectType, uint wRGB,uint hRGB,uint bppRGB,uint channalsRGB, byte[] srcrawRGB, string fovParamCfg,ref double fovDegrees_ref, ref string ErrorData) 
         {
-            if (wRGB > 0)
+            if (wRGB > 0& hRGB>0& bppRGB>0&& channalsRGB>0)
             {
                 if (connectType == CameraType.LV_Q || connectType == CameraType.BV_Q || connectType == CameraType.CV_Q)
                 {
@@ -1408,15 +1409,154 @@ namespace cvColorVision
                 }
                 else
                 {
+                    ErrorData = "图像格式只支持LV,BV,CV";
                     return false;
                 }
             }
             else
             {
+                ErrorData = "图像数据W,H,BPP,channels中有一个小于等于0";
                 return false;
             }
         }
 
+        public class FindRoi
+        {
+            public int x { set; get; }
+            public int y { set; get; }
+            public int width { set; get; }
 
+            public int height { set; get; }
+            public override string ToString()
+            {
+                return string.Format("{0},{1},{2},{3}", x, y, width, height);
+            }
+        }
+
+        private void saveCsv_SFR(string path, float[] pdfrequency, float[] pdomainSamplingData)
+        {
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+            if (path.Substring(path.Length - 1, 1) != "/")
+            {
+                path = path + "\\SFRResult_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
+            }
+            else
+            {
+                path = path + "SFRResult_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
+            }
+            if (!File.Exists(path))
+            {
+                //首先模拟建立将要导出的数据，这些数据都存于DataTable中  
+                System.Data.DataTable dt = new System.Data.DataTable();
+                dt.Columns.Add("pdfrequency", typeof(string));
+                dt.Columns.Add("pdomainSamplingData", typeof(string));
+                System.IO.FileStream fs2 = new FileStream(path, System.IO.FileMode.Create, System.IO.FileAccess.Write);
+                StreamWriter sw2 = new StreamWriter(fs2, UnicodeEncoding.UTF8);
+                //string path = saveFileDialog.FileName.ToString();//保存路径
+                //Tabel header
+                for (int i = 0; i < dt.Columns.Count; i++)
+                {
+                    if (i != 0)
+                    {
+                        sw2.Write(",");
+                    }
+                    sw2.Write(dt.Columns[i].ColumnName);
+                }
+                sw2.WriteLine("");
+                sw2.Flush();
+                sw2.Close();
+                fs2.Close();
+            }
+            System.IO.FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
+            StreamWriter sw = new StreamWriter(fs, UnicodeEncoding.UTF8);
+            for (int i = 0; i < pdfrequency.Length; i++)
+            {
+                sw.Write(pdfrequency[i]);
+                sw.Write(",");
+                sw.Write(pdomainSamplingData[i]);
+                sw.Write(",");
+                sw.WriteLine("");
+            }
+            sw.Flush();
+            sw.Close();
+            fs.Close();
+        }
+
+        public bool SFR(uint wRGB, uint hRGB, uint bppRGB, uint channalsRGB, byte[] srcrawRGB, string fovParamCfg, FindRoi fRoi, ref string ErrorData) 
+        {
+            if (wRGB > 0 & hRGB > 0 & bppRGB > 0 && channalsRGB > 0)
+            {
+                FOVParam pm = CfgFile.Load<FOVParam>(fovParamCfg);
+                if (pm==null)
+                {
+                    ErrorData = "读取本地的SFR文件失败";
+                    return false;
+                }
+                if (fRoi != null)
+                {
+                    //int imgx = 0, imgy = 0;
+                    //m_cDib.GetImgPoint(fRoi.x, fRoi.y, ref imgx, ref imgy);
+                    //int imgw = 0, imgh = 0;
+                    //imgw = (int)(fRoi.width / m_cDib.GetScale());
+                    //imgh = (int)(fRoi.height / m_cDib.GetScale());
+
+                    HImage tImg = new HImage();
+                    tImg.nBpp = (uint)bppRGB;
+                    tImg.nChannels = (uint)channalsRGB;
+                    tImg.nWidth = (uint)wRGB;
+                    tImg.nHeight = (uint)hRGB;
+
+                    if (srcrawRGB != null)
+                    {
+                        //方法2
+                        GCHandle hObject = GCHandle.Alloc(srcrawRGB, GCHandleType.Pinned);
+                        tImg.pData = hObject.AddrOfPinnedObject();
+
+                        CRECT rtROI = new CRECT();
+                        rtROI.x = fRoi.x;
+                        rtROI.y = fRoi.y;
+                        rtROI.cx = fRoi.width;
+                        rtROI.cy = fRoi.height;
+                        double gamma = pm.SFR_gamma;
+
+                        float[] pdfrequency = new float[(int)Math.Max(fRoi.width, fRoi.height)];
+                        float[] pdomainSamplingData = new float[(int)Math.Max(fRoi.width, fRoi.height)];
+                        int nLen = (int)Math.Max(wRGB, hRGB);
+
+                        if (cvCameraCSLib.SFRCalculation(tImg, rtROI, gamma, pdfrequency, pdomainSamplingData, nLen) < 1)
+                        {
+                            ErrorData = "SFRCalculation执行结果失败!";
+                            return false;
+                        }
+                        else
+                        {
+                            //保存结果
+                            saveCsv_SFR("Result", pdfrequency, pdomainSamplingData);
+                            //MessageBox.Show("执行结束");
+                            return true;
+                        }
+                    }
+                    else
+                    {
+                        ErrorData = "图像数据为空!";
+                        return false;
+                    }
+
+                }
+                else
+                {
+                    ErrorData = "请先框选SFR";
+                    return false;
+                }
+            }
+            else
+            {
+                ErrorData = "请先点击测量";
+                return false;
+            }
+        }
     }
 }
