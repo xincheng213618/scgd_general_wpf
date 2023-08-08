@@ -1,4 +1,5 @@
 ﻿using ColorVision.MQTT;
+using ColorVision.MySql;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.SettingUp;
@@ -30,6 +31,14 @@ namespace ColorVision.Service
             MQTTServices = new ObservableCollection<MQTTServiceKind>();
             UserConfig = GlobalSetting.GetInstance().SoftwareConfig.UserConfig;
 
+            MySqlControl.GetInstance().MySqlConnectChanged +=(s,e)=> Reload();
+            Reload();
+        }
+
+
+        public void Reload()
+        {
+            MQTTServices.Clear();
             List<SysResourceModel> Services = ResourceService.GetAllServices(UserConfig.TenantId);
             List<SysResourceModel> devices = ResourceService.GetAllDevices(UserConfig.TenantId);
 
@@ -61,7 +70,7 @@ namespace ColorVision.Service
                                 }
 
 
- 
+
                             }
                         }
                         mQTTServicetype.AddChild(mQTTService);
@@ -69,8 +78,8 @@ namespace ColorVision.Service
                 }
                 MQTTServices.Add(mQTTServicetype);
             }
-        }
 
+        }
 
 
     }
