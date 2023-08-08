@@ -51,8 +51,8 @@ namespace ColorVision.Template
             {
                 headers.Add(i.ToString());
             }
-            headers.Add("电压(V)");
-            headers.Add("电流(mA)");
+            //headers.Add("电压(V)");
+            //headers.Add("电流(mA)");
 
             for (int i = 0; i < headers.Count; i++)
             {
@@ -181,8 +181,8 @@ namespace ColorVision.Template
             }
             Contents.Add(colorParam.fPL[3998].ToString());
 
-            Contents.Add("NaN");
-            Contents.Add("NaN");
+            //Contents.Add("NaN");
+            //Contents.Add("NaN");
 
 
             listViewItem.Content = Contents;

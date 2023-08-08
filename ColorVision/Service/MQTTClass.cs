@@ -12,9 +12,9 @@ namespace ColorVision.Service
     {
         public SysResourceModel SysResourceModel { get; set; }
         public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
-        public MQTTDevice(SysResourceModel sysResourceModel) : base()
+        public MQTTDevice(SysResourceModel device, SysResourceModel service) : base()
         {
-            SysResourceModel = sysResourceModel;
+            SysResourceModel = device;
 
             ContextMenu = new ContextMenu();
             MenuItem menuItem = new MenuItem() { Header = "删除设备" };
@@ -26,6 +26,9 @@ namespace ColorVision.Service
 
             };
             ContextMenu.Items.Add(menuItem);
+
+            SendTopic = service.Pcode + "/" + "STATUS/" + service.Code;
+            SubscribeTopic = service.Pcode + "/" + "CMD/" + service.Code;
         }
 
         public virtual string SendTopic { get; set; }
@@ -41,7 +44,7 @@ namespace ColorVision.Service
         public CameraConfig CameraConfig { get; set; }
         public RelayCommand SaveCommand { get; set; }
 
-        public MQTTDeviceCamera(SysResourceModel sysResourceModel) : base(sysResourceModel)
+        public MQTTDeviceCamera(SysResourceModel sysResourceModel, SysResourceModel service) : base(sysResourceModel, service)
         {
             if (string.IsNullOrEmpty(SysResourceModel.Value))
             {
@@ -63,8 +66,8 @@ namespace ColorVision.Service
 
         }
 
-        public override string SendTopic { get =>CameraConfig.SendTopic; set { CameraConfig.SendTopic = value;  NotifyPropertyChanged(); } }
-        public override string SubscribeTopic { get =>CameraConfig.SubscribeTopic ; set { CameraConfig.SubscribeTopic = value; NotifyPropertyChanged(); } }
+        //public override string SendTopic { get =>CameraConfig.SendTopic; set { CameraConfig.SendTopic = value;  NotifyPropertyChanged(); } }
+        //public override string SubscribeTopic { get =>CameraConfig.SubscribeTopic ; set { CameraConfig.SubscribeTopic = value; NotifyPropertyChanged(); } }
         public override bool IsAlive { get => CameraConfig.IsAlive;set { CameraConfig.IsAlive = value; NotifyPropertyChanged(); } }
 
         public override void Save()
