@@ -1,4 +1,5 @@
-﻿using ColorVision.MVVM;
+﻿using ColorVision.MQTT.Config;
+using ColorVision.MVVM;
 using ColorVision.SettingUp;
 using Google.Protobuf.WellKnownTypes;
 using HandyControl.Expression.Shapes;

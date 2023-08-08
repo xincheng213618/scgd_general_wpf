@@ -41,7 +41,7 @@ namespace ColorVision.MQTT.Control
 
             Spectrum.HeartbeatHandlerEvent += (e) =>
             {
-                if (e.isOpen)
+                if (e.IsOpen)
                 {
                     connectBtn.Content = "关闭";
                     if(windowSpectrum==null)
@@ -55,7 +55,7 @@ namespace ColorVision.MQTT.Control
                     connectBtn.Content = "打开";
                 }
 
-                if (e.isAutoGetData)
+                if (e.IsAutoGetData)
                 {
                     autoTest.Content = "取消自动测试";
                 }

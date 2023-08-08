@@ -1,4 +1,5 @@
-﻿using ColorVision.MVVM;
+﻿using ColorVision.MQTT.Config;
+using ColorVision.MVVM;
 using ColorVision.Template;
 using HslCommunication.MQTT;
 using MQTTnet.Client;
@@ -18,100 +19,6 @@ using System.Windows;
 
 namespace ColorVision.MQTT
 {
-    /// <summary>
-    /// 基础硬件配置信息
-    /// </summary>
-    public class BaseDeviceConfig : ViewModelBase
-    {
-        /// <summary>
-        /// 序号
-        /// </summary>
-        public int No { get => _No; set { _No = value; NotifyPropertyChanged(); } }
-        private int _No;
-
-        /// <summary>
-        /// 名称
-        /// </summary>
-        public string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
-        private string _Name;
-
-        /// <summary>
-        /// 是否存活
-        /// </summary>
-        public bool IsAlive { get => _IsAlive; set { _IsAlive = value; NotifyPropertyChanged(); } }
-        private bool _IsAlive;
-
-
-        /// <summary>
-        /// 设备序号
-        /// </summary>
-        public string ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
-        private string _ID;
-
-        public string MD5 { get => _MD5; set { _MD5 = value; NotifyPropertyChanged(); } }
-        private string _MD5;
-
-        public bool IsRegister { get => _IsRegister; set { _IsRegister = value; NotifyPropertyChanged(); } }
-        private bool _IsRegister;
-
-    }
-
-    public class ServiceConfig: ViewModelBase,IMQTTServiceConfig,IHeartbeat
-    {
-        /// <summary>
-        /// 服务名称
-        /// </summary>
-        public string Name { get; set; }
-
-        /// <summary>
-        /// 服务类型
-        /// </summary>
-        public string Type { get; set; }
-
-        public string SubscribeTopic { get; set; }
-        public string SendTopic { get; set; }
-
-        public bool IsAlive { get => _IsAlive; set { if (value == _IsAlive) return; _IsAlive = value; NotifyPropertyChanged(); } }
-        private bool _IsAlive;
-        public  DateTime LastAliveTime { get => _LastAliveTime; set { _LastAliveTime = value; NotifyPropertyChanged(); } }
-        private DateTime _LastAliveTime = DateTime.MinValue;
-    }
-
-
-    public class SpectrumConfig :BaseDeviceConfig, IMQTTServiceConfig
-    {
-        public string SubscribeTopic { get; set; }
-        public string SendTopic { get; set; }
-    }
-
-
-    /// <summary>
-    /// 相机配置
-    /// </summary>
-    public class CameraConfig: BaseDeviceConfig, IMQTTServiceConfig
-    {
-
-        public CameraConfig()
-        {
-        }
-
-        public string SubscribeTopic { get; set; }
-        public string SendTopic { get; set; }
-
-        public CameraType CameraType { get => _CameraType; set { _CameraType = value; NotifyPropertyChanged(); } }
-        private CameraType _CameraType;
-
-
-        public TakeImageMode TakeImageMode { get => _TakeImageMode; set { _TakeImageMode = value; NotifyPropertyChanged(); } }
-        private TakeImageMode _TakeImageMode;
-
-        public int ImageBpp { get => _ImageBpp; set { _ImageBpp = value; NotifyPropertyChanged(); } }
-        private int _ImageBpp;
-        public int Channel { get => _Channel; set { _Channel = value; NotifyPropertyChanged(); } }
-        private int _Channel;
-
-
-    }
 
 
 
@@ -451,41 +358,5 @@ namespace ColorVision.MQTT
     }
 
 
-    public enum CameraType
-    {
-        [Description("CV_Q")]
-        CVQ,
-        [Description("LV_Q")]
-        LVQ,
-        [Description("BV_Q")]
-        BVQ,
-        [Description("MIL_CL")]
-        MILCL,
-        [Description("MIL_CXP")]
-        MILCXP,
-        [Description("BV_H")]
-        BVH,
-        [Description("LV_H")]
-        LVH,
-        [Description("HK_CXP")]
-        HKCXP,
-        [Description("LV_MIL_CL")]
-        LVMILCL,
-        [Description("MIL_CXP_VIDEO")]
-        MILCXPVIDEO,
-        [Description("CameraType_Total")]
-        CameraTypeTotal,
-    };
 
-    public enum TakeImageMode
-    {
-        [Description("Measure_Normal")]
-        Normal = 0,
-        [Description("Live")]
-        Live,
-        [Description("Measure_Fast")]
-        Fast,
-        [Description("Measure_FastEx")]
-        FastExt
-    };
 }

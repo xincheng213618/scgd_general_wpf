@@ -1,4 +1,4 @@
-﻿using ColorVision.MQTT;
+﻿using ColorVision.MQTT.Config;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;

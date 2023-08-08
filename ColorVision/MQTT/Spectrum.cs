@@ -1,4 +1,5 @@
-﻿using ColorVision.MQTT.Control;
+﻿using ColorVision.MQTT.Config;
+using ColorVision.MQTT.Control;
 using Google.Protobuf.WellKnownTypes;
 using MQTTnet.Client;
 using Newtonsoft.Json;
@@ -114,11 +115,6 @@ namespace ColorVision.MQTT
 
         public bool UnInit()
         {
-            if (ServiceID == 0)
-            {
-                MessageBox.Show("请先初始化");
-                return false;
-            }
             MsgSend msg = new MsgSend
             {
                 EventName = "UnInit",
@@ -130,11 +126,6 @@ namespace ColorVision.MQTT
 
         public bool SetParam()
         {
-            if (ServiceID == 0)
-            {
-                MessageBox.Show("请先初始化");
-                return false;
-            }
             MsgSend msg = new MsgSend
             {
                 EventName = "SetParam"
@@ -145,11 +136,6 @@ namespace ColorVision.MQTT
 
         public bool Open()
         {
-            //if (ServiceID == 0)
-            //{
-            //    MessageBox.Show("请先初始化");
-            //    return false;
-            //}
             MsgSend msg = new MsgSend
             {
                 EventName = "Open"
@@ -160,11 +146,6 @@ namespace ColorVision.MQTT
 
         public bool GetData(float IntTime, int AveNum, bool bUseAutoIntTime =false, bool bUseAutoDark =false)
         {
-            //if (ServiceID == 0)
-            //{
-            //    MessageBox.Show("请先初始化");
-            //    return false;
-            //}
             MsgSend msg = new MsgSend
             {
                 EventName = "GetData",
@@ -237,9 +218,12 @@ namespace ColorVision.MQTT
 
         public class HeartbeatParam
         {
-            public bool isOpen;
-            public bool isAutoGetData;
-            public string time;
+            [JsonProperty("isOpen")]
+            public bool IsOpen { get; set; }
+            [JsonProperty("isAutoGetData")]
+            public bool IsAutoGetData { get; set; }
+            [JsonProperty("time")]
+            public string Time { get; set; }
         }
 
         public class InitDarkParamMQTT

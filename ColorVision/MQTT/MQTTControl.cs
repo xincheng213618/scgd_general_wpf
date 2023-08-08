@@ -1,27 +1,15 @@
-﻿using ColorVision.Extension;
-using ColorVision.MVVM;
-using ColorVision.MySql;
+﻿using ColorVision.MVVM;
 using ColorVision.SettingUp;
-using FlowEngineLib;
-using HandyControl.Expression.Shapes;
-using HandyControl.Tools.Extension;
 using log4net;
-using Microsoft.VisualBasic.Logging;
 using MQTTnet;
 using MQTTnet.Client;
 using MQTTnet.Packets;
-using ScottPlot.Drawing.Colormaps;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Documents;
-using System.Windows.Interop;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
 namespace ColorVision.MQTT
 {
