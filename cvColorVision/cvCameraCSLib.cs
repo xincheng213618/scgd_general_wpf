@@ -4,10 +4,13 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Mime;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Windows;
+using ColorVision.Util;
+using System.Diagnostics;
 
 namespace cvColorVision
 {
@@ -1318,5 +1321,102 @@ namespace cvColorVision
         public Communicate_Type communicate_Type;
         public string szComName;
         public ulong BaudRate;
+    }
+
+    public class SimpleFeatures 
+    {
+        public class FOVParam
+        {
+            public double radio = 0.2;
+            public double cameraDegrees = 0.2;
+            public int thresholdValus = 20;
+            public double dFovDist = 8443;
+
+            public double SFR_gamma = 1.0;
+            public double MTF_dRatio = 0.01;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="connectType">相机的连接类型，如LV,BV,CV</param>
+        /// <param name="wRGB">传入图像的W</param>
+        /// <param name="hRGB">传入图像的H</param>
+        /// <param name="bppRGB">传入图像的bpp位深</param>
+        /// <param name="channalsRGB">传入图像的channels通道数</param>
+        /// <param name="srcrawRGB">传入图像的raw数据</param>
+        /// <param name="fovParamCfg">fov的本地配置文件路径</param>
+        /// <param name="fovDegrees_ref">如果返回true则附带的FOV结果</param>
+        /// <param name="ErrorData">如果返回false则附带的错误信息</param>
+        /// <returns></returns>
+        public bool FOV(CameraType connectType, uint wRGB,uint hRGB,uint bppRGB,uint channalsRGB, byte[] srcrawRGB, string fovParamCfg,ref double fovDegrees_ref, ref string ErrorData) 
+        {
+            if (wRGB > 0)
+            {
+                if (connectType == CameraType.LV_Q || connectType == CameraType.BV_Q || connectType == CameraType.CV_Q)
+                {
+                    FOVParam pm = CfgFile.Load<FOVParam>(fovParamCfg);
+                    if (pm==null)
+                    {
+                        ErrorData = "没有读到设定的FOV本地配置文件";
+                        return false;
+                    }
+
+                    HImage himage_Fov = new HImage();
+                    himage_Fov.nWidth = wRGB;
+                    himage_Fov.nHeight = hRGB;
+                    himage_Fov.nBpp = bppRGB;
+                    himage_Fov.nChannels = channalsRGB;
+
+                    fovDegrees_ref = 0;
+                    unsafe
+                    {
+                        if (srcrawRGB != null)
+                        {
+                            fixed (byte* pAdr = srcrawRGB)
+                            {
+                                himage_Fov.pData = (IntPtr)pAdr;
+
+                                try
+                                {
+                                    if (!cvCameraCSLib.FovImgCentre(himage_Fov, pm.radio, pm.cameraDegrees, ref fovDegrees_ref, pm.thresholdValus, pm.dFovDist, FovPattern.FovCircle, FovType.Horizontal))
+                                    {
+                                        ErrorData = "FOV执行失败！";
+                                        return false;
+                                    }
+                                    else
+                                    {
+                                        //string mess = "fov:" + fovDegrees_ref.ToString();
+                                        //MessageBox.Show(mess);
+                                        return true;
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    ErrorData = "FOV执行失败！| " + ex.Message;
+                                    return false;
+                                }
+
+                            }
+                        }
+                        else
+                        {
+                            ErrorData = "图像数据为空！";
+                            return false;
+                        }
+                    }
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+
     }
 }
