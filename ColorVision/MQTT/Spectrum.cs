@@ -59,7 +59,7 @@ namespace ColorVision.MQTT
                     MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg);
                     if (json == null)
                         return Task.CompletedTask;
-                    if (json.Code == 0)
+                    //if (json.Code == 0)
                     {
                         if (json.EventName == "Init")
                         {
@@ -67,11 +67,11 @@ namespace ColorVision.MQTT
                         }
                         else if (json.EventName == "SetParam")
                         {
-                            MessageBox.Show("SetParam");
+                            //MessageBox.Show("SetParam");
                         }
                         else if (json.EventName == "Open")
                         {
-                            MessageBox.Show("Open");
+                            //MessageBox.Show("Open");
                         }
                         else if (json.EventName == "GetData")
                         {
@@ -87,11 +87,15 @@ namespace ColorVision.MQTT
                         }
                         else if (json.EventName == "Close")
                         {
-                            MessageBox.Show("Close");
+                            //MessageBox.Show("Close");
                         }
                         else if (json.EventName == "Uninit")
                         {
-                            MessageBox.Show("Uninit");
+                            //MessageBox.Show("Uninit");
+                        }
+                        else if (json.EventName == "GetParam")
+                        {
+                            AutoIntTimeParam param = JsonConvert.DeserializeObject<AutoIntTimeParam>(JsonConvert.SerializeObject(json.Data));
                         }
                     }
                 }
@@ -123,12 +127,25 @@ namespace ColorVision.MQTT
             return true;
         }
 
-
-        public bool SetParam()
+        public void GetParam()
         {
             MsgSend msg = new MsgSend
             {
-                EventName = "SetParam"
+                EventName = "GetParam"
+            };
+            PublishAsyncClient(msg);
+        }
+
+        public bool SetParam(int iLimitTime, float fTimeB)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "SetParam",
+                Params = new AutoIntTimeParam()
+                {
+                    iLimitTime = iLimitTime,
+                    fTimeB = fTimeB
+                }
             };
             PublishAsyncClient(msg);
             return true;
@@ -224,6 +241,11 @@ namespace ColorVision.MQTT
             public bool IsAutoGetData { get; set; }
             [JsonProperty("time")]
             public string Time { get; set; }
+        }
+        public class AutoIntTimeParam
+        {
+            public int iLimitTime { get; set; }
+            public float fTimeB { get; set; }
         }
 
         public class InitDarkParamMQTT

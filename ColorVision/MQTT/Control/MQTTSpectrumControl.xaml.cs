@@ -23,7 +23,7 @@ namespace ColorVision.MQTT.Control
     public partial class MQTTSpectrumControl : UserControl
     {
         public MQTTSpectrum Spectrum { get; set; }
-        private WindowSpectrum windowSpectrum;
+        private WindowSpectrum? windowSpectrum;
         public MQTTSpectrumControl(MQTTSpectrum spectrum)
         {
             this.Spectrum = spectrum;
@@ -74,7 +74,8 @@ namespace ColorVision.MQTT.Control
 
         private void Button_Click_Open(object sender, RoutedEventArgs e)
         {
-            if (connectBtn.Content.ToString().Equals("打开"))
+            string btnTitle = connectBtn.Content.ToString();
+            if (!string.IsNullOrWhiteSpace(btnTitle) && btnTitle.Equals("打开", StringComparison.Ordinal))
             {
                 Spectrum.Open();
                 connectBtn.Content = "关闭";
@@ -85,14 +86,17 @@ namespace ColorVision.MQTT.Control
             {
                 Spectrum.Close();
                 connectBtn.Content = "打开";
-                windowSpectrum.Close();
-                windowSpectrum = null;
+                if (windowSpectrum != null)
+                {
+                    windowSpectrum.Close();
+                    windowSpectrum = null;
+                }
             }
         }
 
         private void Button_Click_3(object sender, RoutedEventArgs e)
         {
-            Spectrum.SetParam();
+            //Spectrum.SetParam();
         }
 
         private void Button_Click_OneTest(object sender, RoutedEventArgs e)
@@ -107,7 +111,8 @@ namespace ColorVision.MQTT.Control
         }
         private void Button_Click_AutoTest(object sender, RoutedEventArgs e)
         {
-            if (autoTest.Content.ToString().Equals("自动测试"))
+            string btnTitle = autoTest.Content.ToString();
+            if (!string.IsNullOrWhiteSpace(btnTitle) && btnTitle.Equals("自动测试", StringComparison.Ordinal))
             {
                 Spectrum.GetDataAuto((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value, AutoIntTime.IsChecked ?? false, AutoDark.IsChecked ?? false);
                 autoTest.Content = "取消自动测试";
@@ -120,7 +125,11 @@ namespace ColorVision.MQTT.Control
         }
         private void Button_Click_Init_Dark(object sender, RoutedEventArgs e)
         {
-            Spectrum.InitDark(100, 1);
+            Spectrum.InitDark((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value);
+        }
+        private void Button_Click_GetParam(object sender, RoutedEventArgs e)
+        {
+            Spectrum.GetParam();
         }
         #endregion
         #region Spectrum
