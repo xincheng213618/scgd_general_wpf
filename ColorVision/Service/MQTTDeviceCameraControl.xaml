@@ -20,15 +20,15 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel >
                             <TextBlock Text="{Binding Name}"/>
-                            <TextBlock Text="{Binding CameraConfig.Name}"/>
-                            <TextBlock Text="{Binding CameraConfig.ID}"/>
-                            <TextBlock Text="{Binding CameraConfig.MD5}"/>
-                            <TextBlock Text="{Binding CameraConfig.SendTopic}"/>
-                            <TextBlock Text="{Binding CameraConfig.SubscribeTopic}"/>
-                            <TextBlock Text="{Binding CameraConfig.CameraType}"/>
-                            <TextBlock Text="{Binding CameraConfig.ImageBpp}"/>
-                            <TextBlock Text="{Binding CameraConfig.TakeImageMode}"/>
-                            <TextBlock Text="{Binding CameraConfig.IsAlive}"/>
+                            <TextBlock Text="{Binding Config.Name}"/>
+                            <TextBlock Text="{Binding Config.ID}"/>
+                            <TextBlock Text="{Binding Config.MD5}"/>
+                            <TextBlock Text="{Binding Config.SendTopic}"/>
+                            <TextBlock Text="{Binding Config.SubscribeTopic}"/>
+                            <TextBlock Text="{Binding Config.CameraType}"/>
+                            <TextBlock Text="{Binding Config.ImageBpp}"/>
+                            <TextBlock Text="{Binding Config.TakeImageMode}"/>
+                            <TextBlock Text="{Binding Config.IsAlive}"/>
                         </StackPanel>
                         <Button  Grid.Column="1" Content="编辑"  Click="Button_Click_1"/>
                     </Grid>
@@ -44,20 +44,20 @@
                             </DockPanel>
                             <DockPanel Margin="0,5" >
                                 <Label Content="设备昵称"/>
-                                <TextBox Text="{Binding CameraConfig.Name}"/>
+                                <TextBox Text="{Binding Config.Name}"/>
                             </DockPanel>
 
                             <DockPanel Margin="0,5" >
                                 <Label Content="相机ID："/>
-                                <TextBox Text="{Binding CameraConfig.ID}"/>
+                                <TextBox Text="{Binding Config.ID}"/>
                             </DockPanel>
                             <DockPanel Margin="5">
                                 <Label Content="相机类型："/>
-                                <hc:ComboBox x:Name="ComboxCameraType" Style="{StaticResource ComboBox.Small}"  SelectedValue="{Binding CameraConfig.CameraType}" SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20" Margin="0,0,10,0"/>
+                                <hc:ComboBox x:Name="ComboxCameraType" Style="{StaticResource ComboBox.Small}"  SelectedValue="{Binding Config.CameraType}" SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20" Margin="0,0,10,0"/>
                             </DockPanel>
                             <DockPanel Margin="2">
                                 <Label Content="取图模式："/>
-                                <ComboBox  x:Name="ComboxCameraTakeImageMode"  Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding CameraConfig.TakeImageMode}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20" Margin="0,0,10,0"/>
+                                <ComboBox  x:Name="ComboxCameraTakeImageMode"  Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding Config.TakeImageMode}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20" Margin="0,0,10,0"/>
                             </DockPanel>
                             <UniformGrid Columns="2">
                                 <DockPanel  Margin="2">

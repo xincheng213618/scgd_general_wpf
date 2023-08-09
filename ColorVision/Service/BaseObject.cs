@@ -25,7 +25,7 @@ namespace ColorVision.Service
 
     public class BaseObject : ViewModelBase
     {
-
+        public RelayCommand SaveCommand { get; set; }
         public ContextMenu ContextMenu { get; set; }
         public  ObservableCollection<BaseObject> VisualChildren { get; set; }
 
@@ -33,6 +33,7 @@ namespace ColorVision.Service
         public BaseObject()
         {
             VisualChildren = new ObservableCollection<BaseObject>();
+            SaveCommand = new RelayCommand(a => Save());
         }
         public BaseObject Parent
         {

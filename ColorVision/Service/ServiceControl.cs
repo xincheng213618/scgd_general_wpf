@@ -1,4 +1,5 @@
 ﻿using ColorVision.MQTT;
+using ColorVision.MQTT.Config;
 using ColorVision.MySql;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
@@ -7,6 +8,7 @@ using ColorVision.Template;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Design;
+using System.Windows.Media.Media3D;
 
 namespace ColorVision.Service
 {
@@ -66,10 +68,17 @@ namespace ColorVision.Service
                     {
                         if (item is MQTTDeviceCamera deviceCamera)
                         {
-                            MQTTCamera Camera1 = new MQTTCamera(deviceCamera.CameraConfig);
+                            MQTTCamera Camera1 = new MQTTCamera(deviceCamera.Config);
                             MQTTManager.MQTTCameras.Add(Camera1);
                             MQTTManager.ServiceHeartbeats.Add(Camera1);
                         }
+                        else if (item is MQTTDevicePG devicePG)
+                        {
+                            MQTTPG mQTTPG = new MQTTPG(devicePG.Config);
+                            MQTTManager.MQTTPGs.Add(mQTTPG);
+                            MQTTManager.ServiceHeartbeats.Add(mQTTPG);
+                        }
+
 
                         if (mQTTServiceKind.SysDictionaryModel.Value == 3)
                         {
@@ -81,11 +90,7 @@ namespace ColorVision.Service
                             MQTTVISource mQTTVISource = new MQTTVISource();
                             MQTTManager.MQTTVISources.Add(mQTTVISource);
                         }
-                        else if (mQTTServiceKind.SysDictionaryModel.Value == 2)
-                        {
-                            MQTTPG mQTTPG = new MQTTPG();
-                            MQTTManager.MQTTPGs.Add(mQTTPG);
-                        }
+
                     }
                 }
             }
@@ -115,9 +120,14 @@ namespace ColorVision.Service
                         {
                             if (device.Pid == service.Id)
                             {
-                                if (device.Type == 1)
+                                if (device.Type == (int)MQTTDeviceType.Camera)
                                 {
                                     MQTTDeviceCamera camera = new MQTTDeviceCamera(device);
+                                    mQTTService.AddChild(camera);
+                                }
+                                else if (device.Type == (int)MQTTDeviceType.PG)
+                                {
+                                    MQTTDevicePG camera = new MQTTDevicePG(device);
                                     mQTTService.AddChild(camera);
                                 }
                                 else

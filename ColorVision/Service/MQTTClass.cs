@@ -10,12 +10,13 @@ namespace ColorVision.Service
 {
     public class MQTTDevice : BaseObject
     {
+
         public SysResourceModel SysResourceModel { get; set; }
         public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
        
-        public MQTTDevice(SysResourceModel device) : base()
+        public MQTTDevice(SysResourceModel sysResourceModel) : base()
         {
-            SysResourceModel = device;
+            SysResourceModel = sysResourceModel;
 
             ContextMenu = new ContextMenu();
             MenuItem menuItem = new MenuItem() { Header = "删除资源" };
@@ -27,8 +28,6 @@ namespace ColorVision.Service
 
             };
             ContextMenu.Items.Add(menuItem);
-
-  
         }
 
         public virtual string SendTopic { get; set; }
@@ -36,53 +35,90 @@ namespace ColorVision.Service
         public virtual bool IsAlive { get; set; }
     }
 
-    public class MQTTDeviceCamera : MQTTDevice
+    public class MQTTDevicePG : MQTTDevice
     {
-        public CameraConfig CameraConfig { get; set; }
-        public RelayCommand SaveCommand { get; set; }
-
-        public MQTTDeviceCamera(SysResourceModel sysResourceModel) : base(sysResourceModel)
+        public PGConfig Config { get; set; }
+        public MQTTDevicePG(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             if (string.IsNullOrEmpty(SysResourceModel.Value))
             {
-                CameraConfig = new CameraConfig();
+                Config = new PGConfig();
             }
             else
             {
                 try
                 {
-                    CameraConfig = JsonConvert.DeserializeObject<CameraConfig>(SysResourceModel.Value) ?? new CameraConfig();
+                    Config = JsonConvert.DeserializeObject<PGConfig>(SysResourceModel.Value) ?? new PGConfig();
                 }
                 catch
                 {
-                    CameraConfig = new CameraConfig();
+                    Config = new PGConfig();
                 }
             }
-
-            SaveCommand = new RelayCommand(a => Save());
-
         }
 
-        //public override string SendTopic { get =>CameraConfig.SendTopic; set { CameraConfig.SendTopic = value;  NotifyPropertyChanged(); } }
-        //public override string SubscribeTopic { get =>CameraConfig.SubscribeTopic ; set { CameraConfig.SubscribeTopic = value; NotifyPropertyChanged(); } }
-        public override bool IsAlive { get => CameraConfig.IsAlive;set { CameraConfig.IsAlive = value; NotifyPropertyChanged(); } }
+        public override string SendTopic { get => Config.SendTopic; set { Config.SendTopic = value; NotifyPropertyChanged(); } }
+        public override string SubscribeTopic { get => Config.SubscribeTopic; set { Config.SubscribeTopic = value; NotifyPropertyChanged(); } }
+        public override bool IsAlive { get => Config.IsAlive; set { Config.IsAlive = value; NotifyPropertyChanged(); } }
 
         public override void Save()
         {
             base.Save();
-            SysResourceModel.Value = JsonConvert.SerializeObject(CameraConfig);
+            SysResourceModel.Value = JsonConvert.SerializeObject(Config);
+            ServiceControl.GetInstance().ResourceService.Save(SysResourceModel);
+        }
+
+
+    }
+
+    public class MQTTDeviceCamera : MQTTDevice
+    {
+        public CameraConfig Config { get; set; }
+
+        public MQTTDeviceCamera(SysResourceModel sysResourceModel) : base(sysResourceModel)
+        {
+            if (string.IsNullOrEmpty(SysResourceModel.Value))
+            {
+                Config = new CameraConfig();
+            }
+            else
+            {
+                try
+                {
+                    Config = JsonConvert.DeserializeObject<CameraConfig>(SysResourceModel.Value) ?? new CameraConfig();
+                }
+                catch
+                {
+                    Config = new CameraConfig();
+                }
+            }
+
+        }
+        public override string SendTopic { get =>Config.SendTopic; set { Config.SendTopic = value;  NotifyPropertyChanged(); } }
+        public override string SubscribeTopic { get =>Config.SubscribeTopic ; set { Config.SubscribeTopic = value; NotifyPropertyChanged(); } }
+        public override bool IsAlive { get => Config.IsAlive;set { Config.IsAlive = value; NotifyPropertyChanged(); } }
+
+        public override void Save()
+        {
+            base.Save();
+            SysResourceModel.Value = JsonConvert.SerializeObject(Config);
             ServiceControl.GetInstance().ResourceService.Save(SysResourceModel);
         }
     }
 
-
+    public enum  MQTTDeviceType
+    {
+        Camera = 1,
+        PG =2,
+        Spectum =3,
+        SMU =4,
+    }
 
     public class MQTTService : BaseObject
     {
         public SysResourceModel SysResourceModel { get; set; }
         public ServiceConfig ServiceConfig { get; set; }
 
-        public RelayCommand SaveCommand { get; set; }
 
         public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
 
@@ -116,9 +152,9 @@ namespace ColorVision.Service
                     ServiceControl.GetInstance().ResourceService.DeleteById(SysResourceModel.Id);
             };
             ContextMenu.Items.Add(menuItem);
-
-            SaveCommand = new RelayCommand(a => Save());
         }
+
+        public MQTTDeviceType Type { get => (MQTTDeviceType)SysResourceModel.Type; }
 
 
         public override void Save()
