@@ -13,6 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using static ColorVision.MQTT.MQTTSpectrum;
 using static cvColorVision.GCSDLL;
 
 namespace ColorVision.MQTT.Control
@@ -29,11 +30,17 @@ namespace ColorVision.MQTT.Control
             this.Spectrum = spectrum;
             InitializeComponent();
         }
+
+        private MQTTSpectrum GetSpectrum()
+        {
+            return Spectrum;
+        }
+
         private void StackPanelSpectrum_Initialized(object sender, EventArgs e)
         {
             Spectrum.DataHandlerEvent += (e) =>
             {
-                if(windowSpectrum!=null)
+                if (windowSpectrum != null && e != null)
                 {
                     windowSpectrum.spectrumResult.SpectrumDrawPlot(e);
                 }
@@ -205,7 +212,7 @@ namespace ColorVision.MQTT.Control
         {
             if (resultCode == 0)
             {
-                WindowSpectrum.spectrumResult.SpectrumDrawPlot(data);
+                WindowSpectrum.spectrumResult.SpectrumDrawPlot(new SpectumData(-1,data));
             }
             else
             {

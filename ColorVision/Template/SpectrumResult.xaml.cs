@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualBasic;
+﻿using ColorVision.MySql.Service;
+using Microsoft.VisualBasic;
 using OpenCvSharp.Flann;
 using ScottPlot;
 using System;
@@ -17,6 +18,7 @@ using System.Windows.Markup;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using static ColorVision.MQTT.MQTTSpectrum;
 using static cvColorVision.GCSDLL;
 
 namespace ColorVision.Template
@@ -26,9 +28,11 @@ namespace ColorVision.Template
     /// </summary>
     public partial class SpectrumResult : UserControl
     {
+        private SpectumResultService spectumResult;
         public SpectrumResult()
         {
             InitializeComponent();
+            spectumResult = new SpectumResultService();
         }
         static int ResultNum ;
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -151,8 +155,9 @@ namespace ColorVision.Template
         }
 
 
-        public void SpectrumDrawPlot(ColorParam colorParam)
+        public void SpectrumDrawPlot(SpectumData data)
         {
+            ColorParam colorParam = data.Data;
             colorParams.Add(colorParam);
 
             ListViewItem listViewItem = new ListViewItem();
@@ -183,6 +188,7 @@ namespace ColorVision.Template
 
             //Contents.Add("NaN");
             //Contents.Add("NaN");
+            Contents.Add(data.ID.ToString());
 
 
             listViewItem.Content = Contents;
@@ -228,6 +234,8 @@ namespace ColorVision.Template
                     int index = listView1.Items.IndexOf(item);
                     colorParams.RemoveAt(index);
                     listView1.Items.RemoveAt(index);
+                    List<string> Contents = (List<string>)item.Content;
+                    spectumResult.DeleteById(int.Parse(Contents[Contents.Count-1]));
                 }
             }
 

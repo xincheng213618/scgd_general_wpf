@@ -28,7 +28,7 @@ namespace ColorVision.Service
             };
             ContextMenu.Items.Add(menuItem);
 
-
+  
         }
 
         public virtual string SendTopic { get; set; }
@@ -63,8 +63,8 @@ namespace ColorVision.Service
 
         }
 
-        public override string SendTopic { get => CameraConfig.SendTopic; set { CameraConfig.SendTopic = value; NotifyPropertyChanged(); } }
-        public override string SubscribeTopic { get => CameraConfig.SubscribeTopic; set { CameraConfig.SubscribeTopic = value; NotifyPropertyChanged(); } }
+        //public override string SendTopic { get =>CameraConfig.SendTopic; set { CameraConfig.SendTopic = value;  NotifyPropertyChanged(); } }
+        //public override string SubscribeTopic { get =>CameraConfig.SubscribeTopic ; set { CameraConfig.SubscribeTopic = value; NotifyPropertyChanged(); } }
         public override bool IsAlive { get => CameraConfig.IsAlive;set { CameraConfig.IsAlive = value; NotifyPropertyChanged(); } }
 
         public override void Save()
@@ -105,6 +105,8 @@ namespace ColorVision.Service
                 }
             }
             ServiceConfig.Name = Name;
+            ServiceConfig.SubscribeTopic = SysResourceModel.Pcode + "/STATUS/" + SysResourceModel.Code;
+            ServiceConfig.SendTopic = SysResourceModel.Pcode + "/CMD/" + SysResourceModel.Code;
             ContextMenu = new ContextMenu();
             MenuItem menuItem = new MenuItem() { Header = "删除服务" };
             menuItem.Click += (s, e) =>

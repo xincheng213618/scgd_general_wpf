@@ -18,7 +18,7 @@ using static cvColorVision.GCSDLL;
 
 namespace ColorVision.MQTT
 {
-    public delegate void MQTTSpectrumDataHandler(ColorParam colorPara);
+    public delegate void MQTTSpectrumDataHandler(SpectumData? colorPara);
     public delegate void MQTTSpectrumHeartbeatHandler(HeartbeatParam heartbeat);
 
     public class MQTTSpectrum: BaseService
@@ -76,7 +76,7 @@ namespace ColorVision.MQTT
                         else if (json.EventName == "GetData")
                         {
                             JObject data = json.Data;
-                            ColorParam colorParam = JsonConvert.DeserializeObject<ColorParam>(JsonConvert.SerializeObject(data));
+                            SpectumData? colorParam = JsonConvert.DeserializeObject<SpectumData>(JsonConvert.SerializeObject(data));
                             Application.Current.Dispatcher.Invoke(() => DataHandlerEvent?.Invoke(colorParam));
 
                         }
@@ -231,6 +231,18 @@ namespace ColorVision.MQTT
                 EventName = "GetDataAutoStop",
             };
             PublishAsyncClient(msg);
+        }
+
+        public class SpectumData
+        {
+            public int ID { get; set; }
+            public ColorParam Data { get; set; }
+
+            public SpectumData(int id, ColorParam data)
+            {
+                ID = id;
+                Data = data;
+            }
         }
 
         public class HeartbeatParam
