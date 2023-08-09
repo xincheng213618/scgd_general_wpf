@@ -56,37 +56,9 @@ namespace ColorVision.Service
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            foreach (var item in MQTTManager.MQTTCameras)
-                item.Dispose();
-            MQTTManager.MQTTCameras.Clear();
-            MQTTManager.ServiceHeartbeats.Clear();
 
-            foreach (var mQTTServiceKind in MQTTServices)
-            {
-                foreach (var mQTTService in mQTTServiceKind.VisualChildren)
-                {
-                    foreach (var item in mQTTService.VisualChildren)
-                    {
-                        if (item is MQTTDeviceCamera deviceCamera)
-                        {
-                            MQTTCamera Camera1 = new MQTTCamera(deviceCamera.CameraConfig);
-                            MQTTManager.MQTTCameras.Add(Camera1);
-                            MQTTManager.ServiceHeartbeats.Add(Camera1);
-                        }
-                    }
-                }
-            }
+            ServiceControl.GetInstance().GenContorl();
 
-
-            foreach (var item in MQTTManager.MQTTSpectrums)
-                item.Dispose();
-            MQTTManager.MQTTSpectrums.Clear();
-
-            MQTTSpectrum mQTTSpectrum = new MQTTSpectrum();
-            MQTTManager.MQTTSpectrums.Add(mQTTSpectrum);
-
-
-            MQTTManager.Reload();
 
             this.Close();
         }

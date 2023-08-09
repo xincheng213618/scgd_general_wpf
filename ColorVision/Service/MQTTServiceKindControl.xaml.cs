@@ -1,24 +1,10 @@
 ﻿using ColorVision.MQTT.Config;
 using ColorVision.MySql.DAO;
 using ColorVision.SettingUp;
-using ColorVision.Template;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel.Design;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace ColorVision.Service
 {
@@ -59,16 +45,23 @@ namespace ColorVision.Service
             };
         }
 
+
+
+
         private void Button_New_Click(object sender, RoutedEventArgs e)
         {
+            if (!Util.IsInvalidPath(TextBox_Name.Text, "服务名称") || !Util.IsInvalidPath(TextBox_Code.Text, "服务标识"))
+                return;
+
             if (TextBox_Type.SelectedItem is MQTTServiceKind mQTTServiceKind)
             {
                 SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, mQTTServiceKind.SysDictionaryModel.Value, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
                 ServiceConfig serviceConfig = new ServiceConfig
                 {
-                    SendTopic = SendTopicAdd.Text,
-                    SubscribeTopic = SubscribeTopicAdd.Text
+                    SendTopic = mQTTServiceKind.SysDictionaryModel.Code + "/" + "CMD/" + sysResource.Code,
+                    SubscribeTopic = mQTTServiceKind.SysDictionaryModel.Code + "/" + "STATUS/" + sysResource.Code
                 };
+            
                 sysResource.Value = JsonConvert.SerializeObject(serviceConfig);
                 ServiceControl.ResourceService.Save(sysResource);
                 int pkId = sysResource.GetPK();

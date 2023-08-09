@@ -11,9 +11,11 @@ using System.Text;
 using System.Threading.Tasks;
 using log4net;
 using System.Threading;
+using System.Windows;
 
 namespace ColorVision.MySql
 {
+
     public class MySqlControl: ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MySqlControl));
@@ -34,6 +36,8 @@ namespace ColorVision.MySql
             //Task.Run(() => Connect());
             Connect();
         }
+
+        public event EventHandler MySqlConnectChanged;
 
         public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; NotifyPropertyChanged(); } }
         private bool _IsConnect;
@@ -57,7 +61,9 @@ namespace ColorVision.MySql
                 log.Info($"数据库连接信息:{connStr}");
                 MySqlConnection = new MySqlConnection() { ConnectionString = connStr  };
                 MySqlConnection.Open();
-
+                Application.Current.Dispatcher.Invoke(() => {
+                    MySqlConnectChanged?.Invoke(this, new EventArgs());
+                });
                 IsConnect = true;
                 ConnectSign = "已连接";
                 return true;
