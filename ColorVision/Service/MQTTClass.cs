@@ -13,7 +13,7 @@ namespace ColorVision.Service
         public SysResourceModel SysResourceModel { get; set; }
         public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
        
-        public MQTTDevice(SysResourceModel device, SysResourceModel service) : base()
+        public MQTTDevice(SysResourceModel device) : base()
         {
             SysResourceModel = device;
 
@@ -28,8 +28,7 @@ namespace ColorVision.Service
             };
             ContextMenu.Items.Add(menuItem);
 
-            SubscribeTopic = service.Pcode + "/STATUS/" + service.Code;
-            SendTopic = service.Pcode + "/CMD/" + service.Code;
+  
         }
 
         public virtual string SendTopic { get; set; }
@@ -42,7 +41,7 @@ namespace ColorVision.Service
         public CameraConfig CameraConfig { get; set; }
         public RelayCommand SaveCommand { get; set; }
 
-        public MQTTDeviceCamera(SysResourceModel sysResourceModel, SysResourceModel service) : base(sysResourceModel, service)
+        public MQTTDeviceCamera(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             if (string.IsNullOrEmpty(SysResourceModel.Value))
             {
