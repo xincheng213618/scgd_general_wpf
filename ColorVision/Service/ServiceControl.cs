@@ -46,6 +46,16 @@ namespace ColorVision.Service
                 item.Dispose();
             MQTTManager.MQTTSpectrums.Clear();
 
+
+            foreach (var item in MQTTManager.MQTTVISources)
+                item.Dispose();
+            MQTTManager.MQTTVISources.Clear();
+
+
+            foreach (var item in MQTTManager.MQTTPGs)
+                item.Dispose();
+            MQTTManager.MQTTPGs.Clear();
+
             MQTTManager.ServiceHeartbeats.Clear();
 
             foreach (var mQTTServiceKind in MQTTServices)
