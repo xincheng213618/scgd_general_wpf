@@ -433,30 +433,37 @@ namespace ColorVision.MySql
             }
             return row;
         }
-
         public virtual DataTable GetDataTable(string? tableName = null)
         {
             DataTable d_info = new DataTable(tableName);
             CreateColumns(d_info);
             return d_info;
         }
-
-
         public int DeleteAll(int tenantId)
         {
             string sql = $"update {TableName} set is_delete=1 where tenant_id={tenantId}";
+            if (!IsLogicDel)
+            {
+                sql = $"delete from {TableName} where tenant_id={tenantId}";
+            }
             return ExecuteNonQuery(sql);
         }
-
         public int DeleteAllByPid(int pid)
         {
             string sql = $"update {TableName} set is_delete=1 where pid={pid}";
+            if (!IsLogicDel)
+            {
+                sql = $"delete from {TableName} where pid={pid}";
+            }
             return ExecuteNonQuery(sql);
         }
-
         public int DeleteById(int id)
         {
             string sql = $"update {TableName} set is_delete=1 where id=@id";
+            if (!IsLogicDel)
+            {
+                sql = $"delete from {TableName} where id=@id";
+            }
             Dictionary<string, object> param = new Dictionary<string, object>
             {
                 { "id", id }

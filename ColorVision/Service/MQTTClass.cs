@@ -28,8 +28,8 @@ namespace ColorVision.Service
             };
             ContextMenu.Items.Add(menuItem);
 
-            SendTopic = service.Pcode + "/" + "STATUS/" + service.Code;
-            SubscribeTopic = service.Pcode + "/" + "CMD/" + service.Code;
+            SubscribeTopic = service.Pcode + "/STATUS/" + service.Code;
+            SendTopic = service.Pcode + "/CMD/" + service.Code;
         }
 
         public virtual string SendTopic { get; set; }
@@ -106,6 +106,8 @@ namespace ColorVision.Service
                 }
             }
             ServiceConfig.Name = Name;
+            ServiceConfig.SubscribeTopic = SysResourceModel.Pcode + "/STATUS/" + SysResourceModel.Code;
+            ServiceConfig.SendTopic = SysResourceModel.Pcode + "/CMD/" + SysResourceModel.Code;
             ContextMenu = new ContextMenu();
             MenuItem menuItem = new MenuItem() { Header = "删除服务" };
             menuItem.Click += (s, e) =>
