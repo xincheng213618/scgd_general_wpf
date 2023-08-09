@@ -33,6 +33,9 @@ namespace ColorVision.SettingUp
         public double Top { get; set; }
         public int WindowState { get; set; }
 
+        public bool IsDeFaultOpenService { get=> _IsDeFaultOpenService; set { _IsDeFaultOpenService = value;NotifyPropertyChanged(); } }
+        private bool _IsDeFaultOpenService = true;
+
         public bool IsOpenStatusBar { get => _IsOpenStatusBar; set { _IsOpenStatusBar = value; NotifyPropertyChanged(); } }
         private bool _IsOpenStatusBar = true;
         public bool IsOpenSidebar { get => _IsOpenSidebar; set { _IsOpenSidebar = value; NotifyPropertyChanged(); } }

@@ -35,6 +35,53 @@ namespace ColorVision.Service
             Reload();
         }
 
+        public void GenContorl()
+        {
+            MQTTManager MQTTManager = MQTTManager.GetInstance();
+            foreach (var item in MQTTManager.MQTTCameras)
+                item.Dispose();
+            MQTTManager.MQTTCameras.Clear();
+
+            foreach (var item in MQTTManager.MQTTSpectrums)
+                item.Dispose();
+            MQTTManager.MQTTSpectrums.Clear();
+
+            MQTTManager.ServiceHeartbeats.Clear();
+
+            foreach (var mQTTServiceKind in MQTTServices)
+            {
+                foreach (var mQTTService in mQTTServiceKind.VisualChildren)
+                {
+                    foreach (var item in mQTTService.VisualChildren)
+                    {
+                        if (item is MQTTDeviceCamera deviceCamera)
+                        {
+                            MQTTCamera Camera1 = new MQTTCamera(deviceCamera.CameraConfig);
+                            MQTTManager.MQTTCameras.Add(Camera1);
+                            MQTTManager.ServiceHeartbeats.Add(Camera1);
+                        }
+
+                        if (mQTTServiceKind.SysDictionaryModel.Value == 3)
+                        {
+                            MQTTSpectrum mQTTSpectrum = new MQTTSpectrum();
+                            MQTTManager.MQTTSpectrums.Add(mQTTSpectrum);
+                        }
+                        else if (mQTTServiceKind.SysDictionaryModel.Value == 4)
+                        {
+                            MQTTVISource mQTTVISource = new MQTTVISource();
+                            MQTTManager.MQTTVISources.Add(mQTTVISource);
+                        }
+                        else if (mQTTServiceKind.SysDictionaryModel.Value == 2)
+                        {
+                            MQTTPG mQTTPG = new MQTTPG();
+                            MQTTManager.MQTTPGs.Add(mQTTPG);
+                        }
+                    }
+                }
+            }
+            MQTTManager.Reload();
+        }
+
 
         public void Reload()
         {

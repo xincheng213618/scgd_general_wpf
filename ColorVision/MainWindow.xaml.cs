@@ -35,6 +35,7 @@ using log4net;
 using System.Security.RightsManagement;
 using ColorVision.MQTT.Control;
 using ColorVision.Util;
+using ColorVision.Service;
 
 namespace ColorVision
 {
@@ -177,6 +178,15 @@ namespace ColorVision
                         DrawingVisualLists.Remove(visual);
                 }
             };
+
+            if (SoftwareSetting.IsDeFaultOpenService)
+            {
+                new WindowService() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            }
+            else
+            {
+
+            }
         }
 
         private DrawingVisual ImageRuler = new DrawingVisual();

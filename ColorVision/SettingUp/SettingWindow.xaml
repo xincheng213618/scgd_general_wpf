@@ -84,6 +84,10 @@
                                             </DockPanel>
                                             <TextBlock Text="  (这里必须要配置，后续本地和局域网都支持)" Visibility="{Binding IsUseMQTT,Converter={StaticResource bool2VisibilityConverter1}}"  FontSize="8" Margin="0,3,0,0" />
                                         </DockPanel>
+                                        <DockPanel Margin="5">
+                                            <ToggleButton DockPanel.Dock="Right" Height="20" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding SoftwareSetting.IsDeFaultOpenService}"/>
+                                            <TextBlock Text="开机自动配置服务"/>
+                                        </DockPanel>
                                         <DockPanel x:Name="AutoRunDock" Margin="5"  d:DataContext="{d:DesignInstance local:GlobalSetting}">
                                             <ToggleButton DockPanel.Dock="Right" Height="20" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsAutoRun}"/>
                                             <TextBlock Text="开机自动启动(可能会不成功)"/>
