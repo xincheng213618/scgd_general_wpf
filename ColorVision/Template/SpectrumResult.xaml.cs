@@ -235,7 +235,11 @@ namespace ColorVision.Template
                     colorParams.RemoveAt(index);
                     listView1.Items.RemoveAt(index);
                     List<string> Contents = (List<string>)item.Content;
-                    spectumResult.DeleteById(int.Parse(Contents[Contents.Count-1]));
+                    int id = int.Parse(Contents[Contents.Count - 1]);
+                    if( id > 0 )
+                    {
+                        spectumResult.DeleteById(id);
+                    }
                 }
             }
 

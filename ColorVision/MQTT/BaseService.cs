@@ -7,6 +7,7 @@ using HslCommunication.MQTT;
 using log4net;
 using MQTTnet.Client;
 using Newtonsoft.Json;
+using NPOI.OpenXmlFormats.Spreadsheet;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -67,8 +68,11 @@ namespace ColorVision.MQTT
 
         public event EventHandler Connected;
 
+        public Dictionary<string, MsgSend> cmdMap { get; set; }
+
         public BaseService()
         {
+            cmdMap = new Dictionary<string, MsgSend>();
             MQTTControl = MQTTControl.GetInstance();
             MQTTConfig = MQTTControl.MQTTConfig;
             MQTTSetting = MQTTControl.MQTTSetting;

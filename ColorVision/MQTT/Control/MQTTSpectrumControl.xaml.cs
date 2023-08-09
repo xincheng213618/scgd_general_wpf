@@ -86,8 +86,8 @@ namespace ColorVision.MQTT.Control
             {
                 Spectrum.Open();
                 connectBtn.Content = "关闭";
-                windowSpectrum = new WindowSpectrum();
-                windowSpectrum.Show();
+                //windowSpectrum = new WindowSpectrum();
+                //windowSpectrum.Show();
             }
             else
             {

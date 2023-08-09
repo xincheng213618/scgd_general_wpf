@@ -54,7 +54,7 @@
             <Grid >
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
-                    <RowDefinition Height="150"/>
+                    <RowDefinition Height="250"/>
                 </Grid.RowDefinitions>
                 <ScrollViewer Grid.Row="0"  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                     <WindowsFormsHost Grid.Row="0">
