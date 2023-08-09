@@ -7,6 +7,7 @@ using HslCommunication.MQTT;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel.Design;
 using System.Linq;
 using System.Text;
@@ -59,6 +60,18 @@ namespace ColorVision.Service
                     ListViewService.Visibility = Visibility.Visible;
                 }
             };
+
+            if (MQTTService.Type == MQTTDeviceType.Camera)
+            {
+                if (HeartbeatService.ServicesDevices.TryGetValue(MQTTService.ServiceConfig.SubscribeTopic, out ObservableCollection<string> list))
+                {
+                    foreach (var item in list)
+                    {
+                        MQTTCreateStackPanel.Children.Add(new TextBox() { Text =item ,IsReadOnly =true});
+                    }
+                }
+            }
+
         }
 
         private void Button_New_Click(object sender, RoutedEventArgs e)

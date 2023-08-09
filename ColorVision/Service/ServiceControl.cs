@@ -114,7 +114,6 @@ namespace ColorVision.Service
                     if (service.Type == item.Value)
                     {
                         MQTTService mQTTService = new MQTTService(service);
-                        MQTTManager.GetInstance().ServiceHeartbeats.Add(new HeartbeatService(mQTTService.ServiceConfig));
 
                         foreach (var device in devices)
                         {

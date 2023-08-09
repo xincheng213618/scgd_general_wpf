@@ -1,4 +1,5 @@
-﻿using ColorVision.MQTT.Config;
+﻿using ColorVision.MQTT;
+using ColorVision.MQTT.Config;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
@@ -157,8 +158,8 @@ namespace ColorVision.Service
     public class MQTTService : BaseObject
     {
         public SysResourceModel SysResourceModel { get; set; }
-        public ServiceConfig ServiceConfig { get; set; }
-
+        public ServiceConfig ServiceConfig { get; set; }  
+        public HeartbeatService HeartbeatService { get; set; }
 
         public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
 
@@ -196,6 +197,8 @@ namespace ColorVision.Service
                 }
             };
             ContextMenu.Items.Add(menuItem);
+
+            HeartbeatService = new HeartbeatService(ServiceConfig);
         }
 
         public MQTTDeviceType Type { get => (MQTTDeviceType)SysResourceModel.Type; }
