@@ -7,6 +7,7 @@ using HslCommunication.MQTT;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel.Design;
 using System.Linq;
 using System.Text;
@@ -59,6 +60,18 @@ namespace ColorVision.Service
                     ListViewService.Visibility = Visibility.Visible;
                 }
             };
+
+            if (MQTTService.Type == MQTTDeviceType.Camera)
+            {
+                if (HeartbeatService.ServicesDevices.TryGetValue(MQTTService.ServiceConfig.SubscribeTopic, out ObservableCollection<string> list))
+                {
+                    foreach (var item in list)
+                    {
+                        MQTTCreateStackPanel.Children.Add(new TextBox() { Text =item ,IsReadOnly =true});
+                    }
+                }
+            }
+
         }
 
         private void Button_New_Click(object sender, RoutedEventArgs e)
@@ -72,22 +85,65 @@ namespace ColorVision.Service
             {
                 SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, mQTTService.SysResourceModel.Type, mQTTService.SysResourceModel.Id, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
                 
-                CameraConfig cameraConfig1 = new CameraConfig
+                if (mQTTService.Type == MQTTDeviceType.Camera)
                 {
-                    ID = "e29b14429bc375b1",
-                    CameraType = CameraType.LVQ,
-                    TakeImageMode = TakeImageMode.Normal,
-                    ImageBpp = 8
-                };
-                cameraConfig1.Name = TextBox_Name.Text;
-                cameraConfig1.SendTopic = MQTTService.ServiceConfig.SendTopic;
-                cameraConfig1.SendTopic = MQTTService.ServiceConfig.SubscribeTopic;
+                    CameraConfig cameraConfig1 = new CameraConfig
+                    {
+                        ID = "e29b14429bc375b1",
+                        CameraType = CameraType.LVQ,
+                        TakeImageMode = TakeImageMode.Normal,
+                        ImageBpp = 8
+                    };
+                    cameraConfig1.Name = TextBox_Name.Text;
 
-                sysResource.Value = JsonConvert.SerializeObject(cameraConfig1);
-                ServiceControl.ResourceService.Save(sysResource);
-                int pkId = sysResource.GetPK();
-                if (pkId > 0 && ServiceControl.ResourceService.GetMasterById(pkId) is SysResourceModel model)
-                    mQTTService.AddChild(new MQTTDeviceCamera(model));
+
+                    cameraConfig1.SendTopic = MQTTService.ServiceConfig.SendTopic;
+                    cameraConfig1.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;
+                    sysResource.Value = JsonConvert.SerializeObject(cameraConfig1);
+                    ServiceControl.ResourceService.Save(sysResource);
+                    int pkId = sysResource.GetPK();
+                    if (pkId > 0 && ServiceControl.ResourceService.GetMasterById(pkId) is SysResourceModel model)
+                        mQTTService.AddChild(new MQTTDeviceCamera(model));
+                }
+                else if (mQTTService.Type == MQTTDeviceType.PG)
+                {
+                    PGConfig pGConfig = new PGConfig
+                    {
+                        ID = "e29b14429bc375b1",
+                    };
+                    pGConfig.Name = TextBox_Name.Text;
+
+
+                    pGConfig.SendTopic = MQTTService.ServiceConfig.SendTopic;
+                    pGConfig.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;
+                    sysResource.Value = JsonConvert.SerializeObject(pGConfig);
+                    ServiceControl.ResourceService.Save(sysResource);
+                    int pkId = sysResource.GetPK();
+                    if (pkId > 0 && ServiceControl.ResourceService.GetMasterById(pkId) is SysResourceModel model)
+                        mQTTService.AddChild(new MQTTDevicePG(model));
+                }
+                else if (mQTTService.Type == MQTTDeviceType.Spectum)
+                {
+                    SpectrumConfig config = new SpectrumConfig
+                    {
+                        ID = "e29b14429bc375b1",
+                    };
+                    config.Name = TextBox_Name.Text;
+                    config.SendTopic = MQTTService.ServiceConfig.SendTopic;
+                    config.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;
+                    sysResource.Value = JsonConvert.SerializeObject(config);
+                    ServiceControl.ResourceService.Save(sysResource);
+                    int pkId = sysResource.GetPK();
+                    if (pkId > 0 && ServiceControl.ResourceService.GetMasterById(pkId) is SysResourceModel model)
+                        mQTTService.AddChild(new MQTTDeviceSpectrum(model));
+                }
+                else
+                {
+                    ServiceControl.ResourceService.Save(sysResource);
+                    int pkId = sysResource.GetPK();
+                    if (pkId > 0 && ServiceControl.ResourceService.GetMasterById(pkId) is SysResourceModel model)
+                        mQTTService.AddChild(new MQTTDevice(model));
+                }
 
 
                 MessageBox.Show("添加资源成功");
@@ -100,10 +156,10 @@ namespace ColorVision.Service
         {
             foreach (var item in MQTTService.VisualChildren)
             {
-                if(item is MQTTDeviceCamera mQTTDeviceCamera)
+                if(item is MQTTDevice mQTTDevice)
                 {
-                    mQTTDeviceCamera.SendTopic = MQTTService.ServiceConfig.SendTopic;
-                    mQTTDeviceCamera.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;
+                    mQTTDevice.SendTopic = MQTTService.ServiceConfig.SendTopic;
+                    mQTTDevice.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;
                 }
             }
 

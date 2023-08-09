@@ -9,6 +9,7 @@ using OpenCvSharp;
 using ScottPlot.Drawing.Colormaps;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Data;
 using System.IO;
@@ -38,6 +39,8 @@ namespace ColorVision.MQTT
 
         public static List<string> MD5 { get; set; } = new List<string>();
         public static List<string> CameraIDs { get; set; } = new List<string>();
+
+        public static Dictionary<string, ObservableCollection<string>> ServicesDevices { get; set; } = new Dictionary<string, ObservableCollection<string>>();
 
         public CameraConfig Config { get; set; }
         public string DeviceID { get => Config.ID; }
@@ -92,7 +95,14 @@ namespace ColorVision.MQTT
                         if (!MD5.Contains(MD5IDs[i].ToString()))
                             MD5.Add(MD5IDs[i].ToString());
 
-
+                        if (ServicesDevices.TryGetValue(SubscribeTopic,out ObservableCollection<string> list)&& !list.Contains(CameraIDs[i].ToString()))
+                        {
+                            list.Add(CameraIDs[i].ToString());
+                        }
+                        else
+                        {
+                            ServicesDevices.Add(SubscribeTopic, new ObservableCollection<string>() { CameraIDs[i].ToString() });
+                        }
                     }
                     return;
             }

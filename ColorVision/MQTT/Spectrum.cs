@@ -32,6 +32,7 @@ namespace ColorVision.MQTT
             SpectrumConfig = new SpectrumConfig();
             SpectrumConfig.SendTopic = SendTopic;
             SpectrumConfig.SubscribeTopic = SubscribeTopic;
+
             this.SendTopic = SendTopic;
             this.SubscribeTopic = SubscribeTopic;
 
@@ -39,13 +40,23 @@ namespace ColorVision.MQTT
             MQTTControl.SubscribeCache(SubscribeTopic);
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
         }
+
+
+
+
         public SpectrumConfig SpectrumConfig { get; set; }
 
 
         public MQTTSpectrum(SpectrumConfig spectrumConfig)
         {
+            this.SpectrumConfig = spectrumConfig;
 
+            this.SendTopic = spectrumConfig.SendTopic;
+            this.SubscribeTopic = spectrumConfig.SubscribeTopic;
 
+            MQTTControl = MQTTControl.GetInstance();
+            MQTTControl.SubscribeCache(SubscribeTopic);
+            MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
         }
 
 

@@ -1,4 +1,5 @@
-﻿using MQTTnet.Client;
+﻿using ColorVision.MQTT.Config;
+using MQTTnet.Client;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -32,10 +33,27 @@ namespace ColorVision.MQTT
 
     public class MQTTPG: BaseService
     {
+
+        public PGConfig PGConfig { get; set; }
+
         public MQTTPG(string SendTopic = "PG", string SubscribeTopic = "PGService") : base()
         {
+            PGConfig = new PGConfig() { SendTopic = SendTopic, SubscribeTopic = SubscribeTopic };
+
             this.SendTopic = SendTopic;
             this.SubscribeTopic = SubscribeTopic;
+            MQTTControl = MQTTControl.GetInstance();
+            MQTTControl.SubscribeCache(SubscribeTopic);
+            MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
+        }
+
+        public MQTTPG(PGConfig pGConfig) : base()
+        {
+            PGConfig = pGConfig;
+
+            this.SendTopic = PGConfig.SendTopic;
+            this.SubscribeTopic = PGConfig.SubscribeTopic;
+
             MQTTControl = MQTTControl.GetInstance();
             MQTTControl.SubscribeCache(SubscribeTopic);
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;

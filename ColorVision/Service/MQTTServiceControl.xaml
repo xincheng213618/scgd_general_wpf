@@ -61,7 +61,7 @@
 
         </Grid>
         <GroupBox x:Name="MQTTCreate" Header="创建资源" Grid.Row="2" Visibility="Collapsed">
-            <StackPanel   Grid.Column="1" Grid.Row="1" Margin="5">
+            <StackPanel x:Name="MQTTCreateStackPanel"  Grid.Column="1" Grid.Row="1" Margin="5">
                 <DockPanel Margin="5" >
                     <TextBlock Text="类型" Width="60"/>
                     <ComboBox x:Name="TextBox_Type" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Name"  DisplayMemberPath="Name" />

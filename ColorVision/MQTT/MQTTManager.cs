@@ -39,6 +39,9 @@ namespace ColorVision.MQTT
             MQTTVISources = new ObservableCollection<MQTTVISource>();
         }
 
+        public void ClearAll() { 
+        }
+
         public void Reload()
         {
             DeviceSettingChanged?.Invoke(this, new EventArgs());

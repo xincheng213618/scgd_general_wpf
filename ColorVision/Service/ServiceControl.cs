@@ -1,4 +1,5 @@
 ﻿using ColorVision.MQTT;
+using ColorVision.MQTT.Config;
 using ColorVision.MySql;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
@@ -7,6 +8,8 @@ using ColorVision.Template;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Design;
+using System.Windows.Automation;
+using System.Windows.Media.Media3D;
 
 namespace ColorVision.Service
 {
@@ -66,26 +69,28 @@ namespace ColorVision.Service
                     {
                         if (item is MQTTDeviceCamera deviceCamera)
                         {
-                            MQTTCamera Camera1 = new MQTTCamera(deviceCamera.CameraConfig);
+                            MQTTCamera Camera1 = new MQTTCamera(deviceCamera.Config);
                             MQTTManager.MQTTCameras.Add(Camera1);
                             MQTTManager.ServiceHeartbeats.Add(Camera1);
                         }
-
-                        if (mQTTServiceKind.SysDictionaryModel.Value == 3)
+                        else if (item is MQTTDevicePG devicePG)
                         {
-                            MQTTSpectrum mQTTSpectrum = new MQTTSpectrum();
+                            MQTTPG mQTTPG = new MQTTPG(devicePG.Config);
+                            MQTTManager.MQTTPGs.Add(mQTTPG);
+                            MQTTManager.ServiceHeartbeats.Add(mQTTPG);
+                        }
+                        else if (item is MQTTDeviceSpectrum deviceSpectrum)
+                        {
+                            MQTTSpectrum mQTTSpectrum = new MQTTSpectrum(deviceSpectrum.Config);
                             MQTTManager.MQTTSpectrums.Add(mQTTSpectrum);
+                            MQTTManager.ServiceHeartbeats.Add(mQTTSpectrum);
                         }
                         else if (mQTTServiceKind.SysDictionaryModel.Value == 4)
                         {
                             MQTTVISource mQTTVISource = new MQTTVISource();
                             MQTTManager.MQTTVISources.Add(mQTTVISource);
                         }
-                        else if (mQTTServiceKind.SysDictionaryModel.Value == 2)
-                        {
-                            MQTTPG mQTTPG = new MQTTPG();
-                            MQTTManager.MQTTPGs.Add(mQTTPG);
-                        }
+
                     }
                 }
             }
@@ -109,16 +114,25 @@ namespace ColorVision.Service
                     if (service.Type == item.Value)
                     {
                         MQTTService mQTTService = new MQTTService(service);
-                        MQTTManager.GetInstance().ServiceHeartbeats.Add(new HeartbeatService(mQTTService.ServiceConfig));
 
                         foreach (var device in devices)
                         {
                             if (device.Pid == service.Id)
                             {
-                                if (device.Type == 1)
+                                if (device.Type == (int)MQTTDeviceType.Camera)
                                 {
                                     MQTTDeviceCamera camera = new MQTTDeviceCamera(device);
                                     mQTTService.AddChild(camera);
+                                }
+                                else if (device.Type == (int)MQTTDeviceType.PG)
+                                {
+                                    MQTTDevicePG pg = new MQTTDevicePG(device);
+                                    mQTTService.AddChild(pg);
+                                }
+                                else if (device.Type == (int)MQTTDeviceType.Spectum)
+                                {
+                                    MQTTDeviceSpectrum spectrum = new MQTTDeviceSpectrum(device);
+                                    mQTTService.AddChild(spectrum);
                                 }
                                 else
                                 {

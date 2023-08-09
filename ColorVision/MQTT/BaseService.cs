@@ -7,12 +7,12 @@ using HslCommunication.MQTT;
 using log4net;
 using MQTTnet.Client;
 using Newtonsoft.Json;
-using NPOI.OpenXmlFormats.Spreadsheet;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
@@ -46,8 +46,54 @@ namespace ColorVision.MQTT
         public HeartbeatService(ServiceConfig serviceConfig) : base()
         {
             ServiceConfig = serviceConfig;
+
+            SendTopic = ServiceConfig.SendTopic;
+            SubscribeTopic = ServiceConfig.SubscribeTopic;
+
             MQTTControl.SubscribeCache(SubscribeTopic);
+
+            MsgReturnReceived +=(msg)=>
+            {
+                switch (msg.EventName)
+                {
+                    case "CM_GetAllCameraID":
+
+                        JArray CameraIDs = msg.Data.CameraID;
+                        JArray MD5IDs = msg.Data.MD5ID;
+                        for (int i = 0; i < CameraIDs.Count; i++)
+                        {
+                            if (ServicesDevices.TryGetValue(SubscribeTopic, out ObservableCollection<string> list) && !list.Contains(CameraIDs[i].ToString()))
+                            {
+                                list.Add(CameraIDs[i].ToString());
+                            }
+                            else
+                            {
+                                ServicesDevices.Add(SubscribeTopic, new ObservableCollection<string>() { CameraIDs[i].ToString() });
+                            }
+                        }
+                        return;
+                }
+
+            };
+            this.Connected += (s, e) =>
+            {
+                GetAllCameraID();
+            };
         }
+        public static Dictionary<string, ObservableCollection<string>> ServicesDevices { get; set; } = new Dictionary<string, ObservableCollection<string>>();
+
+
+        public bool GetAllCameraID()
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "CM_GetAllCameraID",
+                Params = new Dictionary<string, object>() { { "CameraID", "" }, { "eType", 0 } }
+            };
+            PublishAsyncClient(msg);
+            return true;
+        }
+
         public override string SubscribeTopic { get => ServiceConfig.SubscribeTopic; set { ServiceConfig.SubscribeTopic = value; } }
         public override string SendTopic { get => ServiceConfig.SendTopic; set { ServiceConfig.SendTopic = value; } }
 
