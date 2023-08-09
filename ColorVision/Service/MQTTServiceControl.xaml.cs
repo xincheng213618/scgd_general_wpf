@@ -103,7 +103,7 @@ namespace ColorVision.Service
                 if(item is MQTTDeviceCamera mQTTDeviceCamera)
                 {
                     mQTTDeviceCamera.SendTopic = MQTTService.ServiceConfig.SendTopic;
-                    mQTTDeviceCamera.SendTopic = MQTTService.ServiceConfig.SubscribeTopic;
+                    mQTTDeviceCamera.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;
                 }
             }
 
