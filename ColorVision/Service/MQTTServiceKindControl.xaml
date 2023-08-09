@@ -25,15 +25,7 @@
                     <TextBlock Text="名称" Width="60"/>
                     <TextBox x:Name="TextBox_Name" />
                 </DockPanel>
-                <DockPanel Margin="5" >
-                    <TextBlock Text="发送Topic" Width="60"/>
-                    <TextBox x:Name="SendTopicAdd" />
-                </DockPanel>
-                <DockPanel Margin="5" >
-                    <TextBlock Text="接收Topic" Width="60"/>
-                    <TextBox  x:Name="SubscribeTopicAdd"  />
-                </DockPanel>
-                <Button   Click="Button_New_Click"  Width="250" Content="添加服务" />
+                <Button   Click="Button_New_Click" Background="#E6E6E6"  Width="250" Content="添加服务" />
             </StackPanel>
         </GroupBox>
         <Grid>

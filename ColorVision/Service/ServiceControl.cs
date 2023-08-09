@@ -60,12 +60,12 @@ namespace ColorVision.Service
                             {
                                 if (device.Type == 1)
                                 {
-                                    MQTTDeviceCamera camera = new MQTTDeviceCamera(device, service);
+                                    MQTTDeviceCamera camera = new MQTTDeviceCamera(device);
                                     mQTTService.AddChild(camera);
                                 }
                                 else
                                 {
-                                    MQTTDevice other_device = new MQTTDevice(device, service);
+                                    MQTTDevice other_device = new MQTTDevice(device);
                                     mQTTService.AddChild(other_device);
                                 }
 

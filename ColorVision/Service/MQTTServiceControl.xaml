@@ -21,6 +21,7 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="50"/>
+                    <ColumnDefinition Width="50"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel >
                     <TextBlock Text="{Binding Name}"/>
@@ -29,7 +30,12 @@
                     <TextBlock Text="{Binding ServiceConfig.IsAlive}"/>
                     <TextBlock Text="{Binding ServiceConfig.LastAliveTime}"/>
                 </StackPanel>
-                <Button  Grid.Column="1" Content="编辑"  Click="Button_Click_1"/>
+                <Button  Grid.Column="1" Click="Button_Click_1" Margin="2">
+                    <TextBlock Text="编辑服务" TextWrapping="Wrap" />
+                </Button>
+                <Button  Grid.Column="2" Click="Button_Click_2" Margin="2">
+                    <TextBlock Text="添加资源" TextWrapping="Wrap" />
+                </Button>
             </Grid>
             <Grid  x:Name="MQTTEditContent" Visibility="Collapsed" Margin="5">
                 <Grid.ColumnDefinitions>
@@ -54,8 +60,8 @@
             </Grid>
 
         </Grid>
-        <GroupBox Header="创建资源" Grid.Row="2">
-            <StackPanel x:Name="MQTTCreate"  Grid.Column="1" Grid.Row="1" Margin="5">
+        <GroupBox x:Name="MQTTCreate" Header="创建资源" Grid.Row="2" Visibility="Collapsed">
+            <StackPanel   Grid.Column="1" Grid.Row="1" Margin="5">
                 <DockPanel Margin="5" >
                     <TextBlock Text="类型" Width="60"/>
                     <ComboBox x:Name="TextBox_Type" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Name"  DisplayMemberPath="Name" />
