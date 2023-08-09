@@ -8,6 +8,7 @@ using ColorVision.Template;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Design;
+using System.Windows.Automation;
 using System.Windows.Media.Media3D;
 
 namespace ColorVision.Service
@@ -78,12 +79,11 @@ namespace ColorVision.Service
                             MQTTManager.MQTTPGs.Add(mQTTPG);
                             MQTTManager.ServiceHeartbeats.Add(mQTTPG);
                         }
-
-
-                        if (mQTTServiceKind.SysDictionaryModel.Value == 3)
+                        else if (item is MQTTDeviceSpectrum deviceSpectrum)
                         {
-                            MQTTSpectrum mQTTSpectrum = new MQTTSpectrum();
+                            MQTTSpectrum mQTTSpectrum = new MQTTSpectrum(deviceSpectrum.Config);
                             MQTTManager.MQTTSpectrums.Add(mQTTSpectrum);
+                            MQTTManager.ServiceHeartbeats.Add(mQTTSpectrum);
                         }
                         else if (mQTTServiceKind.SysDictionaryModel.Value == 4)
                         {
@@ -127,8 +127,13 @@ namespace ColorVision.Service
                                 }
                                 else if (device.Type == (int)MQTTDeviceType.PG)
                                 {
-                                    MQTTDevicePG camera = new MQTTDevicePG(device);
-                                    mQTTService.AddChild(camera);
+                                    MQTTDevicePG pg = new MQTTDevicePG(device);
+                                    mQTTService.AddChild(pg);
+                                }
+                                else if (device.Type == (int)MQTTDeviceType.Spectum)
+                                {
+                                    MQTTDeviceSpectrum spectrum = new MQTTDeviceSpectrum(device);
+                                    mQTTService.AddChild(spectrum);
                                 }
                                 else
                                 {

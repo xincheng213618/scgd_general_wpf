@@ -3,6 +3,7 @@ using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using Newtonsoft.Json;
+using System;
 using System.ComponentModel.Design;
 using System.Windows.Controls;
 
@@ -29,10 +30,11 @@ namespace ColorVision.Service
             };
             ContextMenu.Items.Add(menuItem);
         }
-
         public virtual string SendTopic { get; set; }
         public virtual string SubscribeTopic { get; set; }
         public virtual bool IsAlive { get; set; }
+
+
     }
 
     public class MQTTDevicePG : MQTTDevice
@@ -70,6 +72,42 @@ namespace ColorVision.Service
 
 
     }
+    
+    public class MQTTDeviceSpectrum : MQTTDevice
+    {
+        public SpectrumConfig Config { get; set; }
+
+        public MQTTDeviceSpectrum(SysResourceModel sysResourceModel) : base(sysResourceModel)
+        {
+            if (string.IsNullOrEmpty(SysResourceModel.Value))
+            {
+                Config = new SpectrumConfig();
+            }
+            else
+            {
+                try
+                {
+                    Config = JsonConvert.DeserializeObject<SpectrumConfig>(SysResourceModel.Value) ?? new SpectrumConfig();
+                }
+                catch
+                {
+                    Config = new SpectrumConfig();
+                }
+            }
+        }
+
+        public override string SendTopic { get => Config.SendTopic; set { Config.SendTopic = value; NotifyPropertyChanged(); } }
+        public override string SubscribeTopic { get => Config.SubscribeTopic; set { Config.SubscribeTopic = value; NotifyPropertyChanged(); } }
+        public override bool IsAlive { get => Config.IsAlive; set { Config.IsAlive = value; NotifyPropertyChanged(); } }
+
+        public override void Save()
+        {
+            base.Save();
+            SysResourceModel.Value = JsonConvert.SerializeObject(Config);
+            ServiceControl.GetInstance().ResourceService.Save(SysResourceModel);
+        }
+    }
+
 
     public class MQTTDeviceCamera : MQTTDevice
     {
@@ -92,8 +130,9 @@ namespace ColorVision.Service
                     Config = new CameraConfig();
                 }
             }
-
         }
+
+
         public override string SendTopic { get =>Config.SendTopic; set { Config.SendTopic = value;  NotifyPropertyChanged(); } }
         public override string SubscribeTopic { get =>Config.SubscribeTopic ; set { Config.SubscribeTopic = value; NotifyPropertyChanged(); } }
         public override bool IsAlive { get => Config.IsAlive;set { Config.IsAlive = value; NotifyPropertyChanged(); } }
@@ -104,6 +143,7 @@ namespace ColorVision.Service
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
             ServiceControl.GetInstance().ResourceService.Save(SysResourceModel);
         }
+
     }
 
     public enum  MQTTDeviceType

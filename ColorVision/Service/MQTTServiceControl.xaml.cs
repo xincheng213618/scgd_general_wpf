@@ -85,7 +85,7 @@ namespace ColorVision.Service
 
 
                     cameraConfig1.SendTopic = MQTTService.ServiceConfig.SendTopic;
-                    cameraConfig1.SendTopic = MQTTService.ServiceConfig.SubscribeTopic;
+                    cameraConfig1.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;
                     sysResource.Value = JsonConvert.SerializeObject(cameraConfig1);
                     ServiceControl.ResourceService.Save(sysResource);
                     int pkId = sysResource.GetPK();
@@ -102,12 +102,27 @@ namespace ColorVision.Service
 
 
                     pGConfig.SendTopic = MQTTService.ServiceConfig.SendTopic;
-                    pGConfig.SendTopic = MQTTService.ServiceConfig.SubscribeTopic;
+                    pGConfig.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;
                     sysResource.Value = JsonConvert.SerializeObject(pGConfig);
                     ServiceControl.ResourceService.Save(sysResource);
                     int pkId = sysResource.GetPK();
                     if (pkId > 0 && ServiceControl.ResourceService.GetMasterById(pkId) is SysResourceModel model)
                         mQTTService.AddChild(new MQTTDevicePG(model));
+                }
+                else if (mQTTService.Type == MQTTDeviceType.Spectum)
+                {
+                    SpectrumConfig config = new SpectrumConfig
+                    {
+                        ID = "e29b14429bc375b1",
+                    };
+                    config.Name = TextBox_Name.Text;
+                    config.SendTopic = MQTTService.ServiceConfig.SendTopic;
+                    config.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;
+                    sysResource.Value = JsonConvert.SerializeObject(config);
+                    ServiceControl.ResourceService.Save(sysResource);
+                    int pkId = sysResource.GetPK();
+                    if (pkId > 0 && ServiceControl.ResourceService.GetMasterById(pkId) is SysResourceModel model)
+                        mQTTService.AddChild(new MQTTDeviceSpectrum(model));
                 }
                 else
                 {
@@ -128,10 +143,10 @@ namespace ColorVision.Service
         {
             foreach (var item in MQTTService.VisualChildren)
             {
-                if(item is MQTTDeviceCamera mQTTDeviceCamera)
+                if(item is MQTTDevice mQTTDevice)
                 {
-                    mQTTDeviceCamera.SendTopic = MQTTService.ServiceConfig.SendTopic;
-                    mQTTDeviceCamera.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;
+                    mQTTDevice.SendTopic = MQTTService.ServiceConfig.SendTopic;
+                    mQTTDevice.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;
                 }
             }
 
