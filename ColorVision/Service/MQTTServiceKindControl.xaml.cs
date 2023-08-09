@@ -46,8 +46,6 @@ namespace ColorVision.Service
         }
 
 
-
-
         private void Button_New_Click(object sender, RoutedEventArgs e)
         {
             if (!Util.IsInvalidPath(TextBox_Name.Text, "服务名称") || !Util.IsInvalidPath(TextBox_Code.Text, "服务标识"))
