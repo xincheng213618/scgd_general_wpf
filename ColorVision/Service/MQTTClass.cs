@@ -189,7 +189,11 @@ namespace ColorVision.Service
             {
                 this.Parent.RemoveChild(this);
                 if (SysResourceModel != null)
+                {
                     ServiceControl.GetInstance().ResourceService.DeleteById(SysResourceModel.Id);
+                    ServiceControl.GetInstance().ResourceService.DeleteAllByPid(SysResourceModel.Id);
+
+                }
             };
             ContextMenu.Items.Add(menuItem);
         }
