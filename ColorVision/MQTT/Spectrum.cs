@@ -4,6 +4,7 @@ using Google.Protobuf.WellKnownTypes;
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using NPOI.OpenXmlFormats.Spreadsheet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -88,8 +89,21 @@ namespace ColorVision.MQTT
                         {
                             JObject data = json.Data;
                             SpectumData? colorParam = JsonConvert.DeserializeObject<SpectumData>(JsonConvert.SerializeObject(data));
-                            Application.Current.Dispatcher.Invoke(() => DataHandlerEvent?.Invoke(colorParam));
-
+                            if (cmdMap.ContainsKey(json.MsgID))
+                            {
+                                Application.Current.Dispatcher.Invoke(() => DataHandlerEvent?.Invoke(colorParam));
+                                cmdMap.Remove(json.MsgID);
+                            }
+                        }
+                        else if (json.EventName == "GetDataAuto")
+                        {
+                            JObject data = json.Data;
+                            SpectumData? colorParam = JsonConvert.DeserializeObject<SpectumData>(JsonConvert.SerializeObject(data));
+                            if (cmdMap.ContainsKey(json.MsgID))
+                            {
+                                Application.Current.Dispatcher.Invoke(() => DataHandlerEvent?.Invoke(colorParam));
+                                //cmdMap.Remove(json.MsgID);
+                            }
                         }
                         else if (json.EventName == "Heartbeat")
                         {
@@ -186,6 +200,7 @@ namespace ColorVision.MQTT
                 }
             };
             PublishAsyncClient(msg);
+            cmdMap.Add(msg.MsgID.ToString(), msg);
             return true;
         }
 
@@ -233,6 +248,7 @@ namespace ColorVision.MQTT
                 }
             };
             PublishAsyncClient(msg);
+            cmdMap.Add(msg.MsgID.ToString(), msg);
         }
 
         internal void GetDataAutoStop()
@@ -242,6 +258,7 @@ namespace ColorVision.MQTT
                 EventName = "GetDataAutoStop",
             };
             PublishAsyncClient(msg);
+            cmdMap.Clear();
         }
 
         public class SpectumData
