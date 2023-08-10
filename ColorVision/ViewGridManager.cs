@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace ColorVision
 {
@@ -94,11 +95,40 @@ namespace ColorVision
                     grid.SetValue(Grid.RowProperty, row);
                     grid.SetValue(Grid.ColumnProperty, col);
                     MainView.Children.Add(grid);
+
+                    AddGridSplitter(row, col);
+
                     newlist++;
                 }
             }
         }
 
+        private void AddGridSplitter(int row, int col)
+        {
+            GridSplitter gridSplitter = new GridSplitter()
+            {
+                Background = Brushes.LightGray,
+                Width = 2,
+                HorizontalAlignment = HorizontalAlignment.Right,
+            };
+
+            gridSplitter.SetValue(Grid.RowProperty, row);
+            gridSplitter.SetValue(Grid.ColumnProperty, col);
+            MainView.Children.Add(gridSplitter);
+
+            GridSplitter gridSplitter1 = new GridSplitter()
+            {
+                Background = Brushes.LightGray,
+                Height = 2,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Bottom,
+            };
+
+            gridSplitter1.SetValue(Grid.RowProperty, row);
+            gridSplitter1.SetValue(Grid.ColumnProperty, col);
+
+            MainView.Children.Add(gridSplitter1);
+        }
 
 
 

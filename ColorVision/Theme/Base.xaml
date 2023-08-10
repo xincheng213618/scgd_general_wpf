@@ -21,6 +21,7 @@
 
 
     <Style TargetType="{x:Type TextBox}">
+        <Setter Property="BorderBrush" Value="#CCCEDB"/>
         <EventSetter  Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown" />
         <Setter Property="Template">
             <Setter.Value>

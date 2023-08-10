@@ -4,7 +4,7 @@
                     xmlns:local="clr-namespace:ColorVision.Controls">
     
     <BooleanToVisibilityConverter x:Key="bool2VisibilityConverter"/>
-    <WindowChrome x:Key="DefaultWindowChrome" x:Shared="False"  CornerRadius="0" GlassFrameThickness="-1"  UseAeroCaptionButtons="False"/>
+    <WindowChrome x:Key="DefaultWindowChrome" x:Shared="False"  CornerRadius="0" GlassFrameThickness="-1" ResizeBorderThickness="1"  UseAeroCaptionButtons="False"/>
 
 
     <Style x:Key="CaptionButtonStyleDefault" TargetType="Button">
@@ -129,7 +129,7 @@
                             <Setter TargetName="CloseButton" Property="Foreground"  Value="{DynamicResource WindowIsNotActiveForeground}"/>
                         </Trigger>
                         <Trigger Property="IsActive" Value="True">
-                            <Setter TargetName="RootBorderActive" Property="BorderBrush" Value="#191919" />
+                            <Setter TargetName="RootBorderActive" Property="BorderBrush" Value="#CCCEDB" />
                             <Setter TargetName="RootBorderActive" Property="BorderThickness" Value="0.5"/>
                         </Trigger>
                         <Trigger Property="WindowState" Value="Maximized">
