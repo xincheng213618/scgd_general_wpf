@@ -7,7 +7,7 @@
         xmlns:base ="clr-namespace:ColorVision.Controls"
         xmlns:hc ="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
-        Height="500" Width="800"  MinWidth="500" MinHeight="450" Background="#F9F9F9" WindowStyle="ToolWindow" WindowStartupLocation="CenterScreen" Initialized="BaseWindow_Initialized">
+        Height="500" Width="800"  MinWidth="500" MinHeight="450" Background="#FBFBFB" WindowStyle="ToolWindow" WindowStartupLocation="CenterScreen" Initialized="BaseWindow_Initialized">
     <Grid>
         <TextBlock Text="打开" FontSize="20"  HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,-20,0,0"/>
         <Grid Margin="10,20" >
@@ -22,7 +22,7 @@
                 </Grid.RowDefinitions>
                 <DockPanel  >
                     <TextBlock Text="最近使用的内容"  VerticalAlignment="Center" FontSize="18"/>
-                    <TextBox x:Name="Searchbox"   BorderBrush="Beige" MaxLength="15" VerticalContentAlignment="Center"  TextChanged="Searchbox_TextChanged"   Margin="10,0" Width="200"  HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                    <TextBox x:Name="Searchbox"   BorderBrush="#CCCEDB" MaxLength="15" VerticalContentAlignment="Center"  TextChanged="Searchbox_TextChanged"   Margin="10,0" Width="200"  HorizontalAlignment="Left" VerticalAlignment="Center"/>
                 </DockPanel>
                 <Grid  Grid.Row="1">
                     <ListView  x:Name="ListView1" Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" SelectionChanged="ListView1_SelectionChanged">

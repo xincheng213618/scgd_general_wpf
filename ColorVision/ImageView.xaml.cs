@@ -1,6 +1,7 @@
 ﻿using ColorVision.Extension;
 using ColorVision.MVVM;
 using ColorVision.SettingUp;
+using NPOI.POIFS.Properties;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -558,38 +559,60 @@ namespace ColorVision
 
 
 
+        public class WindowStatus
+        {
+            public object Root { get; set; }
+            public Grid Parent { get; set; }
+
+            public WindowStyle WindowStyle { get; set; }
+
+            public WindowState WindowState { get; set; }
+
+            public ResizeMode ResizeMode { get; set; }
+
+
+        }
+        private WindowStatus OldWindowStatus { get; set; }
+
+
         private void Button8_Click(object sender, RoutedEventArgs e)
         {
             if (sender is ToggleButton toggleButton)
             {
-                var mainWindow = this;
+                var mainWindow = Application.Current.MainWindow;
 
-                //if (toggleButton.IsChecked == true)
-                //{
-                //    mainWindow.WindowStyle = WindowStyle.None;
-                //    mainWindow.WindowState = WindowState.Maximized;
-                //    if (mainWindow.Content is Grid grid)
-                //    {
-                //        if (grid.Children[0] is Menu menu)
-                //        {
-                //            menu.Visibility = Visibility.Collapsed;
-                //        }
-                //    }
+                if (toggleButton.IsChecked == true)
+                {
+                    if (this.VisualParent is Grid p)
+                    {
+                        OldWindowStatus = new WindowStatus();
+                        OldWindowStatus.Parent = p;
+                        OldWindowStatus.WindowState = mainWindow.WindowState;
+                        OldWindowStatus.WindowStyle = mainWindow.WindowStyle;
+                        OldWindowStatus.ResizeMode = mainWindow.ResizeMode;
+                        OldWindowStatus.Root = mainWindow.Content;
 
-                //    ImageContentGrid.Children.Remove(ZoomGrid);
-                //    mainWindow.Content = ZoomGrid;
-                //}
-                //else
-                //{
-                //    mainWindow.WindowStyle = WindowStyle.SingleBorderWindow; // 或者其他您需要的风格
-                //    mainWindow.WindowState = WindowState.Normal;
-                //    mainWindow.ResizeMode = ResizeMode.CanResize; // 如果需要允许改变大小
-                //    mainWindow.Topmost = false; // 如果之前设置了 Topmost，现在取消
-                //    mainWindow.ShowInTaskbar = true; // 如果之前设置了 ShowInTaskbar，现在取消
+                        mainWindow.WindowStyle = WindowStyle.None;
+                        mainWindow.WindowState = WindowState.Maximized;
 
-                //    mainWindow.Content = Root;
-                //    ImageContentGrid.Children.Add(ZoomGrid);
-                //}
+                        OldWindowStatus.Parent.Children.Remove(this);
+                        mainWindow.Content = this;
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
+                else
+                {
+
+                    mainWindow.WindowStyle = OldWindowStatus.WindowStyle;
+                    mainWindow.WindowState = OldWindowStatus.WindowState;
+                    mainWindow.ResizeMode = OldWindowStatus.ResizeMode;
+
+                    mainWindow.Content = OldWindowStatus.Root;
+                    OldWindowStatus.Parent.Children.Add(this);
+                }
 
             }
         }

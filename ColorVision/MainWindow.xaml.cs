@@ -408,49 +408,17 @@ namespace ColorVision
 
         private void Button6_Click(object sender, RoutedEventArgs e)
         {
-            if (ViewGridManager.Views.Count > 1)
-            {
-                for (int i = ViewGridManager.Views.Count-1; i > 0; i--)
-                {
-                    ViewGridManager.RemoveView(i);
-                }
-            }
+            ViewGridManager.SetViewNum(1);
         }
 
         private void Button7_Click(object sender, RoutedEventArgs e)
         {
-            if (ViewGridManager.Views.Count > 2)
-            {
-                for (int i = ViewGridManager.Views.Count - 1; i > 2; i--)
-                {
-                    ViewGridManager.RemoveView(i);
-                }
-            }
-            else if (ViewGridManager.Views.Count < 2)
-            {
-                for (int i = ViewGridManager.Views.Count; i < 2; i++)
-                {
-                    ViewGridManager.AddView(new ImageView());
-                }
-            }
+            ViewGridManager.SetViewNum(2);
         }
 
         private void Button8_Click(object sender, RoutedEventArgs e)
         {
-            if (ViewGridManager.Views.Count > 4)
-            {
-                for (int i = ViewGridManager.Views.Count - 1; i > 4; i--)
-                {
-                    ViewGridManager.RemoveView(i);
-                }
-            }
-            else if (ViewGridManager.Views.Count < 4)
-            {
-                for (int i = ViewGridManager.Views.Count; i < 4; i++)
-                {
-                    ViewGridManager.AddView(new ImageView());
-                }
-            }
+            ViewGridManager.SetViewNum(4);
         }
     }
 
