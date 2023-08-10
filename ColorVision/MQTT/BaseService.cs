@@ -7,6 +7,7 @@ using HslCommunication.MQTT;
 using log4net;
 using MQTTnet.Client;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

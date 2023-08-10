@@ -53,8 +53,8 @@
             </Grid.ColumnDefinitions>
             <Grid >
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="250"/>
+                    <RowDefinition Height="6*"/>
+                    <RowDefinition Height="4*"/>
                 </Grid.RowDefinitions>
                 <ScrollViewer Grid.Row="0"  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                     <WindowsFormsHost Grid.Row="0">
