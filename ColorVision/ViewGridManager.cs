@@ -53,6 +53,27 @@ namespace ColorVision
             Views.RemoveAt(index);
         }
 
+        public void SetViewNum(int num)
+        {
+            if (Views.Count > num)
+            {
+                for (int i = Views.Count - 1; i > num-1; i--)
+                {
+                    ViewGrids.RemoveAt(i);
+                    Views.RemoveAt(i);
+                }
+                GridSort(ViewGrids);
+            }
+            else if (Views.Count < num)
+            {
+                for (int i = Views.Count; i < num ; i++)
+                {
+                    AddView(new ImageView());
+                }
+                GridSort(ViewGrids);
+            }
+        }
+
         private Grid GetNewGrid(Control control)
         {
             Grid grid = new Grid()
@@ -72,71 +93,68 @@ namespace ColorVision
             MainView.ColumnDefinitions.Clear();
             MainView.RowDefinitions.Clear();
 
-            int newlist = 0;
             for (int i = 0; i < GridLists.Count; i++)
             {
-                if (GridLists[i] != null)
+                int location = Array.IndexOf(defaultViewIndexMap, i);
+                int row = (location / 10);
+                int col = (location % 10);
+                if (MainView.ColumnDefinitions.Count <= col)
                 {
-                    Grid grid = GridLists[i];
-                    int location = Array.IndexOf(defaultViewIndexMap, newlist);
-                    int row = (location / 10);
-                    int col = (location % 10);
-                    if (MainView.ColumnDefinitions.Count <= col)
-                    {
-                        ColumnDefinition columnDefinition = new ColumnDefinition() { Width = (GridLength)gridLengthConverter.ConvertFrom("*") };
-                        MainView.ColumnDefinitions.Add(columnDefinition);
-                    }
-                    if (MainView.RowDefinitions.Count <= row)
-                    {
-                        RowDefinition rowDefinition = new RowDefinition() { Height = (GridLength)gridLengthConverter.ConvertFrom("*") };
-                        MainView.RowDefinitions.Add(rowDefinition);
-                    }
-
-                    grid.SetValue(Grid.RowProperty, row);
-                    grid.SetValue(Grid.ColumnProperty, col);
-                    MainView.Children.Add(grid);
-
-
-
-                    newlist++;
+                    ColumnDefinition columnDefinition = new ColumnDefinition() { Width = new GridLength(1, GridUnitType.Star) };
+                    MainView.ColumnDefinitions.Add(columnDefinition);
                 }
+                if (MainView.RowDefinitions.Count <= row)
+                {
+                    RowDefinition rowDefinition = new RowDefinition() { Height = new GridLength(1, GridUnitType.Star) };
+                    MainView.RowDefinitions.Add(rowDefinition);
+                }
+
+
             }
 
-            for (int row = 0; row < MainView.RowDefinitions.Count; row++)
+
+            for (int i = 0; i < GridLists.Count; i++)
             {
-                for (int col = 0; col < MainView.ColumnDefinitions.Count; col++)
+                Grid grid = GridLists[i];
+                int location = Array.IndexOf(defaultViewIndexMap, i);
+                int row = (location / 10);
+                int col = (location % 10);
+                grid.SetValue(Grid.RowProperty, row);
+                grid.SetValue(Grid.ColumnProperty, col);
+                MainView.Children.Add(grid);
+
+                if (MainView.ColumnDefinitions.Count - 1 != col)
                 {
-                    if (MainView.ColumnDefinitions.Count-1 != col)
+                    GridSplitter gridSplitter = new GridSplitter()
                     {
-                        GridSplitter gridSplitter = new GridSplitter()
-                        {
-                            Background = Brushes.LightGray,
-                            Width = 2,
-                            HorizontalAlignment = HorizontalAlignment.Right,
-                        };
+                        Background = Brushes.LightGray,
+                        Width = 2,
+                        HorizontalAlignment = HorizontalAlignment.Right,
+                    };
 
-                        gridSplitter.SetValue(Grid.RowProperty, row);
-                        gridSplitter.SetValue(Grid.ColumnProperty, col);
-                        MainView.Children.Add(gridSplitter);
-                    }
+                    gridSplitter.SetValue(Grid.RowProperty, row);
+                    gridSplitter.SetValue(Grid.ColumnProperty, col);
+                    MainView.Children.Add(gridSplitter);
+                }
 
-                    if (MainView.RowDefinitions.Count-1 != row)
+                if (MainView.RowDefinitions.Count - 1 != row)
+                {
+                    GridSplitter gridSplitter1 = new GridSplitter()
                     {
-                        GridSplitter gridSplitter1 = new GridSplitter()
-                        {
-                            Background = Brushes.LightGray,
-                            Height = 2,
-                            HorizontalAlignment = HorizontalAlignment.Stretch,
-                            VerticalAlignment = VerticalAlignment.Bottom,
-                        };
+                        Background = Brushes.LightGray,
+                        Height = 2,
+                        HorizontalAlignment = HorizontalAlignment.Stretch,
+                        VerticalAlignment = VerticalAlignment.Bottom,
+                    };
 
-                        gridSplitter1.SetValue(Grid.RowProperty, row);
-                        gridSplitter1.SetValue(Grid.ColumnProperty, col);
+                    gridSplitter1.SetValue(Grid.RowProperty, row);
+                    gridSplitter1.SetValue(Grid.ColumnProperty, col);
 
-                        MainView.Children.Add(gridSplitter1);
-                    }
+                    MainView.Children.Add(gridSplitter1);
                 }
             }
+
+
         }
 
 
