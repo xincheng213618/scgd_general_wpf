@@ -48,6 +48,14 @@ namespace ColorVision.Service
             {
                 StackPanelShow.Children.Add(new MQTTDeviceCameraControl(mQTTDeviceCamera));
             }
+            else if (TreeView1.SelectedItem is MQTTDeviceSpectrum mQTTDeviceSpectrum)
+            {
+                StackPanelShow.Children.Add(new MQTTDeviceSpectrumControl(mQTTDeviceSpectrum));
+            }
+            else if (TreeView1.SelectedItem is MQTTDeviceSMU mQTTDeviceSMU)
+            {
+                StackPanelShow.Children.Add(new MQTTDeviceSMUControl(mQTTDeviceSMU));
+            }
             else if (TreeView1.SelectedItem is MQTTDevice mQTTDevice)
             {
                 StackPanelShow.Children.Add(new MQTTDeviceControl(mQTTDevice));
