@@ -19,23 +19,23 @@ using System.Windows.Shapes;
 namespace ColorVision.Service
 {
     /// <summary>
-    /// MQTTDeviceCameraControl.xaml 的交互逻辑
+    /// MQTTDeviceSpectrumControl.xaml 的交互逻辑
     /// </summary>
     public partial class MQTTDeviceSpectrumControl : UserControl
     {
-        public MQTTDeviceCamera MQTTDeviceCamera { get; set; }
+        public MQTTDeviceSpectrum MQTTDeviceSp { get; set; }
         public ServiceControl ServiceControl { get; set; }
 
-        public MQTTDeviceSpectrumControl(MQTTDeviceCamera mQTTDeviceCamera)
+        public MQTTDeviceSpectrumControl(MQTTDeviceSpectrum mqttDeviceSp)
         {
-            MQTTDeviceCamera = mQTTDeviceCamera;
+            this.MQTTDeviceSp = mqttDeviceSp;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             ServiceControl = ServiceControl.GetInstance();
-            this.DataContext = MQTTDeviceCamera;
+            this.DataContext = this.MQTTDeviceSp;
 
             ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()
                                            select new KeyValuePair<CameraType, string>(e1, e1.ToDescription());
@@ -45,14 +45,14 @@ namespace ColorVision.Service
 
 
 
-            ComboxCameraChannel.Text = MQTTDeviceCamera.Config.Channel.ToString();
-            ComboxCameraImageBpp.Text = MQTTDeviceCamera.Config.ImageBpp.ToString();
+            //ComboxCameraChannel.Text = MQTTDeviceCamera.Config.Channel.ToString();
+            //ComboxCameraImageBpp.Text = MQTTDeviceCamera.Config.ImageBpp.ToString();
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            MQTTDeviceCamera.Config.Channel = int.Parse(ComboxCameraChannel.Text.ToString());
-            MQTTDeviceCamera.Config.ImageBpp = int.Parse(ComboxCameraImageBpp.Text.ToString());
+            //MQTTDeviceCamera.Config.Channel = int.Parse(ComboxCameraChannel.Text.ToString());
+            //MQTTDeviceCamera.Config.ImageBpp = int.Parse(ComboxCameraImageBpp.Text.ToString());
 
             MQTTEditContent.Visibility = Visibility.Collapsed;
             MQTTShowContent.Visibility = Visibility.Visible;

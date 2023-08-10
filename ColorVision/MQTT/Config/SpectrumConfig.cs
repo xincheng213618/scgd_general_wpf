@@ -11,4 +11,10 @@
         public string SubscribeTopic { get; set; }
         public string SendTopic { get; set; }
     }
+
+    public class SMUConfig : BaseDeviceConfig, IMQTTServiceConfig
+    {
+        public string SubscribeTopic { get; set; }
+        public string SendTopic { get; set; }
+    }
 }

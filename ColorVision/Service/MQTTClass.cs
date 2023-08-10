@@ -38,6 +38,36 @@ namespace ColorVision.Service
 
     }
 
+    public class MQTTDeviceSMU : MQTTDevice
+    {
+        public SMUConfig Config { get; set; }
+        public MQTTDeviceSMU(SysResourceModel sysResourceModel) : base(sysResourceModel)
+        {
+            if (string.IsNullOrEmpty(SysResourceModel.Value))
+            {
+                Config = new SMUConfig();
+            }
+            else
+            {
+                try
+                {
+                    Config = JsonConvert.DeserializeObject<SMUConfig>(SysResourceModel.Value) ?? new SMUConfig();
+                }
+                catch
+                {
+                    Config = new SMUConfig();
+                }
+            }
+        }
+
+        public override void Save()
+        {
+            base.Save();
+            SysResourceModel.Value = JsonConvert.SerializeObject(Config);
+            ServiceControl.GetInstance().ResourceService.Save(SysResourceModel);
+        }
+    }
+
     public class MQTTDevicePG : MQTTDevice
     {
         public PGConfig Config { get; set; }
