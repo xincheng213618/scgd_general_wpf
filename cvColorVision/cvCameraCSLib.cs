@@ -1433,7 +1433,7 @@ namespace cvColorVision
             }
         }
 
-        private void saveCsv_SFR(string path, float[] pdfrequency, float[] pdomainSamplingData)
+        private static void saveCsv_SFR(string path, float[] pdfrequency, float[] pdomainSamplingData)
         {
             if (!Directory.Exists(path))
             {
@@ -1485,7 +1485,7 @@ namespace cvColorVision
             fs.Close();
         }
 
-        public bool SFR(uint wRGB, uint hRGB, uint bppRGB, uint channalsRGB, byte[] srcrawRGB, string fovParamCfg, FindRoi fRoi, ref string ErrorData) 
+        public static bool SFR(uint wRGB, uint hRGB, uint bppRGB, uint channalsRGB, byte[] srcrawRGB, string fovParamCfg, FindRoi fRoi, ref string ErrorData) 
         {
             if (wRGB > 0 & hRGB > 0 & bppRGB > 0 && channalsRGB > 0)
             {

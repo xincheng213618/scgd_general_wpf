@@ -10,6 +10,7 @@
                 <ResourceDictionary Source="/ColorVision;component/Theme/Base.xaml"/>
                 <ResourceDictionary Source="/ColorVision;component/Theme/Menu.xaml"/>
                 <ResourceDictionary Source="/ColorVision;component/Theme/GroupBox.xaml"/>
+                <ResourceDictionary Source="/ColorVision;component/Theme/Icons.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

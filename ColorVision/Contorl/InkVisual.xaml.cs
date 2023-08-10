@@ -15,9 +15,8 @@ using System.Windows.Shapes;
 
 namespace ColorVision
 {
-    /// <summary>
-    /// InkCanvas.xaml 的交互逻辑
-    /// </summary>
+
+    ///这里是未带开发的部分
     public partial class InkVisual : UserControl
     {
         public InkVisual()

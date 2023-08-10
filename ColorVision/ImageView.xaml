@@ -12,6 +12,7 @@
              xmlns:converter="clr-namespace:ColorVision.Converter"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:co="clr-namespace:ColorVision.Controls"
+             d:DataContext="{d:DesignInstance local:ImageView}"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800" Initialized="UserControl_Initialized">
     <Grid x:Name="ImageContentGrid" >
@@ -118,9 +119,6 @@
             </local:ZoomboxSub>
             <StackPanel Grid.Row="0" Grid.RowSpan="2" >
                 <ToolBar x:Name="ToolBar1" DataContext="{Binding ToolBarTop}"   Loaded="ToolBar1_Loaded" Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" HorizontalAlignment="Center">
-                    <ToolBar.Resources>
-                        <ResourceDictionary Source="/Theme/Icons.xaml"/>
-                    </ToolBar.Resources>
                     <ToggleButton x:Name="ToggleButtonMouse"  IsChecked="{Binding Path=Move}"  Margin="4,0,1,0">
                         <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageMouse}"/>
                     </ToggleButton>

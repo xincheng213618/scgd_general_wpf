@@ -139,7 +139,18 @@ namespace ColorVision
             {
 
             }
+
+            ViewGridManager = new ViewGridManager(ViewGrid);
+
+            ViewGrid.Children.Clear();
+            ViewGridManager.AddView(ImageView1);
+
         }
+
+        public ViewGridManager ViewGridManager { get; set; }
+
+
+
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -388,6 +399,58 @@ namespace ColorVision
         private void Button1_Click(object sender, RoutedEventArgs e)
         {
             ImageView1.DrawingTest();
+        }
+
+        private void Button5_Click(object sender, RoutedEventArgs e)
+        {
+            ViewGridManager.AddView( new ImageView());
+        }
+
+        private void Button6_Click(object sender, RoutedEventArgs e)
+        {
+            if (ViewGridManager.Views.Count > 1)
+            {
+                for (int i = ViewGridManager.Views.Count-1; i > 0; i--)
+                {
+                    ViewGridManager.RemoveView(i);
+                }
+            }
+        }
+
+        private void Button7_Click(object sender, RoutedEventArgs e)
+        {
+            if (ViewGridManager.Views.Count > 2)
+            {
+                for (int i = ViewGridManager.Views.Count - 1; i > 2; i--)
+                {
+                    ViewGridManager.RemoveView(i);
+                }
+            }
+            else if (ViewGridManager.Views.Count < 2)
+            {
+                for (int i = ViewGridManager.Views.Count; i < 2; i++)
+                {
+                    ViewGridManager.AddView(new ImageView());
+                }
+            }
+        }
+
+        private void Button8_Click(object sender, RoutedEventArgs e)
+        {
+            if (ViewGridManager.Views.Count > 4)
+            {
+                for (int i = ViewGridManager.Views.Count - 1; i > 4; i--)
+                {
+                    ViewGridManager.RemoveView(i);
+                }
+            }
+            else if (ViewGridManager.Views.Count < 4)
+            {
+                for (int i = ViewGridManager.Views.Count; i < 4; i++)
+                {
+                    ViewGridManager.AddView(new ImageView());
+                }
+            }
         }
     }
 

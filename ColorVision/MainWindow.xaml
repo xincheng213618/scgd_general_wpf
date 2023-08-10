@@ -116,6 +116,11 @@
                                         <Button Content="打开测试图像"  Margin="10,0" Click="Button_Click"/>
                                         <Button Content="绘制测试图形"  Margin="10,0"  Click="Button1_Click"/>
                                         <Button Content="视频测试"  Margin="10,0"  Click="Button4_Click"/>
+                                        <Button Content="添加view"  Margin="10,0"  Click="Button5_Click"/>
+                                        <Button Content="1"  Margin="10,0"  Click="Button6_Click"/>
+                                        <Button Content="2"  Margin="10,0"  Click="Button7_Click"/>
+                                        <Button Content="4"  Margin="10,0"  Click="Button8_Click"/>
+
                                     </UniformGrid>
                                 </StackPanel>
                             </Border>
@@ -167,7 +172,7 @@
                 </ScrollViewer>
             </Grid>
 
-            <Grid x:Name="ViewGrid" Grid.Column="1">
+            <Grid x:Name="ViewGrid" Grid.Column="1" Background="#c3c3c3">
                 <local:ImageView x:Name="ImageView1"/>
             </Grid>
             <GridSplitter  Grid.Column="1"  Width="2" HorizontalAlignment="Left" />
