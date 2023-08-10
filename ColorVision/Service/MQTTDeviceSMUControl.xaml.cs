@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ColorVision.MQTT;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -18,14 +19,85 @@ namespace ColorVision.Service
     /// <summary>
     /// MQTTDeviceSMUControl.xaml 的交互逻辑
     /// </summary>
-    public partial class MQTTDeviceSMUControl : UserControl
+    public partial class MQTTDeviceSMUControl : UserControl, IDisposable
     {
         public MQTTDeviceSMU MQTTDeviceSMU { get; set; }
         public ServiceControl ServiceControl { get; set; }
+
+        private MQTTVISource? device;
+        private bool disposedValue;
+        private bool disposedObj;
+
         public MQTTDeviceSMUControl(MQTTDeviceSMU mqttDeviceSMU)
         {
+            this.disposedObj = false;
             this.MQTTDeviceSMU = mqttDeviceSMU;
             InitializeComponent();
+            MQTTManager manager = MQTTManager.GetInstance();
+            foreach (MQTTVISource sp in manager.MQTTVISources)
+            {
+                if (sp.Device.SysResourceModel.Id == this.MQTTDeviceSMU.SysResourceModel.Id)
+                {
+                    device = sp;
+                    break;
+                }
+            }
+
+            if (device == null)
+            {
+                device = new MQTTVISource(this.MQTTDeviceSMU);
+                disposedObj = true;
+            }
+        }
+
+        private void UserControl_Initialized(object sender, EventArgs e)
+        {
+            this.DataContext = this.MQTTDeviceSMU;
+        }
+
+        private void Button_Click_Edit(object sender, RoutedEventArgs e)
+        {
+            MQTTShowContent.Visibility = Visibility.Collapsed;
+            MQTTEditContent.Visibility = Visibility.Visible;
+        }
+
+        private void Button_Click_Submit(object sender, RoutedEventArgs e)
+        {
+            MQTTEditContent.Visibility = Visibility.Collapsed;
+            MQTTShowContent.Visibility = Visibility.Visible;
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    if (disposedObj && device != null)
+                    {
+                        device.Dispose();
+                        device = null;
+                    }
+                }
+
+                // TODO: 释放未托管的资源(未托管的对象)并重写终结器
+                // TODO: 将大型字段设置为 null
+                disposedValue = true;
+            }
+        }
+
+        // // TODO: 仅当“Dispose(bool disposing)”拥有用于释放未托管资源的代码时才替代终结器
+        // ~MQTTDeviceSMUControl()
+        // {
+        //     // 不要更改此代码。请将清理代码放入“Dispose(bool disposing)”方法中
+        //     Dispose(disposing: false);
+        // }
+
+        public void Dispose()
+        {
+            // 不要更改此代码。请将清理代码放入“Dispose(bool disposing)”方法中
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }

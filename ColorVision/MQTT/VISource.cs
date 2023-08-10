@@ -1,4 +1,5 @@
-﻿using MQTTnet.Client;
+﻿using ColorVision.Service;
+using MQTTnet.Client;
 using Newtonsoft.Json;
 using System;
 using System.Text;
@@ -13,6 +14,8 @@ namespace ColorVision.MQTT
 
     public class MQTTVISource: BaseService
     {
+        public MQTTDeviceSMU Device { get; set; }
+
         public MQTTVISource( string SendTopic = "Pss_Sx", string SubscribeTopic = "Pss_SxService") : base()
         {
             this.SendTopic = SendTopic;
@@ -20,6 +23,11 @@ namespace ColorVision.MQTT
             MQTTControl = MQTTControl.GetInstance();
             MQTTControl.SubscribeCache(SubscribeTopic);
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
+        }
+
+        public MQTTVISource(MQTTDeviceSMU device) : this(device.Config.SendTopic, device.Config.SubscribeTopic)
+        {
+            this.Device = device;
         }
 
         private Task MqttClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)

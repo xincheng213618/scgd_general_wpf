@@ -9,11 +9,11 @@
     <StackPanel Margin="0,5">
         <ToggleButton  x:Name="ToggleButton4"  Style="{StaticResource ButtonPageControl1}" Background="#F9F9F9"  Content="源表设置"  FontSize="15" Foreground="Black" IsChecked="True" />
         <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton4,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
-            <StackPanel  x:Name="StackPanelVI" Margin="5"  Initialized="StackPanelVI_Initialized" d:DataContext="{d:DesignInstance Type=Template:PassSxSource}" >
+            <StackPanel  x:Name="StackPanelVI" Margin="5"  Initialized="StackPanelVI_Initialized" >
                 <DockPanel Margin="2">
                     <CheckBox IsChecked="{Binding IsNet}" VerticalAlignment="Center" Content="网络" DockPanel.Dock="Right"/>
                     <Button x:Name="ButtonSourceMeter1" Margin="10,0"   DockPanel.Dock="Right" Content="打开"  Click="ButtonSourceMeter1_Click"/>
-                    <TextBox x:Name="TextSourceMeterIP" Text="{Binding DevName}" BorderThickness="0,0,0,1"  />
+                    <TextBox x:Name="TextSourceMeterIP" Text="{Binding DevName}" BorderThickness="0,0,0,1" IsEnabled="False" />
                 </DockPanel>
                 <DockPanel Margin="2" >
                     <RadioButton Content="电压" Width="100" IsChecked="{Binding IsSourceV}" />
@@ -55,7 +55,7 @@
                     <TextBlock Text="模板：" VerticalAlignment="Center" Width="40"/>
                     <ComboBox  x:Name="ComboxVITemplate"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,0,30,0"/>
                 </DockPanel>
-                <StackPanel  x:Name="StackPanelVITemplate"  d:DataContext="{d:DesignInstance Type=Template:SxParam}" >
+                <StackPanel  x:Name="StackPanelVITemplate">
                     <DockPanel Margin="2" >
                         <TextBlock Text="起始:" Width="40" />
                         <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"   Visibility="{Binding IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="V"/>

@@ -1,5 +1,6 @@
 ﻿using ColorVision.MQTT.Config;
 using ColorVision.MQTT.Control;
+using ColorVision.Service;
 using Google.Protobuf.WellKnownTypes;
 using MQTTnet.Client;
 using Newtonsoft.Json;
@@ -20,11 +21,13 @@ using static cvColorVision.GCSDLL;
 namespace ColorVision.MQTT
 {
     public delegate void MQTTSpectrumDataHandler(SpectumData? colorPara);
+    public delegate void MQTTAutoParamHandler(AutoIntTimeParam colorPara);
     public delegate void MQTTSpectrumHeartbeatHandler(HeartbeatParam heartbeat);
 
     public class MQTTSpectrum: BaseService
     {
         public event MQTTSpectrumDataHandler DataHandlerEvent;
+        public event MQTTAutoParamHandler AutoParamHandlerEvent;
         public event MQTTSpectrumHeartbeatHandler HeartbeatHandlerEvent;
 
         public MQTTSpectrum(string SendTopic = "Spectum/CMD/chen_sp1", string SubscribeTopic = "Spectum/STATUS/chen_sp1") : base()
@@ -41,12 +44,13 @@ namespace ColorVision.MQTT
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
         }
 
-
-
-
+        public MQTTDeviceSpectrum Device { get; set; }
         public SpectrumConfig SpectrumConfig { get; set; }
 
-
+        public MQTTSpectrum(MQTTDeviceSpectrum device) : this(device.Config)
+        {
+            this.Device = device;
+        }
         public MQTTSpectrum(SpectrumConfig spectrumConfig)
         {
             this.SpectrumConfig = spectrumConfig;
@@ -121,6 +125,7 @@ namespace ColorVision.MQTT
                         else if (json.EventName == "GetParam")
                         {
                             AutoIntTimeParam param = JsonConvert.DeserializeObject<AutoIntTimeParam>(JsonConvert.SerializeObject(json.Data));
+                            Application.Current.Dispatcher.Invoke(() => AutoParamHandlerEvent?.Invoke(param));
                         }
                     }
                 }

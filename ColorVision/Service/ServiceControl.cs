@@ -81,13 +81,13 @@ namespace ColorVision.Service
                         }
                         else if (item is MQTTDeviceSpectrum deviceSpectrum)
                         {
-                            MQTTSpectrum mQTTSpectrum = new MQTTSpectrum(deviceSpectrum.Config);
+                            MQTTSpectrum mQTTSpectrum = new MQTTSpectrum(deviceSpectrum);
                             MQTTManager.MQTTSpectrums.Add(mQTTSpectrum);
                             MQTTManager.ServiceHeartbeats.Add(mQTTSpectrum);
                         }
-                        else if (mQTTServiceKind.SysDictionaryModel.Value == 4)
+                        else if (item is MQTTDeviceSMU smu)
                         {
-                            MQTTVISource mQTTVISource = new MQTTVISource();
+                            MQTTVISource mQTTVISource = new MQTTVISource(smu);
                             MQTTManager.MQTTVISources.Add(mQTTVISource);
                         }
 
@@ -133,6 +133,11 @@ namespace ColorVision.Service
                                 {
                                     MQTTDeviceSpectrum spectrum = new MQTTDeviceSpectrum(device);
                                     mQTTService.AddChild(spectrum);
+                                } 
+                                else if (device.Type == (int)MQTTDeviceType.SMU)
+                                {
+                                    MQTTDeviceSMU smu = new MQTTDeviceSMU(device);
+                                    mQTTService.AddChild(smu);
                                 }
                                 else
                                 {

@@ -214,8 +214,10 @@ namespace ColorVision.MQTT.Control
 
         private void StackPanelVI_Initialized(object sender, EventArgs e)
         {
-            MQTTVISource = new MQTTVISource();
+            //MQTTVISource = new MQTTVISource();
             passSxSource = new PassSxSource();
+            passSxSource.IsNet = MQTTVISource.Device.Config.IsNet;
+            passSxSource.DevName = MQTTVISource.Device.Config.ID;
             StackPanelVI.DataContext = passSxSource;
 
 
