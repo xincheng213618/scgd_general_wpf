@@ -96,39 +96,49 @@ namespace ColorVision
                     grid.SetValue(Grid.ColumnProperty, col);
                     MainView.Children.Add(grid);
 
-                    AddGridSplitter(row, col);
+
 
                     newlist++;
                 }
             }
+
+            for (int row = 0; row < MainView.RowDefinitions.Count; row++)
+            {
+                for (int col = 0; col < MainView.ColumnDefinitions.Count; col++)
+                {
+                    if (MainView.ColumnDefinitions.Count-1 != col)
+                    {
+                        GridSplitter gridSplitter = new GridSplitter()
+                        {
+                            Background = Brushes.LightGray,
+                            Width = 2,
+                            HorizontalAlignment = HorizontalAlignment.Right,
+                        };
+
+                        gridSplitter.SetValue(Grid.RowProperty, row);
+                        gridSplitter.SetValue(Grid.ColumnProperty, col);
+                        MainView.Children.Add(gridSplitter);
+                    }
+
+                    if (MainView.RowDefinitions.Count-1 != row)
+                    {
+                        GridSplitter gridSplitter1 = new GridSplitter()
+                        {
+                            Background = Brushes.LightGray,
+                            Height = 2,
+                            HorizontalAlignment = HorizontalAlignment.Stretch,
+                            VerticalAlignment = VerticalAlignment.Bottom,
+                        };
+
+                        gridSplitter1.SetValue(Grid.RowProperty, row);
+                        gridSplitter1.SetValue(Grid.ColumnProperty, col);
+
+                        MainView.Children.Add(gridSplitter1);
+                    }
+                }
+            }
         }
 
-        private void AddGridSplitter(int row, int col)
-        {
-            GridSplitter gridSplitter = new GridSplitter()
-            {
-                Background = Brushes.LightGray,
-                Width = 2,
-                HorizontalAlignment = HorizontalAlignment.Right,
-            };
-
-            gridSplitter.SetValue(Grid.RowProperty, row);
-            gridSplitter.SetValue(Grid.ColumnProperty, col);
-            MainView.Children.Add(gridSplitter);
-
-            GridSplitter gridSplitter1 = new GridSplitter()
-            {
-                Background = Brushes.LightGray,
-                Height = 2,
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                VerticalAlignment = VerticalAlignment.Bottom,
-            };
-
-            gridSplitter1.SetValue(Grid.RowProperty, row);
-            gridSplitter1.SetValue(Grid.ColumnProperty, col);
-
-            MainView.Children.Add(gridSplitter1);
-        }
 
 
 
