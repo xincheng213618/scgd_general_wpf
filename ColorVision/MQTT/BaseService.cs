@@ -57,19 +57,19 @@ namespace ColorVision.MQTT
             {
                 switch (msg.EventName)
                 {
-                    case "CM_GetAllCameraID":
-
-                        JArray CameraIDs = msg.Data.CameraID;
+                    case "CM_GetAllSnID":
+                        JArray SnIDs = msg.Data.SnID;
                         JArray MD5IDs = msg.Data.MD5ID;
-                        for (int i = 0; i < CameraIDs.Count; i++)
+
+                        for (int i = 0; i < SnIDs.Count; i++)
                         {
-                            if (ServicesDevices.TryGetValue(SubscribeTopic, out ObservableCollection<string> list) && !list.Contains(CameraIDs[i].ToString()))
+                            if (ServicesDevices.TryGetValue(SubscribeTopic, out ObservableCollection<string> list) && !list.Contains(SnIDs[i].ToString()))
                             {
-                                list.Add(CameraIDs[i].ToString());
+                                list.Add(SnIDs[i].ToString());
                             }
                             else
                             {
-                                ServicesDevices.Add(SubscribeTopic, new ObservableCollection<string>() { CameraIDs[i].ToString() });
+                                ServicesDevices.Add(SubscribeTopic, new ObservableCollection<string>() { SnIDs[i].ToString() });
                             }
                         }
                         return;
@@ -78,18 +78,17 @@ namespace ColorVision.MQTT
             };
             this.Connected += (s, e) =>
             {
-                GetAllCameraID();
+                GetAllSnID();
             };
         }
         public static Dictionary<string, ObservableCollection<string>> ServicesDevices { get; set; } = new Dictionary<string, ObservableCollection<string>>();
 
 
-        public bool GetAllCameraID()
+        public bool GetAllSnID()
         {
             MsgSend msg = new MsgSend
             {
-                EventName = "CM_GetAllCameraID",
-                Params = new Dictionary<string, object>() { { "CameraID", "" }, { "eType", 0 } }
+                EventName = "CM_GetAllSnID",
             };
             PublishAsyncClient(msg);
             return true;
@@ -230,12 +229,12 @@ namespace ColorVision.MQTT
             msg.ServiceName = SendTopic;
             msg.MsgID = guid;
             msg.ServiceID = ServiceID;
-            msg.CameraID = CameraID;
+            msg.SnID = CameraID;
             string json = JsonConvert.SerializeObject(msg, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
 
             Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, json, false));
 
-            if (msg.EventName == "CM_GetAllCameraID")
+            if (msg.EventName == "CM_GetAllSnID")
                 return;
 
             MsgRecord msgRecord = new MsgRecord {SendTopic=SendTopic,SubscribeTopic =SubscribeTopic ,MsgID = guid.ToString(), SendTime = DateTime.Now, MsgSend = msg,MsgRecordState = MsgRecordState.Send};

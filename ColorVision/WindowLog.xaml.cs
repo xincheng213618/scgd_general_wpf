@@ -42,7 +42,6 @@ namespace ColorVision
 
             var hierarchy = (Hierarchy)LogManager.GetRepository();
             //hierarchy.Root.RemoveAllAppenders();
-
             // 创建一个输出到TextBox的Appender
             var textBoxAppender = new TextBoxAppender(logTextBox);
 

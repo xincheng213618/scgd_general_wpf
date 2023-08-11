@@ -81,27 +81,29 @@ namespace ColorVision.MQTT
             IsRun = false;
             switch (msg.EventName)
             {
-                case "CM_GetAllCameraID":
+                case "CM_GetAllSnID":
 
-                    JArray CameraIDs = msg.Data.CameraID;
+                    JArray SnIDs = msg.Data.SnID;
                     JArray MD5IDs = msg.Data.MD5ID;
-                    for (int i = 0; i < CameraIDs.Count; i++)
+
+                    for (int i = 0; i < SnIDs.Count; i++)
                     {
-                        if (CameraIDs[i].ToString() ==CameraID)
+                        if (SnIDs[i].ToString() ==CameraID)
                             Config.MD5 = MD5IDs[i].ToString();
 
-                        if (!MQTTCamera.CameraIDs.Contains(CameraIDs[i].ToString()))
-                                MQTTCamera.CameraIDs.Add(CameraIDs[i].ToString());
-                        if (!MD5.Contains(MD5IDs[i].ToString()))
-                            MD5.Add(MD5IDs[i].ToString());
+                        if (!CameraIDs.Contains(SnIDs[i].ToString()))
+                            CameraIDs.Add(SnIDs[i].ToString());
 
-                        if (ServicesDevices.TryGetValue(SubscribeTopic,out ObservableCollection<string> list)&& !list.Contains(CameraIDs[i].ToString()))
+                        if (!MD5.Contains(MD5IDs[i].ToString()))
+                            MD5.Add(MD5IDs[i].ToString()); 
+
+                        if (ServicesDevices.TryGetValue(SubscribeTopic,out ObservableCollection<string> list)&& !list.Contains(SnIDs[i].ToString()))
                         {
-                            list.Add(CameraIDs[i].ToString());
+                            list.Add(SnIDs[i].ToString());
                         }
                         else
                         {
-                            ServicesDevices.Add(SubscribeTopic, new ObservableCollection<string>() { CameraIDs[i].ToString() });
+                            ServicesDevices.Add(SubscribeTopic, new ObservableCollection<string>() { SnIDs[i].ToString() });
                         }
                     }
                     return;
@@ -182,7 +184,7 @@ namespace ColorVision.MQTT
             MsgSend msg = new MsgSend
             {
                 EventName = "Init",
-                Params = new Dictionary<string, object>() { { "CameraType", (int)CameraType },{ "CameraID", CameraID } }
+                Params = new Dictionary<string, object>() { { "CameraType", (int)CameraType },{ "CameraID", CameraID } ,{ "szCfgName",null } } 
             };
             PublishAsyncClient(msg);
             return true;
@@ -252,8 +254,7 @@ namespace ColorVision.MQTT
         {
               MsgSend msg = new MsgSend
               {
-                EventName = "CM_GetAllCameraID",
-                Params = new Dictionary<string, object>() { { "CameraID", "" }, { "eType", 0 } }
+                EventName = "CM_GetAllSnID",
               };
             PublishAsyncClient(msg);
             return true;

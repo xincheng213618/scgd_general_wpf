@@ -1,8 +1,10 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace ColorVision.Theme
 {
@@ -32,5 +34,36 @@ namespace ColorVision.Theme
             if (registryValueObject is null) return true;
             return (int)registryValueObject > 0;
         }
+
+
+
+
+
+        public event EventHandler? SystemThemeChanged;
+        public event EventHandler? AppsThemeChanged;
+
+        //public bool AppsUseLightTheme { get => AppsUseLightTheme(); }
+
+
+        public ThemeManager()
+        {
+            SystemEvents.UserPreferenceChanged += (s, e) =>
+            {
+                if (AppsUseLightTheme() || !ThemeManager.SystemUsesLightTheme())
+                {
+
+                }
+
+            };
+            SystemParameters.StaticPropertyChanged += (s, e) =>
+            {
+                if (!AppsUseLightTheme() || !SystemUsesLightTheme())
+                {
+                }
+            };
+        }
+
+
+
     }
 }
