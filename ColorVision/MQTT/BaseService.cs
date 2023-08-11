@@ -60,6 +60,12 @@ namespace ColorVision.MQTT
                     case "CM_GetAllSnID":
                         JArray SnIDs = msg.Data.SnID;
                         JArray MD5IDs = msg.Data.MD5ID;
+                        if (SnIDs == null || MD5IDs == null)
+                        {
+                            return;
+                        }
+
+
 
                         for (int i = 0; i < SnIDs.Count; i++)
                         {
@@ -203,7 +209,7 @@ namespace ColorVision.MQTT
         public virtual string SendTopic { get; set; }
         public MQTTControl MQTTControl { get; set; }
         public ulong ServiceID { get; set; }
-        public string CameraID { get; set; }
+        public string SnID { get; set; }
 
         public virtual DateTime LastAliveTime { get => _LastAliveTime; set { _LastAliveTime = value; NotifyPropertyChanged(); } } 
         private DateTime _LastAliveTime = DateTime.MinValue;
@@ -224,12 +230,11 @@ namespace ColorVision.MQTT
         /// <param name="msg"></param>
         internal virtual void PublishAsyncClient(MsgSend msg)
         {
-            Guid guid = Guid.NewGuid();
-
             msg.ServiceName = SendTopic;
+            Guid guid = Guid.NewGuid();
             msg.MsgID = guid;
             msg.ServiceID = ServiceID;
-            msg.SnID = CameraID;
+            msg.SnID = SnID;
             string json = JsonConvert.SerializeObject(msg, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
 
             Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, json, false));

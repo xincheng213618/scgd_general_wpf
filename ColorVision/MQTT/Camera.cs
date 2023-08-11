@@ -86,9 +86,15 @@ namespace ColorVision.MQTT
                     JArray SnIDs = msg.Data.SnID;
                     JArray MD5IDs = msg.Data.MD5ID;
 
+
+                    if (SnIDs == null || MD5IDs == null)
+                    {
+                        return;
+                    }
+
                     for (int i = 0; i < SnIDs.Count; i++)
                     {
-                        if (SnIDs[i].ToString() ==CameraID)
+                        if (SnIDs[i].ToString() ==SnID)
                             Config.MD5 = MD5IDs[i].ToString();
 
                         if (!CameraIDs.Contains(SnIDs[i].ToString()))
@@ -180,7 +186,7 @@ namespace ColorVision.MQTT
         public bool Init(CameraType CameraType,string CameraID)
         {
             CurrentCameraType = CameraType;
-            this.CameraID = CameraID;
+            this.SnID = CameraID;
             MsgSend msg = new MsgSend
             {
                 EventName = "Init",
@@ -213,19 +219,28 @@ namespace ColorVision.MQTT
             PublishAsyncClient(msg);
         }
 
-        public bool Calibration(CalibrationParam calibrationParam)
+        public bool Calibration()
         {
-
-            if (CheckIsRun())
-                return false;
-            IsRun = false;
             MsgSend msg = new MsgSend
             {
                 EventName = "SetParam",
-                Params =  new CalibrationParamMQTT(calibrationParam)
+                Params = new Dictionary<string, object>() {
+                {
+                    "NameFuc", new List<ParamFunction>() 
+                    {
+                        new ParamFunction(){Name ="CM_InitCalibration" },
+                        new ParamFunction(){Name ="CM_UnInitCalibration" },
+                        new ParamFunction(){Name ="CM_UnInitCalibration" },
+                        new ParamFunction(){Name ="CM_UnInitCalibration" },
+                        new ParamFunction(){Name ="CM_UnInitCalibration" },
+                        new ParamFunction(){Name ="CM_UnInitCalibration" },
+                        new ParamFunction(){Name ="CM_UnInitCalibration" },
+                    }
+                }
+                }
             };
-            PublishAsyncClient(msg);
 
+            PublishAsyncClient(msg);
             return true;
         }
         public bool Open(string CameraID,TakeImageMode TakeImageMode,int ImageBpp)
@@ -259,6 +274,8 @@ namespace ColorVision.MQTT
             PublishAsyncClient(msg);
             return true;
         }
+
+        
 
         public bool SetCfwport()
         {
