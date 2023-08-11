@@ -111,7 +111,7 @@ namespace ColorVision.MQTT
 
 
             //信息在这里添加一次过滤，让信息只能在对应的相机上显示,同时如果ID为空的话，就默认是服务端的信息，不进行过滤，这里后续在进行优化
-            if (Config.ID!=null&&msg.DeviceID != Config.ID)
+            if (Config.ID!=null&&msg.SnID != Config.ID)
             {
                 return;
             }
@@ -184,7 +184,7 @@ namespace ColorVision.MQTT
             MsgSend msg = new MsgSend
             {
                 EventName = "Init",
-                Params = new Dictionary<string, object>() { { "CameraType", (int)CameraType },{ "CameraID", CameraID } ,{ "szCfgName",null } } 
+                Params = new Dictionary<string, object>() { { "CameraType", (int)CameraType },{ "SnID", CameraID } ,{ "szCfgName",null } } 
             };
             PublishAsyncClient(msg);
             return true;
@@ -233,7 +233,7 @@ namespace ColorVision.MQTT
             MsgSend msg = new MsgSend
             {
                 EventName = "Open",
-                Params = new Dictionary<string, object>() { { "TakeImageMode", (int)TakeImageMode }, { "CameraID", CameraID }, { "Bpp", ImageBpp } }
+                Params = new Dictionary<string, object>() { { "TakeImageMode", (int)TakeImageMode }, { "SnID", CameraID }, { "Bpp", ImageBpp } }
             };
             PublishAsyncClient(msg);
             return true;

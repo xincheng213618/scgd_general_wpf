@@ -47,7 +47,7 @@ namespace ColorVision.MQTT.Control
 
             MQTTCamera.InitCameraSuccess += (s, e) =>
             {
-                if (e.DeviceID == MQTTCamera.Config.ID)
+                if (e.SnID == MQTTCamera.Config.ID)
                 {
                     ComboxCameraID.ItemsSource = MQTTCamera.CameraIDs;
                     ComboxCameraID.SelectedIndex = 0;
@@ -59,7 +59,7 @@ namespace ColorVision.MQTT.Control
             };
             MQTTCamera.OpenCameraSuccess += (s,e) =>
             {
-                if (e.DeviceID == MQTTCamera.Config.ID)
+                if (e.SnID == MQTTCamera.Config.ID)
                 {
                     CameraCloseButton.Visibility = Visibility.Visible;
                     CameraOpenButton.Visibility = Visibility.Collapsed;
@@ -68,7 +68,7 @@ namespace ColorVision.MQTT.Control
             };
             MQTTCamera.CloseCameraSuccess += (s,e) =>
             {
-                if (e.DeviceID == MQTTCamera.Config.ID)
+                if (e.SnID == MQTTCamera.Config.ID)
                 {
                     CameraCloseButton.Visibility = Visibility.Collapsed;
                     CameraOpenButton.Visibility = Visibility.Visible;
