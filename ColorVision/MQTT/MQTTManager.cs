@@ -25,7 +25,6 @@ namespace ColorVision.MQTT
 
 
         public ObservableCollection<BaseService> Services { get; set; }
-        public ObservableCollection<BaseService> Services { get; set; }
 
 
         public MQTTManager()

@@ -42,6 +42,9 @@ namespace ColorVision.SettingUp
             {
                 cmbloglevel.Items.Add(it);
             });
+
+            BitmapImage bitmapImage = new BitmapImage(new Uri(AppDomain.CurrentDomain.BaseDirectory + SoftwareConfig.UserConfig.UserImage));
+            HeaderImage.Source = bitmapImage;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
