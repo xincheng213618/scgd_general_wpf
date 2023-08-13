@@ -177,6 +177,7 @@ namespace ColorVision.MQTT
                             foundMsgRecord.MsgReturn = json;
                             foundMsgRecord.MsgRecordState = json.Code == 0 ? MsgRecordState.Success : MsgRecordState.Fail;
                             MsgRecords.Remove(foundMsgRecord);
+                            MsgReceived?.Invoke(foundMsgRecord.MsgSend, json);
                         }
                     }
                     ///这里是因为这里先加载相机上，所以加在这里
@@ -203,6 +204,9 @@ namespace ColorVision.MQTT
             }
         }
         public MsgReturnHandler MsgReturnReceived { get; set; }
+        public MsgHandler MsgReceived { get; set; }
+
+        
 
 
         public virtual string SubscribeTopic { get; set; }

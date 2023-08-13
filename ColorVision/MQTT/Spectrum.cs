@@ -1,20 +1,11 @@
 ﻿using ColorVision.MQTT.Config;
-using ColorVision.MQTT.Control;
 using ColorVision.Service;
-using Google.Protobuf.WellKnownTypes;
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using NPOI.OpenXmlFormats.Spreadsheet;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Documents;
-using System.Windows.Media.Media3D;
 using static ColorVision.MQTT.MQTTSpectrum;
 using static cvColorVision.GCSDLL;
 

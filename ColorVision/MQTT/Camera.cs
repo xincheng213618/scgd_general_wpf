@@ -190,7 +190,7 @@ namespace ColorVision.MQTT
             MsgSend msg = new MsgSend
             {
                 EventName = "Init",
-                Params = new Dictionary<string, object>() { { "CameraType", (int)CameraType },{ "SnID", CameraID } ,{ "szCfgName",null } } 
+                Params = new Dictionary<string, object>() { { "CameraType", (int)CameraType },{ "SnID", CameraID } ,{ "szCfgName","" } } 
             };
             PublishAsyncClient(msg);
             return true;

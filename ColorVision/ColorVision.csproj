@@ -98,7 +98,7 @@
     <Compile Update="App.xaml.cs">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Compile>
-    <Compile Update="Service\MQTTDeviceSpectrumControl.xaml.cs">
+    <Compile Update="MQTT\Service\MQTTDeviceSpectrumControl.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
