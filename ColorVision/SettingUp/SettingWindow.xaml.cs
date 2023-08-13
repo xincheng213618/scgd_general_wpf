@@ -116,10 +116,6 @@ namespace ColorVision.SettingUp
             }
         }
 
-        private void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            FocusManager.SetFocusedElement(this, null);
-        }
 
         private void TextBlock_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {

@@ -25,7 +25,6 @@ namespace ColorVision.SettingUp
         private string _UserPwd = string.Empty;
 
 
-
         public PerMissionMode PerMissionMode { get => _PerMissionMode; set { _PerMissionMode = value; NotifyPropertyChanged(); } }
         private PerMissionMode _PerMissionMode;
 

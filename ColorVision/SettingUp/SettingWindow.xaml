@@ -53,8 +53,8 @@
     </Window.Resources>
     <Grid>
 
-        <TabControl TabStripPlacement="Left" Background="Transparent" SelectionChanged="TabControl_SelectionChanged">
-            <TabItem  Header="通用设置" Width="100" Background="Transparent">
+        <TabControl TabStripPlacement="Left" Background="Transparent">
+            <TabItem  Header="通用设置" Width="100" Background="Transparent" >
                 <ScrollViewer   Background="#F2F2F2" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" >
                     <StackPanel>
                         <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
@@ -109,7 +109,7 @@
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
-            <TabItem  Header="用户设置" Background="Transparent">
+            <TabItem  Header="用户设置" Background="Transparent" Height="30" VerticalAlignment="Bottom">
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" Background="#F2F2F2" VerticalScrollBarVisibility="Auto" >
                     <StackPanel>
                         <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
@@ -168,8 +168,8 @@
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
-            
-            <TabItem  Header="MQTT" Background="Transparent">
+
+            <TabItem  Header="MQTT" Background="Transparent" Focusable="False">
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" Background="#F2F2F2" VerticalScrollBarVisibility="Auto" >
                     <StackPanel>
                         <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
@@ -204,45 +204,47 @@
 
 
             <TabItem  Header="性能检测" Background="Transparent">
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled" Background="#F2F2F2" VerticalScrollBarVisibility="Auto" >
-                    <StackPanel>
-                        <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
-                            <GroupBox.Header>
-                                <TextBlock Text="性能" FontSize="20"/>
-                            </GroupBox.Header>
+                <Grid>
+                    <TextBox  Width="50" Height="0"/>
+                    <ScrollViewer HorizontalScrollBarVisibility="Disabled" Background="#F2F2F2" VerticalScrollBarVisibility="Auto" >
+                        <StackPanel>
+                            <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
+                                <GroupBox.Header>
+                                    <TextBlock Text="性能" FontSize="20"/>
+                                </GroupBox.Header>
 
-                            <StackPanel>
-                                <Border Style="{StaticResource BorderModuleArea}" Background="White" CornerRadius="8">
-                                    <StackPanel Margin="5">
-                                        <DockPanel Margin="5" Height="20">
-                                            <TextBlock Text="更新速度:  " />
-                                            <TextBox Text="{Binding PerformanceControl.UpdateSpeed}" HorizontalAlignment="Left" Width="200"/>
-                                        </DockPanel>
-                                        <DockPanel Margin="5" Height="20">
-                                            <TextBlock Text="日期格式:  " />
-                                            <TextBox Text="{Binding PerformancSetting.DefaultTimeFormat}" HorizontalAlignment="Left" Width="200"/>
-                                        </DockPanel>
-                                    </StackPanel>
-                                </Border>
-                                <Border  Style="{StaticResource BorderModuleArea}" Background="White" CornerRadius="8">
-                                    <StackPanel Orientation="Horizontal" Margin="15">
-                                        <Grid>
-                                            <hc:WaveProgressBar  Value="{Binding PerformanceControl.RAMPercent}"/>
-                                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="RAM"/>
-                                        </Grid>
-                                        <Grid >
-                                            <hc:WaveProgressBar  Value="{Binding PerformanceControl.RAMThisPercent}"/>
-                                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="{Binding PerformanceControl.RAMThis}"/>
-                                        </Grid>
-                                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="{Binding PerformanceControl.Time}"/>
-                                    </StackPanel>
-                                </Border>
+                                <StackPanel>
+                                    <Border Style="{StaticResource BorderModuleArea}" Background="White" CornerRadius="8">
+                                        <StackPanel Margin="5">
+                                            <DockPanel Margin="5" Height="20">
+                                                <TextBlock Text="更新速度:  " />
+                                                <TextBox Text="{Binding PerformanceControl.UpdateSpeed}" HorizontalAlignment="Left" Width="200"/>
+                                            </DockPanel>
+                                            <DockPanel Margin="5" Height="20">
+                                                <TextBlock Text="日期格式:  " />
+                                                <TextBox Text="{Binding PerformancSetting.DefaultTimeFormat}" HorizontalAlignment="Left" Width="200"/>
+                                            </DockPanel>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border  Style="{StaticResource BorderModuleArea}" Background="White" CornerRadius="8">
+                                        <StackPanel Orientation="Horizontal" Margin="15">
+                                            <Grid>
+                                                <hc:WaveProgressBar  Value="{Binding PerformanceControl.RAMPercent}"/>
+                                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="RAM"/>
+                                            </Grid>
+                                            <Grid >
+                                                <hc:WaveProgressBar  Value="{Binding PerformanceControl.RAMThisPercent}"/>
+                                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="{Binding PerformanceControl.RAMThis}"/>
+                                            </Grid>
+                                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="{Binding PerformanceControl.Time}"/>
+                                        </StackPanel>
+                                    </Border>
 
-                            </StackPanel>
-                        </GroupBox>
-                    </StackPanel>
-                </ScrollViewer>
-
+                                </StackPanel>
+                            </GroupBox>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
             </TabItem>
 
             <TabItem  Header="快捷键" Background="Transparent">
@@ -251,6 +253,7 @@
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
+                    <TextBox  Width="50" Height="0"/>
                     <ScrollViewer HorizontalScrollBarVisibility="Disabled"  VerticalScrollBarVisibility="Auto" >
                         <StackPanel>
                             <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
