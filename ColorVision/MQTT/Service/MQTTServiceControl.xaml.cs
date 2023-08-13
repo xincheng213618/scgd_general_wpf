@@ -1,5 +1,6 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.MQTT.Camera;
+using ColorVision.MQTT.PG;
 using ColorVision.MQTT.Service;
 using ColorVision.MQTT.Spectrum;
 using ColorVision.MySql.DAO;
@@ -123,7 +124,7 @@ namespace ColorVision.MQTT.Service
                     ServiceControl.ResourceService.Save(sysResource);
                     int pkId = sysResource.GetPK();
                     if (pkId > 0 && ServiceControl.ResourceService.GetMasterById(pkId) is SysResourceModel model)
-                        mQTTService.AddChild(new MQTTDeviceSpectrum(model));
+                        mQTTService.AddChild(new DeviceSpectrum(model));
                 }
                 else
                 {

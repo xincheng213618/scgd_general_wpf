@@ -1,42 +1,23 @@
-﻿using ColorVision.Extension;
-using ColorVision.MQTT;
-using ColorVision.MVVM;
-using ColorVision.MySql;
-using ColorVision.Solution;
+﻿using ColorVision.MQTT;
 using ColorVision.SettingUp;
 using ColorVision.Template;
-using Microsoft.VisualBasic.Logging;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
-using System.Windows.Input;
-using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Media.Media3D;
 using ColorVision.Theme;
-using System.Windows.Forms.Integration;
-using OpenCvSharp.Flann;
 using ColorVision.Video;
-using ScottPlot.Drawing.Colormaps;
-using ScottPlot.Styles;
-using System.Drawing.Imaging;
-using HandyControl.Expression.Shapes;
 using Microsoft.Win32;
-using log4net;
-using System.Security.RightsManagement;
-using ColorVision.MQTT.Control;
 using ColorVision.Util;
 using ColorVision.Service;
 using ColorVision.MQTT.Camera;
+using ColorVision.MQTT.PG;
+using ColorVision.MQTT.Spectrum;
+using ColorVision.MQTT.SMU;
 
 namespace ColorVision
 {
@@ -385,7 +366,7 @@ namespace ColorVision
                     stackPanel.Children.Clear();
                     foreach (var item in MQTTManager.MQTTVISources)
                     {
-                        MQTTVISourceControl Control = new MQTTVISourceControl(item);
+                        MQTTSMUControl Control = new MQTTSMUControl(item);
                         stackPanel.Children.Add(Control);
                     }
                 };

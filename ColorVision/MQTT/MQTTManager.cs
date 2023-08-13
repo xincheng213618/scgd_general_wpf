@@ -25,7 +25,7 @@ namespace ColorVision.MQTT
 
         public ObservableCollection<MQTTCamera> MQTTCameras { get; set; }
 
-        public ObservableCollection<MQTTPG> MQTTPGs { get; set; }
+        public ObservableCollection<PGService> MQTTPGs { get; set; }
 
         public ObservableCollection<SpectrumService> MQTTSpectrums { get; set; }
 
@@ -39,7 +39,7 @@ namespace ColorVision.MQTT
             ServiceHeartbeats = new ObservableCollection<IHeartbeat>();
 
             MQTTCameras = new ObservableCollection<MQTTCamera>();
-            MQTTPGs = new ObservableCollection< MQTTPG>();
+            MQTTPGs = new ObservableCollection< PGService>();
             MQTTSpectrums = new ObservableCollection<SpectrumService>();
             MQTTVISources = new ObservableCollection<SMUService>();
         }

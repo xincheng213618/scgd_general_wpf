@@ -1,18 +1,19 @@
-﻿<UserControl x:Class="ColorVision.MQTT.Control.MQTTPGControl"
+﻿<UserControl x:Class="ColorVision.MQTT.PG.MQTTPGControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:ColorVision.MQTT.Control"
+             xmlns:local="clr-namespace:ColorVision.MQTT.PG"
              xmlns:mqtt ="clr-namespace:ColorVision.MQTT"
              xmlns:Template ="clr-namespace:ColorVision.Template"
              xmlns:SettingUp ="clr-namespace:ColorVision.SettingUp"
              xmlns:converter="clr-namespace:ColorVision.Converter"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance local:PGService}"
              d:DesignHeight="400" d:DesignWidth="300">
-    <StackPanel Margin="0,5" x:Name="StackPanelPG" d:DataContext="{d:DesignInstance mqtt:MQTTPG}" Initialized="StackPanelPG_Initialized">
-        <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Background="#F9F9F9"  Content="{Binding PGConfig.Name }"  FontSize="15" Foreground="Black" IsChecked="True" />
+    <StackPanel Margin="0,5" x:Name="StackPanelPG" Initialized="StackPanelPG_Initialized">
+        <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Background="#F9F9F9"  Content="{Binding Config.Name }"  FontSize="15" Foreground="Black" IsChecked="True" />
         <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="5">
                 <DockPanel>

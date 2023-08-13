@@ -7,24 +7,26 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.MQTT.Control
+namespace ColorVision.MQTT.PG
 {
     /// <summary>
     /// MQTTPGControl.xaml 的交互逻辑
     /// </summary>
     public partial class MQTTPGControl : UserControl
     {
-        private MQTTPG MQTTPG { get; set; }
+        private PGService PGService { get; set; }
 
-        public MQTTPGControl(MQTTPG pg)
+        public MQTTPGControl(PGService pg)
         {
-            MQTTPG = pg;
+            PGService = pg;
             InitializeComponent();
-            this.DataContext = MQTTPG;
+            this.DataContext = PGService;
         }
+
+
         private void StackPanelPG_Initialized(object sender, EventArgs e)
         {
-            StackPanelPG.DataContext = MQTTPG;
+            StackPanelPG.DataContext = PGService;
             ComboxPGTemplate.ItemsSource = TemplateControl.GetInstance().PGParams;
             ComboxPGTemplate.SelectionChanged += (s, e) =>
             {
@@ -71,13 +73,13 @@ namespace ColorVision.MQTT.Control
             {
                 if (ComboxPGCommunicateType.SelectedItem is KeyValuePair<string, CommunicateType> KeyValue1 && KeyValue1.Value is CommunicateType communicateType)
                 {
-                    MQTTPG.Init(pGType, communicateType);
+                    PGService.Init(pGType, communicateType);
                 }
             }
         }
         private void PGUnInit(object sender, RoutedEventArgs e)
         {
-            MQTTPG.UnInit();
+            PGService.UnInit();
         }
         private void PGOpen(object sender, RoutedEventArgs e)
         {
@@ -90,22 +92,22 @@ namespace ColorVision.MQTT.Control
                     return;
                 }
 
-                MQTTPG.Open(communicateType, TextBoxPGIP.Text, port);
+                PGService.Open(communicateType, TextBoxPGIP.Text, port);
             }
         }
         private void PGClose(object sender, RoutedEventArgs e)
         {
-            MQTTPG.Close();
+            PGService.Close();
         }
-        private void PGStartPG(object sender, RoutedEventArgs e) => MQTTPG.PGStartPG();
+        private void PGStartPG(object sender, RoutedEventArgs e) => PGService.PGStartPG();
 
-        private void PGStopPG(object sender, RoutedEventArgs e) => MQTTPG.PGStopPG();
+        private void PGStopPG(object sender, RoutedEventArgs e) => PGService.PGStopPG();
 
-        private void PGReSetPG(object sender, RoutedEventArgs e) => MQTTPG.PGReSetPG();
-        private void PGSwitchUpPG(object sender, RoutedEventArgs e) => MQTTPG.PGSwitchUpPG();
-        private void PGSwitchDownPG(object sender, RoutedEventArgs e) => MQTTPG.PGSwitchDownPG();
+        private void PGReSetPG(object sender, RoutedEventArgs e) => PGService.PGReSetPG();
+        private void PGSwitchUpPG(object sender, RoutedEventArgs e) => PGService.PGSwitchUpPG();
+        private void PGSwitchDownPG(object sender, RoutedEventArgs e) => PGService.PGSwitchDownPG();
 
-        private void PGSwitchFramePG(object sender, RoutedEventArgs e) => MQTTPG.PGSwitchFramePG(int.Parse(PGFrameText.Text));
+        private void PGSwitchFramePG(object sender, RoutedEventArgs e) => PGService.PGSwitchFramePG(int.Parse(PGFrameText.Text));
 
     }
 }

@@ -17,20 +17,24 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace ColorVision.MQTT.Control
+namespace ColorVision.MQTT.SMU
 {
     /// <summary>
-    /// MQTTVISourceControl.xaml 的交互逻辑
+    /// MQTTSMUControl.xaml 的交互逻辑
     /// </summary>
-    public partial class MQTTVISourceControl : UserControl
+    public partial class MQTTSMUControl : UserControl
     {
-        private SMUService MQTTVISource { get; set; }
+        private SMUService SMUService { get; set; }
 
-
-        public MQTTVISourceControl(SMUService Source)
+        public MQTTSMUControl(SMUService Source)
         {
-            this.MQTTVISource = Source;
+            this.SMUService = Source;
             InitializeComponent();
+        }
+
+        private void UserControl_Initialized(object sender, EventArgs e)
+        {
+            this.DataContext = SMUService;
         }
 
         private void ButtonSourceMeter1_Click(object sender, RoutedEventArgs e)
@@ -217,8 +221,8 @@ namespace ColorVision.MQTT.Control
         {
             //SMUService = new SMUService();
             passSxSource = new PassSxSource();
-            passSxSource.IsNet = MQTTVISource.Device.Config.IsNet;
-            passSxSource.DevName = MQTTVISource.Device.Config.ID;
+            passSxSource.IsNet = SMUService.Device.Config.IsNet;
+            passSxSource.DevName = SMUService.Device.Config.ID;
             StackPanelVI.DataContext = passSxSource;
 
 
@@ -235,22 +239,24 @@ namespace ColorVision.MQTT.Control
 
         private void MQTTVIOpen(object sender, RoutedEventArgs e)
         {
-            MQTTVISource.Open();
+            SMUService.Open();
         }
         private void MQTTVIClose(object sender, RoutedEventArgs e)
         {
-            MQTTVISource.Close();
+            SMUService.Close();
         }
 
         private void MQTTVISetParam(object sender, RoutedEventArgs e)
         {
-            MQTTVISource.SetParam();
+            SMUService.SetParam();
         }
 
 
         private void MQTTVIGetData(object sender, RoutedEventArgs e)
         {
-            MQTTVISource.GetData();
+            SMUService.GetData();
         }
+
+
     }
 }

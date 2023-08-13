@@ -1,36 +1,21 @@
-﻿using ColorVision.Extension;
-using ColorVision.MQTT;
-using ColorVision.MQTT.Service;
-using ColorVision.MQTT.Spectrum;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
-namespace ColorVision.Service
+namespace ColorVision.MQTT.Spectrum
 {
     /// <summary>
-    /// MQTTDeviceSpectrumControl.xaml 的交互逻辑
+    /// DeviceSpectrumControl.xaml 的交互逻辑
     /// </summary>
-    public partial class MQTTDeviceSpectrumControl : UserControl, IDisposable
+    public partial class DeviceSpectrumControl : UserControl, IDisposable
     {
-        public MQTTDeviceSpectrum MQTTDeviceSp { get; set; }
+        public DeviceSpectrum MQTTDeviceSp { get; set; }
 
         private SpectrumService? spectrum;
         private bool disposedValue;
         private bool disposedObj;
 
-        public MQTTDeviceSpectrumControl(MQTTDeviceSpectrum mqttDeviceSp)
+        public DeviceSpectrumControl(DeviceSpectrum mqttDeviceSp)
         {
             this.disposedObj = false;
             this.MQTTDeviceSp = mqttDeviceSp;
@@ -99,7 +84,7 @@ namespace ColorVision.Service
         }
 
         // // TODO: 仅当“Dispose(bool disposing)”拥有用于释放未托管资源的代码时才替代终结器
-        // ~MQTTDeviceSpectrumControl()
+        // ~DeviceSpectrumControl()
         // {
         //     // 不要更改此代码。请将清理代码放入“Dispose(bool disposing)”方法中
         //     Dispose(disposing: false);

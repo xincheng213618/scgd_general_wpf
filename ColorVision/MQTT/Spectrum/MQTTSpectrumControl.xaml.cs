@@ -16,7 +16,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using static cvColorVision.GCSDLL;
 
-namespace ColorVision.MQTT.Control
+namespace ColorVision.MQTT.Spectrum
 {
     /// <summary>
     /// MQTTSpectrumControl.xaml 的交互逻辑

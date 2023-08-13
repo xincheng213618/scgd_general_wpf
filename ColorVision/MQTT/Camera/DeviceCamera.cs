@@ -12,15 +12,5 @@ namespace ColorVision.MQTT.Camera
 
         }
 
-
-
-
-        public override void Save()
-        {
-            base.Save();
-            SysResourceModel.Value = JsonConvert.SerializeObject(Config);
-            ServiceControl.GetInstance().ResourceService.Save(SysResourceModel);
-        }
-
     }
 }

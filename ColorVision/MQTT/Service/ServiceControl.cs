@@ -77,11 +77,11 @@ namespace ColorVision.MQTT.Service
                         }
                         else if (item is DevicePG devicePG)
                         {
-                            MQTTPG mQTTPG = new MQTTPG(devicePG.Config);
+                            PGService mQTTPG = new PGService(devicePG.Config);
                             MQTTManager.MQTTPGs.Add(mQTTPG);
                             MQTTManager.ServiceHeartbeats.Add(mQTTPG);
                         }
-                        else if (item is MQTTDeviceSpectrum deviceSpectrum)
+                        else if (item is DeviceSpectrum deviceSpectrum)
                         {
                             SpectrumService mQTTSpectrum = new SpectrumService(deviceSpectrum);
                             MQTTManager.MQTTSpectrums.Add(mQTTSpectrum);
@@ -133,7 +133,7 @@ namespace ColorVision.MQTT.Service
                                 }
                                 else if (device.Type == (int)MQTTDeviceType.Spectum)
                                 {
-                                    MQTTDeviceSpectrum spectrum = new MQTTDeviceSpectrum(device);
+                                    DeviceSpectrum spectrum = new DeviceSpectrum(device);
                                     mQTTService.AddChild(spectrum);
                                 }
                                 else if (device.Type == (int)MQTTDeviceType.SMU)

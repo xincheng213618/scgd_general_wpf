@@ -46,23 +46,31 @@ namespace ColorVision.MQTT
         public bool IsAlive { get; set; }
     }
 
-
-    public class BaseService <T>:ViewModelBase, IHeartbeat, IMQTTServiceConfig, IDisposable where T :BaseDeviceConfig
+    public class BaseService<T> : BaseService where T :BaseDeviceConfig
     {
-        internal static readonly ILog log = LogManager.GetLogger(typeof(BaseService<T>));
+        public T Config { get; set; }
+
+        public BaseService(T config)
+        {
+            Config = config;
+        }
+    }
+
+
+    public class BaseService:ViewModelBase, IHeartbeat, IMQTTServiceConfig, IDisposable 
+    {
+        internal static readonly ILog log = LogManager.GetLogger(typeof(BaseService));
 
         public MQTTConfig MQTTConfig { get; set; }
         public MQTTSetting MQTTSetting { get; set; }
 
-        public T Config { get; set; }
 
         public event EventHandler Connected;
 
         public Dictionary<string, MsgSend> cmdMap { get; set; }
 
-        public BaseService(T config)
+        public BaseService()
         {
-            Config = config;
             cmdMap = new Dictionary<string, MsgSend>();
             MQTTControl = MQTTControl.GetInstance();
             MQTTConfig = MQTTControl.MQTTConfig;

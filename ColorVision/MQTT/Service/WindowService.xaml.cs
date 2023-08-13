@@ -1,6 +1,8 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.MQTT.Camera;
 using ColorVision.MQTT.Service;
+using ColorVision.MQTT.SMU;
+using ColorVision.MQTT.Spectrum;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.SettingUp;
@@ -50,13 +52,13 @@ namespace ColorVision.Service
             {
                 StackPanelShow.Children.Add(new DeviceCameraControl(mQTTDeviceCamera));
             }
-            else if (TreeView1.SelectedItem is MQTTDeviceSpectrum mQTTDeviceSpectrum)
+            else if (TreeView1.SelectedItem is DeviceSpectrum mQTTDeviceSpectrum)
             {
-                StackPanelShow.Children.Add(new MQTTDeviceSpectrumControl(mQTTDeviceSpectrum));
+                StackPanelShow.Children.Add(new DeviceSpectrumControl(mQTTDeviceSpectrum));
             }
             else if (TreeView1.SelectedItem is DeviceSMU mQTTDeviceSMU)
             {
-                StackPanelShow.Children.Add(new MQTTDeviceSMUControl(mQTTDeviceSMU));
+                StackPanelShow.Children.Add(new DeviceSMUControl(mQTTDeviceSMU));
             }
 
         }

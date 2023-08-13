@@ -16,44 +16,30 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace ColorVision.MQTT.Camera
+namespace ColorVision.MQTT.PG
 {
     /// <summary>
     /// DevicePGControl.xaml 的交互逻辑
     /// </summary>
-    public partial class DeviceCameraControl : UserControl
+    public partial class DevicePGControl : UserControl
     {
-        public DeviceCamera MQTTDeviceCamera { get; set; }
+        public DevicePG DevicePG { get; set; }
         public ServiceControl ServiceControl { get; set; }
 
-        public DeviceCameraControl(DeviceCamera mQTTDeviceCamera)
+        public DevicePGControl(DevicePG devicePG)
         {
-            MQTTDeviceCamera = mQTTDeviceCamera;
+            DevicePG = devicePG;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             ServiceControl = ServiceControl.GetInstance();
-            this.DataContext = MQTTDeviceCamera;
-
-            ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()
-                                           select new KeyValuePair<CameraType, string>(e1, e1.ToDescription());
-
-            ComboxCameraTakeImageMode.ItemsSource = from e1 in Enum.GetValues(typeof(TakeImageMode)).Cast<TakeImageMode>()
-                                                    select new KeyValuePair<TakeImageMode, string>(e1, e1.ToDescription());
-
-
-
-            ComboxCameraChannel.Text = MQTTDeviceCamera.Config.Channel.ToString();
-            ComboxCameraImageBpp.Text = MQTTDeviceCamera.Config.ImageBpp.ToString();
+            this.DataContext = DevicePG;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            MQTTDeviceCamera.Config.Channel = int.Parse(ComboxCameraChannel.Text.ToString());
-            MQTTDeviceCamera.Config.ImageBpp = int.Parse(ComboxCameraImageBpp.Text.ToString());
-
             MQTTEditContent.Visibility = Visibility.Collapsed;
             MQTTShowContent.Visibility = Visibility.Visible;
         }

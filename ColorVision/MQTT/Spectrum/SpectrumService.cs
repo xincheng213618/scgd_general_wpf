@@ -1,5 +1,4 @@
-﻿using ColorVision.MQTT.Service;
-using MQTTnet.Client;
+﻿using MQTTnet.Client;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Text;
@@ -18,9 +17,9 @@ namespace ColorVision.MQTT.Spectrum
         public event MQTTAutoParamHandler AutoParamHandlerEvent;
         public event MQTTSpectrumHeartbeatHandler HeartbeatHandlerEvent;
 
-        public MQTTDeviceSpectrum Device { get; set; }
+        public DeviceSpectrum Device { get; set; }
 
-        public SpectrumService(MQTTDeviceSpectrum device) : this(device.Config)
+        public SpectrumService(DeviceSpectrum device) : this(device.Config)
         {
             this.Device = device;
         }

@@ -1,6 +1,5 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.MQTT.Service;
-using ColorVision.MQTT.SMU;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,12 +15,12 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace ColorVision.Service
+namespace ColorVision.MQTT.SMU
 {
     /// <summary>
-    /// MQTTDeviceSMUControl.xaml 的交互逻辑
+    /// DeviceSMUControl.xaml 的交互逻辑
     /// </summary>
-    public partial class MQTTDeviceSMUControl : UserControl, IDisposable
+    public partial class DeviceSMUControl : UserControl, IDisposable
     {
         public DeviceSMU MQTTDeviceSMU { get; set; }
         public ServiceControl ServiceControl { get; set; }
@@ -30,7 +29,7 @@ namespace ColorVision.Service
         private bool disposedValue;
         private bool disposedObj;
 
-        public MQTTDeviceSMUControl(DeviceSMU mqttDeviceSMU)
+        public DeviceSMUControl(DeviceSMU mqttDeviceSMU)
         {
             this.disposedObj = false;
             this.MQTTDeviceSMU = mqttDeviceSMU;
@@ -89,7 +88,7 @@ namespace ColorVision.Service
         }
 
         // // TODO: 仅当“Dispose(bool disposing)”拥有用于释放未托管资源的代码时才替代终结器
-        // ~MQTTDeviceSMUControl()
+        // ~DeviceSMUControl()
         // {
         //     // 不要更改此代码。请将清理代码放入“Dispose(bool disposing)”方法中
         //     Dispose(disposing: false);

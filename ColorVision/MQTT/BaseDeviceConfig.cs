@@ -9,8 +9,11 @@ namespace ColorVision.MQTT
     /// </summary>
     public class BaseDeviceConfig : ViewModelBase, IMQTTServiceConfig, IHeartbeat
     {
-        public string SubscribeTopic { get; set; }
-        public string SendTopic { get; set; }
+        public string SubscribeTopic { get => _SubscribeTopic; set { _SubscribeTopic = value; NotifyPropertyChanged(); } }
+        private string _SubscribeTopic;
+
+        public string SendTopic { get => _SendTopic; set { _SendTopic = value; NotifyPropertyChanged(); } }
+        private string _SendTopic;
 
         /// <summary>
         /// 名称

@@ -30,9 +30,9 @@ namespace ColorVision.MQTT.PG
     };
 
 
-    public class MQTTPG : BaseService<PGConfig>
+    public class PGService : BaseService<PGConfig>
     {
-        public MQTTPG(PGConfig pGConfig) : base(pGConfig)
+        public PGService(PGConfig pGConfig) : base(pGConfig)
         {
             Config = pGConfig;
 
