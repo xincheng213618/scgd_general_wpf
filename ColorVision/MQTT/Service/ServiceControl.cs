@@ -1,5 +1,6 @@
 ﻿using ColorVision.MQTT.Camera;
 using ColorVision.MQTT.PG;
+using ColorVision.MQTT.Sensor;
 using ColorVision.MQTT.SMU;
 using ColorVision.MQTT.Spectrum;
 using ColorVision.MySql;
@@ -21,7 +22,6 @@ namespace ColorVision.MQTT.Service
         private static readonly object _locker = new();
         public static ServiceControl GetInstance() { lock (_locker) { return _instance ??= new ServiceControl(); } }
 
-
         public ObservableCollection<MQTTServiceKind> MQTTServices { get; set; }
 
         public SysResourceService ResourceService { get; set; }
@@ -39,6 +39,7 @@ namespace ColorVision.MQTT.Service
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => Reload();
             Reload();
         }
+
 
         public void GenContorl()
         {
@@ -121,30 +122,27 @@ namespace ColorVision.MQTT.Service
                         {
                             if (device.Pid == service.Id)
                             {
-                                if (device.Type == (int)MQTTDeviceType.Camera)
-                                {
-                                    DeviceCamera camera = new DeviceCamera(device);
-                                    mQTTService.AddChild(camera);
-                                }
-                                else if (device.Type == (int)MQTTDeviceType.PG)
-                                {
-                                    DevicePG pg = new DevicePG(device);
-                                    mQTTService.AddChild(pg);
-                                }
-                                else if (device.Type == (int)MQTTDeviceType.Spectum)
-                                {
-                                    DeviceSpectrum spectrum = new DeviceSpectrum(device);
-                                    mQTTService.AddChild(spectrum);
-                                }
-                                else if (device.Type == (int)MQTTDeviceType.SMU)
-                                {
-                                    DeviceSMU smu = new DeviceSMU(device);
-                                    mQTTService.AddChild(smu);
-                                }
 
-
-
-
+                                switch ((MQTTDeviceType)device.Type)
+                                {
+                                    case MQTTDeviceType.Camera:
+                                        mQTTService.AddChild(new DeviceCamera(device));
+                                        break;
+                                    case MQTTDeviceType.PG:
+                                        mQTTService.AddChild(new DevicePG(device));
+                                        break;
+                                    case MQTTDeviceType.Spectum:
+                                        mQTTService.AddChild(new DeviceSpectrum(device));
+                                        break;
+                                    case MQTTDeviceType.SMU:
+                                        mQTTService.AddChild(new DeviceSMU(device));
+                                        break;
+                                    case MQTTDeviceType.Sensor:
+                                        mQTTService.AddChild(new DeviceSensor(device));
+                                        break;
+                                    default:
+                                        break;
+                                }
                             }
                         }
                         mQTTServicetype.AddChild(mQTTService);
