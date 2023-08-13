@@ -36,6 +36,7 @@ using System.Security.RightsManagement;
 using ColorVision.MQTT.Control;
 using ColorVision.Util;
 using ColorVision.Service;
+using ColorVision.MQTT.Camera;
 
 namespace ColorVision
 {

@@ -1,5 +1,4 @@
-﻿using ColorVision.MQTT.Config;
-using MQTTnet.Client;
+﻿using MQTTnet.Client;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -11,7 +10,7 @@ using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Media.Media3D;
 
-namespace ColorVision.MQTT
+namespace ColorVision.MQTT.PG
 {
 
     public enum PGType
@@ -31,28 +30,14 @@ namespace ColorVision.MQTT
     };
 
 
-    public class MQTTPG: BaseService
+    public class MQTTPG : BaseService<PGConfig>
     {
-
-        public PGConfig PGConfig { get; set; }
-
-        public MQTTPG(string SendTopic = "PG", string SubscribeTopic = "PGService") : base()
+        public MQTTPG(PGConfig pGConfig) : base(pGConfig)
         {
-            PGConfig = new PGConfig() { SendTopic = SendTopic, SubscribeTopic = SubscribeTopic };
+            Config = pGConfig;
 
-            this.SendTopic = SendTopic;
-            this.SubscribeTopic = SubscribeTopic;
-            MQTTControl = MQTTControl.GetInstance();
-            MQTTControl.SubscribeCache(SubscribeTopic);
-            MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
-        }
-
-        public MQTTPG(PGConfig pGConfig) : base()
-        {
-            PGConfig = pGConfig;
-
-            this.SendTopic = PGConfig.SendTopic;
-            this.SubscribeTopic = PGConfig.SubscribeTopic;
+            SendTopic = Config.SendTopic;
+            SubscribeTopic = Config.SubscribeTopic;
 
             MQTTControl = MQTTControl.GetInstance();
             MQTTControl.SubscribeCache(SubscribeTopic);
@@ -109,13 +94,13 @@ namespace ColorVision.MQTT
         }
 
 
-        public bool Init(PGType pGType,CommunicateType communicateType)
+        public bool Init(PGType pGType, CommunicateType communicateType)
         {
             MsgSend msg = new MsgSend
             {
                 EventName = "Init",
-                Params = new Dictionary<string, object>() { { "ePg_Type", (int)pGType },{ "eCOM_Type",(int)communicateType } }
-                
+                Params = new Dictionary<string, object>() { { "ePg_Type", (int)pGType }, { "eCOM_Type", (int)communicateType } }
+
             };
             PublishAsyncClient(msg);
             return true;
@@ -137,7 +122,7 @@ namespace ColorVision.MQTT
             return true;
         }
 
-        public void PGStartPG() => SetParam(new List<ParamFunction>() { new ParamFunction() { Name = "CM_StartPG" }});
+        public void PGStartPG() => SetParam(new List<ParamFunction>() { new ParamFunction() { Name = "CM_StartPG" } });
         public void PGStopPG() => SetParam(new List<ParamFunction>() { new ParamFunction() { Name = "CM_StopPG" } });
         public void PGReSetPG() => SetParam(new List<ParamFunction>() { new ParamFunction() { Name = "CM_ReSetPG" } });
         public void PGSwitchUpPG() => SetParam(new List<ParamFunction>() { new ParamFunction() { Name = "CM_SwitchUpPG" } });
@@ -158,7 +143,7 @@ namespace ColorVision.MQTT
 
 
 
-        public bool Open(CommunicateType communicateType,string value1,int value2)
+        public bool Open(CommunicateType communicateType, string value1, int value2)
         {
             MsgSend msg = new MsgSend()
             {
@@ -196,6 +181,6 @@ namespace ColorVision.MQTT
             };
             PublishAsyncClient(msg);
             return true;
-        }    
+        }
     }
 }

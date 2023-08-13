@@ -1,6 +1,7 @@
 ﻿using ColorVision.Extension;
 using ColorVision.MQTT;
-using ColorVision.MQTT.Config;
+using ColorVision.MQTT.Service;
+using ColorVision.MQTT.Spectrum;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,7 +26,7 @@ namespace ColorVision.Service
     {
         public MQTTDeviceSpectrum MQTTDeviceSp { get; set; }
 
-        private MQTTSpectrum? spectrum;
+        private SpectrumService? spectrum;
         private bool disposedValue;
         private bool disposedObj;
 
@@ -34,7 +35,7 @@ namespace ColorVision.Service
             this.disposedObj = false;
             this.MQTTDeviceSp = mqttDeviceSp;
             MQTTManager manager = MQTTManager.GetInstance();
-            foreach (MQTTSpectrum sp in manager.MQTTSpectrums)
+            foreach (SpectrumService sp in manager.MQTTSpectrums)
             {
                 if(sp.Device.SysResourceModel.Id == MQTTDeviceSp.SysResourceModel.Id)
                 {
@@ -45,7 +46,7 @@ namespace ColorVision.Service
 
             if(spectrum == null)
             {
-                spectrum = new MQTTSpectrum(this.MQTTDeviceSp);
+                spectrum = new SpectrumService(this.MQTTDeviceSp);
                 disposedObj = true;
             }
 
@@ -53,7 +54,7 @@ namespace ColorVision.Service
             InitializeComponent();
         }
 
-        private void Spectrum_AutoParamHandlerEvent(MQTTSpectrum.AutoIntTimeParam colorPara)
+        private void Spectrum_AutoParamHandlerEvent(AutoIntTimeParam colorPara)
         {
             MQTTDeviceSp.Config.TimeFrom = colorPara.fTimeB;
             MQTTDeviceSp.Config.TimeLimit = colorPara.iLimitTime;

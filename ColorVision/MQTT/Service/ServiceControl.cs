@@ -1,5 +1,7 @@
-﻿using ColorVision.MQTT;
-using ColorVision.MQTT.Config;
+﻿using ColorVision.MQTT.Camera;
+using ColorVision.MQTT.PG;
+using ColorVision.MQTT.SMU;
+using ColorVision.MQTT.Spectrum;
 using ColorVision.MySql;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
@@ -11,7 +13,7 @@ using System.ComponentModel.Design;
 using System.Windows.Automation;
 using System.Windows.Media.Media3D;
 
-namespace ColorVision.Service
+namespace ColorVision.MQTT.Service
 {
     public class ServiceControl
     {
@@ -34,7 +36,7 @@ namespace ColorVision.Service
             MQTTServices = new ObservableCollection<MQTTServiceKind>();
             UserConfig = GlobalSetting.GetInstance().SoftwareConfig.UserConfig;
 
-            MySqlControl.GetInstance().MySqlConnectChanged +=(s,e)=> Reload();
+            MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => Reload();
             Reload();
         }
 
@@ -81,13 +83,13 @@ namespace ColorVision.Service
                         }
                         else if (item is MQTTDeviceSpectrum deviceSpectrum)
                         {
-                            MQTTSpectrum mQTTSpectrum = new MQTTSpectrum(deviceSpectrum);
+                            SpectrumService mQTTSpectrum = new SpectrumService(deviceSpectrum);
                             MQTTManager.MQTTSpectrums.Add(mQTTSpectrum);
                             MQTTManager.ServiceHeartbeats.Add(mQTTSpectrum);
                         }
                         else if (item is MQTTDeviceSMU smu)
                         {
-                            MQTTVISource mQTTVISource = new MQTTVISource(smu);
+                            SMUService mQTTVISource = new SMUService(smu);
                             MQTTManager.MQTTVISources.Add(mQTTVISource);
                         }
 
@@ -133,7 +135,7 @@ namespace ColorVision.Service
                                 {
                                     MQTTDeviceSpectrum spectrum = new MQTTDeviceSpectrum(device);
                                     mQTTService.AddChild(spectrum);
-                                } 
+                                }
                                 else if (device.Type == (int)MQTTDeviceType.SMU)
                                 {
                                     MQTTDeviceSMU smu = new MQTTDeviceSMU(device);

@@ -1,50 +1,33 @@
-﻿using ColorVision.MQTT.Config;
-using ColorVision.Service;
+﻿using ColorVision.MQTT.Service;
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using static ColorVision.MQTT.MQTTSpectrum;
-using static cvColorVision.GCSDLL;
 
-namespace ColorVision.MQTT
+namespace ColorVision.MQTT.Spectrum
 {
     public delegate void MQTTSpectrumDataHandler(SpectumData? colorPara);
     public delegate void MQTTAutoParamHandler(AutoIntTimeParam colorPara);
     public delegate void MQTTSpectrumHeartbeatHandler(HeartbeatParam heartbeat);
 
-    public class MQTTSpectrum: BaseService
+    public class SpectrumService: BaseService<SpectrumConfig>
     {
         public event MQTTSpectrumDataHandler DataHandlerEvent;
         public event MQTTAutoParamHandler AutoParamHandlerEvent;
         public event MQTTSpectrumHeartbeatHandler HeartbeatHandlerEvent;
 
-        public MQTTSpectrum(string SendTopic = "Spectum/CMD/chen_sp1", string SubscribeTopic = "Spectum/STATUS/chen_sp1") : base()
-        {
-            SpectrumConfig = new SpectrumConfig();
-            SpectrumConfig.SendTopic = SendTopic;
-            SpectrumConfig.SubscribeTopic = SubscribeTopic;
-
-            this.SendTopic = SendTopic;
-            this.SubscribeTopic = SubscribeTopic;
-
-            MQTTControl = MQTTControl.GetInstance();
-            MQTTControl.SubscribeCache(SubscribeTopic);
-            MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
-        }
-
         public MQTTDeviceSpectrum Device { get; set; }
-        public SpectrumConfig SpectrumConfig { get; set; }
 
-        public MQTTSpectrum(MQTTDeviceSpectrum device) : this(device.Config)
+        public SpectrumService(MQTTDeviceSpectrum device) : this(device.Config)
         {
             this.Device = device;
         }
-        public MQTTSpectrum(SpectrumConfig spectrumConfig)
+
+        public SpectrumService(SpectrumConfig spectrumConfig) : base(spectrumConfig)
         {
-            this.SpectrumConfig = spectrumConfig;
+            this.Config = spectrumConfig;
 
             this.SendTopic = spectrumConfig.SendTopic;
             this.SubscribeTopic = spectrumConfig.SubscribeTopic;
@@ -257,51 +240,6 @@ namespace ColorVision.MQTT
             cmdMap.Clear();
         }
 
-        public class SpectumData
-        {
-            public int ID { get; set; }
-            public ColorParam Data { get; set; }
 
-            public SpectumData(int id, ColorParam data)
-            {
-                ID = id;
-                Data = data;
-            }
-        }
-
-        public class HeartbeatParam
-        {
-            [JsonProperty("isOpen")]
-            public bool IsOpen { get; set; }
-            [JsonProperty("isAutoGetData")]
-            public bool IsAutoGetData { get; set; }
-            [JsonProperty("time")]
-            public string Time { get; set; }
-        }
-        public class AutoIntTimeParam
-        {
-            public int iLimitTime { get; set; }
-            public float fTimeB { get; set; }
-        }
-
-        public class InitDarkParamMQTT
-        {
-            [JsonProperty("fIntTime")]
-            public float IntTime { get; set; }
-            [JsonProperty("iAveNum")]
-            public int AveNum { get; set; }
-        }
-
-        public class GetDataParamMQTT
-        {
-            [JsonProperty("fIntTime")]
-            public float IntTime { get; set; }
-            [JsonProperty("iAveNum")]
-            public int AveNum { get; set; }
-            [JsonProperty("bUseAutoIntTime")]
-            public bool BUseAutoIntTime { get; set; }
-            [JsonProperty("bUseAutoDark")]
-            public bool BUseAutoDark { get; set; }
-        }
     }
 }

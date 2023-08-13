@@ -74,7 +74,7 @@ namespace ColorVision
             }
         }
 
-        private Grid GetNewGrid(Control control)
+        private static Grid GetNewGrid(Control control)
         {
             Grid grid = new Grid()
             {

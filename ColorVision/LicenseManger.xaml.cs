@@ -1,5 +1,5 @@
 ﻿using ColorVision.Controls;
-using ColorVision.MQTT;
+using ColorVision.MQTT.Camera;
 using ColorVision.MVVM;
 using ColorVision.Template;
 using System;

@@ -11,17 +11,13 @@ using System.Windows.Media.Media3D;
 
 namespace ColorVision.MQTT
 {
-    /// <summary>
-    /// 滤色轮
-    /// </summary>
-    public class FilterWheel:BaseService
+
+    public class FilterWheel:BaseService<BaseDeviceConfig>
     {
 
-        public FilterWheel()
+        public FilterWheel(BaseDeviceConfig baseDeviceConfig):base (baseDeviceConfig)
         {
             MQTTControl = MQTTControl.GetInstance();
-            SendTopic = "FilterWheel";
-            SubscribeTopic = "FilterWheelService";
             MQTTControl.SubscribeCache(SubscribeTopic);
         }
     }

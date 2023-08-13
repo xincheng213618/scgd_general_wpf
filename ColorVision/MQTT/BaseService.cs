@@ -1,5 +1,4 @@
-﻿using ColorVision.MQTT.Config;
-using ColorVision.MVVM;
+﻿using ColorVision.MVVM;
 using ColorVision.SettingUp;
 using Google.Protobuf.WellKnownTypes;
 using HandyControl.Expression.Shapes;
@@ -7,10 +6,8 @@ using HslCommunication.MQTT;
 using log4net;
 using MQTTnet.Client;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Security.Cryptography;
@@ -28,9 +25,17 @@ namespace ColorVision.MQTT
     /// </summary>
     public interface IMQTTServiceConfig
     {
-        public string SubscribeTopic { get; }
-        public string SendTopic { get; }
+        /// <summary>
+        /// 发送信道
+        /// </summary>
+        public string SendTopic { get; set; }
+
+        /// <summary>
+        /// 监听信道
+        /// </summary>
+        public string SubscribeTopic { get; set; }
     }
+
     /// <summary>
     /// 心跳接口
     /// </summary>
@@ -41,89 +46,23 @@ namespace ColorVision.MQTT
         public bool IsAlive { get; set; }
     }
 
-    public class HeartbeatService: BaseService
+
+    public class BaseService <T>:ViewModelBase, IHeartbeat, IMQTTServiceConfig, IDisposable where T :BaseDeviceConfig
     {
-        public ServiceConfig ServiceConfig { get; set; }
-        public HeartbeatService(ServiceConfig serviceConfig) : base()
-        {
-            ServiceConfig = serviceConfig;
+        internal static readonly ILog log = LogManager.GetLogger(typeof(BaseService<T>));
 
-            SendTopic = ServiceConfig.SendTopic;
-            SubscribeTopic = ServiceConfig.SubscribeTopic;
-
-            MQTTControl.SubscribeCache(SubscribeTopic);
-
-            MsgReturnReceived +=(msg)=>
-            {
-                switch (msg.EventName)
-                {
-                    case "CM_GetAllSnID":
-                        JArray SnIDs = msg.Data.SnID;
-                        JArray MD5IDs = msg.Data.MD5ID;
-                        if (SnIDs == null || MD5IDs == null)
-                        {
-                            return;
-                        }
-
-
-
-                        for (int i = 0; i < SnIDs.Count; i++)
-                        {
-                            if (ServicesDevices.TryGetValue(SubscribeTopic, out ObservableCollection<string> list) && !list.Contains(SnIDs[i].ToString()))
-                            {
-                                list.Add(SnIDs[i].ToString());
-                            }
-                            else
-                            {
-                                ServicesDevices.Add(SubscribeTopic, new ObservableCollection<string>() { SnIDs[i].ToString() });
-                            }
-                        }
-                        return;
-                }
-
-            };
-            this.Connected += (s, e) =>
-            {
-                GetAllSnID();
-            };
-        }
-        public static Dictionary<string, ObservableCollection<string>> ServicesDevices { get; set; } = new Dictionary<string, ObservableCollection<string>>();
-
-
-        public bool GetAllSnID()
-        {
-            MsgSend msg = new MsgSend
-            {
-                EventName = "CM_GetAllSnID",
-            };
-            PublishAsyncClient(msg);
-            return true;
-        }
-
-        public override string SubscribeTopic { get => ServiceConfig.SubscribeTopic; set { ServiceConfig.SubscribeTopic = value; } }
-        public override string SendTopic { get => ServiceConfig.SendTopic; set { ServiceConfig.SendTopic = value; } }
-
-        public override bool IsAlive { get => ServiceConfig.IsAlive; set => ServiceConfig.IsAlive = value; }
-         
-        public override DateTime LastAliveTime { get => ServiceConfig.LastAliveTime; set => ServiceConfig.LastAliveTime = value; }
-
-
-    }
-
-
-
-    public class BaseService:ViewModelBase, IHeartbeat, IMQTTServiceConfig, IDisposable
-    {
-        internal static readonly ILog log = LogManager.GetLogger(typeof(BaseService));
         public MQTTConfig MQTTConfig { get; set; }
         public MQTTSetting MQTTSetting { get; set; }
+
+        public T Config { get; set; }
 
         public event EventHandler Connected;
 
         public Dictionary<string, MsgSend> cmdMap { get; set; }
 
-        public BaseService()
+        public BaseService(T config)
         {
+            Config = config;
             cmdMap = new Dictionary<string, MsgSend>();
             MQTTControl = MQTTControl.GetInstance();
             MQTTConfig = MQTTControl.MQTTConfig;

@@ -1,4 +1,5 @@
-﻿using ColorVision.MQTT.Config;
+﻿using ColorVision.MQTT;
+using ColorVision.MQTT.Service;
 using ColorVision.MySql.DAO;
 using ColorVision.SettingUp;
 using Newtonsoft.Json;
@@ -48,7 +49,7 @@ namespace ColorVision.Service
 
         private void Button_New_Click(object sender, RoutedEventArgs e)
         {
-            if (!Util.IsInvalidPath(TextBox_Name.Text, "服务名称") || !Util.IsInvalidPath(TextBox_Code.Text, "服务标识"))
+            if (!MQTT.Util.IsInvalidPath(TextBox_Name.Text, "服务名称") || !MQTT.Util.IsInvalidPath(TextBox_Code.Text, "服务标识"))
                 return;
 
             if (TextBox_Type.SelectedItem is MQTTServiceKind mQTTServiceKind)

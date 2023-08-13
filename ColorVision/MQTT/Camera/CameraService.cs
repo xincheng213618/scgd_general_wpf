@@ -1,5 +1,4 @@
-﻿using ColorVision.MQTT.Config;
-using ColorVision.MVVM;
+﻿using ColorVision.MVVM;
 using ColorVision.Template;
 using HslCommunication.MQTT;
 using MQTTnet.Client;
@@ -18,18 +17,14 @@ using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace ColorVision.MQTT
+namespace ColorVision.MQTT.Camera
 {
 
-
-
-
-
-    public delegate void MQTTCameraFileHandler(object sender,string? FilePath);
+    public delegate void MQTTCameraFileHandler(object sender, string? FilePath);
     public delegate void MQTTCameraMsgHandler(object sender, MsgReturn msg);
 
 
-    public class MQTTCamera :BaseService
+    public class MQTTCamera : BaseService<CameraConfig>
     {
         public event MQTTCameraFileHandler FileHandler;
         public event MQTTCameraMsgHandler InitCameraSuccess;
@@ -42,33 +37,15 @@ namespace ColorVision.MQTT
 
         public static Dictionary<string, ObservableCollection<string>> ServicesDevices { get; set; } = new Dictionary<string, ObservableCollection<string>>();
 
-        public CameraConfig Config { get; set; }
         public string DeviceID { get => Config.ID; }
 
-        public MQTTCamera(string SendTopic = "Camera/CMD/0", string SubscribeTopic = "Camera/STATUS/0") : base()
+        public MQTTCamera(CameraConfig CameraConfig) : base(CameraConfig)
         {
-            Config = new CameraConfig();
-            Config.SendTopic = SendTopic;
-            Config.SubscribeTopic = SubscribeTopic;
-            this.SendTopic = SendTopic;
-            this.SubscribeTopic = SubscribeTopic;
+            SendTopic = CameraConfig.SendTopic;
+            SubscribeTopic = CameraConfig.SubscribeTopic;
             MQTTControl.SubscribeCache(SubscribeTopic);
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
-
-            this.Connected += (s, e) =>
-            {
-                GetAllCameraID();
-            };
-        }
-
-        public MQTTCamera(CameraConfig CameraConfig)
-        {
-            this.Config = CameraConfig;
-            this.SendTopic = CameraConfig.SendTopic;
-            this.SubscribeTopic = CameraConfig.SubscribeTopic;
-            MQTTControl.SubscribeCache(SubscribeTopic);
-            MsgReturnReceived += MQTTCamera_MsgReturnChanged;
-            this.Connected += (s, e) =>
+            Connected += (s, e) =>
             {
                 GetAllCameraID();
             };
@@ -94,16 +71,16 @@ namespace ColorVision.MQTT
 
                     for (int i = 0; i < SnIDs.Count; i++)
                     {
-                        if (SnIDs[i].ToString() ==SnID)
+                        if (SnIDs[i].ToString() == SnID)
                             Config.MD5 = MD5IDs[i].ToString();
 
                         if (!CameraIDs.Contains(SnIDs[i].ToString()))
                             CameraIDs.Add(SnIDs[i].ToString());
 
                         if (!MD5.Contains(MD5IDs[i].ToString()))
-                            MD5.Add(MD5IDs[i].ToString()); 
+                            MD5.Add(MD5IDs[i].ToString());
 
-                        if (ServicesDevices.TryGetValue(SubscribeTopic,out ObservableCollection<string> list)&& !list.Contains(SnIDs[i].ToString()))
+                        if (ServicesDevices.TryGetValue(SubscribeTopic, out ObservableCollection<string> list) && !list.Contains(SnIDs[i].ToString()))
                         {
                             list.Add(SnIDs[i].ToString());
                         }
@@ -117,7 +94,7 @@ namespace ColorVision.MQTT
 
 
             //信息在这里添加一次过滤，让信息只能在对应的相机上显示,同时如果ID为空的话，就默认是服务端的信息，不进行过滤，这里后续在进行优化
-            if (Config.ID!=null&&msg.SnID != Config.ID)
+            if (Config.ID != null && msg.SnID != Config.ID)
             {
                 return;
             }
@@ -129,7 +106,7 @@ namespace ColorVision.MQTT
                 {
                     case "Init":
                         ServiceID = msg.ServiceID;
-                        Application.Current.Dispatcher.Invoke(() => InitCameraSuccess?.Invoke(this,msg));
+                        Application.Current.Dispatcher.Invoke(() => InitCameraSuccess?.Invoke(this, msg));
                         break;
                     case "UnInit":
                         Application.Current.Dispatcher.Invoke(() => UnInitCameraSuccess?.Invoke(this, msg));
@@ -165,13 +142,13 @@ namespace ColorVision.MQTT
                         Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(this, SaveFileName));
                         break;
                     case "Close":
-                        Application.Current.Dispatcher.Invoke(() => CloseCameraSuccess?.Invoke(this,msg));
+                        Application.Current.Dispatcher.Invoke(() => CloseCameraSuccess?.Invoke(this, msg));
                         break;
                     case "Open":
                         MessageBox.Show("Open失败，没有许可证");
                         break;
                     case "Uninit":
-                        Application.Current.Dispatcher.Invoke(() => UnInitCameraSuccess?.Invoke(this,msg));
+                        Application.Current.Dispatcher.Invoke(() => UnInitCameraSuccess?.Invoke(this, msg));
                         break;
                     default:
                         MessageBox.Show($"未定义{msg.EventName}");
@@ -183,14 +160,14 @@ namespace ColorVision.MQTT
         public bool IsRun { get; set; }
         public CameraType CurrentCameraType { get; set; }
 
-        public bool Init(CameraType CameraType,string CameraID)
+        public bool Init(CameraType CameraType, string CameraID)
         {
             CurrentCameraType = CameraType;
-            this.SnID = CameraID;
+            SnID = CameraID;
             MsgSend msg = new MsgSend
             {
                 EventName = "Init",
-                Params = new Dictionary<string, object>() { { "CameraType", (int)CameraType },{ "SnID", CameraID } ,{ "szCfgName","" } } 
+                Params = new Dictionary<string, object>() { { "CameraType", (int)CameraType }, { "SnID", CameraID }, { "szCfgName", "" } }
             };
             PublishAsyncClient(msg);
             return true;
@@ -214,7 +191,7 @@ namespace ColorVision.MQTT
             {
                 EventName = "SetParam",
                 Params = new Dictionary<string, object>() { { "Func",new List<ParamFunction> (){
-                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", nIndex }, { "nPort", nPort },{ "eImgChlType" , eImgChlType } }  } } } } 
+                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", nIndex }, { "nPort", nPort },{ "eImgChlType" , eImgChlType } }  } } } }
             };
             PublishAsyncClient(msg);
         }
@@ -226,7 +203,7 @@ namespace ColorVision.MQTT
                 EventName = "SetParam",
                 Params = new Dictionary<string, object>() {
                 {
-                    "NameFuc", new List<ParamFunction>() 
+                    "NameFuc", new List<ParamFunction>()
                     {
                         new ParamFunction(){Name ="CM_InitCalibration" },
                         new ParamFunction(){Name ="CM_UnInitCalibration" },
@@ -243,7 +220,7 @@ namespace ColorVision.MQTT
             PublishAsyncClient(msg);
             return true;
         }
-        public bool Open(string CameraID,TakeImageMode TakeImageMode,int ImageBpp)
+        public bool Open(string CameraID, TakeImageMode TakeImageMode, int ImageBpp)
         {
             MsgSend msg = new MsgSend
             {
@@ -253,8 +230,8 @@ namespace ColorVision.MQTT
             PublishAsyncClient(msg);
             return true;
         }
-         
-        public bool GetData(double expTime,double gain,string saveFileName = "1.tif")
+
+        public bool GetData(double expTime, double gain, string saveFileName = "1.tif")
         {
             MsgSend msg = new MsgSend
             {
@@ -267,22 +244,22 @@ namespace ColorVision.MQTT
 
         public bool GetAllCameraID()
         {
-              MsgSend msg = new MsgSend
-              {
+            MsgSend msg = new MsgSend
+            {
                 EventName = "CM_GetAllSnID",
-              };
+            };
             PublishAsyncClient(msg);
             return true;
         }
 
-        
+
 
         public bool SetCfwport()
         {
             MsgSend msg = new MsgSend
             {
                 EventName = "GetAutoExpTime",
-                Params = new Dictionary<string, object>() { 
+                Params = new Dictionary<string, object>() {
                     {
                         "SetCfwport", new List<Dictionary<string, object>>()
                         {
@@ -296,19 +273,19 @@ namespace ColorVision.MQTT
                                 { "nIndex",2},{ "nPort",2},{"eImgChlType",0 }
                             },
                         }
-                    } 
+                    }
                 }
             };
             PublishAsyncClient(msg);
             return true;
         }
 
-        public bool SetLicense(string md5,string FileData)
+        public bool SetLicense(string md5, string FileData)
         {
             MsgSend msg = new MsgSend
             {
                 EventName = "SaveLicense",
-                Params = new Dictionary<string, object>() { { "eType", 0}, { "FileName", md5 }, { "FileData", FileData } }
+                Params = new Dictionary<string, object>() { { "eType", 0 }, { "FileName", md5 }, { "FileData", FileData } }
             };
             PublishAsyncClient(msg);
             return true;
@@ -339,21 +316,21 @@ namespace ColorVision.MQTT
             return IsRun;
         }
 
-        
+
 
         public class CalibrationParamMQTT : ViewModelBase
         {
             public CalibrationParamMQTT(CalibrationParam item)
             {
-                this.Luminance = SetPath(item.SelectedLuminance, item.FileNameLuminance);
-                this.LumOneColor = SetPath(item.SelectedColorOne, item.FileNameColorOne);
-                this.LumFourColor = SetPath(item.SelectedColorFour, item.FileNameColorFour);
-                this.LumMultiColor = SetPath(item.SelectedColorMulti, item.FileNameColorMulti);
-                this.DarkNoise = SetPath(item.SelectedDarkNoise, item.FileNameDarkNoise);
-                this.DSNU = SetPath(item.SelectedDSNU, item.FileNameDSNU);
-                this.Distortion = SetPath(item.SelectedDistortion, item.FileNameDistortion);
-                this.DefectWPoint = SetPath(item.SelectedDefectWPoint, item.FileNameDefectWPoint);
-                this.DefectBPoint = SetPath(item.SelectedDefectBPoint, item.FileNameDefectBPoint);
+                Luminance = SetPath(item.SelectedLuminance, item.FileNameLuminance);
+                LumOneColor = SetPath(item.SelectedColorOne, item.FileNameColorOne);
+                LumFourColor = SetPath(item.SelectedColorFour, item.FileNameColorFour);
+                LumMultiColor = SetPath(item.SelectedColorMulti, item.FileNameColorMulti);
+                DarkNoise = SetPath(item.SelectedDarkNoise, item.FileNameDarkNoise);
+                DSNU = SetPath(item.SelectedDSNU, item.FileNameDSNU);
+                Distortion = SetPath(item.SelectedDistortion, item.FileNameDistortion);
+                DefectWPoint = SetPath(item.SelectedDefectWPoint, item.FileNameDefectWPoint);
+                DefectBPoint = SetPath(item.SelectedDefectBPoint, item.FileNameDefectBPoint);
             }
             private static string? SetPath(bool Check, string Name)
             {

@@ -1,6 +1,6 @@
 ﻿using ColorVision.Extension;
-using ColorVision.MQTT;
-using ColorVision.MQTT.Config;
+using ColorVision.MQTT.Camera;
+using ColorVision.MQTT.Service;
 using System;
 using System.Collections.Generic;
 using System.Linq;

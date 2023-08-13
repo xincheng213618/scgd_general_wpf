@@ -1,5 +1,7 @@
-﻿using ColorVision.MQTT;
-using ColorVision.MQTT.Config;
+﻿using ColorVision.MQTT.Camera;
+using ColorVision.MQTT.PG;
+using ColorVision.MQTT.SMU;
+using ColorVision.MQTT.Spectrum;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
@@ -8,14 +10,14 @@ using System;
 using System.ComponentModel.Design;
 using System.Windows.Controls;
 
-namespace ColorVision.Service
+namespace ColorVision.MQTT.Service
 {
     public class MQTTDevice : BaseObject
     {
 
         public SysResourceModel SysResourceModel { get; set; }
         public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
-       
+
         public MQTTDevice(SysResourceModel sysResourceModel) : base()
         {
             SysResourceModel = sysResourceModel;
@@ -24,7 +26,7 @@ namespace ColorVision.Service
             MenuItem menuItem = new MenuItem() { Header = "删除资源" };
             menuItem.Click += (s, e) =>
             {
-                this.Parent.RemoveChild(this);
+                Parent.RemoveChild(this);
                 if (SysResourceModel != null)
                     ServiceControl.GetInstance().ResourceService.DeleteById(SysResourceModel.Id);
 
@@ -103,7 +105,7 @@ namespace ColorVision.Service
 
 
     }
-    
+
     public class MQTTDeviceSpectrum : MQTTDevice
     {
         public SpectrumConfig Config { get; set; }
@@ -164,9 +166,9 @@ namespace ColorVision.Service
         }
 
 
-        public override string SendTopic { get =>Config.SendTopic; set { Config.SendTopic = value;  NotifyPropertyChanged(); } }
-        public override string SubscribeTopic { get =>Config.SubscribeTopic ; set { Config.SubscribeTopic = value; NotifyPropertyChanged(); } }
-        public override bool IsAlive { get => Config.IsAlive;set { Config.IsAlive = value; NotifyPropertyChanged(); } }
+        public override string SendTopic { get => Config.SendTopic; set { Config.SendTopic = value; NotifyPropertyChanged(); } }
+        public override string SubscribeTopic { get => Config.SubscribeTopic; set { Config.SubscribeTopic = value; NotifyPropertyChanged(); } }
+        public override bool IsAlive { get => Config.IsAlive; set { Config.IsAlive = value; NotifyPropertyChanged(); } }
 
         public override void Save()
         {
@@ -177,18 +179,18 @@ namespace ColorVision.Service
 
     }
 
-    public enum  MQTTDeviceType
+    public enum MQTTDeviceType
     {
         Camera = 1,
-        PG =2,
-        Spectum =3,
-        SMU =4,
+        PG = 2,
+        Spectum = 3,
+        SMU = 4,
     }
 
     public class MQTTService : BaseObject
     {
         public SysResourceModel SysResourceModel { get; set; }
-        public ServiceConfig ServiceConfig { get; set; }  
+        public ServiceConfig ServiceConfig { get; set; }
         public HeartbeatService HeartbeatService { get; set; }
 
         public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
@@ -218,7 +220,7 @@ namespace ColorVision.Service
             MenuItem menuItem = new MenuItem() { Header = "删除服务" };
             menuItem.Click += (s, e) =>
             {
-                this.Parent.RemoveChild(this);
+                Parent.RemoveChild(this);
                 if (SysResourceModel != null)
                 {
                     //先标记自己为删除状态，在将自己的子节点标记为删除状态

@@ -1,7 +1,6 @@
 ﻿using ColorVision.Extension;
-using ColorVision.MQTT;
-using ColorVision.MQTT.Config;
 using ColorVision.Template;
+using cvColorVision;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,82 +16,63 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace ColorVision.MQTT.Control
+namespace ColorVision.MQTT.Camera
 {
 
     /// <summary>
     /// 根据服务的MQTT相机
     /// </summary>
-    public partial class MQTTCameraControl : UserControl
+    public partial class MQTTCameraControl1 : UserControl
     {
         private MQTTCamera MQTTCamera { get; set; }
 
-        public MQTTCameraControl(MQTTCamera mQTTCamera)
+        public MQTTCameraControl1(MQTTCamera mQTTCamera)
         {
             MQTTCamera = mQTTCamera;
             InitializeComponent();
-            StackPanelCamera.DataContext = MQTTCamera;
-            MQTTCamera = mQTTCamera;
+
+        }
+        private void UserControl_Initialized(object sender, EventArgs e)
+        {
+            this.DataContext = MQTTCamera;
         }
 
         private void StackPanelCamera_Initialized(object sender, EventArgs e)
         {
-            //MQTTCamera.FileHandler += OpenImage;
-
-            ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()
-                                           select new KeyValuePair<CameraType, string>(e1, e1.ToDescription());
-            ComboxCameraType.SelectedIndex = 1;
-
-            ComboxCameraType.SelectionChanged += (s, e) =>
-            {
-                if (ComboxCameraType.SelectedItem is KeyValuePair<CameraType, string> KeyValue)
-                {
-                    if (KeyValue.Key == CameraType.BVQ)
-                    {
-                        StackPanelFilterWheel.Visibility = Visibility.Visible;
-                    }
-                    else
-                    {
-                        if (StackPanelFilterWheel.Visibility == Visibility.Visible)
-                        {
-                            StackPanelFilterWheel.Visibility = Visibility.Collapsed;
-                        }
-                    }
-                }
-            };
-
-
-            ComboxCameraTakeImageMode.ItemsSource = from e1 in Enum.GetValues(typeof(TakeImageMode)).Cast<TakeImageMode>()
-                                                    select new KeyValuePair<TakeImageMode, string>(e1, e1.ToDescription());
-            ComboxCameraTakeImageMode.SelectedIndex = 0;
-
-
-
             StackPanelOpen.Visibility = Visibility.Collapsed;
             StackPanelImage.Visibility = Visibility.Collapsed;
             CameraCloseButton.Visibility = Visibility.Collapsed;
             CameraOpenButton.Visibility = Visibility.Collapsed;
 
-            MQTTCamera.InitCameraSuccess += (s,e) =>
+            MQTTCamera.InitCameraSuccess += (s, e) =>
             {
-                ComboxCameraID.ItemsSource = MQTTCamera.CameraIDs;
-                ComboxCameraID.SelectedIndex = 0;
-                StackPanelOpen.Visibility = Visibility.Visible;
-                CameraOpenButton.Visibility = Visibility.Visible;
-                CameraCloseButton.Visibility = Visibility.Collapsed;
-                CamerInitButton.Content = "断开初始化";
+                if (e.SnID == MQTTCamera.Config.ID)
+                {
+                    ComboxCameraID.ItemsSource = MQTTCamera.CameraIDs;
+                    ComboxCameraID.SelectedIndex = 0;
+                    StackPanelOpen.Visibility = Visibility.Visible;
+                    CameraOpenButton.Visibility = Visibility.Visible;
+                    CameraCloseButton.Visibility = Visibility.Collapsed;
+                    CamerInitButton.Content = "断开初始化";
+                }
             };
-            MQTTCamera.OpenCameraSuccess += (s, e) =>
+            MQTTCamera.OpenCameraSuccess += (s,e) =>
             {
-                CameraCloseButton.Visibility = Visibility.Visible;
-                CameraOpenButton.Visibility = Visibility.Collapsed;
-                StackPanelImage.Visibility = Visibility.Visible;
+                if (e.SnID == MQTTCamera.Config.ID)
+                {
+                    CameraCloseButton.Visibility = Visibility.Visible;
+                    CameraOpenButton.Visibility = Visibility.Collapsed;
+                    StackPanelImage.Visibility = Visibility.Visible;
+                }
             };
-            MQTTCamera.CloseCameraSuccess += (s, e) =>
+            MQTTCamera.CloseCameraSuccess += (s,e) =>
             {
-                CameraCloseButton.Visibility = Visibility.Collapsed;
-                CameraOpenButton.Visibility = Visibility.Visible;
-                StackPanelImage.Visibility = Visibility.Collapsed;
+                if (e.SnID == MQTTCamera.Config.ID)
+                {
+                    CameraCloseButton.Visibility = Visibility.Collapsed;
+                    CameraOpenButton.Visibility = Visibility.Visible;
+                    StackPanelImage.Visibility = Visibility.Collapsed;
+                }
             };
         }
 
@@ -102,11 +82,8 @@ namespace ColorVision.MQTT.Control
             {
                 if (button.Content.ToString() == "初始化")
                 {
-                    if (ComboxCameraType.SelectedItem is KeyValuePair<CameraType, string> KeyValue && KeyValue.Key is CameraType cameraType)
-                    {
-                        MQTTCamera.Init(cameraType, ComboxCameraID.Text.ToString());
-                        CamerInitButton.Content = "正在初始化";
-                    }
+                    MQTTCamera.Init(MQTTCamera.Config.CameraType, MQTTCamera.Config.ID);
+                    CamerInitButton.Content = "正在初始化";
                 }
                 else
                 {
@@ -122,15 +99,7 @@ namespace ColorVision.MQTT.Control
 
         private void SendDemo2_Click(object sender, RoutedEventArgs e)
         {
-            if (ComboxCameraTakeImageMode.SelectedItem is KeyValuePair<TakeImageMode, string> KeyValue && KeyValue.Key is TakeImageMode takeImageMode)
-            {
-                if (string.IsNullOrEmpty(ComboxCameraID.Text))
-                {
-                    MessageBox.Show("找不到相机");
-                    return;
-                }
-                MQTTCamera.Open(ComboxCameraID.Text.ToString(), takeImageMode, int.Parse(ComboxCameraImageBpp.Text));
-            }
+            MQTTCamera.Open(MQTTCamera.Config.ID, MQTTCamera.Config.TakeImageMode, MQTTCamera.Config.ImageBpp);
         }
 
         private void SendDemo3_Click(object sender, RoutedEventArgs e)
@@ -183,5 +152,7 @@ namespace ColorVision.MQTT.Control
         {
             MQTTCamera.SetCfwport();
         }
+
+
     }
 }

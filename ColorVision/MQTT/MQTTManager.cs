@@ -1,4 +1,8 @@
-﻿using HslCommunication.MQTT;
+﻿using ColorVision.MQTT.Camera;
+using ColorVision.MQTT.PG;
+using ColorVision.MQTT.SMU;
+using ColorVision.MQTT.Spectrum;
+using HslCommunication.MQTT;
 using HslCommunication.Profinet.Panasonic.Helper;
 using System;
 using System.Collections.Generic;
@@ -23,9 +27,9 @@ namespace ColorVision.MQTT
 
         public ObservableCollection<MQTTPG> MQTTPGs { get; set; }
 
-        public ObservableCollection<MQTTSpectrum> MQTTSpectrums { get; set; }
+        public ObservableCollection<SpectrumService> MQTTSpectrums { get; set; }
 
-        public ObservableCollection<MQTTVISource> MQTTVISources { get; set; }
+        public ObservableCollection<SMUService> MQTTVISources { get; set; }
 
         public ObservableCollection<IHeartbeat> ServiceHeartbeats { get; set; }
          
@@ -36,8 +40,8 @@ namespace ColorVision.MQTT
 
             MQTTCameras = new ObservableCollection<MQTTCamera>();
             MQTTPGs = new ObservableCollection< MQTTPG>();
-            MQTTSpectrums = new ObservableCollection<MQTTSpectrum>();
-            MQTTVISources = new ObservableCollection<MQTTVISource>();
+            MQTTSpectrums = new ObservableCollection<SpectrumService>();
+            MQTTVISources = new ObservableCollection<SMUService>();
         }
 
         public void Reload()

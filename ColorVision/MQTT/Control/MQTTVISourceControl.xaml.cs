@@ -1,4 +1,5 @@
-﻿using ColorVision.Template;
+﻿using ColorVision.MQTT.SMU;
+using ColorVision.Template;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -23,10 +24,10 @@ namespace ColorVision.MQTT.Control
     /// </summary>
     public partial class MQTTVISourceControl : UserControl
     {
-        private MQTTVISource MQTTVISource { get; set; }
+        private SMUService MQTTVISource { get; set; }
 
 
-        public MQTTVISourceControl(MQTTVISource Source)
+        public MQTTVISourceControl(SMUService Source)
         {
             this.MQTTVISource = Source;
             InitializeComponent();
@@ -214,7 +215,7 @@ namespace ColorVision.MQTT.Control
 
         private void StackPanelVI_Initialized(object sender, EventArgs e)
         {
-            //MQTTVISource = new MQTTVISource();
+            //SMUService = new SMUService();
             passSxSource = new PassSxSource();
             passSxSource.IsNet = MQTTVISource.Device.Config.IsNet;
             passSxSource.DevName = MQTTVISource.Device.Config.ID;

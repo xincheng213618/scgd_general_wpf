@@ -1,26 +1,14 @@
 ﻿using ColorVision.MQTT;
-using ColorVision.MQTT.Config;
+using ColorVision.MQTT.Camera;
+using ColorVision.MQTT.Service;
+using ColorVision.MQTT.Spectrum;
 using ColorVision.MySql.DAO;
 using ColorVision.SettingUp;
-using ColorVision.Template;
-using HslCommunication.MQTT;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel.Design;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace ColorVision.Service
 {
@@ -77,7 +65,7 @@ namespace ColorVision.Service
         private void Button_New_Click(object sender, RoutedEventArgs e)
         {
 
-            if (!Util.IsInvalidPath(TextBox_Name.Text, "资源名称") || !Util.IsInvalidPath(TextBox_Code.Text, "资源标识"))
+            if (!MQTT.Util.IsInvalidPath(TextBox_Name.Text, "资源名称") || !MQTT.Util.IsInvalidPath(TextBox_Code.Text, "资源标识"))
                 return;
 
 

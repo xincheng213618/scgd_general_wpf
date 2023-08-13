@@ -1,4 +1,5 @@
-﻿using ColorVision.MySql.Service;
+﻿using ColorVision.MQTT.Spectrum;
+using ColorVision.MySql.Service;
 using Microsoft.VisualBasic;
 using OpenCvSharp.Flann;
 using ScottPlot;
@@ -18,7 +19,6 @@ using System.Windows.Markup;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using static ColorVision.MQTT.MQTTSpectrum;
 using static cvColorVision.GCSDLL;
 
 namespace ColorVision.Template

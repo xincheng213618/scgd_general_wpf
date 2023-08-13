@@ -1,4 +1,5 @@
-﻿using cvColorVision;
+﻿using ColorVision.MQTT.Spectrum;
+using cvColorVision;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,7 +14,6 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using static ColorVision.MQTT.MQTTSpectrum;
 using static cvColorVision.GCSDLL;
 
 namespace ColorVision.MQTT.Control
@@ -23,15 +23,15 @@ namespace ColorVision.MQTT.Control
     /// </summary>
     public partial class MQTTSpectrumControl : UserControl
     {
-        public MQTTSpectrum Spectrum { get; set; }
+        public SpectrumService Spectrum { get; set; }
         private WindowSpectrum? windowSpectrum;
-        public MQTTSpectrumControl(MQTTSpectrum spectrum)
+        public MQTTSpectrumControl(SpectrumService spectrum)
         {
             this.Spectrum = spectrum;
             InitializeComponent();
         }
 
-        private MQTTSpectrum GetSpectrum()
+        private SpectrumService GetSpectrum()
         {
             return Spectrum;
         }

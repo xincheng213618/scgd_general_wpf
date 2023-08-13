@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace ColorVision.Service
+namespace ColorVision.MQTT
 {
     internal static class Util
     {

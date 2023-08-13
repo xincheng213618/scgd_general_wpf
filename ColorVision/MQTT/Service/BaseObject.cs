@@ -4,7 +4,7 @@ using ColorVision.MVVM;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
-namespace ColorVision.Service
+namespace ColorVision.MQTT.Service
 {
     public static class BaseObjectExtensions
     {
@@ -27,7 +27,7 @@ namespace ColorVision.Service
     {
         public RelayCommand SaveCommand { get; set; }
         public ContextMenu ContextMenu { get; set; }
-        public  ObservableCollection<BaseObject> VisualChildren { get; set; }
+        public ObservableCollection<BaseObject> VisualChildren { get; set; }
 
         public ServiceControl ServiceControl { get; set; }
         public BaseObject()

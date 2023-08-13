@@ -1,28 +1,21 @@
-﻿using ColorVision.MQTT.Config;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ColorVision.MQTT
+namespace ColorVision.MQTT.Sensor
 {
-
-    public class SensorConfig : BaseService
-    {
-
-    }
 
 
     /// <summary>
     /// 传感器的部分
     /// </summary>
 
-    public class SensorService : BaseService
+    public class SensorService : BaseService<SensorConfig>
     {
-        public SensorConfig Config { get; set; }
 
-        public SensorService()
+        public SensorService(SensorConfig sensorConfig):base(sensorConfig)
         {
             Config = new SensorConfig();
             MQTTControl = MQTTControl.GetInstance();

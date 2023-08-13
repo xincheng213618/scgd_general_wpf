@@ -1,4 +1,6 @@
 ﻿using ColorVision.MQTT;
+using ColorVision.MQTT.Service;
+using ColorVision.MQTT.SMU;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,7 +26,7 @@ namespace ColorVision.Service
         public MQTTDeviceSMU MQTTDeviceSMU { get; set; }
         public ServiceControl ServiceControl { get; set; }
 
-        private MQTTVISource? device;
+        private SMUService? device;
         private bool disposedValue;
         private bool disposedObj;
 
@@ -34,7 +36,7 @@ namespace ColorVision.Service
             this.MQTTDeviceSMU = mqttDeviceSMU;
             InitializeComponent();
             MQTTManager manager = MQTTManager.GetInstance();
-            foreach (MQTTVISource sp in manager.MQTTVISources)
+            foreach (SMUService sp in manager.MQTTVISources)
             {
                 if (sp.Device.SysResourceModel.Id == this.MQTTDeviceSMU.SysResourceModel.Id)
                 {
@@ -45,7 +47,7 @@ namespace ColorVision.Service
 
             if (device == null)
             {
-                device = new MQTTVISource(this.MQTTDeviceSMU);
+                device = new SMUService(this.MQTTDeviceSMU);
                 disposedObj = true;
             }
         }
