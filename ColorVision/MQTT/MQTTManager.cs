@@ -23,25 +23,13 @@ namespace ColorVision.MQTT
 
         public event EventHandler DeviceSettingChanged;
 
-        public ObservableCollection<MQTTCamera> MQTTCameras { get; set; }
 
-        public ObservableCollection<PGService> MQTTPGs { get; set; }
-
-        public ObservableCollection<SpectrumService> MQTTSpectrums { get; set; }
-
-        public ObservableCollection<SMUService> MQTTVISources { get; set; }
-
-        public ObservableCollection<IHeartbeat> ServiceHeartbeats { get; set; }
+        public ObservableCollection<BaseService> Services { get; set; }
          
         public MQTTManager()
         {
             MQTTControl = MQTTControl.GetInstance();
-            ServiceHeartbeats = new ObservableCollection<IHeartbeat>();
-
-            MQTTCameras = new ObservableCollection<MQTTCamera>();
-            MQTTPGs = new ObservableCollection< PGService>();
-            MQTTSpectrums = new ObservableCollection<SpectrumService>();
-            MQTTVISources = new ObservableCollection<SMUService>();
+            Services = new ObservableCollection<BaseService>();
         }
 
         public void Reload()

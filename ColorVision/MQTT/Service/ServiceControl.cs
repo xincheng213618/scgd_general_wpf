@@ -44,25 +44,10 @@ namespace ColorVision.MQTT.Service
         public void GenContorl()
         {
             MQTTManager MQTTManager = MQTTManager.GetInstance();
-            foreach (var item in MQTTManager.MQTTCameras)
+            foreach (var item in MQTTManager.Services)
                 item.Dispose();
-            MQTTManager.MQTTCameras.Clear();
+            MQTTManager.Services.Clear();
 
-            foreach (var item in MQTTManager.MQTTSpectrums)
-                item.Dispose();
-            MQTTManager.MQTTSpectrums.Clear();
-
-
-            foreach (var item in MQTTManager.MQTTVISources)
-                item.Dispose();
-            MQTTManager.MQTTVISources.Clear();
-
-
-            foreach (var item in MQTTManager.MQTTPGs)
-                item.Dispose();
-            MQTTManager.MQTTPGs.Clear();
-
-            MQTTManager.ServiceHeartbeats.Clear();
 
             foreach (var mQTTServiceKind in MQTTServices)
             {
@@ -73,25 +58,26 @@ namespace ColorVision.MQTT.Service
                         if (item is DeviceCamera deviceCamera)
                         {
                             MQTTCamera Camera1 = new MQTTCamera(deviceCamera.Config);
-                            MQTTManager.MQTTCameras.Add(Camera1);
-                            MQTTManager.ServiceHeartbeats.Add(Camera1);
+                            MQTTManager.Services.Add(Camera1);
                         }
                         else if (item is DevicePG devicePG)
                         {
                             PGService mQTTPG = new PGService(devicePG.Config);
-                            MQTTManager.MQTTPGs.Add(mQTTPG);
-                            MQTTManager.ServiceHeartbeats.Add(mQTTPG);
+                            MQTTManager.Services.Add(mQTTPG);
                         }
                         else if (item is DeviceSpectrum deviceSpectrum)
                         {
                             SpectrumService mQTTSpectrum = new SpectrumService(deviceSpectrum);
-                            MQTTManager.MQTTSpectrums.Add(mQTTSpectrum);
-                            MQTTManager.ServiceHeartbeats.Add(mQTTSpectrum);
+                            MQTTManager.Services.Add(mQTTSpectrum);
                         }
                         else if (item is DeviceSMU smu)
                         {
                             SMUService mQTTVISource = new SMUService(smu);
-                            MQTTManager.MQTTVISources.Add(mQTTVISource);
+                            MQTTManager.Services.Add(mQTTVISource);
+                        }
+                        else if (item is DeviceSensor deviceSensor)
+                        {
+
                         }
 
                     }

@@ -18,6 +18,7 @@ using ColorVision.MQTT.Camera;
 using ColorVision.MQTT.PG;
 using ColorVision.MQTT.Spectrum;
 using ColorVision.MQTT.SMU;
+using ColorVision.MQTT.Sensor;
 
 namespace ColorVision
 {
@@ -235,11 +236,6 @@ namespace ColorVision
         }
 
 
-        private void MenuItem11_Click(object sender, RoutedEventArgs e)
-        {
-            new HeartbeatWindow() { Owner = this }.Show();
-        }
-
         private void MenuItem12_Click(object sender, RoutedEventArgs e)
         {
             new MQTTList() { Owner = this }.Show();
@@ -302,76 +298,9 @@ namespace ColorVision
             FlowTemplate.SelectedIndex = 0;
         }
 
-        private void StackPanelMQTTCameras_Initialized(object sender, EventArgs e)
-        {
-            if (sender is StackPanel stackPanel)
-            {
-                MQTTManager.DeviceSettingChanged += (s, e) =>
-                {
-                    stackPanel.Children.Clear();
-                    foreach (var item in MQTTManager.MQTTCameras)
-                    {
-                        MQTTCameraControl1 Control = new MQTTCameraControl1(item);
-                        item.FileHandler += (s, e) =>
-                        {
-                            //OpenImage(e);
-                        };
-                        stackPanel.Children.Add(Control);
-                    }
 
-                };
-            }
-        }
-
-        private void StackPanelMQTTPGs_Initialized(object sender, EventArgs e)
-        {
-            if (sender is StackPanel stackPanel)
-            {
-                MQTTManager.DeviceSettingChanged += (s, e) =>
-                {
-                    stackPanel.Children.Clear();
-                    foreach (var item in MQTTManager.MQTTPGs)
-                    {
-                        MQTTPGControl Control = new MQTTPGControl(item);
-                        stackPanel.Children.Add(Control);
-                    }
-                };
-            }
-          
-        }
 
         public MQTTManager MQTTManager { get; set; } = MQTTManager.GetInstance();
-        private void StackPanelMQTTSpectrums_Initialized(object sender, EventArgs e)
-        {
-            if (sender is StackPanel stackPanel)
-            {
-                MQTTManager.DeviceSettingChanged += (s, e) =>
-                {
-                    stackPanel.Children.Clear();
-                    foreach (var item in MQTTManager.MQTTSpectrums)
-                    {
-                        MQTTSpectrumControl Control = new MQTTSpectrumControl(item);
-                        stackPanel.Children.Add(Control);
-                    }
-                };
-            }
-        }
-
-        private void StackPanelMQTTVIs_Initialized(object sender, EventArgs e)
-        {
-            if (sender is StackPanel stackPanel)
-            {
-                MQTTManager.DeviceSettingChanged += (s, e) =>
-                {
-                    stackPanel.Children.Clear();
-                    foreach (var item in MQTTManager.MQTTVISources)
-                    {
-                        MQTTSMUControl Control = new MQTTSMUControl(item);
-                        stackPanel.Children.Add(Control);
-                    }
-                };
-            }
-        }
 
         private void MenuItem13_Click(object sender, RoutedEventArgs e)
         {
@@ -401,6 +330,50 @@ namespace ColorVision
         private void Button8_Click(object sender, RoutedEventArgs e)
         {
             ViewGridManager.SetViewNum(4);
+        }
+
+        private void StackPanelMQTT_Initialized(object sender, EventArgs e)
+        {
+            if (sender is StackPanel stackPanel)
+            {
+                MQTTManager.DeviceSettingChanged += (s, e) =>
+                {
+                    stackPanel.Children.Clear();
+                    foreach (var item in MQTTManager.Services)
+                    {
+                        if (item is MQTTCamera camera)
+                        {
+                            MQTTCameraControl1 mQTTCameraControl = new MQTTCameraControl1(camera);
+                            camera.FileHandler += (s, e) =>
+                            {
+                                //OpenImage(e);
+                            };
+                            stackPanel.Children.Add(mQTTCameraControl);
+                        }
+                        else if (item is SpectrumService spectrum)
+                        {
+                            MQTTSpectrumControl mQTTSpectrumControl = new MQTTSpectrumControl(spectrum);
+                            stackPanel.Children.Add(mQTTSpectrumControl);
+
+                        }
+                        else if (item is PGService pGService)
+                        {
+                            MQTTPGControl mQTTPGControl = new MQTTPGControl(pGService);
+                            stackPanel.Children.Add(mQTTPGControl);
+                        }
+                        else if (item is SMUService mUService)
+                        {
+                            MQTTSMUControl mQTTSMUControl = new MQTTSMUControl(mUService);
+                            stackPanel.Children.Add(mQTTSMUControl);
+                        }
+                        else if (item is SensorService sensorService)
+                        {
+                            HandyControl.Controls.Growl.Info("SensorService开发中");
+                        }
+                    }
+
+                };
+            }
         }
     }
 

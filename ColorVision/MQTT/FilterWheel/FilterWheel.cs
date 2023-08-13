@@ -9,13 +9,13 @@ using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Media.Media3D;
 
-namespace ColorVision.MQTT
+namespace ColorVision.MQTT.FilterWheel
 {
 
-    public class FilterWheel:BaseService<BaseDeviceConfig>
+    public class FilterWheel : BaseService<BaseDeviceConfig>
     {
 
-        public FilterWheel(BaseDeviceConfig baseDeviceConfig):base (baseDeviceConfig)
+        public FilterWheel(BaseDeviceConfig baseDeviceConfig) : base(baseDeviceConfig)
         {
             MQTTControl = MQTTControl.GetInstance();
             MQTTControl.SubscribeCache(SubscribeTopic);

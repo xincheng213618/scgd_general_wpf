@@ -13,7 +13,7 @@ namespace ColorVision.MQTT
         public virtual string SendTopic { get; set; }
         public virtual string SubscribeTopic { get; set; }
         public virtual bool IsAlive { get; set; }
-        public virtual DateTime  { get; set; }
+        public virtual DateTime LastAliveTime { get; set; }
 
     }
 

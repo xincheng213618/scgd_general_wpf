@@ -74,7 +74,6 @@
                 <MenuItem Header="工具(_T)">
                     <MenuItem Header="流程引擎(_F)" Click="MenuItem9_Click"/>
                     <MenuItem Header="MQTT日志(_Q)" Click="MenuItem_Click"/>
-                    <MenuItem Header="MQTT心跳(_H)" Click="MenuItem11_Click"/>
                     <MenuItem Header="MQTT列表(_L)" Click="MenuItem12_Click"/>
                     <MenuItem Header="MQTT服务(_S)" Click="MenuItem13_Click"/>
 
@@ -126,14 +125,9 @@
                             </Border>
                         </StackPanel>
 
-                        <StackPanel x:Name="StackPanelMQTTPGs" Initialized="StackPanelMQTTPGs_Initialized">
+                        <StackPanel x:Name="StackPanelMQTT" Initialized="StackPanelMQTT_Initialized">
 
                         </StackPanel>
-
-                        <StackPanel x:Name="StackPanelMQTTCameras" Initialized="StackPanelMQTTCameras_Initialized">
-                            
-                        </StackPanel>
-
 
                         <StackPanel Margin="0,5"  x:Name="StackPanelCalibration" Initialized="StackPanelCalibration_Initialized">
                             <ToggleButton  x:Name="ToggleButton2"  Style="{StaticResource ButtonPageControl1}" Content="校正" Background="#F9F9F9"  FontSize="15" Foreground="Black" IsChecked="False" />
@@ -146,12 +140,6 @@
                                     <Template:Calibration x:Name="Calibration1" />
                                 </StackPanel>
                             </Border>
-                        </StackPanel>
-                        <StackPanel x:Name="StackPanelMQTTSpectrums" Initialized="StackPanelMQTTSpectrums_Initialized">
-
-                        </StackPanel>
-                        <StackPanel x:Name="StackPanelMQTTVIs" Initialized="StackPanelMQTTVIs_Initialized">
-
                         </StackPanel>
 
 
