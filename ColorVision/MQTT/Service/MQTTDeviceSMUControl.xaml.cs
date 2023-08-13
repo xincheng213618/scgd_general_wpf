@@ -23,14 +23,14 @@ namespace ColorVision.Service
     /// </summary>
     public partial class MQTTDeviceSMUControl : UserControl, IDisposable
     {
-        public MQTTDeviceSMU MQTTDeviceSMU { get; set; }
+        public DeviceSMU MQTTDeviceSMU { get; set; }
         public ServiceControl ServiceControl { get; set; }
 
         private SMUService? device;
         private bool disposedValue;
         private bool disposedObj;
 
-        public MQTTDeviceSMUControl(MQTTDeviceSMU mqttDeviceSMU)
+        public MQTTDeviceSMUControl(DeviceSMU mqttDeviceSMU)
         {
             this.disposedObj = false;
             this.MQTTDeviceSMU = mqttDeviceSMU;

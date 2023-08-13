@@ -16,17 +16,17 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace ColorVision.Service
+namespace ColorVision.MQTT.Camera
 {
     /// <summary>
-    /// MQTTDeviceCameraControl.xaml 的交互逻辑
+    /// DeviceCameraControl.xaml 的交互逻辑
     /// </summary>
-    public partial class MQTTDeviceCameraControl : UserControl
+    public partial class DeviceCameraControl : UserControl
     {
-        public MQTTDeviceCamera MQTTDeviceCamera { get; set; }
+        public DeviceCamera MQTTDeviceCamera { get; set; }
         public ServiceControl ServiceControl { get; set; }
 
-        public MQTTDeviceCameraControl(MQTTDeviceCamera mQTTDeviceCamera)
+        public DeviceCameraControl(DeviceCamera mQTTDeviceCamera)
         {
             MQTTDeviceCamera = mQTTDeviceCamera;
             InitializeComponent();

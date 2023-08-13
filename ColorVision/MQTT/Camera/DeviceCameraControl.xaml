@@ -1,12 +1,12 @@
-﻿<UserControl x:Class="ColorVision.Service.MQTTDeviceCameraControl"
+﻿<UserControl x:Class="ColorVision.MQTT.Camera.DeviceCameraControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:ColorVision.Service"
+             xmlns:local="clr-namespace:ColorVision.MQTT.Camera"
              mc:Ignorable="d" 
              xmlns:hc="https://handyorg.github.io/handycontrol"
-             d:DataContext="{d:DesignInstance local:MQTTDeviceCamera}"
+             d:DataContext="{d:DesignInstance local:DeviceCamera}"
              d:DesignHeight="400" d:DesignWidth="600" Initialized="UserControl_Initialized">
     <Grid>
         <Grid Margin="0,0,0,5">

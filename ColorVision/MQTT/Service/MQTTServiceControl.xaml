@@ -1,9 +1,10 @@
-﻿<UserControl x:Class="ColorVision.Service.MQTTServiceControl"
+﻿<UserControl x:Class="ColorVision.MQTT.Service.MQTTServiceControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.MQTT.Service"
+             xmlns:mqtt="clr-namespace:ColorVision.MQTT"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:MQTTService}"
              d:DesignHeight="500" d:DesignWidth="600" Initialized="UserControl_Initialized">
@@ -90,14 +91,14 @@
                 <GridView>
                     <GridViewColumn  Header="设备名称">
                         <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:MQTTDevice}">
+                            <DataTemplate  DataType="{x:Type mqtt:MQTTDevice}">
                                 <TextBlock Text="{ Binding Name}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn  Header="是否存活">
                         <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:MQTTDevice}">
+                            <DataTemplate  DataType="{x:Type mqtt:MQTTDevice}">
                                 <TextBlock Text="{ Binding  IsAlive}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>

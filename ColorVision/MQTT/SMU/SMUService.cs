@@ -14,9 +14,9 @@ namespace ColorVision.MQTT.SMU
 
     public class SMUService : BaseService<SMUConfig>
     {
-        public MQTTDeviceSMU Device { get; set; }
+        public DeviceSMU Device { get; set; }
 
-        public SMUService(MQTTDeviceSMU device) : base(device.Config)
+        public SMUService(DeviceSMU device) : base(device.Config)
         {
             this.Device = device;
 

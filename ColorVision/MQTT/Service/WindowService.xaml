@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.MQTT.Service"
+        xmlns:mqtt="clr-namespace:ColorVision.MQTT"
         mc:Ignorable="d"
         Title="WindowService" Height="600" Width="800" Initialized="Window_Initialized" >
     <Grid>
@@ -28,7 +29,7 @@
                             <TextBlock Text="{Binding Name}"/>
                         </StackPanel>
                     </HierarchicalDataTemplate>
-                    <HierarchicalDataTemplate DataType="{x:Type local:MQTTDevice}" ItemsSource="{Binding VisualChildren}" >
+                    <HierarchicalDataTemplate DataType="{x:Type mqtt:MQTTDevice}" ItemsSource="{Binding VisualChildren}" >
                         <StackPanel>
                             <TextBlock Text="{Binding Name}"/>
                         </StackPanel>

@@ -10,7 +10,7 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Service
+namespace ColorVision.MQTT.Service
 {
     /// <summary>
     /// MQTTServiceControl.xaml 的交互逻辑
@@ -91,7 +91,7 @@ namespace ColorVision.Service
                     ServiceControl.ResourceService.Save(sysResource);
                     int pkId = sysResource.GetPK();
                     if (pkId > 0 && ServiceControl.ResourceService.GetMasterById(pkId) is SysResourceModel model)
-                        mQTTService.AddChild(new MQTTDeviceCamera(model));
+                        mQTTService.AddChild(new DeviceCamera(model));
                 }
                 else if (mQTTService.Type == MQTTDeviceType.PG)
                 {
@@ -108,7 +108,7 @@ namespace ColorVision.Service
                     ServiceControl.ResourceService.Save(sysResource);
                     int pkId = sysResource.GetPK();
                     if (pkId > 0 && ServiceControl.ResourceService.GetMasterById(pkId) is SysResourceModel model)
-                        mQTTService.AddChild(new MQTTDevicePG(model));
+                        mQTTService.AddChild(new DevicePG(model));
                 }
                 else if (mQTTService.Type == MQTTDeviceType.Spectum)
                 {
@@ -127,12 +127,8 @@ namespace ColorVision.Service
                 }
                 else
                 {
-                    ServiceControl.ResourceService.Save(sysResource);
-                    int pkId = sysResource.GetPK();
-                    if (pkId > 0 && ServiceControl.ResourceService.GetMasterById(pkId) is SysResourceModel model)
-                        mQTTService.AddChild(new MQTTDevice(model));
-                }
 
+                }
 
                 MessageBox.Show("添加资源成功");
                 MQTTCreate.Visibility = Visibility.Collapsed;

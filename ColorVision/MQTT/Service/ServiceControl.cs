@@ -69,13 +69,13 @@ namespace ColorVision.MQTT.Service
                 {
                     foreach (var item in mQTTService.VisualChildren)
                     {
-                        if (item is MQTTDeviceCamera deviceCamera)
+                        if (item is DeviceCamera deviceCamera)
                         {
                             MQTTCamera Camera1 = new MQTTCamera(deviceCamera.Config);
                             MQTTManager.MQTTCameras.Add(Camera1);
                             MQTTManager.ServiceHeartbeats.Add(Camera1);
                         }
-                        else if (item is MQTTDevicePG devicePG)
+                        else if (item is DevicePG devicePG)
                         {
                             MQTTPG mQTTPG = new MQTTPG(devicePG.Config);
                             MQTTManager.MQTTPGs.Add(mQTTPG);
@@ -87,7 +87,7 @@ namespace ColorVision.MQTT.Service
                             MQTTManager.MQTTSpectrums.Add(mQTTSpectrum);
                             MQTTManager.ServiceHeartbeats.Add(mQTTSpectrum);
                         }
-                        else if (item is MQTTDeviceSMU smu)
+                        else if (item is DeviceSMU smu)
                         {
                             SMUService mQTTVISource = new SMUService(smu);
                             MQTTManager.MQTTVISources.Add(mQTTVISource);
@@ -123,12 +123,12 @@ namespace ColorVision.MQTT.Service
                             {
                                 if (device.Type == (int)MQTTDeviceType.Camera)
                                 {
-                                    MQTTDeviceCamera camera = new MQTTDeviceCamera(device);
+                                    DeviceCamera camera = new DeviceCamera(device);
                                     mQTTService.AddChild(camera);
                                 }
                                 else if (device.Type == (int)MQTTDeviceType.PG)
                                 {
-                                    MQTTDevicePG pg = new MQTTDevicePG(device);
+                                    DevicePG pg = new DevicePG(device);
                                     mQTTService.AddChild(pg);
                                 }
                                 else if (device.Type == (int)MQTTDeviceType.Spectum)
@@ -138,14 +138,10 @@ namespace ColorVision.MQTT.Service
                                 }
                                 else if (device.Type == (int)MQTTDeviceType.SMU)
                                 {
-                                    MQTTDeviceSMU smu = new MQTTDeviceSMU(device);
+                                    DeviceSMU smu = new DeviceSMU(device);
                                     mQTTService.AddChild(smu);
                                 }
-                                else
-                                {
-                                    MQTTDevice other_device = new MQTTDevice(device);
-                                    mQTTService.AddChild(other_device);
-                                }
+
 
 
 
