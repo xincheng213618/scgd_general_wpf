@@ -19,6 +19,7 @@ using ColorVision.MQTT.PG;
 using ColorVision.MQTT.Spectrum;
 using ColorVision.MQTT.SMU;
 using ColorVision.MQTT.Sensor;
+using HandyControl.Controls;
 
 namespace ColorVision
 {
@@ -374,6 +375,11 @@ namespace ColorVision
 
                 };
             }
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            new  HandyControl.Controls.Screenshot().Start();
         }
     }
 

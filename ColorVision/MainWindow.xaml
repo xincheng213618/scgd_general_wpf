@@ -119,6 +119,7 @@
                                         <Button Content="1"  Margin="10,0"  Click="Button6_Click"/>
                                         <Button Content="2"  Margin="10,0"  Click="Button7_Click"/>
                                         <Button Content="4"  Margin="10,0"  Click="Button8_Click"/>
+                                        <Button Content="截图" Click="Button_Click_1"/>
 
                                     </UniformGrid>
                                 </StackPanel>
