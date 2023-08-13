@@ -19,7 +19,6 @@ using ColorVision.MQTT.PG;
 using ColorVision.MQTT.Spectrum;
 using ColorVision.MQTT.SMU;
 using ColorVision.MQTT.Sensor;
-using HandyControl.Controls;
 
 namespace ColorVision
 {
@@ -316,21 +315,49 @@ namespace ColorVision
         private void Button5_Click(object sender, RoutedEventArgs e)
         {
             ViewGridManager.AddView( new ImageView());
+            foreach (var item in ViewGridManager.Views)
+            {
+                if (item is ImageView imageView)
+                {
+                    imageView.Zoombox1.ZoomUniformToFill();
+                }
+            }
         }
 
         private void Button6_Click(object sender, RoutedEventArgs e)
         {
             ViewGridManager.SetViewNum(1);
+            foreach (var item in ViewGridManager.Views)
+            {
+                if (item is ImageView imageView)
+                {
+                    imageView.Zoombox1.ZoomUniformToFill();
+                }
+            }
         }
 
         private void Button7_Click(object sender, RoutedEventArgs e)
         {
             ViewGridManager.SetViewNum(2);
+            foreach (var item in ViewGridManager.Views)
+            {
+                if (item is ImageView imageView)
+                {
+                    imageView.Zoombox1.ZoomUniformToFill();
+                }
+            }
         }
 
         private void Button8_Click(object sender, RoutedEventArgs e)
         {
             ViewGridManager.SetViewNum(4);
+            foreach (var item in ViewGridManager.Views)
+            {
+                if (item is ImageView imageView)
+                {
+                    imageView.Zoombox1.ZoomUniformToFill();
+                }
+            }
         }
 
         private void StackPanelMQTT_Initialized(object sender, EventArgs e)
