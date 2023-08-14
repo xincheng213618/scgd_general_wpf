@@ -4,7 +4,8 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision"
-        xmlns:Template="clr-namespace:ColorVision.Template" x:Class="ColorVision.WindowSpectrum"
+        xmlns:Template="clr-namespace:ColorVision.Template"
+    x:Class="ColorVision.WindowSpectrum"
         mc:Ignorable="d"
         Title="WindowSpectrum" Height="780" Width="800">
     <Grid>

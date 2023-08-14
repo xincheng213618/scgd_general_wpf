@@ -30,7 +30,6 @@ namespace ColorVision
     {
         public ToolBarTop ToolBarTop { get; set; }
 
-
         public ImageView()
         {
             InitializeComponent();
@@ -117,7 +116,6 @@ namespace ColorVision
                 dc.DrawLine(new Pen(Brushes.Blue, 1), new Point(0, j), new Point(bitmapImage.Width, j));
             }
         }
-
 
         private void DrawImageRuler()
         {
