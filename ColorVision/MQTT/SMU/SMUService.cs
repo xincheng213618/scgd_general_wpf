@@ -1,4 +1,5 @@
-﻿using MQTTnet.Client;
+﻿using ColorVision.MQTT.Spectrum;
+using MQTTnet.Client;
 using Newtonsoft.Json;
 using System;
 using System.Text;
@@ -13,14 +14,13 @@ namespace ColorVision.MQTT.SMU
 
     public class SMUService : BaseService<SMUConfig>
     {
-        public DeviceSMU Device { get; set; }
-
-        public SMUService(DeviceSMU device) : base(device.Config)
+        public SMUService(SMUConfig sMUConfig) : base(sMUConfig)
         {
-            this.Device = device;
+            this.Config = sMUConfig;
 
-            this.SendTopic = device.Config.SendTopic;
-            this.SubscribeTopic = device.Config.SubscribeTopic;
+            this.SendTopic = sMUConfig.SendTopic;
+            this.SubscribeTopic = sMUConfig.SubscribeTopic;
+
             MQTTControl = MQTTControl.GetInstance();
             MQTTControl.SubscribeCache(SubscribeTopic);
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;

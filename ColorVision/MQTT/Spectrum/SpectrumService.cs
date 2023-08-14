@@ -17,13 +17,6 @@ namespace ColorVision.MQTT.Spectrum
         public event MQTTAutoParamHandler AutoParamHandlerEvent;
         public event MQTTSpectrumHeartbeatHandler HeartbeatHandlerEvent;
 
-        public DeviceSpectrum Device { get; set; }
-
-        public SpectrumService(DeviceSpectrum device) : this(device.Config)
-        {
-            this.Device = device;
-        }
-
         public SpectrumService(SpectrumConfig spectrumConfig) : base(spectrumConfig)
         {
             this.Config = spectrumConfig;

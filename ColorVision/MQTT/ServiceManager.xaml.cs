@@ -16,14 +16,6 @@ using System.Windows.Shapes;
 
 namespace ColorVision.MQTT
 {
-   
-    public class ServiceManager
-    {
-
-    }
-
-
-
     /// <summary>
     /// ServiceManagerWindow.xaml 的交互逻辑
     /// </summary>

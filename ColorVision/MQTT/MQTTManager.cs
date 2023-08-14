@@ -11,6 +11,7 @@ using System.IO.Ports;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Controls;
 
 namespace ColorVision.MQTT
 {
@@ -23,21 +24,15 @@ namespace ColorVision.MQTT
 
         public event EventHandler DeviceSettingChanged;
 
+        public StackPanel MQTTStackPanel { get; set; }
 
         public ObservableCollection<BaseService> Services { get; set; }
-
 
         public MQTTManager()
         {
             MQTTControl = MQTTControl.GetInstance();
             Services = new ObservableCollection<BaseService>();
+            MQTTStackPanel = new StackPanel();
         }
-
-        public void Reload()
-        {
-            DeviceSettingChanged?.Invoke(this, new EventArgs());
-        }
-        
-
     }
 }

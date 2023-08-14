@@ -2,6 +2,8 @@
 using ColorVision.Extension;
 using ColorVision.MQTT.Service;
 using ColorVision.MVVM;
+using MQTTnet.Internal;
+using System;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
@@ -26,6 +28,7 @@ namespace ColorVision.MQTT
 
     public class BaseObject : ViewModelBase
     {
+
         public RelayCommand SaveCommand { get; set; }
         public ContextMenu ContextMenu { get; set; }
         public ObservableCollection<BaseObject> VisualChildren { get; set; }

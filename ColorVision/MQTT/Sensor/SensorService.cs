@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ColorVision.MQTT.SMU;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,10 +18,13 @@ namespace ColorVision.MQTT.Sensor
 
         public SensorService(SensorConfig sensorConfig):base(sensorConfig)
         {
-            Config = new SensorConfig();
+            this.Config = sensorConfig;
+
+            this.SendTopic = sensorConfig.SendTopic;
+            this.SubscribeTopic = sensorConfig.SubscribeTopic;
+
+
             MQTTControl = MQTTControl.GetInstance();
-            SendTopic = "Sensor";
-            SubscribeTopic = "SensorService";
             MQTTControl.SubscribeCache(SubscribeTopic);
         }
 

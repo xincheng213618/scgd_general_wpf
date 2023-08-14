@@ -364,43 +364,7 @@ namespace ColorVision
         {
             if (sender is StackPanel stackPanel)
             {
-                MQTTManager.DeviceSettingChanged += (s, e) =>
-                {
-                    stackPanel.Children.Clear();
-                    foreach (var item in MQTTManager.Services)
-                    {
-                        if (item is MQTTCamera camera)
-                        {
-                            MQTTCameraControl1 mQTTCameraControl = new MQTTCameraControl1(camera);
-                            camera.FileHandler += (s, e) =>
-                            {
-                                //OpenImage(e);
-                            };
-                            stackPanel.Children.Add(mQTTCameraControl);
-                        }
-                        else if (item is SpectrumService spectrum)
-                        {
-                            MQTTSpectrumControl mQTTSpectrumControl = new MQTTSpectrumControl(spectrum);
-                            stackPanel.Children.Add(mQTTSpectrumControl);
-
-                        }
-                        else if (item is PGService pGService)
-                        {
-                            MQTTPGControl mQTTPGControl = new MQTTPGControl(pGService);
-                            stackPanel.Children.Add(mQTTPGControl);
-                        }
-                        else if (item is SMUService mUService)
-                        {
-                            MQTTSMUControl mQTTSMUControl = new MQTTSMUControl(mUService);
-                            stackPanel.Children.Add(mQTTSMUControl);
-                        }
-                        else if (item is SensorService sensorService)
-                        {
-                            HandyControl.Controls.Growl.Info("SensorService开发中");
-                        }
-                    }
-
-                };
+                stackPanel.Children.Add(MQTTManager.MQTTStackPanel);
             }
         }
 

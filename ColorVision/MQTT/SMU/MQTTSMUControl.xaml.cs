@@ -219,10 +219,9 @@ namespace ColorVision.MQTT.SMU
 
         private void StackPanelVI_Initialized(object sender, EventArgs e)
         {
-            //SMUService = new SMUService();
             passSxSource = new PassSxSource();
-            passSxSource.IsNet = SMUService.Device.Config.IsNet;
-            passSxSource.DevName = SMUService.Device.Config.ID;
+            passSxSource.IsNet = SMUService.Config.IsNet;
+            passSxSource.DevName = SMUService.Config.ID;
             StackPanelVI.DataContext = passSxSource;
 
 

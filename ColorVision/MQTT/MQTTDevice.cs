@@ -8,13 +8,17 @@ using System.Windows.Controls;
 
 namespace ColorVision.MQTT
 {
-    public class MQTTDevice : BaseObject
+    public class MQTTDevice : BaseObject, IDisposable
     {
         public virtual string SendTopic { get; set; }
         public virtual string SubscribeTopic { get; set; }
         public virtual bool IsAlive { get; set; }
         public virtual DateTime LastAliveTime { get; set; }
 
+        public void Dispose()
+        {
+            GC.SuppressFinalize(this);
+        }
     }
 
 

@@ -11,8 +11,11 @@ using ColorVision.Template;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Design;
+using System.Windows;
 using System.Windows.Automation;
+using System.Windows.Controls;
 using System.Windows.Media.Media3D;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace ColorVision.MQTT.Service
 {
@@ -44,11 +47,7 @@ namespace ColorVision.MQTT.Service
         public void GenContorl()
         {
             MQTTManager MQTTManager = MQTTManager.GetInstance();
-            foreach (var item in MQTTManager.Services)
-                item.Dispose();
-            MQTTManager.Services.Clear();
-
-
+            MQTTManager.MQTTStackPanel.Children.Clear();
             foreach (var mQTTServiceKind in MQTTServices)
             {
                 foreach (var mQTTService in mQTTServiceKind.VisualChildren)
@@ -57,33 +56,41 @@ namespace ColorVision.MQTT.Service
                     {
                         if (item is DeviceCamera deviceCamera)
                         {
-                            MQTTCamera Camera1 = new MQTTCamera(deviceCamera.Config);
-                            MQTTManager.Services.Add(Camera1);
+                            MQTTManager.Services.Add(deviceCamera.CameraService);
+                            MQTTCameraControl1 mQTTCameraControl = new MQTTCameraControl1(deviceCamera.CameraService);
+                            deviceCamera.CameraService.FileHandler += (s, e) =>
+                            {
+                                MessageBox.Show(e);
+                            };
+                            MQTTManager.MQTTStackPanel.Children.Add(mQTTCameraControl);
+
                         }
                         else if (item is DevicePG devicePG)
                         {
-                            PGService mQTTPG = new PGService(devicePG.Config);
-                            MQTTManager.Services.Add(mQTTPG);
+                            MQTTManager.Services.Add(devicePG.PGService);
+                            MQTTPGControl mQTTPGControl = new MQTTPGControl(devicePG.PGService);
+                            MQTTManager.MQTTStackPanel.Children.Add(mQTTPGControl);
                         }
                         else if (item is DeviceSpectrum deviceSpectrum)
                         {
-                            SpectrumService mQTTSpectrum = new SpectrumService(deviceSpectrum);
-                            MQTTManager.Services.Add(mQTTSpectrum);
+                            MQTTManager.Services.Add(deviceSpectrum.SpectrumService);
+                            MQTTSpectrumControl mQTTSpectrumControl = new MQTTSpectrumControl(deviceSpectrum.SpectrumService);
+                            MQTTManager.MQTTStackPanel.Children.Add(mQTTSpectrumControl);
                         }
                         else if (item is DeviceSMU smu)
                         {
-                            SMUService mQTTVISource = new SMUService(smu);
-                            MQTTManager.Services.Add(mQTTVISource);
+                            MQTTManager.Services.Add(smu.SMUService);
+                            MQTTSMUControl mQTTSMUControl = new MQTTSMUControl(smu.SMUService);
+                            MQTTManager.MQTTStackPanel.Children.Add(mQTTSMUControl);
                         }
                         else if (item is DeviceSensor deviceSensor)
                         {
-
+                            HandyControl.Controls.Growl.Info("SensorService开发中");
                         }
 
                     }
                 }
             }
-            MQTTManager.Reload();
         }
 
 

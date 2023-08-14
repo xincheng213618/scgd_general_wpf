@@ -45,10 +45,6 @@ namespace ColorVision.MQTT.Camera
             SubscribeTopic = CameraConfig.SubscribeTopic;
             MQTTControl.SubscribeCache(SubscribeTopic);
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
-            Connected += (s, e) =>
-            {
-                GetAllCameraID();
-            };
         }
 
 
