@@ -67,32 +67,22 @@ namespace ColorVision
             {
                 if (WindowConfig.Icon == null)
                 {
-                    if (!ThemeManager.AppsUseLightTheme() || !ThemeManager.SystemUsesLightTheme())
+                    ThemeManager.SystemThemeChanged += (s, e) =>
+                    {
+                        if (e ==Theme.Theme.Dark)
+                        {
+                            this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
+                        }
+                        else
+                        {
+                            this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision.ico"));
+                        }
+                    };
+
+                    if (ThemeManager.SystemTheme ==Theme.Theme.Dark)
                     {
                         this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
                     }
-                    SystemEvents.UserPreferenceChanged += (s, e) =>
-                    {
-                        if (!ThemeManager.AppsUseLightTheme() || !ThemeManager.SystemUsesLightTheme())
-                        {
-                            this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
-                        }
-                        else
-                        {
-                            this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision.ico"));
-                        }
-                    };
-                    SystemParameters.StaticPropertyChanged += (s, e) =>
-                    {
-                        if (!ThemeManager.AppsUseLightTheme() || !ThemeManager.SystemUsesLightTheme())
-                        {
-                            this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
-                        }
-                        else
-                        {
-                            this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision.ico"));
-                        }
-                    };
                 }
                 else
                 {

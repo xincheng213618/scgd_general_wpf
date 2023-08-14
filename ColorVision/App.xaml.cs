@@ -2,6 +2,7 @@
 using ColorVision.MySql;
 using ColorVision.NativeMethods;
 using ColorVision.SettingUp;
+using ColorVision.Theme;
 using HslCommunication.Profinet.MegMeet;
 using log4net;
 using log4net.Config;
@@ -105,6 +106,9 @@ namespace ColorVision
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
+
+            this.ApplyTheme(Theme.Theme.Light);
+
             GlobalSetting.GetInstance();
 
             //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en");
