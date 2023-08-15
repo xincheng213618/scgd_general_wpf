@@ -11,7 +11,7 @@ namespace ColorVision.MQTT.Spectrum
     {
         public DeviceSpectrum MQTTDeviceSp { get; set; }
 
-        private SpectrumService? spectrum;
+        private SpectrumService? SpectrumService;
         private bool disposedValue;
         private bool disposedObj;
 
@@ -19,8 +19,8 @@ namespace ColorVision.MQTT.Spectrum
         {
             this.disposedObj = false;
             this.MQTTDeviceSp = mqttDeviceSp;
-
-            spectrum.AutoParamHandlerEvent += Spectrum_AutoParamHandlerEvent;
+            SpectrumService = mqttDeviceSp.SpectrumService;
+            SpectrumService.AutoParamHandlerEvent += Spectrum_AutoParamHandlerEvent;
             InitializeComponent();
         }
 
@@ -41,14 +41,14 @@ namespace ColorVision.MQTT.Spectrum
         {
             MQTTShowContent.Visibility = Visibility.Collapsed;
             MQTTEditContent.Visibility = Visibility.Visible;
-            if (spectrum != null) spectrum.GetParam();
+            if (SpectrumService != null) SpectrumService.GetParam();
         }
 
         private void Button_Click_Submit(object sender, RoutedEventArgs e)
         {
             MQTTEditContent.Visibility = Visibility.Collapsed;
             MQTTShowContent.Visibility = Visibility.Visible;
-            if (spectrum != null) spectrum.SetParam(MQTTDeviceSp.Config.TimeLimit, MQTTDeviceSp.Config.TimeFrom);
+            if (SpectrumService != null) SpectrumService.SetParam(MQTTDeviceSp.Config.TimeLimit, MQTTDeviceSp.Config.TimeFrom);
         }
 
         protected virtual void Dispose(bool disposing)
@@ -57,10 +57,10 @@ namespace ColorVision.MQTT.Spectrum
             {
                 if (disposing)
                 {
-                    if (disposedObj && spectrum!=null)
+                    if (disposedObj && SpectrumService != null)
                     {
-                        spectrum.Dispose();
-                        spectrum = null;
+                        SpectrumService.Dispose();
+                        SpectrumService = null;
                     }
                 }
                 disposedValue = true;
