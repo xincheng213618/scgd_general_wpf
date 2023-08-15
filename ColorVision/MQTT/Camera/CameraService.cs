@@ -100,7 +100,7 @@ namespace ColorVision.MQTT.Camera
 
                 switch (msg.EventName)
                 {
-                    case "Init":
+                    case "Init":    
                         ServiceID = msg.ServiceID;
                         Application.Current.Dispatcher.Invoke(() => InitCameraSuccess?.Invoke(this, msg));
                         break;
@@ -143,7 +143,11 @@ namespace ColorVision.MQTT.Camera
                     case "Open":
                         MessageBox.Show("Open失败，没有许可证");
                         break;
+                    case "Init":
+                        MessageBox.Show("初始化失败，找不到相机"+ Environment.NewLine +"请连接相机或重新初始化服务");
+                        break;
                     case "Uninit":
+                        MessageBox.Show("关闭相机失败" + Environment.NewLine + "请连接相机或重新初始化服务");
                         Application.Current.Dispatcher.Invoke(() => UnInitCameraSuccess?.Invoke(this, msg));
                         break;
                     default:
