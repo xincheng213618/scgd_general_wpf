@@ -185,19 +185,16 @@ namespace ColorVision.MQTT.Spectrum
             else
                 MessageBox.Show("校零失败");
         }
-        WindowSpectrum WindowSpectrum;
         private void SpectrumSingleTest(object sender, RoutedEventArgs e)
         {
             GCSDLL.CVOneTest(SpectrumData, (float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value, false, false);
-            WindowSpectrum ??= new WindowSpectrum();
-            WindowSpectrum.Show();
         }
 
         public void TestResult(ref ColorParam data, float intTime, int resultCode)
         {
             if (resultCode == 0)
             {
-                WindowSpectrum.spectrumResult.SpectrumDrawPlot(new SpectumData(-1,data));
+                View.spectrumResult.SpectrumDrawPlot(new SpectumData(-1,data));
             }
             else
             {

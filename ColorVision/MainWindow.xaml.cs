@@ -314,7 +314,7 @@ namespace ColorVision
             {
                 if (item is ImageView imageView)
                 {
-                    imageView.Zoombox1.ZoomUniformToFill();
+                    imageView.Zoombox1.ZoomUniform();
                 }
             }
         }
@@ -331,7 +331,7 @@ namespace ColorVision
             {
                 if (item is ImageView imageView)
                 {
-                    imageView.Zoombox1.ZoomUniformToFill();
+                    imageView.Zoombox1.ZoomUniform();
                 }
             }
         }
@@ -343,7 +343,7 @@ namespace ColorVision
             {
                 if (item is ImageView imageView)
                 {
-                    imageView.Zoombox1.ZoomUniformToFill();
+                    imageView.Zoombox1.ZoomUniform();
                 }
             }
         }
@@ -355,7 +355,7 @@ namespace ColorVision
             {
                 if (item is ImageView imageView)
                 {
-                    imageView.Zoombox1.ZoomUniformToFill();
+                    imageView.Zoombox1.ZoomUniform();
                 }
             }
         }
@@ -377,7 +377,16 @@ namespace ColorVision
         {
             if (sender is Button button)
             {
-                ViewGridManager.SetOneView(int.Parse(button.Tag.ToString() ?? "0"));
+                int v = int.Parse(button.Tag.ToString() ?? "0");
+                if (v >= ViewGridManager.Views.Count)
+                    return;
+
+                ViewGridManager.SetOneView(v);
+
+                if (ViewGridManager.Views[v] is ImageView imageView)
+                {
+                    imageView.Zoombox1.ZoomUniform();
+                }
 
             }
         }
