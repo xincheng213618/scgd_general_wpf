@@ -6,9 +6,10 @@
              xmlns:local="clr-namespace:ColorVision.MQTT.Spectrum" 
              xmlns:hc="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance local:SpectrumConfig}"
              d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized">
 
-    <StackPanel Margin="0,5" x:Name="StackPanelSpectrum" >
+    <StackPanel Margin="0,5" x:Name="StackPanelSpectrum"  IsEnabled="{Binding IsAlive}">
         <ToggleButton  x:Name="ToggleButton3"  Style="{StaticResource ButtonPageControl1}" Background="#F9F9F9"   Content="光谱仪操作"  FontSize="15" Foreground="Black" IsChecked="True" />
         <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton3,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel >
