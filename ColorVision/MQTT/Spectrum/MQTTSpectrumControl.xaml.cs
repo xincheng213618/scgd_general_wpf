@@ -23,39 +23,28 @@ namespace ColorVision.MQTT.Spectrum
     /// </summary>
     public partial class MQTTSpectrumControl : UserControl
     {
-        public SpectrumService Spectrum { get; set; }
-        private WindowSpectrum? windowSpectrum;
-        public MQTTSpectrumControl(SpectrumService spectrum)
+        public SpectrumService SpectrumService { get; set; }
+
+        public ChartView View { get; set; }
+        public MQTTSpectrumControl(SpectrumService spectrumService)
         {
-            this.Spectrum = spectrum;
+            this.SpectrumService = spectrumService;
             InitializeComponent();
         }
 
-        private SpectrumService GetSpectrum()
+        private void UserControl_Initialized(object sender, EventArgs e)
         {
-            return Spectrum;
-        }
-
-        private void StackPanelSpectrum_Initialized(object sender, EventArgs e)
-        {
-            Spectrum.DataHandlerEvent += (e) =>
+            View = new ChartView();
+            ViewGridManager.GetInstance().AddView(View);
+            SpectrumService.DataHandlerEvent += e =>
             {
-                if (windowSpectrum != null && e != null)
-                {
-                    windowSpectrum.spectrumResult.SpectrumDrawPlot(e);
-                }
+                View.spectrumResult.SpectrumDrawPlot(e);
             };
-
-            Spectrum.HeartbeatHandlerEvent += (e) =>
+            SpectrumService.HeartbeatHandlerEvent += (e) =>
             {
                 if (e.IsOpen)
                 {
                     connectBtn.Content = "关闭";
-                    if(windowSpectrum==null)
-                    {
-                        windowSpectrum = new WindowSpectrum();
-                        windowSpectrum.Show();
-                    }
                 }
                 else
                 {
@@ -73,10 +62,11 @@ namespace ColorVision.MQTT.Spectrum
             };
         }
 
+
         #region MQTT
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            Spectrum.Init();
+            SpectrumService.Init();
         }
 
         private void Button_Click_Open(object sender, RoutedEventArgs e)
@@ -84,59 +74,54 @@ namespace ColorVision.MQTT.Spectrum
             string btnTitle = connectBtn.Content.ToString();
             if (!string.IsNullOrWhiteSpace(btnTitle) && btnTitle.Equals("打开", StringComparison.Ordinal))
             {
-                Spectrum.Open();
+                SpectrumService.Open();
                 connectBtn.Content = "关闭";
                 //windowSpectrum = new WindowSpectrum();
                 //windowSpectrum.Show();
             }
             else
             {
-                Spectrum.Close();
+                SpectrumService.Close();
                 connectBtn.Content = "打开";
-                if (windowSpectrum != null)
-                {
-                    windowSpectrum.Close();
-                    windowSpectrum = null;
-                }
             }
         }
 
         private void Button_Click_3(object sender, RoutedEventArgs e)
         {
-            //Spectrum.SetParam();
+            //SpectrumService.SetParam();
         }
 
         private void Button_Click_OneTest(object sender, RoutedEventArgs e)
         {
-            Spectrum.GetData((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value, AutoIntTime.IsChecked??false, AutoDark.IsChecked ?? false);
+            SpectrumService.GetData((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value, AutoIntTime.IsChecked??false, AutoDark.IsChecked ?? false);
         }
 
         private void Button_Click_Close(object sender, RoutedEventArgs e)
         {
-            Spectrum.Close();
-            //Spectrum.UnInit();
+            SpectrumService.Close();
+            //SpectrumService.UnInit();
         }
         private void Button_Click_AutoTest(object sender, RoutedEventArgs e)
         {
             string btnTitle = autoTest.Content.ToString();
             if (!string.IsNullOrWhiteSpace(btnTitle) && btnTitle.Equals("自动测试", StringComparison.Ordinal))
             {
-                Spectrum.GetDataAuto((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value, AutoIntTime.IsChecked ?? false, AutoDark.IsChecked ?? false);
+                SpectrumService.GetDataAuto((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value, AutoIntTime.IsChecked ?? false, AutoDark.IsChecked ?? false);
                 autoTest.Content = "取消自动测试";
             }
             else
             {
-                Spectrum.GetDataAutoStop();
+                SpectrumService.GetDataAutoStop();
                 autoTest.Content = "自动测试";
             }
         }
         private void Button_Click_Init_Dark(object sender, RoutedEventArgs e)
         {
-            Spectrum.InitDark((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value);
+            SpectrumService.InitDark((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value);
         }
         private void Button_Click_GetParam(object sender, RoutedEventArgs e)
         {
-            Spectrum.GetParam();
+            SpectrumService.GetParam();
         }
         #endregion
         #region Spectrum
@@ -220,5 +205,7 @@ namespace ColorVision.MQTT.Spectrum
             }
         }
         #endregion
+
+
     }
 }

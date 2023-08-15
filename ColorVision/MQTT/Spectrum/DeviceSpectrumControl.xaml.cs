@@ -30,6 +30,8 @@ namespace ColorVision.MQTT.Spectrum
             MQTTDeviceSp.Config.TimeLimit = colorPara.iLimitTime;
         }
 
+
+
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = this.MQTTDeviceSp;

@@ -40,8 +40,6 @@ namespace ColorVision.Video
         {
             SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
             Decoder = new OpenH264Lib.Decoder(H264DllName);
-
-
         }
 
 

@@ -1,4 +1,6 @@
-﻿using System;
+﻿using ColorVision.MQTT;
+using log4net;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -31,11 +33,18 @@ namespace ColorVision
 
         public List<Control> Views { get; set; }
 
-        public ViewGridManager(Grid grid)
+
+        private static readonly ILog log = LogManager.GetLogger(typeof(MQTTControl));
+
+        private static ViewGridManager _instance;
+        private static readonly object _locker = new();
+        public static ViewGridManager GetInstance() { lock (_locker) { return _instance ??= new ViewGridManager(); } }
+
+        //这里些publlic 是故意的,希望这里可以复用，或者是这里后面可能需要重构一下
+        public ViewGridManager()
         {
             ViewGrids = new List<Grid>();
             Views = new List<Control>();
-            MainView = grid;
         }
 
         public void AddView(Control control)
@@ -53,6 +62,10 @@ namespace ColorVision
             Views.RemoveAt(index);
         }
 
+        /// <summary>
+        /// 保留固定数量的窗口视图，多余的会删除掉
+        /// </summary>
+        /// <param name="num"></param>
         public void SetViewNum(int num)
         {
             if (Views.Count > num)
@@ -73,6 +86,19 @@ namespace ColorVision
                 GridSort(ViewGrids);
             }
         }
+
+        public void SetOneView(int Main)
+        {
+            if (Main >= 0 && Main< ViewGrids.Count)
+            {
+                List<Grid> newGrids = new List<Grid>();
+                newGrids.Add(ViewGrids[Main]);
+                GridSort(newGrids);
+            }
+
+        }
+
+
 
         private static Grid GetNewGrid(Control control)
         {

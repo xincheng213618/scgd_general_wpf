@@ -30,7 +30,6 @@ namespace ColorVision.MQTT.Spectrum
         }
 
 
-
         private Task MqttClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
         {
             if (arg.ApplicationMessage.Topic == SubscribeTopic)

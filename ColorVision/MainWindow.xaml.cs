@@ -29,7 +29,10 @@ namespace ColorVision
     public partial class MainWindow : Window
     {
         public GlobalSetting GlobalSetting { get; set; }
-        public SoftwareSetting SoftwareSetting { get  {
+        public SoftwareSetting SoftwareSetting
+        {
+            get
+            {
                 if (GlobalSetting.SoftwareConfig.SoftwareSetting == null)
                     GlobalSetting.SoftwareConfig.SoftwareSetting = new SoftwareSetting();
                 return GlobalSetting.SoftwareConfig.SoftwareSetting;
@@ -43,7 +46,8 @@ namespace ColorVision
             this.loader = new FlowEngineLib.STNodeLoader("FlowEngineLib.dll");
 
             InitializeComponent();
-            this.Closed += (s, e) => {
+            this.Closed += (s, e) =>
+            {
 
                 SoftwareSetting.Top = this.Top;
                 SoftwareSetting.Left = this.Left;
@@ -51,7 +55,7 @@ namespace ColorVision
                 SoftwareSetting.Width = this.Width;
                 SoftwareSetting.WindowState = (int)this.WindowState;
             };
-            if (SoftwareSetting.IsRestoreWindow && SoftwareSetting.Height != 0&& SoftwareSetting.Width != 0)
+            if (SoftwareSetting.IsRestoreWindow && SoftwareSetting.Height != 0 && SoftwareSetting.Width != 0)
             {
                 this.Top = SoftwareSetting.Top;
                 this.Left = SoftwareSetting.Left;
@@ -69,7 +73,7 @@ namespace ColorVision
                 {
                     ThemeManager.SystemThemeChanged += (s, e) =>
                     {
-                        if (e ==Theme.Theme.Dark)
+                        if (e == Theme.Theme.Dark)
                         {
                             this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
                         }
@@ -79,7 +83,7 @@ namespace ColorVision
                         }
                     };
 
-                    if (ThemeManager.SystemTheme ==Theme.Theme.Dark)
+                    if (ThemeManager.SystemTheme == Theme.Theme.Dark)
                     {
                         this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
                     }
@@ -98,6 +102,12 @@ namespace ColorVision
             Application.Current.MainWindow = this;
 
             TemplateControl = TemplateControl.GetInstance();
+
+            ViewGridManager = ViewGridManager.GetInstance();
+            ViewGridManager.MainView = ViewGrid;
+            ViewGrid.Children.Clear();
+            ViewGridManager.AddView(ImageView1);
+
             await Task.Delay(30);
 
             StatusBarGrid.DataContext = GlobalSetting.GetInstance();
@@ -113,16 +123,11 @@ namespace ColorVision
 
             }
 
-            ViewGridManager = new ViewGridManager(ViewGrid);
 
-            ViewGrid.Children.Clear();
-            ViewGridManager.AddView(ImageView1);
 
         }
 
         public ViewGridManager ViewGridManager { get; set; }
-
-
 
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -278,7 +283,7 @@ namespace ColorVision
             {
                 if (FlowTemplate.SelectedValue is FlowParam flowParam)
                 {
-                    string fileName = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.GetFullFileName(flowParam.FileName?? string.Empty);
+                    string fileName = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.GetFullFileName(flowParam.FileName ?? string.Empty);
                     if (File.Exists(fileName))
                     {
                         loader.Load(fileName);
@@ -304,7 +309,7 @@ namespace ColorVision
 
         private void Button5_Click(object sender, RoutedEventArgs e)
         {
-            ViewGridManager.AddView( new ImageView());
+            ViewGridManager.AddView(new ImageView());
             foreach (var item in ViewGridManager.Views)
             {
                 if (item is ImageView imageView)
@@ -365,10 +370,17 @@ namespace ColorVision
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            new  HandyControl.Controls.Screenshot().Start();
+            new HandyControl.Controls.Screenshot().Start();
         }
 
+        private void Button10_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button)
+            {
+                ViewGridManager.SetOneView(int.Parse(button.Tag.ToString() ?? "0"));
 
+            }
+        }
     }
 
 
