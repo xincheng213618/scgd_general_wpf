@@ -42,6 +42,7 @@ namespace ColorVision.MQTT.Spectrum
                 if (e != null)
                     SpectrumDrawPlot(e);
             };
+
             SpectrumService.HeartbeatHandlerEvent += (e) =>
             {
                 if (e.IsOpen)

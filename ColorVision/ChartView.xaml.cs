@@ -47,11 +47,11 @@ namespace ColorVision
 
             List<string> headers = new List<string> { "序号", "测量时间", "IP", "亮度Lv(cd/m2)", "蓝光", "色度x", "色度y", "色度u", "色度v", "相关色温(K)", "主波长Ld(nm)", "色纯度(%)", "峰值波长Lp(nm)", "显色性指数Ra", "半波宽" };
 
-            GridViewColumn gridViewColumn = new GridViewColumn();
-            for (int i = 380; i < 781; i++)
-            {
-                headers.Add(i.ToString());
-            }
+            //GridViewColumn gridViewColumn = new GridViewColumn();
+            //for (int i = 380; i < 781; i++)
+            //{
+            //    headers.Add(i.ToString());
+            //}
             //headers.Add("电压(V)");
             //headers.Add("电流(mA)");
 
@@ -177,14 +177,13 @@ namespace ColorVision
             Contents.Add(Convert.ToString(Math.Round(colorParam.fLp, 1)));
             Contents.Add(Convert.ToString(Math.Round(colorParam.fRa, 2)));
             Contents.Add(Convert.ToString(Math.Round(colorParam.fHW, 4)));
-            for (int i = 0; i < 4000; i += 10)
-            {
-                Contents.Add(colorParam.fPL[i].ToString());
-            }
-            Contents.Add(colorParam.fPL[3998].ToString());
 
-            //Contents.Add("NaN");
-            //Contents.Add("NaN");
+            //for (int i = 0; i < 4000; i += 10)
+            //{
+            //    Contents.Add(colorParam.fPL[i].ToString());
+            //}
+            //Contents.Add(colorParam.fPL[3998].ToString());
+
             Contents.Add(data.ID.ToString());
 
 
