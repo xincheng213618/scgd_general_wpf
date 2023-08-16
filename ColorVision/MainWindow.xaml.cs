@@ -116,13 +116,13 @@ namespace ColorVision
             SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
             MenuStatusBar.DataContext = SoftwareConfig;
             SiderBarGrid.DataContext = SoftwareConfig;
-            if (SoftwareSetting.IsDeFaultOpenService)
+            if (!SoftwareSetting.IsDeFaultOpenService)
             {
                 new WindowService() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
             }
             else
             {
-
+                ServiceControl.GetInstance().GenContorl();
             }
 
 
