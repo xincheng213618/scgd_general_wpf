@@ -55,6 +55,13 @@ namespace ColorVision
             };
             ContextMenu.Items.Add(menuItem1);
 
+            MenuItem menuItem2 = new MenuItem() { Header = "独立窗口中显示" };
+            menuItem2.Click += (s, e) =>
+            {
+                ViewGridManager.GetInstance().SetSingleWindowView(this);
+            };
+            ContextMenu.Items.Add(menuItem2);
+
             this.ContextMenu = ContextMenu;
 
             wpfplot1.Plot.Title("相对光谱曲线");

@@ -36,8 +36,6 @@ namespace ColorVision
         public static Dictionary<Control,Grid> ViewControls { get; set; } = new Dictionary<Control,Grid>();
 
 
-        private static readonly ILog log = LogManager.GetLogger(typeof(MQTTControl));
-
         private static ViewGridManager _instance;
         private static readonly object _locker = new();
         public static ViewGridManager GetInstance() { lock (_locker) { return _instance ??= new ViewGridManager(); } }
@@ -106,6 +104,24 @@ namespace ColorVision
             GridSort(ViewGrids);
         }
 
+        private List<Grid> SingleWindowGrid = new List<Grid>();
+        Window window;
+        public void SetSingleWindowView(Control control)
+        {
+            if (ViewControls.TryGetValue(control, out Grid grid))
+            {
+                SingleWindowGrid.Add(grid);
+                GridSort(ViewGrids);
+                window = new Window();
+                window.Content = grid;
+                window.Show();
+                window.Closed += (s, e) =>
+                {
+                    SingleWindowGrid.Remove(grid);
+                };
+            }
+        }
+
         public void SetOneView(int Main)
         {
             ViewGrids.Clear();
@@ -117,6 +133,13 @@ namespace ColorVision
         {
             if (ViewControls.TryGetValue(control,out Grid grid))
             {
+                SingleWindowGrid.Remove(grid);
+                if (window!=null)
+                {
+                    window.Content = null;
+                    window.Close();
+                }
+
                 ViewGrids.Clear();
                 ViewGrids.Add(grid);
                 GridSort(ViewGrids);
@@ -142,6 +165,11 @@ namespace ColorVision
 
         private void GridSort(List<Grid> GridLists)
         {
+            foreach (var item in SingleWindowGrid)
+            {
+                GridLists.Remove(item);
+            }
+
             MainView.Children.Clear();
             MainView.ColumnDefinitions.Clear();
             MainView.RowDefinitions.Clear();
