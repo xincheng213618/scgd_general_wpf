@@ -76,6 +76,7 @@ namespace ColorVision.MQTT.Camera
                         if (!MD5.Contains(MD5IDs[i].ToString()))
                             MD5.Add(MD5IDs[i].ToString());
 
+                          
                         if (ServicesDevices.TryGetValue(SubscribeTopic, out ObservableCollection<string> list) && !list.Contains(SnIDs[i].ToString()))
                         {
                             list.Add(SnIDs[i].ToString());
