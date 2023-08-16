@@ -15,10 +15,10 @@ namespace ColorVision.MySql.DAO
         public bool IsUseAutoIntTime { get; set; }
         public bool IsUseAutoDark { get; set; }
         public int? Pid { get; set; }
-        public string BatchId { get; set; }
-        public string PL { get; set; }
-        public string AbsPL { get; set; }
-        public string Ri { get; set; }
+        public string? BatchId { get; set; }
+        public string? PL { get; set; }
+        public string? AbsPL { get; set; }
+        public string? Ri { get; set; }
         public float x { get; set; }
         public float y { get; set; }
         public float u { get; set; }

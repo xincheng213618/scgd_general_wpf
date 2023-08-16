@@ -4,10 +4,35 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision"
-             xmlns:Template="clr-namespace:ColorVision.Template"
+             xmlns:ScottPlot="clr-namespace:ScottPlot;assembly=ScottPlot.WPF"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             d:DesignHeight="450" d:DesignWidth="800" Initialized="UserControl_Initialized">
     <Grid>
-        <Template:SpectrumResult x:Name="spectrumResult"/>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <ScottPlot:WpfPlot  x:Name="wpfplot1" />
+        <ToolBar Grid.Row="1"  Background ="#EEF4F9" Loaded="ToolBar1_Loaded" ToolBarTray.IsLocked="True">
+            <ToolBar.Resources>
+                <ResourceDictionary Source="/Theme/Icons.xaml"/>
+            </ToolBar.Resources>
+            <ToggleButton Click="Button1_Click" Margin="2,2,0,0" >
+                <Image  Stretch="Uniform" Source="{StaticResource DrawingImageSwitch}" />
+            </ToggleButton>
+
+            <ToggleButton Click="Button_Click_1"  IsChecked="True"  Margin="2,2,0,0">
+                <Image Stretch="Uniform" Source="{StaticResource DrawingImageList}" />
+            </ToggleButton>
+            <Button Click="Button_Click" Margin="2,2,0,0" >
+                <Image  Stretch="Uniform" Source="{StaticResource DrawingImageSave}" />
+            </Button>
+            <Button Click="Button2_Click" Margin="2,2,0,0" ToolTip="您可以全选后删除" >
+                <Image  Stretch="Uniform" Source="{StaticResource DrawingImageDelete}" />
+            </Button>
+
+        </ToolBar>
+        <ListView Height="400"  Grid.Row="2" x:Name="listView1" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" />
     </Grid>
 </UserControl>

@@ -22,8 +22,6 @@ namespace ColorVision.MQTT
         public static MQTTManager GetInstance() { lock (_locker) { return _instance ??= new MQTTManager(); } }
         public MQTTControl MQTTControl { get; set; }
 
-        public event EventHandler DeviceSettingChanged;
-
         public StackPanel MQTTStackPanel { get; set; }
 
         public ObservableCollection<BaseService> Services { get; set; }
