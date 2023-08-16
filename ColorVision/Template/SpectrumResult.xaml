@@ -17,8 +17,8 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <ScottPlot:WpfPlot  x:Name="wpfplot1" />
-        <ToolBar Grid.Row="1"  Background ="#EEF4F9" Margin="-4,0,0,0" Loaded="ToolBar1_Loaded" ToolBarTray.IsLocked="True">
+        <ScottPlot:WpfPlot  x:Name="wpfplot1"  Height="600" />
+        <ToolBar Grid.Row="1"  Background ="#EEF4F9" Loaded="ToolBar1_Loaded" ToolBarTray.IsLocked="True">
             <ToolBar.Resources>
                 <ResourceDictionary Source="/Theme/Icons.xaml"/>
             </ToolBar.Resources>

@@ -41,10 +41,6 @@ namespace ColorVision.Template
             wpfplot1.Plot.Title("相对光谱曲线");
             wpfplot1.Plot.XLabel("波长[nm]");
             wpfplot1.Plot.YLabel("相对光谱");
-            wpfplot1.Width = 800;
-            wpfplot1.Height = 600;
-
-
 
             GridView gridView = new GridView();
 

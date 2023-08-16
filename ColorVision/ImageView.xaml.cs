@@ -33,6 +33,8 @@ namespace ColorVision
         public ImageView()
         {
             InitializeComponent();
+            
+
         }
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
