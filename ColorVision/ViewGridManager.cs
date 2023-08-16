@@ -31,6 +31,8 @@ namespace ColorVision
 
         public Grid MainView { get; set; }
 
+        public Control CurrentView { get; set; }
+
         public List<Control> Views { get; set; }
 
         public static Dictionary<Control,Grid> ViewControls { get; set; } = new Dictionary<Control,Grid>();
@@ -90,12 +92,10 @@ namespace ColorVision
                     for (int i = Views.Count; i < num; i++)
                     {
                         AddView(new ImageView());
-                    }
-
+                   }
                 }
             }
-
-
+            CurrentView = Views[0];
             ViewGrids.Clear();
             for (int i = 0; i < Views.Count; i++)
             {
@@ -110,6 +110,8 @@ namespace ColorVision
         {
             if (ViewControls.TryGetValue(control, out Grid grid))
             {
+
+
                 SingleWindowGrid.Add(grid);
                 GridSort(ViewGrids);
                 window = new Window();
@@ -124,6 +126,8 @@ namespace ColorVision
 
         public void SetOneView(int Main)
         {
+            CurrentView = Views[Main];
+
             ViewGrids.Clear();
             ViewGrids.Add(ViewControls[Views[Main]]);
             GridSort(ViewGrids);
@@ -133,6 +137,8 @@ namespace ColorVision
         {
             if (ViewControls.TryGetValue(control,out Grid grid))
             {
+                CurrentView = control;
+
                 SingleWindowGrid.Remove(grid);
                 if (window!=null)
                 {

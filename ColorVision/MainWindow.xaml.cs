@@ -140,7 +140,14 @@ namespace ColorVision
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 string filePath = openFileDialog.FileName;
-                ImageView1.OpenImage(filePath);
+                if (ViewGridManager.CurrentView is ImageView imageView)
+                {
+                    imageView.OpenImage(filePath);
+                }
+                else
+                {
+                    ImageView1.OpenImage(filePath);
+                }
             }
         }
 
