@@ -80,7 +80,7 @@ namespace ColorVision.MQTT.Service
                         else if (item is DeviceSpectrum deviceSpectrum)
                         {
                             MQTTManager.Services.Add(deviceSpectrum.SpectrumService);
-                            MQTTSpectrumControl mQTTSpectrumControl = new MQTTSpectrumControl(deviceSpectrum.SpectrumService);
+                            MQTTSpectrumControl mQTTSpectrumControl = new MQTTSpectrumControl(deviceSpectrum);
                             MQTTManager.MQTTStackPanel.Children.Add(mQTTSpectrumControl);
                         }
                         else if (item is DeviceSMU smu)
