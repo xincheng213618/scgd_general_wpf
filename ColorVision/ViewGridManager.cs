@@ -95,8 +95,35 @@ namespace ColorVision
                 newGrids.Add(ViewGrids[Main]);
                 GridSort(newGrids);
             }
-
         }
+
+        public void SetFourView(int Main)
+        {
+            if (Main >= 0 && Main < ViewGrids.Count)
+            {
+                List<Grid> newGrids = new List<Grid>();
+                newGrids.Add(ViewGrids[Main]);
+                if (Main - 1 >= 0)
+                {
+                    newGrids.Add(ViewGrids[Main - 1]);
+                }
+                if (Main + 1 < ViewGrids.Count)
+                {
+                    newGrids.Add(ViewGrids[Main + 1]);
+                }
+                if (Main - 10 >= 0)
+                {
+                    newGrids.Add(ViewGrids[Main - 10]);
+                }
+                if (Main + 10 < ViewGrids.Count)
+                {
+                    newGrids.Add(ViewGrids[Main + 10]);
+                }
+                GridSort(newGrids);
+            }
+        }
+
+
 
 
 
