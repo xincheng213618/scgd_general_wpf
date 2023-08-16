@@ -35,13 +35,13 @@ namespace ColorVision.MQTT.Service
 
         public UserConfig UserConfig { get; set; }
 
-        private SpectumResultService spectumResult;
+        private ResultService spectumResult;
 
         public ServiceControl()
         {
             ResourceService = new SysResourceService();
             DictionaryService = new SysDictionaryService();
-            spectumResult = new SpectumResultService();
+            spectumResult = new ResultService();
             MQTTServices = new ObservableCollection<MQTTServiceKind>();
             UserConfig = GlobalSetting.GetInstance().SoftwareConfig.UserConfig;
 
@@ -102,7 +102,7 @@ namespace ColorVision.MQTT.Service
         public void SpectrumDrawPlotFromDB(string bid)
         {
             List<SpectumData> datas = new List<SpectumData>();
-            List<SpectumResultModel> result = spectumResult.SelectByBid(bid);
+            List<SpectumResultModel> result = spectumResult.SpectumSelectBySN(bid);
             foreach (var item in result)
             {
                 ColorParam param = new ColorParam()
@@ -147,6 +147,12 @@ namespace ColorVision.MQTT.Service
             }
         }
 
+
+        public int ResultBatchSave(string sn)
+        {
+            BatchResultMasterModel model = new BatchResultMasterModel(sn, UserConfig.TenantId);
+            return spectumResult.BatchSave(model);
+        }
 
         public void Reload()
         {

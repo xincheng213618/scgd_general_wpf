@@ -134,8 +134,11 @@ namespace ColorVision.MySql
         {
             string andSQL = " ";
             string isDelSQL = " ";
-            if (hasAnd) andSQL = " and ";
-            if (_IsLogicDel) isDelSQL = "is_delete=0";
+            if (_IsLogicDel)
+            {
+                if (hasAnd) andSQL = " and ";
+                isDelSQL = "is_delete=0";
+            }
             return andSQL + isDelSQL;
         }
 

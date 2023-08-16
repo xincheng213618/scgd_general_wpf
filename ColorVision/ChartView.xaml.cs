@@ -27,11 +27,11 @@ namespace ColorVision
     public partial class ChartView : UserControl
     {
 
-        private SpectumResultService spectumResult;
+        private ResultService spectumResult;
 
         public ChartView()
         {
-            spectumResult = new SpectumResultService();
+            spectumResult = new ResultService();
             InitializeComponent();
         }
 
@@ -234,7 +234,7 @@ namespace ColorVision
                     int id = int.Parse(Contents[Contents.Count - 1]);
                     if (id > 0)
                     {
-                        spectumResult.DeleteById(id);
+                        spectumResult.SpectumDeleteById(id);
                     }
                 }
             }
