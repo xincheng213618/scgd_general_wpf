@@ -33,6 +33,8 @@ namespace ColorVision
 
         public List<Control> Views { get; set; }
 
+        public static Dictionary<Control,Grid> ViewControls { get; set; } = new Dictionary<Control,Grid>();
+
 
         private static readonly ILog log = LogManager.GetLogger(typeof(MQTTControl));
 
@@ -64,6 +66,8 @@ namespace ColorVision
         {
             ViewGrids.RemoveAt(index);
             GridSort(ViewGrids);
+
+            ViewControls.Remove(Views[index]);
             Views.RemoveAt(index);
         }
 
@@ -73,84 +77,69 @@ namespace ColorVision
         /// <param name="num"></param>
         public void SetViewNum(int num)
         {
-            if (Views.Count > num)
+            if (num > 0)
             {
-                for (int i = Views.Count - 1; i > num-1; i--)
+                if (Views.Count > num)
                 {
-                    ViewGrids.RemoveAt(i);
-                    Views.RemoveAt(i);
+                    for (int i = Views.Count - 1; i > num - 1; i--)
+                    {
+                        ViewControls.Remove(Views[i]);
+                        Views.RemoveAt(i);
+                    }
                 }
-                GridSort(ViewGrids);
+                else if (Views.Count < num)
+                {
+                    for (int i = Views.Count; i < num; i++)
+                    {
+                        AddView(new ImageView());
+                    }
+
+                }
             }
-            else if (Views.Count < num)
+
+
+            ViewGrids.Clear();
+            for (int i = 0; i < Views.Count; i++)
             {
-                for (int i = Views.Count; i < num ; i++)
-                {
-                    AddView(new ImageView());
-                }
-                GridSort(ViewGrids);
+                ViewGrids.Add(ViewControls[Views[i]]);
             }
+            GridSort(ViewGrids);
         }
 
         public void SetOneView(int Main)
         {
-            if (Main >= 0 && Main< ViewGrids.Count)
-            {
-                List<Grid> newGrids = new List<Grid>();
-                newGrids.Add(ViewGrids[Main]);
-                GridSort(newGrids);
-            }
+            ViewGrids.Clear();
+            ViewGrids.Add(ViewControls[Views[Main]]);
+            GridSort(ViewGrids);
         }
 
-        public void SetFourView(int Main)
+        public void SetOneView(Control control)
         {
-            if (Main >= 0 && Main < ViewGrids.Count)
+            if (ViewControls.TryGetValue(control,out Grid grid))
             {
-                List<Grid> newGrids = new List<Grid>();
-                newGrids.Add(ViewGrids[Main]);
-                if (Main - 1 >= 0)
-                {
-                    newGrids.Add(ViewGrids[Main - 1]);
-                }
-                if (Main + 1 < ViewGrids.Count)
-                {
-                    newGrids.Add(ViewGrids[Main + 1]);
-                }
-                if (Main - 10 >= 0)
-                {
-                    newGrids.Add(ViewGrids[Main - 10]);
-                }
-                if (Main + 10 < ViewGrids.Count)
-                {
-                    newGrids.Add(ViewGrids[Main + 10]);
-                }
-                GridSort(newGrids);
+                ViewGrids.Clear();
+                ViewGrids.Add(grid);
+                GridSort(ViewGrids);
             }
         }
-
-
-
 
 
         private static Grid GetNewGrid(Control control)
         {
-            if (control.Parent is Grid lastgrid)
+            if (ViewControls.TryGetValue(control, out Grid last))
             {
-                return lastgrid;
+                return last;
             }
+
             Grid grid = new Grid()
             {
                 Margin = new Thickness(2, 2, 2, 2),
             };
-
-
-
             grid.Children.Add(control);
+            ViewControls.Add(control, grid);
             return grid;
         }
 
-
-        static GridLengthConverter gridLengthConverter = new GridLengthConverter();
         private void GridSort(List<Grid> GridLists)
         {
             MainView.Children.Clear();
