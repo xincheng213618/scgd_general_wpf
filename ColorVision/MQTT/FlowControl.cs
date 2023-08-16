@@ -105,7 +105,7 @@ namespace ColorVision.MQTT
                         return Task.CompletedTask;
                     FlowControlData = json;
                     Application.Current.Dispatcher.Invoke(() => FlowData?.Invoke(FlowControlData, new EventArgs()));
-                    if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Fail")
+                    if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
                     {
                         Application.Current.Dispatcher.Invoke(() => FlowCompleted?.Invoke(FlowControlData, new EventArgs()));
                     }
