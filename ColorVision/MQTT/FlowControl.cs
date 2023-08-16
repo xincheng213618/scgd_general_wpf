@@ -44,6 +44,7 @@ namespace ColorVision.MQTT
         private static readonly ILog logger = LogManager.GetLogger(typeof(FlowControl));
 
         string svrName = "FlowControl";
+        private FlowEngineLib.STNodeLoader loader;
         public FlowControlData FlowControlData { get; set; }
 
         MQTTControl MQTTControl;
@@ -52,23 +53,35 @@ namespace ColorVision.MQTT
         public string SubscribeTopic { get; set; }
         public string SendTopic { get; set; }
 
-        public FlowControl(MQTTControl mQTTControl,string topic)
+        public FlowControl(MQTTControl mQTTControl, string topic)
         {
             this.MQTTControl = mQTTControl;
-            this.SendTopic = "FLOW/CMD/" +topic;
+            this.SendTopic = "FLOW/CMD/" + topic;
             this.SubscribeTopic = "FLOW/STATUS/" + topic;
             MQTTControl.SubscribeCache(SubscribeTopic);
             MQTTControl.ApplicationMessageReceivedAsync += MQTTControl_ApplicationMessageReceivedAsync;
+        }
+        public FlowControl(MQTTControl mQTTControl, FlowEngineLib.STNodeLoader loader) : this(mQTTControl, loader.GetStartNodeName())
+        {
+            this.loader = loader;
         }
 
 
         public void Start(string sn)
         {
-            FlowEngineLib.CVBaseDataFlow baseEvent = new FlowEngineLib.CVBaseDataFlow(svrName, "Start", sn);
+            if(loader == null)
+            {
+                FlowEngineLib.CVBaseDataFlow baseEvent = new FlowEngineLib.CVBaseDataFlow(svrName, "Start", sn);
 
-            string Msg = JsonConvert.SerializeObject(baseEvent);
-            Application.Current.Dispatcher.Invoke(() => FlowMsg?.Invoke(Msg, new EventArgs()));
-            Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, Msg, false));
+                string Msg = JsonConvert.SerializeObject(baseEvent);
+                Application.Current.Dispatcher.Invoke(() => FlowMsg?.Invoke(Msg, new EventArgs()));
+                Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, Msg, false));
+
+            }
+            else
+            {
+                loader.StartNode(sn);
+            }
         }
 
 
