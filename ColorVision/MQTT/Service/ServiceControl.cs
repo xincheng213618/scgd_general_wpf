@@ -30,6 +30,9 @@ namespace ColorVision.MQTT.Service
 
         public ObservableCollection<MQTTServiceKind> MQTTServices { get; set; }
 
+        public ObservableCollection<MQTTDevice> MQTTDevices { get; set; }
+
+
         public SysResourceService ResourceService { get; set; }
         public SysDictionaryService DictionaryService { get; set; }
 
@@ -46,7 +49,7 @@ namespace ColorVision.MQTT.Service
             DictionaryService = new SysDictionaryService();
             spectumResult = new ResultService();
             MQTTServices = new ObservableCollection<MQTTServiceKind>();
-
+            MQTTDevices = new ObservableCollection<MQTTDevice>();
             UserConfig = GlobalSetting.GetInstance().SoftwareConfig.UserConfig;
             MQTTStackPanel = new StackPanel();
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => Reload();
@@ -134,7 +137,7 @@ namespace ColorVision.MQTT.Service
                 datas.Add(data);
 
             }
-            foreach (UserControl ctl in ServiceControl.GetInstance().MQTTStackPanel.Children)
+            foreach (UserControl ctl in MQTTStackPanel.Children)
             {
                 if (ctl is MQTTSpectrumControl spectrum)
                 {
@@ -178,19 +181,29 @@ namespace ColorVision.MQTT.Service
                                 switch ((MQTTDeviceType)device.Type)
                                 {
                                     case MQTTDeviceType.Camera:
-                                        mQTTService.AddChild(new DeviceCamera(device));
+                                        DeviceCamera deviceCamera = new DeviceCamera(device);
+                                        mQTTService.AddChild(deviceCamera);
+                                        MQTTDevices.Add(deviceCamera);
                                         break;
                                     case MQTTDeviceType.PG:
-                                        mQTTService.AddChild(new DevicePG(device));
+                                        DevicePG devicePG = new DevicePG(device);
+                                        mQTTService.AddChild(devicePG);
+                                        MQTTDevices.Add(devicePG);
                                         break;
                                     case MQTTDeviceType.Spectum:
-                                        mQTTService.AddChild(new DeviceSpectrum(device));
+                                        DeviceSpectrum deviceSpectrum = new DeviceSpectrum(device);
+                                        mQTTService.AddChild(deviceSpectrum);
+                                        MQTTDevices.Add(deviceSpectrum);
                                         break;
                                     case MQTTDeviceType.SMU:
-                                        mQTTService.AddChild(new DeviceSMU(device));
+                                        DeviceSMU deviceSMU = new DeviceSMU(device);
+                                        mQTTService.AddChild(deviceSMU);
+                                        MQTTDevices.Add(deviceSMU);
                                         break;
                                     case MQTTDeviceType.Sensor:
-                                        mQTTService.AddChild(new DeviceSensor(device));
+                                        DeviceSensor device1 = new DeviceSensor(device);
+                                        mQTTService.AddChild(device1);
+                                        MQTTDevices.Add(device1);
                                         break;
                                     default:
                                         break;

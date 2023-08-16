@@ -52,7 +52,7 @@
                     <MenuItem Header="退出(_X)" InputGestureText="Alt + F4" Click="MenuItem_Exit"/>
                 </MenuItem>
                 <MenuItem Header="配置(_S)">
-                    <MenuItem Header="服务配置(_S)"  Tag="ServiceParam" Click="MenuItem_Template"/>
+                    <MenuItem Header="管理员服务配置(_S)"  Tag="ServiceParam" Click="MenuItem_Template"/>
                     <MenuItem Header="设备配置(_D)"  Tag="DeviceParam" Click="MenuItem_Template"/>
                     <MenuItem Header="相机视频配置(_V)" Click="MenuItem10_Click"/>
                 </MenuItem>
