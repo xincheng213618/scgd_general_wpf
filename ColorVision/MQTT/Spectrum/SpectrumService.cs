@@ -1,6 +1,7 @@
 ﻿using MQTTnet.Client;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -158,9 +159,11 @@ namespace ColorVision.MQTT.Spectrum
 
         public bool GetData(float IntTime, int AveNum, bool bUseAutoIntTime =false, bool bUseAutoDark =false)
         {
+            string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             MsgSend msg = new MsgSend
             {
                 EventName = "GetData",
+                SerialNumber = sn,
                 Params = new GetDataParamMQTT()
                 {
                     IntTime = IntTime,
