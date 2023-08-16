@@ -49,10 +49,10 @@ namespace ColorVision.MySql.DAO
         {
         }
 
-        public List<SpectumResultModel> selectByBId(string bid)
+        public List<SpectumResultModel> selectBySN(string sn)
         {
             List<SpectumResultModel> list = new List<SpectumResultModel>();
-            DataTable d_info = GetTableAllByBid(bid);
+            DataTable d_info = GetTableAllBySN(sn);
             foreach (var item in d_info.AsEnumerable())
             {
                 SpectumResultModel? model = GetModel(item);
@@ -64,7 +64,7 @@ namespace ColorVision.MySql.DAO
             return list;
         }
 
-        private DataTable GetTableAllByBid(string bid)
+        private DataTable GetTableAllBySN(string bid)
         {
             string sql = $"select * from {GetTableName()} where batch_id='{bid}'";
             DataTable d_info = GetData(sql);

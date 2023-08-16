@@ -28,11 +28,11 @@ namespace ColorVision.Template
     /// </summary>
     public partial class SpectrumResult : UserControl
     {
-        private SpectumResultService spectumResult;
+        private ResultService spectumResult;
         public SpectrumResult()
         {
             InitializeComponent();
-            spectumResult = new SpectumResultService();
+            spectumResult = new ResultService();
         }
         static int ResultNum ;
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -234,7 +234,7 @@ namespace ColorVision.Template
                     int id = int.Parse(Contents[Contents.Count - 1]);
                     if( id > 0 )
                     {
-                        spectumResult.DeleteById(id);
+                        spectumResult.SpectumDeleteById(id);
                     }
                 }
             }

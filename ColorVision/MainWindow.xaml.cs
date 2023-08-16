@@ -272,6 +272,7 @@ namespace ColorVision
                     };
                     flowControl.FlowCompleted += FlowControl_FlowCompleted;
                     string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+                    ServiceControl.GetInstance().ResultBatchSave(sn);
                     flowControl.Start(sn);
                     window.Show();
                 }
