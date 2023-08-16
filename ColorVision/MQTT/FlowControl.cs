@@ -48,7 +48,6 @@ namespace ColorVision.MQTT
 
         MQTTControl MQTTControl;
 
-
         public string SubscribeTopic { get; set; }
         public string SendTopic { get; set; }
 
@@ -93,7 +92,7 @@ namespace ColorVision.MQTT
                         return Task.CompletedTask;
                     FlowControlData = json;
                     Application.Current.Dispatcher.Invoke(() => FlowData?.Invoke(FlowControlData, new EventArgs()));
-                    if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "OverTime")
+                    if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Fail")
                     {
                         Application.Current.Dispatcher.Invoke(() => FlowCompleted?.Invoke(FlowControlData, new EventArgs()));
                     }
