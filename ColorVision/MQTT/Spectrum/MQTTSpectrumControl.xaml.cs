@@ -39,7 +39,8 @@ namespace ColorVision.MQTT.Spectrum
             ViewGridManager.GetInstance().AddView(View);
             SpectrumService.DataHandlerEvent += e =>
             {
-               SpectrumDrawPlot(e);
+                if (e != null)
+                    SpectrumDrawPlot(e);
             };
             SpectrumService.HeartbeatHandlerEvent += (e) =>
             {
@@ -65,7 +66,7 @@ namespace ColorVision.MQTT.Spectrum
 
         public void SpectrumDrawPlot(SpectumData data)
         {
-            View.spectrumResult.SpectrumDrawPlot(data);
+            View.SpectrumDrawPlot(data);
         }
 
 
@@ -200,7 +201,7 @@ namespace ColorVision.MQTT.Spectrum
         {
             if (resultCode == 0)
             {
-                View.spectrumResult.SpectrumDrawPlot(new SpectumData(-1,data));
+                View.SpectrumDrawPlot(new SpectumData(-1,data));
             }
             else
             {

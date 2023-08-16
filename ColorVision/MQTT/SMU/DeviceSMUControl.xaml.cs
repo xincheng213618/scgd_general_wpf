@@ -25,12 +25,9 @@ namespace ColorVision.MQTT.SMU
         public DeviceSMU MQTTDeviceSMU { get; set; }
         public ServiceControl ServiceControl { get; set; }
 
-        private bool disposedValue;
-        private bool disposedObj;
 
         public DeviceSMUControl(DeviceSMU mqttDeviceSMU)
         {
-            this.disposedObj = false;
             this.MQTTDeviceSMU = mqttDeviceSMU;
             InitializeComponent();
         }

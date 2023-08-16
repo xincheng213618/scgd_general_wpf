@@ -129,7 +129,7 @@ namespace ColorVision.MQTT.Service
                     fSpect1 = item.Spect1,
                     fSpect2 = item.Spect2,
                     fInterval = item.Interval,
-                    fPL = JsonConvert.DeserializeObject<float[]>(item.PL),
+                    fPL = JsonConvert.DeserializeObject<float[]>(item.PL??string.Empty)?? System.Array.Empty<float>(),
                 };
                 SpectumData data = new SpectumData(item.Id,param);
                 datas.Add(data);
