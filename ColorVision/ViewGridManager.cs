@@ -47,12 +47,17 @@ namespace ColorVision
             Views = new List<Control>();
         }
 
-        public void AddView(Control control)
+        public int AddView(Control control)
         {
+            if (Views.Contains(control))
+                return Views.IndexOf(control);
+
             Views.Add(control);
             Grid grid = GetNewGrid(control);
             ViewGrids.Add(grid);
             GridSort(ViewGrids);
+
+            return Views.IndexOf(control);
         }
 
         public void RemoveView(int index)
@@ -129,10 +134,16 @@ namespace ColorVision
 
         private static Grid GetNewGrid(Control control)
         {
+            if (control.Parent is Grid lastgrid)
+            {
+                return lastgrid;
+            }
             Grid grid = new Grid()
             {
                 Margin = new Thickness(2, 2, 2, 2),
             };
+
+
 
             grid.Children.Add(control);
             return grid;

@@ -47,8 +47,6 @@ namespace ColorVision.MQTT.Camera
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
         }
 
-
-
         private void MQTTCamera_MsgReturnChanged(MsgReturn msg)
         {
             IsRun = false;

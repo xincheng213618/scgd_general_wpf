@@ -7,10 +7,12 @@ namespace ColorVision.MQTT.Spectrum
     {
         public SpectrumService SpectrumService { get; set; }
 
+        public ChartView ChartView { get; set; }
+
         public DeviceSpectrum(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             SpectrumService = new SpectrumService(Config);
-
+            ChartView = new ChartView();
         }
     }
 }

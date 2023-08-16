@@ -23,18 +23,19 @@ namespace ColorVision.MQTT.Spectrum
     /// </summary>
     public partial class MQTTSpectrumControl : UserControl
     {
-        public SpectrumService SpectrumService { get; set; }
 
-        public ChartView View { get; set; }
-        public MQTTSpectrumControl(SpectrumService spectrumService)
+        public DeviceSpectrum DeviceSpectrum { get; set; }
+        public SpectrumService SpectrumService { get => DeviceSpectrum.SpectrumService; }
+
+        public ChartView View { get => DeviceSpectrum.ChartView;}
+        public MQTTSpectrumControl(DeviceSpectrum DeviceSpectrum)
         {
-            this.SpectrumService = spectrumService;
+            this.DeviceSpectrum = DeviceSpectrum;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            View = new ChartView();
             ViewGridManager.GetInstance().AddView(View);
             SpectrumService.DataHandlerEvent += e =>
             {
