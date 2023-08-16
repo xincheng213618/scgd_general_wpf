@@ -33,8 +33,7 @@ namespace ColorVision
         public ImageView()
         {
             InitializeComponent();
-            
-
+           
         }
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
@@ -44,6 +43,22 @@ namespace ColorVision
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            ContextMenu ContextMenu  = new ContextMenu();
+
+            MenuItem menuItem = new MenuItem() { Header = "设为主窗口" };
+            menuItem.Click += (s, e) =>
+            {
+                ViewGridManager.GetInstance().SetOneView(this);
+            };
+            ContextMenu.Items.Add(menuItem);
+
+            MenuItem menuItem1 = new MenuItem() { Header = "展示全部窗口" };
+            menuItem1.Click += (s, e) =>
+            {
+                ViewGridManager.GetInstance().SetViewNum(-1);
+            };
+            ContextMenu.Items.Add(menuItem1);
+            this.ContextMenu = ContextMenu;
             ToolBar1.Visibility = Visibility.Collapsed;
 
             ToolBarTop = new ToolBarTop(Zoombox1, ImageShow);
