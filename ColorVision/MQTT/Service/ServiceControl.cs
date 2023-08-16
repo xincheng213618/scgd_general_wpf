@@ -37,14 +37,18 @@ namespace ColorVision.MQTT.Service
 
         private ResultService spectumResult;
 
+        public StackPanel MQTTStackPanel { get; set; }
+
+
         public ServiceControl()
         {
             ResourceService = new SysResourceService();
             DictionaryService = new SysDictionaryService();
             spectumResult = new ResultService();
             MQTTServices = new ObservableCollection<MQTTServiceKind>();
-            UserConfig = GlobalSetting.GetInstance().SoftwareConfig.UserConfig;
 
+            UserConfig = GlobalSetting.GetInstance().SoftwareConfig.UserConfig;
+            MQTTStackPanel = new StackPanel();
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => Reload();
             Reload();
         }
@@ -52,8 +56,7 @@ namespace ColorVision.MQTT.Service
 
         public void GenContorl()
         {
-            MQTTManager MQTTManager = MQTTManager.GetInstance();
-            MQTTManager.MQTTStackPanel.Children.Clear();
+            MQTTStackPanel.Children.Clear();
             foreach (var mQTTServiceKind in MQTTServices)
             {
                 foreach (var mQTTService in mQTTServiceKind.VisualChildren)
@@ -62,32 +65,28 @@ namespace ColorVision.MQTT.Service
                     {
                         if (item is DeviceCamera deviceCamera)
                         {
-                            MQTTManager.Services.Add(deviceCamera.CameraService);
                             MQTTCameraControl1 mQTTCameraControl = new MQTTCameraControl1(deviceCamera.CameraService);
                             deviceCamera.CameraService.FileHandler += (s, e) =>
                             {
                                 MessageBox.Show(e);
                             };
-                            MQTTManager.MQTTStackPanel.Children.Add(mQTTCameraControl);
+                            MQTTStackPanel.Children.Add(mQTTCameraControl);
 
                         }
                         else if (item is DevicePG devicePG)
                         {
-                            MQTTManager.Services.Add(devicePG.PGService);
                             MQTTPGControl mQTTPGControl = new MQTTPGControl(devicePG.PGService);
-                            MQTTManager.MQTTStackPanel.Children.Add(mQTTPGControl);
+                            MQTTStackPanel.Children.Add(mQTTPGControl);
                         }
                         else if (item is DeviceSpectrum deviceSpectrum)
                         {
-                            MQTTManager.Services.Add(deviceSpectrum.SpectrumService);
                             MQTTSpectrumControl mQTTSpectrumControl = new MQTTSpectrumControl(deviceSpectrum);
-                            MQTTManager.MQTTStackPanel.Children.Add(mQTTSpectrumControl);
+                            MQTTStackPanel.Children.Add(mQTTSpectrumControl);
                         }
                         else if (item is DeviceSMU smu)
                         {
-                            MQTTManager.Services.Add(smu.SMUService);
                             MQTTSMUControl mQTTSMUControl = new MQTTSMUControl(smu.SMUService);
-                            MQTTManager.MQTTStackPanel.Children.Add(mQTTSMUControl);
+                            MQTTStackPanel.Children.Add(mQTTSMUControl);
                         }
                         else if (item is DeviceSensor deviceSensor)
                         {
@@ -135,7 +134,7 @@ namespace ColorVision.MQTT.Service
                 datas.Add(data);
 
             }
-            foreach (UserControl ctl in MQTTManager.GetInstance().MQTTStackPanel.Children)
+            foreach (UserControl ctl in ServiceControl.GetInstance().MQTTStackPanel.Children)
             {
                 if (ctl is MQTTSpectrumControl spectrum)
                 {

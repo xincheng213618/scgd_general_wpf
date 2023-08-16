@@ -20,7 +20,6 @@ namespace ColorVision.Service
     /// </summary>
     public partial class WindowService : Window
     {
-        public MQTTManager MQTTManager { get; set; }
         public WindowService()
         {
             InitializeComponent();
@@ -28,8 +27,6 @@ namespace ColorVision.Service
         public ObservableCollection<MQTTServiceKind> MQTTServices { get; set; }
         private void Window_Initialized(object sender, EventArgs e)
         {
-            MQTTManager = MQTTManager.GetInstance();
-
             MQTTServices = ServiceControl.GetInstance().MQTTServices;
             TreeView1.ItemsSource = MQTTServices;
 

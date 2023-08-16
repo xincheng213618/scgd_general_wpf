@@ -302,9 +302,6 @@ namespace ColorVision
         }
 
 
-
-        public MQTTManager MQTTManager { get; set; } = MQTTManager.GetInstance();
-
         private void MenuItem13_Click(object sender, RoutedEventArgs e)
         {
             new ServiceManagerWindow() { Owner = this }.Show();
@@ -372,7 +369,7 @@ namespace ColorVision
         {
             if (sender is StackPanel stackPanel)
             {
-                stackPanel.Children.Add(MQTTManager.MQTTStackPanel);
+                stackPanel.Children.Add(ServiceControl.GetInstance().MQTTStackPanel);
             }
         }
 
