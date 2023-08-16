@@ -8,6 +8,8 @@ using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.SettingUp;
 using ColorVision.Template;
+using Newtonsoft.Json;
+using NPOI.SS.Formula.Functions;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Design;
@@ -15,6 +17,7 @@ using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Media.Media3D;
+using static cvColorVision.GCSDLL;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace ColorVision.MQTT.Service
@@ -32,10 +35,13 @@ namespace ColorVision.MQTT.Service
 
         public UserConfig UserConfig { get; set; }
 
+        private SpectumResultService spectumResult;
+
         public ServiceControl()
         {
             ResourceService = new SysResourceService();
             DictionaryService = new SysDictionaryService();
+            spectumResult = new SpectumResultService();
             MQTTServices = new ObservableCollection<MQTTServiceKind>();
             UserConfig = GlobalSetting.GetInstance().SoftwareConfig.UserConfig;
 
@@ -88,6 +94,54 @@ namespace ColorVision.MQTT.Service
                             HandyControl.Controls.Growl.Info("SensorService开发中");
                         }
 
+                    }
+                }
+            }
+        }
+
+        public void SpectrumDrawPlotFromDB(string bid)
+        {
+            List<SpectumData> datas = new List<SpectumData>();
+            List<SpectumResultModel> result = spectumResult.SelectByBid(bid);
+            foreach (var item in result)
+            {
+                ColorParam param = new ColorParam()
+                {
+                    fx = item.x,
+                    fy = item.y,
+                    fu = item.u,
+                    fv = item.v,
+                    fCCT = item.CCT,
+                    dC = item.dC,
+                    fLd = item.Ld,
+                    fPur = item.Pur,
+                    fLp = item.Lp,
+                    fHW = item.HW,
+                    fLav = item.Lav,
+                    fRa = item.Ra,
+                    fRR = item.RR,
+                    fGR = item.GR,
+                    fBR = item.BR,
+                    fIp = item.Ip,
+                    fPh = item.Ph,
+                    fPhe = item.Phe,
+                    fPlambda = item.Plambda,
+                    fSpect1 = item.Spect1,
+                    fSpect2 = item.Spect2,
+                    fInterval = item.Interval,
+                    fPL = JsonConvert.DeserializeObject<float[]>(item.PL),
+                };
+                SpectumData data = new SpectumData(item.Id,param);
+                datas.Add(data);
+
+            }
+            foreach (UserControl ctl in MQTTManager.GetInstance().MQTTStackPanel.Children)
+            {
+                if (ctl is MQTTSpectrumControl spectrum)
+                {
+                    foreach (SpectumData data in datas)
+                    {
+                        spectrum.SpectrumDrawPlot(data);
                     }
                 }
             }

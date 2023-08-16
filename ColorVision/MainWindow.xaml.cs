@@ -19,6 +19,7 @@ using ColorVision.MQTT.PG;
 using ColorVision.MQTT.Spectrum;
 using ColorVision.MQTT.SMU;
 using ColorVision.MQTT.Sensor;
+using ColorVision.MQTT.Service;
 
 namespace ColorVision
 {
@@ -194,6 +195,11 @@ namespace ColorVision
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             //MessageBox.Show("流程执行完成");
             window.Close();
+            if(sender!=null)
+            {
+                FlowControlData flowControlData = (FlowControlData)sender;
+                ServiceControl.GetInstance().SpectrumDrawPlotFromDB(flowControlData.SerialNumber);
+            }
         }
         bool CameraOpen;
 

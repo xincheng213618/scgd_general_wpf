@@ -20,5 +20,15 @@ namespace ColorVision.MySql.Service
         {
             return resultDao.DeleteById(id);
         }
+
+        internal List<SpectumResultModel> SelectByBid(string bid)
+        {
+            return resultDao.selectByBId(bid);
+        }
+
+        internal List<SpectumResultModel> SelectByPid(int pid)
+        {
+            return resultDao.GetAllByPid(pid);
+        }
     }
 }
