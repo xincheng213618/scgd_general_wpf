@@ -49,21 +49,21 @@ namespace ColorVision.MQTT.SMU
             showPxResult(passSxSource.IsSourceV, passSxSource.StopMeasureVal);
         }
 
-        private void SMUService_DeviceStatusHandler(DeviceStatusType deviceStatus,Button button)
+        private void SMUService_DeviceStatusHandler(DeviceStatus deviceStatus,Button button)
         {
-            if (deviceStatus == DeviceStatusType.Opened)
+            if (deviceStatus == DeviceStatus.Open)
             {
                 button.Content = "关闭";
             }
-            else if (deviceStatus == DeviceStatusType.Closed)
+            else if (deviceStatus == DeviceStatus.Close)
             {
                 button.Content = "打开";
             }
-            else if (deviceStatus == DeviceStatusType.Opening)
+            else if (deviceStatus == DeviceStatus.Opening)
             {
                 button.Content = "打开中";
             }
-            else if (deviceStatus == DeviceStatusType.Closing)
+            else if (deviceStatus == DeviceStatus.Closing)
             {
                 button.Content = "关闭中";
             }

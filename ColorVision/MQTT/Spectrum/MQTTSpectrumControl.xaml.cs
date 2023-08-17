@@ -36,6 +36,7 @@ namespace ColorVision.MQTT.Spectrum
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            this.DataContext = SpectrumService;
             ViewGridManager.GetInstance().AddView(View);
             SpectrumService.DataHandlerEvent += e =>
             {
@@ -45,19 +46,19 @@ namespace ColorVision.MQTT.Spectrum
 
             SpectrumService.HeartbeatHandlerEvent += (e) =>
             {
-                if (e.DeviceStatus == DeviceStatusType.Opened)
+                if (e.DeviceStatus == DeviceStatus.Open)
                 {
                     connectBtn.Content = "关闭";
                 }
-                else if(e.DeviceStatus == DeviceStatusType.Closed)
+                else if(e.DeviceStatus == DeviceStatus.Close)
                 {
                     connectBtn.Content = "打开";
                 }
-                else if (e.DeviceStatus == DeviceStatusType.Opening)
+                else if (e.DeviceStatus == DeviceStatus.Opening)
                 {
                     connectBtn.Content = "打开中";
                 }
-                else if (e.DeviceStatus == DeviceStatusType.Closing)
+                else if (e.DeviceStatus == DeviceStatus.Closing)
                 {
                     connectBtn.Content = "关闭中";
                 }

@@ -25,14 +25,6 @@ namespace ColorVision.MQTT.Camera
     public delegate void MQTTCameraMsgHandler(object sender, MsgReturn msg);
 
 
-    public enum DeviceStatus
-    {
-        UnInit,
-        Init,
-        Open,
-        Close,
-    }
-
     public class CameraService : BaseService<CameraConfig>
     {
         public event MQTTCameraFileHandler FileHandler;
@@ -41,7 +33,11 @@ namespace ColorVision.MQTT.Camera
         public event MQTTCameraMsgHandler CloseCameraSuccess;
         public event MQTTCameraMsgHandler UnInitCameraSuccess;
 
-        public DeviceStatus DeviceStatus { get; set; }
+        public event DeviceStatusChangedHandler DeviceStatusChanged;
+
+        public DeviceStatus DeviceStatus { get => _DeviceStatus; set { _DeviceStatus = value; DeviceStatusChanged?.Invoke(value); } } 
+        private DeviceStatus _DeviceStatus;
+
         public static List<string> MD5 { get; set; } = new List<string>();
         public static List<string> CameraIDs { get; set; } = new List<string>();
 
@@ -58,9 +54,7 @@ namespace ColorVision.MQTT.Camera
             DeviceStatus = DeviceStatus.UnInit;
         }
 
-        
-
-
+       
         private void MQTTCamera_MsgReturnChanged(MsgReturn msg)
         {
             IsRun = false;

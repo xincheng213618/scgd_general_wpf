@@ -96,12 +96,11 @@
                     </Grid>
                 </Grid>
 
-                <Grid Margin="5">
+                <DockPanel>
+                    <TextBlock Text="{Binding CameraService.DeviceStatus}"/>
                     <Button Click="Button_Click_2"  Content="初始化" />
-                </Grid>
+                </DockPanel>
             </StackPanel>
-
-
         </Grid>
     </Grid>
 </UserControl>
