@@ -11,7 +11,7 @@
         <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton4,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel  x:Name="StackPanelVI" Margin="5"  Initialized="StackPanelVI_Initialized" >
                 <DockPanel Margin="2">
-                    <CheckBox IsChecked="{Binding IsNet}" VerticalAlignment="Center" Content="网络" DockPanel.Dock="Right"/>
+                    <CheckBox IsChecked="{Binding IsNet}" VerticalAlignment="Center" Content="网络" DockPanel.Dock="Right" IsEnabled="False"/>
                     <Button x:Name="ButtonSourceMeter1" Margin="10,0"   DockPanel.Dock="Right" Content="打开"  Click="ButtonSourceMeter1_Click"/>
                     <TextBox x:Name="TextSourceMeterIP" Text="{Binding DevName}" BorderThickness="0,0,0,1" IsEnabled="False" />
                 </DockPanel>

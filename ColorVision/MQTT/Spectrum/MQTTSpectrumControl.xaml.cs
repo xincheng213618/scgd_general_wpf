@@ -45,13 +45,21 @@ namespace ColorVision.MQTT.Spectrum
 
             SpectrumService.HeartbeatHandlerEvent += (e) =>
             {
-                if (e.IsOpen)
+                if (e.DeviceStatus == DeviceStatusType.Opened)
                 {
                     connectBtn.Content = "关闭";
                 }
-                else
+                else if(e.DeviceStatus == DeviceStatusType.Closed)
                 {
                     connectBtn.Content = "打开";
+                }
+                else if (e.DeviceStatus == DeviceStatusType.Opening)
+                {
+                    connectBtn.Content = "打开中";
+                }
+                else if (e.DeviceStatus == DeviceStatusType.Closing)
+                {
+                    connectBtn.Content = "关闭中";
                 }
 
                 if (e.IsAutoGetData)
@@ -80,17 +88,18 @@ namespace ColorVision.MQTT.Spectrum
         private void Button_Click_Open(object sender, RoutedEventArgs e)
         {
             string btnTitle = connectBtn.Content.ToString();
-            if (!string.IsNullOrWhiteSpace(btnTitle) && btnTitle.Equals("打开", StringComparison.Ordinal))
+            if (!string.IsNullOrWhiteSpace(btnTitle))
             {
-                SpectrumService.Open();
-                connectBtn.Content = "关闭";
-                //windowSpectrum = new WindowSpectrum();
-                //windowSpectrum.Show();
-            }
-            else
-            {
-                SpectrumService.Close();
-                connectBtn.Content = "打开";
+                if (btnTitle.Equals("打开", StringComparison.Ordinal))
+                {
+                    connectBtn.Content = "打开中";
+                    SpectrumService.Open();
+                }
+                else
+                {
+                    connectBtn.Content = "关闭中";
+                    SpectrumService.Close();
+                }
             }
         }
 

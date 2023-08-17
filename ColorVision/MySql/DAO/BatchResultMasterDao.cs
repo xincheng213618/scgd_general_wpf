@@ -23,8 +23,8 @@ namespace ColorVision.MySql.DAO
         }
 
         public int? TId { get; set; }
-        public string Name { get; set; }
-        public string Code { get; set; }
+        public string? Name { get; set; }
+        public string? Code { get; set; }
         public DateTime? CreateDate { get; set; } = DateTime.Now;
         public int TenantId { get; set; }
     }
@@ -63,7 +63,7 @@ namespace ColorVision.MySql.DAO
             return row;
         }
 
-        public BatchResultMasterModel GetByCode(string code)
+        public BatchResultMasterModel? GetByCode(string code)
         {
             string sql = $"select * from {GetTableName()} where code=@code";
             Dictionary<string, object> param = new Dictionary<string, object>
@@ -71,7 +71,7 @@ namespace ColorVision.MySql.DAO
                 { "code", code }
             };
             DataTable d_info = GetData(sql, param);
-            return d_info.Rows.Count == 1 ? GetModel(d_info.Rows[0]) : default;
+            return (d_info !=null && d_info.Rows.Count == 1) ? GetModel(d_info.Rows[0]) : default;
         }
     }
 }
