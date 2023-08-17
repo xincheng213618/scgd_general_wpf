@@ -224,7 +224,6 @@ namespace ColorVision.MQTT.SMU
             passSxSource.DevName = SMUService.Config.ID;
             StackPanelVI.DataContext = passSxSource;
 
-
             ComboxVITemplate.ItemsSource = TemplateControl.GetInstance().SxParams;
             ComboxVITemplate.SelectionChanged += (s, e) =>
             {
@@ -238,7 +237,7 @@ namespace ColorVision.MQTT.SMU
 
         private void MQTTVIOpen(object sender, RoutedEventArgs e)
         {
-            SMUService.Open();
+            SMUService.Open(SMUService.Config.IsNet, SMUService.Config.ID);
         }
         private void MQTTVIClose(object sender, RoutedEventArgs e)
         {
