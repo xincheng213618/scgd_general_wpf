@@ -1,7 +1,9 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.MQTT.Camera;
 using ColorVision.MQTT.PG;
+using ColorVision.MQTT.Sensor;
 using ColorVision.MQTT.Service;
+using ColorVision.MQTT.SMU;
 using ColorVision.MQTT.Spectrum;
 using ColorVision.MySql.DAO;
 using ColorVision.SettingUp;
@@ -126,9 +128,35 @@ namespace ColorVision.MQTT.Service
                     if (pkId > 0 && ServiceControl.ResourceService.GetMasterById(pkId) is SysResourceModel model)
                         mQTTService.AddChild(new DeviceSpectrum(model));
                 }
-                else
-                {
 
+                else if (mQTTService.Type == MQTTDeviceType.SMU)
+                {
+                    SMUConfig config = new SMUConfig
+                    {
+                        ID = "e29b14429bc375b1",
+                    };
+                    config.Name = TextBox_Name.Text;
+                    config.SendTopic = MQTTService.ServiceConfig.SendTopic;
+                    config.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;
+                    sysResource.Value = JsonConvert.SerializeObject(config);
+                    ServiceControl.ResourceService.Save(sysResource);
+                    int pkId = sysResource.GetPK();
+                    if (pkId > 0 && ServiceControl.ResourceService.GetMasterById(pkId) is SysResourceModel model)
+                        mQTTService.AddChild(new DeviceSpectrum(model));
+                }else if (mQTTService.Type == MQTTDeviceType.Sensor)
+                {
+                    SensorConfig config = new SensorConfig
+                    {
+                        ID = "e29b14429bc375b1",
+                    };
+                    config.Name = TextBox_Name.Text;
+                    config.SendTopic = MQTTService.ServiceConfig.SendTopic;
+                    config.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;
+                    sysResource.Value = JsonConvert.SerializeObject(config);
+                    ServiceControl.ResourceService.Save(sysResource);
+                    int pkId = sysResource.GetPK();
+                    if (pkId > 0 && ServiceControl.ResourceService.GetMasterById(pkId) is SysResourceModel model)
+                        mQTTService.AddChild(new DeviceSpectrum(model));
                 }
 
                 MessageBox.Show("添加资源成功");
