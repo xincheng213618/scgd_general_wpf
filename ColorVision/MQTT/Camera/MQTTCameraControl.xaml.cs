@@ -24,14 +24,13 @@ namespace ColorVision.MQTT.Camera
     /// </summary>
     public partial class MQTTCameraControl : UserControl
     {
-        private CameraService MQTTCamera { get; set; }
+        private CameraService Service { get; set; }
 
-        public MQTTCameraControl(CameraService mQTTCamera)
+        public MQTTCameraControl(CameraService Service)
         {
-            MQTTCamera = mQTTCamera;
+            this.Service = Service;
             InitializeComponent();
-            StackPanelCamera.DataContext = MQTTCamera;
-            MQTTCamera = mQTTCamera;
+            StackPanelCamera.DataContext = Service;
         }
 
         private void StackPanelCamera_Initialized(object sender, EventArgs e)
@@ -72,27 +71,40 @@ namespace ColorVision.MQTT.Camera
             CameraCloseButton.Visibility = Visibility.Collapsed;
             CameraOpenButton.Visibility = Visibility.Collapsed;
 
-            MQTTCamera.InitCameraSuccess += (s,e) =>
+            Service.DeviceStatusChanged += (e) =>
             {
-                ComboxCameraID.ItemsSource = CameraService.CameraIDs;
-                ComboxCameraID.SelectedIndex = 0;
-                StackPanelOpen.Visibility = Visibility.Visible;
-                CameraOpenButton.Visibility = Visibility.Visible;
-                CameraCloseButton.Visibility = Visibility.Collapsed;
-                CamerInitButton.Content = "断开初始化";
-            };
-            MQTTCamera.OpenCameraSuccess += (s, e) =>
-            {
-                CameraCloseButton.Visibility = Visibility.Visible;
-                CameraOpenButton.Visibility = Visibility.Collapsed;
-                StackPanelImage.Visibility = Visibility.Visible;
-            };
-            MQTTCamera.CloseCameraSuccess += (s, e) =>
-            {
-                CameraCloseButton.Visibility = Visibility.Collapsed;
-                CameraOpenButton.Visibility = Visibility.Visible;
-                StackPanelImage.Visibility = Visibility.Collapsed;
-            };
+                switch (e)
+                {
+                    case DeviceStatus.Close:
+                        CameraCloseButton.Visibility = Visibility.Collapsed;
+                        CameraOpenButton.Visibility = Visibility.Visible;
+                        StackPanelImage.Visibility = Visibility.Collapsed;
+                        break;
+                    case DeviceStatus.Closing:
+                        break;
+                    case DeviceStatus.Open:
+                        CameraCloseButton.Visibility = Visibility.Visible;
+                        CameraOpenButton.Visibility = Visibility.Collapsed;
+                        StackPanelImage.Visibility = Visibility.Visible;
+                        break;
+                    case DeviceStatus.Opening:
+                        break;
+                    case DeviceStatus.UnInit:
+                        break;
+                    case DeviceStatus.Init:
+                        ComboxCameraID.ItemsSource = CameraService.CameraIDs;
+                        ComboxCameraID.SelectedIndex = 0;
+                        StackPanelOpen.Visibility = Visibility.Visible;
+                        CameraOpenButton.Visibility = Visibility.Visible;
+                        CameraCloseButton.Visibility = Visibility.Collapsed;
+                        CamerInitButton.Content = "断开初始化";
+                        break;
+                    case DeviceStatus.UnConnected:
+                        break;
+                    default:
+                        break;
+                }
+            }; 
         }
 
         private void MQTTCamera_Init_Click(object sender, RoutedEventArgs e)
@@ -103,13 +115,13 @@ namespace ColorVision.MQTT.Camera
                 {
                     if (ComboxCameraType.SelectedItem is KeyValuePair<CameraType, string> KeyValue && KeyValue.Key is CameraType cameraType)
                     {
-                        MQTTCamera.Init(cameraType, ComboxCameraID.Text.ToString());
+                        Service.Init(cameraType, ComboxCameraID.Text.ToString());
                         CamerInitButton.Content = "正在初始化";
                     }
                 }
                 else
                 {
-                    MQTTCamera.UnInit();
+                    Service.UnInit();
                     button.Content = "初始化";
                     StackPanelOpen.Visibility = Visibility.Collapsed;
                     StackPanelImage.Visibility = Visibility.Collapsed;
@@ -128,18 +140,18 @@ namespace ColorVision.MQTT.Camera
                     MessageBox.Show("找不到相机");
                     return;
                 }
-                MQTTCamera.Open(ComboxCameraID.Text.ToString(), takeImageMode, int.Parse(ComboxCameraImageBpp.Text));
+                Service.Open(ComboxCameraID.Text.ToString(), takeImageMode, int.Parse(ComboxCameraImageBpp.Text));
             }
         }
 
         private void SendDemo3_Click(object sender, RoutedEventArgs e)
         {
-            MQTTCamera.GetData(SliderexpTime.Value, SliderGain.Value);
+            Service.GetData(SliderexpTime.Value, SliderGain.Value);
         }
 
         private void SendDemo4_Click(object sender, RoutedEventArgs e)
         {
-            MQTTCamera.Close();
+            Service.Close();
         }
 
 
@@ -147,7 +159,7 @@ namespace ColorVision.MQTT.Camera
         {
             if (ComboxFilterWheelChannel.SelectedIndex > -1)
             {
-                MQTTCamera.FilterWheelSetPort(0, ComboxFilterWheelChannel.SelectedIndex + 0x30, (int)MQTTCamera.CurrentCameraType);
+                Service.FilterWheelSetPort(0, ComboxFilterWheelChannel.SelectedIndex + 0x30, (int)Service.CurrentCameraType);
             }
         }
 
@@ -156,7 +168,7 @@ namespace ColorVision.MQTT.Camera
         {
             try
             {
-                MQTTCamera.FilterWheelSetPort(ComboxFilterWheelChannel1.SelectedIndex + 1, ComboxFilterWheelChannel2.SelectedIndex + 1, (int)MQTTCamera.CurrentCameraType);
+                Service.FilterWheelSetPort(ComboxFilterWheelChannel1.SelectedIndex + 1, ComboxFilterWheelChannel2.SelectedIndex + 1, (int)Service.CurrentCameraType);
             }
             catch
             {
@@ -166,7 +178,7 @@ namespace ColorVision.MQTT.Camera
 
         private void FilterWheelReset_Click(object sender, RoutedEventArgs e)
         {
-            MQTTCamera.FilterWheelSetPort(0, 0x30, (int)MQTTCamera.CurrentCameraType);
+            Service.FilterWheelSetPort(0, 0x30, (int)Service.CurrentCameraType);
             ComboxFilterWheelChannel.SelectedIndex = 0;
         }
 
@@ -180,7 +192,7 @@ namespace ColorVision.MQTT.Camera
 
         private void SendDemo5_Click(object sender, RoutedEventArgs e)
         {
-            MQTTCamera.SetCfwport();
+            Service.SetCfwport();
         }
     }
 }
