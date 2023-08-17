@@ -87,11 +87,12 @@ namespace ColorVision.MQTT.SMU
             return true;
         }
 
-        public bool Open()
+        public bool Open(bool isNet, string devName)
         {
             MsgSend msg = new MsgSend
             {
-                EventName = "Open"
+                EventName = "Open",
+                Params = new SMUOpenParam() { DevName = devName, IsNet = isNet, }
             };
             PublishAsyncClient(msg);
             return true;
