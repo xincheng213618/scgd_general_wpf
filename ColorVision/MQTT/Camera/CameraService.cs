@@ -31,7 +31,7 @@ namespace ColorVision.MQTT.Camera
 
         public event DeviceStatusChangedHandler DeviceStatusChanged;
 
-        public DeviceStatus DeviceStatus { get => _DeviceStatus; set { _DeviceStatus = value; DeviceStatusChanged?.Invoke(value); } } 
+        public DeviceStatus DeviceStatus { get => _DeviceStatus; set { _DeviceStatus = value;  Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value)); } } 
         private DeviceStatus _DeviceStatus;
 
         public static List<string> MD5 { get; set; } = new List<string>();
