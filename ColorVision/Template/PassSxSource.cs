@@ -69,6 +69,13 @@ namespace ColorVision.Template
         public bool  IsNet { get => _IsNet; set { _IsNet = value; NotifyPropertyChanged(); } }
         private bool _IsNet =true;
 
+        public double StartMeasureVal { get => _startMeasureVal; set { _startMeasureVal = value; NotifyPropertyChanged(); } }
+        private double _startMeasureVal;
+        public double StopMeasureVal { get => _stopMeasureVal; set { _stopMeasureVal = value; NotifyPropertyChanged(); } }
+        private double _stopMeasureVal;
+        public int Number { get => _number; set { _number = value; NotifyPropertyChanged(); } }
+        private int _number;
+
         public bool Open(bool isNet,string devName)
         {
             if (IsOpen) return true;
@@ -136,8 +143,8 @@ namespace ColorVision.Template
 
 
 
-        public double[] VList { get => pVList; }
-        public double[] IList { get => pIList; }
+        public double[] VList { get => pVList; set { pVList = value; } }
+        public double[] IList { get => pIList; set { pIList = value; } }
 
 
         private double[] pVList;

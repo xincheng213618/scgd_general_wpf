@@ -10,10 +10,13 @@ using System.Windows.Input;
 
 namespace ColorVision.MQTT.SMU
 {
-
+    public delegate void MQTTSMUHeartbeatHandler(HeartbeatParam heartbeat);
+    public delegate void MQTTSMUScanResultHandler(SMUScanResultData data);
 
     public class SMUService : BaseService<SMUConfig>
     {
+        public event MQTTSMUHeartbeatHandler HeartbeatHandlerEvent;
+        public event MQTTSMUScanResultHandler ScanResultHandlerEvent;
         public SMUService(SMUConfig sMUConfig) : base(sMUConfig)
         {
             this.Config = sMUConfig;
@@ -44,22 +47,32 @@ namespace ColorVision.MQTT.SMU
                         }
                         else if (json.EventName == "SetParam")
                         {
-                            MessageBox.Show("SetParam");
+                            //MessageBox.Show("SetParam");
                         }
                         else if (json.EventName == "Open")
                         {
-                            MessageBox.Show("Open");
+                            //MessageBox.Show("Open");
                         }
                         else if (json.EventName == "GetData")
                         {
                         }
+                        else if (json.EventName == "Scan")
+                        {
+                            SMUScanResultData data = JsonConvert.DeserializeObject<SMUScanResultData>(JsonConvert.SerializeObject(json.Data));
+                            Application.Current.Dispatcher.Invoke(() => ScanResultHandlerEvent?.Invoke(data));
+                        }
                         else if (json.EventName == "Close")
                         {
-                            MessageBox.Show("Close");
+                            //MessageBox.Show("Close");
                         }
                         else if (json.EventName == "Uninit")
                         {
-                            MessageBox.Show("Uninit");
+                            //MessageBox.Show("Uninit");
+                        }
+                        else if (json.EventName == "Heartbeat")
+                        {
+                            HeartbeatParam heartbeat = JsonConvert.DeserializeObject<HeartbeatParam>(JsonConvert.SerializeObject(json.Data));
+                            Application.Current.Dispatcher.Invoke(() => HeartbeatHandlerEvent?.Invoke(heartbeat));
                         }
                     }
                 }
@@ -98,11 +111,12 @@ namespace ColorVision.MQTT.SMU
             return true;
         }
 
-        public bool GetData()
+        public bool GetData(bool isSourceV,double lmtVal,double measureVal)
         {
             MsgSend msg = new MsgSend
             {
                 EventName = "GetData",
+                Params = new SMUGetDataParam() { IsSourceV = isSourceV, MeasureVal = measureVal, LimitVal = lmtVal }
             };
             PublishAsyncClient(msg);
             return true;
@@ -110,11 +124,11 @@ namespace ColorVision.MQTT.SMU
 
         public bool Close()
         {
-            if (ServiceID == 0)
-            {
-                MessageBox.Show("请先初始化");
-                return false;
-            }
+            //if (ServiceID == 0)
+            //{
+            //    MessageBox.Show("请先初始化");
+            //    return false;
+            //}
             MsgSend msg = new MsgSend
             {
                 EventName = "Close"
@@ -123,7 +137,15 @@ namespace ColorVision.MQTT.SMU
             return true;
         }
 
-
-
+        internal bool Scan(bool isSourceV, double startMeasureVal, double stopMeasureVal, double lmtVal, int number)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "Scan",
+                Params = new SMUScanParam() { IsSourceV = isSourceV, StartMeasureVal = startMeasureVal, StopMeasureVal = stopMeasureVal, LimitVal = lmtVal, Number = number }
+            };
+            PublishAsyncClient(msg);
+            return true;
+        }
     }
 }

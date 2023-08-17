@@ -1,5 +1,7 @@
 ﻿using ColorVision.MQTT.SMU;
+using ColorVision.MQTT.Spectrum;
 using ColorVision.Template;
+using NPOI.OpenXmlFormats.Dml.Chart;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -35,50 +37,103 @@ namespace ColorVision.MQTT.SMU
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = SMUService;
+
+            SMUService.HeartbeatHandlerEvent += (e) => SMUService_DeviceStatusHandler(e.DeviceStatus, ButtonSourceMeter1);
+            SMUService.ScanResultHandlerEvent += (e) => SMUService_ScanResultHandler(e);
         }
+
+        private void SMUService_ScanResultHandler(SMUScanResultData data)
+        {
+            passSxSource.VList = data.VList;
+            passSxSource.IList = data.IList;
+            showPxResult(passSxSource.IsSourceV, passSxSource.StopMeasureVal);
+        }
+
+        private void SMUService_DeviceStatusHandler(DeviceStatusType deviceStatus,Button button)
+        {
+            if (deviceStatus == DeviceStatusType.Opened)
+            {
+                button.Content = "关闭";
+            }
+            else if (deviceStatus == DeviceStatusType.Closed)
+            {
+                button.Content = "打开";
+            }
+            else if (deviceStatus == DeviceStatusType.Opening)
+            {
+                button.Content = "打开中";
+            }
+            else if (deviceStatus == DeviceStatusType.Closing)
+            {
+                button.Content = "关闭中";
+            }
+        }
+
+        private void DoOpenByDll(Button button)
+        {
+            if (!passSxSource.IsOpen)
+            {
+                button.Content = "打开中";
+                Task.Run(() =>
+                {
+                    if (passSxSource.Open(passSxSource.IsNet, passSxSource.DevName))
+                    {
+                        Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+                        {
+                            button.Content = "关闭";
+                        }));
+                    }
+                    else
+                    {
+                        Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+                        {
+                            button.Content = "打开失败";
+                        }));
+                    }
+                });
+            }
+            else
+            {
+                passSxSource.Close();
+                button.Content = "打开";
+            }
+        }
+
+        private void DoOpenByMQTT(Button button)
+        {
+            string btnTitle = button.Content.ToString();
+            if (btnTitle.Equals("打开", StringComparison.Ordinal))
+            {
+                button.Content = "打开中";
+                SMUService.Open(passSxSource.IsNet, passSxSource.DevName);
+            }
+            else
+            {
+                button.Content = "关闭中";
+                SMUService.Close();
+            }
+        }
+
 
         private void ButtonSourceMeter1_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
             {
-                if (!passSxSource.IsOpen)
-                {
-                    button.Content = "打开中";
-                    Task.Run(() =>
-                    {
-                        if (passSxSource.Open(passSxSource.IsNet, passSxSource.DevName))
-                        {
-                            Application.Current.Dispatcher.BeginInvoke(new Action(() =>
-                            {
-                                button.Content = "关闭";
-                            }));
-                        }
-                        else
-                        {
-                            Application.Current.Dispatcher.BeginInvoke(new Action(() =>
-                            {
-                                button.Content = "打开失败";
-                            }));
-                        }
-                    });
-                }
-                else
-                {
-                    passSxSource.Close();
-                    button.Content = "打开";
-                }
+                DoOpenByMQTT(button);
             }
         }
 
         private void MeasureData_Click(object sender, RoutedEventArgs e)
         {
-            double V = 0, I = 0;
-            passSxSource.MeasureData(passSxSource.MeasureVal, passSxSource.LmtVal, ref V, ref I);
+            //double V = 0, I = 0;
+            SMUService.GetData(passSxSource.IsSourceV, passSxSource.MeasureVal, passSxSource.LmtVal);
+            //passSxSource.MeasureData(passSxSource.MeasureVal, passSxSource.LmtVal, ref V, ref I);
         }
         private void StepMeasureData_Click(object sender, RoutedEventArgs e)
         {
-            double V = 0, I = 0;
-            passSxSource.MeasureData(passSxSource.MeasureVal, passSxSource.LmtVal, ref V, ref I);
+            //double V = 0, I = 0;
+            //passSxSource.MeasureData(passSxSource.MeasureVal, passSxSource.LmtVal, ref V, ref I);
+            SMUService.GetData(passSxSource.IsSourceV, passSxSource.MeasureVal, passSxSource.LmtVal);
         }
 
         private void MeasureDataClose_Click(object sender, RoutedEventArgs e)
@@ -90,20 +145,21 @@ namespace ColorVision.MQTT.SMU
         {
             if (sender is Button button)
             {
-                if (ComboxVITemplate.SelectedItem is KeyValuePair<string, SxParam> KeyValue && KeyValue.Value is SxParam SxParm)
-                {
-                    button.Content = "扫描中";
-                    passSxSource.SetSource(SxParm.IsSourceV);
-                    Task.Run(() =>
-                    {
-                        passSxSource.Scan(SxParm.StartMeasureVal, SxParm.StopMeasureVal, SxParm.LmtVal, SxParm.Number);
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            button.Content = "扫描";
-                            showPxResult(SxParm.IsSourceV, SxParm.StopMeasureVal);
-                        });
-                    });
-                }
+                SMUService.Scan(passSxSource.IsSourceV, passSxSource.StartMeasureVal, passSxSource.StopMeasureVal, passSxSource.LmtVal, passSxSource.Number);
+                //if (ComboxVITemplate.SelectedItem is KeyValuePair<string, SxParam> KeyValue && KeyValue.Value is SxParam SxParm)
+                //{
+                //    button.Content = "扫描中";
+                //    passSxSource.SetSource(SxParm.IsSourceV);
+                //    Task.Run(() =>
+                //    {
+                //        passSxSource.Scan(SxParm.StartMeasureVal, SxParm.StopMeasureVal, SxParm.LmtVal, SxParm.Number);
+                //        Application.Current.Dispatcher.Invoke(() =>
+                //        {
+                //            button.Content = "扫描";
+                //            showPxResult(SxParm.IsSourceV, SxParm.StopMeasureVal);
+                //        });
+                //    });
+                //}
             }
 
         }
@@ -161,6 +217,7 @@ namespace ColorVision.MQTT.SMU
             }
             else
             {
+                endVal = endVal / 1000;
                 xMin = IMin - IMin / step;
                 xMax = endVal + IMax / step;
                 yMin = VMin - VMin / step;
@@ -224,12 +281,18 @@ namespace ColorVision.MQTT.SMU
             passSxSource.DevName = SMUService.Config.ID;
             StackPanelVI.DataContext = passSxSource;
 
+            StackPanelVITemplate.DataContext = passSxSource;
+
             ComboxVITemplate.ItemsSource = TemplateControl.GetInstance().SxParams;
             ComboxVITemplate.SelectionChanged += (s, e) =>
             {
                 if (ComboxVITemplate.SelectedItem is KeyValuePair<string, SxParam> KeyValue && KeyValue.Value is SxParam SxParm)
                 {
-                    StackPanelVITemplate.DataContext = SxParm;
+                    passSxSource.StartMeasureVal = SxParm.StartMeasureVal;
+                    passSxSource.StopMeasureVal = SxParm.StopMeasureVal;
+                    passSxSource.IsSourceV = SxParm.IsSourceV; 
+                    passSxSource.LmtVal = SxParm.LmtVal;
+                    passSxSource.Number = SxParm.Number;
                 }
             };
             ComboxVITemplate.SelectedIndex = 0;
@@ -252,7 +315,7 @@ namespace ColorVision.MQTT.SMU
 
         private void MQTTVIGetData(object sender, RoutedEventArgs e)
         {
-            SMUService.GetData();
+            //SMUService.GetData();
         }
 
 
