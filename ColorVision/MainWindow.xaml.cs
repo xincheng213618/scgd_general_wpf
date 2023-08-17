@@ -116,13 +116,13 @@ namespace ColorVision
             SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
             MenuStatusBar.DataContext = SoftwareConfig;
             SiderBarGrid.DataContext = SoftwareConfig;
-            if (SoftwareSetting.IsDeFaultOpenService)
+            if (!SoftwareSetting.IsDeFaultOpenService)
             {
                 new WindowService() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
             }
             else
             {
-
+                ServiceControl.GetInstance().GenContorl();
             }
 
 
@@ -140,7 +140,14 @@ namespace ColorVision
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 string filePath = openFileDialog.FileName;
-                ImageView1.OpenImage(filePath);
+                if (ViewGridManager.CurrentView is ImageView imageView)
+                {
+                    imageView.OpenImage(filePath);
+                }
+                else
+                {
+                    ImageView1.OpenImage(filePath);
+                }
             }
         }
 
@@ -302,9 +309,6 @@ namespace ColorVision
         }
 
 
-
-        public MQTTManager MQTTManager { get; set; } = MQTTManager.GetInstance();
-
         private void MenuItem13_Click(object sender, RoutedEventArgs e)
         {
             new ServiceManagerWindow() { Owner = this }.Show();
@@ -372,7 +376,7 @@ namespace ColorVision
         {
             if (sender is StackPanel stackPanel)
             {
-                stackPanel.Children.Add(MQTTManager.MQTTStackPanel);
+                stackPanel.Children.Add(ServiceControl.GetInstance().MQTTStackPanel);
             }
         }
 

@@ -18,17 +18,18 @@ namespace ColorVision.Service
     /// <summary>
     /// WindowService.xaml 的交互逻辑
     /// </summary>
-    public partial class WindowService : Window
+    public partial class WindowService1 : Window
     {
-        public WindowService()
+        public WindowService1()
         {
             InitializeComponent();
         }
-        public ObservableCollection<MQTTServiceKind> MQTTServices { get; set; }
+
+        public ObservableCollection<MQTTDevice> MQTTDevices { get; set; }
         private void Window_Initialized(object sender, EventArgs e)
         {
-            MQTTServices = ServiceControl.GetInstance().MQTTServices;
-            TreeView1.ItemsSource = MQTTServices;
+            MQTTDevices = ServiceControl.GetInstance().MQTTDevices;
+            TreeView1.ItemsSource = MQTTDevices;
 
 
         }

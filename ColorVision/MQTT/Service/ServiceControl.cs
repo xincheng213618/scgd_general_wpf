@@ -30,6 +30,9 @@ namespace ColorVision.MQTT.Service
 
         public ObservableCollection<MQTTServiceKind> MQTTServices { get; set; }
 
+        public ObservableCollection<MQTTDevice> MQTTDevices { get; set; }
+
+
         public SysResourceService ResourceService { get; set; }
         public SysDictionaryService DictionaryService { get; set; }
 
@@ -37,14 +40,18 @@ namespace ColorVision.MQTT.Service
 
         private ResultService spectumResult;
 
+        public StackPanel MQTTStackPanel { get; set; }
+
+
         public ServiceControl()
         {
             ResourceService = new SysResourceService();
             DictionaryService = new SysDictionaryService();
             spectumResult = new ResultService();
             MQTTServices = new ObservableCollection<MQTTServiceKind>();
+            MQTTDevices = new ObservableCollection<MQTTDevice>();
             UserConfig = GlobalSetting.GetInstance().SoftwareConfig.UserConfig;
-
+            MQTTStackPanel = new StackPanel();
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => Reload();
             Reload();
         }
@@ -52,8 +59,7 @@ namespace ColorVision.MQTT.Service
 
         public void GenContorl()
         {
-            MQTTManager MQTTManager = MQTTManager.GetInstance();
-            MQTTManager.MQTTStackPanel.Children.Clear();
+            MQTTStackPanel.Children.Clear();
             foreach (var mQTTServiceKind in MQTTServices)
             {
                 foreach (var mQTTService in mQTTServiceKind.VisualChildren)
@@ -62,32 +68,28 @@ namespace ColorVision.MQTT.Service
                     {
                         if (item is DeviceCamera deviceCamera)
                         {
-                            MQTTManager.Services.Add(deviceCamera.CameraService);
                             MQTTCameraControl1 mQTTCameraControl = new MQTTCameraControl1(deviceCamera.CameraService);
                             deviceCamera.CameraService.FileHandler += (s, e) =>
                             {
                                 MessageBox.Show(e);
                             };
-                            MQTTManager.MQTTStackPanel.Children.Add(mQTTCameraControl);
+                            MQTTStackPanel.Children.Add(mQTTCameraControl);
 
                         }
                         else if (item is DevicePG devicePG)
                         {
-                            MQTTManager.Services.Add(devicePG.PGService);
                             MQTTPGControl mQTTPGControl = new MQTTPGControl(devicePG.PGService);
-                            MQTTManager.MQTTStackPanel.Children.Add(mQTTPGControl);
+                            MQTTStackPanel.Children.Add(mQTTPGControl);
                         }
                         else if (item is DeviceSpectrum deviceSpectrum)
                         {
-                            MQTTManager.Services.Add(deviceSpectrum.SpectrumService);
                             MQTTSpectrumControl mQTTSpectrumControl = new MQTTSpectrumControl(deviceSpectrum);
-                            MQTTManager.MQTTStackPanel.Children.Add(mQTTSpectrumControl);
+                            MQTTStackPanel.Children.Add(mQTTSpectrumControl);
                         }
                         else if (item is DeviceSMU smu)
                         {
-                            MQTTManager.Services.Add(smu.SMUService);
                             MQTTSMUControl mQTTSMUControl = new MQTTSMUControl(smu.SMUService);
-                            MQTTManager.MQTTStackPanel.Children.Add(mQTTSMUControl);
+                            MQTTStackPanel.Children.Add(mQTTSMUControl);
                         }
                         else if (item is DeviceSensor deviceSensor)
                         {
@@ -135,7 +137,7 @@ namespace ColorVision.MQTT.Service
                 datas.Add(data);
 
             }
-            foreach (UserControl ctl in MQTTManager.GetInstance().MQTTStackPanel.Children)
+            foreach (UserControl ctl in MQTTStackPanel.Children)
             {
                 if (ctl is MQTTSpectrumControl spectrum)
                 {
@@ -179,19 +181,29 @@ namespace ColorVision.MQTT.Service
                                 switch ((MQTTDeviceType)device.Type)
                                 {
                                     case MQTTDeviceType.Camera:
-                                        mQTTService.AddChild(new DeviceCamera(device));
+                                        DeviceCamera deviceCamera = new DeviceCamera(device);
+                                        mQTTService.AddChild(deviceCamera);
+                                        MQTTDevices.Add(deviceCamera);
                                         break;
                                     case MQTTDeviceType.PG:
-                                        mQTTService.AddChild(new DevicePG(device));
+                                        DevicePG devicePG = new DevicePG(device);
+                                        mQTTService.AddChild(devicePG);
+                                        MQTTDevices.Add(devicePG);
                                         break;
                                     case MQTTDeviceType.Spectum:
-                                        mQTTService.AddChild(new DeviceSpectrum(device));
+                                        DeviceSpectrum deviceSpectrum = new DeviceSpectrum(device);
+                                        mQTTService.AddChild(deviceSpectrum);
+                                        MQTTDevices.Add(deviceSpectrum);
                                         break;
                                     case MQTTDeviceType.SMU:
-                                        mQTTService.AddChild(new DeviceSMU(device));
+                                        DeviceSMU deviceSMU = new DeviceSMU(device);
+                                        mQTTService.AddChild(deviceSMU);
+                                        MQTTDevices.Add(deviceSMU);
                                         break;
                                     case MQTTDeviceType.Sensor:
-                                        mQTTService.AddChild(new DeviceSensor(device));
+                                        DeviceSensor device1 = new DeviceSensor(device);
+                                        mQTTService.AddChild(device1);
+                                        MQTTDevices.Add(device1);
                                         break;
                                     default:
                                         break;
