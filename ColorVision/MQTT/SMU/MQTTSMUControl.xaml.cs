@@ -237,7 +237,7 @@ namespace ColorVision.MQTT.SMU
 
         private void MQTTVIOpen(object sender, RoutedEventArgs e)
         {
-            SMUService.Open(SMUService.Config.IsNet, SMUService.Config.ID);
+            SMUService.Open(passSxSource.IsNet, passSxSource.DevName);
         }
         private void MQTTVIClose(object sender, RoutedEventArgs e)
         {
