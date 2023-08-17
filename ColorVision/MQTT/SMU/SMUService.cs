@@ -12,11 +12,13 @@ namespace ColorVision.MQTT.SMU
 {
     public delegate void MQTTSMUHeartbeatHandler(HeartbeatParam heartbeat);
     public delegate void MQTTSMUScanResultHandler(SMUScanResultData data);
+    public delegate void MQTTSMUResultHandler(SMUResultData data);
 
     public class SMUService : BaseService<SMUConfig>
     {
         public event MQTTSMUHeartbeatHandler HeartbeatHandlerEvent;
         public event MQTTSMUScanResultHandler ScanResultHandlerEvent;
+        public event MQTTSMUResultHandler ResultHandlerEvent;
         public SMUService(SMUConfig sMUConfig) : base(sMUConfig)
         {
             this.Config = sMUConfig;
@@ -55,6 +57,8 @@ namespace ColorVision.MQTT.SMU
                         }
                         else if (json.EventName == "GetData")
                         {
+                            SMUResultData data = JsonConvert.DeserializeObject<SMUResultData>(JsonConvert.SerializeObject(json.Data));
+                            Application.Current.Dispatcher.Invoke(() => ResultHandlerEvent?.Invoke(data));
                         }
                         else if (json.EventName == "Scan")
                         {
@@ -111,7 +115,7 @@ namespace ColorVision.MQTT.SMU
             return true;
         }
 
-        public bool GetData(bool isSourceV,double lmtVal,double measureVal)
+        public bool GetData(bool isSourceV, double measureVal, double lmtVal)
         {
             MsgSend msg = new MsgSend
             {
@@ -137,12 +141,22 @@ namespace ColorVision.MQTT.SMU
             return true;
         }
 
-        internal bool Scan(bool isSourceV, double startMeasureVal, double stopMeasureVal, double lmtVal, int number)
+        public bool Scan(bool isSourceV, double startMeasureVal, double stopMeasureVal, double lmtVal, int number)
         {
             MsgSend msg = new MsgSend
             {
                 EventName = "Scan",
                 Params = new SMUScanParam() { IsSourceV = isSourceV, StartMeasureVal = startMeasureVal, StopMeasureVal = stopMeasureVal, LimitVal = lmtVal, Number = number }
+            };
+            PublishAsyncClient(msg);
+            return true;
+        }
+
+        public bool CloseOutput()
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "CloseOutput"
             };
             PublishAsyncClient(msg);
             return true;

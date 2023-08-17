@@ -39,7 +39,14 @@ namespace ColorVision.MQTT.SMU
             this.DataContext = SMUService;
 
             SMUService.HeartbeatHandlerEvent += (e) => SMUService_DeviceStatusHandler(e.DeviceStatus, ButtonSourceMeter1);
-            SMUService.ScanResultHandlerEvent += (e) => SMUService_ScanResultHandler(e);
+            SMUService.ScanResultHandlerEvent += SMUService_ScanResultHandler;
+            SMUService.ResultHandlerEvent += SMUService_ResultHandler;
+        }
+
+        private void SMUService_ResultHandler(SMUResultData data)
+        {
+            passSxSource.V = data.V;
+            passSxSource.I = data.I;
         }
 
         private void SMUService_ScanResultHandler(SMUScanResultData data)
@@ -138,7 +145,7 @@ namespace ColorVision.MQTT.SMU
 
         private void MeasureDataClose_Click(object sender, RoutedEventArgs e)
         {
-            passSxSource.CloseOutput();
+            SMUService.CloseOutput();
         }
 
         private void VIScan_Click(object sender, RoutedEventArgs e)

@@ -2,6 +2,18 @@
 
 namespace ColorVision.MQTT.SMU
 {
+    public class SMUResultData
+    {
+        public double V { set; get; }
+        public double I { set; get; }
+
+        public SMUResultData(double v, double i)
+        {
+            this.V = v;
+            this.I = i;
+        }
+    }
+
     public class SMUScanResultData
     {
         public double[] VList { set; get; }

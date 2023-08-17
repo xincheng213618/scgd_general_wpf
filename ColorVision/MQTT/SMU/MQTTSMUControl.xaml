@@ -40,7 +40,7 @@
                 <UniformGrid  Columns="3" Margin="2">
                     <Button Content="点亮" Click="MeasureData_Click" Margin="2"/>
                     <Button Content="设置" Click="StepMeasureData_Click" Margin="2"/>
-                    <Button Content="关闭" Click="MeasureDataClose_Click" Margin="2"/>
+                    <Button Content="熄灭" Click="MeasureDataClose_Click" Margin="2"/>
                 </UniformGrid>
                 <DockPanel Margin="2">
                     <TextBlock  Text="电压" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
@@ -88,7 +88,7 @@
 
                 </StackPanel>
 
-                <GroupBox  Header="MQTTTest" Margin="2">
+                <GroupBox  Header="MQTTTest" Margin="2" Visibility="Hidden">
                     <UniformGrid Columns="2" Margin="2">
                         <Button Content="打开"  Click="MQTTVIOpen" Margin="2"/>
                         <Button Content="关闭"  Click="MQTTVIClose" Margin="2"/>
