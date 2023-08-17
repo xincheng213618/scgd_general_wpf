@@ -43,10 +43,10 @@ namespace ColorVision.MQTT
                 }
 
             };
-            //this.Connected += (s, e) =>
-            //{
-            //    GetAllSnID();
-            //};
+            this.Connected += (s, e) =>
+            {
+                GetAllSnID();
+            };
         }
         public static Dictionary<string, ObservableCollection<string>> ServicesDevices { get; set; } = new Dictionary<string, ObservableCollection<string>>();
 

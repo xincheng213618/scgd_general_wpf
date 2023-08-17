@@ -140,6 +140,7 @@ namespace ColorVision.MQTT.Camera
                         Application.Current.Dispatcher.Invoke(() => CloseCameraSuccess?.Invoke(this, msg));
                         break;
                     case "Open":
+                        Application.Current.Dispatcher.Invoke(() => OpenCameraSuccess?.Invoke(this, msg));
                         MessageBox.Show("Open失败，没有许可证");
                         break;
                     case "Init":
@@ -224,7 +225,7 @@ namespace ColorVision.MQTT.Camera
             MsgSend msg = new MsgSend
             {
                 EventName = "Open",
-                Params = new Dictionary<string, object>() { { "TakeImageMode", (int)TakeImageMode }, { "SnID", CameraID }, { "Bpp", ImageBpp } }
+                Params = new Dictionary<string, object>() { { "TakeImageMode", (int)TakeImageMode }, { "Open", CameraID }, { "Bpp", ImageBpp } }
             };
             PublishAsyncClient(msg);
             return true;
