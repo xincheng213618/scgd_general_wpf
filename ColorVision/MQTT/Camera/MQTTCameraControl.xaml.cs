@@ -24,9 +24,9 @@ namespace ColorVision.MQTT.Camera
     /// </summary>
     public partial class MQTTCameraControl : UserControl
     {
-        private MQTTCamera MQTTCamera { get; set; }
+        private CameraService MQTTCamera { get; set; }
 
-        public MQTTCameraControl(MQTTCamera mQTTCamera)
+        public MQTTCameraControl(CameraService mQTTCamera)
         {
             MQTTCamera = mQTTCamera;
             InitializeComponent();
@@ -36,7 +36,7 @@ namespace ColorVision.MQTT.Camera
 
         private void StackPanelCamera_Initialized(object sender, EventArgs e)
         {
-            //MQTTCamera.FileHandler += OpenImage;
+            //CameraService.FileHandler += OpenImage;
 
             ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()
                                            select new KeyValuePair<CameraType, string>(e1, e1.ToDescription());
@@ -74,7 +74,7 @@ namespace ColorVision.MQTT.Camera
 
             MQTTCamera.InitCameraSuccess += (s,e) =>
             {
-                ComboxCameraID.ItemsSource = MQTTCamera.CameraIDs;
+                ComboxCameraID.ItemsSource = CameraService.CameraIDs;
                 ComboxCameraID.SelectedIndex = 0;
                 StackPanelOpen.Visibility = Visibility.Visible;
                 CameraOpenButton.Visibility = Visibility.Visible;

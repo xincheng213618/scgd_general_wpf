@@ -7,7 +7,7 @@ namespace ColorVision.MQTT.Camera
 {
     public class DeviceCamera : MQTTDevice<CameraConfig>
     {
-        public MQTTCamera CameraService { get; set; }
+        public CameraService CameraService { get; set; }
 
         public MQTTCameraControl1 Control { get; set; }
 
@@ -15,7 +15,7 @@ namespace ColorVision.MQTT.Camera
 
         public DeviceCamera(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
-            CameraService = new MQTTCamera(Config);
+            CameraService = new CameraService(Config);
             Control = new MQTTCameraControl1(CameraService);
             View = new ImageView();
         }

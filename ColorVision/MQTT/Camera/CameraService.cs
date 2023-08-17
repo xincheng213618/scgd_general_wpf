@@ -16,6 +16,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media.Media3D;
 
 namespace ColorVision.MQTT.Camera
 {
@@ -24,7 +25,15 @@ namespace ColorVision.MQTT.Camera
     public delegate void MQTTCameraMsgHandler(object sender, MsgReturn msg);
 
 
-    public class MQTTCamera : BaseService<CameraConfig>
+    public enum DeviceStatus
+    {
+        UnInit,
+        Init,
+        Open,
+        Close,
+    }
+
+    public class CameraService : BaseService<CameraConfig>
     {
         public event MQTTCameraFileHandler FileHandler;
         public event MQTTCameraMsgHandler InitCameraSuccess;
@@ -32,6 +41,7 @@ namespace ColorVision.MQTT.Camera
         public event MQTTCameraMsgHandler CloseCameraSuccess;
         public event MQTTCameraMsgHandler UnInitCameraSuccess;
 
+        public DeviceStatus DeviceStatus { get; set; }
         public static List<string> MD5 { get; set; } = new List<string>();
         public static List<string> CameraIDs { get; set; } = new List<string>();
 
@@ -39,13 +49,17 @@ namespace ColorVision.MQTT.Camera
 
         public string DeviceID { get => Config.ID; }
 
-        public MQTTCamera(CameraConfig CameraConfig) : base(CameraConfig)
+        public CameraService(CameraConfig CameraConfig) : base(CameraConfig)
         {
             SendTopic = CameraConfig.SendTopic;
             SubscribeTopic = CameraConfig.SubscribeTopic;
             MQTTControl.SubscribeCache(SubscribeTopic);
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
+            DeviceStatus = DeviceStatus.UnInit;
         }
+
+        
+
 
         private void MQTTCamera_MsgReturnChanged(MsgReturn msg)
         {
@@ -102,18 +116,22 @@ namespace ColorVision.MQTT.Camera
                     case "Init":    
                         ServiceID = msg.ServiceID;
                         Application.Current.Dispatcher.Invoke(() => InitCameraSuccess?.Invoke(this, msg));
+                        DeviceStatus= DeviceStatus.Init;
                         break;
                     case "UnInit":
                         Application.Current.Dispatcher.Invoke(() => UnInitCameraSuccess?.Invoke(this, msg));
+                        DeviceStatus = DeviceStatus.UnInit;
                         break;
                     case "SetParam":
                         MessageBox.Show("SetParam");
                         break;
                     case "Close":
                         Application.Current.Dispatcher.Invoke(() => CloseCameraSuccess?.Invoke(this, msg));
+                        DeviceStatus = DeviceStatus.Close;
                         break;
                     case "Open":
                         Application.Current.Dispatcher.Invoke(() => OpenCameraSuccess?.Invoke(this, msg));
+                        DeviceStatus = DeviceStatus.Open;
                         break;
                     case "GetData":
                         string SaveFileName = msg.Data.SaveFileName;
@@ -159,6 +177,9 @@ namespace ColorVision.MQTT.Camera
 
         public bool IsRun { get; set; }
         public CameraType CurrentCameraType { get; set; }
+
+
+        public bool Init() => Init(Config.CameraType, Config.ID);
 
         public bool Init(CameraType CameraType, string CameraID)
         {
