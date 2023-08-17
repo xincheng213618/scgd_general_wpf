@@ -28,10 +28,6 @@ namespace ColorVision.MQTT.Camera
     public class CameraService : BaseService<CameraConfig>
     {
         public event MQTTCameraFileHandler FileHandler;
-        public event MQTTCameraMsgHandler InitCameraSuccess;
-        public event MQTTCameraMsgHandler OpenCameraSuccess;
-        public event MQTTCameraMsgHandler CloseCameraSuccess;
-        public event MQTTCameraMsgHandler UnInitCameraSuccess;
 
         public event DeviceStatusChangedHandler DeviceStatusChanged;
 
@@ -109,22 +105,18 @@ namespace ColorVision.MQTT.Camera
                 {
                     case "Init":    
                         ServiceID = msg.ServiceID;
-                        Application.Current.Dispatcher.Invoke(() => InitCameraSuccess?.Invoke(this, msg));
                         DeviceStatus= DeviceStatus.Init;
                         break;
                     case "UnInit":
-                        Application.Current.Dispatcher.Invoke(() => UnInitCameraSuccess?.Invoke(this, msg));
                         DeviceStatus = DeviceStatus.UnInit;
                         break;
                     case "SetParam":
                         MessageBox.Show("SetParam");
                         break;
                     case "Close":
-                        Application.Current.Dispatcher.Invoke(() => CloseCameraSuccess?.Invoke(this, msg));
                         DeviceStatus = DeviceStatus.Close;
                         break;
                     case "Open":
-                        Application.Current.Dispatcher.Invoke(() => OpenCameraSuccess?.Invoke(this, msg));
                         DeviceStatus = DeviceStatus.Open;
                         break;
                     case "GetData":
@@ -149,10 +141,8 @@ namespace ColorVision.MQTT.Camera
                         Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(this, SaveFileName));
                         break;
                     case "Close":
-                        Application.Current.Dispatcher.Invoke(() => CloseCameraSuccess?.Invoke(this, msg));
                         break;
                     case "Open":
-                        Application.Current.Dispatcher.Invoke(() => OpenCameraSuccess?.Invoke(this, msg));
                         MessageBox.Show("Open失败，没有许可证");
                         break;
                     case "Init":
@@ -160,7 +150,6 @@ namespace ColorVision.MQTT.Camera
                         break;
                     case "Uninit":
                         MessageBox.Show("关闭相机失败" + Environment.NewLine + "请连接相机或重新初始化服务");
-                        Application.Current.Dispatcher.Invoke(() => UnInitCameraSuccess?.Invoke(this, msg));
                         break;
                     default:
                         MessageBox.Show($"{msg.EventName}失败");
