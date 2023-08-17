@@ -171,6 +171,9 @@ namespace ColorVision
 
         private void GridSort(List<Grid> GridLists)
         {
+            if (MainView == null)
+                return;
+
             foreach (var item in SingleWindowGrid)
             {
                 GridLists.Remove(item);

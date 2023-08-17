@@ -141,7 +141,6 @@
                             </Border>
                         </StackPanel>
 
-
                         <StackPanel x:Name="StackPanelMQTT" Initialized="StackPanelMQTT_Initialized">
 
                         </StackPanel>

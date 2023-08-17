@@ -151,7 +151,7 @@ namespace ColorVision.MQTT.Camera
                         Application.Current.Dispatcher.Invoke(() => UnInitCameraSuccess?.Invoke(this, msg));
                         break;
                     default:
-                        MessageBox.Show($"未定义{msg.EventName}");
+                        MessageBox.Show($"{msg.EventName}失败");
                         break;
                 }
             }
@@ -225,7 +225,7 @@ namespace ColorVision.MQTT.Camera
             MsgSend msg = new MsgSend
             {
                 EventName = "Open",
-                Params = new Dictionary<string, object>() { { "TakeImageMode", (int)TakeImageMode }, { "Open", CameraID }, { "Bpp", ImageBpp } }
+                Params = new Dictionary<string, object>() { { "TakeImageMode", (int)TakeImageMode }, { "CameraID", CameraID }, { "Bpp", ImageBpp } }
             };
             PublishAsyncClient(msg);
             return true;
