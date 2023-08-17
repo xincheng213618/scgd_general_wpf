@@ -95,6 +95,10 @@
                         <Button Grid.Column="1"  Content="提交" Click="Button_Click" Command="{Binding SaveCommand}" />
                     </Grid>
                 </Grid>
+
+                <Grid Margin="5">
+                    <Button Click="Button_Click_2"  Content="初始化" />
+                </Grid>
             </StackPanel>
 
 

@@ -11,7 +11,7 @@
              xmlns:converter="clr-namespace:ColorVision.Converter"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d" 
-             d:DataContext="{d:DesignInstance local:MQTTCamera}"
+             d:DataContext="{d:DesignInstance local:CameraService}"
              d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized">
 
     <StackPanel x:Name="StackPanelCamera"  Margin="0,5"  Initialized="StackPanelCamera_Initialized">

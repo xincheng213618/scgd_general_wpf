@@ -24,7 +24,9 @@ namespace ColorVision.MQTT.Camera
     public partial class DeviceCameraControl : UserControl
     {
         public DeviceCamera MQTTDeviceCamera { get; set; }
-        public ServiceControl ServiceControl { get; set; }
+
+        public CameraService Service { get => MQTTDeviceCamera.CameraService; }
+
 
         public DeviceCameraControl(DeviceCamera mQTTDeviceCamera)
         {
@@ -34,7 +36,6 @@ namespace ColorVision.MQTT.Camera
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            ServiceControl = ServiceControl.GetInstance();
             this.DataContext = MQTTDeviceCamera;
 
             ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()
@@ -63,6 +64,11 @@ namespace ColorVision.MQTT.Camera
             MQTTShowContent.Visibility = Visibility.Collapsed;
             MQTTEditContent.Visibility = Visibility.Visible;
 
+        }
+
+        private void Button_Click_2(object sender, RoutedEventArgs e)
+        {
+            Service.Init();
         }
     }
 }

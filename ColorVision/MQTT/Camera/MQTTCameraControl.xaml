@@ -11,7 +11,7 @@
              xmlns:SettingUp ="clr-namespace:ColorVision.SettingUp"
              xmlns:converter="clr-namespace:ColorVision.Converter"
              xmlns:hc="https://handyorg.github.io/handycontrol"
-             d:DataContext="{d:DesignInstance local:MQTTCamera}"
+             d:DataContext="{d:DesignInstance local:CameraService}"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="300">
 
