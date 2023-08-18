@@ -70,8 +70,6 @@ namespace ColorVision
 
             GridView gridView = new GridView();
 
-
-
             List<string> headers = new List<string> { "序号", "测量时间", "IP", "亮度Lv(cd/m2)", "蓝光", "色度x", "色度y", "色度u", "色度v", "相关色温(K)", "主波长Ld(nm)", "色纯度(%)", "峰值波长Lp(nm)", "显色性指数Ra", "半波宽" };
 
             //GridViewColumn gridViewColumn = new GridViewColumn();
@@ -134,6 +132,7 @@ namespace ColorVision
             if (sender is ListView listview && listview.SelectedIndex > -1)
             {
                 DrawPlot(colorParams[listview.SelectedIndex]);
+                listView2.ItemsSource = colorParams[listview.SelectedIndex].fPL;
             }
         }
 

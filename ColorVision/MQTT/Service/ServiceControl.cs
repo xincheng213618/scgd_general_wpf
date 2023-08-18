@@ -71,7 +71,10 @@ namespace ColorVision.MQTT.Service
                             MQTTCameraControl1 mQTTCameraControl = new MQTTCameraControl1(deviceCamera.CameraService);
                             deviceCamera.CameraService.FileHandler += (s, e) =>
                             {
-                                MessageBox.Show(e);
+                                if (ViewGridManager.GetInstance().Views[0] is ImageView imageView)
+                                {
+                                    imageView.OpenImage(e);
+                                }
                             };
                             MQTTStackPanel.Children.Add(mQTTCameraControl);
 

@@ -9,9 +9,9 @@
              d:DataContext="{d:DesignInstance local:SpectrumService}"
              d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized">
 
-    <StackPanel Margin="0,5" x:Name="StackPanelSpectrum"  IsEnabled="{Binding IsAlive}">
+    <StackPanel Margin="0,5" x:Name="StackPanelSpectrum"  >
         <ToggleButton  x:Name="ToggleButton3"  Style="{StaticResource ButtonPageControl1}" Background="#F9F9F9"   Content="{Binding Config.Name}"  FontSize="15" Foreground="Black" IsChecked="True" />
-        <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton3,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
+        <Border  Style="{DynamicResource BorderModuleArea}" IsEnabled="{Binding IsAlive}" Visibility="{Binding ElementName=ToggleButton3,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel >
                 <DockPanel Margin="5">
                     <TextBlock  Text="平均次数" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />

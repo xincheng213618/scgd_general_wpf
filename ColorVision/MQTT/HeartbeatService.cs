@@ -22,22 +22,29 @@ namespace ColorVision.MQTT
                 switch (msg.EventName)
                 {
                     case "CM_GetAllSnID":
-                        JArray SnIDs = msg.Data.SnID;
-                        JArray MD5IDs = msg.Data.MD5ID;
-                        if (SnIDs == null || MD5IDs == null)
+                        try
                         {
-                            return;
+                            JArray SnIDs = msg.Data.SnID;
+                            JArray MD5IDs = msg.Data.MD5ID;
+                            if (SnIDs == null || MD5IDs == null)
+                            {
+                                return;
+                            }
+                            for (int i = 0; i < SnIDs.Count; i++)
+                            {
+                                if (ServicesDevices.TryGetValue(SubscribeTopic, out ObservableCollection<string> list) && !list.Contains(SnIDs[i].ToString()))
+                                {
+                                    list.Add(SnIDs[i].ToString());
+                                }
+                                else
+                                {
+                                    ServicesDevices.Add(SubscribeTopic, new ObservableCollection<string>() { SnIDs[i].ToString() });
+                                }
+                            }
                         }
-                        for (int i = 0; i < SnIDs.Count; i++)
+                        catch(Exception ex)
                         {
-                            if (ServicesDevices.TryGetValue(SubscribeTopic, out ObservableCollection<string> list) && !list.Contains(SnIDs[i].ToString()))
-                            {
-                                list.Add(SnIDs[i].ToString());
-                            }
-                            else
-                            {
-                                ServicesDevices.Add(SubscribeTopic, new ObservableCollection<string>() { SnIDs[i].ToString() });
-                            }
+                            
                         }
                         return;
                 }

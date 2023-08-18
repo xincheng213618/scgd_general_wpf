@@ -132,7 +132,6 @@ namespace ColorVision.MQTT
                 }
                 catch (Exception ex)
                 {
-                    log.Warn(ex);
                     return Task.CompletedTask;
                 }
             }
