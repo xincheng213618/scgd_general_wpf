@@ -1,6 +1,8 @@
 ﻿using ColorVision.MQTT.Spectrum;
 using ColorVision.MySql.Service;
 using ColorVision.Template;
+using ScottPlot;
+using ScottPlot.Plottable;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -227,26 +229,32 @@ namespace ColorVision
             for (int i = 20; i <= 120; i++)
                 sum2 += colorParam.fPL[i * 10];
             ResultNum++;
-            List<string> Contents = new List<string>() { ResultNum.ToString(), DateTime.Now.ToString(), Math.Round(colorParam.fIp / 65535 * 100, 2).ToString() + "%", (colorParam.fPh / 1).ToString() };
-            Contents.Add(Math.Round(sum1 / sum2 * 100, 2).ToString());
-            Contents.Add(Convert.ToString(Math.Round(colorParam.fx, 4)));
-            Contents.Add(Convert.ToString(Math.Round(colorParam.fy, 4)));
-            Contents.Add(Convert.ToString(Math.Round(colorParam.fu, 4)));
-            Contents.Add(Convert.ToString(Math.Round(colorParam.fv, 4)));
-            Contents.Add(Convert.ToString(Math.Round(colorParam.fCCT, 1)));
-            Contents.Add(Convert.ToString(Math.Round(colorParam.fLd, 1)));
-            Contents.Add(Convert.ToString(Math.Round(colorParam.fPur, 2)));
-            Contents.Add(Convert.ToString(Math.Round(colorParam.fLp, 1)));
-            Contents.Add(Convert.ToString(Math.Round(colorParam.fRa, 2)));
-            Contents.Add(Convert.ToString(Math.Round(colorParam.fHW, 4)));
+            List<string> Contents = new List<string>
+            {
+                ResultNum.ToString(),
+                DateTime.Now.ToString(),
+                Math.Round(colorParam.fIp / 65535 * 100, 2).ToString() + "%",
+                (colorParam.fPh / 1).ToString(),
+                Math.Round(sum1 / sum2 * 100, 2).ToString(),
+                Convert.ToString(Math.Round(colorParam.fx, 4)),
+                Convert.ToString(Math.Round(colorParam.fy, 4)),
+                Convert.ToString(Math.Round(colorParam.fu, 4)),
+                Convert.ToString(Math.Round(colorParam.fv, 4)),
+                Convert.ToString(Math.Round(colorParam.fCCT, 1)),
+                Convert.ToString(Math.Round(colorParam.fLd, 1)),
+                Convert.ToString(Math.Round(colorParam.fPur, 2)),
+                Convert.ToString(Math.Round(colorParam.fLp, 1)),
+                Convert.ToString(Math.Round(colorParam.fRa, 2)),
+                Convert.ToString(Math.Round(colorParam.fHW, 4)),
 
-            //for (int i = 0; i < 4000; i += 10)
-            //{
-            //    Contents.Add(colorParam.fPL[i].ToString());
-            //}
-            //Contents.Add(colorParam.fPL[3998].ToString());
+                //for (int i = 0; i < 4000; i += 10)
+                //{
+                //    Contents.Add(colorParam.fPL[i].ToString());
+                //}
+                //Contents.Add(colorParam.fPL[3998].ToString());
 
-            Contents.Add(data.ID.ToString());
+                data.ID.ToString()
+            };
 
 
             listViewItem.Content = Contents;
@@ -351,11 +359,36 @@ namespace ColorVision
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            if (sender is ToggleButton toggleButton)
-            {
-                listView1.Visibility = toggleButton.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+            listView1.Visibility = listView1.Visibility == Visibility.Collapsed ? Visibility.Visible : Visibility.Collapsed;
+            listView2.Visibility = listView2.Visibility == Visibility.Collapsed ? Visibility.Visible : Visibility.Collapsed;
+        }
 
-            }
+        private void UserControl_MouseEnter(object sender, MouseEventArgs e)
+        {
+            BorderShow.Visibility = Visibility.Visible;
+        }
+
+        private void UserControl_MouseLeave(object sender, MouseEventArgs e)
+        {
+            BorderShow.Visibility = Visibility.Collapsed;
+        }
+
+        MarkerPlot markerPlot1;
+
+        private void listView2_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            wpfplot1.Plot.Remove(markerPlot1);
+            markerPlot1 = new MarkerPlot
+            {
+                X = listView2.SelectedIndex +380,
+                Y = colorParams[listView1.SelectedIndex].fPL[listView2.SelectedIndex * 10],
+                MarkerShape = MarkerShape.filledCircle,
+                MarkerSize = 5f,
+                Color = Color.Red,
+                Label = null
+            };
+            wpfplot1.Plot.Add(markerPlot1);
+            wpfplot1.Refresh();
         }
     }
 }

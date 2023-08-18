@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:ColorVision"
              xmlns:ScottPlot="clr-namespace:ScottPlot;assembly=ScottPlot.WPF"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800" Initialized="UserControl_Initialized">
+             d:DesignHeight="450" d:DesignWidth="800" Initialized="UserControl_Initialized"  MouseEnter="UserControl_MouseEnter" MouseLeave="UserControl_MouseLeave">
 
     <Grid>
         <Grid.ColumnDefinitions>
@@ -27,10 +27,6 @@
                 <ToggleButton Click="Button1_Click" Margin="2,2,0,0" >
                     <Image  Stretch="Uniform" Source="{StaticResource DrawingImageSwitch}" />
                 </ToggleButton>
-
-                <ToggleButton Click="Button_Click_1"  IsChecked="True"  Margin="2,2,0,0">
-                    <Image Stretch="Uniform" Source="{StaticResource DrawingImageList}" />
-                </ToggleButton>
                 <Button Click="Button_Click" Margin="2,2,0,0" >
                     <Image  Stretch="Uniform" Source="{StaticResource DrawingImageSave}" />
                 </Button>
@@ -41,7 +37,13 @@
             </ToolBar>
             <ListView Height="400"  Grid.Row="2" x:Name="listView1" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" />
         </Grid>
-        <ListView x:Name="listView2"  Grid.Column="1" />
+        <ListView x:Name="listView2"  Grid.Column="1" SelectionChanged="listView2_SelectionChanged" />
+
+        <Border x:Name="BorderShow" Height="25" Width="25" HorizontalAlignment="Left" VerticalAlignment="Top" Background="#FFFFFF" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="25">
+            <Button Click="Button_Click_1"  Background="Transparent" BorderThickness="0" >
+                <Image Stretch="Uniform" Source="{StaticResource DrawingImageList}" />
+            </Button>
+        </Border>
 
     </Grid>
 </UserControl>
