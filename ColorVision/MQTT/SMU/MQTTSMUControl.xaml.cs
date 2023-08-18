@@ -146,6 +146,8 @@ namespace ColorVision.MQTT.SMU
         private void MeasureDataClose_Click(object sender, RoutedEventArgs e)
         {
             SMUService.CloseOutput();
+            passSxSource.V = null;
+            passSxSource.I = null;
         }
 
         private void VIScan_Click(object sender, RoutedEventArgs e)

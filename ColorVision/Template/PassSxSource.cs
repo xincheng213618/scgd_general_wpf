@@ -134,10 +134,10 @@ namespace ColorVision.Template
         public double LmtVal { get => _lmtVal; set { _lmtVal = value; NotifyPropertyChanged(); } }
         private double _lmtVal;
 
-        public double V { get => _V;  set { _V = value; NotifyPropertyChanged(); } }
-        private double _V;
-        public double I { get => _I;  set { _I = value; NotifyPropertyChanged(); } }
-        private double _I;
+        public double? V { get => _V;  set { _V = value; NotifyPropertyChanged(); } }
+        private double? _V;
+        public double? I { get => _I;  set { _I = value; NotifyPropertyChanged(); } }
+        private double? _I;
         public void MeasureData(double measureVal, double lmtVal, ref double rstV, ref double rstI)
         {
             PassSx.cvMeasureData(DevID, measureVal, lmtVal, ref rstV, ref rstI);
