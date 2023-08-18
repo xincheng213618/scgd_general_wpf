@@ -26,11 +26,17 @@ namespace ColorVision.MQTT.SMU
     /// </summary>
     public partial class MQTTSMUControl : UserControl
     {
-        private SMUService SMUService { get; set; }
 
-        public MQTTSMUControl(SMUService Source)
+        public DeviceSMU DeviceSMU { get; set; }
+        private SMUService SMUService { get => DeviceSMU.SMUService;  }
+        public ChartView View { get => DeviceSMU.ChartView; }
+
+        PassSxSource passSxSource;
+
+
+        public MQTTSMUControl(DeviceSMU deviceSMU)
         {
-            this.SMUService = Source;
+            this.DeviceSMU = deviceSMU;
             InitializeComponent();
         }
 
@@ -38,9 +44,49 @@ namespace ColorVision.MQTT.SMU
         {
             this.DataContext = SMUService;
 
+
+
+
             SMUService.HeartbeatHandlerEvent += (e) => SMUService_DeviceStatusHandler(e.DeviceStatus, ButtonSourceMeter1);
             SMUService.ScanResultHandlerEvent += SMUService_ScanResultHandler;
             SMUService.ResultHandlerEvent += SMUService_ResultHandler;
+
+
+            passSxSource = new PassSxSource();
+            passSxSource.IsNet = SMUService.Config.IsNet;
+            passSxSource.DevName = SMUService.Config.ID;
+            StackPanelVI.DataContext = passSxSource;
+
+            StackPanelVITemplate.DataContext = passSxSource;
+
+            ComboxVITemplate.ItemsSource = TemplateControl.GetInstance().SxParams;
+            ComboxVITemplate.SelectionChanged += (s, e) =>
+            {
+                if (ComboxVITemplate.SelectedItem is KeyValuePair<string, SxParam> KeyValue && KeyValue.Value is SxParam SxParm)
+                {
+                    passSxSource.StartMeasureVal = SxParm.StartMeasureVal;
+                    passSxSource.StopMeasureVal = SxParm.StopMeasureVal;
+                    passSxSource.IsSourceV = SxParm.IsSourceV;
+                    passSxSource.LimitVal = SxParm.LmtVal;
+                    passSxSource.Number = SxParm.Number;
+                }
+            };
+            ComboxVITemplate.SelectedIndex = 0;
+
+            var plt = View.wpfplot1.Plot;
+
+            plt.Title("电压曲线");
+            if (passSxSource.IsSourceV)
+            {
+                plt.XLabel("电压(V)");
+                plt.YLabel("电流(A)");
+            }
+            else
+            {
+                plt.XLabel("电流(A)");
+                plt.YLabel("电压(V)");
+            }
+            ViewGridManager.GetInstance().AddView(View);
         }
 
         private void SMUService_ResultHandler(SMUResultData data)
@@ -138,8 +184,6 @@ namespace ColorVision.MQTT.SMU
         }
         private void StepMeasureData_Click(object sender, RoutedEventArgs e)
         {
-            //double V = 0, I = 0;
-            //passSxSource.MeasureData(passSxSource.MeasureVal, passSxSource.LmtVal, ref V, ref I);
             SMUService.GetData(passSxSource.IsSourceV, passSxSource.MeasureVal, passSxSource.LmtVal);
         }
 
@@ -155,27 +199,14 @@ namespace ColorVision.MQTT.SMU
             if (sender is Button button)
             {
                 SMUService.Scan(passSxSource.IsSourceV, passSxSource.StartMeasureVal, passSxSource.StopMeasureVal, passSxSource.LimitVal, passSxSource.Number);
-                //if (ComboxVITemplate.SelectedItem is KeyValuePair<string, SxParam> KeyValue && KeyValue.Value is SxParam SxParm)
-                //{
-                //    button.Content = "扫描中";
-                //    passSxSource.SetSource(SxParm.IsSourceV);
-                //    Task.Run(() =>
-                //    {
-                //        passSxSource.Scan(SxParm.StartMeasureVal, SxParm.StopMeasureVal, SxParm.LmtVal, SxParm.Number);
-                //        Application.Current.Dispatcher.Invoke(() =>
-                //        {
-                //            button.Content = "扫描";
-                //            showPxResult(SxParm.IsSourceV, SxParm.StopMeasureVal);
-                //        });
-                //    });
-                //}
+
             }
 
         }
 
         private void showPxResult(bool isSourceV, double endVal)
         {
-            var plt = new ScottPlot.Plot(400, 300);
+            var plt = View.wpfplot1.Plot;
 
             plt.Title("电压曲线");
             if (isSourceV)
@@ -244,13 +275,12 @@ namespace ColorVision.MQTT.SMU
             }
 
             plt.AddScatter(xs, ys, System.Drawing.Color.DarkGoldenrod, 3, 3, 0);
-            try
-            {
-                plt.SetAxisLimitsX(xMin, xMax);
-                plt.SetAxisLimitsY(yMin, yMax);
-            }
-            catch { }
-            new ScottPlot.WpfPlotViewer(plt).Show();
+
+
+            plt.SetAxisLimitsX(xMin, xMax);
+            plt.SetAxisLimitsY(yMin, yMax);
+
+            View.wpfplot1.Refresh();
         }
 
 
@@ -281,30 +311,10 @@ namespace ColorVision.MQTT.SMU
             }
         }
 
-        PassSxSource passSxSource;
 
         private void StackPanelVI_Initialized(object sender, EventArgs e)
         {
-            passSxSource = new PassSxSource();
-            passSxSource.IsNet = SMUService.Config.IsNet;
-            passSxSource.DevName = SMUService.Config.ID;
-            StackPanelVI.DataContext = passSxSource;
 
-            StackPanelVITemplate.DataContext = passSxSource;
-
-            ComboxVITemplate.ItemsSource = TemplateControl.GetInstance().SxParams;
-            ComboxVITemplate.SelectionChanged += (s, e) =>
-            {
-                if (ComboxVITemplate.SelectedItem is KeyValuePair<string, SxParam> KeyValue && KeyValue.Value is SxParam SxParm)
-                {
-                    passSxSource.StartMeasureVal = SxParm.StartMeasureVal;
-                    passSxSource.StopMeasureVal = SxParm.StopMeasureVal;
-                    passSxSource.IsSourceV = SxParm.IsSourceV; 
-                    passSxSource.LimitVal = SxParm.LmtVal;
-                    passSxSource.Number = SxParm.Number;
-                }
-            };
-            ComboxVITemplate.SelectedIndex = 0;
         }
 
         private void MQTTVIOpen(object sender, RoutedEventArgs e)

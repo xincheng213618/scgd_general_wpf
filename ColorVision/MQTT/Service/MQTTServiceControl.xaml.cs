@@ -52,7 +52,7 @@ namespace ColorVision.MQTT.Service
                 }
             };
 
-            if (MQTTService.Type == MQTTDeviceType.Camera)
+            if (MQTTService.Type == DeviceType.Camera)
             {
                 if (HeartbeatService.ServicesDevices.TryGetValue(MQTTService.ServiceConfig.SubscribeTopic, out ObservableCollection<string> list))
                 {
@@ -76,7 +76,7 @@ namespace ColorVision.MQTT.Service
             {
                 SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, mQTTService.SysResourceModel.Type, mQTTService.SysResourceModel.Id, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
                 
-                if (mQTTService.Type == MQTTDeviceType.Camera)
+                if (mQTTService.Type == DeviceType.Camera)
                 {
                     CameraConfig cameraConfig1 = new CameraConfig
                     {
@@ -96,7 +96,7 @@ namespace ColorVision.MQTT.Service
                     if (pkId > 0 && ServiceControl.ResourceService.GetMasterById(pkId) is SysResourceModel model)
                         mQTTService.AddChild(new DeviceCamera(model));
                 }
-                else if (mQTTService.Type == MQTTDeviceType.PG)
+                else if (mQTTService.Type == DeviceType.PG)
                 {
                     PGConfig pGConfig = new PGConfig
                     {
@@ -113,7 +113,7 @@ namespace ColorVision.MQTT.Service
                     if (pkId > 0 && ServiceControl.ResourceService.GetMasterById(pkId) is SysResourceModel model)
                         mQTTService.AddChild(new DevicePG(model));
                 }
-                else if (mQTTService.Type == MQTTDeviceType.Spectum)
+                else if (mQTTService.Type == DeviceType.Spectum)
                 {
                     SpectrumConfig config = new SpectrumConfig
                     {
@@ -129,7 +129,7 @@ namespace ColorVision.MQTT.Service
                         mQTTService.AddChild(new DeviceSpectrum(model));
                 }
 
-                else if (mQTTService.Type == MQTTDeviceType.SMU)
+                else if (mQTTService.Type == DeviceType.SMU)
                 {
                     SMUConfig config = new SMUConfig
                     {
@@ -143,7 +143,7 @@ namespace ColorVision.MQTT.Service
                     int pkId = sysResource.GetPK();
                     if (pkId > 0 && ServiceControl.ResourceService.GetMasterById(pkId) is SysResourceModel model)
                         mQTTService.AddChild(new DeviceSpectrum(model));
-                }else if (mQTTService.Type == MQTTDeviceType.Sensor)
+                }else if (mQTTService.Type == DeviceType.Sensor)
                 {
                     SensorConfig config = new SensorConfig
                     {

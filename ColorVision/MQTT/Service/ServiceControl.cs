@@ -91,7 +91,7 @@ namespace ColorVision.MQTT.Service
                         }
                         else if (item is DeviceSMU smu)
                         {
-                            MQTTSMUControl mQTTSMUControl = new MQTTSMUControl(smu.SMUService);
+                            MQTTSMUControl mQTTSMUControl = new MQTTSMUControl(smu);
                             MQTTStackPanel.Children.Add(mQTTSMUControl);
                         }
                         else if (item is DeviceSensor deviceSensor)
@@ -181,29 +181,29 @@ namespace ColorVision.MQTT.Service
                             if (device.Pid == service.Id)
                             {
 
-                                switch ((MQTTDeviceType)device.Type)
+                                switch ((DeviceType)device.Type)
                                 {
-                                    case MQTTDeviceType.Camera:
+                                    case DeviceType.Camera:
                                         DeviceCamera deviceCamera = new DeviceCamera(device);
                                         mQTTService.AddChild(deviceCamera);
                                         MQTTDevices.Add(deviceCamera);
                                         break;
-                                    case MQTTDeviceType.PG:
+                                    case DeviceType.PG:
                                         DevicePG devicePG = new DevicePG(device);
                                         mQTTService.AddChild(devicePG);
                                         MQTTDevices.Add(devicePG);
                                         break;
-                                    case MQTTDeviceType.Spectum:
+                                    case DeviceType.Spectum:
                                         DeviceSpectrum deviceSpectrum = new DeviceSpectrum(device);
                                         mQTTService.AddChild(deviceSpectrum);
                                         MQTTDevices.Add(deviceSpectrum);
                                         break;
-                                    case MQTTDeviceType.SMU:
+                                    case DeviceType.SMU:
                                         DeviceSMU deviceSMU = new DeviceSMU(device);
                                         mQTTService.AddChild(deviceSMU);
                                         MQTTDevices.Add(deviceSMU);
                                         break;
-                                    case MQTTDeviceType.Sensor:
+                                    case DeviceType.Sensor:
                                         DeviceSensor device1 = new DeviceSensor(device);
                                         mQTTService.AddChild(device1);
                                         MQTTDevices.Add(device1);
