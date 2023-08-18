@@ -26,9 +26,9 @@ namespace ColorVision.MQTT.Camera
     {
         private CameraService Service { get; set; }
 
-        public MQTTCameraControl1(CameraService mQTTCamera)
+        public MQTTCameraControl1(CameraService service)
         {
-            Service = mQTTCamera;
+            Service = service;
             InitializeComponent();
 
         }
@@ -96,7 +96,6 @@ namespace ColorVision.MQTT.Camera
                 if (button.Content.ToString() == "初始化")
                 {
                     Service.Init(Service.Config.CameraType, Service.Config.ID);
-                    CamerInitButton.Content = "正在初始化";
                 }
                 else
                 {

@@ -48,6 +48,9 @@ namespace ColorVision.MQTT.Camera
 
             ComboxCameraChannel.Text = MQTTDeviceCamera.Config.Channel.ToString();
             ComboxCameraImageBpp.Text = MQTTDeviceCamera.Config.ImageBpp.ToString();
+
+
+            CameraID.ItemsSource = CameraService.CameraIDs;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

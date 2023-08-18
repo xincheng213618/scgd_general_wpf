@@ -49,7 +49,7 @@
 
                             <DockPanel Margin="0,5" >
                                 <Label Content="相机ID："/>
-                                <TextBox Text="{Binding Config.ID}"/>
+                                <hc:ComboBox  x:Name="CameraID" Margin="0,0,0,20" Width="400" HorizontalAlignment="Left"  IsEditable="True" SelectedIndex="0" Text="{Binding Config.ID}"  hc:InfoElement.ShowClearButton="True" />
                             </DockPanel>
                             <DockPanel Margin="5">
                                 <Label Content="相机类型："/>
@@ -97,8 +97,8 @@
                 </Grid>
 
                 <DockPanel>
-                    <TextBlock Text="{Binding CameraService.DeviceStatus}"/>
                     <Button Click="Button_Click_2"  Content="初始化" />
+                    <TextBlock Text="{Binding CameraService.DeviceStatus}"/>
                 </DockPanel>
             </StackPanel>
         </Grid>

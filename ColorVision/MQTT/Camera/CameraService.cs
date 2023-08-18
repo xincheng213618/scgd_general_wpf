@@ -48,6 +48,11 @@ namespace ColorVision.MQTT.Camera
             MQTTControl.SubscribeCache(SubscribeTopic);
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
             DeviceStatus = DeviceStatus.UnInit;
+
+            this.Connected += (s, e) =>
+            {
+                GetAllCameraID();
+            };
         }
 
        
@@ -57,37 +62,44 @@ namespace ColorVision.MQTT.Camera
             switch (msg.EventName)
             {
                 case "CM_GetAllSnID":
-
-                    JArray SnIDs = msg.Data.SnID;
-                    JArray MD5IDs = msg.Data.MD5ID;
-
-
-                    if (SnIDs == null || MD5IDs == null)
+                    try
                     {
-                        return;
+                        JArray SnIDs = msg.Data.SnID;
+                        JArray MD5IDs = msg.Data.MD5ID;
+
+
+                        if (SnIDs == null || MD5IDs == null)
+                        {
+                            return;
+                        }
+
+                        for (int i = 0; i < SnIDs.Count; i++)
+                        {
+                            if (SnIDs[i].ToString() == SnID)
+                                Config.MD5 = MD5IDs[i].ToString();
+
+                            if (!CameraIDs.Contains(SnIDs[i].ToString()))
+                                CameraIDs.Add(SnIDs[i].ToString());
+
+                            if (!MD5.Contains(MD5IDs[i].ToString()))
+                                MD5.Add(MD5IDs[i].ToString());
+
+
+                            if (ServicesDevices.TryGetValue(SubscribeTopic, out ObservableCollection<string> list) && !list.Contains(SnIDs[i].ToString()))
+                            {
+                                list.Add(SnIDs[i].ToString());
+                            }
+                            else
+                            {
+                                ServicesDevices.Add(SubscribeTopic, new ObservableCollection<string>() { SnIDs[i].ToString() });
+                            }
+                        }
+                    }
+                    catch(Exception ex)
+                    {
+
                     }
 
-                    for (int i = 0; i < SnIDs.Count; i++)
-                    {
-                        if (SnIDs[i].ToString() == SnID)
-                            Config.MD5 = MD5IDs[i].ToString();
-
-                        if (!CameraIDs.Contains(SnIDs[i].ToString()))
-                            CameraIDs.Add(SnIDs[i].ToString());
-
-                        if (!MD5.Contains(MD5IDs[i].ToString()))
-                            MD5.Add(MD5IDs[i].ToString());
-
-                          
-                        if (ServicesDevices.TryGetValue(SubscribeTopic, out ObservableCollection<string> list) && !list.Contains(SnIDs[i].ToString()))
-                        {
-                            list.Add(SnIDs[i].ToString());
-                        }
-                        else
-                        {
-                            ServicesDevices.Add(SubscribeTopic, new ObservableCollection<string>() { SnIDs[i].ToString() });
-                        }
-                    }
                     return;
             }
 
