@@ -97,6 +97,12 @@ namespace ColorVision
             }
 
             listView2.View = gridView2;
+
+            wpfplot1.Plot.Clear();
+            wpfplot1.Plot.SetAxisLimitsX(380, 810);
+            wpfplot1.Plot.SetAxisLimitsY(0, 1);
+            wpfplot1.Plot.XAxis.SetBoundary(370, 850);
+            wpfplot1.Plot.YAxis.SetBoundary(0, 1);
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -143,7 +149,7 @@ namespace ColorVision
         {
             if (sender is ListView listview && listview.SelectedIndex > -1)
             {
-                DrawPlot(colorParams[listview.SelectedIndex]);
+                DrawPlot();
                 //listView2.ItemsSource = colorParams[listview.SelectedIndex].fPL;
 
                 listView2.Items.Clear();
@@ -174,6 +180,7 @@ namespace ColorVision
             }
         }
 
+        ScatterPlot scatterPlot;
 
         private void DrawPlotCore(ColorParam colorParam, Color color, float lineWidth = 3)
         {
@@ -189,28 +196,38 @@ namespace ColorVision
 
 
         bool MulComparison;
+        ScatterPlot? LastMulSelectComparsion;
 
-        private void DrawPlot(ColorParam colorParam)
+        private void DrawPlot()
         {
-            wpfplot1.Plot.Clear();
-            wpfplot1.Plot.SetAxisLimitsX(380, 810);
-            wpfplot1.Plot.SetAxisLimitsY(0, 1);
-            wpfplot1.Plot.XAxis.SetBoundary(370, 850);
-            wpfplot1.Plot.YAxis.SetBoundary(0, 1);
             if (MulComparison)
             {
-                listView1.SelectedIndex = listView1.Items.Count > 0 && listView1.SelectedIndex == -1 ? 0 : listView1.SelectedIndex;
-                for (int i = 0; i < colorParams.Count; i++)
+                if (LastMulSelectComparsion != null)
                 {
-                    if (i == listView1.SelectedIndex)
-                        continue;
-                    DrawPlotCore(colorParams[i], Color.DarkGoldenrod, 1);
+                    LastMulSelectComparsion.Color = Color.DarkGoldenrod;
+                    LastMulSelectComparsion.LineWidth = 1;
+                    LastMulSelectComparsion.MarkerSize = 1;
                 }
-                DrawPlotCore(colorParams[listView1.SelectedIndex], Color.Red);
+
+
+                LastMulSelectComparsion = ScatterPlots[listView1.SelectedIndex];
+                LastMulSelectComparsion.LineWidth = 3;
+                LastMulSelectComparsion.MarkerSize = 3;
+                LastMulSelectComparsion.Color = Color.Red;
+                wpfplot1.Plot.Add(LastMulSelectComparsion);
+
             }
             else
             {
-                DrawPlotCore(colorParam, Color.DarkGoldenrod);
+                var temp = ScatterPlots[listView1.SelectedIndex];
+                temp.Color = Color.DarkGoldenrod;
+                temp.LineWidth = 1;
+                temp.MarkerSize = 1;
+
+                wpfplot1.Plot.Add(temp);
+                wpfplot1.Plot.Remove(LastMulSelectComparsion);
+                LastMulSelectComparsion = temp;
+
             }
             wpfplot1.Refresh();
         }
@@ -247,23 +264,37 @@ namespace ColorVision
                 Convert.ToString(Math.Round(colorParam.fRa, 2)),
                 Convert.ToString(Math.Round(colorParam.fHW, 4)),
 
-                //for (int i = 0; i < 4000; i += 10)
-                //{
-                //    Contents.Add(colorParam.fPL[i].ToString());
-                //}
-                //Contents.Add(colorParam.fPL[3998].ToString());
-
                 data.ID.ToString()
             };
 
 
+
+            double[] x = new double[colorParam.fPL.Length];
+            double[] y = new double[colorParam.fPL.Length];
+            for (int i = 0; i < colorParam.fPL.Length; i++)
+            {
+                x[i] = ((double)colorParam.fSpect1 + Math.Round(colorParam.fInterval, 1) * i);
+                y[i] = colorParam.fPL[i];
+            }
+
+            ScatterPlot scatterPlot = new ScatterPlot(x, y)
+            {
+                Color = Color.DarkGoldenrod,
+                LineWidth = 1,
+                MarkerSize = 1,
+                Label = null,
+                MarkerShape = MarkerShape.none,
+                LineStyle = LineStyle.Solid
+            };
+
+            ScatterPlots.Add(scatterPlot);
             listViewItem.Content = Contents;
             listView1.Items.Add(listViewItem);
             listView1.SelectedIndex = colorParams.Count - 1;
-            DrawPlot(colorParam);
             listView1.ScrollIntoView(listViewItem);
         }
 
+        private List<ScatterPlot> ScatterPlots { get; set; } = new List<ScatterPlot>();
 
 
         private void Button1_Click(object sender, RoutedEventArgs e)
@@ -275,7 +306,35 @@ namespace ColorVision
                     return;
                 listView1.SelectedIndex = 0;
             }
-            DrawPlot(colorParams[listView1.SelectedIndex]);
+
+            ReDrawPlot();
+        }
+
+
+        private void ReDrawPlot()
+        {
+            wpfplot1.Plot.Clear();
+            wpfplot1.Plot.SetAxisLimitsX(380, 810);
+            wpfplot1.Plot.SetAxisLimitsY(0, 1);
+            wpfplot1.Plot.XAxis.SetBoundary(370, 850);
+            wpfplot1.Plot.YAxis.SetBoundary(0, 1);
+            LastMulSelectComparsion = null;
+            if (MulComparison)
+            {
+                listView1.SelectedIndex = listView1.Items.Count > 0 && listView1.SelectedIndex == -1 ? 0 : listView1.SelectedIndex;
+                for (int i = 0; i < colorParams.Count; i++)
+                {
+                    if (i == listView1.SelectedIndex)
+                        continue;
+                    var plot = ScatterPlots[i];
+                    plot.Color = Color.DarkGoldenrod;
+                    plot.LineWidth = 1;
+                    plot.MarkerSize = 1;
+
+                    wpfplot1.Plot.Add(plot);
+                }
+            }
+            DrawPlot();
         }
 
         private void Button2_Click(object sender, RoutedEventArgs e)
@@ -299,6 +358,9 @@ namespace ColorVision
                 {
                     int index = listView1.Items.IndexOf(item);
                     colorParams.RemoveAt(index);
+
+                    ScatterPlots.RemoveAt(index);
+
                     listView1.Items.RemoveAt(index);
                     List<string> Contents = (List<string>)item.Content;
                     int id = int.Parse(Contents[Contents.Count - 1]);
@@ -313,14 +375,8 @@ namespace ColorVision
             if (listView1.Items.Count > 0)
             {
                 listView1.SelectedIndex = 0;
-                DrawPlot(colorParams[listView1.SelectedIndex]);
             }
-            else
-            {
-                wpfplot1.Plot.Clear();
-                wpfplot1.Refresh();
-            }
-
+            ReDrawPlot();
         }
 
         private void ToolBar1_Loaded(object sender, RoutedEventArgs e)
@@ -346,7 +402,7 @@ namespace ColorVision
                 if (listView1.Items.Count > 0)
                 {
                     listView1.SelectedIndex = temp - 1; ;
-                    DrawPlot(colorParams[listView1.SelectedIndex]);
+                    DrawPlot();
                 }
                 else
                 {
@@ -377,18 +433,23 @@ namespace ColorVision
 
         private void listView2_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+
             wpfplot1.Plot.Remove(markerPlot1);
-            markerPlot1 = new MarkerPlot
+            if (listView2.SelectedIndex > -1)
             {
-                X = listView2.SelectedIndex +380,
-                Y = colorParams[listView1.SelectedIndex].fPL[listView2.SelectedIndex * 10],
-                MarkerShape = MarkerShape.filledCircle,
-                MarkerSize = 10f,
-                Color = Color.Orange,
-                Label = null
-            };
-            wpfplot1.Plot.Add(markerPlot1);
+                markerPlot1 = new MarkerPlot
+                {
+                    X = listView2.SelectedIndex + 380,
+                    Y = colorParams[listView1.SelectedIndex].fPL[listView2.SelectedIndex * 10],
+                    MarkerShape = MarkerShape.filledCircle,
+                    MarkerSize = 10f,
+                    Color = Color.Orange,
+                    Label = null
+                };
+                wpfplot1.Plot.Add(markerPlot1);
+            }
             wpfplot1.Refresh();
+
         }
     }
 }
