@@ -76,6 +76,9 @@ namespace ColorVision.Template
         public int Number { get => _number; set { _number = value; NotifyPropertyChanged(); } }
         private int _number;
 
+        public double LimitVal { get => _limitVal; set { _limitVal = value; NotifyPropertyChanged(); } }
+        private double _limitVal;
+
         public bool Open(bool isNet,string devName)
         {
             if (IsOpen) return true;
