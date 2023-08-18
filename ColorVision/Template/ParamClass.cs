@@ -135,6 +135,11 @@ namespace ColorVision.Template
                     if (string.IsNullOrEmpty(val)) val = "0.0";
                     return (T)(object)float.Parse(val);
                 }
+                else if (typeof(T) == typeof(double))
+                {
+                    if (string.IsNullOrEmpty(val)) val = "0.0";
+                    return (T)(object)double.Parse(val);
+                }
                 return (T)(object)val;
             }
             return storage;

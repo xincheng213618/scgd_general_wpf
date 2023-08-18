@@ -76,13 +76,13 @@ namespace ColorVision.Template
             CalibrationParams = IDefault(FileNameCalibrationParams, new CalibrationParam());
             PGParams = IDefault(FileNamePGParams, new PGParam());
             LedReusltParams = IDefault(FileNameLedJudgeParams, new LedReusltParam());
-            SxParams = IDefault(FileNameSxParms, new SxParam());
-            FlowParams = IDefault(FileNameFlowParms, new FlowParam());
+            //SxParams = IDefault(FileNameSxParms, new SxParam());
+            //FlowParams = IDefault(FileNameFlowParms, new FlowParam());
 
             LoadPoiParam();
             LoadAoiParam();
             LoadFlowParam();
-
+            LoadSxParam();
         }
 
 
@@ -165,7 +165,8 @@ namespace ColorVision.Template
                     SaveDefault(FileNameLedJudgeParams, LedReusltParams);
                     break;
                 case WindowTemplateType.SxParm:
-                    SaveDefault(FileNameSxParms, SxParams);
+                    if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql) SaveSx2DB(SxParams);
+                    else SaveDefault(FileNameSxParms, SxParams);
                     break;
                 case WindowTemplateType.PoiParam:
                     SaveDefault(FileNamePoiParms, PoiParams);
@@ -176,6 +177,19 @@ namespace ColorVision.Template
                 default:
                     break;
             }
+        }
+
+        private void SaveSx2DB(ObservableCollection<KeyValuePair<string, SxParam>> sxParams)
+        {
+            foreach (var item in sxParams)
+            {
+                SaveSx2DB(item.Value);
+            }
+        }
+
+        private void SaveSx2DB(SxParam value)
+        {
+            modService.Save(value);
         }
 
         public void SavePOI2DB(PoiParam poiParam)
@@ -224,6 +238,18 @@ namespace ColorVision.Template
                 poiParam.PoiPoints.Add(new PoiParamData(dbModel));
             }
         }
+        internal SxParam? AddSxParam(string text)
+        {
+            ModMasterModel flowMaster = new ModMasterModel(ModMasterType.SMU, text, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            modService.Save(flowMaster);
+            int pkId = flowMaster.GetPK();
+            if (pkId > 0)
+            {
+                return LoadSxParamById(pkId);
+            }
+            return null;
+        }
+
         internal AoiParam? AddAoiParam(string text)
         {
             ModMasterModel flowMaster = new ModMasterModel(ModMasterType.Aoi, text, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
@@ -329,6 +355,36 @@ namespace ColorVision.Template
             List<ModDetailModel> aoiDetail = modService.GetDetailByPid(pkId);
             if (aoiMaster != null) return new AoiParam(aoiMaster, aoiDetail);
             else return null;
+        }
+
+        private SxParam? LoadSxParamById(int pkId)
+        {
+            ModMasterModel sxMaster = modService.GetMasterById(pkId);
+            List<ModDetailModel> sxDetail = modService.GetDetailByPid(pkId);
+            if (sxMaster != null) return new SxParam(sxMaster, sxDetail);
+            else return null;
+        }
+
+        internal ObservableCollection<KeyValuePair<string, SxParam>> LoadSxParam()
+        {
+            SxParams.Clear();
+            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+            {
+                List<ModMasterModel> smus = modService.GetSMUAll(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                foreach (var dbModel in smus)
+                {
+                    List<ModDetailModel> smuDetails = modService.GetDetailByPid(dbModel.Id);
+                    KeyValuePair<string, SxParam> item = new KeyValuePair<string, SxParam>(dbModel.Name ?? "default", new SxParam(dbModel, smuDetails));
+                    SxParams.Add(item);
+                }
+            }
+            else
+            {
+                var keyValuePairs = IDefault(FileNameSxParms, new SxParam());
+                foreach (var item in keyValuePairs)
+                    SxParams.Add(item);
+            }
+            return SxParams;
         }
 
         internal ObservableCollection<KeyValuePair<string, FlowParam>> LoadFlowParam()
