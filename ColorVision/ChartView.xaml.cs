@@ -86,7 +86,7 @@ namespace ColorVision
             }
             listView1.View = gridView;
 
-            List<string> headers2 = new List<string> { "点位","光谱" };
+            List<string> headers2 = new List<string> { "波长", "相对光谱","绝对光谱"};
 
             GridView gridView2 = new GridView();
             for (int i = 0; i < headers2.Count; i++)
@@ -153,10 +153,21 @@ namespace ColorVision
                     List<string> strings = new List<string>();
                     strings.Add((i/10 +380).ToString());
                     strings.Add(colorParams[listview.SelectedIndex].fPL[i].ToString());
+                    strings.Add((colorParams[listview.SelectedIndex].fPL[i]* colorParams[listview.SelectedIndex].fPlambda).ToString());
+
                     listViewItem2.Content = strings;
                     listView2.Items.Add(listViewItem2);
 
                 }
+
+                ListViewItem listViewItem3= new ListViewItem();
+
+                List<string> strings1 = new List<string>();
+                strings1.Add("780");
+                strings1.Add(colorParams[listview.SelectedIndex].fPL[3998].ToString());
+                strings1.Add((colorParams[listview.SelectedIndex].fPL[3998] * colorParams[listview.SelectedIndex].fPlambda).ToString());
+                listViewItem3.Content = strings1;
+                listView2.Items.Add(listViewItem3);
 
             }
         }
