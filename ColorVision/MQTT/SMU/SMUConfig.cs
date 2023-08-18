@@ -30,7 +30,7 @@ namespace ColorVision.MQTT.SMU
     public class HeartbeatParam
     {
         //[JsonProperty("isOpen")]
-        public DeviceStatusType DeviceStatus { get; set; }
+        public DeviceStatus DeviceStatus { get; set; }
 
         [JsonProperty("time")]
         public string Time { get; set; }

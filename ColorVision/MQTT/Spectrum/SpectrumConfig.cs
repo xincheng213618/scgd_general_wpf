@@ -19,7 +19,7 @@ namespace ColorVision.MQTT.Spectrum
     public class HeartbeatParam
     {
         //[JsonProperty("isOpen")]
-        public DeviceStatusType DeviceStatus { get; set; }
+        public DeviceStatus DeviceStatus { get; set; }
         //[JsonProperty("isAutoGetData")]
         public bool IsAutoGetData { get; set; }
         [JsonProperty("time")]

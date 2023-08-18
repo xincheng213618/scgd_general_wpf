@@ -53,34 +53,38 @@ namespace ColorVision.MQTT.Camera
                 CameraCloseButton.Visibility = Visibility.Collapsed;
                 CamerInitButton.Content = "断开初始化";
             }
-            Service.InitCameraSuccess += (s, e) =>
+            Service.DeviceStatusChanged += (e) =>
             {
-                if (e.SnID == Service.Config.ID)
+                switch (e)
                 {
-                    ComboxCameraID.ItemsSource = CameraService.CameraIDs;
-                    ComboxCameraID.SelectedIndex = 0;
-                    StackPanelOpen.Visibility = Visibility.Visible;
-                    CameraOpenButton.Visibility = Visibility.Visible;
-                    CameraCloseButton.Visibility = Visibility.Collapsed;
-                    CamerInitButton.Content = "断开初始化";
-                }
-            };
-            Service.OpenCameraSuccess += (s,e) =>
-            {
-                if (e.SnID == Service.Config.ID)
-                {
-                    CameraCloseButton.Visibility = Visibility.Visible;
-                    CameraOpenButton.Visibility = Visibility.Collapsed;
-                    StackPanelImage.Visibility = Visibility.Visible;
-                }
-            };
-            Service.CloseCameraSuccess += (s,e) =>
-            {
-                if (e.SnID == Service.Config.ID)
-                {
-                    CameraCloseButton.Visibility = Visibility.Collapsed;
-                    CameraOpenButton.Visibility = Visibility.Visible;
-                    StackPanelImage.Visibility = Visibility.Collapsed;
+                    case DeviceStatus.Close:
+                        CameraCloseButton.Visibility = Visibility.Collapsed;
+                        CameraOpenButton.Visibility = Visibility.Visible;
+                        StackPanelImage.Visibility = Visibility.Collapsed;
+                        break;
+                    case DeviceStatus.Closing:
+                        break;
+                    case DeviceStatus.Open:
+                        CameraCloseButton.Visibility = Visibility.Visible;
+                        CameraOpenButton.Visibility = Visibility.Collapsed;
+                        StackPanelImage.Visibility = Visibility.Visible;
+                        break;
+                    case DeviceStatus.Opening:
+                        break;
+                    case DeviceStatus.UnInit:
+                        break;
+                    case DeviceStatus.Init:
+                        ComboxCameraID.ItemsSource = CameraService.CameraIDs;
+                        ComboxCameraID.SelectedIndex = 0;
+                        StackPanelOpen.Visibility = Visibility.Visible;
+                        CameraOpenButton.Visibility = Visibility.Visible;
+                        CameraCloseButton.Visibility = Visibility.Collapsed;
+                        CamerInitButton.Content = "断开初始化";
+                        break;
+                    case DeviceStatus.UnConnected:
+                        break;
+                    default:
+                        break;
                 }
             };
         }
