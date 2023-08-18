@@ -85,6 +85,16 @@ namespace ColorVision
                 gridView.Columns.Add(new GridViewColumn() { Header = headers[i], Width = 100, DisplayMemberBinding = new Binding(string.Format("[{0}]", i)) });
             }
             listView1.View = gridView;
+
+            List<string> headers2 = new List<string> { "点位","光谱" };
+
+            GridView gridView2 = new GridView();
+            for (int i = 0; i < headers2.Count; i++)
+            {
+                gridView2.Columns.Add(new GridViewColumn() { Header = headers2[i],DisplayMemberBinding = new Binding(string.Format("[{0}]", i)) });
+            }
+
+            listView2.View = gridView2;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -132,7 +142,22 @@ namespace ColorVision
             if (sender is ListView listview && listview.SelectedIndex > -1)
             {
                 DrawPlot(colorParams[listview.SelectedIndex]);
-                listView2.ItemsSource = colorParams[listview.SelectedIndex].fPL;
+                //listView2.ItemsSource = colorParams[listview.SelectedIndex].fPL;
+
+                listView2.Items.Clear();
+
+                for (int i = 0; i < 4000; i += 10)
+                {
+                    ListViewItem listViewItem2 = new ListViewItem();
+
+                    List<string> strings = new List<string>();
+                    strings.Add((i/10 +380).ToString());
+                    strings.Add(colorParams[listview.SelectedIndex].fPL[i].ToString());
+                    listViewItem2.Content = strings;
+                    listView2.Items.Add(listViewItem2);
+
+                }
+
             }
         }
 
