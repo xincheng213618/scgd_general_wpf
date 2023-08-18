@@ -383,8 +383,8 @@ namespace ColorVision
                 X = listView2.SelectedIndex +380,
                 Y = colorParams[listView1.SelectedIndex].fPL[listView2.SelectedIndex * 10],
                 MarkerShape = MarkerShape.filledCircle,
-                MarkerSize = 5f,
-                Color = Color.Red,
+                MarkerSize = 10f,
+                Color = Color.Orange,
                 Label = null
             };
             wpfplot1.Plot.Add(markerPlot1);
