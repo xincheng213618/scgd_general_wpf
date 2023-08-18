@@ -1470,11 +1470,7 @@ namespace ColorVision.Template
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             MessageBox.Show("生成关注点");
-
-
-
         }
-
 
         private void RadioButtonMode1_Checked(object sender, RoutedEventArgs e)
         {
