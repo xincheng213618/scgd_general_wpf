@@ -1,4 +1,5 @@
-﻿using ColorVision.MQTT.Spectrum;
+﻿using ColorVision.MQTT.Service;
+using ColorVision.MQTT.Spectrum;
 using ColorVision.MySql.Service;
 using ColorVision.Template;
 using ScottPlot;
@@ -29,20 +30,27 @@ namespace ColorVision
     public partial class ChartView : UserControl
     {
 
+        public DeviceType DeviceType { get; set; }
+
         private ResultService spectumResult;
 
         public ChartView()
         {
             spectumResult = new ResultService();
+            DeviceType = DeviceType.Spectum;
+            InitializeComponent();
+        }
+
+        public ChartView(DeviceType deviceType)
+        {
+            this.DeviceType = deviceType;
             InitializeComponent();
         }
 
         static int ResultNum;
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-
             ContextMenu ContextMenu = new ContextMenu();
-
             MenuItem menuItem = new MenuItem() { Header = "设为主窗口" };
             menuItem.Click += (s, e) =>
             {
@@ -66,43 +74,52 @@ namespace ColorVision
 
             this.ContextMenu = ContextMenu;
 
-            wpfplot1.Plot.Title("相对光谱曲线");
-            wpfplot1.Plot.XLabel("波长[nm]");
-            wpfplot1.Plot.YLabel("相对光谱");
-
-            GridView gridView = new GridView();
-
-            List<string> headers = new List<string> { "序号", "测量时间", "IP", "亮度Lv(cd/m2)", "蓝光", "色度x", "色度y", "色度u", "色度v", "相关色温(K)", "主波长Ld(nm)", "色纯度(%)", "峰值波长Lp(nm)", "显色性指数Ra", "半波宽" };
-
-            //GridViewColumn gridViewColumn = new GridViewColumn();
-            //for (int i = 380; i < 781; i++)
-            //{
-            //    headers.Add(i.ToString());
-            //}
-            //headers.Add("电压(V)");
-            //headers.Add("电流(mA)");
-
-            for (int i = 0; i < headers.Count; i++)
+            switch (DeviceType)
             {
-                gridView.Columns.Add(new GridViewColumn() { Header = headers[i], Width = 100, DisplayMemberBinding = new Binding(string.Format("[{0}]", i)) });
+                case DeviceType.Camera:
+                    break;
+                case DeviceType.PG:
+                    break;
+                case DeviceType.Spectum:
+
+                    wpfplot1.Plot.Title("相对光谱曲线");
+                    wpfplot1.Plot.XLabel("波长[nm]");
+                    wpfplot1.Plot.YLabel("相对光谱");
+
+                    GridView gridView = new GridView();
+
+                    List<string> headers = new List<string> { "序号", "测量时间", "IP", "亮度Lv(cd/m2)", "蓝光", "色度x", "色度y", "色度u", "色度v", "相关色温(K)", "主波长Ld(nm)", "色纯度(%)", "峰值波长Lp(nm)", "显色性指数Ra", "半波宽" };
+
+                    for (int i = 0; i < headers.Count; i++)
+                    {
+                        gridView.Columns.Add(new GridViewColumn() { Header = headers[i], Width = 100, DisplayMemberBinding = new Binding(string.Format("[{0}]", i)) });
+                    }
+                    listView1.View = gridView;
+
+                    List<string> headers2 = new List<string> { "波长", "相对光谱", "绝对光谱" };
+
+                    GridView gridView2 = new GridView();
+                    for (int i = 0; i < headers2.Count; i++)
+                    {
+                        gridView2.Columns.Add(new GridViewColumn() { Header = headers2[i], DisplayMemberBinding = new Binding(string.Format("[{0}]", i)) });
+                    }
+
+                    listView2.View = gridView2;
+
+                    wpfplot1.Plot.Clear();
+                    wpfplot1.Plot.SetAxisLimitsX(380, 810);
+                    wpfplot1.Plot.SetAxisLimitsY(0, 1);
+                    wpfplot1.Plot.XAxis.SetBoundary(370, 850);
+                    wpfplot1.Plot.YAxis.SetBoundary(0, 1);
+
+                    break;
+                case DeviceType.SMU:
+                    break;
+                case DeviceType.Sensor:
+                    break;
+                default:
+                    break;
             }
-            listView1.View = gridView;
-
-            List<string> headers2 = new List<string> { "波长", "相对光谱","绝对光谱"};
-
-            GridView gridView2 = new GridView();
-            for (int i = 0; i < headers2.Count; i++)
-            {
-                gridView2.Columns.Add(new GridViewColumn() { Header = headers2[i],DisplayMemberBinding = new Binding(string.Format("[{0}]", i)) });
-            }
-
-            listView2.View = gridView2;
-
-            wpfplot1.Plot.Clear();
-            wpfplot1.Plot.SetAxisLimitsX(380, 810);
-            wpfplot1.Plot.SetAxisLimitsY(0, 1);
-            wpfplot1.Plot.XAxis.SetBoundary(370, 850);
-            wpfplot1.Plot.YAxis.SetBoundary(0, 1);
 
             listView1.Visibility = Visibility.Collapsed;
             listView2.Visibility = Visibility.Collapsed;
@@ -116,7 +133,6 @@ namespace ColorVision
                 MessageBox.Show("您需要先选择数据");
                 return;
             }
-
 
             using var dialog = new System.Windows.Forms.SaveFileDialog();
             dialog.Filter = "CSV files (*.csv) | *.csv";
@@ -430,7 +446,6 @@ namespace ColorVision
                 Visibility visibility = button.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
                 listView1.Visibility = visibility;
                 listView2.Visibility = visibility;
-
             }
 
         }
@@ -439,7 +454,6 @@ namespace ColorVision
 
         private void listView2_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-
             wpfplot1.Plot.Remove(markerPlot1);
             if (listView2.SelectedIndex > -1)
             {

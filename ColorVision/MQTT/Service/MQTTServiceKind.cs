@@ -3,7 +3,7 @@
 namespace ColorVision.MQTT.Service
 {
 
-    public enum MQTTDeviceType
+    public enum DeviceType
     {
         Camera = 1,
         PG = 2,

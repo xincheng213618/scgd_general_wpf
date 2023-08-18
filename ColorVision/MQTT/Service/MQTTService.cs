@@ -50,7 +50,7 @@ namespace ColorVision.MQTT.Service
             HeartbeatService = new HeartbeatService(ServiceConfig);
         }
 
-        public MQTTDeviceType Type { get => (MQTTDeviceType)SysResourceModel.Type; }
+        public DeviceType Type { get => (DeviceType)SysResourceModel.Type; }
 
 
         public override void Save()
