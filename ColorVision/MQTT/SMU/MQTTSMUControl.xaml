@@ -72,7 +72,7 @@
                         <TextBlock Text="限值:"  Width="40"/>
                         <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"   Visibility="{Binding IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="V"/>
                         <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"  Visibility="{Binding IsSourceV,Converter={StaticResource bool2VisibilityConverter}}" Text="mA"/>
-                        <TextBox Text="{Binding LmtVal}" BorderThickness="0,0,0,1"/>
+                        <TextBox Text="{Binding LimitVal}" BorderThickness="0,0,0,1"/>
                     </DockPanel>
                     <DockPanel Margin="2">
                         <TextBlock Text="点:"  Width="40"/>

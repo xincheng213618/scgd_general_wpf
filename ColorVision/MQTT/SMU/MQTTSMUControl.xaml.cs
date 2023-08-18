@@ -152,7 +152,7 @@ namespace ColorVision.MQTT.SMU
         {
             if (sender is Button button)
             {
-                SMUService.Scan(passSxSource.IsSourceV, passSxSource.StartMeasureVal, passSxSource.StopMeasureVal, passSxSource.LmtVal, passSxSource.Number);
+                SMUService.Scan(passSxSource.IsSourceV, passSxSource.StartMeasureVal, passSxSource.StopMeasureVal, passSxSource.LimitVal, passSxSource.Number);
                 //if (ComboxVITemplate.SelectedItem is KeyValuePair<string, SxParam> KeyValue && KeyValue.Value is SxParam SxParm)
                 //{
                 //    button.Content = "扫描中";
@@ -298,7 +298,7 @@ namespace ColorVision.MQTT.SMU
                     passSxSource.StartMeasureVal = SxParm.StartMeasureVal;
                     passSxSource.StopMeasureVal = SxParm.StopMeasureVal;
                     passSxSource.IsSourceV = SxParm.IsSourceV; 
-                    passSxSource.LmtVal = SxParm.LmtVal;
+                    passSxSource.LimitVal = SxParm.LmtVal;
                     passSxSource.Number = SxParm.Number;
                 }
             };
