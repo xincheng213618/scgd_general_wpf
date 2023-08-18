@@ -103,6 +103,10 @@ namespace ColorVision
             wpfplot1.Plot.SetAxisLimitsY(0, 1);
             wpfplot1.Plot.XAxis.SetBoundary(370, 850);
             wpfplot1.Plot.YAxis.SetBoundary(0, 1);
+
+            listView1.Visibility = Visibility.Collapsed;
+            listView2.Visibility = Visibility.Collapsed;
+
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -141,7 +145,6 @@ namespace ColorVision
         }
 
         private List<List<string>> ListContents { get; set; } = new List<List<string>>() { };
-
 
         public List<ColorParam> colorParams { get; set; } = new List<ColorParam>() { };
 
@@ -231,10 +234,17 @@ namespace ColorVision
             }
             wpfplot1.Refresh();
         }
-
+        bool First;
 
         public void SpectrumDrawPlot(SpectumData data)
         {
+            
+            if (!First)
+            {
+                listView1.Visibility = Visibility.Visible;
+                First = true;
+            }
+
             ColorParam colorParam = data.Data;
             colorParams.Add(colorParam);
 
@@ -415,18 +425,14 @@ namespace ColorVision
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            listView1.Visibility = listView1.Visibility == Visibility.Collapsed ? Visibility.Visible : Visibility.Collapsed;
-            listView2.Visibility = listView2.Visibility == Visibility.Collapsed ? Visibility.Visible : Visibility.Collapsed;
-        }
+            if (sender is ToggleButton button)
+            {
+                Visibility visibility = button.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+                listView1.Visibility = visibility;
+                listView2.Visibility = visibility;
 
-        private void UserControl_MouseEnter(object sender, MouseEventArgs e)
-        {
-            BorderShow.Visibility = Visibility.Visible;
-        }
+            }
 
-        private void UserControl_MouseLeave(object sender, MouseEventArgs e)
-        {
-            BorderShow.Visibility = Visibility.Collapsed;
         }
 
         MarkerPlot markerPlot1;

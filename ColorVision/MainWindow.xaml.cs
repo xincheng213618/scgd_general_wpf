@@ -118,7 +118,7 @@ namespace ColorVision
             SiderBarGrid.DataContext = SoftwareConfig;
             if (!SoftwareSetting.IsDeFaultOpenService)
             {
-                new WindowService() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+                new WindowService1() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
             }
             else
             {
