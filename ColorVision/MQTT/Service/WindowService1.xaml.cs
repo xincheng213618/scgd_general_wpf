@@ -30,7 +30,7 @@ namespace ColorVision.Service
         {
             MQTTDevices = ServiceControl.GetInstance().MQTTDevices;
             TreeView1.ItemsSource = MQTTDevices;
-
+            Grid1.DataContext = GlobalSetting.GetInstance().SoftwareConfig.UserConfig;
 
         }
 

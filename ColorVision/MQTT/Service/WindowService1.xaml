@@ -6,13 +6,20 @@
         xmlns:local="clr-namespace:ColorVision.MQTT.Service"
         xmlns:mqtt="clr-namespace:ColorVision.MQTT"
         mc:Ignorable="d"
+        xmlns:set="clr-namespace:ColorVision.SettingUp"
         Title="服务配置" Height="600" Width="800" Initialized="Window_Initialized" >
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="50"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="50"/>
         </Grid.RowDefinitions>
-        <Grid>
+        <Grid  x:Name="Grid1" d:DataContext="{d:DesignInstance set:UserConfig}">
+            <Border>
+                <TextBlock Text="{Binding UserName}"  HorizontalAlignment="Center"/>
+            </Border>
+        </Grid>
+        <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="200"/>
                 <ColumnDefinition Width="*"/>
@@ -48,7 +55,7 @@
             </StackPanel>
         </Grid>
         
-        <Border  Grid.Row="1">
+        <Border  Grid.Row="2">
             <StackPanel>
 
                 <Button  Height="40"  Width="300"  Margin="5" Background="#E6E6E6" Click="Button_Click">
