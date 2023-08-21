@@ -1,4 +1,5 @@
 ﻿using ColorVision.MQTT;
+using EnumsNET;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -7,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Media;
 
 namespace ColorVision
@@ -26,16 +28,11 @@ namespace ColorVision
                72, 73, 74, 75, 76, 77, 78, 79, 80, 89,
                90, 91, 92, 93, 94, 95, 96, 97, 98, 99
              };
-        private List<Grid> ViewGrids {get;set;}
 
         public Grid MainView { get; set; }
 
-        public Control CurrentView { get; set; }
-
+        public List<Grid> Grids { get; set; }
         public List<Control> Views { get; set; }
-
-        public static Dictionary<Control,Grid> ViewControls { get; set; } = new Dictionary<Control,Grid>();
-
 
         private static ViewGridManager _instance;
         private static readonly object _locker = new();
@@ -44,7 +41,7 @@ namespace ColorVision
         //这里些publlic 是故意的,希望这里可以复用，或者是这里后面可能需要重构一下
         public ViewGridManager()
         {
-            ViewGrids = new List<Grid>();
+            Grids = new List<Grid>();
             Views = new List<Control>();
         }
 
@@ -54,20 +51,13 @@ namespace ColorVision
                 return Views.IndexOf(control);
 
             Views.Add(control);
-            Grid grid = GetNewGrid(control);
-            ViewGrids.Add(grid);
-            GridSort(ViewGrids);
-
             return Views.IndexOf(control);
         }
 
         public void RemoveView(int index)
         {
-            ViewGrids.RemoveAt(index);
-            GridSort(ViewGrids);
-
-            ViewControls.Remove(Views[index]);
             Views.RemoveAt(index);
+
         }
 
         /// <summary>
@@ -76,111 +66,114 @@ namespace ColorVision
         /// <param name="num"></param>
         public void SetViewNum(int num)
         {
-            if (num > 0)
+            if (num == -1)
             {
-                if (Views.Count > num)
+                if (GetViewNums() != Views.Count)
+                    GenViewGrid(Views.Count);
+
+                for (int i = 0; i < Views.Count; i++)
                 {
-                    for (int i = Views.Count - 1; i > num - 1; i--)
-                    {
-                        ViewControls.Remove(Views[i]);
-                        Views.RemoveAt(i);
-                    }
+                    if (Views[i].Parent is Grid grid)
+                        grid.Children.Remove(Views[i]);
+
+                    Grids[i].Children.Clear();
+                    Grids[i].Children.Add(Views[i]);
                 }
-                else if (Views.Count < num)
-                {
-                    for (int i = Views.Count; i < num; i++)
-                    {
-                        AddView(new ImageView());
-                   }
-                }
+                return;
             }
-            CurrentView = Views[0];
-            ViewGrids.Clear();
-            for (int i = 0; i < Views.Count; i++)
+
+
+            if (GetViewNums()!=num)
+                GenViewGrid(num);
+
+            for (int i = 0; i < num; i++)
             {
-                ViewGrids.Add(ViewControls[Views[i]]);
+                if (Views[i].Parent is Grid grid)
+                    grid.Children.Remove(Views[i]);
+
+                Grids[i].Children.Clear();
+                Grids[i].Children.Add(Views[i]);
             }
-            GridSort(ViewGrids);
         }
 
-        private List<Grid> SingleWindowGrid = new List<Grid>();
-        Window window;
+        public Control? CurrentView {
+            get
+            {
+                if (Grids.Count > 0)
+                {
+                    for (int i = 0; i < Views.Count; i++)
+                    {
+                        if (Views[i].Parent is Grid grid && grid == Grids[0])
+                        {
+                            return Views[i];
+                        }
+                    }
+                }
+                return null;
+
+            }
+        }
+
         public void SetSingleWindowView(Control control)
         {
-            if (ViewControls.TryGetValue(control, out Grid grid))
-            {
-                SingleWindowGrid.Add(grid);
-                GridSort(ViewGrids);
-                window = new Window();
-                window.Content = grid;
-                window.Show();
-                window.Closed += (s, e) =>
-                {
-                    SingleWindowGrid.Remove(grid);
-                };
-            }
+            if (control.Parent is Grid grid)
+                grid.Children.Remove(control);
+
+            Window window = new Window();
+            Grid grid1 = new Grid();
+            grid1.Children.Add(control);
+            window.Content = grid1;
+            window.Show();
         }
 
         public void SetOneView(int Main)
         {
-            CurrentView = Views[Main];
+            if (GetViewNums()!=1)
+                GenViewGrid(1);
 
-            ViewGrids.Clear();
-            ViewGrids.Add(ViewControls[Views[Main]]);
-            GridSort(ViewGrids);
+            if (Views[Main].Parent is Grid grid)
+                grid.Children.Remove(Views[Main]);
+
+            Grids[0].Children.Clear();
+            Grids[0].Children.Add(Views[Main]);
+
         }
 
         public void SetOneView(Control control)
         {
-            if (ViewControls.TryGetValue(control,out Grid grid))
-            {
-                CurrentView = control;
+            if (GetViewNums() != 1)
+                GenViewGrid(1);
 
-                SingleWindowGrid.Remove(grid);
-                if (window!=null)
-                {
-                    window.Content = null;
-                    window.Close();
-                }
+            if (control.Parent is Grid grid)
+                grid.Children.Remove(control);
 
-                ViewGrids.Clear();
-                ViewGrids.Add(grid);
-                GridSort(ViewGrids);
-            }
+            Grids[0].Children.Clear();
+            Grids[0].Children.Add(control);
         }
 
 
-        private static Grid GetNewGrid(Control control)
+        public void SetViewNums(int Nums)
         {
-            if (ViewControls.TryGetValue(control, out Grid last))
-            {
-                return last;
-            }
-
-            Grid grid = new Grid()
-            {
-                Margin = new Thickness(2, 2, 2, 2),
-            };
-            grid.Children.Add(control);
-            ViewControls.Add(control, grid);
-            return grid;
+            GenViewGrid(Nums);
         }
 
-        private void GridSort(List<Grid> GridLists)
+        public int GetViewNums()
+        {
+            return Grids.Count;
+        }
+
+
+
+        private void GenViewGrid(int Nums)
         {
             if (MainView == null)
                 return;
-
-            foreach (var item in SingleWindowGrid)
-            {
-                GridLists.Remove(item);
-            }
 
             MainView.Children.Clear();
             MainView.ColumnDefinitions.Clear();
             MainView.RowDefinitions.Clear();
 
-            for (int i = 0; i < GridLists.Count; i++)
+            for (int i = 0; i < Nums; i++)
             {
                 int location = Array.IndexOf(defaultViewIndexMap, i);
                 int row = (location / 10);
@@ -195,14 +188,13 @@ namespace ColorVision
                     RowDefinition rowDefinition = new RowDefinition() { Height = new GridLength(1, GridUnitType.Star) };
                     MainView.RowDefinitions.Add(rowDefinition);
                 }
-
-
             }
 
-
-            for (int i = 0; i < GridLists.Count; i++)
+            Grids.Clear();
+            for (int i = 0; i < Nums; i++)
             {
-                Grid grid = GridLists[i];
+                Grid grid = new Grid() { Margin = new Thickness(2, 2, 2, 2), };
+                Grids.Add(grid);
                 int location = Array.IndexOf(defaultViewIndexMap, i);
                 int row = (location / 10);
                 int col = (location % 10);
@@ -241,15 +233,6 @@ namespace ColorVision
                 }
             }
 
-
         }
-
-
-
-
-
-
-
-
     }
 }

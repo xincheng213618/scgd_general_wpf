@@ -126,6 +126,8 @@ namespace ColorVision
             {
                 ServiceControl.GetInstance().GenContorl();
             }
+
+            ViewGridManager.GetInstance().SetViewNum(-1);
         }
 
 
