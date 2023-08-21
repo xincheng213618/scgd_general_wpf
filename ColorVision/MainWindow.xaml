@@ -101,8 +101,8 @@
         </Grid>
         <Grid x:Name="ContentGrid" Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition x:Name="SiderCol" Width="Auto" />
+                <ColumnDefinition x:Name="ViewCol" Width="*"/>
             </Grid.ColumnDefinitions>
             <Grid  Grid.Row="0" Background="#F9F9F9" x:Name="SiderBarGrid" d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  MinWidth="150"  Visibility="{Binding SoftwareSetting.IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" >
                 <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
@@ -166,7 +166,7 @@
             <Grid x:Name="ViewGrid" Grid.Column="1" Background="#c3c3c3">
                 <local:ImageView x:Name="ImageView1"/>
             </Grid>
-            <GridSplitter  Grid.Column="1" Background="LightGray"  Width="2" HorizontalAlignment="Left" />
+            <GridSplitter  Grid.Column="1" Background="LightGray"  Width="2" HorizontalAlignment="Left"   DragCompleted="GridSplitter_DragCompleted"  />
         </Grid>
         <Grid Grid.Row="2" x:Name="StatusBarGrid" d:DataContext="{d:DesignInstance SettingUp:GlobalSetting}" Visibility="{Binding SoftwareConfig.SoftwareSetting.IsOpenStatusBar,Converter={StaticResource bool2VisibilityConverter}}" >
             <StatusBar>

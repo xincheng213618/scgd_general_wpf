@@ -402,6 +402,18 @@ namespace ColorVision
 
             }
         }
+
+        private void GridSplitter_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+
+        }
+
+        private void GridSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
+        {
+            SiderBarGrid.Width = SiderCol.ActualWidth;
+            SiderCol.Width = GridLength.Auto;
+            ViewCol.Width = new GridLength(1, GridUnitType.Star);
+        }
     }
 
 
