@@ -380,6 +380,14 @@ namespace ColorVision
             SiderCol.Width = GridLength.Auto;
             ViewCol.Width = new GridLength(1, GridUnitType.Star);
         }
+
+        private void Button1_Click_1(object sender, RoutedEventArgs e)
+        {
+            if(sender is Button button && int.TryParse(button.Tag.ToString() ,out int nums))
+            {
+                ViewGridManager.SetViewGrid(nums);
+            }
+        }
     }
 
 

@@ -71,8 +71,23 @@ namespace ColorVision
         public void RemoveView(int index)
         {
             Views.RemoveAt(index);
-
         }
+
+        public void SetViewGrid(int nums)
+        {
+            GenViewGrid(nums);
+            for (int i = 0; i < nums; i++)
+            {
+                if (i >= Views.Count)
+                    break;
+                if (Views[i].Parent is Grid grid)
+                    grid.Children.Remove(Views[i]);
+
+                Grids[i].Children.Clear();
+                Grids[i].Children.Add(Views[i]);
+            }
+        }
+
 
         /// <summary>
         /// 保留固定数量的窗口视图，多余的会删除掉
@@ -97,7 +112,7 @@ namespace ColorVision
             }
 
 
-            if (GetViewNums()!=num)
+            if (GetViewNums() < num)
                 GenViewGrid(num);
 
             for (int i = 0; i < num; i++)
