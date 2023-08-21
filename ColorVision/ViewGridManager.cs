@@ -25,8 +25,7 @@ namespace ColorVision
                56, 57, 58, 59, 60, 61, 62, 63, 71, 88,
                72, 73, 74, 75, 76, 77, 78, 79, 80, 89,
                90, 91, 92, 93, 94, 95, 96, 97, 98, 99
-            };
-
+             };
         private List<Grid> ViewGrids {get;set;}
 
         public Grid MainView { get; set; }
@@ -110,8 +109,6 @@ namespace ColorVision
         {
             if (ViewControls.TryGetValue(control, out Grid grid))
             {
-
-
                 SingleWindowGrid.Add(grid);
                 GridSort(ViewGrids);
                 window = new Window();

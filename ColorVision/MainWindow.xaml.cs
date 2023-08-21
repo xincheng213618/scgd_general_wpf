@@ -30,6 +30,8 @@ namespace ColorVision
     /// 
     public partial class MainWindow : Window
     {
+        public ViewGridManager ViewGridManager { get; set; }
+
         public GlobalSetting GlobalSetting { get; set; }
         public SoftwareSetting SoftwareSetting
         {
@@ -124,12 +126,8 @@ namespace ColorVision
             {
                 ServiceControl.GetInstance().GenContorl();
             }
-
-
-
         }
 
-        public ViewGridManager ViewGridManager { get; set; }
 
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -151,20 +149,6 @@ namespace ColorVision
             }
         }
 
-        private void StackPanelCalibration_Initialized(object sender, EventArgs e)
-        {
-            ComboxCalibrationTemplate.ItemsSource = TemplateControl.GetInstance().CalibrationParams;
-            ComboxCalibrationTemplate.SelectionChanged += (s, e) =>
-            {
-                if (ComboxCalibrationTemplate.SelectedItem is KeyValuePair<string, CalibrationParam> KeyValue && KeyValue.Value is CalibrationParam calibrationParam)
-                {
-                    Calibration1.CalibrationParam = calibrationParam;
-                    Calibration1.DataContext = calibrationParam;
-                }
-            };
-            ComboxCalibrationTemplate.SelectedIndex = 0;
-        }
-
 
         private void MenuStatusBar_Click(object sender, RoutedEventArgs e)
         {
@@ -176,26 +160,6 @@ namespace ColorVision
         private FlowEngineLib.STNodeLoader loader;
 
         private FlowControl flowControl;
-
-        private void Button2_Click(object sender, RoutedEventArgs e)
-        {
-
-            MQTTConfig MQTTConfig = GlobalSetting.GetInstance().SoftwareConfig.MQTTConfig;
-            string iPStr = MQTTConfig.Host;
-            int port = MQTTConfig.Port;
-            string uName = "";
-            string uPwd = "";
-            FlowEngineLib.MQTTHelper.SetDefaultCfg(iPStr, port, uName, uPwd, false, null);
-
-
-            System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
-            ofd.Filter = "*.stn|*.stn";
-            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-
-            loader.Load(ofd.FileName);
-
-            flowControl = new FlowControl(MQTTControl.GetInstance(), loader.GetStartNodeName());
-        }
         Window window;
 
         private void FlowControl_FlowCompleted(object? sender, EventArgs e)
