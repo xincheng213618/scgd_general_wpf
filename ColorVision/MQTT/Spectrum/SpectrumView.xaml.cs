@@ -29,31 +29,19 @@ namespace ColorVision.MQTT.Spectrum
     /// <summary>
     /// SpectrumView.xaml 的交互逻辑
     /// </summary>
-    public partial class SpectrumView : UserControl
+    public partial class SpectrumView : UserControl,IView
     {
-        public ViewType ViewType { get => _ViewType; set => _ViewType = value; }
-        private ViewType _ViewType;
-        
-        public int ViewIndex { get => _ViewIndex; set => _ViewIndex = value; }
-        private int _ViewIndex;
-
-
-        public DeviceType DeviceType { get; set; }
-
         private ResultService spectumResult;
+
+        public View View { get; set; }
 
         public SpectrumView()
         {
             spectumResult = new ResultService();
-            DeviceType = DeviceType.Spectum;
             InitializeComponent();
+            View = new View();
         }
 
-        public SpectrumView(DeviceType deviceType)
-        {
-            this.DeviceType = deviceType;
-            InitializeComponent();
-        }
 
         static int ResultNum;
         private void UserControl_Initialized(object sender, EventArgs e)

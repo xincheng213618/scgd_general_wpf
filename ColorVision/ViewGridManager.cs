@@ -1,4 +1,5 @@
 ﻿using ColorVision.MQTT;
+using ColorVision.MVVM;
 using EnumsNET;
 using log4net;
 using System;
@@ -19,10 +20,36 @@ namespace ColorVision
         View,
         Window,
     }
+    public delegate void ViewIndexChangedHandler(int oindex,int index);
+    public delegate void ViewMaxChangedHandler(int max);
+
+
+    public class View : ViewModelBase
+    {
+        public event ViewIndexChangedHandler ViewIndexChangedEvent;
+
+        public int ViewIndex { get => _ViewIndex; set { ViewIndexChangedEvent?.Invoke(_ViewIndex, value); _ViewIndex = value; NotifyPropertyChanged(); } }
+
+        private int _ViewIndex = -1;
+        public ViewType ViewType
+        {
+            get
+            {
+                if (ViewIndex > -1)
+                    return ViewType.View;
+                if (ViewIndex == -2)
+                    return ViewType.Window;
+                return ViewType.Hidden;
+            }
+            set => throw new NotImplementedException();
+        }
+
+    }
+
     public interface IView
     {
-        public ViewType ViewType { get; set; }
-        public int ViewIndex { get; set; }
+        public View View { get;}
+
     }
 
 
@@ -41,6 +68,10 @@ namespace ColorVision
                72, 73, 74, 75, 76, 77, 78, 79, 80, 89,
                90, 91, 92, 93, 94, 95, 96, 97, 98, 99
              };
+        public event ViewMaxChangedHandler ViewMaxChangedEvent;
+
+        public int ViewMax { get => _ViewMax; set { if (_ViewMax == value) return;ViewMaxChangedEvent?.Invoke(value); _ViewMax = value; } }
+        private int _ViewMax;
 
         public Grid MainView { get; set; }
 
@@ -56,7 +87,6 @@ namespace ColorVision
         {
             Grids = new List<Grid>();
             Views = new List<Control>();
-            ViewWindows = new List<Control>();
         }
 
         public int AddView(Control control)
@@ -65,6 +95,9 @@ namespace ColorVision
                 return Views.IndexOf(control);
 
             Views.Add(control);
+
+            if (control is IView view)
+                view.View.ViewIndex = Views.IndexOf(control);
             return Views.IndexOf(control);
         }
 
@@ -73,6 +106,37 @@ namespace ColorVision
             Views.RemoveAt(index);
         }
 
+        public void SetViewIndex(Control control, int viewIndex)
+        {
+            if (viewIndex >= 0)
+            {
+                if (viewIndex >= ViewMax)
+                    return;
+
+                if (control.Parent is Grid grid)
+                    grid.Children.Remove(control);
+
+
+                Grids[viewIndex].Children.Clear();
+                Grids[viewIndex].Children.Add(control);
+            }
+            else if (viewIndex == -1)
+            {
+                if (control.Parent is Grid grid)
+                    grid.Children.Remove(control);
+            }
+            else if (viewIndex == -2)
+            {
+                SetSingleWindowView(control);
+            }
+
+
+        }   
+
+        /// <summary>
+        /// 设置一共有几个窗口
+        /// </summary>
+        /// <param name="nums"></param>
         public void SetViewGrid(int nums)
         {
             GenViewGrid(nums);
@@ -80,19 +144,21 @@ namespace ColorVision
             {
                 if (i >= Views.Count)
                     break;
+
+                if (Views[i] is IView view)
+                    view.View.ViewIndex = i;
+
                 if (Views[i].Parent is Grid grid)
                     grid.Children.Remove(Views[i]);
 
                 Grids[i].Children.Clear();
+
                 Grids[i].Children.Add(Views[i]);
             }
         }
 
 
         /// <summary>
-        /// 保留固定数量的窗口视图，多余的会删除掉
-        /// </summary>
-        /// <param name="num"></param>
         public void SetViewNum(int num)
         {
             if (num == -1)
@@ -106,6 +172,10 @@ namespace ColorVision
                         grid.Children.Remove(Views[i]);
 
                     Grids[i].Children.Clear();
+
+                    if (Views[i] is IView view)
+                        view.View.ViewIndex = i;
+
                     Grids[i].Children.Add(Views[i]);
                 }
                 return;
@@ -142,26 +212,38 @@ namespace ColorVision
 
             }
         }
-       public List<Control> ViewWindows { get; set; }
-
 
         public void SetSingleWindowView(Control control)
         {
             if (control.Parent is Grid grid)
                 grid.Children.Remove(control);
 
-            Views.Remove(control);
-            ViewWindows.Add(control);
-            Window window = new Window();
-            Grid grid1 = new Grid();
-            grid1.Children.Add(control);
-            window.Content = grid1;
-            window.Closed += (s, e) =>
+            if (control is IView view)
             {
-                ViewWindows.Remove(control);
-                Views.Add(control);
-            };
-            window.Show();
+                Window window = new Window() {Owner =App.Current.MainWindow };
+                view.View.ViewIndex = -2;
+
+                ViewIndexChangedHandler eventHandler = null;
+                eventHandler = (e1,e2) =>
+                {
+                    window.Close();
+                    view.View.ViewIndexChangedEvent -= eventHandler;
+                };
+                view.View.ViewIndexChangedEvent += eventHandler;
+
+                Views.Remove(control);
+                Grid grid1 = new Grid();
+                grid1.Children.Add(control);
+                window.Content = grid1;
+                window.Closed += (s, e) =>
+                {
+                    view.View.ViewIndexChangedEvent -= eventHandler;
+                    view.View.ViewIndex = -1;
+                    Views.Add(control);
+                };
+                window.Show();
+
+            }
         }
 
         public void SetOneView(int Main)
@@ -171,6 +253,10 @@ namespace ColorVision
 
             if (Views[Main].Parent is Grid grid)
                 grid.Children.Remove(Views[Main]);
+
+
+            if (Views[Main] is IView view)
+                view.View.ViewIndex = 0;
 
             Grids[0].Children.Clear();
             Grids[0].Children.Add(Views[Main]);
@@ -185,14 +271,11 @@ namespace ColorVision
             if (control.Parent is Grid grid)
                 grid.Children.Remove(control);
 
+            if (control is IView view)
+                view.View.ViewIndex = 0;
+
             Grids[0].Children.Clear();
             Grids[0].Children.Add(control);
-        }
-
-
-        public void SetViewNums(int Nums)
-        {
-            GenViewGrid(Nums);
         }
 
         public int GetViewNums()
@@ -206,7 +289,7 @@ namespace ColorVision
         {
             if (MainView == null)
                 return;
-
+            ViewMax = Nums;
             MainView.Children.Clear();
             MainView.ColumnDefinitions.Clear();
             MainView.RowDefinitions.Clear();

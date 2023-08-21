@@ -29,13 +29,15 @@ namespace ColorVision.MQTT.SMU
     /// <summary>
     /// SpectrumView.xaml 的交互逻辑
     /// </summary>
-    public partial class SMUView : UserControl
+    public partial class SMUView : UserControl,IView
     {
+        public View View { get; set; }
         private ResultService spectumResult;
         public SMUView()
         {
             spectumResult = new ResultService();
             InitializeComponent();
+            View = new View();
         }
 
         static int ResultNum;
@@ -313,7 +315,6 @@ namespace ColorVision.MQTT.SMU
         }
 
         private List<ScatterPlot> ScatterPlots { get; set; } = new List<ScatterPlot>();
-
 
         private void Button1_Click(object sender, RoutedEventArgs e)
         {
