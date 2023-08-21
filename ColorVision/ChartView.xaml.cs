@@ -25,27 +25,11 @@ using static cvColorVision.GCSDLL;
 namespace ColorVision
 {
 
-    public enum ViewType
-    {
-        Hidden,
-        View,
-        Window,
-    }
-
-
-    public interface IView
-    {
-        public ContextMenu ContextMenu { get; set; }
-
-        public ViewType ViewType { get; set; }
-        public int ViewIndex { get; set; }
-
-    }
 
     /// <summary>
     /// ChartView.xaml 的交互逻辑
     /// </summary>
-    public partial class ChartView : UserControl, IView
+    public partial class ChartView : UserControl
     {
         public ViewType ViewType { get => _ViewType; set => _ViewType = value; }
         private ViewType _ViewType;

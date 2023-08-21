@@ -13,6 +13,19 @@ using System.Windows.Media;
 
 namespace ColorVision
 {
+    public enum ViewType
+    {
+        Hidden,
+        View,
+        Window,
+    }
+    public interface IView
+    {
+        public ViewType ViewType { get; set; }
+        public int ViewIndex { get; set; }
+    }
+
+
     public class ViewGridManager
     {
         private static readonly int[] defaultViewIndexMap = new int[100]
@@ -43,6 +56,7 @@ namespace ColorVision
         {
             Grids = new List<Grid>();
             Views = new List<Control>();
+            ViewWindows = new List<Control>();
         }
 
         public int AddView(Control control)
@@ -113,16 +127,25 @@ namespace ColorVision
 
             }
         }
+       public List<Control> ViewWindows { get; set; }
+
 
         public void SetSingleWindowView(Control control)
         {
             if (control.Parent is Grid grid)
                 grid.Children.Remove(control);
 
+            Views.Remove(control);
+            ViewWindows.Add(control);
             Window window = new Window();
             Grid grid1 = new Grid();
             grid1.Children.Add(control);
             window.Content = grid1;
+            window.Closed += (s, e) =>
+            {
+                ViewWindows.Remove(control);
+                Views.Add(control);
+            };
             window.Show();
         }
 
