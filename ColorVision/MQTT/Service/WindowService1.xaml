@@ -80,7 +80,7 @@
                     </Button.Template>
                     <Button.Content>
                         <StackPanel Orientation="Horizontal" >
-                            <TextBlock FontSize="18"  Text="进入启动窗口"/>
+                            <TextBlock FontSize="18"  Text="确定"/>
                         </StackPanel>
                     </Button.Content>
                 </Button>

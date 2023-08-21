@@ -93,7 +93,8 @@ namespace ColorVision.MQTT
 
         private Task MQTTControl_ApplicationMessageReceivedAsync(MQTTnet.Client.MqttApplicationMessageReceivedEventArgs arg)
         {
-            logger.Debug(JsonConvert.SerializeObject(arg));
+            if(logger.IsDebugEnabled)
+                logger.Debug(JsonConvert.SerializeObject(arg));
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {
                 string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);

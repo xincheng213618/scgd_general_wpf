@@ -24,10 +24,18 @@ using static cvColorVision.GCSDLL;
 
 namespace ColorVision
 {
+    public interface IView
+    {
+        public ContextMenu ContextMenu { get; set; }
+
+
+
+    }
+
     /// <summary>
     /// ChartView.xaml 的交互逻辑
     /// </summary>
-    public partial class ChartView : UserControl
+    public partial class ChartView : UserControl, IView
     {
 
         public DeviceType DeviceType { get; set; }
@@ -470,6 +478,10 @@ namespace ColorVision
             }
             wpfplot1.Refresh();
 
+        }
+
+        private void GridSplitter_DragCompleted(object sender, DragCompletedEventArgs e)
+        {
         }
     }
 }
