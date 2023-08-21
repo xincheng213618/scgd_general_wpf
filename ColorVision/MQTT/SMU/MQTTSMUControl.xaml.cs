@@ -106,10 +106,8 @@ namespace ColorVision.MQTT.SMU
             {
                 if (ComboxView.SelectedItem is  KeyValuePair<string, int> KeyValue)
                 {
-                    if (View.View.ViewIndex != KeyValue.Value)
-                    {
-                        ViewGridManager.GetInstance().SetViewIndex(View, KeyValue.Value);
-                    }
+                    ViewGridManager.GetInstance().SetViewIndex(View, KeyValue.Value);
+
                 }
             };
         }

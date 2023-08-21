@@ -171,11 +171,10 @@ namespace ColorVision
                     if (Views[i].Parent is Grid grid)
                         grid.Children.Remove(Views[i]);
 
-                    Grids[i].Children.Clear();
 
                     if (Views[i] is IView view)
                         view.View.ViewIndex = i;
-
+                    Grids[i].Children.Clear();
                     Grids[i].Children.Add(Views[i]);
                 }
                 return;
