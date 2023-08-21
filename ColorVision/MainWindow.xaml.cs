@@ -299,7 +299,7 @@ namespace ColorVision
 
         private void Button51_Click(object sender, RoutedEventArgs e)
         {
-            ViewGridManager.AddView(new ChartView());
+            ViewGridManager.AddView(new SMUView());
         }
 
         private void Button6_Click(object sender, RoutedEventArgs e)

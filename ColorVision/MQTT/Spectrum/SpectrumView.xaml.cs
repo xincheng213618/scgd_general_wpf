@@ -22,14 +22,14 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using static cvColorVision.GCSDLL;
 
-namespace ColorVision
+namespace ColorVision.MQTT.Spectrum
 {
 
 
     /// <summary>
-    /// ChartView.xaml 的交互逻辑
+    /// SpectrumView.xaml 的交互逻辑
     /// </summary>
-    public partial class ChartView : UserControl
+    public partial class SpectrumView : UserControl
     {
         public ViewType ViewType { get => _ViewType; set => _ViewType = value; }
         private ViewType _ViewType;
@@ -42,14 +42,14 @@ namespace ColorVision
 
         private ResultService spectumResult;
 
-        public ChartView()
+        public SpectrumView()
         {
             spectumResult = new ResultService();
             DeviceType = DeviceType.Spectum;
             InitializeComponent();
         }
 
-        public ChartView(DeviceType deviceType)
+        public SpectrumView(DeviceType deviceType)
         {
             this.DeviceType = deviceType;
             InitializeComponent();
@@ -82,52 +82,35 @@ namespace ColorVision
 
             this.ContextMenu = ContextMenu;
 
-            switch (DeviceType)
+            wpfplot1.Plot.Title("相对光谱曲线");
+            wpfplot1.Plot.XLabel("波长[nm]");
+            wpfplot1.Plot.YLabel("相对光谱");
+
+            GridView gridView = new GridView();
+
+            List<string> headers = new List<string> { "序号", "测量时间", "IP", "亮度Lv(cd/m2)", "蓝光", "色度x", "色度y", "色度u", "色度v", "相关色温(K)", "主波长Ld(nm)", "色纯度(%)", "峰值波长Lp(nm)", "显色性指数Ra", "半波宽" };
+
+            for (int i = 0; i < headers.Count; i++)
             {
-                case DeviceType.Camera:
-                    break;
-                case DeviceType.PG:
-                    break;
-                case DeviceType.Spectum:
-
-                    wpfplot1.Plot.Title("相对光谱曲线");
-                    wpfplot1.Plot.XLabel("波长[nm]");
-                    wpfplot1.Plot.YLabel("相对光谱");
-
-                    GridView gridView = new GridView();
-
-                    List<string> headers = new List<string> { "序号", "测量时间", "IP", "亮度Lv(cd/m2)", "蓝光", "色度x", "色度y", "色度u", "色度v", "相关色温(K)", "主波长Ld(nm)", "色纯度(%)", "峰值波长Lp(nm)", "显色性指数Ra", "半波宽" };
-
-                    for (int i = 0; i < headers.Count; i++)
-                    {
-                        gridView.Columns.Add(new GridViewColumn() { Header = headers[i], Width = 100, DisplayMemberBinding = new Binding(string.Format("[{0}]", i)) });
-                    }
-                    listView1.View = gridView;
-
-                    List<string> headers2 = new List<string> { "波长", "相对光谱", "绝对光谱" };
-
-                    GridView gridView2 = new GridView();
-                    for (int i = 0; i < headers2.Count; i++)
-                    {
-                        gridView2.Columns.Add(new GridViewColumn() { Header = headers2[i], DisplayMemberBinding = new Binding(string.Format("[{0}]", i)) });
-                    }
-
-                    listView2.View = gridView2;
-
-                    wpfplot1.Plot.Clear();
-                    wpfplot1.Plot.SetAxisLimitsX(380, 810);
-                    wpfplot1.Plot.SetAxisLimitsY(0, 1);
-                    wpfplot1.Plot.XAxis.SetBoundary(370, 850);
-                    wpfplot1.Plot.YAxis.SetBoundary(0, 1);
-
-                    break;
-                case DeviceType.SMU:
-                    break;
-                case DeviceType.Sensor:
-                    break;
-                default:
-                    break;
+                gridView.Columns.Add(new GridViewColumn() { Header = headers[i], Width = 100, DisplayMemberBinding = new Binding(string.Format("[{0}]", i)) });
             }
+            listView1.View = gridView;
+
+            List<string> headers2 = new List<string> { "波长", "相对光谱", "绝对光谱" };
+
+            GridView gridView2 = new GridView();
+            for (int i = 0; i < headers2.Count; i++)
+            {
+                gridView2.Columns.Add(new GridViewColumn() { Header = headers2[i], DisplayMemberBinding = new Binding(string.Format("[{0}]", i)) });
+            }
+
+            listView2.View = gridView2;
+
+            wpfplot1.Plot.Clear();
+            wpfplot1.Plot.SetAxisLimitsX(380, 810);
+            wpfplot1.Plot.SetAxisLimitsY(0, 1);
+            wpfplot1.Plot.XAxis.SetBoundary(370, 850);
+            wpfplot1.Plot.YAxis.SetBoundary(0, 1);
 
             listView1.Visibility = Visibility.Collapsed;
             listView2.Visibility = Visibility.Collapsed;

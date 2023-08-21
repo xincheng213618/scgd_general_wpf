@@ -1,0 +1,51 @@
+﻿<UserControl x:Class="ColorVision.MQTT.SMU.SMUView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ColorVision.MQTT.SMU"
+             xmlns:ScottPlot="clr-namespace:ScottPlot;assembly=ScottPlot.WPF"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800" Initialized="UserControl_Initialized" >
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <ScottPlot:WpfPlot  x:Name="wpfplot1" />
+            <Grid x:Name="Grid1" Grid.Row="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="35"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <ToolBar Grid.Row="0"  Background ="#EEF4F9" Loaded="ToolBar1_Loaded" ToolBarTray.IsLocked="True">
+                    <ToolBar.Resources>
+                        <ResourceDictionary Source="/Theme/Icons.xaml"/>
+                    </ToolBar.Resources>
+                    <ToggleButton Click="Button1_Click" Margin="2,2,0,0" >
+                        <Image  Stretch="Uniform" Source="{StaticResource DrawingImageSwitch}" />
+                    </ToggleButton>
+                    <ToggleButton Click="Button_Click_1" Margin="2,2,0,0" >
+                        <Image Stretch="Uniform" Source="{StaticResource DrawingImageList}" />
+                    </ToggleButton>
+                    <Button Click="Button_Click" Margin="2,2,0,0" >
+                        <Image  Stretch="Uniform" Source="{StaticResource DrawingImageSave}" />
+                    </Button>
+                    <Button Click="Button2_Click" Margin="2,2,0,0" ToolTip="您可以全选后删除" >
+                        <Image  Stretch="Uniform" Source="{StaticResource DrawingImageDelete}" />
+                    </Button>
+
+                </ToolBar>
+                <ListView Height="400"  Grid.Row="1" x:Name="listView1" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" />
+            </Grid>
+            <GridSplitter  Grid.Row="1" Background="#EEF4F9"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
+        </Grid>
+        <ListView x:Name="listView2"  Grid.Column="1" SelectionChanged="listView2_SelectionChanged" />
+    </Grid>
+</UserControl>

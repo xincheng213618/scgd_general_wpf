@@ -7,13 +7,12 @@ namespace ColorVision.MQTT.SMU
     {
         public SMUService SMUService { get; set; }
 
-        public ChartView ChartView { get; set; }
+        public SMUView View { get; set; }
 
         public DeviceSMU(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
-            //Config.SubscribeTopic = sysResourceModel.Pcode + "/STATUS/" + sysResourceModel.Code;
             SMUService = new SMUService(Config);
-            ChartView = new ChartView(DeviceType.SMU);
+            View = new SMUView();
         }
 
 
