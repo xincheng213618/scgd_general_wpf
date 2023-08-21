@@ -421,16 +421,7 @@ namespace ColorVision.MQTT.Spectrum
 
         }
 
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            if (sender is ToggleButton button)
-            {
-                Visibility visibility = button.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
-                listView1.Visibility = visibility;
-                listView2.Visibility = visibility;
-            }
 
-        }
 
         MarkerPlot markerPlot1;
 
@@ -454,8 +445,35 @@ namespace ColorVision.MQTT.Spectrum
 
         }
 
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            if (sender is ToggleButton button)
+            {
+                Visibility visibility = button.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+                listView1.Visibility = visibility;
+            }
+        }
+
+        private void Button_Click_2(object sender, RoutedEventArgs e)
+        {
+            if (sender is ToggleButton button)
+            {
+                Visibility visibility = button.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+                listView2.Visibility = visibility;
+            }
+        }
         private void GridSplitter_DragCompleted(object sender, DragCompletedEventArgs e)
         {
+            listView1.Height = ListRow2.ActualHeight - 38;
+            ListRow2.Height = GridLength.Auto;
+            ListRow1.Height = new GridLength(1, GridUnitType.Star);
+        }
+
+        private void GridSplitter_DragCompleted1(object sender, DragCompletedEventArgs e)
+        {
+            listView2.Width = ListCol2.ActualWidth;
+            ListCol1.Width = new GridLength(1, GridUnitType.Star);
+            ListCol2.Width = GridLength.Auto;
         }
     }
 }

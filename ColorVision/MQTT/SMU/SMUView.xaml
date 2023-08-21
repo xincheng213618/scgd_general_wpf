@@ -10,18 +10,18 @@
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition x:Name="ListCol1" Width="*"/>
+            <ColumnDefinition x:Name="ListCol2" Width="Auto"/>
         </Grid.ColumnDefinitions>
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
+                <RowDefinition x:Name="ListRow1" Height="*"/>
+                <RowDefinition x:Name="ListRow2" Height="Auto"/>
             </Grid.RowDefinitions>
             <ScottPlot:WpfPlot  x:Name="wpfplot1" />
             <Grid x:Name="Grid1" Grid.Row="1">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="35"/>
+                    <RowDefinition Height="38"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <ToolBar Grid.Row="0"  Background ="#EEF4F9" Loaded="ToolBar1_Loaded" ToolBarTray.IsLocked="True">
@@ -31,8 +31,16 @@
                     <ToggleButton Click="Button1_Click" Margin="2,2,0,0" >
                         <Image  Stretch="Uniform" Source="{StaticResource DrawingImageSwitch}" />
                     </ToggleButton>
-                    <ToggleButton Click="Button_Click_1" Margin="2,2,0,0" >
-                        <Image Stretch="Uniform" Source="{StaticResource DrawingImageList}" />
+                    <ToggleButton x:Name="toggle1" Click="Button_Click_1" Margin="2,0,0,0" >
+                        <Image Stretch="Uniform" Source="{StaticResource DrawingImageList}" >
+                            <Image.RenderTransform>
+                                <RotateTransform Angle="90" CenterX="8" CenterY="8"/>
+                            </Image.RenderTransform>
+                        </Image>
+                    </ToggleButton>
+                    <ToggleButton  x:Name="toggle2" Click="Button_Click_2" Margin="2,0,0,0" >
+                        <Image Stretch="Uniform"  Source="{StaticResource DrawingImageList}" >
+                        </Image>
                     </ToggleButton>
                     <Button Click="Button_Click" Margin="2,2,0,0" >
                         <Image  Stretch="Uniform" Source="{StaticResource DrawingImageSave}" />
@@ -44,8 +52,10 @@
                 </ToolBar>
                 <ListView Height="400"  Grid.Row="1" x:Name="listView1" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" />
             </Grid>
-            <GridSplitter  Grid.Row="1" Background="#EEF4F9"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
+            <GridSplitter  Grid.Row="1" IsEnabled="{Binding ElementName=toggle1,Path=IsChecked}" Background="#EEF4F9"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
         </Grid>
         <ListView x:Name="listView2"  Grid.Column="1" SelectionChanged="listView2_SelectionChanged" />
+        <GridSplitter  Grid.Column="1" IsEnabled="{Binding ElementName=toggle2,Path=IsChecked}" Background="LightGray"  Width="2" HorizontalAlignment="Left"   DragCompleted="GridSplitter_DragCompleted1"  />
+
     </Grid>
 </UserControl>
