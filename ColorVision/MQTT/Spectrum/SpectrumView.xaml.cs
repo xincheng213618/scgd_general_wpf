@@ -103,9 +103,6 @@ namespace ColorVision.MQTT.Spectrum
             listView1.Visibility = Visibility.Collapsed;
             listView2.Visibility = Visibility.Collapsed;
 
-
-
-
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
