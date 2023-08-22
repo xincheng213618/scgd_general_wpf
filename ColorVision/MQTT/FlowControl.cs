@@ -44,10 +44,10 @@ namespace ColorVision.MQTT
         private static readonly ILog logger = LogManager.GetLogger(typeof(FlowControl));
 
         string svrName = "FlowControl";
-        private FlowEngineLib.STNodeLoader loader;
         public FlowControlData FlowControlData { get; set; }
 
-        MQTTControl MQTTControl;
+        private MQTTControl MQTTControl;
+        private FlowEngineLib.FlowEngineControl flowEngine;
 
         public string SubscribeTopic { get; set; }
         public string SendTopic { get; set; }
@@ -60,15 +60,16 @@ namespace ColorVision.MQTT
             MQTTControl.SubscribeCache(SubscribeTopic);
             MQTTControl.ApplicationMessageReceivedAsync += MQTTControl_ApplicationMessageReceivedAsync;
         }
-        public FlowControl(MQTTControl mQTTControl, FlowEngineLib.STNodeLoader loader) : this(mQTTControl, loader.GetStartNodeName())
+
+        public FlowControl(MQTTControl mQTTControl, FlowEngineLib.FlowEngineControl flowEngine) : this(mQTTControl, flowEngine.GetStartNodeName())
         {
-            this.loader = loader;
+            this.flowEngine = flowEngine;
         }
 
 
         public void Start(string sn)
         {
-            if(loader == null)
+            if(flowEngine == null)
             {
                 FlowEngineLib.CVBaseDataFlow baseEvent = new FlowEngineLib.CVBaseDataFlow(svrName, "Start", sn);
 
@@ -79,7 +80,7 @@ namespace ColorVision.MQTT
             }
             else
             {
-                loader.StartNode(sn);
+                flowEngine.StartNode(sn);
             }
         }
 

@@ -1,4 +1,7 @@
-﻿using System;
+﻿using FlowEngineLib;
+using FlowEngineLib.Start;
+using ST.Library.UI.NodeEditor;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -18,22 +21,25 @@ namespace ColorVision
     /// <summary>
     /// FlowView.xaml 的交互逻辑
     /// </summary>
-    public partial class FlowView : UserControl
+    public partial class FlowView : UserControl, IView
     {
+        private FlowEngineControl flowEngine;
+        public FlowEngineControl FlowEngineControl { get { return flowEngine; } }
+
+        public View View { get; set; }
+
         public FlowView()
         {
+            flowEngine = new FlowEngineControl(true);
             InitializeComponent();
-        }
-
-        internal void LoadFile(string fileName)
-        {
-            STNodeEditorMain.Nodes.Clear();
-            STNodeEditorMain.LoadCanvas(fileName);
+            View = new View();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
+            STNodeEditorMain.ActiveChanged += (s, e) => STNodePropertyGrid1.SetNode(STNodeEditorMain.ActiveNode);
+            flowEngine.AttachLoader(STNodeEditorMain);
         }
     }
 }

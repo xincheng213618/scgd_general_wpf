@@ -126,10 +126,10 @@ namespace ColorVision.MQTT.Camera
                         MessageBox.Show("SetParam");
                         break;
                     case "Close":
-                        DeviceStatus = DeviceStatus.Close;
+                        DeviceStatus = DeviceStatus.Closed;
                         break;
                     case "Open":
-                        DeviceStatus = DeviceStatus.Open;
+                        DeviceStatus = DeviceStatus.Opened;
                         break;
                     case "GetData":
                         string SaveFileName = msg.Data.SaveFileName;

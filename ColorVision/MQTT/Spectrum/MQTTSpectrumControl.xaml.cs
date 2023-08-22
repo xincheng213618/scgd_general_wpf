@@ -73,11 +73,11 @@ namespace ColorVision.MQTT.Spectrum
 
             SpectrumService.HeartbeatHandlerEvent += (e) =>
             {
-                if (e.DeviceStatus == DeviceStatus.Open)
+                if (e.DeviceStatus == DeviceStatus.Opened)
                 {
                     connectBtn.Content = "关闭";
                 }
-                else if(e.DeviceStatus == DeviceStatus.Close)
+                else if(e.DeviceStatus == DeviceStatus.Closed)
                 {
                     connectBtn.Content = "打开";
                 }

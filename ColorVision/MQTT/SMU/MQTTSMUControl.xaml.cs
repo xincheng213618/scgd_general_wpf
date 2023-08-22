@@ -127,11 +127,11 @@ namespace ColorVision.MQTT.SMU
 
         private void SMUService_DeviceStatusHandler(DeviceStatus deviceStatus,Button button)
         {
-            if (deviceStatus == DeviceStatus.Open)
+            if (deviceStatus == DeviceStatus.Opened)
             {
                 button.Content = "关闭";
             }
-            else if (deviceStatus == DeviceStatus.Close)
+            else if (deviceStatus == DeviceStatus.Closed)
             {
                 button.Content = "打开";
             }

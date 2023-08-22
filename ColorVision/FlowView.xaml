@@ -8,10 +8,22 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800" Initialized="UserControl_Initialized">
     <Grid>
-        <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-            <WindowsFormsHost >
-                <st:STNodeEditor  x:Name="STNodeEditorMain"  />
+        <Grid.ColumnDefinitions >
+            <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid Grid.Column="0">
+            <WindowsFormsHost>
+                <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
             </WindowsFormsHost>
-        </ScrollViewer>
+        </Grid>
+        <Grid Grid.Column="1">
+            <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Visible" VerticalScrollBarVisibility="Visible">
+                <WindowsFormsHost>
+                    <st:STNodeEditor  x:Name="STNodeEditorMain" EnableEdit="False"/>
+                </WindowsFormsHost>
+            </ScrollViewer>
+        </Grid>
+
     </Grid>
 </UserControl>

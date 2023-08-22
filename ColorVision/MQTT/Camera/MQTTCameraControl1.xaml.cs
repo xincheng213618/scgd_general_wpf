@@ -57,14 +57,14 @@ namespace ColorVision.MQTT.Camera
             {
                 switch (e)
                 {
-                    case DeviceStatus.Close:
+                    case DeviceStatus.Closed:
                         CameraCloseButton.Visibility = Visibility.Collapsed;
                         CameraOpenButton.Visibility = Visibility.Visible;
                         StackPanelImage.Visibility = Visibility.Collapsed;
                         break;
                     case DeviceStatus.Closing:
                         break;
-                    case DeviceStatus.Open:
+                    case DeviceStatus.Opened:
                         CameraCloseButton.Visibility = Visibility.Visible;
                         CameraOpenButton.Visibility = Visibility.Collapsed;
                         StackPanelImage.Visibility = Visibility.Visible;

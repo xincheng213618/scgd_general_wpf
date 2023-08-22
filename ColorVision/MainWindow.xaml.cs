@@ -48,7 +48,8 @@ namespace ColorVision
             GlobalSetting = GlobalSetting.GetInstance();
             MQTTConfig mQTTConfig = GlobalSetting.SoftwareConfig.MQTTConfig;
             FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
-            this.loader = new FlowEngineLib.STNodeLoader("FlowEngineLib.dll");
+            //this.loader = new FlowEngineLib.STNodeLoader("FlowEngineLib.dll");
+            flowView = new FlowView();
 
             InitializeComponent();
             this.Closed += (s, e) =>
@@ -72,6 +73,8 @@ namespace ColorVision
 
         private async void Window_Initialized(object sender, EventArgs e)
         {
+            ViewGridManager.GetInstance().AddView(flowView, ComboxView, flowView.View);
+
             if (WindowConfig.IsExist)
             {
                 if (WindowConfig.Icon == null)
@@ -128,9 +131,6 @@ namespace ColorVision
                 ServiceControl.GetInstance().GenContorl();
             }
 
-            flowView = new FlowView();
-            ViewGridManager.GetInstance().AddView(flowView);
-
             ViewGridManager.GetInstance().SetViewNum(-1);
         }
 
@@ -163,7 +163,7 @@ namespace ColorVision
                 menuItem.IsChecked = !menuItem.IsChecked;
             }
         }
-        private FlowEngineLib.STNodeLoader loader;
+       // private FlowEngineLib.STNodeLoader loader;
 
         private FlowControl flowControl;
         Window window;
@@ -224,10 +224,10 @@ namespace ColorVision
         {
             if (FlowTemplate.SelectedValue is FlowParam flowParam)
             {
-                string startNode = loader.GetStartNodeName();
+                string startNode = flowView.FlowEngineControl.GetStartNodeName();
                 if (!string.IsNullOrWhiteSpace(startNode))
                 {
-                    flowControl = new FlowControl(MQTTControl.GetInstance(), loader);
+                    flowControl = new FlowControl(MQTTControl.GetInstance(), flowView.FlowEngineControl);
 
                     window = new Window() { Width = 400, Height = 400, Title = "流程返回信息", Owner = this, ResizeMode = ResizeMode.NoResize, WindowStyle = WindowStyle.None, WindowStartupLocation = WindowStartupLocation.CenterOwner };
                     TextBox textBox = new TextBox() { IsReadOnly = true, Background = Brushes.Black, Foreground = Brushes.White, TextWrapping = TextWrapping.Wrap, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
@@ -263,7 +263,6 @@ namespace ColorVision
         private void StackPanelFlow_Initialized(object sender, EventArgs e)
         {
             FlowTemplate.ItemsSource = TemplateControl.GetInstance().FlowParams;
-
             FlowTemplate.SelectionChanged += (s, e) =>
             {
                 if (FlowTemplate.SelectedValue is FlowParam flowParam)
@@ -271,8 +270,10 @@ namespace ColorVision
                     string fileName = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.GetFullFileName(flowParam.FileName ?? string.Empty);
                     if (File.Exists(fileName))
                     {
-                        if (flowView != null) flowView.LoadFile(fileName);
-                        //loader.Load(fileName);
+                        if (flowView != null)
+                        {
+                            flowView.FlowEngineControl.Load(fileName);
+                        }
                     }
                 }
             };
