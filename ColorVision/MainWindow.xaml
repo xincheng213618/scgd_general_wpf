@@ -132,17 +132,20 @@
                             <ToggleButton  x:Name="ToggleButton_flow"  Style="{StaticResource ButtonPageControl1}" Background="#F9F9F9"  Content="流程"  FontSize="15" Foreground="Black" IsChecked="True" />
                             <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton_flow,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
                                 <StackPanel Margin="5">
+                                    <StackPanel>
+                                        <DockPanel>
+                                            <Label Content="模板："/>
+                                            <ComboBox  x:Name="FlowTemplate" Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,0,10,0"/>
+                                        </DockPanel>
+                                        <Button  Margin="5" Content="执行流程"  Click="Button_FlowRun_Click"/>
+                                    </StackPanel>
                                     <DockPanel>
-                                        <Label Content="模板："/>
-                                        <ComboBox  x:Name="FlowTemplate" Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,0,10,0"/>
+                                        <TextBlock Text="输出视图：" VerticalAlignment="Center" Width="60"/>
+                                        <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"  Height="20"  />
                                     </DockPanel>
-                                    <Button  Margin="5" Content="执行流程"  Click="Button_FlowRun_Click"/>
                                 </StackPanel>
                             </Border>
-                            <DockPanel Margin="5">
-                                <TextBlock Text="输出视图：" VerticalAlignment="Center" Width="60"/>
-                                <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"  Height="20"  />
-                            </DockPanel>
+
                         </StackPanel>
 
                         <StackPanel x:Name="StackPanelMQTT" Initialized="StackPanelMQTT_Initialized">
