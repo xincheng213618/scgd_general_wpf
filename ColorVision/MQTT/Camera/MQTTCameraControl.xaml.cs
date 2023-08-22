@@ -35,8 +35,6 @@ namespace ColorVision.MQTT.Camera
 
         private void StackPanelCamera_Initialized(object sender, EventArgs e)
         {
-            //CameraService.FileHandler += OpenImage;
-
             ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()
                                            select new KeyValuePair<CameraType, string>(e1, e1.ToDescription());
             ComboxCameraType.SelectedIndex = 1;

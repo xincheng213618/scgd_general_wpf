@@ -72,6 +72,10 @@ namespace ColorVision.MQTT.Camera
                     case DeviceStatus.Opening:
                         break;
                     case DeviceStatus.UnInit:
+                        StackPanelOpen.Visibility = Visibility.Collapsed;
+                        StackPanelImage.Visibility = Visibility.Collapsed;
+                        CameraOpenButton.Visibility = Visibility.Collapsed;
+                        CamerInitButton.Content = "初始化";
                         break;
                     case DeviceStatus.Init:
                         ComboxCameraID.ItemsSource = CameraService.CameraIDs;
@@ -93,18 +97,16 @@ namespace ColorVision.MQTT.Camera
         {
             if (sender is Button button)
             {
-                if (button.Content.ToString() == "初始化")
+                if (Service.DeviceStatus == DeviceStatus.UnInit)
                 {
-                    Service.Init(Service.Config.CameraType, Service.Config.ID);
+                    Service.Init();
                 }
                 else
                 {
                     Service.UnInit();
-                    button.Content = "初始化";
-                    StackPanelOpen.Visibility = Visibility.Collapsed;
-                    StackPanelImage.Visibility = Visibility.Collapsed;
-                    CameraOpenButton.Visibility = Visibility.Collapsed;
+
                 }
+
             }
         }
 
