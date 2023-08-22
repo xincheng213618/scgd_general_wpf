@@ -86,10 +86,6 @@ namespace ColorVision.MQTT.SMU
             listView2.View = gridView2;
 
             wpfplot1.Plot.Clear();
-            wpfplot1.Plot.SetAxisLimitsX(380, 810);
-            wpfplot1.Plot.SetAxisLimitsY(0, 1);
-            wpfplot1.Plot.XAxis.SetBoundary(370, 850);
-            wpfplot1.Plot.YAxis.SetBoundary(0, 1);
 
             listView1.Visibility = Visibility.Collapsed;
             listView2.Visibility = Visibility.Collapsed;
@@ -139,31 +135,6 @@ namespace ColorVision.MQTT.SMU
             {
                 DrawPlot();
                 //listView2.ItemsSource = colorParams[listview.SelectedIndex].fPL;
-
-                listView2.Items.Clear();
-
-                for (int i = 0; i < 4000; i += 10)
-                {
-                    ListViewItem listViewItem2 = new ListViewItem();
-
-                    List<string> strings = new List<string>();
-                    strings.Add((i/10 +380).ToString());
-                    strings.Add(colorParams[listview.SelectedIndex].fPL[i].ToString());
-                    strings.Add((colorParams[listview.SelectedIndex].fPL[i]* colorParams[listview.SelectedIndex].fPlambda).ToString());
-
-                    listViewItem2.Content = strings;
-                    listView2.Items.Add(listViewItem2);
-
-                }
-
-                ListViewItem listViewItem3= new ListViewItem();
-
-                List<string> strings1 = new List<string>();
-                strings1.Add("780");
-                strings1.Add(colorParams[listview.SelectedIndex].fPL[3998].ToString());
-                strings1.Add((colorParams[listview.SelectedIndex].fPL[3998] * colorParams[listview.SelectedIndex].fPlambda).ToString());
-                listViewItem3.Content = strings1;
-                listView2.Items.Add(listViewItem3);
 
             }
         }
@@ -312,6 +283,8 @@ namespace ColorVision.MQTT.SMU
             listView1.Items.Add(listViewItem);
             listView1.SelectedIndex = colorParams.Count - 1;
             listView1.ScrollIntoView(listViewItem);
+            wpfplot1.Plot.Add(scatterPlot);
+            wpfplot1.Refresh();
         }
 
         private List<ScatterPlot> ScatterPlots { get; set; } = new List<ScatterPlot>();
