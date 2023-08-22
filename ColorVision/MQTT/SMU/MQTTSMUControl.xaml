@@ -65,7 +65,7 @@
                 </GroupBox>
                 <DockPanel Margin="2">
                     <TextBlock Text="模板：" VerticalAlignment="Center" Width="40"/>
-                    <ComboBox  x:Name="ComboxVITemplate"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,0,30,0"/>
+                    <ComboBox  x:Name="ComboxVITemplate"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,0,5,0"/>
                 </DockPanel>
 
                 <GroupBox Margin="5" Header="扫描">
@@ -86,15 +86,15 @@
                         </UniformGrid>
                         <UniformGrid Columns="2" Margin="2">
                             <DockPanel Margin="2">
+                                <TextBlock Text="点数"/>
+                                <TextBlock DockPanel.Dock="Right" Width="30"   Text=""/>
+                                <TextBox Text="{Binding Number}" BorderThickness="0,0,0,1"/>
+                            </DockPanel>
+                            <DockPanel Margin="2">
                                 <TextBlock Text="限值"/>
                                 <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"   Visibility="{Binding IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="V"/>
                                 <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"  Visibility="{Binding IsSourceV,Converter={StaticResource bool2VisibilityConverter}}" Text="mA"/>
                                 <TextBox Text="{Binding LimitVal}" BorderThickness="0,0,0,1"/>
-                            </DockPanel>
-                            <DockPanel Margin="2">
-                                <TextBlock Text="点数"/>
-                                <TextBlock DockPanel.Dock="Right" Width="30"   Text=""/>
-                                <TextBox Text="{Binding Number}" BorderThickness="0,0,0,1"/>
                             </DockPanel>
                         </UniformGrid>
                         <UniformGrid Columns="1">

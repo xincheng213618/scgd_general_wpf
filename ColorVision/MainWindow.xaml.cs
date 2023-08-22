@@ -31,6 +31,7 @@ namespace ColorVision
     public partial class MainWindow : Window
     {
         public GlobalSetting GlobalSetting { get; set; }
+        private FlowView flowView;
         public SoftwareSetting SoftwareSetting
         {
             get
@@ -125,7 +126,8 @@ namespace ColorVision
                 ServiceControl.GetInstance().GenContorl();
             }
 
-
+            flowView = new FlowView();
+            ViewGridManager.GetInstance().AddView(flowView);
 
         }
 
@@ -301,7 +303,8 @@ namespace ColorVision
                     string fileName = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.GetFullFileName(flowParam.FileName ?? string.Empty);
                     if (File.Exists(fileName))
                     {
-                        loader.Load(fileName);
+                        if (flowView != null) flowView.LoadFile(fileName);
+                        //loader.Load(fileName);
                     }
                 }
             };
@@ -403,6 +406,4 @@ namespace ColorVision
             }
         }
     }
-
-
 }
