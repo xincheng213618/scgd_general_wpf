@@ -143,9 +143,11 @@ namespace ColorVision.MQTT.SMU
 
         public bool Scan(bool isSourceV, double startMeasureVal, double stopMeasureVal, double lmtVal, int number)
         {
+            string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             MsgSend msg = new MsgSend
             {
                 EventName = "Scan",
+                SerialNumber = sn,
                 Params = new SMUScanParam() { IsSourceV = isSourceV, StartMeasureVal = startMeasureVal, StopMeasureVal = stopMeasureVal, LimitVal = lmtVal, Number = number }
             };
             PublishAsyncClient(msg);
