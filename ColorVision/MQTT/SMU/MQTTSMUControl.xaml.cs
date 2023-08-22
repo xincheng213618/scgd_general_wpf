@@ -216,30 +216,20 @@ namespace ColorVision.MQTT.SMU
         {
             SMUService.GetData(passSxSource.IsSourceV, passSxSource.MeasureVal, passSxSource.LmtVal);
         }
-
         private void MeasureDataClose_Click(object sender, RoutedEventArgs e)
         {
             SMUService.CloseOutput();
             passSxSource.V = null;
             passSxSource.I = null;
         }
-
         private void VIScan_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button)
-            {
-                SMUService.Scan(passSxSource.IsSourceV, passSxSource.StartMeasureVal, passSxSource.StopMeasureVal, passSxSource.LimitVal, passSxSource.Number);
-
-            }
-
+            SMUService.Scan(passSxSource.IsSourceV, passSxSource.StartMeasureVal, passSxSource.StopMeasureVal, passSxSource.LimitVal, passSxSource.Number);
         }
-
         private void showPxResult(bool isSourceV, double endVal)
         {
 
         }
-
-
         private void VIExport_Click(object sender, RoutedEventArgs e)
         {
             if (passSxSource.VList.Length == 0)
