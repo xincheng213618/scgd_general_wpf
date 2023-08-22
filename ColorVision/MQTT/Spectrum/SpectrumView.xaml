@@ -50,8 +50,7 @@
                     </Button>
 
                 </ToolBar>
-                <ListView  Height="250
-                           "   Grid.Row="1" x:Name="listView1" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" />
+                <ListView  Height="250"   Grid.Row="1" x:Name="listView1" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" />
             </Grid>
             <GridSplitter  Grid.Row="1" IsEnabled="{Binding ElementName=toggle1,Path=IsChecked}" Background="#EEF4F9"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
         </Grid>
