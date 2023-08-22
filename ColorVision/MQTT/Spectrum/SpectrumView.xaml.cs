@@ -314,7 +314,6 @@ namespace ColorVision.MQTT.Spectrum
                     return;
                 listView1.SelectedIndex = 0;
             }
-
             ReDrawPlot();
         }
 

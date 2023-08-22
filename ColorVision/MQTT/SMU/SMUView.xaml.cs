@@ -467,7 +467,7 @@ namespace ColorVision.MQTT.SMU
             if (sender is ToggleButton button)
             {
                 Visibility visibility = button.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
-                listView1.Visibility = visibility;
+                listView2.Visibility = visibility;
             }
         }
         private void GridSplitter_DragCompleted(object sender, DragCompletedEventArgs e)
