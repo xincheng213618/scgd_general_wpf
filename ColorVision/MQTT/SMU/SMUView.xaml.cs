@@ -75,7 +75,7 @@ namespace ColorVision.MQTT.SMU
             }
             listView1.View = gridView;
 
-            List<string> headers2 = new List<string> { "波长", "相对光谱", "绝对光谱" };
+            List<string> headers2 = new List<string> { "电流"，"电压" };
 
             GridView gridView2 = new GridView();
             for (int i = 0; i < headers2.Count; i++)
@@ -447,6 +447,11 @@ namespace ColorVision.MQTT.SMU
             listView2.Width = ListCol2.ActualWidth;
             ListCol1.Width = new GridLength(1, GridUnitType.Star);
             ListCol2.Width = GridLength.Auto;
+        }
+
+        private void Button3_Click(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }
