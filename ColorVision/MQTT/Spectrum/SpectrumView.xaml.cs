@@ -178,21 +178,6 @@ namespace ColorVision.MQTT.Spectrum
             }
         }
 
-        ScatterPlot scatterPlot;
-
-        private void DrawPlotCore(ColorParam colorParam, Color color, float lineWidth = 3)
-        {
-            double[] x = new double[colorParam.fPL.Length];
-            double[] y = new double[colorParam.fPL.Length];
-            for (int i = 0; i < colorParam.fPL.Length; i++)
-            {
-                x[i] = ((double)colorParam.fSpect1 + Math.Round(colorParam.fInterval, 1) * i);
-                y[i] = colorParam.fPL[i];
-            }
-            wpfplot1.Plot.AddScatter(x, y, color, lineWidth, 3, 0);
-        }
-
-
         bool MulComparison;
         ScatterPlot? LastMulSelectComparsion;
 

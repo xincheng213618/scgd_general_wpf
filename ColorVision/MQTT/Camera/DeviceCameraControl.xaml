@@ -97,7 +97,7 @@
                 </Grid>
 
                 <DockPanel>
-                    <Button Click="Button_Click_2"  Content="初始化" />
+                    <Button x:Name="ButtonInit" Click="Button_Click_2"  Content="初始化" />
                     <TextBlock Text="{Binding CameraService.DeviceStatus}"/>
                 </DockPanel>
             </StackPanel>

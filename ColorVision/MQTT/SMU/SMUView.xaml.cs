@@ -68,14 +68,14 @@ namespace ColorVision.MQTT.SMU
             this.ContextMenu = ContextMenu;
 
             GridView gridView = new GridView();
-            List<string> headers = new List<string> { "序号", "测量时间"};
+            List<string> headers = new List<string> { "序号","属性", "测量时间" };
             for (int i = 0; i < headers.Count; i++)
             {
                 gridView.Columns.Add(new GridViewColumn() { Header = headers[i], Width = 100, DisplayMemberBinding = new Binding(string.Format("[{0}]", i)) });
             }
             listView1.View = gridView;
 
-            List<string> headers2 = new List<string> { "波长", "相对光谱", "绝对光谱" };
+            List<string> headers2 = new List<string> { "电流","电压" };
 
             GridView gridView2 = new GridView();
             for (int i = 0; i < headers2.Count; i++)
@@ -86,9 +86,18 @@ namespace ColorVision.MQTT.SMU
             listView2.View = gridView2;
 
             wpfplot1.Plot.Clear();
+            wpfplot2.Plot.Clear();
 
             listView1.Visibility = Visibility.Collapsed;
             listView2.Visibility = Visibility.Collapsed;
+
+            wpfplot1.Plot.XLabel("电流(A)");
+            wpfplot1.Plot.YLabel("电压(V)");
+            wpfplot1.Plot.Title("电流曲线");
+
+            wpfplot2.Plot.XLabel("电压(V)");
+            wpfplot2.Plot.YLabel("电流(A)");
+            wpfplot2.Plot.Title("电压曲线");
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -127,31 +136,15 @@ namespace ColorVision.MQTT.SMU
 
         private List<List<string>> ListContents { get; set; } = new List<List<string>>() { };
 
-        public List<ColorParam> colorParams { get; set; } = new List<ColorParam>() { };
-
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (sender is ListView listview && listview.SelectedIndex > -1)
             {
                 DrawPlot();
-                //listView2.ItemsSource = colorParams[listview.SelectedIndex].fPL;
-
+                //listView2.ItemsSource;
             }
         }
 
-        ScatterPlot scatterPlot;
-
-        private void DrawPlotCore(ColorParam colorParam, Color color, float lineWidth = 3)
-        {
-            double[] x = new double[colorParam.fPL.Length];
-            double[] y = new double[colorParam.fPL.Length];
-            for (int i = 0; i < colorParam.fPL.Length; i++)
-            {
-                x[i] = ((double)colorParam.fSpect1 + Math.Round(colorParam.fInterval, 1) * i);
-                y[i] = colorParam.fPL[i];
-            }
-            wpfplot1.Plot.AddScatter(x, y, color, lineWidth, 3, 0);
-        }
 
 
         bool MulComparison;
@@ -178,22 +171,46 @@ namespace ColorVision.MQTT.SMU
             }
             else
             {
+               
                 var temp = ScatterPlots[listView1.SelectedIndex];
                 temp.Color = Color.DarkGoldenrod;
                 temp.LineWidth = 1;
                 temp.MarkerSize = 1;
 
-                wpfplot1.Plot.Add(temp);
-                wpfplot1.Plot.Remove(LastMulSelectComparsion);
+
+
+                ToggleButtonChoice.IsChecked = PassSxSources[listView1.SelectedIndex].IsSourceV;
+
+                if (PassSxSources[listView1.SelectedIndex].IsSourceV)
+                {
+                    wpfplot2.Plot.Add(temp);
+                    wpfplot1.Plot.Remove(LastMulSelectComparsion);
+                    wpfplot2.Plot.Remove(LastMulSelectComparsion);
+                }
+                else
+                {
+                    wpfplot1.Plot.Add(temp);
+                    wpfplot1.Plot.Remove(LastMulSelectComparsion);
+                    wpfplot2.Plot.Remove(LastMulSelectComparsion);
+
+                }
+
                 LastMulSelectComparsion = temp;
 
             }
             wpfplot1.Refresh();
         }
 
+        List<PassSxSource> PassSxSources = new List<PassSxSource>();
+
         public void DrawPlot(bool isSourceV, double endVal,double[] VList, double[] IList)
         {
-            ListViewItem listViewItem = new ListViewItem();
+
+            PassSxSource passSxSources = new PassSxSource();
+            passSxSources.IsSourceV = isSourceV;
+            PassSxSources.Add(passSxSources);
+
+
             List<double> listV = new List<double>();
             List<double> listI = new List<double>();
             double VMax = 0, IMax = 0, VMin = 10000, IMin = 10000;
@@ -229,6 +246,24 @@ namespace ColorVision.MQTT.SMU
                 }
                 xs = listV.ToArray();
                 ys = listI.ToArray();
+
+                ScatterPlot scatterPlot = new ScatterPlot(xs, ys)
+                {
+                    Color = Color.DarkGoldenrod,
+                    LineWidth = 1,
+                    MarkerSize = 1,
+                    Label = null,
+                    MarkerShape = MarkerShape.none,
+                    LineStyle = LineStyle.Solid
+                };
+
+                wpfplot2.Plot.SetAxisLimitsX(xMin, xMax);
+                wpfplot2.Plot.SetAxisLimitsY(yMin, yMax);
+                wpfplot2.Plot.Add(scatterPlot);
+                wpfplot2.Refresh();
+                ScatterPlots.Add(scatterPlot);
+
+
             }
             else
             {
@@ -247,40 +282,37 @@ namespace ColorVision.MQTT.SMU
                 }
                 xs = listV.ToArray();
                 ys = listI.ToArray();
-            }
-            if (isSourceV)
-            {
-                wpfplot1.Plot.XLabel("电压(V)");
-                wpfplot1.Plot.YLabel("电流(A)");
-                wpfplot1.Plot.Title("电压曲线");
-            }
-            else
-            {
-                wpfplot1.Plot.XLabel("电流(A)");
-                wpfplot1.Plot.YLabel("电压(V)");
-                wpfplot1.Plot.Title("电流曲线");
-            }
-            wpfplot1.Plot.SetAxisLimitsX(xMin, xMax);
-            wpfplot1.Plot.SetAxisLimitsY(yMin, yMax);
 
-            ScatterPlot scatterPlot = new ScatterPlot(xs, ys)
-            {
-                Color = Color.DarkGoldenrod,
-                LineWidth = 1,
-                MarkerSize = 1,
-                Label = null,
-                MarkerShape = MarkerShape.none,
-                LineStyle = LineStyle.Solid
-            };
+                ScatterPlot scatterPlot = new ScatterPlot(xs, ys)
+                {
+                    Color = Color.DarkGoldenrod,
+                    LineWidth = 1,
+                    MarkerSize = 1,
+                    Label = null,
+                    MarkerShape = MarkerShape.none,
+                    LineStyle = LineStyle.Solid
+                };
+                wpfplot1.Plot.SetAxisLimitsY(xMin, xMax);
+                wpfplot1.Plot.SetAxisLimitsX(yMin, yMax);
+                wpfplot1.Plot.Add(scatterPlot);
+                wpfplot1.Refresh();
+                ScatterPlots.Add(scatterPlot);
+
+            }
+            ToggleButtonChoice.IsChecked = isSourceV;
 
 
-            ScatterPlots.Add(scatterPlot);
-            //listViewItem.Content = Contents;
+            ListViewItem listViewItem = new ListViewItem();
+            ResultNum++;
+            List<string> strings = new List<string>();
+            strings.Add(ResultNum.ToString());
+            strings.Add(isSourceV ? "V" : "I");
+            strings.Add(DateTime.Now.ToString());
+            listViewItem.Content = strings;
             listView1.Items.Add(listViewItem);
-            listView1.SelectedIndex = colorParams.Count - 1;
+            listView1.SelectedIndex = PassSxSources.Count - 1;
             listView1.ScrollIntoView(listViewItem);
-            wpfplot1.Plot.Add(scatterPlot);
-            wpfplot1.Refresh();
+
         }
 
         private List<ScatterPlot> ScatterPlots { get; set; } = new List<ScatterPlot>();
@@ -322,7 +354,7 @@ namespace ColorVision.MQTT.SMU
 
         private void Button2_Click(object sender, RoutedEventArgs e)
         {
-            if (listView1.SelectedIndex < 0 || colorParams.Count <= 0)
+            if (listView1.SelectedIndex < 0)
             {
                 MessageBox.Show("您需要先选择数据");
                 return;
@@ -340,8 +372,6 @@ namespace ColorVision.MQTT.SMU
                 if (item.IsSelected)
                 {
                     int index = listView1.Items.IndexOf(item);
-                    colorParams.RemoveAt(index);
-
                     ScatterPlots.RemoveAt(index);
 
                     listView1.Items.RemoveAt(index);
@@ -378,7 +408,6 @@ namespace ColorVision.MQTT.SMU
             if (e.Key == Key.Delete && listView1.SelectedIndex > -1)
             {
                 int temp = listView1.SelectedIndex;
-                colorParams.RemoveAt(listView1.SelectedIndex);
                 listView1.Items.RemoveAt(listView1.SelectedIndex);
 
 
@@ -406,7 +435,6 @@ namespace ColorVision.MQTT.SMU
                 markerPlot1 = new MarkerPlot
                 {
                     X = listView2.SelectedIndex + 380,
-                    Y = colorParams[listView1.SelectedIndex].fPL[listView2.SelectedIndex * 10],
                     MarkerShape = MarkerShape.filledCircle,
                     MarkerSize = 10f,
                     Color = Color.Orange,
@@ -447,6 +475,11 @@ namespace ColorVision.MQTT.SMU
             listView2.Width = ListCol2.ActualWidth;
             ListCol1.Width = new GridLength(1, GridUnitType.Star);
             ListCol2.Width = GridLength.Auto;
+        }
+
+        private void Button3_Click(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

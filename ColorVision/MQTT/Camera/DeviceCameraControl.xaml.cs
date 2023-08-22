@@ -1,6 +1,7 @@
 ﻿using ColorVision.Extension;
 using ColorVision.MQTT.Camera;
 using ColorVision.MQTT.Service;
+using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -51,6 +52,14 @@ namespace ColorVision.MQTT.Camera
 
 
             CameraID.ItemsSource = CameraService.CameraIDs;
+
+            Service.DeviceStatusChanged += (s) =>
+            {
+                if (s == DeviceStatus.Init)
+                {
+                    ButtonInit.Content = "断开初始化";
+                }
+            };
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -71,7 +80,16 @@ namespace ColorVision.MQTT.Camera
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
-            Service.Init();
+            if (Service.DeviceStatus == DeviceStatus.UnInit)
+            {
+                Service.Init();
+            }
+            else
+            {
+                Service.UnInit();
+            }
+
+
         }
     }
 }
