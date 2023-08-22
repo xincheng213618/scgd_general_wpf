@@ -11,7 +11,7 @@ namespace ColorVision.Controls
 {
     public class DragDropAdorner : Adorner
     {
-        public struct POINT { public Int32 X; public Int32 Y; }
+        public struct POINT { public int X { get; set; } public int Y { get; set; } }
 
         [DllImport("user32.dll")]
         private static extern bool GetCursorPos(ref POINT point);

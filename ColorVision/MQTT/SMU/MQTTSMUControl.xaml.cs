@@ -46,7 +46,7 @@ namespace ColorVision.MQTT.SMU
         {
             this.DataContext = SMUService;
 
-            SMUService.HeartbeatHandlerEvent += (e) => SMUService_DeviceStatusHandler(e.DeviceStatus, ButtonSourceMeter1);
+            SMUService.HeartbeatHandlerEvent += (e) => SMUService_DeviceStatusHandler(e.DeviceStatus);
             SMUService.ScanResultHandlerEvent += SMUService_ScanResultHandler;
             SMUService.ResultHandlerEvent += SMUService_ResultHandler;
 
@@ -119,23 +119,23 @@ namespace ColorVision.MQTT.SMU
             }
         }
 
-        private void SMUService_DeviceStatusHandler(DeviceStatus deviceStatus,Button button)
+        private  void SMUService_DeviceStatusHandler(DeviceStatus deviceStatus)
         {
             if (deviceStatus == DeviceStatus.Opened)
             {
-                button.Content = "关闭";
+                ButtonSourceMeter1.Content = "关闭";
             }
             else if (deviceStatus == DeviceStatus.Closed)
             {
-                button.Content = "打开";
+                ButtonSourceMeter1.Content = "打开";
             }
             else if (deviceStatus == DeviceStatus.Opening)
             {
-                button.Content = "打开中";
+                ButtonSourceMeter1.Content = "打开中";
             }
             else if (deviceStatus == DeviceStatus.Closing)
             {
-                button.Content = "关闭中";
+                ButtonSourceMeter1.Content = "关闭中";
             }
         }
 
@@ -172,7 +172,7 @@ namespace ColorVision.MQTT.SMU
         private void DoOpenByMQTT(Button button)
         {
             string btnTitle = button.Content.ToString();
-            if (btnTitle.Equals("打开", StringComparison.Ordinal))
+            if (btnTitle!=null && btnTitle.Equals("打开", StringComparison.Ordinal))
             {
                 button.Content = "打开中";
                 SMUService.Open(passSxSource.IsNet, passSxSource.DevName);
@@ -213,10 +213,7 @@ namespace ColorVision.MQTT.SMU
         {
             SMUService.Scan(passSxSource.IsSourceV, passSxSource.StartMeasureVal, passSxSource.StopMeasureVal, passSxSource.LimitVal, passSxSource.Number);
         }
-        private void showPxResult(bool isSourceV, double endVal)
-        {
 
-        }
         private void VIExport_Click(object sender, RoutedEventArgs e)
         {
             if (passSxSource.VList.Length == 0)

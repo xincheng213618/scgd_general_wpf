@@ -97,7 +97,8 @@ namespace ColorVision.MQTT.Camera
                     }
                     catch(Exception ex)
                     {
-
+                        if (log.IsErrorEnabled)
+                            log.Error(ex);
                     }
 
                     return;
