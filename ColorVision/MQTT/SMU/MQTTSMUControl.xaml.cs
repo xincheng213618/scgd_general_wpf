@@ -72,19 +72,6 @@ namespace ColorVision.MQTT.SMU
             };
             ComboxVITemplate.SelectedIndex = 0;
 
-            var plt = View.wpfplot1.Plot;
-
-            plt.Title("电压曲线");
-            if (passSxSource.IsSourceV)
-            {
-                plt.XLabel("电压(V)");
-                plt.YLabel("电流(A)");
-            }
-            else
-            {
-                plt.XLabel("电流(A)");
-                plt.YLabel("电压(V)");
-            }
             ViewGridManager.GetInstance().AddView(View);
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
             {
