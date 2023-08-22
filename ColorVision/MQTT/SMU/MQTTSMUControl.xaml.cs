@@ -122,7 +122,14 @@ namespace ColorVision.MQTT.SMU
         {
             passSxSource.VList = data.VList;
             passSxSource.IList = data.IList;
-            View.DrawPlot(passSxSource.IsSourceV, passSxSource.StopMeasureVal, passSxSource.VList, passSxSource.IList);
+            try
+            {
+                View.DrawPlot(passSxSource.IsSourceV, passSxSource.StopMeasureVal, passSxSource.VList, passSxSource.IList);
+            }
+            catch 
+            {
+
+            }
         }
 
         private void SMUService_DeviceStatusHandler(DeviceStatus deviceStatus,Button button)

@@ -193,11 +193,7 @@ namespace ColorVision.MQTT.SMU
 
         public void DrawPlot(bool isSourceV, double endVal,double[] VList, double[] IList)
         {
-
-
             ListViewItem listViewItem = new ListViewItem();
-
-
             List<double> listV = new List<double>();
             List<double> listI = new List<double>();
             double VMax = 0, IMax = 0, VMin = 10000, IMin = 10000;
@@ -305,15 +301,11 @@ namespace ColorVision.MQTT.SMU
         private void ReDrawPlot()
         {
             wpfplot1.Plot.Clear();
-            wpfplot1.Plot.SetAxisLimitsX(380, 810);
-            wpfplot1.Plot.SetAxisLimitsY(0, 1);
-            wpfplot1.Plot.XAxis.SetBoundary(370, 850);
-            wpfplot1.Plot.YAxis.SetBoundary(0, 1);
             LastMulSelectComparsion = null;
             if (MulComparison)
             {
                 listView1.SelectedIndex = listView1.Items.Count > 0 && listView1.SelectedIndex == -1 ? 0 : listView1.SelectedIndex;
-                for (int i = 0; i < colorParams.Count; i++)
+                for (int i = 0; i < ScatterPlots.Count; i++)
                 {
                     if (i == listView1.SelectedIndex)
                         continue;
