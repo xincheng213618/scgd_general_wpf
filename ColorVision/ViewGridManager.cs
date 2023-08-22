@@ -1,4 +1,6 @@
 ﻿using ColorVision.MQTT;
+using ColorVision.MVVM;
+using EnumsNET;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -7,10 +9,50 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Media;
 
 namespace ColorVision
 {
+    public enum ViewType
+    {
+        Hidden,
+        View,
+        Window,
+    }
+    public delegate void ViewIndexChangedHandler(int oindex,int index);
+    public delegate void ViewMaxChangedHandler(int max);
+
+
+    public class View : ViewModelBase
+    {
+        public event ViewIndexChangedHandler ViewIndexChangedEvent;
+
+        public int ViewIndex { get => _ViewIndex; set { ViewIndexChangedEvent?.Invoke(_ViewIndex, value); _ViewIndex = value; NotifyPropertyChanged(); } }
+
+        private int _ViewIndex = -1;
+        public ViewType ViewType
+        {
+            get
+            {
+                if (ViewIndex > -1)
+                    return ViewType.View;
+                if (ViewIndex == -2)
+                    return ViewType.Window;
+                return ViewType.Hidden;
+            }
+            set => throw new NotImplementedException();
+        }
+
+    }
+
+    public interface IView
+    {
+        public View View { get;}
+
+    }
+
+
     public class ViewGridManager
     {
         private static readonly int[] defaultViewIndexMap = new int[100]
@@ -25,18 +67,16 @@ namespace ColorVision
                56, 57, 58, 59, 60, 61, 62, 63, 71, 88,
                72, 73, 74, 75, 76, 77, 78, 79, 80, 89,
                90, 91, 92, 93, 94, 95, 96, 97, 98, 99
-            };
+             };
+        public event ViewMaxChangedHandler ViewMaxChangedEvent;
 
-        private List<Grid> ViewGrids {get;set;}
+        public int ViewMax { get => _ViewMax; set { if (_ViewMax == value) return;ViewMaxChangedEvent?.Invoke(value); _ViewMax = value; } }
+        private int _ViewMax;
 
         public Grid MainView { get; set; }
 
-        public Control CurrentView { get; set; }
-
+        public List<Grid> Grids { get; set; }
         public List<Control> Views { get; set; }
-
-        public static Dictionary<Control,Grid> ViewControls { get; set; } = new Dictionary<Control,Grid>();
-
 
         private static ViewGridManager _instance;
         private static readonly object _locker = new();
@@ -45,7 +85,7 @@ namespace ColorVision
         //这里些publlic 是故意的,希望这里可以复用，或者是这里后面可能需要重构一下
         public ViewGridManager()
         {
-            ViewGrids = new List<Grid>();
+            Grids = new List<Grid>();
             Views = new List<Control>();
         }
 
@@ -55,135 +95,205 @@ namespace ColorVision
                 return Views.IndexOf(control);
 
             Views.Add(control);
-            Grid grid = GetNewGrid(control);
-            ViewGrids.Add(grid);
-            GridSort(ViewGrids);
 
+            if (control is IView view)
+                view.View.ViewIndex = Views.IndexOf(control);
             return Views.IndexOf(control);
         }
 
         public void RemoveView(int index)
         {
-            ViewGrids.RemoveAt(index);
-            GridSort(ViewGrids);
-
-            ViewControls.Remove(Views[index]);
             Views.RemoveAt(index);
         }
 
-        /// <summary>
-        /// 保留固定数量的窗口视图，多余的会删除掉
-        /// </summary>
-        /// <param name="num"></param>
-        public void SetViewNum(int num)
+        public void SetViewIndex(Control control, int viewIndex)
         {
-            if (num > 0)
+            if (viewIndex >= 0)
             {
-                if (Views.Count > num)
-                {
-                    for (int i = Views.Count - 1; i > num - 1; i--)
-                    {
-                        ViewControls.Remove(Views[i]);
-                        Views.RemoveAt(i);
-                    }
-                }
-                else if (Views.Count < num)
-                {
-                    for (int i = Views.Count; i < num; i++)
-                    {
-                        AddView(new ImageView());
-                   }
-                }
+                if (viewIndex >= ViewMax)
+                    return;
+
+                if (control.Parent is Grid grid)
+                    grid.Children.Remove(control);
+
+
+                Grids[viewIndex].Children.Clear();
+                Grids[viewIndex].Children.Add(control);
             }
-            CurrentView = Views[0];
-            ViewGrids.Clear();
-            for (int i = 0; i < Views.Count; i++)
+            else if (viewIndex == -1)
             {
-                ViewGrids.Add(ViewControls[Views[i]]);
+                if (control.Parent is Grid grid)
+                    grid.Children.Remove(control);
             }
-            GridSort(ViewGrids);
+            else if (viewIndex == -2)
+            {
+                SetSingleWindowView(control);
+            }
+
+
+        }   
+
+        /// <summary>
+        /// 设置一共有几个窗口
+        /// </summary>
+        /// <param name="nums"></param>
+        public void SetViewGrid(int nums)
+        {
+            GenViewGrid(nums);
+            for (int i = 0; i < nums; i++)
+            {
+                if (i >= Views.Count)
+                    break;
+
+                if (Views[i] is IView view)
+                    view.View.ViewIndex = i;
+
+                if (Views[i].Parent is Grid grid)
+                    grid.Children.Remove(Views[i]);
+
+                Grids[i].Children.Clear();
+
+                Grids[i].Children.Add(Views[i]);
+            }
         }
 
-        private List<Grid> SingleWindowGrid = new List<Grid>();
-        Window window;
+
+        /// <summary>
+        public void SetViewNum(int num)
+        {
+            if (num == -1)
+            {
+                if (GetViewNums() != Views.Count)
+                    GenViewGrid(Views.Count);
+
+                for (int i = 0; i < Views.Count; i++)
+                {
+                    if (Views[i].Parent is Grid grid)
+                        grid.Children.Remove(Views[i]);
+
+
+                    if (Views[i] is IView view)
+                        view.View.ViewIndex = i;
+                    Grids[i].Children.Clear();
+                    Grids[i].Children.Add(Views[i]);
+                }
+                return;
+            }
+
+
+            if (GetViewNums() < num)
+                GenViewGrid(num);
+
+            for (int i = 0; i < num; i++)
+            {
+                if (Views[i].Parent is Grid grid)
+                    grid.Children.Remove(Views[i]);
+
+                Grids[i].Children.Clear();
+                Grids[i].Children.Add(Views[i]);
+            }
+        }
+
+        public Control? CurrentView {
+            get
+            {
+                if (Grids.Count > 0)
+                {
+                    for (int i = 0; i < Views.Count; i++)
+                    {
+                        if (Views[i].Parent is Grid grid && grid == Grids[0])
+                        {
+                            return Views[i];
+                        }
+                    }
+                }
+                return null;
+
+            }
+        }
+
         public void SetSingleWindowView(Control control)
         {
-            if (ViewControls.TryGetValue(control, out Grid grid))
+            if (control.Parent is Grid grid)
+                grid.Children.Remove(control);
+
+            if (control is IView view)
             {
+                Window window = new Window() {Owner =App.Current.MainWindow };
+                view.View.ViewIndex = -2;
 
+                ViewIndexChangedHandler eventHandler = null;
+                eventHandler = (e1,e2) =>
+                {
+                    window.Close();
+                    view.View.ViewIndexChangedEvent -= eventHandler;
+                };
+                view.View.ViewIndexChangedEvent += eventHandler;
 
-                SingleWindowGrid.Add(grid);
-                GridSort(ViewGrids);
-                window = new Window();
-                window.Content = grid;
-                window.Show();
+                Views.Remove(control);
+                Grid grid1 = new Grid();
+                grid1.Children.Add(control);
+                window.Content = grid1;
                 window.Closed += (s, e) =>
                 {
-                    SingleWindowGrid.Remove(grid);
+                    view.View.ViewIndexChangedEvent -= eventHandler;
+                    view.View.ViewIndex = -1;
+                    Views.Add(control);
                 };
+                window.Show();
+
             }
         }
 
         public void SetOneView(int Main)
         {
-            CurrentView = Views[Main];
+            if (GetViewNums()!=1)
+                GenViewGrid(1);
 
-            ViewGrids.Clear();
-            ViewGrids.Add(ViewControls[Views[Main]]);
-            GridSort(ViewGrids);
+            if (Views[Main].Parent is Grid grid)
+                grid.Children.Remove(Views[Main]);
+
+
+            if (Views[Main] is IView view)
+                view.View.ViewIndex = 0;
+
+            Grids[0].Children.Clear();
+            Grids[0].Children.Add(Views[Main]);
+
         }
 
         public void SetOneView(Control control)
         {
-            if (ViewControls.TryGetValue(control,out Grid grid))
-            {
-                CurrentView = control;
+            if (GetViewNums() != 1)
+                GenViewGrid(1);
 
-                SingleWindowGrid.Remove(grid);
-                if (window!=null)
-                {
-                    window.Content = null;
-                    window.Close();
-                }
+            if (control.Parent is Grid grid)
+                grid.Children.Remove(control);
 
-                ViewGrids.Clear();
-                ViewGrids.Add(grid);
-                GridSort(ViewGrids);
-            }
+            if (control is IView view)
+                view.View.ViewIndex = 0;
+
+            Grids[0].Children.Clear();
+            Grids[0].Children.Add(control);
         }
 
-
-        private static Grid GetNewGrid(Control control)
+        public int GetViewNums()
         {
-            if (ViewControls.TryGetValue(control, out Grid last))
-            {
-                return last;
-            }
-
-            Grid grid = new Grid()
-            {
-                Margin = new Thickness(2, 2, 2, 2),
-            };
-            grid.Children.Add(control);
-            ViewControls.Add(control, grid);
-            return grid;
+            return Grids.Count;
         }
 
-        private void GridSort(List<Grid> GridLists)
+
+
+        private void GenViewGrid(int Nums)
         {
             if (MainView == null)
                 return;
-
-            foreach (var item in SingleWindowGrid)
-            {
-                GridLists.Remove(item);
-            }
-
+            ViewMax = Nums;
             MainView.Children.Clear();
             MainView.ColumnDefinitions.Clear();
             MainView.RowDefinitions.Clear();
 
-            for (int i = 0; i < GridLists.Count; i++)
+            for (int i = 0; i < Nums; i++)
             {
                 int location = Array.IndexOf(defaultViewIndexMap, i);
                 int row = (location / 10);
@@ -198,14 +308,13 @@ namespace ColorVision
                     RowDefinition rowDefinition = new RowDefinition() { Height = new GridLength(1, GridUnitType.Star) };
                     MainView.RowDefinitions.Add(rowDefinition);
                 }
-
-
             }
 
-
-            for (int i = 0; i < GridLists.Count; i++)
+            Grids.Clear();
+            for (int i = 0; i < Nums; i++)
             {
-                Grid grid = GridLists[i];
+                Grid grid = new Grid() { Margin = new Thickness(2, 2, 2, 2), };
+                Grids.Add(grid);
                 int location = Array.IndexOf(defaultViewIndexMap, i);
                 int row = (location / 10);
                 int col = (location % 10);
@@ -244,15 +353,6 @@ namespace ColorVision
                 }
             }
 
-
         }
-
-
-
-
-
-
-
-
     }
 }

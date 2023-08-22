@@ -18,14 +18,14 @@
                     <TextBox x:Name="TextSourceMeterIP" Text="{Binding DevName}" BorderThickness="0,0,0,1" IsEnabled="False" />
                 </DockPanel>
                 
-                <GroupBox Margin="5" Header="源选择">
+                <GroupBox Header="源选择" Margin="0,5">
                     <DockPanel Margin="2" >
                         <RadioButton Content="电压" Width="100" IsChecked="{Binding IsSourceV}" />
                         <RadioButton Content="电流" IsChecked="{Binding IsSourceV,Converter={StaticResource inverseBooleanConverter}}"/>
                     </DockPanel>
                 </GroupBox>
 
-                <GroupBox Margin="5" Header="操作">
+                <GroupBox Header="操作" Margin="0,5">
 
                     <StackPanel>
                         <UniformGrid Columns="2" Margin="2">
@@ -68,7 +68,7 @@
                     <ComboBox  x:Name="ComboxVITemplate"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,0,5,0"/>
                 </DockPanel>
 
-                <GroupBox Margin="5" Header="扫描">
+                <GroupBox Margin="0,5" Header="扫描" >
                     <StackPanel  x:Name="StackPanelVITemplate">
                         <UniformGrid Columns="2" Margin="2">
                             <DockPanel Margin="2" >
@@ -103,6 +103,11 @@
 
                     </StackPanel>
                 </GroupBox>
+
+                <DockPanel>
+                    <TextBlock Text="输出视图：" VerticalAlignment="Center" Width="60"/>
+                    <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"  Height="20"  />
+                </DockPanel>
             </StackPanel>
         </Border>
     </StackPanel>

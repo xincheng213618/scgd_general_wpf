@@ -27,7 +27,7 @@ namespace ColorVision.MQTT.Spectrum
         public DeviceSpectrum DeviceSpectrum { get; set; }
         public SpectrumService SpectrumService { get => DeviceSpectrum.SpectrumService; }
 
-        public ChartView View { get => DeviceSpectrum.ChartView;}
+        public SpectrumView View { get => DeviceSpectrum.ChartView;}
         public MQTTSpectrumControl(DeviceSpectrum DeviceSpectrum)
         {
             this.DeviceSpectrum = DeviceSpectrum;
@@ -38,6 +38,33 @@ namespace ColorVision.MQTT.Spectrum
         {
             this.DataContext = SpectrumService;
             ViewGridManager.GetInstance().AddView(View);
+
+            ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
+            {
+                List<KeyValuePair<string, int>> KeyValues = new List<KeyValuePair<string, int>>();
+                KeyValues.Add(new KeyValuePair<string, int>("独立窗口", -2));
+                KeyValues.Add(new KeyValuePair<string, int>("隐藏", -1));
+                for (int i = 0; i < e; i++)
+                {
+                    KeyValues.Add(new KeyValuePair<string, int>((i + 1).ToString(), i));
+                }
+                ComboxView.ItemsSource = KeyValues;
+                //ComboxView.SelectedIndex = View.View.ViewIndex + 2;
+            };
+            View.View.ViewIndexChangedEvent += (e1, e2) =>
+            {
+                ComboxView.SelectedIndex = e2 + 2;
+            };
+            ComboxView.SelectionChanged += (s, e) =>
+            {
+                if (ComboxView.SelectedItem is KeyValuePair<string, int> KeyValue)
+                {
+                    ViewGridManager.GetInstance().SetViewIndex(View, KeyValue.Value);
+
+                }
+            };
+
+
             SpectrumService.DataHandlerEvent += e =>
             {
                 if (e != null)

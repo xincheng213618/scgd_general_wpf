@@ -11,10 +11,18 @@ namespace ColorVision.Controls
 {
     public class DragDropAdorner : Adorner
     {
+        public struct POINT { public Int32 X; public Int32 Y; }
+
+        [DllImport("user32.dll")]
+        private static extern bool GetCursorPos(ref POINT point);
+
         public DragDropAdorner(UIElement parent) : base(parent)
         {
             IsHitTestVisible = false; // Seems Adorner is hit test visible?
-            mDraggedElement = parent as FrameworkElement;
+            if (parent is FrameworkElement element)
+            {
+                mDraggedElement = element;
+            }
         }
 
         protected override void OnRender(DrawingContext drawingContext)
@@ -23,8 +31,8 @@ namespace ColorVision.Controls
 
             if (mDraggedElement != null)
             {
-                Win32.POINT screenPos = new Win32.POINT();
-                if (Win32.GetCursorPos(ref screenPos))
+                POINT screenPos = new POINT();
+                if (GetCursorPos(ref screenPos))
                 {
                     Point pos =this.PointFromScreen(new Point(screenPos.X, screenPos.Y));                    
                     Rect rect = new Rect(pos.X, pos.Y, mDraggedElement.ActualWidth, mDraggedElement.ActualHeight);
@@ -38,14 +46,7 @@ namespace ColorVision.Controls
             }
         }
 
-        FrameworkElement mDraggedElement = null;
+        FrameworkElement mDraggedElement;
     }
 
-    public static class Win32
-    {
-        public struct POINT { public Int32 X; public Int32 Y; }
-        
-        [DllImport("user32.dll")]
-        public static extern bool GetCursorPos(ref POINT point);
-    }
 }

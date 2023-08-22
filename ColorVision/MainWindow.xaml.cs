@@ -30,6 +30,8 @@ namespace ColorVision
     /// 
     public partial class MainWindow : Window
     {
+        public ViewGridManager ViewGridManager { get; set; }
+
         public GlobalSetting GlobalSetting { get; set; }
         private FlowView flowView;
         public SoftwareSetting SoftwareSetting
@@ -129,9 +131,9 @@ namespace ColorVision
             flowView = new FlowView();
             ViewGridManager.GetInstance().AddView(flowView);
 
+            ViewGridManager.GetInstance().SetViewNum(-1);
         }
 
-        public ViewGridManager ViewGridManager { get; set; }
 
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -153,20 +155,6 @@ namespace ColorVision
             }
         }
 
-        private void StackPanelCalibration_Initialized(object sender, EventArgs e)
-        {
-            ComboxCalibrationTemplate.ItemsSource = TemplateControl.GetInstance().CalibrationParams;
-            ComboxCalibrationTemplate.SelectionChanged += (s, e) =>
-            {
-                if (ComboxCalibrationTemplate.SelectedItem is KeyValuePair<string, CalibrationParam> KeyValue && KeyValue.Value is CalibrationParam calibrationParam)
-                {
-                    Calibration1.CalibrationParam = calibrationParam;
-                    Calibration1.DataContext = calibrationParam;
-                }
-            };
-            ComboxCalibrationTemplate.SelectedIndex = 0;
-        }
-
 
         private void MenuStatusBar_Click(object sender, RoutedEventArgs e)
         {
@@ -178,26 +166,6 @@ namespace ColorVision
         private FlowEngineLib.STNodeLoader loader;
 
         private FlowControl flowControl;
-
-        private void Button2_Click(object sender, RoutedEventArgs e)
-        {
-
-            MQTTConfig MQTTConfig = GlobalSetting.GetInstance().SoftwareConfig.MQTTConfig;
-            string iPStr = MQTTConfig.Host;
-            int port = MQTTConfig.Port;
-            string uName = "";
-            string uPwd = "";
-            FlowEngineLib.MQTTHelper.SetDefaultCfg(iPStr, port, uName, uPwd, false, null);
-
-
-            System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
-            ofd.Filter = "*.stn|*.stn";
-            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-
-            loader.Load(ofd.FileName);
-
-            flowControl = new FlowControl(MQTTControl.GetInstance(), loader.GetStartNodeName());
-        }
         Window window;
 
         private void FlowControl_FlowCompleted(object? sender, EventArgs e)
@@ -336,7 +304,7 @@ namespace ColorVision
 
         private void Button51_Click(object sender, RoutedEventArgs e)
         {
-            ViewGridManager.AddView(new ChartView());
+            ViewGridManager.AddView(new SMUView());
         }
 
         private void Button6_Click(object sender, RoutedEventArgs e)
@@ -403,6 +371,26 @@ namespace ColorVision
                     imageView.Zoombox1.ZoomUniform();
                 }
 
+            }
+        }
+
+        private void GridSplitter_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+
+        }
+
+        private void GridSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
+        {
+            SiderBarGrid.Width = SiderCol.ActualWidth;
+            SiderCol.Width = GridLength.Auto;
+            ViewCol.Width = new GridLength(1, GridUnitType.Star);
+        }
+
+        private void Button1_Click_1(object sender, RoutedEventArgs e)
+        {
+            if(sender is Button button && int.TryParse(button.Tag.ToString() ,out int nums))
+            {
+                ViewGridManager.SetViewGrid(nums);
             }
         }
     }

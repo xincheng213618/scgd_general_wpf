@@ -2,6 +2,8 @@
 using ColorVision.MQTT.Spectrum;
 using ColorVision.Template;
 using NPOI.OpenXmlFormats.Dml.Chart;
+using NPOI.SS.Formula.Eval;
+using ScottPlot;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -29,7 +31,7 @@ namespace ColorVision.MQTT.SMU
 
         public DeviceSMU DeviceSMU { get; set; }
         private SMUService SMUService { get => DeviceSMU.SMUService;  }
-        public ChartView View { get => DeviceSMU.ChartView; }
+        public SMUView View { get => DeviceSMU.View; }
 
         PassSxSource passSxSource;
 
@@ -43,9 +45,6 @@ namespace ColorVision.MQTT.SMU
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = SMUService;
-
-
-
 
             SMUService.HeartbeatHandlerEvent += (e) => SMUService_DeviceStatusHandler(e.DeviceStatus, ButtonSourceMeter1);
             SMUService.ScanResultHandlerEvent += SMUService_ScanResultHandler;
@@ -87,6 +86,30 @@ namespace ColorVision.MQTT.SMU
                 plt.YLabel("电压(V)");
             }
             ViewGridManager.GetInstance().AddView(View);
+            ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
+            {
+                List<KeyValuePair<string, int>> KeyValues = new List<KeyValuePair<string, int>>();
+                KeyValues.Add(new KeyValuePair<string, int>("独立窗口", -2));
+                KeyValues.Add(new KeyValuePair<string, int>("隐藏", -1));
+                for (int i = 0; i < e; i++)
+                {
+                    KeyValues.Add(new KeyValuePair<string, int>((i+1).ToString(), i));
+                }
+                ComboxView.ItemsSource = KeyValues;
+                //ComboxView.SelectedIndex = View.View.ViewIndex + 2;
+            };
+            View.View.ViewIndexChangedEvent += (e1, e2) =>
+            {
+                ComboxView.SelectedIndex = e2 + 2;
+            };
+            ComboxView.SelectionChanged += (s, e) =>
+            {
+                if (ComboxView.SelectedItem is  KeyValuePair<string, int> KeyValue)
+                {
+                    ViewGridManager.GetInstance().SetViewIndex(View, KeyValue.Value);
+
+                }
+            };
         }
 
         private void SMUService_ResultHandler(SMUResultData data)
@@ -99,7 +122,7 @@ namespace ColorVision.MQTT.SMU
         {
             passSxSource.VList = data.VList;
             passSxSource.IList = data.IList;
-            showPxResult(passSxSource.IsSourceV, passSxSource.StopMeasureVal);
+            View.DrawPlot(passSxSource.IsSourceV, passSxSource.StopMeasureVal, passSxSource.VList, passSxSource.IList);
         }
 
         private void SMUService_DeviceStatusHandler(DeviceStatus deviceStatus,Button button)
@@ -206,81 +229,7 @@ namespace ColorVision.MQTT.SMU
 
         private void showPxResult(bool isSourceV, double endVal)
         {
-            var plt = View.wpfplot1.Plot;
 
-            plt.Title("电压曲线");
-            if (isSourceV)
-            {
-                plt.XLabel("电压(V)");
-                plt.YLabel("电流(A)");
-            }
-            else
-            {
-                plt.XLabel("电流(A)");
-                plt.YLabel("电压(V)");
-            }
-            ArrayList listV = new ArrayList();
-            ArrayList listI = new ArrayList();
-            double VMax = 0, IMax = 0, VMin = 10000, IMin = 10000;
-            for (int i = 0; i < passSxSource.VList.Length; i++)
-            {
-                if (passSxSource.VList[i] > VMax) VMax = passSxSource.VList[i];
-                if (passSxSource.IList[i] > IMax) IMax = passSxSource.IList[i];
-                if (passSxSource.VList[i] < VMin) VMin = passSxSource.VList[i];
-                if (passSxSource.IList[i] < IMin) IMin = passSxSource.IList[i];
-
-                listV.Add(passSxSource.VList[i]);
-                listI.Add(passSxSource.IList[i]);
-            }
-            int step = 10;
-            double xMin = 0;
-            double xMax = VMax + VMax / step;
-            double yMin = 0 - IMax / step;
-            double yMax = IMax + IMax / step;
-            double[] xs, ys;
-            if (isSourceV)
-            {
-                xMin = VMin - VMin / step;
-                xMax = endVal + VMax / step;
-                yMin = IMin - IMin / step;
-                yMax = IMax + IMax / step;
-                if (VMax < endVal)
-                {
-                    double addPointStep = (endVal - VMax) / 2.0;
-                    listV.Add(VMax + addPointStep);
-                    listV.Add(endVal);
-                    listI.Add(IMax);
-                    listI.Add(IMax);
-                }
-                xs = (double[])listV.ToArray(typeof(double));
-                ys = (double[])listI.ToArray(typeof(double));
-            }
-            else
-            {
-                endVal = endVal / 1000;
-                xMin = IMin - IMin / step;
-                xMax = endVal + IMax / step;
-                yMin = VMin - VMin / step;
-                yMax = VMax + VMax / step;
-                if (IMax < endVal)
-                {
-                    double addPointStep = (endVal - IMax) / 2.0;
-                    listI.Add(IMax + addPointStep);
-                    listI.Add(endVal);
-                    listV.Add(VMax);
-                    listV.Add(VMax);
-                }
-                xs = (double[])listI.ToArray(typeof(double));
-                ys = (double[])listV.ToArray(typeof(double));
-            }
-
-            plt.AddScatter(xs, ys, System.Drawing.Color.DarkGoldenrod, 3, 3, 0);
-
-
-            plt.SetAxisLimitsX(xMin, xMax);
-            plt.SetAxisLimitsY(yMin, yMax);
-
-            View.wpfplot1.Refresh();
         }
 
 

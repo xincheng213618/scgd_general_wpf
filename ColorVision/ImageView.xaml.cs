@@ -26,14 +26,16 @@ namespace ColorVision
     /// <summary>
     /// ImageView.xaml 的交互逻辑
     /// </summary>
-    public partial class ImageView : UserControl
+    public partial class ImageView : UserControl, IView
     {
         public ToolBarTop ToolBarTop { get; set; }
+
+        public View View { get; set; }
 
         public ImageView()
         {
             InitializeComponent();
-           
+            View = new View();
         }
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
@@ -336,6 +338,8 @@ namespace ColorVision
         }
 
         Point LastMouseMove;
+
+
         private void ImageShow_MouseMove(object sender, MouseEventArgs e)
         {
             if (sender is DrawCanvas drawCanvas && (Zoombox1.ActivateOn == ModifierKeys.None || !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn)))
