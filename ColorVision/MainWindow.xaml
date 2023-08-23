@@ -67,10 +67,7 @@
                     <MenuItem Header="数据判断模板设置(_J)" Tag="LedReusltParams"  Click="MenuItem_Template"/>
                     <MenuItem Header="源表模板设置(_V)"  Tag="SxParms" Click="MenuItem_Template"/>
                 </MenuItem>
-                <MenuItem  x:Name="MenuStatusBar"  d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  Header="视图(_V)">
-                    <MenuItem Header="侧边栏(_M)"  IsChecked="{Binding SoftwareSetting.IsOpenSidebar}"  Click="MenuStatusBar_Click"/>
-                    <MenuItem Header="状态栏(_S)" IsChecked="{Binding SoftwareSetting.IsOpenStatusBar}"  Click="MenuStatusBar_Click" />
-                </MenuItem>
+
                 <MenuItem Header="工具(_T)">
                     <MenuItem Header="流程引擎(_F)" Click="MenuItem9_Click"/>
                     <MenuItem Header="MQTT日志(_Q)" Click="MenuItem_Click"/>
@@ -88,7 +85,20 @@
                 <!--<MenuItem Header="标定(_A)">
                     <MenuItem Header="四色校正" Click="MenuItem_Click8"/>
                 </MenuItem>-->
-                
+                <MenuItem  x:Name="MenuStatusBar"  d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  Header="窗口(_W)">
+                    <MenuItem Header="侧边栏(_M)"  IsChecked="{Binding SoftwareSetting.IsOpenSidebar}"  Click="MenuStatusBar_Click"/>
+                    <MenuItem Header="状态栏(_S)" IsChecked="{Binding SoftwareSetting.IsOpenStatusBar}"  Click="MenuStatusBar_Click" />
+                    <Separator/>
+                    <MenuItem Header="保存窗口布局"  Click="MenuStatusBar_Click" />
+                    <MenuItem Header="应用窗口布局"  Click="MenuStatusBar_Click" />
+                    <Separator/>
+                    <MenuItem x:Name="Button1" Header="一" Click="Button1_Click_1" Tag="1"/>
+                    <MenuItem x:Name="Button2" Header="二" Click="Button1_Click_1"  Tag="2"/>
+                    <MenuItem x:Name="Button3" Header="四" Click="Button1_Click_1"  Tag="4"/>
+                    <MenuItem x:Name="Button4" Header="六" Click="Button1_Click_1"  Tag="6"/>
+                    <MenuItem x:Name="Button5" Header="九" Click="Button1_Click_1"  Tag="9"/>
+                </MenuItem>
+
                 <MenuItem Header="帮助(_H)">
                     <MenuItem Header="打开日志(_L)"  Click="Log_Click"/>
                     <MenuItem Header="打开配置文件(_S)"  Click="Setting_Click"/>
@@ -116,9 +126,6 @@
                                         <Button Content="打开测试图像"  Margin="10,0" Click="Button_Click"/>
                                         <Button Content="绘制测试图形"  Margin="10,0"  Click="Button1_Click"/>
                                         <Button Content="视频测试"  Margin="10,0"  Click="Button4_Click"/>
-                                        <Button Content="添加imageview"  Margin="10,0"  Click="Button5_Click"/>
-                                        <Button Content="添加chartview"  Margin="10,0"  Click="Button51_Click"/>
-
                                         <TextBlock/>
                                         <Button Content="1窗口" Tag="0" Margin="10,0"  Click="Button10_Click"/>
                                         <Button Content="2窗口" Tag="1" Margin="10,0"  Click="Button10_Click"/>
@@ -161,14 +168,7 @@
                 <Grid x:Name="ViewGrid"  Background="#c3c3c3">
                     <local:ImageView x:Name="ImageView1"/>
                 </Grid>
-                <WrapPanel Name="rightToolbar" Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Right">
-                    <Button x:Name="Button1" Content="一" Click="Button1_Click_1" Tag="1"/>
-                    <Button x:Name="Button2" Content="二" Click="Button1_Click_1"  Tag="2"/>
-                    <Button x:Name="Button3" Content="四" Click="Button1_Click_1"  Tag="4"/>
-                    <Button x:Name="Button4" Content="六" Click="Button1_Click_1"  Tag="6"/>
-                    <Button x:Name="Button5" Content="九" Click="Button1_Click_1"  Tag="9"/>
 
-                </WrapPanel>
 
             </Grid>
 

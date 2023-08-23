@@ -389,7 +389,7 @@ namespace ColorVision
 
         private void Button1_Click_1(object sender, RoutedEventArgs e)
         {
-            if(sender is Button button && int.TryParse(button.Tag.ToString() ,out int nums))
+            if(sender is MenuItem button && int.TryParse(button.Tag.ToString() ,out int nums))
             {
                 ViewGridManager.SetViewGrid(nums);
             }

@@ -44,9 +44,11 @@ namespace ColorVision
 
         private void UserControl_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            winf1.Height = (int)this.ActualHeight;
-            winf1.Width = (int)this.ActualWidth -200;
-
+            if (this.ActualWidth > 200)
+            {
+                winf1.Height = (int)this.ActualHeight;
+                winf1.Width = (int)this.ActualWidth - 200;
+            }
         }
     }
 }
