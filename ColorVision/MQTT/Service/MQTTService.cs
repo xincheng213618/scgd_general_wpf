@@ -31,8 +31,8 @@ namespace ColorVision.MQTT.Service
                 }
             }
             ServiceConfig.Name = Name;
-            ServiceConfig.SubscribeTopic = SysResourceModel.Pcode + "/STATUS/" + SysResourceModel.Code;
-            ServiceConfig.SendTopic = SysResourceModel.Pcode + "/CMD/" + SysResourceModel.Code;
+            ServiceConfig.SubscribeTopic = SysResourceModel.TypeCode + "/STATUS/" + SysResourceModel.Code;
+            ServiceConfig.SendTopic = SysResourceModel.TypeCode + "/CMD/" + SysResourceModel.Code;
             ContextMenu = new ContextMenu();
             MenuItem menuItem = new MenuItem() { Header = "删除服务" };
             menuItem.Click += (s, e) =>

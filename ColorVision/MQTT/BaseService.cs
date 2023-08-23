@@ -53,6 +53,7 @@ namespace ColorVision.MQTT
         public BaseService(T config)
         {
             Config = config;
+            ServiceName = Config.Name;
         }
     }
 
@@ -162,6 +163,7 @@ namespace ColorVision.MQTT
         public MQTTControl MQTTControl { get; set; }
         public ulong ServiceID { get; set; }
         public string SnID { get; set; }
+        public string ServiceName { get; set; }
 
         public virtual DateTime LastAliveTime { get => _LastAliveTime; set { _LastAliveTime = value; NotifyPropertyChanged(); } } 
         private DateTime _LastAliveTime = DateTime.MinValue;
@@ -182,7 +184,7 @@ namespace ColorVision.MQTT
         /// <param name="msg"></param>
         internal virtual void PublishAsyncClient(MsgSend msg)
         {
-            msg.ServiceName = SendTopic;
+            //msg.ServiceName = ServiceName;
             Guid guid = Guid.NewGuid();
             msg.MsgID = guid;
             msg.ServiceID = ServiceID;

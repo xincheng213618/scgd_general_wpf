@@ -21,6 +21,9 @@ namespace ColorVision.MQTT
         public string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
         private string _Name;
 
+        public string Code { get => _Code; set { _Code = value; NotifyPropertyChanged(); } }
+        private string _Code;
+
         /// <summary>
         /// 是否存活
         /// </summary>

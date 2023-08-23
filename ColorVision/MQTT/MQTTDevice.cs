@@ -59,6 +59,7 @@ namespace ColorVision.MQTT
                     Config = new T();
                 }
             }
+            Config.Code = SysResourceModel.Code ?? string.Empty;
         }
 
         public override string SendTopic { get => Config.SendTopic; set { Config.SendTopic = value; NotifyPropertyChanged(); } }

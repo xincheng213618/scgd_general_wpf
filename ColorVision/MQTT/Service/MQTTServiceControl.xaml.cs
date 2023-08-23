@@ -86,7 +86,7 @@ namespace ColorVision.MQTT.Service
                         ImageBpp = 8
                     };
                     cameraConfig1.Name = TextBox_Name.Text;
-
+                    cameraConfig1.Code = TextBox_Code.Text;
 
                     cameraConfig1.SendTopic = MQTTService.ServiceConfig.SendTopic;
                     cameraConfig1.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;
@@ -103,7 +103,7 @@ namespace ColorVision.MQTT.Service
                         ID = "e29b14429bc375b1",
                     };
                     pGConfig.Name = TextBox_Name.Text;
-
+                    pGConfig.Code = TextBox_Code.Text;
 
                     pGConfig.SendTopic = MQTTService.ServiceConfig.SendTopic;
                     pGConfig.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;
@@ -120,6 +120,7 @@ namespace ColorVision.MQTT.Service
                         ID = "e29b14429bc375b1",
                     };
                     config.Name = TextBox_Name.Text;
+                    config.Code = TextBox_Code.Text;
                     config.SendTopic = MQTTService.ServiceConfig.SendTopic;
                     config.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;
                     sysResource.Value = JsonConvert.SerializeObject(config);
@@ -136,6 +137,7 @@ namespace ColorVision.MQTT.Service
                         ID = "e29b14429bc375b1",
                     };
                     config.Name = TextBox_Name.Text;
+                    config.Code = TextBox_Code.Text;
                     config.SendTopic = MQTTService.ServiceConfig.SendTopic;
                     config.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;
                     sysResource.Value = JsonConvert.SerializeObject(config);
@@ -150,6 +152,7 @@ namespace ColorVision.MQTT.Service
                         ID = "e29b14429bc375b1",
                     };
                     config.Name = TextBox_Name.Text;
+                    config.Code = TextBox_Code.Text;
                     config.SendTopic = MQTTService.ServiceConfig.SendTopic;
                     config.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;
                     sysResource.Value = JsonConvert.SerializeObject(config);

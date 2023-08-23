@@ -127,7 +127,8 @@ namespace ColorVision.MQTT.Spectrum
         {
             MsgSend msg = new MsgSend
             {
-                EventName = "GetParam"
+                EventName = "GetParam",
+                ServiceName = Config.Code,
             };
             PublishAsyncClient(msg);
         }
@@ -137,6 +138,7 @@ namespace ColorVision.MQTT.Spectrum
             MsgSend msg = new MsgSend
             {
                 EventName = "SetParam",
+                ServiceName = Config.Code,
                 Params = new AutoIntTimeParam()
                 {
                     iLimitTime = iLimitTime,
@@ -151,7 +153,8 @@ namespace ColorVision.MQTT.Spectrum
         {
             MsgSend msg = new MsgSend
             {
-                EventName = "Open"
+                EventName = "Open",
+                ServiceName = Config.Code
             };
             PublishAsyncClient(msg);
             return true;
@@ -164,6 +167,7 @@ namespace ColorVision.MQTT.Spectrum
             {
                 EventName = "GetData",
                 SerialNumber = sn,
+                ServiceName = Config.Code,
                 Params = new GetDataParamMQTT()
                 {
                     IntTime = IntTime,
@@ -186,7 +190,8 @@ namespace ColorVision.MQTT.Spectrum
             //}
             MsgSend msg = new MsgSend
             {
-                EventName = "Close"
+                EventName = "Close",
+                ServiceName = Config.Code,
             };
             PublishAsyncClient(msg);
             return true;
@@ -197,6 +202,7 @@ namespace ColorVision.MQTT.Spectrum
             MsgSend msg = new MsgSend
             {
                 EventName = "InitDark",
+                ServiceName = Config.Code,
                 Params = new InitDarkParamMQTT()
                 {
                     IntTime = IntTime,
@@ -212,6 +218,7 @@ namespace ColorVision.MQTT.Spectrum
             MsgSend msg = new MsgSend
             {
                 EventName = "GetDataAuto",
+                ServiceName = Config.Code,
                 Params = new GetDataParamMQTT()
                 {
                     IntTime = IntTime,
@@ -229,6 +236,7 @@ namespace ColorVision.MQTT.Spectrum
             MsgSend msg = new MsgSend
             {
                 EventName = "GetDataAutoStop",
+                ServiceName = Config.Code,
             };
             PublishAsyncClient(msg);
             cmdMap.Clear();
