@@ -76,7 +76,7 @@ namespace ColorVision.MQTT.Spectrum
 
             GridView gridView = new GridView();
 
-            List<string> headers = new List<string> { "序号", "测量时间", "IP", "亮度Lv(cd/m2)", "蓝光", "色度x", "色度y", "色度u", "色度v", "相关色温(K)", "主波长Ld(nm)", "色纯度(%)", "峰值波长Lp(nm)", "显色性指数Ra", "半波宽" };
+            List<string> headers = new List<string> { "序号", "测量时间", "IP", "亮度Lv(cd/m2)", "蓝光", "色度x", "色度y", "色度u", "色度v", "相关色温(K)", "主波长Ld(nm)", "色纯度(%)", "峰值波长Lp(nm)", "显色性指数Ra", "半波宽", "电压", "电流" };
 
             for (int i = 0; i < headers.Count; i++)
             {
@@ -253,8 +253,10 @@ namespace ColorVision.MQTT.Spectrum
                 Convert.ToString(Math.Round(colorParam.fLp, 1)),
                 Convert.ToString(Math.Round(colorParam.fRa, 2)),
                 Convert.ToString(Math.Round(colorParam.fHW, 4)),
+                string.Format("{0:0.0000}",data.V),
+                string.Format("{0:0.0000}",data.I),
 
-                data.ID.ToString()
+                data.ID.ToString(),
             };
 
 
