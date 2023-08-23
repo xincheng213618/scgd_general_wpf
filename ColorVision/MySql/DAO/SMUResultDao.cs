@@ -58,8 +58,7 @@ namespace ColorVision.MySql.DAO
                 else
                     row["batch_id"] = item.Bid;
 
-                if (item.IsSourceV) row["is_source_v"] = 1;
-                else row["is_source_v"] = 0;
+                row["is_source_v"] = item.IsSourceV;
 
                 row["src_value"] = item.SrcValue;
                 row["limit_value"] = item.LimitValue;
@@ -100,7 +99,7 @@ namespace ColorVision.MySql.DAO
                 Id = item.Field<int>("id"),
                 Pid = item.Field<int?>("pid"),
                 Bid = item.Field<string>("batch_id"),
-                IsSourceV = item.Field<UInt64>("is_source_v")==1,
+                IsSourceV = item.Field<bool>("is_source_v"),
                 SrcValue = item.Field<float>("src_value"),
                 LimitValue = item.Field<float>("limit_value"),
                 VResult = item.Field<float>("v_result"),
