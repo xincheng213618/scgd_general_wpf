@@ -18,6 +18,9 @@
             <Border>
                 <TextBlock Text="{Binding UserName}"  HorizontalAlignment="Center"/>
             </Border>
+            <StackPanel HorizontalAlignment="Right" VerticalAlignment="Bottom">
+                <Button Content="高级设置" Click="Button_Click_1" />
+            </StackPanel>
         </Grid>
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
