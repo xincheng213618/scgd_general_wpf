@@ -458,5 +458,13 @@ namespace ColorVision.MQTT.Spectrum
             ListCol1.Width = new GridLength(1, GridUnitType.Star);
             ListCol2.Width = GridLength.Auto;
         }
+
+        internal void Clear()
+        {
+            wpfplot1.Plot.Clear();
+            listView1.Items.Clear();
+            listView2.Items.Clear();
+            ResultNum = 0;
+        }
     }
 }
