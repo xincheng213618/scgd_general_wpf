@@ -126,9 +126,6 @@
                                         <Button Content="打开测试图像"  Margin="10,0" Click="Button_Click"/>
                                         <Button Content="绘制测试图形"  Margin="10,0"  Click="Button1_Click"/>
                                         <Button Content="视频测试"  Margin="10,0"  Click="Button4_Click"/>
-                                        <Button Content="添加imageview"  Margin="10,0"  Click="Button5_Click"/>
-                                        <Button Content="添加chartview"  Margin="10,0"  Click="Button51_Click"/>
-
                                         <TextBlock/>
                                         <Button Content="1窗口" Tag="0" Margin="10,0"  Click="Button10_Click"/>
                                         <Button Content="2窗口" Tag="1" Margin="10,0"  Click="Button10_Click"/>
