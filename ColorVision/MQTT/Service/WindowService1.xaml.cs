@@ -91,7 +91,8 @@ namespace ColorVision.Service
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-
+            ServiceSettingWindow seriesExportAsSettingWindow = new ServiceSettingWindow();
+            seriesExportAsSettingWindow.Show();
         }
     }
 }
