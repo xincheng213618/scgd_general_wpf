@@ -41,5 +41,12 @@ namespace ColorVision
             STNodeEditorMain.ActiveChanged += (s, e) => STNodePropertyGrid1.SetNode(STNodeEditorMain.ActiveNode);
             flowEngine.AttachLoader(STNodeEditorMain);
         }
+
+        private void UserControl_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            winf1.Height = (int)this.ActualHeight;
+            winf1.Width = (int)this.ActualWidth;
+
+        }
     }
 }
