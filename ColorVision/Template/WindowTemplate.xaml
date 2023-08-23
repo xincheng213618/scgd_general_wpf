@@ -84,8 +84,6 @@
                 </ResourceDictionary>
             </Grid.Resources>
             <hc:PropertyGrid x:Name="PropertyGrid1"/>-->
-
-
             <xctk:PropertyGrid   x:Name="PropertyGrid1" />
 
 

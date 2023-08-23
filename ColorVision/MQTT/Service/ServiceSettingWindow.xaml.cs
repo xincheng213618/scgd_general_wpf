@@ -9,6 +9,7 @@ using System.Linq;
 using System.Windows.Shapes;
 using System.Net;
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 
 namespace ColorVision.MQTT.Service
 {
@@ -47,22 +48,67 @@ namespace ColorVision.MQTT.Service
 
         private void Button_Click_4(object sender, RoutedEventArgs e)
         {
+            if (SeriesExportTreeView2.SelectedItem is MQTTDevice mQTTDevice)
+            {
+                MQTTDevices1.Remove(mQTTDevice);
+                MQTTDevices1.Insert(MQTTDevices1.Count, mQTTDevice);
+                mQTTDevice.IsSelected = true;
+            }
+        }
 
+        public static async void GetFocus(TreeView treeView,int index)
+        {
+            await Task.Delay(1);
+
+            TreeViewItem firstNode = treeView.ItemContainerGenerator.ContainerFromIndex(index) as TreeViewItem;
+
+            // 选中第一个节点
+            if (firstNode != null)
+            {
+                firstNode.IsSelected = true;
+                firstNode.Focus();
+            }
         }
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
+            if (SeriesExportTreeView2.SelectedItem is MQTTDevice mQTTDevice)
+            {
+                int index = MQTTDevices1.IndexOf(mQTTDevice);
+                if (index -1 >=0)
+                {
+                    MQTTDevices1.Remove(mQTTDevice);
+                    MQTTDevices1.Insert(index - 1, mQTTDevice);
+                    mQTTDevice.IsSelected = true;
+                }
 
+            }
         }
 
         private void Button_Click_3(object sender, RoutedEventArgs e)
         {
+            if (SeriesExportTreeView2.SelectedItem is MQTTDevice mQTTDevice)
+            {
+                int index = MQTTDevices1.IndexOf(mQTTDevice);
+                if (index +1< MQTTDevices1.Count)
+                {
+                    MQTTDevices1.Remove(mQTTDevice);
+                    MQTTDevices1.Insert(index+1, mQTTDevice);
+                    mQTTDevice.IsSelected = true;
+                }
 
+
+            }
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-
+            if (SeriesExportTreeView2.SelectedItem is MQTTDevice mQTTDevice)
+            {
+                MQTTDevices1.Remove(mQTTDevice);
+                MQTTDevices1.Insert(0,mQTTDevice);
+                mQTTDevice.IsSelected = true;
+            }
         }
 
         private void Grid_MouseUp(object sender, MouseButtonEventArgs e)

@@ -15,6 +15,9 @@ namespace ColorVision.MQTT
         public virtual bool IsAlive { get; set; }
         public virtual DateTime LastAliveTime { get; set; }
 
+        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; NotifyPropertyChanged(); } }
+        private bool _IsSelected;
+
         public void Dispose()
         {
             GC.SuppressFinalize(this);

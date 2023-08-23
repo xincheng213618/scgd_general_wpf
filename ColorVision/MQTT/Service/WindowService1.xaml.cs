@@ -10,6 +10,7 @@ using ColorVision.SettingUp;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -87,18 +88,29 @@ namespace ColorVision.Service
             }
         }
 
+
+
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            ServiceSettingWindow seriesExportAsSettingWindow = new ServiceSettingWindow();
-            seriesExportAsSettingWindow.Closed += (s, e) =>
+            ServiceSettingWindow Service = new ServiceSettingWindow();
+            Service.Closed += async (s, e) =>
             {
-                if (seriesExportAsSettingWindow.MQTTDevices1.Count > 0)
+                if (Service.MQTTDevices1.Count > 0)
                 {
-                    MQTTDevices = seriesExportAsSettingWindow.MQTTDevices1;
+                    MQTTDevices = Service.MQTTDevices1;
                     TreeView1.ItemsSource = MQTTDevices;
                 }
+                await Task.Delay(10);
+                TreeViewItem firstNode = TreeView1.ItemContainerGenerator.ContainerFromIndex(1) as TreeViewItem;
+
+                // 选中第一个节点
+                if (firstNode != null)
+                {
+                    firstNode.IsSelected = true;
+                    firstNode.Focus();
+                }
             };
-            seriesExportAsSettingWindow.Show();
+            Service.ShowDialog();
 
         }
     }
