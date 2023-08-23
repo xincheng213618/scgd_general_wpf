@@ -90,7 +90,16 @@ namespace ColorVision.Service
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             ServiceSettingWindow seriesExportAsSettingWindow = new ServiceSettingWindow();
+            seriesExportAsSettingWindow.Closed += (s, e) =>
+            {
+                if (seriesExportAsSettingWindow.MQTTDevices1.Count > 0)
+                {
+                    MQTTDevices = seriesExportAsSettingWindow.MQTTDevices1;
+                    TreeView1.ItemsSource = MQTTDevices;
+                }
+            };
             seriesExportAsSettingWindow.Show();
+
         }
     }
 }

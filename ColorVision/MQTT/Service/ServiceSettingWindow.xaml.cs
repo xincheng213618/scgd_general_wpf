@@ -28,8 +28,13 @@ namespace ColorVision.MQTT.Service
 
         private void Window_Initialied(object sender, EventArgs e)
         {
-            MQTTDevices = ServiceControl.GetInstance().MQTTDevices;
+            MQTTDevices = new ObservableCollection<MQTTDevice>();
             MQTTDevices1 = new ObservableCollection<MQTTDevice>();
+
+            foreach (var item in ServiceControl.GetInstance().MQTTDevices)
+            {
+                MQTTDevices.Add(item);
+            }
 
             SeriesExportTreeView1.ItemsSource = MQTTDevices;
             SeriesExportTreeView2.ItemsSource = MQTTDevices1;
@@ -123,7 +128,7 @@ namespace ColorVision.MQTT.Service
 
         private void OK_Click(object sender, RoutedEventArgs e)
         {
-
+            this.Close();
         }
 
 
