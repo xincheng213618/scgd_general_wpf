@@ -75,30 +75,47 @@ namespace ColorVision.MQTT.Spectrum
             {
                 if (e.DeviceStatus == DeviceStatus.Opened)
                 {
-                    connectBtn.Content = "关闭";
+                    btn_connect.Content = "关闭";
                 }
                 else if(e.DeviceStatus == DeviceStatus.Closed)
                 {
-                    connectBtn.Content = "打开";
+                    btn_connect.Content = "打开";
                 }
                 else if (e.DeviceStatus == DeviceStatus.Opening)
                 {
-                    connectBtn.Content = "打开中";
+                    btn_connect.Content = "打开中";
                 }
                 else if (e.DeviceStatus == DeviceStatus.Closing)
                 {
-                    connectBtn.Content = "关闭中";
+                    btn_connect.Content = "关闭中";
+                }
+                else if (e.DeviceStatus == DeviceStatus.Busy)
+                {
+                    enableBtn(false);
+                }
+                else if (e.DeviceStatus == DeviceStatus.Free)
+                {
+                    enableBtn(true);
                 }
 
                 if (e.IsAutoGetData)
                 {
-                    autoTest.Content = "取消自动测试";
+                    btn_autoTest.Content = "取消自动测试";
                 }
                 else
                 {
-                    autoTest.Content = "自动测试";
+                    btn_autoTest.Content = "自动测试";
                 }
             };
+        }
+
+        private void enableBtn(bool enable)
+        {
+            btn_connect.IsEnabled = enable;
+            btn_autoTest.IsEnabled = enable;
+            btn_oneTest.IsEnabled = enable;
+            btn_oneInitDark.IsEnabled = enable;
+            btn_getPatam.IsEnabled = enable;
         }
 
         public void SpectrumDrawPlot(SpectumData data)
@@ -115,17 +132,17 @@ namespace ColorVision.MQTT.Spectrum
 
         private void Button_Click_Open(object sender, RoutedEventArgs e)
         {
-            string btnTitle = connectBtn.Content.ToString();
+            string btnTitle = btn_connect.Content.ToString();
             if (!string.IsNullOrWhiteSpace(btnTitle))
             {
                 if (btnTitle.Equals("打开", StringComparison.Ordinal))
                 {
-                    connectBtn.Content = "打开中";
+                    btn_connect.Content = "打开中";
                     SpectrumService.Open();
                 }
                 else
                 {
-                    connectBtn.Content = "关闭中";
+                    btn_connect.Content = "关闭中";
                     SpectrumService.Close();
                 }
             }
@@ -148,16 +165,16 @@ namespace ColorVision.MQTT.Spectrum
         }
         private void Button_Click_AutoTest(object sender, RoutedEventArgs e)
         {
-            string btnTitle = autoTest.Content.ToString();
+            string btnTitle = btn_autoTest.Content.ToString();
             if (!string.IsNullOrWhiteSpace(btnTitle) && btnTitle.Equals("自动测试", StringComparison.Ordinal))
             {
                 SpectrumService.GetDataAuto((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value, AutoIntTime.IsChecked ?? false, AutoDark.IsChecked ?? false);
-                autoTest.Content = "取消自动测试";
+                btn_autoTest.Content = "取消自动测试";
             }
             else
             {
                 SpectrumService.GetDataAutoStop();
-                autoTest.Content = "自动测试";
+                btn_autoTest.Content = "自动测试";
             }
         }
         private void Button_Click_Init_Dark(object sender, RoutedEventArgs e)
