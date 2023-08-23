@@ -157,6 +157,7 @@ namespace ColorVision.MQTT.Service
             {
                 if (ctl is MQTTSpectrumControl spectrum)
                 {
+                    spectrum.SpectrumClear();
                     foreach (SpectumData data in datas)
                     {
                         spectrum.SpectrumDrawPlot(data);

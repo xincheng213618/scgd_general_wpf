@@ -118,6 +118,10 @@ namespace ColorVision.MQTT.Spectrum
             btn_getPatam.IsEnabled = enable;
         }
 
+        public void SpectrumClear()
+        {
+            View.Clear();
+        }
         public void SpectrumDrawPlot(SpectumData data)
         {
             View.SpectrumDrawPlot(data);
