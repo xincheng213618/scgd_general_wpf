@@ -326,7 +326,7 @@ namespace ColorVision.MySql
 
         public virtual DataTable GetTableAllByPid(int pid)
         {
-            string sql = $"select * from {GetTableName()} where pid={pid}" + GetDelSQL(true);
+            string sql = $"select * from {GetTableName()} where pid={pid}" + GetDelSQL(true) + $" order by {PKField}";
             DataTable d_info = GetData(sql);
             return d_info;
         }

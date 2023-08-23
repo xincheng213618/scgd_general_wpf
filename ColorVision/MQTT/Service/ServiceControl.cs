@@ -38,7 +38,7 @@ namespace ColorVision.MQTT.Service
 
         public UserConfig UserConfig { get; set; }
 
-        private ResultService spectumResult;
+        private ResultService resultService;
 
         public StackPanel MQTTStackPanel { get; set; }
 
@@ -47,7 +47,7 @@ namespace ColorVision.MQTT.Service
         {
             ResourceService = new SysResourceService();
             DictionaryService = new SysDictionaryService();
-            spectumResult = new ResultService();
+            resultService = new ResultService();
             MQTTServices = new ObservableCollection<MQTTServiceKind>();
             MQTTDevices = new ObservableCollection<MQTTDevice>();
             UserConfig = GlobalSetting.GetInstance().SoftwareConfig.UserConfig;
@@ -107,9 +107,11 @@ namespace ColorVision.MQTT.Service
         public void SpectrumDrawPlotFromDB(string bid)
         {
             List<SpectumData> datas = new List<SpectumData>();
-            List<SpectumResultModel> result = spectumResult.SpectumSelectBySN(bid);
-            foreach (var item in result)
+            List<SpectumResultModel> resultSpec = resultService.SpectumSelectBySN(bid);
+            List<SMUResultModel> resultSMU = resultService.SMUSelectBySN(bid);
+            for(int i=0;i< resultSpec.Count; i++)
             {
+                var item = resultSpec[i];
                 ColorParam param = new ColorParam()
                 {
                     fx = item.x,
@@ -134,12 +136,23 @@ namespace ColorVision.MQTT.Service
                     fSpect1 = item.Spect1,
                     fSpect2 = item.Spect2,
                     fInterval = item.Interval,
-                    fPL = JsonConvert.DeserializeObject<float[]>(item.PL??string.Empty)?? System.Array.Empty<float>(),
+                    fPL = JsonConvert.DeserializeObject<float[]>(item.PL ?? string.Empty) ?? System.Array.Empty<float>(),
                 };
-                SpectumData data = new SpectumData(item.Id,param);
-                datas.Add(data);
+                SpectumData data = new SpectumData(item.Id, param);
+                if (i < resultSMU.Count)
+                {
+                    data.V = resultSMU[i].VResult;
+                    data.I = resultSMU[i].IResult;
+                }
+                else
+                {
+                    data.V = float.NaN;
+                    data.I = float.NaN;
+                }
 
+                datas.Add(data);
             }
+
             foreach (UserControl ctl in MQTTStackPanel.Children)
             {
                 if (ctl is MQTTSpectrumControl spectrum)
@@ -156,7 +169,7 @@ namespace ColorVision.MQTT.Service
         public int ResultBatchSave(string sn)
         {
             BatchResultMasterModel model = new BatchResultMasterModel(sn, UserConfig.TenantId);
-            return spectumResult.BatchSave(model);
+            return resultService.BatchSave(model);
         }
 
         public void Reload()
