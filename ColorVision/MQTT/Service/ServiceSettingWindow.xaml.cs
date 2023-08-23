@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Shapes;
 using System.Net;
+using System.Collections.ObjectModel;
 
 namespace ColorVision.MQTT.Service
 {
@@ -16,11 +17,22 @@ namespace ColorVision.MQTT.Service
     /// </summary>
     public partial class ServiceSettingWindow : Window
     {
+        public ObservableCollection<MQTTDevice> MQTTDevices { get; set; }
+        public ObservableCollection<MQTTDevice> MQTTDevices1 { get; set; }
 
         AdornerLayer mAdornerLayer { get; set; }
         public ServiceSettingWindow()
         {
             InitializeComponent();
+        }
+
+        private void Window_Initialied(object sender, EventArgs e)
+        {
+            MQTTDevices = ServiceControl.GetInstance().MQTTDevices;
+            MQTTDevices1 = new ObservableCollection<MQTTDevice>();
+
+            SeriesExportTreeView1.ItemsSource = MQTTDevices;
+            SeriesExportTreeView2.ItemsSource = MQTTDevices1;
         }
 
         private void TreeViewItem_Selected(object sender, RoutedEventArgs e)
@@ -65,21 +77,42 @@ namespace ColorVision.MQTT.Service
 
         private void Button_Click_04(object sender, RoutedEventArgs e)
         {
-
+            foreach (var item in MQTTDevices1)
+            {
+                if (!MQTTDevices.Contains(item))
+                    MQTTDevices.Add(item);
+            }
+            MQTTDevices1.Clear();
         }
 
         private void Button_Click_03(object sender, RoutedEventArgs e)
         {
-
+            if (SeriesExportTreeView2.SelectedItem is MQTTDevice mQTTDevice)
+            {
+                MQTTDevices1.Remove(mQTTDevice);
+                MQTTDevices.Add(mQTTDevice);
+            }
         }
 
         private void Button_Click_02(object sender, RoutedEventArgs e)
         {
-
+            if (SeriesExportTreeView1.SelectedItem is MQTTDevice mQTTDevice)
+            {
+                MQTTDevices.Remove(mQTTDevice);
+                MQTTDevices1.Add(mQTTDevice);
+            }
         }
 
         private void Button_Click_01(object sender, RoutedEventArgs e)
         {
+            foreach (var item in MQTTDevices)
+            {
+
+                if (!MQTTDevices1.Contains(item))
+                    MQTTDevices1.Add(item);
+
+            }
+            MQTTDevices.Clear();
 
         }
 
@@ -93,10 +126,7 @@ namespace ColorVision.MQTT.Service
 
         }
 
-        private void BaseWindow_Initialied(object sender, EventArgs e)
-        {
 
-        }
 
         private void Button_Click_0(object sender, RoutedEventArgs e)
         {

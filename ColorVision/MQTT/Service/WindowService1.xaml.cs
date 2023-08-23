@@ -70,9 +70,7 @@ namespace ColorVision.Service
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-
-            ServiceControl.GetInstance().GenContorl();
-
+            ServiceControl.GetInstance().GenControl(MQTTDevices);
 
             this.Close();
         }

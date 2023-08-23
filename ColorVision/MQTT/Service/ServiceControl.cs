@@ -57,6 +57,47 @@ namespace ColorVision.MQTT.Service
         }
 
 
+        public void GenControl(ObservableCollection<MQTTDevice> MQTTDevices)
+        {
+            MQTTStackPanel.Children.Clear();
+            foreach (var item in MQTTDevices)
+            {
+                if (item is DeviceCamera deviceCamera)
+                {
+                    MQTTCameraControl1 mQTTCameraControl = new MQTTCameraControl1(deviceCamera.CameraService);
+                    deviceCamera.CameraService.FileHandler += (s, e) =>
+                    {
+                        if (ViewGridManager.GetInstance().Views[1] is ImageView imageView)
+                        {
+                            imageView.OpenImage(e);
+                        }
+                    };
+                    MQTTStackPanel.Children.Add(mQTTCameraControl);
+
+                }
+                else if (item is DevicePG devicePG)
+                {
+                    MQTTPGControl mQTTPGControl = new MQTTPGControl(devicePG.PGService);
+                    MQTTStackPanel.Children.Add(mQTTPGControl);
+                }
+                else if (item is DeviceSpectrum deviceSpectrum)
+                {
+                    MQTTSpectrumControl mQTTSpectrumControl = new MQTTSpectrumControl(deviceSpectrum);
+                    MQTTStackPanel.Children.Add(mQTTSpectrumControl);
+                }
+                else if (item is DeviceSMU smu)
+                {
+                    MQTTSMUControl mQTTSMUControl = new MQTTSMUControl(smu);
+                    MQTTStackPanel.Children.Add(mQTTSMUControl);
+                }
+                else if (item is DeviceSensor deviceSensor)
+                {
+                    HandyControl.Controls.Growl.Info("SensorService开发中");
+                }
+
+            }
+        }
+
         public void GenContorl()
         {
             MQTTStackPanel.Children.Clear();
