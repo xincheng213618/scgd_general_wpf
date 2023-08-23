@@ -43,8 +43,8 @@ namespace ColorVision.MQTT.SMU
     public class SMUGetDataParam
     {
         public bool IsSourceV { set; get; }
-        public double MeasureVal { set; get; }
-        public double LimitVal { set; get; }
+        public double MeasureValue { set; get; }
+        public double LimitValue { set; get; }
     }
     
     public class SMUScanParam

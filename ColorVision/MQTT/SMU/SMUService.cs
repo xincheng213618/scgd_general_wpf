@@ -120,7 +120,7 @@ namespace ColorVision.MQTT.SMU
             MsgSend msg = new MsgSend
             {
                 EventName = "GetData",
-                Params = new SMUGetDataParam() { IsSourceV = isSourceV, MeasureVal = measureVal, LimitVal = lmtVal }
+                Params = new SMUGetDataParam() { IsSourceV = isSourceV, MeasureValue = measureVal, LimitValue = lmtVal }
             };
             PublishAsyncClient(msg);
             return true;
