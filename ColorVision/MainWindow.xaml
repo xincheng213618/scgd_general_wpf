@@ -76,6 +76,7 @@
                     <MenuItem Header="MQTT日志(_Q)" Click="MenuItem_Click"/>
                     <MenuItem Header="MQTT列表(_L)" Click="MenuItem12_Click"/>
                     <MenuItem Header="MQTT服务(_S)" Click="MenuItem13_Click"/>
+                    <MenuItem Header="登录"  Click="Login_Click"/>
 
                     <Separator/>
                     <MenuItem Header="设置(_O)"  Click="MenuItem_Click_2"   InputGestureText="Ctrl + I"  >

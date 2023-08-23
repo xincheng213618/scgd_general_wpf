@@ -394,5 +394,11 @@ namespace ColorVision
                 ViewGridManager.SetViewGrid(nums);
             }
         }
+
+        private void Login_Click(object sender, RoutedEventArgs e)
+        {
+            LoginWindow loginWindow = new LoginWindow();
+            loginWindow.ShowDialog();
+        }
     }
 }
