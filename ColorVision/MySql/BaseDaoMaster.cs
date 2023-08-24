@@ -134,8 +134,11 @@ namespace ColorVision.MySql
         {
             string andSQL = " ";
             string isDelSQL = " ";
-            if (hasAnd) andSQL = " and ";
-            if (_IsLogicDel) isDelSQL = "is_delete=0";
+            if (_IsLogicDel)
+            {
+                if (hasAnd) andSQL = " and ";
+                isDelSQL = "is_delete=0";
+            }
             return andSQL + isDelSQL;
         }
 
@@ -323,7 +326,7 @@ namespace ColorVision.MySql
 
         public virtual DataTable GetTableAllByPid(int pid)
         {
-            string sql = $"select * from {GetTableName()} where pid={pid}" + GetDelSQL(true);
+            string sql = $"select * from {GetTableName()} where pid={pid}" + GetDelSQL(true) + $" order by {PKField}";
             DataTable d_info = GetData(sql);
             return d_info;
         }
@@ -433,30 +436,37 @@ namespace ColorVision.MySql
             }
             return row;
         }
-
         public virtual DataTable GetDataTable(string? tableName = null)
         {
             DataTable d_info = new DataTable(tableName);
             CreateColumns(d_info);
             return d_info;
         }
-
-
         public int DeleteAll(int tenantId)
         {
             string sql = $"update {TableName} set is_delete=1 where tenant_id={tenantId}";
+            if (!IsLogicDel)
+            {
+                sql = $"delete from {TableName} where tenant_id={tenantId}";
+            }
             return ExecuteNonQuery(sql);
         }
-
         public int DeleteAllByPid(int pid)
         {
             string sql = $"update {TableName} set is_delete=1 where pid={pid}";
+            if (!IsLogicDel)
+            {
+                sql = $"delete from {TableName} where pid={pid}";
+            }
             return ExecuteNonQuery(sql);
         }
-
         public int DeleteById(int id)
         {
             string sql = $"update {TableName} set is_delete=1 where id=@id";
+            if (!IsLogicDel)
+            {
+                sql = $"delete from {TableName} where id=@id";
+            }
             Dictionary<string, object> param = new Dictionary<string, object>
             {
                 { "id", id }

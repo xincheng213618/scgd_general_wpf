@@ -21,6 +21,11 @@ namespace ColorVision.MySql.Service
             return resourceDao.DeleteById(id);
         }
 
+        internal int DeleteAllByPid(int pid)
+        {
+            return resourceDao.DeleteAllByPid(pid);
+        }
+
         internal List<SysResourceModel> GetAllDevices(int tenantId)
         {
             return resourceDao.GetPidIsNotNull(tenantId);

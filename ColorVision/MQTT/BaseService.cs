@@ -1,4 +1,5 @@
-﻿using ColorVision.MVVM;
+﻿using ColorVision.MQTT.Camera;
+using ColorVision.MVVM;
 using ColorVision.SettingUp;
 using Google.Protobuf.WellKnownTypes;
 using HandyControl.Expression.Shapes;
@@ -8,9 +9,9 @@ using MQTTnet.Client;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
@@ -25,9 +26,17 @@ namespace ColorVision.MQTT
     /// </summary>
     public interface IMQTTServiceConfig
     {
-        public string SubscribeTopic { get; }
-        public string SendTopic { get; }
+        /// <summary>
+        /// 发送信道
+        /// </summary>
+        public string SendTopic { get; set; }
+
+        /// <summary>
+        /// 监听信道
+        /// </summary>
+        public string SubscribeTopic { get; set; }
     }
+
     /// <summary>
     /// 心跳接口
     /// </summary>
@@ -38,36 +47,44 @@ namespace ColorVision.MQTT
         public bool IsAlive { get; set; }
     }
 
-    public class HeartbeatService: BaseService
+    public class BaseService<T> : BaseService where T :BaseDeviceConfig
     {
-        public ServiceConfig ServiceConfig { get; set; }
-        public HeartbeatService(ServiceConfig serviceConfig) : base()
+        public T Config { get; set; }
+
+        public override string SubscribeTopic { get => Config.SubscribeTopic; set { Config.SubscribeTopic = value; } }
+        public override string SendTopic { get => Config.SendTopic; set { Config.SendTopic = value; } }
+
+        public override bool IsAlive { get => Config.IsAlive; set => Config.IsAlive = value; }
+
+        public override DateTime LastAliveTime { get => Config.LastAliveTime; set => Config.LastAliveTime = value; }
+
+        public BaseService(T config)
         {
-            ServiceConfig = serviceConfig;
+            Config = config;
+            ServiceName = Config.Name;
+
+            SendTopic = Config.SendTopic;
+            SubscribeTopic = Config.SubscribeTopic;
             MQTTControl.SubscribeCache(SubscribeTopic);
         }
-        public override string SubscribeTopic { get => ServiceConfig.SubscribeTopic; set { ServiceConfig.SubscribeTopic = value; } }
-        public override string SendTopic { get => ServiceConfig.SendTopic; set { ServiceConfig.SendTopic = value; } }
-
-        public override bool IsAlive { get => ServiceConfig.IsAlive; set => ServiceConfig.IsAlive = value; }
-         
-        public override DateTime LastAliveTime { get => ServiceConfig.LastAliveTime; set => ServiceConfig.LastAliveTime = value; }
-
-
     }
 
 
-
-    public class BaseService:ViewModelBase, IHeartbeat, IMQTTServiceConfig, IDisposable
+    public class BaseService:ViewModelBase, IHeartbeat, IMQTTServiceConfig, IDisposable 
     {
         internal static readonly ILog log = LogManager.GetLogger(typeof(BaseService));
+
         public MQTTConfig MQTTConfig { get; set; }
         public MQTTSetting MQTTSetting { get; set; }
 
+
         public event EventHandler Connected;
+
+        public Dictionary<string, MsgSend> cmdMap { get; set; }
 
         public BaseService()
         {
+            cmdMap = new Dictionary<string, MsgSend>();
             MQTTControl = MQTTControl.GetInstance();
             MQTTConfig = MQTTControl.MQTTConfig;
             MQTTSetting = MQTTControl.MQTTSetting;
@@ -120,6 +137,7 @@ namespace ColorVision.MQTT
                             foundMsgRecord.MsgReturn = json;
                             foundMsgRecord.MsgRecordState = json.Code == 0 ? MsgRecordState.Success : MsgRecordState.Fail;
                             MsgRecords.Remove(foundMsgRecord);
+                            MsgReceived?.Invoke(foundMsgRecord.MsgSend, json);
                         }
                     }
                     ///这里是因为这里先加载相机上，所以加在这里
@@ -127,18 +145,13 @@ namespace ColorVision.MQTT
                 }
                 catch (Exception ex)
                 {
-                    log.Warn(ex);
+                    if (log.IsErrorEnabled)
+                        log.Error(ex);
                     return Task.CompletedTask;
                 }
             }
             return Task.CompletedTask;
         }
-
-
-
-        public string NickName { get => _NickName; set { _NickName = value; NotifyPropertyChanged(); } }
-        private string _NickName = string.Empty;
-
 
         private void Timer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
         {
@@ -152,13 +165,17 @@ namespace ColorVision.MQTT
             }
         }
         public MsgReturnHandler MsgReturnReceived { get; set; }
+        public MsgHandler MsgReceived { get; set; }
+
+        
 
 
         public virtual string SubscribeTopic { get; set; }
         public virtual string SendTopic { get; set; }
         public MQTTControl MQTTControl { get; set; }
         public ulong ServiceID { get; set; }
-        public string CameraID { get; set; }
+        public string SnID { get; set; }
+        public string ServiceName { get; set; }
 
         public virtual DateTime LastAliveTime { get => _LastAliveTime; set { _LastAliveTime = value; NotifyPropertyChanged(); } } 
         private DateTime _LastAliveTime = DateTime.MinValue;
@@ -179,20 +196,24 @@ namespace ColorVision.MQTT
         /// <param name="msg"></param>
         internal virtual void PublishAsyncClient(MsgSend msg)
         {
-            Guid guid = Guid.NewGuid();
-
-            msg.ServiceName = SendTopic;
+            Guid guid = Guid.NewGuid(); 
             msg.MsgID = guid;
             msg.ServiceID = ServiceID;
-            msg.CameraID = CameraID;
+            msg.SnID = SnID;
+            ///这里是为了兼容只前的写法，后面会修改掉
+            if (string.IsNullOrWhiteSpace(msg.ServiceName))
+            {
+                msg.ServiceName = SendTopic;
+            }
             string json = JsonConvert.SerializeObject(msg, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
 
             Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, json, false));
 
-            if (msg.EventName == "CM_GetAllCameraID")
+            if (msg.EventName == "CM_GetAllSnID")
                 return;
 
             MsgRecord msgRecord = new MsgRecord {SendTopic=SendTopic,SubscribeTopic =SubscribeTopic ,MsgID = guid.ToString(), SendTime = DateTime.Now, MsgSend = msg,MsgRecordState = MsgRecordState.Send};
+            
             MQTTSetting.MsgRecords.Insert(0,msgRecord);
 
             MsgRecords.Add(msgRecord);

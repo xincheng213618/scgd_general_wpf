@@ -46,29 +46,60 @@ namespace ColorVision.MQTT
         string svrName = "FlowControl";
         public FlowControlData FlowControlData { get; set; }
 
-        MQTTControl MQTTControl;
-
+        private MQTTControl MQTTControl;
+        private FlowEngineLib.FlowEngineControl flowEngine;
 
         public string SubscribeTopic { get; set; }
         public string SendTopic { get; set; }
+        public string SerialNumber { get; set; }
 
-        public FlowControl(MQTTControl mQTTControl,string topic)
+        public FlowControl(MQTTControl mQTTControl, string topic)
         {
             this.MQTTControl = mQTTControl;
-            this.SendTopic = "FLOW/CMD/" +topic;
+            this.SendTopic = "FLOW/CMD/" + topic;
             this.SubscribeTopic = "FLOW/STATUS/" + topic;
             MQTTControl.SubscribeCache(SubscribeTopic);
             MQTTControl.ApplicationMessageReceivedAsync += MQTTControl_ApplicationMessageReceivedAsync;
         }
 
+        public FlowControl(MQTTControl mQTTControl, FlowEngineLib.FlowEngineControl flowEngine) : this(mQTTControl, flowEngine.GetStartNodeName())
+        {
+            this.flowEngine = flowEngine;
+        }
+
+        public void Stop()
+        {
+            if (flowEngine == null)
+            {
+                FlowEngineLib.CVBaseDataFlow baseEvent = new FlowEngineLib.CVBaseDataFlow(svrName, "Stop", SerialNumber);
+
+                string Msg = JsonConvert.SerializeObject(baseEvent);
+                Application.Current.Dispatcher.Invoke(() => FlowMsg?.Invoke(Msg, new EventArgs()));
+                Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, Msg, false));
+
+            }
+            else
+            {
+                flowEngine.StopNode(SerialNumber);
+            }
+        }
 
         public void Start(string sn)
         {
-            FlowEngineLib.CVBaseDataFlow baseEvent = new FlowEngineLib.CVBaseDataFlow(svrName, "Start", sn);
+            SerialNumber = sn;
+            if (flowEngine == null)
+            {
+                FlowEngineLib.CVBaseDataFlow baseEvent = new FlowEngineLib.CVBaseDataFlow(svrName, "Start", sn);
 
-            string Msg = JsonConvert.SerializeObject(baseEvent);
-            Application.Current.Dispatcher.Invoke(() => FlowMsg?.Invoke(Msg, new EventArgs()));
-            Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, Msg, false));
+                string Msg = JsonConvert.SerializeObject(baseEvent);
+                Application.Current.Dispatcher.Invoke(() => FlowMsg?.Invoke(Msg, new EventArgs()));
+                Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, Msg, false));
+
+            }
+            else
+            {
+                flowEngine.StartNode(sn);
+            }
         }
 
 
@@ -81,7 +112,8 @@ namespace ColorVision.MQTT
 
         private Task MQTTControl_ApplicationMessageReceivedAsync(MQTTnet.Client.MqttApplicationMessageReceivedEventArgs arg)
         {
-            logger.Debug(JsonConvert.SerializeObject(arg));
+            if(logger.IsDebugEnabled)
+                logger.Debug(JsonConvert.SerializeObject(arg));
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {
                 string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
@@ -93,7 +125,7 @@ namespace ColorVision.MQTT
                         return Task.CompletedTask;
                     FlowControlData = json;
                     Application.Current.Dispatcher.Invoke(() => FlowData?.Invoke(FlowControlData, new EventArgs()));
-                    if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "OverTime")
+                    if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
                     {
                         Application.Current.Dispatcher.Invoke(() => FlowCompleted?.Invoke(FlowControlData, new EventArgs()));
                     }

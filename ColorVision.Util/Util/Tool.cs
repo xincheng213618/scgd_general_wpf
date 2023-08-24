@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Util
 {
-    public static class Tool
+    public static partial class Tool
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(Tool));
 

@@ -16,11 +16,12 @@
     <SolidColorBrush x:Key="TextBox.Focus.Border" Color="#FF569DE5"/>
     <Style TargetType="{x:Type TextBlock}">
         <Setter Property="VerticalAlignment" Value="Center"/>
+
     </Style>
 
 
-
     <Style TargetType="{x:Type TextBox}">
+        <Setter Property="BorderBrush" Value="#CCCEDB"/>
         <EventSetter  Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown" />
         <Setter Property="Template">
             <Setter.Value>

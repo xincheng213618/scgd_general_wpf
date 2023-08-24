@@ -273,17 +273,19 @@ namespace ColorVision.Template
                     CreateNewTemplate(TemplateControl.LedReusltParams, TextBox1.Text, new LedReusltParam());
                     break;
                 case WindowTemplateType.SxParm:
-                    CreateNewTemplate(TemplateControl.SxParams, TextBox1.Text, new SxParam());
+                    SxParam? sxParam = TemplateControl.AddSxParam(TextBox1.Text);
+                    if (sxParam != null) CreateNewTemplate(TemplateControl.SxParams, TextBox1.Text, sxParam);
+                    else MessageBox.Show("数据库创建POI模板失败");
                     break;
                 case WindowTemplateType.PoiParam:
-                        PoiParam? poiParam = TemplateControl.AddPoiParam(TextBox1.Text);
-                        if (poiParam != null) CreateNewTemplate(TemplateControl.PoiParams, TextBox1.Text, poiParam);
-                        else MessageBox.Show("数据库创建POI模板失败");
+                    PoiParam? poiParam = TemplateControl.AddPoiParam(TextBox1.Text);
+                    if (poiParam != null) CreateNewTemplate(TemplateControl.PoiParams, TextBox1.Text, poiParam);
+                    else MessageBox.Show("数据库创建POI模板失败");
                     break;
                 case WindowTemplateType.FlowParam:
-                        FlowParam? flowParam = TemplateControl.AddFlowParam(TextBox1.Text);
-                        if (flowParam != null) CreateNewTemplate(TemplateControl.FlowParams, TextBox1.Text, flowParam);
-                        else MessageBox.Show("数据库创建流程模板失败");
+                    FlowParam? flowParam = TemplateControl.AddFlowParam(TextBox1.Text);
+                    if (flowParam != null) CreateNewTemplate(TemplateControl.FlowParams, TextBox1.Text, flowParam);
+                    else MessageBox.Show("数据库创建流程模板失败");
                     break;
                 case WindowTemplateType.MeasureParm:
                     MeasureParam? measureParam = TemplateControl.AddMeasureParam(TextBox1.Text);
@@ -373,6 +375,8 @@ namespace ColorVision.Template
                             TemplateControl.LedReusltParams.RemoveAt(ListView1.SelectedIndex);
                             break;
                         case WindowTemplateType.SxParm:
+                            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+                                TemplateControl.ModMasterDeleteById(TemplateControl.SxParams[ListView1.SelectedIndex].Value.ID);
                             TemplateControl.SxParams.RemoveAt(ListView1.SelectedIndex);
                             break;
                         case WindowTemplateType.PoiParam:

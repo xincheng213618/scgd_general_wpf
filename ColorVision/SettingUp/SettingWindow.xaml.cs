@@ -42,6 +42,9 @@ namespace ColorVision.SettingUp
             {
                 cmbloglevel.Items.Add(it);
             });
+
+            //BitmapImage bitmapImage = new BitmapImage(new Uri(AppDomain.CurrentDomain.BaseDirectory + SoftwareConfig.UserConfig.UserImage));
+            //HeaderImage.Source = bitmapImage;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -116,10 +119,6 @@ namespace ColorVision.SettingUp
             }
         }
 
-        private void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            FocusManager.SetFocusedElement(this, null);
-        }
 
         private void TextBlock_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {

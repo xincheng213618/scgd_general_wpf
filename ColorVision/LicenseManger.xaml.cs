@@ -1,5 +1,5 @@
 ﻿using ColorVision.Controls;
-using ColorVision.MQTT;
+using ColorVision.MQTT.Camera;
 using ColorVision.MVVM;
 using ColorVision.Template;
 using System;
@@ -54,7 +54,7 @@ namespace ColorVision
             ListViewLicense.ItemsSource = LicenseConfigs;
 
             LicenseConfigs.Add(new LicenseConfig() { Name = "ColorVision", Sn = "0000005EAD286752E9BF44AD08D23250", Tag = $"免费版\n\r永久有效", IsCanImport = false });
-            MQTTCamera.MD5.ForEach(x =>
+            CameraService.MD5.ForEach(x =>
             {
                 LicenseConfigs.Add(new LicenseConfig() { Name = "相机", Sn = x, Tag = $"业务还在开发中" });
             });
@@ -70,7 +70,6 @@ namespace ColorVision
             {
                 string Key = File.ReadAllText(openFileDialog.FileName);
                 LicenseConfigs[ListViewLicense.SelectedIndex].Tag = $"{Key}";
-                MQTT.MQTTManager.GetInstance().MQTTCameras[0].SetLicense(LicenseConfigs[ListViewLicense.SelectedIndex].Sn, Key);
 
             }
 

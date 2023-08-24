@@ -1,25 +1,24 @@
-
-
 # scgd_general_wpf
 
-项目开发环境，NET 6.0 , WPF, C# , VS2022, Win11 
+项目开发环境，NET 6.0 , WPF, C# , VS2022 企业版, Win11 
 默认分辨率：1920x1080
 项目在版本相同的情况下，不支持多开
 
 ## 项目结构
 
-主程序：`ColorVision.exe`
+### ColorVision
+
+项目主程序
+
+### ColorVision.Util
+
+一些可以通用的代码剥离
+
+### cvColorVision
+
+调用原始工程中C++的相关代码
 
 ## 使用流程
-
-1、进行各种驱动、数据库、MQTT、主程序安装，初始化工作完成（包含配置文件、数据库脚本等）--------------有可能只有主程序
-2、启动主程序，配置系统相关参数（包括数据库、MQTT等参数），使用管理员对用户名和租户进行建权，使用用户名进行登录（拿到对应的权限和租户）
-3、在服务配置界面，根据权限（超级管理员所有功能都有）分为注册（set）或者发现（get）所有的服务，并拿到这些服务下当前的硬件资源id，并进行选择，完成服务的初始化。超级管理员还需要分配租户（现在可以视作服务）及对租户中的用户进行配置，用户可以看到自己所属租户的所有资源
-4、在设备配置界面，用户根据租户拿到所有的设备，进行选择并进行初始化（其实就是独占了资源）、取别名等操作，首先验证license，完成后摆放到界面上以供使用。
-
-## 程序流程细化
-
-### 服务配置
 
 #### MQTT配置
 
@@ -29,7 +28,7 @@
     "Host": "192.168.3.225",
     "Port": 1883,
     "UserName": "",
-    "UserPwd": "LbCpSUBF6\u002B4oGcYFXFTIOA=="
+    "UserPwd": ""
   }
 ```
 
@@ -41,10 +40,21 @@
     "Host": "192.168.3.250",
     "Port": 3306,
     "UserName": "root",
-    "UserPwd": "EvAEQ1ZzFHUIehz/AsHEZQ==",
+    "UserPwd": "123456@cv",
     "Database": "cv"
   }
 ```
+
+## 流程
+
+1、进行各种驱动、数据库、MQTT、主程序安装，初始化工作完成（包含配置文件、数据库脚本等）--------------有可能只有主程序
+2、启动主程序，配置系统相关参数（包括数据库、MQTT等参数），使用管理员对用户名和租户进行建权，使用用户名进行登录（拿到对应的权限和租户）
+3、在服务配置界面，根据权限（超级管理员所有功能都有）分为注册（set）或者发现（get）所有的服务，并拿到这些服务下当前的硬件资源id，并进行选择，完成服务的初始化。超级管理员还需要分配租户（现在可以视作服务）及对租户中的用户进行配置，用户可以看到自己所属租户的所有资源
+4、在设备配置界面，用户根据租户拿到所有的设备，进行选择并进行初始化（其实就是独占了资源）、取别名等操作，首先验证license，完成后摆放到界面上以供使用。
+
+## 程序流程细化
+
+
 
 ### 管理员管理服务
 
@@ -78,9 +88,7 @@
 
 ## MQTT协议
 
-### 相机协议
-
-#### 心跳
+## 心跳协议
 
 ```
 {
@@ -93,6 +101,63 @@
 }
 ```
 
+```
+{
+	"Code" : 0,
+	"EventName" : "Heartbeat",
+	"MsgID" : 0,
+	"ServiceID" : 0,
+	"ServiceName" : "PG",
+	"data" : ""
+}
+```
+
+```
+{
+	"Code" : 0,
+	"EventName" : "Heartbeat",
+	"MsgID" : 0,
+	"ServiceID" : 0,
+	"ServiceName" : "SMU",
+	"data" : ""
+}
+```
+
+```
+{
+	"Code" : 0,
+	"EventName" : "Heartbeat",
+	"MsgID" : 0,
+	"ServiceID" : 0,
+	"ServiceName" : "Camera",
+	"data" : ""
+}
+```
+
+```
+{
+	"Code" : 0,
+	"EventName" : "Heartbeat",
+	"MsgID" : 0,
+	"ServiceID" : 0,
+	"ServiceName" : "Spectrum",
+	"data" : ""
+}
+```
+
+```
+{
+	"Code" : 0,
+	"EventName" : "Heartbeat",
+	"MsgID" : 0,
+	"ServiceID" : 0,
+	"ServiceName" : "Sensor",
+	"data" : ""
+}
+```
+
+### 相机协议
+
 #### Init
 
 ```
@@ -101,7 +166,7 @@
       "EventName": "Init",
       "ServiceName": "Camera",
       "ServiceID": 2311455622160,
-      "CameraID": "e29b14429bc375b1",
+      "SnID": "e29b14429bc375b1",
       "MsgID": "1f794554-ca41-4edc-aa84-5119925b0771",
       "params": {
         "CameraType": 1
@@ -112,11 +177,11 @@
       "EventName": "Init",
       "ServiceName": "Camera",
       "ServiceID": 2311456371280,
-      "CameraID": "e29b14429bc375b1",
+      "SnID": "e29b14429bc375b1",
       "Code": 0,
       "MsgID": "1f794554-ca41-4edc-aa84-5119925b0771",
       "data": {
-        "CameraId": "{\n\t\"ID\" : \n\t[\n\t\t\"e29b14429bc375b1\"\n\t],\n\t\"number\" : 1\n}\n"
+        "SnID": "{\n\t\"ID\" : \n\t[\n\t\t\"e29b14429bc375b1\"\n\t],\n\t\"number\" : 1\n}\n"
       }
     }
 ```
@@ -129,7 +194,7 @@
       "EventName": "UnInit",
       "ServiceName": "Camera",
       "ServiceID": 2311455622160,
-      "CameraID": "e29b14429bc375b1",
+      "SnID": "e29b14429bc375b1",
       "MsgID": "5d45d13a-6673-4036-85d8-4633914217b0",
       "params": null
     },
@@ -138,7 +203,7 @@
       "EventName": "UnInit",
       "ServiceName": "Camera",
       "ServiceID": 2311455622160,
-      "CameraID": "e29b14429bc375b1",
+      "SnID": "e29b14429bc375b1",
       "Code": 1,
       "MsgID": "5d45d13a-6673-4036-85d8-4633914217b0",
       "data": ""
@@ -153,11 +218,11 @@
       "EventName": "Open",
       "ServiceName": "Camera",
       "ServiceID": 2311456371280,
-      "CameraID": "e29b14429bc375b1",
+      "SnID": "e29b14429bc375b1",
       "MsgID": "1665662a-859c-423d-b156-e8bbf1a540ae",
       "params": {
         "TakeImageMode": 0,
-        "CameraID": "e29b14429bc375b1",
+        "SnID": "e29b14429bc375b1",
         "Bpp": 8
       }
     },
@@ -166,7 +231,7 @@
       "EventName": "Open",
       "ServiceName": "Camera",
       "ServiceID": 2311456371280,
-      "CameraID": "e29b14429bc375b1",
+      "SnID": "e29b14429bc375b1",
       "Code": 1,
       "MsgID": "1665662a-859c-423d-b156-e8bbf1a540ae",
       "data": ""
@@ -181,7 +246,7 @@
       "EventName": "Close",
       "ServiceName": "Camera",
       "ServiceID": 2091665652640,
-      "CameraID": "e29b14429bc375b1",
+      "SnID": "e29b14429bc375b1",
       "MsgID": "d27b6a89-b21f-452a-9941-af96721ec1bc",
       "params": null
     },
@@ -190,7 +255,7 @@
       "EventName": "Close",
       "ServiceName": "Camera",
       "ServiceID": 2091665652640,
-      "CameraID": "e29b14429bc375b1",
+      "SnID": "e29b14429bc375b1",
       "Code": 0,
       "MsgID": "d27b6a89-b21f-452a-9941-af96721ec1bc",
       "data": ""
@@ -205,7 +270,7 @@
       "EventName": "GetAutoExpTime",
       "ServiceName": "Camera",
       "ServiceID": 2227923805216,
-      "CameraID": "e29b14429bc375b1",
+      "SnID": "e29b14429bc375b1",
       "MsgID": "23891bc0-86fe-469f-ac75-c487d13dd424",
       "params": {
         "SetCfwport": [
@@ -232,7 +297,7 @@
       "EventName": "GetAutoExpTime",
       "ServiceName": "Camera",
       "ServiceID": 2227923805216,
-      "CameraID": "e29b14429bc375b1",
+      "SnID": "e29b14429bc375b1",
       "Code": 0,
       "MsgID": "23891bc0-86fe-469f-ac75-c487d13dd424",
       "data": {
@@ -262,7 +327,7 @@
       "EventName": "GetData",
       "ServiceName": "Camera",
       "ServiceID": 2890885791520,
-      "CameraID": "e29b14429bc375b1",
+      "SnID": "e29b14429bc375b1",
       "MsgID": "4f5c214a-68ef-48f3-a353-9cd6dc1d6b26",
       "params": {
         "expTime": 100.0,
@@ -275,7 +340,7 @@
       "EventName": "GetData",
       "ServiceName": "Camera",
       "ServiceID": 2890885791520,
-      "CameraID": "e29b14429bc375b1",
+      "SnID": "e29b14429bc375b1",
       "Code": 1,
       "MsgID": "4f5c214a-68ef-48f3-a353-9cd6dc1d6b26",
       "data": {

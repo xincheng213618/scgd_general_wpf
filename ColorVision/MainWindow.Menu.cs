@@ -79,6 +79,10 @@ namespace ColorVision
                     case "ServiceParam":
                         new WindowService() { Owner =this,WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
                         break;
+                    case "DeviceParam":
+                        new WindowService1() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+
+                        break;
                     case "MeasureParm":
                         MeasureParamControl measure = new MeasureParamControl();
                         windowTemplate = new WindowTemplate(WindowTemplateType.MeasureParm, measure) { Title = "测量设置" };
