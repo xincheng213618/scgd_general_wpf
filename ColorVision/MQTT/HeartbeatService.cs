@@ -12,11 +12,6 @@ namespace ColorVision.MQTT
         {
             ServiceConfig = serviceConfig;
 
-            SendTopic = ServiceConfig.SendTopic;
-            SubscribeTopic = ServiceConfig.SubscribeTopic;
-
-            MQTTControl.SubscribeCache(SubscribeTopic);
-
             MsgReturnReceived +=(msg)=>
             {
                 switch (msg.EventName)
@@ -68,17 +63,5 @@ namespace ColorVision.MQTT
             PublishAsyncClient(msg);
             return true;
         }
-
-        public override string SubscribeTopic { get => ServiceConfig.SubscribeTopic; set { ServiceConfig.SubscribeTopic = value; } }
-        public override string SendTopic { get => ServiceConfig.SendTopic; set { ServiceConfig.SendTopic = value; } }
-
-        public override bool IsAlive { get => ServiceConfig.IsAlive; set => ServiceConfig.IsAlive = value; }
-         
-        public override DateTime LastAliveTime { get => ServiceConfig.LastAliveTime; set => ServiceConfig.LastAliveTime = value; }
-
-
     }
-
-
-
 }
