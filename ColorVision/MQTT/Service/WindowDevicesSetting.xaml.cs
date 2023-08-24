@@ -16,18 +16,13 @@ namespace ColorVision.MQTT.Service
     /// <summary>
     /// Window1.xaml 的交互逻辑
     /// </summary>
-    public partial class ServiceSettingWindow : Window
+    public partial class WindowDevicesSetting : Window
     {
         public ObservableCollection<MQTTDevice> MQTTDevices { get; set; }
         public ObservableCollection<MQTTDevice> MQTTDevices1 { get; set; }
 
         AdornerLayer mAdornerLayer { get; set; }
-        public ServiceSettingWindow()
-        {
-            InitializeComponent();
-        }
-
-        private void Window_Initialied(object sender, EventArgs e)
+        public WindowDevicesSetting(ObservableCollection<MQTTDevice> Devices)
         {
             MQTTDevices = new ObservableCollection<MQTTDevice>();
             MQTTDevices1 = new ObservableCollection<MQTTDevice>();
@@ -36,6 +31,17 @@ namespace ColorVision.MQTT.Service
             {
                 MQTTDevices.Add(item);
             }
+            foreach (var item in Devices)
+            {
+                MQTTDevices.Remove(item);
+                MQTTDevices1.Add(item);
+            }
+            InitializeComponent();
+        }
+
+        private void Window_Initialied(object sender, EventArgs e)
+        {
+
 
             SeriesExportTreeView1.ItemsSource = MQTTDevices;
             SeriesExportTreeView2.ItemsSource = MQTTDevices1;

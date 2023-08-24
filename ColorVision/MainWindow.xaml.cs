@@ -127,7 +127,7 @@ namespace ColorVision
             {
                 if (!SoftwareSetting.IsDeFaultOpenService)
                 {
-                    new WindowService1() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+                    new WindowDevices() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
                 }
                 else
                 {

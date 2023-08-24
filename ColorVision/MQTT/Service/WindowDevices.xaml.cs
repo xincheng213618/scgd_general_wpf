@@ -20,9 +20,9 @@ namespace ColorVision.Service
     /// <summary>
     /// WindowService.xaml 的交互逻辑
     /// </summary>
-    public partial class WindowService1 : Window
+    public partial class WindowDevices : Window
     {
-        public WindowService1()
+        public WindowDevices()
         {
             InitializeComponent();
         }
@@ -92,7 +92,7 @@ namespace ColorVision.Service
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            ServiceSettingWindow Service = new ServiceSettingWindow();
+            WindowDevicesSetting Service = new WindowDevicesSetting(MQTTDevices);
             Service.Closed += async (s, e) =>
             {
                 if (Service.MQTTDevices1.Count > 0)
@@ -101,7 +101,7 @@ namespace ColorVision.Service
                     TreeView1.ItemsSource = MQTTDevices;
                 }
                 await Task.Delay(10);
-                TreeViewItem firstNode = TreeView1.ItemContainerGenerator.ContainerFromIndex(1) as TreeViewItem;
+                TreeViewItem firstNode = TreeView1.ItemContainerGenerator.ContainerFromIndex(0) as TreeViewItem;
 
                 // 选中第一个节点
                 if (firstNode != null)
