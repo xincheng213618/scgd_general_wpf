@@ -12,6 +12,9 @@ using System.Windows;
 using ColorVision.Util;
 using System.Diagnostics;
 using System.IO;
+using System.ComponentModel;
+using System.Windows.Forms;
+using static cvColorVision.SimpleFeatures;
 
 namespace cvColorVision
 {
@@ -290,7 +293,7 @@ namespace cvColorVision
         SlopeIN = 0,    //采用斜率布点
         SlopeOUT = 1,   //不采用斜率布点
     };
-    public struct BlobThreParams
+    public struct ST_BlobThreParams
     {
         public bool filterByColor; //是否使用颜色过滤
                                    //unsigned char blobColor; //亮斑255暗斑0
@@ -313,6 +316,129 @@ namespace cvColorVision
         public float minInertiaRatio;
         public float maxInertiaRatio;
     }
+
+    public class BlobThreParams
+    {
+        [CategoryAttribute("\t\t\t全局"), DescriptionAttribute("是否使用颜色过滤")]
+        public bool filterByColor { set; get; } //是否使用颜色过滤
+                                                //unsigned char blobColor; //亮斑255暗斑0
+        [CategoryAttribute("\t\t\t全局"), DescriptionAttribute("筛选亮斑写255暗斑写0")]
+        public int blobColor { set; get; } //亮斑255暗斑0
+        [CategoryAttribute("\t\t\t全局"), DescriptionAttribute("重复次数认定次数(达到筛选出是斑点的次数几次后认定是斑点，结合扫描图像的阈值步进值理解这条)")]
+        public int minRepeatability { set; get; }  //重复次数认定
+        [CategoryAttribute("\t\t\t全局"), DescriptionAttribute("角点提取类型[Circlepoint/圆点,Checkerboard/棋盘格]")]
+        public CornerType cornerType { set; get; }
+
+        [CategoryAttribute("\t阈值"), DescriptionAttribute("斑点最小灰度阈值")]
+        public float minThreshold { set; get; } //阈值每次间隔值
+        [CategoryAttribute("\t阈值"), DescriptionAttribute("每次扫描图像时阈值的步进值")]
+        public float thresholdStep { set; get; } //斑点最小灰度
+        [CategoryAttribute("\t阈值"), DescriptionAttribute("斑点最大灰度阈值")]
+        public float maxThreshold { set; get; }//斑点最大灰度
+        [CategoryAttribute("\t阈值"), DescriptionAttribute("斑点间隔距离")]
+        public float minDistBetweenBlobs { set; get; } //斑点间隔距离
+        [CategoryAttribute("面积"), DescriptionAttribute("是否使用面积过滤")]
+        public bool filterByArea { set; get; } //是否使用面积过滤
+        [CategoryAttribute("面积"), DescriptionAttribute("最小面积阈值")]
+        public float minArea { set; get; }//斑点最小面积值
+        [CategoryAttribute("面积"), DescriptionAttribute("最大面积阈值")]
+        public float maxArea { set; get; }  //斑点最大面积值
+        [CategoryAttribute("形状圆控制"), DescriptionAttribute("形状控制（圆，方）是否调用")]
+        public bool filterByCircularity { set; get; } //形状控制（圆，方）
+        [CategoryAttribute("形状圆控制"), DescriptionAttribute("离1越近越接近圆")]
+        public float minCircularity { set; get; }
+        [CategoryAttribute("形状圆控制"), DescriptionAttribute("越大越圆")]
+        public float maxCircularity { set; get; }
+        [CategoryAttribute("形状豁口控制"), DescriptionAttribute("豁口是否调用")]
+        public bool filterByConvexity { set; get; }  //形状控制（豁口）
+        [CategoryAttribute("形状豁口控制"), DescriptionAttribute("离1越近越没豁口")]
+        public float minConvexity { set; get; }
+        [CategoryAttribute("形状豁口控制"), DescriptionAttribute("越大越圆")]
+        public float maxConvexity { set; get; }
+        [CategoryAttribute("形状椭圆控制"), DescriptionAttribute("椭圆度是否调用")]
+        public bool filterByInertia { set; get; }  //形状控制（椭圆度）
+        [CategoryAttribute("形状椭圆控制"), DescriptionAttribute("0的话可以近似认为是直线，1的话基本是圆")]
+        public float minInertiaRatio { set; get; }
+        [CategoryAttribute("形状椭圆控制"), DescriptionAttribute("越大越圆")]
+        public float maxInertiaRatio { set; get; }
+        [CategoryAttribute("\t\t大小"), DescriptionAttribute("宽度")]
+        public int cx { set; get; }
+        [CategoryAttribute("\t\t大小"), DescriptionAttribute("高度")]
+        public int cy { set; get; }
+
+        public static BlobThreParams cfg;
+        [JsonIgnore]
+        public ST_BlobThreParams st_cfg;
+        private static string DistoParamCfg = "cfg\\DistoParamSetup.cfg";
+
+        public static BlobThreParams Load()
+        {
+            BlobThreParams blobThreParams = CfgFile.Load<BlobThreParams>(DistoParamCfg);
+            if (blobThreParams == null)
+            {
+                blobThreParams = new BlobThreParams();
+                blobThreParams.filterByColor = true;
+                blobThreParams.blobColor = 0;
+                blobThreParams.minThreshold = 10;
+                blobThreParams.thresholdStep = 10;
+                blobThreParams.maxThreshold = 220;
+                blobThreParams.minDistBetweenBlobs = 50;
+                blobThreParams.filterByArea = true;
+                blobThreParams.minArea = 200;
+                blobThreParams.maxArea = 10000;
+                blobThreParams.minRepeatability = 2;
+                blobThreParams.filterByCircularity = false;
+                blobThreParams.minCircularity = 0.9f;
+                blobThreParams.maxCircularity = (float)1e37;
+                blobThreParams.filterByConvexity = false;
+                blobThreParams.minConvexity = 0.9f;
+                blobThreParams.maxConvexity = (float)1e37;
+                blobThreParams.filterByInertia = false;
+                blobThreParams.minInertiaRatio = 0.1f;
+                blobThreParams.maxInertiaRatio = (float)1e37;
+                blobThreParams.cx = 11;
+                blobThreParams.cy = 8;
+                blobThreParams.cornerType = CornerType.Checkerboard;
+
+                blobThreParams.st_cfg = new ST_BlobThreParams();
+
+                CfgFile.Save<BlobThreParams>(DistoParamCfg, blobThreParams);
+            }
+            cfg = blobThreParams;
+            blobThreParams.setValue();
+            return cfg;
+        }
+
+        private void setValue()
+        {
+            st_cfg.filterByColor = this.filterByColor;
+            st_cfg.blobColor = this.blobColor;
+            st_cfg.minThreshold = this.minThreshold;
+            st_cfg.thresholdStep = this.thresholdStep;
+            st_cfg.maxThreshold = this.maxThreshold;
+            st_cfg.minDistBetweenBlobs = this.minDistBetweenBlobs;
+            st_cfg.filterByArea = this.filterByArea;
+            st_cfg.minArea = this.minArea;
+            st_cfg.maxArea = this.maxArea;
+            st_cfg.minRepeatability = this.minRepeatability;
+            st_cfg.filterByCircularity = this.filterByCircularity;
+            st_cfg.minCircularity = this.minCircularity;
+            st_cfg.maxCircularity = this.maxCircularity;
+            st_cfg.filterByConvexity = this.filterByConvexity;
+            st_cfg.minConvexity = this.minConvexity;
+            st_cfg.maxConvexity = this.maxConvexity;
+            st_cfg.filterByInertia = this.filterByInertia;
+            st_cfg.minInertiaRatio = this.minInertiaRatio;
+            st_cfg.maxInertiaRatio = this.maxInertiaRatio;
+        }
+
+        internal static void Save(BlobThreParams blobThreParams)
+        {
+            blobThreParams.setValue();
+            CfgFile.Save<BlobThreParams>(DistoParamCfg, blobThreParams);
+        }
+    }
+
     public struct CRECT
     {
         public int x;
@@ -1171,9 +1297,22 @@ namespace cvColorVision
         public unsafe static extern bool IsOpen(IntPtr handle);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "MoveDiaphragm",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern bool MoveDiaphragm(IntPtr handle, float dPosition, uint dwTimeOut);
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "DistortionCheck",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern int DistortionCheck(HImage tImg, SIZE iSize, BlobThreParams tBlobThreParams, float[] finalPointsX, float[] finalPointsY, ref double pointx, ref double pointy, ref double maxErrorRatio, ref double t, CornerType type /*= Circlepoint*/, SlopeType sType /*= CenterPoint*/, LayoutType lType /*= SlopeIN*/);
 
+        //[DllImport(LIBRARY_CVCAMERA, EntryPoint = "DistortionCheck",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        //public unsafe static extern int DistortionCheck(HImage tImg, SIZE iSize, BlobThreParams tBlobThreParams, float[] finalPointsX, float[] finalPointsY, ref double pointx, ref double pointy, ref double maxErrorRatio, ref double t, CornerType type /*= Circlepoint*/, SlopeType sType /*= CenterPoint*/, LayoutType lType /*= SlopeIN*/);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "DistortionCheck",
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int DistortionCheck(HImage tImg, SIZE iSize, ST_BlobThreParams tBlobThreParams, float[] finalPointsX, float[] finalPointsY, ref double pointx, ref double pointy, ref double maxErrorRatio, ref double t, CornerType type /*= Circlepoint*/, SlopeType sType /*= CenterPoint*/, LayoutType lType /*= SlopeIN*/, DistortionType dType);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "FovImgCentreEX",
+ CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool FovImgCentreEX(HImage tImg, float x_c, float y_c, float x_p, float y_p, double Radio, double cameraDegrees, ref double fovDegrees, int thresholdValus, double dFovDist, FovPattern pattern, FovType type);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "GhostGlareDectect",
+        CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool GhostGlareDectect(HImage tImg, int radius, int cols, int rows, float ratioH, float ratioL, string path, float[] centersX, float[] centersY,
+       float[] blobGray, float[] dstGray, ref int memSizeH, ref int numArrH, int[] arrH, int[] dataH_X, int[] dataH_Y, ref int memSizeL, ref int numArrL, int[] arrL, int[] dataL_X, int[] dataL_Y);
     }
     public struct C_AoiParam
     {
@@ -1243,6 +1382,12 @@ namespace cvColorVision
         BLUE = 0,
         GREEN = 1,
         RED = 2,
+    };
+    public enum DistortionType //TV畸变H,V方向与光学畸变的检测方法
+    {
+        OpticsDist = 0,
+        TVDistH = 1,
+        TVDistV = 2,
     };
 
     public class CvOledDLL
@@ -1323,19 +1468,134 @@ namespace cvColorVision
         public string szComName;
         public ulong BaudRate;
     }
+    public enum CameraModeType
+    {
+        LV,
+        BV,
+        CV,
+        Other
+    }
+
+
 
     public class SimpleFeatures 
     {
+        private CameraModeType GetCameraModeType(CameraType type)
+        {
+            CameraModeType ret = CameraModeType.Other;
+            switch (type)
+            {
+                case CameraType.CV_Q:
+                    ret = CameraModeType.CV;
+                    break;
+                case CameraType.LV_Q:
+                case CameraType.MIL_CXP:
+                case CameraType.LV_H:
+                case CameraType.HK_CXP:
+                case CameraType.LV_MIL_CL:
+                case CameraType.MIL_CXP_VIDEO:
+                    ret = CameraModeType.LV;
+                    break;
+                case CameraType.BV_Q:
+                case CameraType.MIL_CL:
+                case CameraType.BV_H:
+                    ret = CameraModeType.BV;
+                    break;
+                default:
+                    ret = CameraModeType.Other;
+                    break;
+            }
+
+            return ret;
+        }
+
         public class FOVParam
         {
-            public double radio = 0.2;
-            public double cameraDegrees = 0.2;
-            public int thresholdValus = 20;
-            public double dFovDist = 8443;
+            [CategoryAttribute("FOV"), DescriptionAttribute("计算FOV时中心区亮度的百分比多少认为是暗区")]
+            public double radio { get; set; }
+            [CategoryAttribute("FOV"), DescriptionAttribute("相机镜头有效像素对应的角度")]
+            public double cameraDegrees { get; set; }
+            [CategoryAttribute("FOV"), DescriptionAttribute("FOV中计算圆心或者矩心时使用的二值化阈值")]
+            public int thresholdValus { get; set; }
 
-            public double SFR_gamma = 1.0;
-            public double MTF_dRatio = 0.01;
+            [CategoryAttribute("FOV"), DescriptionAttribute("相机镜头使用的有效像素")]
+            public double dFovDist { get; set; }
+
+            [CategoryAttribute("FOV"), DescriptionAttribute("计算pattern(FovCircle-圆形；FovRectangle-矩形)")]
+            public FovPattern fovPattern { get; set; }
+            [CategoryAttribute("FOV"), DescriptionAttribute("计算路线(Horizontal-水平；Vertical-垂直；Leaning-斜向)")]
+            public FovType fovType { get; set; }
+
+            [CategoryAttribute("SFR"), DescriptionAttribute("SFR gamma")]
+            public double SFR_gamma { get; set; }
+            [CategoryAttribute("MTF"), DescriptionAttribute("MTF dRatio")]
+            public double MTF_dRatio { get; set; }
+
+            [CategoryAttribute("Ghost"), DescriptionAttribute("待检测鬼影点阵的半径长度(像素)")]
+            public int Ghost_radius { get; set; }
+            [CategoryAttribute("Ghost"), DescriptionAttribute("待检测鬼影点阵的列数")]
+            public int Ghost_cols { get; set; }
+            [CategoryAttribute("Ghost"), DescriptionAttribute("待检测鬼影点阵的行数")]
+            public int Ghost_rows { get; set; }
+            [CategoryAttribute("Ghost"), DescriptionAttribute("待检测鬼影的中心灰度百分比上限")]
+            public float Ghost_ratioH { get; set; }
+            [CategoryAttribute("Ghost"), DescriptionAttribute("待检测鬼影的中心灰度百分比下限")]
+            public float Ghost_ratioL { get; set; }
+
+            [CategoryAttribute("CentreLine"), DescriptionAttribute("图像进行二值化的阈值")]
+            public int CL_iThresh { get; set; }
+            [CategoryAttribute("CentreLine"), DescriptionAttribute("轮廓的周长阈值")]
+            public int CL_minSize { get; set; }
+            [CategoryAttribute("CentreLine"), DescriptionAttribute("最终获取的中心线点集最小内部坐标数量")]
+            public int CL_minCentresSize { get; set; }
+            [CategoryAttribute("CentreLine"), DescriptionAttribute("中心线的大概宽度")]
+            public int CL_lineWidth { get; set; }
+            [CategoryAttribute("CentreLine"), DescriptionAttribute("中心线递归使用递归线段长度(一般默认20即可)")]
+            public int CL_LENGTH { get; set; }
+
+
+            public static FOVParam cfg;
+            private static string fovParamCfg = "cfg\\FovParamSetup.cfg";
+
+            public FOVParam()
+            {
+                radio = 0.2;
+                cameraDegrees = 0.2;
+                thresholdValus = 20;
+                dFovDist = 8443;
+                fovPattern = FovPattern.FovCircle;
+                fovType = FovType.Horizontal;
+                SFR_gamma = 1.0;
+                MTF_dRatio = 0.01;
+                Ghost_radius = 65;
+                Ghost_ratioH = 0.4f;
+                Ghost_ratioL = 0.2f;
+                Ghost_cols = 3;
+                Ghost_rows = 3;
+                CL_iThresh = 85;
+                CL_minSize = 200;
+                CL_minCentresSize = 100;
+                CL_lineWidth = 60;
+                CL_LENGTH = 20;
+            }
+            public static FOVParam Load()
+            {
+                FOVParam pm = CfgFile.Load<FOVParam>(fovParamCfg);
+                if (pm == null)
+                {
+                    pm = new FOVParam();
+                    CfgFile.Save<FOVParam>(fovParamCfg, pm);
+                }
+                cfg = pm;
+                return cfg;
+            }
+
+            public static void Save(FOVParam pm)
+            {
+                CfgFile.Save<FOVParam>(fovParamCfg, pm);
+            }
         }
+
 
         /// <summary>
         /// 
@@ -1352,24 +1612,91 @@ namespace cvColorVision
         /// <returns></returns>
         public bool FOV(CameraType connectType, uint wRGB,uint hRGB,uint bppRGB,uint channalsRGB, byte[] srcrawRGB, string fovParamCfg,ref double fovDegrees_ref, ref string ErrorData) 
         {
-            if (wRGB > 0& hRGB>0& bppRGB>0&& channalsRGB>0)
+            //if (wRGB > 0& hRGB>0& bppRGB>0&& channalsRGB>0)
+            //{
+            //    if (connectType == CameraType.LV_Q || connectType == CameraType.BV_Q || connectType == CameraType.CV_Q)
+            //    {
+            //        FOVParam pm = CfgFile.Load<FOVParam>(fovParamCfg);
+            //        if (pm==null)
+            //        {
+            //            ErrorData = "没有读到设定的FOV本地配置文件";
+            //            return false;
+            //        }
+
+            //        HImage himage_Fov = new HImage();
+            //        himage_Fov.nWidth = wRGB;
+            //        himage_Fov.nHeight = hRGB;
+            //        himage_Fov.nBpp = bppRGB;
+            //        himage_Fov.nChannels = channalsRGB;
+
+            //        fovDegrees_ref = 0;
+            //        unsafe
+            //        {
+            //            if (srcrawRGB != null)
+            //            {
+            //                fixed (byte* pAdr = srcrawRGB)
+            //                {
+            //                    himage_Fov.pData = (IntPtr)pAdr;
+
+            //                    try
+            //                    {
+            //                        if (!cvCameraCSLib.FovImgCentre(himage_Fov, pm.radio, pm.cameraDegrees, ref fovDegrees_ref, pm.thresholdValus, pm.dFovDist, FovPattern.FovCircle, FovType.Horizontal))
+            //                        {
+            //                            ErrorData = "FOV执行失败！";
+            //                            return false;
+            //                        }
+            //                        else
+            //                        {
+            //                            //string mess = "fov:" + fovDegrees_ref.ToString();
+            //                            //MessageBox.Show(mess);
+            //                            return true;
+            //                        }
+            //                    }
+            //                    catch (Exception ex)
+            //                    {
+            //                        ErrorData = "FOV执行失败！| " + ex.Message;
+            //                        return false;
+            //                    }
+
+            //                }
+            //            }
+            //            else
+            //            {
+            //                ErrorData = "图像数据为空！";
+            //                return false;
+            //            }
+            //        }
+            //    }
+            //    else
+            //    {
+            //        ErrorData = "图像格式只支持LV,BV,CV";
+            //        return false;
+            //    }
+            //}
+            //else
+            //{
+            //    ErrorData = "图像数据W,H,BPP,channels中有一个小于等于0";
+            //    return false;
+            //}
+
+            if (wRGB > 0 & hRGB > 0 & bppRGB > 0 && channalsRGB > 0)
             {
-                if (connectType == CameraType.LV_Q || connectType == CameraType.BV_Q || connectType == CameraType.CV_Q)
+                CameraModeType cameraMode = GetCameraModeType(connectType);
+                if (cameraMode == CameraModeType.LV || cameraMode == CameraModeType.BV || cameraMode == CameraModeType.CV)
                 {
                     FOVParam pm = CfgFile.Load<FOVParam>(fovParamCfg);
-                    if (pm==null)
-                    {
-                        ErrorData = "没有读到设定的FOV本地配置文件";
-                        return false;
-                    }
 
                     HImage himage_Fov = new HImage();
+
                     himage_Fov.nWidth = wRGB;
                     himage_Fov.nHeight = hRGB;
                     himage_Fov.nBpp = bppRGB;
                     himage_Fov.nChannels = channalsRGB;
-
                     fovDegrees_ref = 0;
+                    FovPattern fovPattern = pm.fovPattern;
+                    FovType fovType = pm.fovType;
+                    bool fovResult = false;
+
                     unsafe
                     {
                         if (srcrawRGB != null)
@@ -1380,16 +1707,57 @@ namespace cvColorVision
 
                                 try
                                 {
-                                    if (!cvCameraCSLib.FovImgCentre(himage_Fov, pm.radio, pm.cameraDegrees, ref fovDegrees_ref, pm.thresholdValus, pm.dFovDist, FovPattern.FovCircle, FovType.Horizontal))
+                                    //if (fovPattern == FovPattern.FovCircle && fovType == FovType.Leaning)
+                                    //{
+                                    //    if (isFovCircle && roiPointData_Temporary != null)
+                                    //    {
+                                    //        fovResult = cvCameraCSLib.FovImgCentreEX(himage_Fov,
+                                    //            roiPointData_Temporary.Img_x, roiPointData_Temporary.Img_y, fovLeaning.X, fovLeaning.Y,
+                                    //            pm.radio, pm.cameraDegrees, ref fovDegrees_ref, pm.thresholdValus, pm.dFovDist, fovPattern, fovType);
+                                    //        if (fovResult) saveCsv_FOV("Result", "FovCircle", "Leaning", fovDegrees_ref);
+                                    //        else MessageBox.Show("FOV执行失败！");
+                                    //    }
+                                    //    else
+                                    //    {
+                                    //        MessageBox.Show("请先选择圆形测量点");
+                                    //    }
+                                    //}
+                                    //else
+                                    //{
+
+                                    //}
+
+                                    fovType = FovType.Horizontal;
+                                    fovResult = cvCameraCSLib.FovImgCentre(himage_Fov, pm.radio, pm.cameraDegrees, ref fovDegrees_ref, pm.thresholdValus, pm.dFovDist, fovPattern, fovType);
+                                    if (fovResult)
+                                    {
+                                        saveCsv_FOV("Result", GetFovPattern(pm.fovPattern), "Horizontal", fovDegrees_ref);
+                                    }
+                                    else 
+                                    {
+                                        ErrorData = "Horizontal FOV执行失败！";
+                                        return false;
+                                    } 
+
+
+
+                                    fovType = FovType.Vertical;
+                                    fovResult = cvCameraCSLib.FovImgCentre(himage_Fov, pm.radio, pm.cameraDegrees, ref fovDegrees_ref, pm.thresholdValus, pm.dFovDist, fovPattern, fovType);
+                                    if (fovResult)
+                                    {
+                                        saveCsv_FOV("Result", GetFovPattern(pm.fovPattern), "Vertical", fovDegrees_ref);
+                                        return true;
+                                    }
+                                    else 
+                                    {
+                                        ErrorData = "Vertical FOV执行失败！";
+                                        return false;
+                                    } 
+
+                                    if (!fovResult)
                                     {
                                         ErrorData = "FOV执行失败！";
                                         return false;
-                                    }
-                                    else
-                                    {
-                                        //string mess = "fov:" + fovDegrees_ref.ToString();
-                                        //MessageBox.Show(mess);
-                                        return true;
                                     }
                                 }
                                 catch (Exception ex)
@@ -1397,7 +1765,6 @@ namespace cvColorVision
                                     ErrorData = "FOV执行失败！| " + ex.Message;
                                     return false;
                                 }
-
                             }
                         }
                         else
@@ -1415,9 +1782,75 @@ namespace cvColorVision
             }
             else
             {
-                ErrorData = "图像数据W,H,BPP,channels中有一个小于等于0";
+                ErrorData = "请先点击测量 ";
                 return false;
             }
+        }
+
+        private string GetFovPattern(FovPattern pattern)
+        {
+            string fovPattern = "";
+            switch (pattern)
+            {
+                case FovPattern.FovCircle:
+                    fovPattern = "FovCircle";
+                    break;
+                case FovPattern.FovRectangle:
+                    fovPattern = "FovRectangle";
+                    break;
+                default:
+                    fovPattern = "FovCircle";
+                    break;
+            }
+
+            return fovPattern;
+        }
+
+        private void saveCsv_FOV(string path, string fovPattern, string fovType, double fovDegrees)
+        {
+            bool saveHeader = false;
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+            if (path.Substring(path.Length - 1, 1) != "/")
+            {
+                path = path + "\\FOVResult_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
+            }
+            else
+            {
+                path = path + "FOVResult_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
+            }
+            if (!File.Exists(path))
+            {
+                saveHeader = true;
+            }
+
+            System.IO.FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
+            StreamWriter sw = new StreamWriter(fs, UnicodeEncoding.UTF8);
+
+            if (saveHeader)
+            {
+                sw.Write("FovPattern");
+                sw.Write(",");
+                sw.Write("FovType");
+                sw.Write(",");
+                sw.Write("Value");
+                sw.WriteLine("");
+            }
+
+
+            sw.Write(fovPattern);
+            sw.Write(",");
+            sw.Write(fovType);
+            sw.Write(",");
+            sw.Write(fovDegrees.ToString());
+            sw.WriteLine("");
+
+
+            sw.Flush();
+            sw.Close();
+            fs.Close();
         }
 
         public class FindRoi
@@ -1431,6 +1864,19 @@ namespace cvColorVision
             {
                 return string.Format("{0},{1},{2},{3}", x, y, width, height);
             }
+        }
+
+        public class DistoData 
+        {
+            public uint wRGB { set; get; }
+            public uint hRGB { set; get; }
+            public uint bppRGB { set; get; }
+            public uint channalsRGB { set; get; }
+            public byte[] srcrawRGB { set; get; }
+            public string DistoParamCfg { set; get; }
+            public string ErrorData { set; get; }
+
+            public bool checkResult { set; get; }
         }
 
         private static void saveCsv_SFR(string path, float[] pdfrequency, float[] pdomainSamplingData)
@@ -1558,5 +2004,516 @@ namespace cvColorVision
                 return false;
             }
         }
+
+        public bool Disto(DistoData distoData) 
+        {
+            try
+            {
+                //try the five second method with a 6 second timeout
+                CallWithTimeout(distoData, FiveSecondMethod, 15000);
+                return true;
+            }
+            catch (Exception ex) 
+            {
+                System.Windows.Forms.MessageBox.Show("畸变计算超时"); 
+                return false; 
+            }
+        }
+
+        static void CallWithTimeout(DistoData distoData,Action<DistoData> action, int timeoutMilliseconds)
+        {
+            Thread threadToKill = null;
+            Action wrappedAction = () =>
+            {
+                threadToKill = Thread.CurrentThread;
+                string ErrorData = "";
+                action(distoData);
+            };
+
+            IAsyncResult result = wrappedAction.BeginInvoke(null, null);
+            if (result.AsyncWaitHandle.WaitOne(timeoutMilliseconds))
+            {
+                wrappedAction.EndInvoke(result);
+            }
+            else
+            {
+                threadToKill.Abort();
+                throw new TimeoutException();
+                //try { throw new TimeoutException(); }
+                //catch (Exception e) { MessageBox.Show("畸变计算超时"); }
+
+            }
+        }
+
+        public void FiveSecondMethod(DistoData distoData)
+        {
+            BlobThreParams blobThreParams = BlobThreParams.Load();
+            if (distoData.wRGB > 0&& distoData.hRGB >0&& distoData.bppRGB >0&& distoData.channalsRGB >0)
+            {
+                //初始化HImage
+                HImage tImg = new HImage();
+                tImg.nBpp = distoData.bppRGB;
+                tImg.nChannels = distoData.channalsRGB;
+                tImg.nWidth = distoData.wRGB;
+                tImg.nHeight = distoData.hRGB;
+
+                if (distoData.srcrawRGB != null)
+                {
+                    GCHandle hObject = GCHandle.Alloc(distoData.srcrawRGB, GCHandleType.Pinned);
+                    tImg.pData = hObject.AddrOfPinnedObject();
+                    //初始化SIZE
+                    SIZE sIZE = new SIZE();
+                    sIZE.cx = blobThreParams.cx;
+                    sIZE.cy = blobThreParams.cy;
+                    //初始化输出的理想坐标点系XY坐标集
+                    float[] finalPointsX = new float[10000];
+                    float[] finalPointsY = new float[10000];
+                    //初始化最大畸变点XY坐标
+                    double pointx = 0, pointy = 0;
+                    //初始化最大畸变点畸变率
+                    double maxErrorRatio = 0;
+                    //初始化图像在平面的旋转角度
+                    double t = 0;
+                    //选取使用角点提取的方法
+                    CornerType cornerType = GetCornerType(blobThreParams);
+                    //选取点阵斜率计算方法
+                    SlopeType slopeType = SlopeType.CenterPoint;
+                    //选取生成理想点阵的布点方式
+                    LayoutType layoutType = LayoutType.SlopeIN;
+                    DistortionType distortionType = DistortionType.OpticsDist;
+                    string strDisType = "OpticsDist";
+                    if (cvCameraCSLib.DistortionCheck(tImg, sIZE, blobThreParams.st_cfg, finalPointsX,
+                    finalPointsY, ref pointx, ref pointy, ref maxErrorRatio, ref t, cornerType,
+                    slopeType, layoutType, distortionType) < 1)
+                    {
+                        //MessageBox.Show("DistortionCheck执行结果失败！");
+                        //return;
+                        distoData.ErrorData = "DistortionCheck执行结果失败";
+                        distoData.checkResult= false;
+                    }
+                    else
+                    {
+                        //保存结果
+                        saveCsv_Distortion("Result", pointx, pointy, maxErrorRatio, t, strDisType);
+                        //MessageBox.Show("执行结束");
+                    }
+                    distortionType = DistortionType.TVDistH;
+                    strDisType = "TVDistH";
+                    if (cvCameraCSLib.DistortionCheck(tImg, sIZE, blobThreParams.st_cfg, finalPointsX,
+                    finalPointsY, ref pointx, ref pointy, ref maxErrorRatio, ref t, cornerType,
+                    slopeType, layoutType, distortionType) < 1)
+                    {
+                        //MessageBox.Show("DistortionCheck执行结果失败！");
+                        //return;
+                        distoData.ErrorData = "DistortionCheck执行结果失败";
+                        distoData.checkResult = false;
+                    }
+                    else
+                    {
+                        //保存结果
+                        saveCsv_Distortion("Result", pointx, pointy, maxErrorRatio, t, strDisType);
+                        //MessageBox.Show("执行结束");
+                    }
+                    distortionType = DistortionType.TVDistV;
+                    strDisType = "TVDistV";
+                    if (cvCameraCSLib.DistortionCheck(tImg, sIZE, blobThreParams.st_cfg, finalPointsX,
+                    finalPointsY, ref pointx, ref pointy, ref maxErrorRatio, ref t, cornerType,
+                    slopeType, layoutType, distortionType) < 1)
+                    {
+                        //MessageBox.Show("DistortionCheck执行结果失败！");
+                        //return;
+                        distoData.ErrorData = "DistortionCheck执行结果失败";
+                        distoData.checkResult = false;
+                    }
+                    else
+                    {
+                        //保存结果
+                        saveCsv_Distortion("Result", pointx, pointy, maxErrorRatio, t, strDisType);
+                        //MessageBox.Show("执行结束");
+                    }
+                    //MessageBox.Show("执行结束");
+                    hObject.Free();
+                    distoData.ErrorData = "执行结束";
+                    distoData.checkResult = true;
+                }
+                else
+                {
+                    //MessageBox.Show("图像数据为空");
+                    //MessageBox.Show("请先点击测量");
+                    distoData.ErrorData = "图像数据为空";
+                    distoData.checkResult = false;
+                }
+            }
+            else
+            {
+                //MessageBox.Show("请先点击测量");
+                distoData.ErrorData = "请先点击测量";
+                distoData.checkResult = false;
+            }
+        }
+
+        private void saveCsv_Distortion(string path, double pointx, double pointy, double maxErrorRatio, double t, string strDisType)
+        {
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+            if (path.Substring(path.Length - 1, 1) != "/")
+            {
+                path = path + "\\DistortionResult.csv";
+            }
+            else
+            {
+                path = path + "DistortionResult.csv";
+            }
+            if (!File.Exists(path))
+            {
+                //首先模拟建立将要导出的数据，这些数据都存于DataTable中  
+                System.Data.DataTable dt = new System.Data.DataTable();
+                dt.Columns.Add("Time", typeof(string));
+                dt.Columns.Add("pointx", typeof(string));
+                dt.Columns.Add("pointy", typeof(string));
+                dt.Columns.Add("maxErrorRatio", typeof(string));
+                dt.Columns.Add("t", typeof(string));
+                dt.Columns.Add("DistortionType", typeof(string));
+                System.IO.FileStream fs2 = new FileStream(path, System.IO.FileMode.Create, System.IO.FileAccess.Write);
+                StreamWriter sw2 = new StreamWriter(fs2, UnicodeEncoding.UTF8);
+                //string path = saveFileDialog.FileName.ToString();//保存路径
+                //Tabel header
+                for (int i = 0; i < dt.Columns.Count; i++)
+                {
+                    if (i != 0)
+                    {
+                        sw2.Write(",");
+                    }
+                    sw2.Write(dt.Columns[i].ColumnName);
+                }
+                sw2.WriteLine("");
+                sw2.Flush();
+                sw2.Close();
+                fs2.Close();
+            }
+            System.IO.FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
+            StreamWriter sw = new StreamWriter(fs, UnicodeEncoding.UTF8);
+            sw.Write(DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss.fff"));
+            sw.Write(",");
+            sw.Write(pointx);
+            sw.Write(",");
+            sw.Write(pointy);
+            sw.Write(",");
+            sw.Write(maxErrorRatio);
+            sw.Write(",");
+            sw.Write(t);
+            sw.Write(",");
+            sw.Write(strDisType);
+            sw.Write(",");
+            sw.WriteLine("");
+            sw.Flush();
+            sw.Close();
+            fs.Close();
+        }
+
+        private CornerType GetCornerType(BlobThreParams blobThreParams)
+        {
+            CornerType cornerType = blobThreParams.cornerType;
+            //switch (blobThreParams.cornerType.ToLower())
+            //{
+            //    case "circlepoint":
+            //        cornerType = CornerType.Circlepoint;
+            //        break;
+            //    case "checkerboard":
+            //        cornerType = CornerType.Checkerboard;
+            //        break;
+            //    default:
+            //        cornerType = CornerType.Checkerboard;
+            //        break;
+            //}
+            return cornerType;
+        }
+
+
+
+
+        /// <summary>
+        /// 传进去的图只能是32位单通道的图
+        /// </summary>
+        /// <param name="listGhostH"></param>
+        /// <param name="listGhostL"></param>
+        /// <param name="wRGB"></param>
+        /// <param name="hRGB"></param>
+        /// <param name="bppRGB"></param>
+        /// <param name="channalsRGB"></param>
+        /// <param name="srcrawRGB"></param>
+        /// <returns></returns>
+        public bool Ghost(List<System.Drawing.Point> listGhostH, List<System.Drawing.Point> listGhostL, uint wRGB, uint hRGB, uint bppRGB, uint channalsRGB, byte[] srcrawRGB, ref string ErrorData) 
+        {
+            if (listGhostH != null) listGhostH.Clear();
+            if (listGhostL != null) listGhostL.Clear();
+            if (wRGB > 0 & hRGB > 0 & bppRGB > 0 && channalsRGB > 0)
+            {
+                FOVParam pm = FOVParam.Load();
+                //初始化HImage
+                HImage tImg = new HImage();
+                tImg.nBpp = bppRGB;
+                tImg.nChannels = channalsRGB;
+                tImg.nWidth = wRGB;
+                tImg.nHeight = hRGB;
+
+                if (srcrawRGB != null)
+                {
+                    GCHandle hObject;
+                    hObject = GCHandle.Alloc(srcrawRGB, GCHandleType.Pinned);
+                    //
+                    tImg.pData = hObject.AddrOfPinnedObject();
+
+                    int NxN = pm.Ghost_cols * pm.Ghost_rows;
+                    int memSizeH = 20 * 1024;//储存所有点阵坐标需要申请的内存
+                    int memSizeL = 20 * 1024;//储存所有鬼影坐标需要申请的内存
+                    int numArrH = NxN;//包含的点阵数量
+                    int numArrL = NxN;//包含的鬼影集数量
+                    int[] arrH = new int[numArrH];//每个点阵轮廓的点坐标数量
+                    int[] arrL = new int[numArrL];//每个鬼影轮廓的点坐标数量
+                    int[] dataH_X = new int[memSizeH];//所有点阵轮廓的X坐标集
+                    int[] dataL_X = new int[memSizeL];//所有鬼影轮廓的X坐标集
+                    int[] dataH_Y = new int[memSizeH];//所有点阵轮廓的Y坐标集
+                    int[] dataL_Y = new int[memSizeL];//所有鬼影轮廓的Y坐标集
+                    float[] centersX = new float[NxN];//检出的鬼影点阵质心X坐标
+                    float[] centersY = new float[NxN];//检出的鬼影点阵质心Y坐标
+                    float[] dstGray = new float[NxN];//检出鬼影区域的灰度均值集
+                    float[] blobGray = new float[NxN];//检出光斑的灰度均值集
+                    string path = GetPath("Result");//
+                    bool ret = cvCameraCSLib.GhostGlareDectect(tImg, pm.Ghost_radius, pm.Ghost_cols, pm.Ghost_rows, pm.Ghost_ratioH, pm.Ghost_ratioL, path, centersX, centersY, blobGray, dstGray,
+                        ref memSizeH, ref numArrH, arrH, dataH_X, dataH_Y, ref memSizeL, ref numArrL, arrL, dataL_X, dataL_Y);
+                    if (ret)
+                    {
+                        save_Ghost_result("Result", NxN, centersX, centersY, blobGray, dstGray, numArrH, arrH, dataH_X, dataH_Y, numArrL, arrL, dataL_X, dataL_Y);
+                    }
+                    else if (memSizeH > 20 * 1024 || memSizeL > 20 * 1024)
+                    {
+                        dataH_X = new int[memSizeH];//所有点阵轮廓的X坐标集
+                        dataL_X = new int[memSizeL];//所有鬼影轮廓的X坐标集
+                        dataH_Y = new int[memSizeH];//所有点阵轮廓的Y坐标集
+                        dataL_Y = new int[memSizeL];//所有鬼影轮廓的Y坐标集
+
+                        ret = cvCameraCSLib.GhostGlareDectect(tImg, pm.Ghost_radius, pm.Ghost_cols, pm.Ghost_rows, pm.Ghost_ratioH, pm.Ghost_ratioL, path, centersX, centersY, blobGray, dstGray,
+                        ref memSizeH, ref numArrH, arrH, dataH_X, dataH_Y, ref memSizeL, ref numArrL, arrL, dataL_X, dataL_Y);
+                        if (ret)
+                        {
+                            save_Ghost_result("Result", NxN, centersX, centersY, blobGray, dstGray, numArrH, arrH, dataH_X, dataH_Y, numArrL, arrL, dataL_X, dataL_Y);
+                        }
+                        else
+                        {
+                            ErrorData = "二次检查失败";
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        ErrorData = "首次检查失败";
+                        return false;
+                    }
+
+                    hObject.Free();
+                    return true;
+                }
+                else
+                {
+                    ErrorData = "请先点击测量";
+                    return false;
+                }
+            }
+            else
+            {
+                ErrorData = "请先点击测量";
+                return false;
+            }
+        }
+
+        private string GetPath(string path)
+        {
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+            if (path.Substring(path.Length - 1, 1) != "/")
+            {
+                path = path + "\\";
+            }
+            return path;
+        }
+
+        private List<System.Drawing.Point> listGhostH = new List<System.Drawing.Point>();
+        private List<System.Drawing.Point> listGhostL = new List<System.Drawing.Point>();
+        private void save_Ghost_result(string path, int nxN, float[] centersX, float[] centersY, float[] blobGray, float[] dstGray, int numArrH, int[] arrH, int[] dataH_X, int[] dataH_Y, int numArrL, int[] arrL, int[] dataL_X, int[] dataL_Y)
+        {
+            if (listGhostH == null)
+            {
+                listGhostH = new List<System.Drawing.Point>();
+            }
+            if (listGhostL == null)
+            {
+                listGhostL = new List<System.Drawing.Point>();
+            }
+            saveCsv_Ghost_xy(path, nxN, centersX, centersY, blobGray, dstGray);
+            saveCsv_Ghost_point(path, "点阵", numArrH, arrH, dataH_X, dataH_Y, listGhostH);
+            saveCsv_Ghost_point(path, "鬼影", numArrL, arrL, dataL_X, dataL_Y, listGhostL);
+        }
+
+        private void saveCsv_Ghost_xy(string path, int nxN, float[] centersX, float[] centersY, float[] blobGray, float[] dstGray)
+        {
+            bool saveHeader = false;
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+            if (path.Substring(path.Length - 1, 1) != "/")
+            {
+                path = path + "\\GhostXYResult_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
+            }
+            else
+            {
+                path = path + "GhostXYResult_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
+            }
+            if (!File.Exists(path))
+            {
+                saveHeader = true;
+            }
+
+            System.IO.FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
+            StreamWriter sw = new StreamWriter(fs, UnicodeEncoding.UTF8);
+
+            if (saveHeader)
+            {
+                sw.Write("centersX");
+                sw.Write(",");
+                sw.Write("centersY");
+                sw.Write(",");
+                sw.Write("blobGray");
+                sw.Write(",");
+                sw.Write("dstGray");
+                sw.WriteLine("");
+            }
+
+            for (int i = 0; i < nxN; i++)
+            {
+                sw.Write(centersX[i]);
+                sw.Write(",");
+                sw.Write(centersY[i]);
+                sw.Write(",");
+                sw.Write(blobGray[i]);
+                sw.Write(",");
+                sw.Write(dstGray[i]);
+                sw.WriteLine("");
+            }
+
+            sw.Flush();
+            sw.Close();
+            fs.Close();
+        }
+
+        private void saveCsv_Ghost_point(string path, string name, int numArr, int[] arr, int[] data_X, int[] data_Y, List<System.Drawing.Point> list)
+        {
+            bool saveHeader = false;
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+            if (path.Substring(path.Length - 1, 1) != "/")
+            {
+                path = path + "\\GhostResult_" + name + "_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
+            }
+            else
+            {
+                path = path + "GhostResult_" + name + "_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
+            }
+            if (!File.Exists(path))
+            {
+                saveHeader = true;
+            }
+
+            System.IO.FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
+            StreamWriter sw = new StreamWriter(fs, UnicodeEncoding.UTF8);
+
+            if (saveHeader)
+            {
+                sw.Write("X");
+                sw.Write(",");
+                sw.Write("Y");
+                sw.WriteLine("");
+            }
+            int idx = 0;
+            for (int x = 0; x < numArr; x++)
+            {
+                for (int y = 0; y < arr[x]; y++)
+                {
+                    System.Drawing.Point point = new System.Drawing.Point();
+                    list.Add(point);
+                    point.X = data_X[idx];
+                    point.Y = data_Y[idx];
+                    sw.Write(point.X);
+                    sw.Write(",");
+                    sw.Write(point.Y);
+                    sw.WriteLine("");
+                    idx++;
+                }
+            }
+
+            sw.Flush();
+            sw.Close();
+            fs.Close();
+        }
+
+        //public bool MTF() 
+        //{
+
+        //    FOVParam pm = FOVParam.Load();
+
+        //    DoMTF(pm, true);
+        //    return true;
+
+        //}
+
+        //public class MTFResult
+        //{
+        //    public double articulation = 1.0;
+        //    public RoiPointData rpd;
+
+        //    public MTFResult(RoiPointData rpd, double articulation)
+        //    {
+        //        this.rpd = rpd;
+        //        this.articulation = articulation;
+        //    }
+        //}
+
+        //private void DoMTF(PoiParam poi,FOVParam pm, bool saveCsv)
+        //{
+        //    List<MTFResult> MTFResults = new List<MTFResult>();
+        //    foreach (RoiPointData pd in pot.riPoints)
+        //    {
+        //        HImage tImg = getHImg(pd, srcrawRGB);
+        //        double articulation = -1.0;
+
+        //        try
+        //        {
+        //            articulation = cvCameraCSLib.cvCalArticulation(EvaFunc.CalResol, tImg, 0, 1, 5, pm.MTF_dRatio);
+        //        }
+        //        finally
+        //        {
+        //            //Marshal.FreeHGlobal(tImg.pData);
+        //        }
+
+        //        if (articulation < 0)
+        //        {
+        //            MessageBox.Show("MTFCalculation执行结果失败！");
+        //        }
+        //        else
+        //        {
+        //            MTFResult result = new MTFResult(pd, articulation);
+        //            MTFResults.Add(result);
+        //        }
+        //    }
+        //    if (saveCsv) saveCsv_MTF("Result", MTFResults);
+        //    OnDraw();
+        //}
     }
 }
