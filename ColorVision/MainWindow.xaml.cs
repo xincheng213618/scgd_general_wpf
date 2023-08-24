@@ -122,14 +122,23 @@ namespace ColorVision
             SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
             MenuStatusBar.DataContext = SoftwareConfig;
             SiderBarGrid.DataContext = SoftwareConfig;
-            if (!SoftwareSetting.IsDeFaultOpenService)
+            try
             {
-                new WindowService1() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+                if (!SoftwareSetting.IsDeFaultOpenService)
+                {
+                    new WindowService1() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+                }
+                else
+                {
+                    ServiceControl.GetInstance().GenContorl();
+                }
             }
-            else
+            catch(Exception ex)
             {
-                ServiceControl.GetInstance().GenContorl();
+                MessageBox.Show("窗口创建错误");
+                Environment.Exit(-1);
             }
+
 
             ViewGridManager.GetInstance().SetViewNum(-1);
         }
