@@ -414,10 +414,10 @@ namespace ColorVision
                 switch (nums)
                 {
                     case 20:
-                        ViewGridManager.SetViewGrid(2);
+                        ViewGridManager.SetViewGridTwo();
                         break;
                     case 21:
-                        ViewGridManager.SetViewGridTwo();
+                        ViewGridManager.SetViewGrid(2);
                         break;
                     default:
                         ViewGridManager.SetViewGrid(nums);
@@ -435,10 +435,10 @@ namespace ColorVision
                 {
 
                     case 20:
-                        ViewGridManager.SetViewGrid(2);
+                        ViewGridManager.SetViewGridTwo();
                         break;
                     case 21:
-                        ViewGridManager.SetViewGridTwo();
+                        ViewGridManager.SetViewGrid(2);
                         break;
                     default:
                         ViewGridManager.SetViewGrid(nums);

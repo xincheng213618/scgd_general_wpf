@@ -26,6 +26,7 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel >
                     <TextBlock Text="{Binding Name}"/>
+                    <TextBlock Text="{Binding SysResourceModel.Code}"/>
                     <TextBlock Text="{Binding ServiceConfig.SendTopic}"/>
                     <TextBlock Text="{Binding ServiceConfig.SubscribeTopic}"/>
                     <TextBlock Text="{Binding ServiceConfig.IsAlive}"/>
@@ -49,12 +50,8 @@
                         <TextBox Text="{Binding Name}"/>
                     </DockPanel>
                     <DockPanel Margin="5" >
-                        <TextBlock Text="SendTopic" Width="120"/>
-                        <TextBox Text="{Binding ServiceConfig.SendTopic}"/>
-                    </DockPanel>
-                    <DockPanel Margin="5" >
-                        <TextBlock Text="SubscribeTopic" Width="120"/>
-                        <TextBox Text="{Binding ServiceConfig.SubscribeTopic}"/>
+                        <TextBlock Text="服务Code" Width="120"/>
+                        <TextBox Text="{Binding SysResourceModel.Code}"/>
                     </DockPanel>
                 </StackPanel>
                 <Button Grid.Column="1"  Content="提交" Click="Button_Click" Command="{Binding SaveCommand}" />

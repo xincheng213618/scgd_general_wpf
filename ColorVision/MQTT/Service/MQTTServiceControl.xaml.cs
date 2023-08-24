@@ -170,14 +170,19 @@ namespace ColorVision.MQTT.Service
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            MQTTService.ServiceConfig.SubscribeTopic = MQTTService.SysResourceModel.TypeCode + "/STATUS/" + MQTTService.SysResourceModel.Code;
+            MQTTService.ServiceConfig.SendTopic = MQTTService.SysResourceModel.TypeCode + "/CMD/" + MQTTService.SysResourceModel.Code;
+
             foreach (var item in MQTTService.VisualChildren)
             {
                 if(item is MQTTDevice mQTTDevice)
                 {
                     mQTTDevice.SendTopic = MQTTService.ServiceConfig.SendTopic;
                     mQTTDevice.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;
+                    mQTTDevice.Save();
                 }
             }
+            MQTTService.Save();
 
             MQTTEditContent.Visibility = Visibility.Collapsed;
             MQTTShowContent.Visibility = Visibility.Visible;
