@@ -144,7 +144,7 @@ namespace ColorVision.MQTT.Service
                     ServiceControl.ResourceService.Save(sysResource);
                     int pkId = sysResource.GetPK();
                     if (pkId > 0 && ServiceControl.ResourceService.GetMasterById(pkId) is SysResourceModel model)
-                        mQTTService.AddChild(new DeviceSpectrum(model));
+                        mQTTService.AddChild(new DeviceSMU(model));
                 }else if (mQTTService.Type == DeviceType.Sensor)
                 {
                     SensorConfig config = new SensorConfig
