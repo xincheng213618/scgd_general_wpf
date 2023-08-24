@@ -260,6 +260,11 @@ namespace ColorVision
             }
         }
 
+        private void Button_FlowStop_Click(object sender, RoutedEventArgs e)
+        {
+            if(flowControl!=null) flowControl.Stop();
+        }
+
         private void StackPanelFlow_Initialized(object sender, EventArgs e)
         {
             FlowTemplate.ItemsSource = TemplateControl.GetInstance().FlowParams;

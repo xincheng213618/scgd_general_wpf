@@ -51,6 +51,7 @@ namespace ColorVision.MQTT
 
         public string SubscribeTopic { get; set; }
         public string SendTopic { get; set; }
+        public string SerialNumber { get; set; }
 
         public FlowControl(MQTTControl mQTTControl, string topic)
         {
@@ -66,10 +67,27 @@ namespace ColorVision.MQTT
             this.flowEngine = flowEngine;
         }
 
+        public void Stop()
+        {
+            if (flowEngine == null)
+            {
+                FlowEngineLib.CVBaseDataFlow baseEvent = new FlowEngineLib.CVBaseDataFlow(svrName, "Stop", SerialNumber);
+
+                string Msg = JsonConvert.SerializeObject(baseEvent);
+                Application.Current.Dispatcher.Invoke(() => FlowMsg?.Invoke(Msg, new EventArgs()));
+                Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, Msg, false));
+
+            }
+            else
+            {
+                flowEngine.StopNode(SerialNumber);
+            }
+        }
 
         public void Start(string sn)
         {
-            if(flowEngine == null)
+            SerialNumber = sn;
+            if (flowEngine == null)
             {
                 FlowEngineLib.CVBaseDataFlow baseEvent = new FlowEngineLib.CVBaseDataFlow(svrName, "Start", sn);
 

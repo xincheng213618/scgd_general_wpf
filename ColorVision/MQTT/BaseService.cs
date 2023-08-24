@@ -1,4 +1,5 @@
-﻿using ColorVision.MVVM;
+﻿using ColorVision.MQTT.Camera;
+using ColorVision.MVVM;
 using ColorVision.SettingUp;
 using Google.Protobuf.WellKnownTypes;
 using HandyControl.Expression.Shapes;
@@ -50,10 +51,21 @@ namespace ColorVision.MQTT
     {
         public T Config { get; set; }
 
+        public override string SubscribeTopic { get => Config.SubscribeTopic; set { Config.SubscribeTopic = value; } }
+        public override string SendTopic { get => Config.SendTopic; set { Config.SendTopic = value; } }
+
+        public override bool IsAlive { get => Config.IsAlive; set => Config.IsAlive = value; }
+
+        public override DateTime LastAliveTime { get => Config.LastAliveTime; set => Config.LastAliveTime = value; }
+
         public BaseService(T config)
         {
             Config = config;
             ServiceName = Config.Name;
+
+            SendTopic = Config.SendTopic;
+            SubscribeTopic = Config.SubscribeTopic;
+            MQTTControl.SubscribeCache(SubscribeTopic);
         }
     }
 

@@ -43,9 +43,7 @@ namespace ColorVision.MQTT.Camera
 
         public CameraService(CameraConfig CameraConfig) : base(CameraConfig)
         {
-            SendTopic = CameraConfig.SendTopic;
-            SubscribeTopic = CameraConfig.SubscribeTopic;
-            MQTTControl.SubscribeCache(SubscribeTopic);
+
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
             DeviceStatus = DeviceStatus.UnInit;
 

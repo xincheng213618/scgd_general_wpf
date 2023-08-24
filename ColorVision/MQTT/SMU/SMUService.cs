@@ -39,8 +39,9 @@ namespace ColorVision.MQTT.SMU
                 try
                 {
                     MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg);
-                    if (json == null)
+                    if (json == null || !json.ServiceName.Equals(Config.Code))
                         return Task.CompletedTask;
+
                     if (json.Code == 0)
                     {
                         if (json.EventName == "Init")
@@ -98,7 +99,8 @@ namespace ColorVision.MQTT.SMU
             }
             MsgSend msg = new MsgSend
             {
-                EventName = "SetParam"
+                EventName = "SetParam",
+                ServiceName = Config.Code,
             };
             PublishAsyncClient(msg);
             return true;
@@ -109,6 +111,7 @@ namespace ColorVision.MQTT.SMU
             MsgSend msg = new MsgSend
             {
                 EventName = "Open",
+                ServiceName = Config.Code,
                 Params = new SMUOpenParam() { DevName = devName, IsNet = isNet, }
             };
             PublishAsyncClient(msg);
@@ -120,6 +123,7 @@ namespace ColorVision.MQTT.SMU
             MsgSend msg = new MsgSend
             {
                 EventName = "GetData",
+                ServiceName = Config.Code,
                 Params = new SMUGetDataParam() { IsSourceV = isSourceV, MeasureValue = measureVal, LimitValue = lmtVal }
             };
             PublishAsyncClient(msg);
@@ -135,7 +139,8 @@ namespace ColorVision.MQTT.SMU
             //}
             MsgSend msg = new MsgSend
             {
-                EventName = "Close"
+                EventName = "Close",
+                ServiceName = Config.Code,
             };
             PublishAsyncClient(msg);
             return true;
@@ -147,6 +152,7 @@ namespace ColorVision.MQTT.SMU
             MsgSend msg = new MsgSend
             {
                 EventName = "Scan",
+                ServiceName = Config.Code,
                 SerialNumber = sn,
                 Params = new SMUScanParam() { IsSourceV = isSourceV, StartMeasureVal = startMeasureVal, StopMeasureVal = stopMeasureVal, LimitVal = lmtVal, Number = number }
             };
@@ -158,7 +164,8 @@ namespace ColorVision.MQTT.SMU
         {
             MsgSend msg = new MsgSend
             {
-                EventName = "CloseOutput"
+                EventName = "CloseOutput",
+                ServiceName = Config.Code,
             };
             PublishAsyncClient(msg);
             return true;
