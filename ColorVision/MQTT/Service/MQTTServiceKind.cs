@@ -1,4 +1,5 @@
-﻿using ColorVision.MySql.DAO;
+﻿using ColorVision.Device;
+using ColorVision.MySql.DAO;
 
 namespace ColorVision.MQTT.Service
 {

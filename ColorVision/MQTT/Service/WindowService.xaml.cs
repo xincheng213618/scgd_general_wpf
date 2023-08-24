@@ -1,4 +1,7 @@
-﻿using ColorVision.MQTT;
+﻿using ColorVision.Device.Camera;
+using ColorVision.Device.SMU;
+using ColorVision.Device.Spectrum;
+using ColorVision.MQTT;
 using ColorVision.MQTT.Camera;
 using ColorVision.MQTT.Service;
 using ColorVision.MQTT.SMU;

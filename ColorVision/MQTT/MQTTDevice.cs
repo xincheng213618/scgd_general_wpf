@@ -1,4 +1,5 @@
-﻿using ColorVision.MQTT.Service;
+﻿using ColorVision.Device;
+using ColorVision.MQTT.Service;
 using ColorVision.MQTT.SMU;
 using ColorVision.MySql.DAO;
 using Newtonsoft.Json;

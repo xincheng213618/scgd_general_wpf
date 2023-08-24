@@ -19,9 +19,9 @@ using ColorVision.MQTT.PG;
 using ColorVision.MQTT.Spectrum;
 using ColorVision.MQTT.SMU;
 using ColorVision.MQTT.Sensor;
-using ColorVision.MQTT.Service;
 using System.Threading;
 using EnumsNET;
+using ColorVision.MQTT.Service;
 
 namespace ColorVision
 {

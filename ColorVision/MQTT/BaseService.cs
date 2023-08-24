@@ -1,4 +1,5 @@
-﻿using ColorVision.MQTT.Camera;
+﻿using ColorVision.Device;
+using ColorVision.MQTT.Camera;
 using ColorVision.MVVM;
 using ColorVision.SettingUp;
 using Google.Protobuf.WellKnownTypes;
@@ -20,22 +21,6 @@ using System.Windows.Controls;
 
 namespace ColorVision.MQTT
 {
-
-    /// <summary>
-    /// MQTT服务接口
-    /// </summary>
-    public interface IMQTTServiceConfig
-    {
-        /// <summary>
-        /// 发送信道
-        /// </summary>
-        public string SendTopic { get; set; }
-
-        /// <summary>
-        /// 监听信道
-        /// </summary>
-        public string SubscribeTopic { get; set; }
-    }
 
     /// <summary>
     /// 心跳接口
@@ -70,13 +55,11 @@ namespace ColorVision.MQTT
     }
 
 
-    public class BaseService:ViewModelBase, IHeartbeat, IMQTTServiceConfig, IDisposable 
+    public class BaseService:ViewModelBase, IHeartbeat, IServiceConfig, IDisposable 
     {
         internal static readonly ILog log = LogManager.GetLogger(typeof(BaseService));
 
-        public MQTTConfig MQTTConfig { get; set; }
         public MQTTSetting MQTTSetting { get; set; }
-
 
         public event EventHandler Connected;
 
@@ -86,7 +69,6 @@ namespace ColorVision.MQTT
         {
             cmdMap = new Dictionary<string, MsgSend>();
             MQTTControl = MQTTControl.GetInstance();
-            MQTTConfig = MQTTControl.MQTTConfig;
             MQTTSetting = MQTTControl.MQTTSetting;
             MQTTControl.ApplicationMessageReceivedAsync += Processing;
             var timer = new System.Timers.Timer
@@ -240,7 +222,7 @@ namespace ColorVision.MQTT
         }
     }
 
-    public class MsgRecord:ViewModelBase, IMQTTServiceConfig
+    public class MsgRecord:ViewModelBase, IServiceConfig
     {
         public string SubscribeTopic { get; set; }
         public string SendTopic { get; set; }

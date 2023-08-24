@@ -1,6 +1,11 @@
-﻿using ColorVision.MQTT.Camera;
+﻿using ColorVision.Device.Camera;
+using ColorVision.Device.PG;
+using ColorVision.Device.Sensor;
+using ColorVision.Device.SMU;
+using ColorVision.Device.Spectrum;
+using ColorVision.MQTT;
+using ColorVision.MQTT.Camera;
 using ColorVision.MQTT.PG;
-using ColorVision.MQTT.Sensor;
 using ColorVision.MQTT.SMU;
 using ColorVision.MQTT.Spectrum;
 using ColorVision.MySql;
@@ -150,7 +155,7 @@ namespace ColorVision.MQTT.Service
             List<SpectumData> datas = new List<SpectumData>();
             List<SpectumResultModel> resultSpec = resultService.SpectumSelectBySN(bid);
             List<SMUResultModel> resultSMU = resultService.SMUSelectBySN(bid);
-            for(int i=0;i< resultSpec.Count; i++)
+            for (int i = 0; i < resultSpec.Count; i++)
             {
                 var item = resultSpec[i];
                 ColorParam param = new ColorParam()

@@ -1,10 +1,10 @@
-﻿using ColorVision.MQTT;
+﻿using ColorVision.Device.Camera;
+using ColorVision.Device.PG;
+using ColorVision.Device.Sensor;
+using ColorVision.Device.SMU;
+using ColorVision.Device.Spectrum;
 using ColorVision.MQTT.Camera;
 using ColorVision.MQTT.PG;
-using ColorVision.MQTT.Sensor;
-using ColorVision.MQTT.Service;
-using ColorVision.MQTT.SMU;
-using ColorVision.MQTT.Spectrum;
 using ColorVision.MySql.DAO;
 using ColorVision.SettingUp;
 using Newtonsoft.Json;
