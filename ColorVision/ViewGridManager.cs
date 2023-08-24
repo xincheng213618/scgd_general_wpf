@@ -58,8 +58,8 @@ namespace ColorVision
     {
         private static readonly int[] defaultViewIndexMap = new int[100]
              {
-               0, 1, 4, 9, 16, 25, 36, 49, 64, 81,
-               2, 3, 5, 10, 17, 26, 37, 50, 65, 82,
+               0, 2, 4, 9, 16, 25, 36, 49, 64, 81,
+               1, 3, 5, 10, 17, 26, 37, 50, 65, 82,
                6, 7, 8, 11, 18, 27, 38, 51, 66, 83,
                12, 13, 14, 15, 19, 28, 39, 52, 67, 84,
                20, 21, 22, 23, 24, 29, 40, 53, 68, 85,
@@ -69,6 +69,9 @@ namespace ColorVision
                72, 73, 74, 75, 76, 77, 78, 79, 80, 89,
                90, 91, 92, 93, 94, 95, 96, 97, 98, 99
              };
+
+
+
         public event ViewMaxChangedHandler ViewMaxChangedEvent;
 
         public int ViewMax { get => _ViewMax; set { if (_ViewMax == value) return;ViewMaxChangedEvent?.Invoke(value); _ViewMax = value; } }
@@ -313,6 +316,8 @@ namespace ColorVision
         {
             return Grids.Count;
         }
+
+
 
 
 
