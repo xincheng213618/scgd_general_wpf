@@ -21,6 +21,7 @@ using ColorVision.MQTT.SMU;
 using ColorVision.MQTT.Sensor;
 using ColorVision.MQTT.Service;
 using System.Threading;
+using EnumsNET;
 
 namespace ColorVision
 {
@@ -122,14 +123,23 @@ namespace ColorVision
             SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
             MenuStatusBar.DataContext = SoftwareConfig;
             SiderBarGrid.DataContext = SoftwareConfig;
-            if (!SoftwareSetting.IsDeFaultOpenService)
+            try
             {
-                new WindowService1() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+                if (!SoftwareSetting.IsDeFaultOpenService)
+                {
+                    new WindowDevices() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+                }
+                else
+                {
+                    ServiceControl.GetInstance().GenContorl();
+                }
             }
-            else
+            catch(Exception ex)
             {
-                ServiceControl.GetInstance().GenContorl();
+                MessageBox.Show("窗口创建错误");
+                Environment.Exit(-1);
             }
+
 
             ViewGridManager.GetInstance().SetViewNum(-1);
         }
@@ -401,8 +411,44 @@ namespace ColorVision
         {
             if(sender is MenuItem button && int.TryParse(button.Tag.ToString() ,out int nums))
             {
+                switch (nums)
+                {
+                    case 20:
+                        ViewGridManager.SetViewGrid(2);
+                        break;
+                    case 21:
+                        ViewGridManager.SetViewGridTwo();
+                        break;
+                    default:
+                        ViewGridManager.SetViewGrid(nums);
+                        break;
+                }
+
                 ViewGridManager.SetViewGrid(nums);
             }
+        }
+        private void ViewGrid_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && int.TryParse(button.Tag.ToString(), out int nums))
+            {
+                switch (nums)
+                {
+
+                    case 20:
+                        ViewGridManager.SetViewGrid(2);
+                        break;
+                    case 21:
+                        ViewGridManager.SetViewGridTwo();
+                        break;
+                    default:
+                        ViewGridManager.SetViewGrid(nums);
+                        break;
+                }
+            }
+        }
+
+        private void Button1_Click_2(object sender, RoutedEventArgs e)
+        {
         }
 
         private void Login_Click(object sender, RoutedEventArgs e)
@@ -410,5 +456,7 @@ namespace ColorVision
             LoginWindow loginWindow = new LoginWindow();
             loginWindow.ShowDialog();
         }
+
+
     }
 }

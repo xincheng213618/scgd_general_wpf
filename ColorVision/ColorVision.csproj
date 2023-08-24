@@ -42,6 +42,10 @@
     <None Remove="Image\ColorVision.png" />
     <None Remove="Image\ColorVision1.ico" />
     <None Remove="Image\connect.png" />
+    <None Remove="Image\view1.png" />
+    <None Remove="Image\view20.png" />
+    <None Remove="Image\view21.png" />
+    <None Remove="Image\view4.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -93,6 +97,10 @@
     <Resource Include="Image\ColorVision.png" />
     <Resource Include="Image\ColorVision1.ico" />
     <Resource Include="Image\connect.png" />
+    <Resource Include="Image\view1.png" />
+    <Resource Include="Image\view20.png" />
+    <Resource Include="Image\view21.png" />
+    <Resource Include="Image\view4.png" />
   </ItemGroup>
 
   <ItemGroup>

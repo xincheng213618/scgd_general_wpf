@@ -93,7 +93,8 @@
                     <MenuItem Header="应用窗口布局"  Click="MenuStatusBar_Click" />
                     <Separator/>
                     <MenuItem x:Name="Button1" Header="一" Click="Button1_Click_1" Tag="1"/>
-                    <MenuItem x:Name="Button2" Header="二" Click="Button1_Click_1"  Tag="2"/>
+                    <MenuItem x:Name="Button2" Header="二(左右)" Click="Button1_Click_1"  Tag="20"/>
+                    <MenuItem x:Name="Button21" Header="二(上下)" Click="Button1_Click_1"  Tag="21"/>
                     <MenuItem x:Name="Button3" Header="四" Click="Button1_Click_1"  Tag="4"/>
                     <MenuItem x:Name="Button4" Header="六" Click="Button1_Click_1"  Tag="6"/>
                     <MenuItem x:Name="Button5" Header="九" Click="Button1_Click_1"  Tag="9"/>
@@ -195,11 +196,27 @@
                         <TextBlock Text="{Binding  SoftwareConfig.SolutionConfig.SolutionName}"  MouseLeftButtonDown="TextBlock_MouseLeftButtonDown2"/>
                     </DockPanel>
                 </StatusBarItem>
+                
                 <StatusBarItem Grid.Column="1" >
                     <DockPanel>
                         <DockPanel.Resources>
                             <ResourceDictionary Source="/Theme/Icons.xaml"/>
                         </DockPanel.Resources>
+                        <StackPanel Orientation="Horizontal" Margin="0">
+                            <Button  Height="15" BorderThickness="0" Click="ViewGrid_Click" Tag="1">
+                                <Image Margin="-3" Source="Image\view1.png"/>
+                            </Button>
+                            <Button  Height="15" BorderThickness="0"  Click="ViewGrid_Click" Tag="20">
+                                <Image Margin="-3" Source="Image\view20.png"/>
+                            </Button>
+                            <Button  Height="15" BorderThickness="0"  Click="ViewGrid_Click" Tag="21">
+                                <Image Margin="-3" Source="Image\view21.png"/>
+                            </Button>
+                            <Button  Height="15" BorderThickness="0"  Click="ViewGrid_Click" Tag="4">
+                                <Image Margin="-3" Source="Image\view4.png"/>
+                            </Button>
+                        </StackPanel>
+                        <Grid Width="1" Background="Black"/>
                         <StatusBarItem  MouseLeftButtonDown="TextBlock_MouseLeftButtonDown1" Visibility="{Binding SoftwareConfig.IsUseMySql,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="MySql" >
                             <ToggleButton x:Name="StatusBarMysql" Style="{StaticResource ButtonDrawingImageMysql}"  Height="20"  Margin="0,-10" IsChecked="{Binding SoftwareConfig.MySqlControl.IsConnect,Mode=OneWay}"  IsEnabled="False"/>
                         </StatusBarItem>

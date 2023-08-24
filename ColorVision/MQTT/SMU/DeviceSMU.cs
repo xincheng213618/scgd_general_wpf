@@ -14,7 +14,5 @@ namespace ColorVision.MQTT.SMU
             SMUService = new SMUService(Config);
             View = new SMUView();
         }
-
-
     }
 }

@@ -196,11 +196,15 @@ namespace ColorVision.MQTT
         /// <param name="msg"></param>
         internal virtual void PublishAsyncClient(MsgSend msg)
         {
-            //msg.ServiceName = ServiceName;
-            Guid guid = Guid.NewGuid();
+            Guid guid = Guid.NewGuid(); 
             msg.MsgID = guid;
             msg.ServiceID = ServiceID;
             msg.SnID = SnID;
+            ///这里是为了兼容只前的写法，后面会修改掉
+            if (string.IsNullOrWhiteSpace(msg.ServiceName))
+            {
+                msg.ServiceName = SendTopic;
+            }
             string json = JsonConvert.SerializeObject(msg, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
 
             Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, json, false));
@@ -209,6 +213,7 @@ namespace ColorVision.MQTT
                 return;
 
             MsgRecord msgRecord = new MsgRecord {SendTopic=SendTopic,SubscribeTopic =SubscribeTopic ,MsgID = guid.ToString(), SendTime = DateTime.Now, MsgSend = msg,MsgRecordState = MsgRecordState.Send};
+            
             MQTTSetting.MsgRecords.Insert(0,msgRecord);
 
             MsgRecords.Add(msgRecord);

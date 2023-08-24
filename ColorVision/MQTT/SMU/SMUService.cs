@@ -132,11 +132,6 @@ namespace ColorVision.MQTT.SMU
 
         public bool Close()
         {
-            //if (ServiceID == 0)
-            //{
-            //    MessageBox.Show("请先初始化");
-            //    return false;
-            //}
             MsgSend msg = new MsgSend
             {
                 EventName = "Close",
