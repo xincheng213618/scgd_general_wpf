@@ -35,7 +35,6 @@ namespace ColorVision.MQTT.SMU
 
         PassSxSource passSxSource;
 
-
         public MQTTSMUControl(DeviceSMU deviceSMU)
         {
             this.DeviceSMU = deviceSMU;
