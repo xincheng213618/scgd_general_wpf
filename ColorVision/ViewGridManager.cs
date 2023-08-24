@@ -2,6 +2,7 @@
 using ColorVision.MVVM;
 using EnumsNET;
 using log4net;
+using NPOI.HSSF.Record;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -56,8 +57,19 @@ namespace ColorVision
 
     public class ViewGridManager
     {
-        private static readonly int[] defaultViewIndexMap = new int[100]
-             {
+        private static readonly int[] defaultViewIndexMap = new int[100]{
+               0, 1, 4, 9, 16, 25, 36, 49, 64, 81,
+               2, 3, 5, 10, 17, 26, 37, 50, 65, 82,
+               6, 7, 8, 11, 18, 27, 38, 51, 66, 83,
+               12, 13, 14, 15, 19, 28, 39, 52, 67, 84,
+               20, 21, 22, 23, 24, 29, 40, 53, 68, 85,
+               30, 31, 32, 33, 34, 35, 41, 54, 69, 86,
+               42, 43, 44, 45, 46, 47, 48, 55, 70, 87,
+               56, 57, 58, 59, 60, 61, 62, 63, 71, 88,
+               72, 73, 74, 75, 76, 77, 78, 79, 80, 89,
+               90, 91, 92, 93, 94, 95, 96, 97, 98, 99
+     };
+        private static readonly int[] defaultViewIndexMap1 = new int[100] {
                0, 2, 4, 9, 16, 25, 36, 49, 64, 81,
                1, 3, 5, 10, 17, 26, 37, 50, 65, 82,
                6, 7, 8, 11, 18, 27, 38, 51, 66, 83,
@@ -68,7 +80,7 @@ namespace ColorVision
                56, 57, 58, 59, 60, 61, 62, 63, 71, 88,
                72, 73, 74, 75, 76, 77, 78, 79, 80, 89,
                90, 91, 92, 93, 94, 95, 96, 97, 98, 99
-             };
+     };
 
 
 
@@ -191,6 +203,27 @@ namespace ColorVision
                 Grids[i].Children.Add(Views[i]);
             }
         }
+        public void SetViewGridTwo()
+        {
+            GenViewGrid(2, false);
+            for (int i = 0; i < 2; i++)
+            {
+                if (i >= Views.Count)
+                    break;
+
+                if (Views[i] is IView view)
+                    view.View.ViewIndex = i;
+
+                if (Views[i].Parent is Grid grid)
+                    grid.Children.Remove(Views[i]);
+
+                Grids[i].Children.Clear();
+
+                Grids[i].Children.Add(Views[i]);
+            }
+
+        }
+
 
 
         /// <summary>
@@ -321,8 +354,10 @@ namespace ColorVision
 
 
 
-        private void GenViewGrid(int Nums)
+        private void GenViewGrid(int Nums,bool defaultmap =true)
         {
+            int[] maps = defaultmap ? defaultViewIndexMap : defaultViewIndexMap1;
+
             if (MainView == null)
                 return;
             ViewMax = Nums;
@@ -332,7 +367,7 @@ namespace ColorVision
 
             for (int i = 0; i < Nums; i++)
             {
-                int location = Array.IndexOf(defaultViewIndexMap, i);
+                int location = Array.IndexOf(maps, i);
                 int row = (location / 10);
                 int col = (location % 10);
                 if (MainView.ColumnDefinitions.Count <= col)
@@ -352,7 +387,7 @@ namespace ColorVision
             {
                 Grid grid = new Grid() { Margin = new Thickness(2, 2, 2, 2), };
                 Grids.Add(grid);
-                int location = Array.IndexOf(defaultViewIndexMap, i);
+                int location = Array.IndexOf(maps, i);
                 int row = (location / 10);
                 int col = (location % 10);
                 grid.SetValue(Grid.RowProperty, row);

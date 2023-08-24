@@ -21,6 +21,7 @@ using ColorVision.MQTT.SMU;
 using ColorVision.MQTT.Sensor;
 using ColorVision.MQTT.Service;
 using System.Threading;
+using EnumsNET;
 
 namespace ColorVision
 {
@@ -410,8 +411,44 @@ namespace ColorVision
         {
             if(sender is MenuItem button && int.TryParse(button.Tag.ToString() ,out int nums))
             {
+                switch (nums)
+                {
+                    case 20:
+                        ViewGridManager.SetViewGrid(2);
+                        break;
+                    case 21:
+                        ViewGridManager.SetViewGridTwo();
+                        break;
+                    default:
+                        ViewGridManager.SetViewGrid(nums);
+                        break;
+                }
+
                 ViewGridManager.SetViewGrid(nums);
             }
+        }
+        private void ViewGrid_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && int.TryParse(button.Tag.ToString(), out int nums))
+            {
+                switch (nums)
+                {
+
+                    case 20:
+                        ViewGridManager.SetViewGrid(2);
+                        break;
+                    case 21:
+                        ViewGridManager.SetViewGridTwo();
+                        break;
+                    default:
+                        ViewGridManager.SetViewGrid(nums);
+                        break;
+                }
+            }
+        }
+
+        private void Button1_Click_2(object sender, RoutedEventArgs e)
+        {
         }
 
         private void Login_Click(object sender, RoutedEventArgs e)
@@ -419,5 +456,7 @@ namespace ColorVision
             LoginWindow loginWindow = new LoginWindow();
             loginWindow.ShowDialog();
         }
+
+
     }
 }
