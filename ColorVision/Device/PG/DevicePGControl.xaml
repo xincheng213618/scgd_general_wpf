@@ -48,8 +48,21 @@
                                 <TextBox Text="{Binding Config.HeartbeatTime}"/>
                             </DockPanel>
                             <DockPanel Margin="0,5" >
-                                <Label Content="相机ID"/>
-                                <TextBox Text="{Binding Config.ID}"/>
+                                <Label Content="通讯方式"/>
+                                <RadioButton x:Name="IsNet" Content="TCP/IP" IsChecked="{Binding  Config.IsTCPIP}"/>
+                                <RadioButton x:Name="IsComm" Content="串口" IsChecked="{Binding  Config.IsComm}"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,5" >
+                                <UniformGrid Columns="2">
+                                    <StackPanel Margin="5">
+                                        <TextBlock  x:Name="TextBlockPGIP"   Text="IP地址"/>
+                                        <TextBox Text="{Binding Config.Addr}"/>
+                                    </StackPanel>
+                                    <StackPanel Margin="5">
+                                        <TextBlock  x:Name="TextBlockPGPort"   Text="端口"/>
+                                        <TextBox Text="{Binding Config.Port}"/>
+                                    </StackPanel>
+                                </UniformGrid>
                             </DockPanel>
                         </StackPanel>
                         <Button Grid.Column="1"  Content="提交" Click="Button_Click" Command="{Binding SaveCommand}" />

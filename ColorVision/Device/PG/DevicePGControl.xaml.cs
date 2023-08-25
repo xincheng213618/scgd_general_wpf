@@ -23,7 +23,23 @@ namespace ColorVision.Device.PG
         {
             ServiceControl = ServiceControl.GetInstance();
             this.DataContext = DevicePG;
+
+            IsNet.Checked += IsNet_Checked;
+            IsComm.Checked += IsComm_Checked;
         }
+
+        private void IsComm_Checked(object sender, RoutedEventArgs e)
+        {
+            TextBlockPGIP.Text = "串口";
+            TextBlockPGPort.Text = "波特率";
+        }
+
+        private void IsNet_Checked(object sender, RoutedEventArgs e)
+        {
+            TextBlockPGIP.Text = "IP地址";
+            TextBlockPGPort.Text = "端口";
+        }
+
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
