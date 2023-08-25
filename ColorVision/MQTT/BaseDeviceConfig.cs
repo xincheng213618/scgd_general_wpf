@@ -24,6 +24,8 @@ namespace ColorVision.MQTT
         public string Code { get => _Code; set { _Code = value; NotifyPropertyChanged(); } }
         private string _Code;
 
+        public int HeartbeatTime { get => _HeartbeatTime; set { _HeartbeatTime = value; NotifyPropertyChanged(); } }
+        private int _HeartbeatTime;
         /// <summary>
         /// 是否存活
         /// </summary>

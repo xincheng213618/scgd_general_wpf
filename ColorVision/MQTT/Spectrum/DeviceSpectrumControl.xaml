@@ -46,12 +46,22 @@
                             </DockPanel>
 
                             <DockPanel Margin="0,5" >
-                                <Label Content="最大积分时间："/>
+                                <Label Content="心跳间隔"/>
+                                <TextBox Text="{Binding Config.HeartbeatTime}"/>
+                            </DockPanel>
+
+                            <DockPanel Margin="0,5" >
+                                <Label Content="自动测试间隔"/>
+                                <TextBox Text="{Binding Config.AutoTestTime}"/>
+                            </DockPanel>
+
+                            <DockPanel Margin="0,5" >
+                                <Label Content="最大积分时间"/>
                                 <TextBox Text="{Binding Config.TimeLimit}"/>
                             </DockPanel>
 
                             <DockPanel Margin="0,5" >
-                                <Label Content="起始积分时间："/>
+                                <Label Content="起始积分时间"/>
                                 <TextBox Text="{Binding Config.TimeFrom}"/>
                             </DockPanel>
                         </StackPanel>
