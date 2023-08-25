@@ -7,7 +7,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.MQTT
 {
-    public class MQTTDevice : BaseObject, IDisposable
+    public class BaseDevice : BaseObject, IDisposable
     {
         public virtual string SendTopic { get; set; }
         public virtual string SubscribeTopic { get; set; }
@@ -24,13 +24,13 @@ namespace ColorVision.MQTT
     }
 
 
-    public class MQTTDevice<T> : MQTTDevice where T :BaseDeviceConfig,new()
+    public class BaseDevice<T> : BaseDevice where T :BaseDeviceConfig,new()
     {
         public T Config { get; set; }
         public SysResourceModel SysResourceModel { get; set; }
         public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
 
-        public MQTTDevice(SysResourceModel sysResourceModel) : base()
+        public BaseDevice(SysResourceModel sysResourceModel) : base()
         {
             SysResourceModel = sysResourceModel;
 

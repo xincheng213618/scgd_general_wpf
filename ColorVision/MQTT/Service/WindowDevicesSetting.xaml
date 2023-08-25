@@ -62,7 +62,7 @@
                                         <TextBlock Text="{Binding Name}"/>
                                     </StackPanel>
                                 </HierarchicalDataTemplate>
-                                <HierarchicalDataTemplate DataType="{x:Type mqtt:MQTTDevice}" ItemsSource="{Binding VisualChildren}" >
+                                <HierarchicalDataTemplate DataType="{x:Type mqtt:BaseDevice}" ItemsSource="{Binding VisualChildren}" >
                                     <StackPanel>
                                         <TextBlock Text="{Binding Name}"/>
                                     </StackPanel>
@@ -115,7 +115,7 @@
                                             <TextBlock Text="{Binding Name}"/>
                                         </StackPanel>
                                     </HierarchicalDataTemplate>
-                                    <HierarchicalDataTemplate DataType="{x:Type mqtt:MQTTDevice}" ItemsSource="{Binding VisualChildren}" >
+                                    <HierarchicalDataTemplate DataType="{x:Type mqtt:BaseDevice}" ItemsSource="{Binding VisualChildren}" >
                                         <StackPanel>
                                             <TextBlock Text="{Binding Name}"/>
                                         </StackPanel>

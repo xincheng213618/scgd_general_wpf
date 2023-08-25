@@ -3,7 +3,7 @@ using ColorVision.MySql.DAO;
 
 namespace ColorVision.Device.Camera
 {
-    public class DeviceCamera : MQTTDevice<CameraConfig>
+    public class DeviceCamera : BaseDevice<CameraConfig>
     {
         public CameraService CameraService { get; set; }
 

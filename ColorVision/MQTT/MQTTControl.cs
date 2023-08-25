@@ -19,10 +19,6 @@ namespace ColorVision.MQTT
 
     public class MsgControl
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(MsgControl));
-
-        private static MsgControl _instance;
-        private static readonly object _locker = new();
         public MQTTControl MQTTControl { get; set; }
 
         private MsgControl()

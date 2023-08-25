@@ -23,7 +23,7 @@ namespace ColorVision.MQTT.Service
 
         public ObservableCollection<MQTTServiceKind> MQTTServices { get; set; }
 
-        public ObservableCollection<MQTTDevice> MQTTDevices { get; set; }
+        public ObservableCollection<BaseDevice> MQTTDevices { get; set; }
 
 
         public SysResourceService ResourceService { get; set; }
@@ -42,7 +42,7 @@ namespace ColorVision.MQTT.Service
             DictionaryService = new SysDictionaryService();
             resultService = new ResultService();
             MQTTServices = new ObservableCollection<MQTTServiceKind>();
-            MQTTDevices = new ObservableCollection<MQTTDevice>();
+            MQTTDevices = new ObservableCollection<BaseDevice>();
             UserConfig = GlobalSetting.GetInstance().SoftwareConfig.UserConfig;
             MQTTStackPanel = new StackPanel();
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => Reload();
@@ -50,7 +50,7 @@ namespace ColorVision.MQTT.Service
         }
 
 
-        public void GenControl(ObservableCollection<MQTTDevice> MQTTDevices)
+        public void GenControl(ObservableCollection<BaseDevice> MQTTDevices)
         {
             MQTTStackPanel.Children.Clear();
             foreach (var item in MQTTDevices)

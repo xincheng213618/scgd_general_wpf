@@ -1998,7 +1998,7 @@ namespace cvColorVision
             }
         }
 
-        public bool Disto(DistoData distoData) 
+        public static bool Disto(DistoData distoData) 
         {
             try
             {

@@ -3,7 +3,7 @@ using ColorVision.MySql.DAO;
 
 namespace ColorVision.Device.Spectrum
 {
-    public class DeviceSpectrum : MQTTDevice<SpectrumConfig>
+    public class DeviceSpectrum : BaseDevice<SpectrumConfig>
     {
         public SpectrumService SpectrumService { get; set; }
 

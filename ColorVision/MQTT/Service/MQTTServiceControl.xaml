@@ -88,14 +88,14 @@
                 <GridView>
                     <GridViewColumn  Header="设备名称">
                         <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type mqtt:MQTTDevice}">
+                            <DataTemplate  DataType="{x:Type mqtt:BaseDevice}">
                                 <TextBlock Text="{ Binding Name}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn  Header="是否存活">
                         <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type mqtt:MQTTDevice}">
+                            <DataTemplate  DataType="{x:Type mqtt:BaseDevice}">
                                 <TextBlock Text="{ Binding  IsAlive}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>

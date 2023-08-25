@@ -3,7 +3,7 @@ using ColorVision.MySql.DAO;
 
 namespace ColorVision.Device.SMU
 {
-    public class DeviceSMU : MQTTDevice<SMUConfig>
+    public class DeviceSMU : BaseDevice<SMUConfig>
     {
         public SMUService SMUService { get; set; }
 

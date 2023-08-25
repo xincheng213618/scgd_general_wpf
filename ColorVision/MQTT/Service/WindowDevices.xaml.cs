@@ -24,7 +24,7 @@ namespace ColorVision.Service
             InitializeComponent();
         }
 
-        public ObservableCollection<MQTTDevice> MQTTDevices { get; set; }
+        public ObservableCollection<BaseDevice> MQTTDevices { get; set; }
         private void Window_Initialized(object sender, EventArgs e)
         {
             MQTTDevices = ServiceControl.GetInstance().MQTTDevices;

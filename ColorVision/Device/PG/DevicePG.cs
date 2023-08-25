@@ -3,7 +3,7 @@ using ColorVision.MySql.DAO;
 
 namespace ColorVision.Device.PG
 {
-    public class DevicePG : MQTTDevice<PGConfig>
+    public class DevicePG : BaseDevice<PGConfig>
     {
         public PGService PGService { get; set; }
 
