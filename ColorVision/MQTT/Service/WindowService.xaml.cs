@@ -53,11 +53,10 @@ namespace ColorVision.Service
             {
                 StackPanelShow.Children.Add(new DeviceSMUControl(mQTTDeviceSMU));
             }
-            else if (TreeView1.SelectedItem is DevicePG devicePG)
+            else if (TreeView1.SelectedItem is DevicePG mQTTDevicePG)
             {
-                StackPanelShow.Children.Add(new DevicePGControl(devicePG));
+                StackPanelShow.Children.Add(new DevicePGControl(mQTTDevicePG));
             }
-
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

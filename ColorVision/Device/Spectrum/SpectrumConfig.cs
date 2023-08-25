@@ -67,6 +67,9 @@ namespace ColorVision.Device.Spectrum
         private int _TimeLimit;
         public int TimeLimit { get => _TimeLimit; set { _TimeLimit = value; NotifyPropertyChanged(); } }
 
+        private int _AutoTestTime;
+        public int AutoTestTime { get => _AutoTestTime; set { _AutoTestTime = value; NotifyPropertyChanged(); } }
+
         private float _TimeFrom;
         public float TimeFrom { get => _TimeFrom; set { _TimeFrom = value; NotifyPropertyChanged(); } }
     }

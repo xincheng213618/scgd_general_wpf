@@ -43,9 +43,12 @@
                                 <Label Content="设备昵称"/>
                                 <TextBox Text="{Binding Config.Name}"/>
                             </DockPanel>
-
                             <DockPanel Margin="0,5" >
-                                <Label Content="相机ID："/>
+                                <Label Content="心跳时间"/>
+                                <TextBox Text="{Binding Config.HeartbeatTime}"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,5" >
+                                <Label Content="相机ID"/>
                                 <TextBox Text="{Binding Config.ID}"/>
                             </DockPanel>
                         </StackPanel>
