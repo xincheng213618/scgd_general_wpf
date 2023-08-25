@@ -10,10 +10,35 @@ using System.Collections.ObjectModel;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Interop;
 
 namespace ColorVision.MQTT
 {
     public delegate void MQTTMsgHandler(MQMsg resultDataMQTT);
+
+
+    public class MsgControl
+    {
+        private static readonly ILog log = LogManager.GetLogger(typeof(MsgControl));
+
+        private static MsgControl _instance;
+        private static readonly object _locker = new();
+        public MQTTControl MQTTControl { get; set; }
+
+        private MsgControl()
+        {
+            MQTTControl = MQTTControl.GetInstance();
+        }
+
+        public async Task UnsubscribeAsyncClientAsync(string topic) => await MQTTControl.UnsubscribeAsyncClientAsync(topic);
+
+        public async Task PublishAsyncClient(string topic, string msg, bool retained) => await MQTTControl.PublishAsyncClient(topic, msg, retained);
+
+
+
+
+
+    }
 
 
     public class MQTTControl : ViewModelBase
