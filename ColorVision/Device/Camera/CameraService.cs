@@ -39,10 +39,10 @@ namespace ColorVision.Device.Camera
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
             DeviceStatus = DeviceStatus.UnInit;
 
-            //Connected += (s, e) =>
-            //{
-            //    GetAllCameraID();
-            //};
+            Connected += (s, e) =>
+            {
+                GetAllCameraID();
+            };
         }
 
 

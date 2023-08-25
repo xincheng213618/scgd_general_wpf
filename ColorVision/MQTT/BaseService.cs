@@ -81,7 +81,7 @@ namespace ColorVision.MQTT
                 string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
                 try
                 {
-                    MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg,new JsonSerializerSettings() { StringEscapeHandling = StringEscapeHandling.EscapeNonAscii });
+                    MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg);
                     if (json == null)
                         return Task.CompletedTask;
                     

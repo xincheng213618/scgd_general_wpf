@@ -14,17 +14,21 @@ namespace ColorVision.Theme
         UseSystem
     };
 
+    public static class ThemeManagerExtensions
+    {
+        public static void ApplyTheme(this Application app, Theme theme) => ThemeManager.Current.ApplyTheme(app, theme);
+    }
+
     public delegate void ThemeChangedHandler(Theme oldtheme,Theme newtheme);
 
-    public static class ThemeManager
+    public class ThemeManager
     {
-        public static Application Application { get; private set; }
+        public Application Application { get; private set; }
 
-        public static void ApplyTheme(this Application app, Theme theme)
+        public static ThemeManager Current { get; set; } = new ThemeManager();
+
+        public ThemeManager()
         {
-            Application = app;
-            CurrentUITheme = theme;
-
             SystemEvents.UserPreferenceChanged += (s, e) =>
             {
                 AppsTheme = AppsUseLightTheme() ? Theme.Light : Theme.Dark;
@@ -36,22 +40,33 @@ namespace ColorVision.Theme
                 SystemTheme = SystemUsesLightTheme() ? Theme.Light : Theme.Dark;
             };
 
+            AppsThemeChanged += (s, e) =>
+            {
+                if (ApplicationTheme == Theme.UseSystem)
+                {
+                    //ActualApplicationTheme =
+                }
+            };
+        }
 
 
 
-
+        public void ApplyTheme(Application app, Theme theme) 
+        { 
 
         }
-        public static Theme CurrentUITheme { get; set; } = Theme.Dark;
 
 
+        public  Theme ApplicationTheme { get; set; }
 
-        public static Theme AppsTheme { get => _AppsTheme; set { if (value == _AppsTheme) return;  AppsThemeChanged?.Invoke(_AppsTheme, value); _AppsTheme = value; } }
-        private static Theme _AppsTheme = AppsUseLightTheme() ? Theme.Light : Theme.Dark;
+        public  Theme ActualApplicationTheme { get; set; }
+
+        public  Theme AppsTheme { get => _AppsTheme; set { if (value == _AppsTheme) return;  AppsThemeChanged?.Invoke(_AppsTheme, value); _AppsTheme = value; } }
+        private  Theme _AppsTheme = AppsUseLightTheme() ? Theme.Light : Theme.Dark;
 
 
-        public static Theme SystemTheme { get => _SystemTheme; set { if (value == _SystemTheme) return; SystemThemeChanged?.Invoke(_SystemTheme, value);  _SystemTheme = value; } }
-        private static Theme _SystemTheme = SystemUsesLightTheme() ? Theme.Light : Theme.Dark;
+        public  Theme SystemTheme { get => _SystemTheme; set { if (value == _SystemTheme) return; SystemThemeChanged?.Invoke(_SystemTheme, value);  _SystemTheme = value; } }
+        private  Theme _SystemTheme = SystemUsesLightTheme() ? Theme.Light : Theme.Dark;
 
 
         public static bool AppsUseLightTheme()
@@ -79,8 +94,8 @@ namespace ColorVision.Theme
         }
 
 
-        public static event ThemeChangedHandler? SystemThemeChanged;
+        public event ThemeChangedHandler? SystemThemeChanged;
 
-        public static event ThemeChangedHandler? AppsThemeChanged;
+        public event ThemeChangedHandler? AppsThemeChanged;
     }
 }
