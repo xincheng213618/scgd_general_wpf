@@ -64,7 +64,7 @@ namespace ColorVision.Service
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            WindowDevicesSetting Service = new WindowDevicesSetting(MQTTDevices);
+            WindowDevicesSetting Service = new WindowDevicesSetting(MQTTDevices) { Owner = this,WindowStartupLocation =WindowStartupLocation.CenterOwner };
             Service.Closed += async (s, e) =>
             {
                 if (Service.MQTTDevices1.Count > 0)
