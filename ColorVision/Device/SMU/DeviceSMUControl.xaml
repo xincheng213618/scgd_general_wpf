@@ -8,7 +8,7 @@
              xmlns:hc="https://handyorg.github.io/handycontrol"
              d:DataContext="{d:DesignInstance local:DeviceSMU}"
              d:DesignHeight="400" d:DesignWidth="600" Initialized="UserControl_Initialized">
-    <Grid>
+    <Grid>     
         <Grid Margin="0,0,0,5">
             <Border Background="#F2F2F2" CornerRadius="5"/>
             <StackPanel>

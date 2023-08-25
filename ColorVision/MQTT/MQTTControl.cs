@@ -16,27 +16,6 @@ namespace ColorVision.MQTT
 {
     public delegate void MQTTMsgHandler(MQMsg resultDataMQTT);
 
-
-    public class MsgControl
-    {
-        public MQTTControl MQTTControl { get; set; }
-
-        private MsgControl()
-        {
-            MQTTControl = MQTTControl.GetInstance();
-        }
-
-        public async Task UnsubscribeAsyncClientAsync(string topic) => await MQTTControl.UnsubscribeAsyncClientAsync(topic);
-
-        public async Task PublishAsyncClient(string topic, string msg, bool retained) => await MQTTControl.PublishAsyncClient(topic, msg, retained);
-
-
-
-
-
-    }
-
-
     public class MQTTControl : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MQTTControl));
@@ -91,7 +70,7 @@ namespace ColorVision.MQTT
                 MQTTMsgChanged?.Invoke(new MQMsg(1,
                     $"{DateTime.Now:HH:mm:ss.fff} 接收：{arg.ApplicationMessage.Topic} {Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment)},消息等级Qos：[{arg.ApplicationMessage.QualityOfServiceLevel}]，是否保留：[{arg.ApplicationMessage.Retain}]",
                     arg.ApplicationMessage.Topic, Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment)));
-                ApplicationMessageReceivedAsync.Invoke(arg); return Task.CompletedTask; };
+                ApplicationMessageReceivedAsync?.Invoke(arg); return Task.CompletedTask; };
             try
             {
                 await MQTTClient.ConnectAsync(options);
