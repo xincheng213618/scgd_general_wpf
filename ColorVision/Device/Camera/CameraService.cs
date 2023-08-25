@@ -214,11 +214,6 @@ namespace ColorVision.Device.Camera
                     {
                         new ParamFunction(){Name ="CM_InitCalibration" },
                         new ParamFunction(){Name ="CM_UnInitCalibration" },
-                        new ParamFunction(){Name ="CM_UnInitCalibration" },
-                        new ParamFunction(){Name ="CM_UnInitCalibration" },
-                        new ParamFunction(){Name ="CM_UnInitCalibration" },
-                        new ParamFunction(){Name ="CM_UnInitCalibration" },
-                        new ParamFunction(){Name ="CM_UnInitCalibration" },
                     }
                 }
                 }

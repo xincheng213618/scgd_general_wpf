@@ -10,20 +10,20 @@ namespace ColorVision.Theme
         Dark,
         [Description("浅色")]
         Light,
+        [Description("跟随系统")]
+        UseSystem
     };
 
     public delegate void ThemeChangedHandler(Theme oldtheme,Theme newtheme);
 
     public static class ThemeManager
     {
-
         public static Application Application { get; private set; }
 
         public static void ApplyTheme(this Application app, Theme theme)
         {
             Application = app;
             CurrentUITheme = theme;
-
 
             SystemEvents.UserPreferenceChanged += (s, e) =>
             {
@@ -35,12 +35,18 @@ namespace ColorVision.Theme
                 AppsTheme = AppsUseLightTheme() ? Theme.Light : Theme.Dark;
                 SystemTheme = SystemUsesLightTheme() ? Theme.Light : Theme.Dark;
             };
+
+
+
+
+
+
         }
-
-
         public static Theme CurrentUITheme { get; set; } = Theme.Dark;
 
-        public static Theme AppsTheme { get => _AppsTheme; set { if (value == _AppsTheme) return; AppsThemeChanged?.Invoke(_AppsTheme, value); _AppsTheme = value; } }
+
+
+        public static Theme AppsTheme { get => _AppsTheme; set { if (value == _AppsTheme) return;  AppsThemeChanged?.Invoke(_AppsTheme, value); _AppsTheme = value; } }
         private static Theme _AppsTheme = AppsUseLightTheme() ? Theme.Light : Theme.Dark;
 
 
