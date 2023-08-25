@@ -1,5 +1,6 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.MySql.DAO;
+using System.Windows.Controls;
 
 namespace ColorVision.Device.Camera
 {
@@ -17,5 +18,7 @@ namespace ColorVision.Device.Camera
             Control = new MQTTCameraControl1(CameraService);
             View = new ImageView();
         }
+
+        public override UserControl GenDeviceControl() => new DeviceCameraControl(this);
     }
 }

@@ -1,7 +1,9 @@
-﻿using ColorVision.Device.Camera;
+﻿using ColorVision.Device;
+using ColorVision.Device.Camera;
 using ColorVision.Device.PG;
 using ColorVision.Device.SMU;
 using ColorVision.Device.Spectrum;
+using ColorVision.MQTT;
 using ColorVision.MQTT.Service;
 using System;
 using System.Collections.ObjectModel;
@@ -32,31 +34,8 @@ namespace ColorVision.Service
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             StackPanelShow.Children.Clear();
-
-            if (TreeView1.SelectedItem is MQTTServiceKind mQTTServiceKind)
-            {
-                StackPanelShow.Children.Add( new MQTTServiceKindControl(mQTTServiceKind));
-            }
-            else if (TreeView1.SelectedItem is MQTTService mQTTService)
-            {
-                StackPanelShow.Children.Add(new MQTTServiceControl(mQTTService));
-            }
-            else if (TreeView1.SelectedItem is DeviceCamera  mQTTDeviceCamera)
-            {
-                StackPanelShow.Children.Add(new DeviceCameraControl(mQTTDeviceCamera));
-            }
-            else if (TreeView1.SelectedItem is DeviceSpectrum mQTTDeviceSpectrum)
-            {
-                StackPanelShow.Children.Add(new DeviceSpectrumControl(mQTTDeviceSpectrum));
-            }
-            else if (TreeView1.SelectedItem is DeviceSMU mQTTDeviceSMU)
-            {
-                StackPanelShow.Children.Add(new DeviceSMUControl(mQTTDeviceSMU));
-            }
-            else if (TreeView1.SelectedItem is DevicePG mQTTDevicePG)
-            {
-                StackPanelShow.Children.Add(new DevicePGControl(mQTTDevicePG));
-            }
+            if (TreeView1.SelectedItem is BaseObject baseObject)
+                StackPanelShow.Children.Add(baseObject.GenDeviceControl());
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

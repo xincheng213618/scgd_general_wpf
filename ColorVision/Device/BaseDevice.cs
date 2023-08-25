@@ -17,6 +17,8 @@ namespace ColorVision.MQTT
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; NotifyPropertyChanged(); } }
         private bool _IsSelected;
 
+
+
         public void Dispose()
         {
             GC.SuppressFinalize(this);
@@ -63,6 +65,8 @@ namespace ColorVision.MQTT
             }
             Config.Code = SysResourceModel.Code ?? string.Empty;
         }
+
+
 
         public override string SendTopic { get => Config.SendTopic; set { Config.SendTopic = value; NotifyPropertyChanged(); } }
         public override string SubscribeTopic { get => Config.SubscribeTopic; set { Config.SubscribeTopic = value; NotifyPropertyChanged(); } }

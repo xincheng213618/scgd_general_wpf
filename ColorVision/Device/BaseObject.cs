@@ -2,6 +2,7 @@
 using ColorVision.Extension;
 using ColorVision.MQTT.Service;
 using ColorVision.MVVM;
+using System;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
@@ -66,6 +67,10 @@ namespace ColorVision.Device
 
         public virtual void Save()
         {
+        }
+        public virtual UserControl GenDeviceControl()
+        {
+            throw new NotImplementedException();
         }
 
     }

@@ -11,5 +11,6 @@ namespace ColorVision.Device.FilterWheel
             MQTTControl = MQTTControl.GetInstance();
             MQTTControl.SubscribeCache(SubscribeTopic);
         }
+
     }
 }

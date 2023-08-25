@@ -1,5 +1,7 @@
-﻿using ColorVision.MQTT;
+﻿using ColorVision.Device.Camera;
+using ColorVision.MQTT;
 using ColorVision.MySql.DAO;
+using System.Windows.Controls;
 
 namespace ColorVision.Device.PG
 {
@@ -11,5 +13,8 @@ namespace ColorVision.Device.PG
         {
             PGService = new PGService(Config);
         }
+
+        public override UserControl GenDeviceControl() => new DevicePGControl(this);
+
     }
 }

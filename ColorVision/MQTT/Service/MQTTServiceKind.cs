@@ -1,5 +1,7 @@
 ﻿using ColorVision.Device;
 using ColorVision.MySql.DAO;
+using ColorVision.Service;
+using System.Windows.Controls;
 
 namespace ColorVision.MQTT.Service
 {
@@ -19,5 +21,7 @@ namespace ColorVision.MQTT.Service
         public MQTTServiceKind() : base()
         {
         }
+
+        public override UserControl GenDeviceControl() => new MQTTServiceKindControl(this);
     }
 }
