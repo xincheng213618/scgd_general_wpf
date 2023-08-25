@@ -1,6 +1,4 @@
-﻿using ColorVision.Device;
-using ColorVision.MQTT;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
 namespace ColorVision.Device.SMU
 {

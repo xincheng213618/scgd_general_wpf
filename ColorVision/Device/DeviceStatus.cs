@@ -1,4 +1,4 @@
-﻿namespace ColorVision.MQTT
+﻿namespace ColorVision.Device
 {
     public delegate void DeviceStatusChangedHandler(DeviceStatus deviceStatus);
 

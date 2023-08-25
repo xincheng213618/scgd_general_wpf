@@ -1,23 +1,15 @@
 ﻿using ColorVision.Device;
-using ColorVision.MQTT.Camera;
 using ColorVision.MVVM;
 using ColorVision.SettingUp;
-using Google.Protobuf.WellKnownTypes;
-using HandyControl.Expression.Shapes;
-using HslCommunication.MQTT;
 using log4net;
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
-using System.Windows;
-using System.Windows.Controls;
 
 namespace ColorVision.MQTT
 {

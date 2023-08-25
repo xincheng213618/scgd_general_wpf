@@ -1,5 +1,4 @@
-﻿using ColorVision.Device.PG;
-using ColorVision.Extension;
+﻿using ColorVision.Extension;
 using ColorVision.Template;
 using System;
 using System.Collections.Generic;
@@ -7,7 +6,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.MQTT.PG
+namespace ColorVision.Device.PG
 {
     /// <summary>
     /// MQTTPGControl.xaml 的交互逻辑

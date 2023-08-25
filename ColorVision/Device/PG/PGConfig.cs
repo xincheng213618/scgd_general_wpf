@@ -1,5 +1,4 @@
-﻿using ColorVision.Device;
-using ColorVision.MQTT;
+﻿using ColorVision.MQTT;
 
 namespace ColorVision.Device.PG
 {

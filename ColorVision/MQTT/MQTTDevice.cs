@@ -1,10 +1,8 @@
 ﻿using ColorVision.Device;
 using ColorVision.MQTT.Service;
-using ColorVision.MQTT.SMU;
 using ColorVision.MySql.DAO;
 using Newtonsoft.Json;
 using System;
-using System.Data;
 using System.Windows.Controls;
 
 namespace ColorVision.MQTT

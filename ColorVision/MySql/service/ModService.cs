@@ -1,14 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Documents;
+﻿using System.Collections.Generic;
 using ColorVision.MySql.DAO;
 using ColorVision.Template;
 using ColorVision.Util;
-using cvColorVision;
-using Org.BouncyCastle.Crypto.Parameters;
 
 namespace ColorVision.MySql.Service
 {

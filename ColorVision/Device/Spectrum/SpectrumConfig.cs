@@ -1,5 +1,4 @@
-﻿using ColorVision.Device;
-using ColorVision.MQTT;
+﻿using ColorVision.MQTT;
 using Newtonsoft.Json;
 using static cvColorVision.GCSDLL;
 

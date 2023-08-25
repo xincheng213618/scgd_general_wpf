@@ -1,20 +1,14 @@
 ﻿#pragma warning disable  CA2101,CA1707,CA1401,CA1051,CA1838,CA1711,CS0649,CA2211,CA1708,CA1720
 using Newtonsoft.Json;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Net.Mime;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Windows;
 using ColorVision.Util;
-using System.Diagnostics;
 using System.IO;
 using System.ComponentModel;
-using System.Windows.Forms;
-using static cvColorVision.SimpleFeatures;
 
 namespace cvColorVision
 {
@@ -1480,7 +1474,7 @@ namespace cvColorVision
 
     public class SimpleFeatures 
     {
-        private CameraModeType GetCameraModeType(CameraType type)
+        private static CameraModeType GetCameraModeType(CameraType type)
         {
             CameraModeType ret = CameraModeType.Other;
             switch (type)
@@ -1753,7 +1747,6 @@ namespace cvColorVision
                                         ErrorData = "Vertical FOV执行失败！";
                                         return false;
                                     } 
-
                                     if (!fovResult)
                                     {
                                         ErrorData = "FOV执行失败！";
@@ -1787,7 +1780,7 @@ namespace cvColorVision
             }
         }
 
-        private string GetFovPattern(FovPattern pattern)
+        private static string GetFovPattern(FovPattern pattern)
         {
             string fovPattern = "";
             switch (pattern)
@@ -1806,7 +1799,7 @@ namespace cvColorVision
             return fovPattern;
         }
 
-        private void saveCsv_FOV(string path, string fovPattern, string fovType, double fovDegrees)
+        private static void saveCsv_FOV(string path, string fovPattern, string fovType, double fovDegrees)
         {
             bool saveHeader = false;
             if (!Directory.Exists(path))
@@ -2013,7 +2006,7 @@ namespace cvColorVision
                 CallWithTimeout(distoData, FiveSecondMethod, 15000);
                 return true;
             }
-            catch (Exception ex) 
+            catch
             {
                 System.Windows.Forms.MessageBox.Show("畸变计算超时"); 
                 return false; 
@@ -2026,7 +2019,6 @@ namespace cvColorVision
             Action wrappedAction = () =>
             {
                 threadToKill = Thread.CurrentThread;
-                string ErrorData = "";
                 action(distoData);
             };
 
@@ -2037,7 +2029,9 @@ namespace cvColorVision
             }
             else
             {
-                threadToKill.Abort();
+#pragma warning disable SYSLIB0006
+                threadToKill?.Abort();
+#pragma warning restore SYSLIB0006
                 throw new TimeoutException();
                 //try { throw new TimeoutException(); }
                 //catch (Exception e) { MessageBox.Show("畸变计算超时"); }
@@ -2045,7 +2039,7 @@ namespace cvColorVision
             }
         }
 
-        public void FiveSecondMethod(DistoData distoData)
+        public static void FiveSecondMethod(DistoData distoData)
         {
             BlobThreParams blobThreParams = BlobThreParams.Load();
             if (distoData.wRGB > 0&& distoData.hRGB >0&& distoData.bppRGB >0&& distoData.channalsRGB >0)
@@ -2152,7 +2146,7 @@ namespace cvColorVision
             }
         }
 
-        private void saveCsv_Distortion(string path, double pointx, double pointy, double maxErrorRatio, double t, string strDisType)
+        private static void saveCsv_Distortion(string path, double pointx, double pointy, double maxErrorRatio, double t, string strDisType)
         {
             if (!Directory.Exists(path))
             {
@@ -2213,7 +2207,7 @@ namespace cvColorVision
             fs.Close();
         }
 
-        private CornerType GetCornerType(BlobThreParams blobThreParams)
+        private static CornerType GetCornerType(BlobThreParams blobThreParams)
         {
             CornerType cornerType = blobThreParams.cornerType;
             //switch (blobThreParams.cornerType.ToLower())
@@ -2329,7 +2323,7 @@ namespace cvColorVision
             }
         }
 
-        private string GetPath(string path)
+        private static string GetPath(string path)
         {
             if (!Directory.Exists(path))
             {
@@ -2344,7 +2338,7 @@ namespace cvColorVision
 
         private List<System.Drawing.Point> listGhostH = new List<System.Drawing.Point>();
         private List<System.Drawing.Point> listGhostL = new List<System.Drawing.Point>();
-        private void save_Ghost_result(string path, int nxN, float[] centersX, float[] centersY, float[] blobGray, float[] dstGray, int numArrH, int[] arrH, int[] dataH_X, int[] dataH_Y, int numArrL, int[] arrL, int[] dataL_X, int[] dataL_Y)
+        private  void save_Ghost_result(string path, int nxN, float[] centersX, float[] centersY, float[] blobGray, float[] dstGray, int numArrH, int[] arrH, int[] dataH_X, int[] dataH_Y, int numArrL, int[] arrL, int[] dataL_X, int[] dataL_Y)
         {
             if (listGhostH == null)
             {
@@ -2359,7 +2353,7 @@ namespace cvColorVision
             saveCsv_Ghost_point(path, "鬼影", numArrL, arrL, dataL_X, dataL_Y, listGhostL);
         }
 
-        private void saveCsv_Ghost_xy(string path, int nxN, float[] centersX, float[] centersY, float[] blobGray, float[] dstGray)
+        private static void saveCsv_Ghost_xy(string path, int nxN, float[] centersX, float[] centersY, float[] blobGray, float[] dstGray)
         {
             bool saveHeader = false;
             if (!Directory.Exists(path))
@@ -2411,7 +2405,7 @@ namespace cvColorVision
             fs.Close();
         }
 
-        private void saveCsv_Ghost_point(string path, string name, int numArr, int[] arr, int[] data_X, int[] data_Y, List<System.Drawing.Point> list)
+        private static void saveCsv_Ghost_point(string path, string name, int numArr, int[] arr, int[] data_X, int[] data_Y, List<System.Drawing.Point> list)
         {
             bool saveHeader = false;
             if (!Directory.Exists(path))

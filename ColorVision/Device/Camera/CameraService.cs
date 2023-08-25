@@ -1,23 +1,13 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.MVVM;
 using ColorVision.Template;
-using HslCommunication.MQTT;
-using MQTTnet.Client;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using OpenCvSharp;
-using ScottPlot.Drawing.Colormaps;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Data;
 using System.IO;
-using System.Text;
-using System.Text.Json.Nodes;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Media.Media3D;
 
 namespace ColorVision.Device.Camera
 {

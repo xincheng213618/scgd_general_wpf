@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Globalization;
-using System.Runtime.CompilerServices;
-using System.Security.Policy;
 using System.Text;
-using System.Windows.Documents;
 using System.Windows.Input;
 
 namespace ColorVision.HotKey

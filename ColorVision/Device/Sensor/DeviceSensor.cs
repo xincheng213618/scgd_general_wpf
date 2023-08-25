@@ -1,5 +1,4 @@
 ﻿using ColorVision.MQTT;
-using ColorVision.MQTT.SMU;
 using ColorVision.MySql.DAO;
 
 namespace ColorVision.Device.Sensor

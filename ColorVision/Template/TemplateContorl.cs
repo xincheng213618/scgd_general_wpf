@@ -1,22 +1,12 @@
-﻿using ColorVision.MQTT;
-using ColorVision.MySql.DAO;
+﻿using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.SettingUp;
 using ColorVision.Util;
-using cvColorVision;
-using NPOI.SS.Formula.Functions;
-using ScottPlot.Styles;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel.Design;
 using System.IO;
-using System.Linq;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Forms.Design;
 
 namespace ColorVision.Template
 {

@@ -2,8 +2,6 @@
 using ColorVision.Extension;
 using ColorVision.MQTT.Service;
 using ColorVision.MVVM;
-using MQTTnet.Internal;
-using System;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 

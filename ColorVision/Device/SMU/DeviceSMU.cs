@@ -1,6 +1,4 @@
 ﻿using ColorVision.MQTT;
-using ColorVision.MQTT.Service;
-using ColorVision.MQTT.SMU;
 using ColorVision.MySql.DAO;
 
 namespace ColorVision.Device.SMU

@@ -1,15 +1,4 @@
-﻿using ColorVision.Device;
-using ColorVision.MQTT;
-using MQTTnet.Client;
-using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Documents;
-using System.Windows.Media.Media3D;
+﻿using ColorVision.MQTT;
 
 namespace ColorVision.Device.FilterWheel
 {

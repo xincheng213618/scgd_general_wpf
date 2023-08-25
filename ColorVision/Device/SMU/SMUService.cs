@@ -1,13 +1,10 @@
 ﻿using ColorVision.MQTT;
-using ColorVision.MQTT.Spectrum;
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using System;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Input;
 
 namespace ColorVision.Device.SMU
 {
@@ -40,7 +37,7 @@ namespace ColorVision.Device.SMU
                 try
                 {
                     MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg);
-                    if (json == null || !json.ServiceName.Equals(Config.Code))
+                    if (json == null || !json.ServiceName.Equals(Config.Code, StringComparison.Ordinal))
                         return Task.CompletedTask;
 
                     if (json.Code == 0)

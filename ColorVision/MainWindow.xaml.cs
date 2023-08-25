@@ -2,7 +2,6 @@
 using ColorVision.SettingUp;
 using ColorVision.Template;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
@@ -11,17 +10,10 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using ColorVision.Theme;
 using ColorVision.Video;
-using Microsoft.Win32;
 using ColorVision.Util;
 using ColorVision.Service;
-using ColorVision.MQTT.Camera;
-using ColorVision.MQTT.PG;
-using ColorVision.MQTT.Spectrum;
-using ColorVision.MQTT.SMU;
-using ColorVision.MQTT.Sensor;
-using System.Threading;
-using EnumsNET;
 using ColorVision.MQTT.Service;
+using ColorVision.Device.SMU;
 
 namespace ColorVision
 {
@@ -134,7 +126,7 @@ namespace ColorVision
                     ServiceControl.GetInstance().GenContorl();
                 }
             }
-            catch(Exception ex)
+            catch
             {
                 MessageBox.Show("窗口创建错误");
                 Environment.Exit(-1);
@@ -183,8 +175,6 @@ namespace ColorVision
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             //MessageBox.Show("流程执行完成");
             window.Close();
-            window = null;
-            flowControl = null;
             if (sender!=null)
             {
                 FlowControlData flowControlData = (FlowControlData)sender;

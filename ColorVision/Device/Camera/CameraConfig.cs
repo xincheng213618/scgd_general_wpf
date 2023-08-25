@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel;
-using ColorVision.Device;
 
 namespace ColorVision.Device.Camera
 {

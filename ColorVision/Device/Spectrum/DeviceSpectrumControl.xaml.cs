@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.Device.Spectrum;
 
-namespace ColorVision.MQTT.Spectrum
+namespace ColorVision.Device.Spectrum
 {
     /// <summary>
     /// DeviceSpectrumControl.xaml 的交互逻辑

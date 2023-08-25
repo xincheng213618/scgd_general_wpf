@@ -3,27 +3,15 @@ using ColorVision.Device.PG;
 using ColorVision.Device.Sensor;
 using ColorVision.Device.SMU;
 using ColorVision.Device.Spectrum;
-using ColorVision.MQTT;
-using ColorVision.MQTT.Camera;
-using ColorVision.MQTT.PG;
-using ColorVision.MQTT.SMU;
-using ColorVision.MQTT.Spectrum;
 using ColorVision.MySql;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.SettingUp;
-using ColorVision.Template;
 using Newtonsoft.Json;
-using NPOI.SS.Formula.Functions;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel.Design;
-using System.Windows;
-using System.Windows.Automation;
 using System.Windows.Controls;
-using System.Windows.Media.Media3D;
 using static cvColorVision.GCSDLL;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace ColorVision.MQTT.Service
 {

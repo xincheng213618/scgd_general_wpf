@@ -1,19 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using ColorVision.MySql;
 using ColorVision.SettingUp;
-using ColorVision.Util;
 using log4net;
 using OpenH264Lib;
-using Org.BouncyCastle.Bcpg;
-using Org.BouncyCastle.Utilities;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace ColorVision.Video
 {

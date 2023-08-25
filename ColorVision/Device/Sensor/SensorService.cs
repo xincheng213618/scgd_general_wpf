@@ -1,10 +1,4 @@
 ﻿using ColorVision.MQTT;
-using ColorVision.MQTT.SMU;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ColorVision.Device.Sensor
 {

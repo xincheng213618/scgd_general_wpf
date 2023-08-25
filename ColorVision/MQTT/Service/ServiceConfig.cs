@@ -1,7 +1,4 @@
 ﻿using ColorVision.Device;
-using ColorVision.MQTT;
-using ColorVision.MVVM;
-using System;
 
 namespace ColorVision.MQTT.Service
 {

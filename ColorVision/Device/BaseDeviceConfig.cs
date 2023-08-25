@@ -1,7 +1,6 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.MVVM;
 using System;
-using System.ComponentModel;
 
 namespace ColorVision.Device
 {

@@ -1,6 +1,4 @@
 ﻿using ColorVision.MQTT;
-using ColorVision.MQTT.Camera;
-using ColorVision.MQTT.Spectrum;
 using ColorVision.MySql.DAO;
 
 namespace ColorVision.Device.Spectrum

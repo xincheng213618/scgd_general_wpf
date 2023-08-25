@@ -1,15 +1,12 @@
 ﻿using ColorVision.Extension;
 using ColorVision.MVVM;
-using ColorVision.MySql;
 using ColorVision.MySql.DAO;
 using ColorVision.SettingUp;
-using ColorVision.Solution;
 using ColorVision.Util;
 using cvColorVision;
 using log4net;
 using Newtonsoft.Json;
 using NPOI.SS.UserModel;
-using Org.BouncyCastle.Utilities.Collections;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -24,10 +21,8 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Xml.Linq;
 
 namespace ColorVision.Template
 {

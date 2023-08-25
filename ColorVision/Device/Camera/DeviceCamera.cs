@@ -1,9 +1,5 @@
 ﻿using ColorVision.MQTT;
-using ColorVision.MQTT.Camera;
-using ColorVision.MQTT.Service;
 using ColorVision.MySql.DAO;
-using Newtonsoft.Json;
-using System;
 
 namespace ColorVision.Device.Camera
 {

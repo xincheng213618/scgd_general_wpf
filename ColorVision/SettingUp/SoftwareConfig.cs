@@ -4,16 +4,10 @@ using ColorVision.MySql;
 using ColorVision.Template;
 using log4net;
 using log4net.Core;
-using log4net.Layout;
 using log4net.Repository.Hierarchy;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace ColorVision.SettingUp
 {
