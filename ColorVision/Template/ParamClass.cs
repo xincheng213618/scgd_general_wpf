@@ -1,17 +1,11 @@
 ﻿using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.SettingUp;
-using Google.Protobuf.WellKnownTypes;
-using HslCommunication.Secs.Types;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ColorVision.Template
 {

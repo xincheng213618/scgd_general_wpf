@@ -1,12 +1,5 @@
-﻿using NPOI.SS.Formula.Functions;
-using OpenCvSharp.Flann;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
 
 namespace ColorVision.MySql.DAO
 {

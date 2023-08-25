@@ -1,23 +1,11 @@
 ﻿#pragma warning disable CS4014
 using ColorVision.MQTT;
-using ColorVision.MVVM;
 using ColorVision.SettingUp;
-using ColorVision.Util;
-using HandyControl.Expression.Shapes;
-using MQTTnet.Client;
-using MQTTnet.Server;
 using Newtonsoft.Json;
-using ScottPlot.Drawing.Colormaps;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Reflection.Metadata.Ecma335;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Interop;
 using System.Windows.Media;
 
 namespace ColorVision

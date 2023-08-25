@@ -1,26 +1,16 @@
 ﻿using ColorVision.MQTT;
-using ColorVision.MySql;
 using ColorVision.NativeMethods;
 using ColorVision.SettingUp;
 using ColorVision.Theme;
-using HslCommunication.Profinet.MegMeet;
 using log4net;
 using log4net.Config;
-using Microsoft.VisualBasic.Logging;
 using System;
 using System.CodeDom.Compiler;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Data;
 using System.Diagnostics;
-using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Resources;
 
 [assembly: XmlConfigurator(ConfigFile = "log4net.config", Watch = true)]
 namespace ColorVision

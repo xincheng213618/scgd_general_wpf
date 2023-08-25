@@ -1,9 +1,8 @@
-﻿using ColorVision.MVVM;
-using System;
+﻿using ColorVision.Device;
 
-namespace ColorVision.MQTT
+namespace ColorVision.MQTT.Service
 {
-    public class ServiceConfig : BaseDeviceConfig, IMQTTServiceConfig, IHeartbeat
+    public class ServiceConfig : BaseDeviceConfig, IServiceConfig, IHeartbeat
     {
         /// <summary>
         /// 服务类型

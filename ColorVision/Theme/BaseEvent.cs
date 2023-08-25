@@ -1,15 +1,6 @@
 ﻿#pragma warning disable CA1010
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Windows;
-using System.Collections;
-using System.ComponentModel;
-using System.Windows.Markup;
-using System.Windows.Controls;
 
 namespace ColorVision.Theme
 {

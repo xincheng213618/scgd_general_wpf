@@ -1,14 +1,8 @@
-﻿using ColorVision.MQTT;
-using ColorVision.MQTT.Camera;
-using ColorVision.MQTT.PG;
+﻿using ColorVision.Device.Camera;
+using ColorVision.Device.SMU;
+using ColorVision.Device.Spectrum;
 using ColorVision.MQTT.Service;
-using ColorVision.MQTT.SMU;
-using ColorVision.MQTT.Spectrum;
-using ColorVision.MySql.DAO;
-using ColorVision.MySql.Service;
-using ColorVision.SettingUp;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;

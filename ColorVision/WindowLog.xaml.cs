@@ -2,22 +2,11 @@
 using log4net.Repository.Hierarchy;
 using log4net;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using log4net.Appender;
 using log4net.Core;
 using ColorVision.MQTT;
-using ScottPlot.Drawing.Colormaps;
 
 namespace ColorVision
 {

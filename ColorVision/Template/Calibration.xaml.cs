@@ -1,10 +1,7 @@
-﻿using ColorVision.MVVM;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System;
 using System.Windows;
 using System.Windows.Controls;
-using System.IO;
-using System.Xml.Linq;
 using System.Windows.Input;
 
 namespace ColorVision.Template

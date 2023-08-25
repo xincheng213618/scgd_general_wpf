@@ -107,10 +107,10 @@
     <Compile Update="App.xaml.cs">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Compile>
-    <Compile Update="MQTT\Spectrum\SpectrumView.xaml.cs">
+    <Compile Update="Device\Spectrum\SpectrumView.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="MQTT\Spectrum\DeviceSpectrumControl.xaml.cs">
+    <Compile Update="Device\Spectrum\DeviceSpectrumControl.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
