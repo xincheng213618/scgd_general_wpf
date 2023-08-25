@@ -26,8 +26,6 @@ namespace ColorVision.MQTT
 
 
 
-
-
     public class BaseService<T> : BaseService where T :BaseDeviceConfig
     {
         public T Config { get; set; }
@@ -157,7 +155,7 @@ namespace ColorVision.MQTT
         public virtual DateTime LastAliveTime { get => _LastAliveTime; set { _LastAliveTime = value; NotifyPropertyChanged(); } } 
         private DateTime _LastAliveTime = DateTime.MinValue;
 
-        public virtual bool IsAlive { get => _IsAlive; set { if (value == _IsAlive) return;  _IsAlive = value; NotifyPropertyChanged(); } }
+        public virtual bool IsAlive { get => _IsAlive; set {  _IsAlive = value; NotifyPropertyChanged(); } }
         private bool _IsAlive;
 
 
