@@ -11,8 +11,18 @@ namespace ColorVision.SettingUp
     {
         public MQTTSetting()
         {
-            if (File.Exists(GlobalConst.MQTTMsgRecordsFileName)) 
-                MsgRecords = Newtonsoft.Json.JsonConvert.DeserializeObject<ObservableCollection<MsgRecord>>(File.ReadAllText(GlobalConst.MQTTMsgRecordsFileName)) ??  new ObservableCollection<MsgRecord>(); 
+            if (File.Exists(GlobalConst.MQTTMsgRecordsFileName))
+            {
+                try
+                {
+                    MsgRecords = Newtonsoft.Json.JsonConvert.DeserializeObject<ObservableCollection<MsgRecord>>(File.ReadAllText(GlobalConst.MQTTMsgRecordsFileName)) ?? new ObservableCollection<MsgRecord>();
+
+                }
+                catch
+                {
+                    MsgRecords = new ObservableCollection<MsgRecord>();
+                }
+            }
             else
                 MsgRecords = new ObservableCollection<MsgRecord>();
             MsgRecords.CollectionChanged += (s, e) =>

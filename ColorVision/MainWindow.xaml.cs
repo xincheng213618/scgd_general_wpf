@@ -175,6 +175,7 @@ namespace ColorVision
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             //MessageBox.Show("流程执行完成");
             window.Close();
+
             if (sender!=null)
             {
                 FlowControlData flowControlData = (FlowControlData)sender;
