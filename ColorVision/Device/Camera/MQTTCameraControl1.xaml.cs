@@ -140,7 +140,6 @@ namespace ColorVision.Device.Camera
             ComboxFilterWheelChannel.SelectedIndex = 0;
         }
 
-
         private void StackPanelFilterWheel_Initialized(object sender, EventArgs e)
         {
             for (int i = 0; i < 10; i++)
@@ -153,6 +152,9 @@ namespace ColorVision.Device.Camera
             Service.SetCfwport();
         }
 
-
+        private void SendDemo7_Click(object sender, RoutedEventArgs e)
+        {
+            Service.OpenVideo();
+        }
     }
 }

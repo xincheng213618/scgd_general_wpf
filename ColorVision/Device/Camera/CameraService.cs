@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
+using System.Windows.Media.Media3D;
 
 namespace ColorVision.Device.Camera
 {
@@ -226,6 +227,17 @@ namespace ColorVision.Device.Camera
             PublishAsyncClient(msg);
             return true;
         }
+
+        public void OpenVideo()
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "OpenVideo",
+                Params = new Dictionary<string, object>() { }
+            };
+            PublishAsyncClient(msg);
+        }
+
         public bool Open(string CameraID, TakeImageMode TakeImageMode, int ImageBpp)
         {
             MsgSend msg = new MsgSend
