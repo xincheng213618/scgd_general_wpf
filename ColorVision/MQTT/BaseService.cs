@@ -81,10 +81,10 @@ namespace ColorVision.MQTT
                 string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
                 try
                 {
-                    MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg);
+                    MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg,new JsonSerializerSettings() { StringEscapeHandling = StringEscapeHandling.EscapeNonAscii });
                     if (json == null)
                         return Task.CompletedTask;
-
+                    
                     if (json.EventName == "Heartbeat")
                     {
                         LastAliveTime = DateTime.Now;
