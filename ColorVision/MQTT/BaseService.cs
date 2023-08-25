@@ -24,6 +24,10 @@ namespace ColorVision.MQTT
         public bool IsAlive { get; set; }
     }
 
+
+
+
+
     public class BaseService<T> : BaseService where T :BaseDeviceConfig
     {
         public T Config { get; set; }
@@ -74,7 +78,6 @@ namespace ColorVision.MQTT
 
         private Task Processing(MqttApplicationMessageReceivedEventArgs arg)
         {
-
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {
                 string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);

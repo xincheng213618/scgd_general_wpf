@@ -1,4 +1,5 @@
 ﻿using ColorVision.Device.Camera;
+using ColorVision.Device.PG;
 using ColorVision.Device.SMU;
 using ColorVision.Device.Spectrum;
 using ColorVision.MQTT.Service;
@@ -51,6 +52,10 @@ namespace ColorVision.Service
             else if (TreeView1.SelectedItem is DeviceSMU mQTTDeviceSMU)
             {
                 StackPanelShow.Children.Add(new DeviceSMUControl(mQTTDeviceSMU));
+            }
+            else if (TreeView1.SelectedItem is DevicePG devicePG)
+            {
+                StackPanelShow.Children.Add(new DevicePGControl(devicePG));
             }
 
         }
