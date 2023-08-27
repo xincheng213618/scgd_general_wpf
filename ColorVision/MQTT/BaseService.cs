@@ -84,7 +84,7 @@ namespace ColorVision.MQTT
                     MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg);
                     if (json == null)
                         return Task.CompletedTask;
-                    
+
                     if (json.EventName == "Heartbeat")
                     {
                         LastAliveTime = DateTime.Now;
