@@ -19,6 +19,17 @@ namespace ColorVision.SettingUp
         {
         }
 
+        /// <summary>
+        /// 主题
+        /// </summary>
+        public Theme.Theme Theme { get; set; } = ColorVision.Theme.Theme.Light;
+
+        /// <summary>
+        /// 语言
+        /// </summary>
+        public string UICulture { get; set; } = "zh-Hans";
+
+
         public bool IsRestoreWindow { get; set; }
 
         public double Width { get; set; }

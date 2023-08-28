@@ -102,6 +102,10 @@
                                             <hc:ComboBox x:Name="cmbloglevel" Text="{Binding SoftwareSetting.LogLevel}" hc:InfoElement.Placeholder="Level"  DockPanel.Dock="Right"  Style="{StaticResource ComboBox.Small}" Width="100"  />
                                             <TextBlock Text="日志级别"/>
                                         </DockPanel>
+                                        <DockPanel  Margin="5">
+                                            <hc:ComboBox x:Name="cmtheme" SelectedValue="{Binding SoftwareSetting.Theme}" hc:InfoElement.Placeholder="Theme"  DockPanel.Dock="Right" Style="{StaticResource ComboBox.Small}" Width="100"   SelectionChanged="cmtheme_SelectionChanged"/>
+                                            <TextBlock Text="主题"/>
+                                        </DockPanel>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>

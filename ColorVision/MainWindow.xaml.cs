@@ -72,7 +72,7 @@ namespace ColorVision
             {
                 if (WindowConfig.Icon == null)
                 {
-                    ThemeManager.Current.SystemThemeChanged += (s, e) =>
+                    ThemeManager.Current.SystemThemeChanged += (e) =>
                     {
                         if (e == Theme.Theme.Dark)
                         {

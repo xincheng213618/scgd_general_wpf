@@ -6,10 +6,10 @@ namespace ColorVision.Theme
 {
     public enum Theme
     {
-        [Description("深色")]
-        Dark,
         [Description("浅色")]
         Light,
+        [Description("深色")]
+        Dark,
         [Description("跟随系统")]
         UseSystem
     };
@@ -19,7 +19,7 @@ namespace ColorVision.Theme
         public static void ApplyTheme(this Application app, Theme theme) => ThemeManager.Current.ApplyTheme(app, theme);
     }
 
-    public delegate void ThemeChangedHandler(Theme oldtheme,Theme newtheme);
+    public delegate void ThemeChangedHandler(Theme newtheme);
 
     public class ThemeManager
     {
@@ -40,11 +40,11 @@ namespace ColorVision.Theme
                 SystemTheme = SystemUsesLightTheme() ? Theme.Light : Theme.Dark;
             };
 
-            AppsThemeChanged += (s, e) =>
+            AppsThemeChanged += (e) =>
             {
                 if (ApplicationTheme == Theme.UseSystem)
                 {
-                    //ActualApplicationTheme =
+                    ApplyActTheme(Application.Current,e);
                 }
             };
         }
@@ -52,20 +52,42 @@ namespace ColorVision.Theme
 
 
         public void ApplyTheme(Application app, Theme theme) 
-        { 
+        {
+            if (ApplicationTheme == theme)
+                return;
+            ApplicationTheme = theme;
+            if (theme == Theme.UseSystem)
+                theme = AppsTheme;
+            ApplyActTheme(app,theme);
+        }
 
+        private void ApplyActTheme(Application app, Theme theme)
+        {
+            if (ApplicationActTheme == theme)
+                return;
+            ApplicationActTheme = theme;
+            MessageBox.Show(theme.ToString());
         }
 
 
-        public  Theme ApplicationTheme { get; set; }
 
-        public  Theme ActualApplicationTheme { get; set; }
+        /// <summary>
+        /// 选择的主题，存在三种情况：
+        /// </summary>
+        public  Theme ApplicationTheme { get;  private set; }
+        private Theme ApplicationActTheme { get;  set; }
 
-        public  Theme AppsTheme { get => _AppsTheme; set { if (value == _AppsTheme) return;  AppsThemeChanged?.Invoke(_AppsTheme, value); _AppsTheme = value; } }
+
+        /// <summary>
+        /// Windows,APP的主题
+        /// </summary>
+        public Theme AppsTheme { get => _AppsTheme; set { if (value == _AppsTheme) return;  AppsThemeChanged?.Invoke(value); _AppsTheme = value; } }
         private  Theme _AppsTheme = AppsUseLightTheme() ? Theme.Light : Theme.Dark;
 
-
-        public  Theme SystemTheme { get => _SystemTheme; set { if (value == _SystemTheme) return; SystemThemeChanged?.Invoke(_SystemTheme, value);  _SystemTheme = value; } }
+        /// <summary>
+        /// 任务栏的主题，这里Win10和Win11的表现不一样
+        /// </summary>
+        public  Theme SystemTheme { get => _SystemTheme; set { if (value == _SystemTheme) return; SystemThemeChanged?.Invoke(value);  _SystemTheme = value; } }
         private  Theme _SystemTheme = SystemUsesLightTheme() ? Theme.Light : Theme.Dark;
 
 
