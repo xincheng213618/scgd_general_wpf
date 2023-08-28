@@ -16,28 +16,27 @@
         <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Background="#F9F9F9"  Content="{Binding Config.Name }"  FontSize="15" Foreground="Black" IsChecked="True" />
         <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="5">
-                <DockPanel>
-                    <Label Content="模板："/>
-                    <ComboBox  x:Name="ComboxPGTemplate"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,0,10,0"/>
-                </DockPanel>
-                <Template:PG x:Name="PG1" />
-                <GroupBox Header="MQTT Test">
-                    <StackPanel Visibility="Visible" >
-                        <UniformGrid>
-                            <ComboBox  x:Name="ComboxPGType"   Style="{StaticResource ComboBox.Small}"   SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,2,10,2"/>
-                            <ComboBox  x:Name="ComboxPGCommunicateType"  Style="{StaticResource ComboBox.Small}"   SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,2,10,2"/>
-                            <Button Margin="2" Content="InitPG"  Click="PGInit"/>
-                            <Button Margin="2"  Content="UnInitPG" Click="PGUnInit"/>
+                <GroupBox Header="通讯方式" Margin="5">
+                    <StackPanel>
+                        <DockPanel Margin="0,5" IsEnabled="False">
+                            <RadioButton Content="TCPIP通讯" IsChecked="{Binding  Config.IsTCPIP}" Margin="0,0,5,0"/>
+                            <RadioButton Content="串口通讯"  IsChecked="{Binding  Config.IsTCPIP,Converter={StaticResource Boolean2BooleanReConverter}}" Margin="0,0,5,0"/>
+                        </DockPanel>
+                        <UniformGrid IsEnabled="False" Columns="2">
+                            <DockPanel Margin="5">
+                                <TextBlock  x:Name="TextBlockPGIP"   Text="IP"/>
+                                <TextBox  x:Name="TextBoxPGIP" BorderThickness="0,0,0,1" Text="{Binding Config.Addr}"/>
+                            </DockPanel>
+                            <DockPanel Margin="5">
+                                <TextBlock  x:Name="TextBlockPGPort"  Text="Port"/>
+                                <TextBox  x:Name="TextBoxPGPort" BorderThickness="0,0,0,1" Text="{Binding Config.Port}"/>
+                            </DockPanel>
                         </UniformGrid>
-                        <UniformGrid>
-                            <DockPanel Margin="2">
-                                <TextBlock  x:Name="TextBlockPGIP"   Text="IP:"/>
-                                <TextBox  x:Name="TextBoxPGIP" Height="16" BorderThickness="0,0,0,1"/>
-                            </DockPanel>
-                            <DockPanel Margin="2"  >
-                                <TextBlock  x:Name="TextBlockPGPort"  Text="Port:"/>
-                                <TextBox  x:Name="TextBoxPGPort" Height="16" BorderThickness="0,0,0,1"/>
-                            </DockPanel>
+                    </StackPanel>
+                </GroupBox>
+                <GroupBox Header="操作" Margin="5">
+                    <StackPanel Visibility="Visible" >
+                        <UniformGrid Columns="2">
                             <Button Margin="2"  Content="打开PG" Click="PGOpen"/>
                             <Button Margin="2" Content="关闭PG" Click="PGClose"/>
                         </UniformGrid>
@@ -48,9 +47,17 @@
                             <Grid/>
                             <Button Margin="2"  Content="SwitchUp" Click="PGSwitchUpPG"/>
                             <Button  Margin="2" Content="SwitchDown" Click="PGSwitchDownPG"/>
-                            <TextBox VerticalContentAlignment="Center"  BorderThickness="0,0,0,1" Margin="0,3" x:Name="PGFrameText" Text="0"/>
+                            <TextBox VerticalContentAlignment="Center"  BorderThickness="0,0,0,1" Margin="2" x:Name="PGFrameText" Text="0"/>
                             <Button  Margin="2" Content="SwitchFrame" Click="PGSwitchFramePG"/>
                         </UniformGrid>
+
+                        <StackPanel>
+                            <DockPanel Margin="5">
+                                <TextBlock Text="画面指令"/>
+                                <TextBox x:Name="PGCmdMsg"/>
+                            </DockPanel>
+                            <Button Content="发送" Click="PGSendCmd" Width="60"/>
+                        </StackPanel>
                     </StackPanel>
                 </GroupBox>
             </StackPanel>
