@@ -7,7 +7,7 @@
 #ifdef OPENCV_EXPORTS
 #define OPENCV_API __declspec(dllexport)
 #else
-#define CALARTCULATION_API __declspec(dllimport)
+#define OPENCV_API __declspec(dllimport)
 #endif
 
 extern "C" OPENCV_API double CalArtculation(int nw, int nh, char* data);
