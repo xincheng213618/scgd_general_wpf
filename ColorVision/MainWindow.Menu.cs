@@ -51,8 +51,8 @@ namespace ColorVision
                         TemplateAbb(windowTemplate, TemplateControl.CalibrationParams);
                         break;
                     case "PGParam":
-                        PG pg = new PG(TemplateControl.PGParams[0].Value);
-                        windowTemplate = new WindowTemplate(WindowTemplateType.PGParam, pg) { Title = "PG通讯设置" };
+                        //PG pg = new PG(TemplateControl.PGParams[0].Value);
+                        windowTemplate = new WindowTemplate(WindowTemplateType.PGParam) { Title = "PG设置" };
                         TemplateAbb(windowTemplate, TemplateControl.PGParams);
                         break;
                     case "LedReusltParams":

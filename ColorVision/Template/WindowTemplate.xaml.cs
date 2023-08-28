@@ -193,6 +193,7 @@ namespace ColorVision.Template
                     case WindowTemplateType.AoiParam:
                     case WindowTemplateType.LedReuslt:
                     case WindowTemplateType.SxParm:
+                    case WindowTemplateType.PGParam:
                         PropertyGrid1.SelectedObject = ListConfigs[listView.SelectedIndex].Value;
                         break;
                     case WindowTemplateType.Calibration:
@@ -202,13 +203,12 @@ namespace ColorVision.Template
                             calibration.CalibrationParam = calibrationParam;
                         }
                         break;
-                    case WindowTemplateType.PGParam:
-                        if (UserControl is PG pg && ListConfigs[listView.SelectedIndex].Value is PGParam pGparam)
-                        {
-                            pg.DataContext = pGparam;
-                            pg.PGParam = pGparam;
-                        }
-                        break;
+                        //if (UserControl is PG pg && ListConfigs[listView.SelectedIndex].Value is PGParam pGparam)
+                        //{
+                        //    pg.DataContext = pGparam;
+                        //    pg.PGParam = pGparam;
+                        //}
+                        //break;
                     case WindowTemplateType.MeasureParm:
                         if (UserControl is MeasureParamControl mpc && ListConfigs[listView.SelectedIndex].Value is MeasureParam mp)
                         {
@@ -255,7 +255,9 @@ namespace ColorVision.Template
                     CreateNewTemplate(TemplateControl.CalibrationParams, TextBox1.Text, new CalibrationParam());
                     break;
                 case WindowTemplateType.PGParam:
-                    CreateNewTemplate(TemplateControl.PGParams, TextBox1.Text, new PGParam());
+                    PGParam? pgParam = TemplateControl.AddPGParam(TextBox1.Text);
+                    if (pgParam != null) CreateNewTemplate(TemplateControl.PGParams, TextBox1.Text, pgParam);
+                    else MessageBox.Show("数据库创建PG模板失败");
                     break;
                 case WindowTemplateType.LedReuslt:
                     CreateNewTemplate(TemplateControl.LedReusltParams, TextBox1.Text, new LedReusltParam());
@@ -357,6 +359,8 @@ namespace ColorVision.Template
                             TemplateControl.CalibrationParams.RemoveAt(ListView1.SelectedIndex);
                             break;
                         case WindowTemplateType.PGParam:
+                            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+                                TemplateControl.ModMasterDeleteById(TemplateControl.PGParams[ListView1.SelectedIndex].Value.ID);
                             TemplateControl.PGParams.RemoveAt(ListView1.SelectedIndex);
                             break;
                         case WindowTemplateType.LedReuslt:

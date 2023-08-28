@@ -19,6 +19,10 @@
                 <GroupBox Header="通讯方式" Margin="5">
                     <StackPanel>
                         <DockPanel Margin="0,5" IsEnabled="False">
+                            <TextBlock Text="类别型号"/>
+                            <TextBox BorderThickness="0,0,0,1" Text="{Binding Config.Category}"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,5" IsEnabled="False">
                             <RadioButton Content="TCPIP通讯" IsChecked="{Binding  Config.IsTCPIP}" Margin="0,0,5,0"/>
                             <RadioButton Content="串口通讯"  IsChecked="{Binding  Config.IsTCPIP,Converter={StaticResource Boolean2BooleanReConverter}}" Margin="0,0,5,0"/>
                         </DockPanel>

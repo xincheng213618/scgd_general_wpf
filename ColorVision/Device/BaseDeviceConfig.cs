@@ -46,7 +46,12 @@ namespace ColorVision.Device
     }
 
     public delegate void HeartbeatEventHandler(HeartbeatParam heartbeat);
+    //public delegate void HeartbeatEventHandler(object sender, HeartbeatEventArgs e);
 
+    //public class HeartbeatEventArgs
+    //{
+    //    public string ID { get; set; }
+    //}
     public class HeartbeatParam
     {
         public DeviceStatus DeviceStatus { get; set; }
