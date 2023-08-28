@@ -1,4 +1,5 @@
-﻿using ColorVision.Extension;
+﻿using ColorVision.Device.SMU;
+using ColorVision.Extension;
 using ColorVision.Template;
 using System;
 using System.Collections.Generic;
@@ -26,20 +27,8 @@ namespace ColorVision.Device.PG
         private void StackPanelPG_Initialized(object sender, EventArgs e)
         {
             StackPanelPG.DataContext = PGService;
-            //ComboxPGTemplate.ItemsSource = TemplateControl.GetInstance().PGParams;
-            //ComboxPGTemplate.SelectionChanged += (s, e) =>
-            //{
-            //    if (ComboxPGTemplate.SelectedItem is KeyValuePair<string, PGParam> KeyValue && KeyValue.Value is PGParam pGParam)
-            //    {
-            //        PG1.PGParam = pGParam;
-            //        PG1.DataContext = pGParam;
-            //    }
-            //};
-            //ComboxPGTemplate.SelectedIndex = 0;
 
-            //ComboxPGType.ItemsSource = from e1 in Enum.GetValues(typeof(PGType)).Cast<PGType>()
-            //                           select new KeyValuePair<string, PGType>(e1.ToDescription(), e1);
-            //ComboxPGType.SelectedIndex = 0;
+            this.PGService.HeartbeatEvent += (e) => PGService_DeviceStatusHandler(e.DeviceStatus);
 
             if (this.PGService.Config.IsTCPIP)
             {
@@ -51,63 +40,55 @@ namespace ColorVision.Device.PG
                 TextBlockPGIP.Text = "串口";
                 TextBlockPGPort.Text = "波特率";
             }
-
-            //ComboxPGCommunicateType.ItemsSource = from e1 in Enum.GetValues(typeof(CommunicateType)).Cast<CommunicateType>()
-            //                                      select new KeyValuePair<string, CommunicateType>(e1.ToDescription(), e1);
-            //ComboxPGCommunicateType.SelectedIndex = 0;
-            //ComboxPGCommunicateType.SelectionChanged += (s, e) =>
-            //{
-            //    if (ComboxPGCommunicateType.SelectedItem is KeyValuePair<string, CommunicateType> KeyValue && KeyValue.Value is CommunicateType communicateType)
-            //    {
-            //        switch (communicateType)
-            //        {
-            //            case CommunicateType.Tcp:
-            //                TextBlockPGIP.Text = "IP";
-            //                TextBlockPGPort.Text = "Port";
-            //                break;
-            //            case CommunicateType.Serial:
-            //                TextBlockPGIP.Text = "ComName";
-            //                TextBlockPGPort.Text = "BaudRate"; break;
-            //        }
-
-            //    }
-            //};
-
         }
 
-
-        //private void PGInit(object sender, RoutedEventArgs e)
-        //{
-        //    if (ComboxPGType.SelectedItem is KeyValuePair<string, PGType> KeyValue && KeyValue.Value is PGType pGType)
-        //    {
-        //        if (ComboxPGCommunicateType.SelectedItem is KeyValuePair<string, CommunicateType> KeyValue1 && KeyValue1.Value is CommunicateType communicateType)
-        //        {
-        //            PGService.Init(pGType, communicateType);
-        //        }
-        //    }
-        //}
-        //private void PGUnInit(object sender, RoutedEventArgs e)
-        //{
-        //    PGService.UnInit();
-        //}
-        private void PGOpen(object sender, RoutedEventArgs e)
+        private void PGService_DeviceStatusHandler(DeviceStatus deviceStatus)
         {
-            //if (ComboxPGCommunicateType.SelectedItem is KeyValuePair<string, CommunicateType> KeyValue1 && KeyValue1.Value is CommunicateType communicateType)
+            if (deviceStatus == DeviceStatus.Opened)
             {
+                btn_open.Content = "关闭";
+            }
+            else if (deviceStatus == DeviceStatus.Closed)
+            {
+                btn_open.Content = "打开";
+            }
+            else if (deviceStatus == DeviceStatus.Opening)
+            {
+                btn_open.Content = "打开中";
+            }
+            else if (deviceStatus == DeviceStatus.Closing)
+            {
+                btn_open.Content = "关闭中";
+            }
+        }
+
+        private void DoOpen(Button button)
+        {
+            string btnTitle = button.Content.ToString();
+            if (btnTitle != null && btnTitle.Equals("打开", StringComparison.Ordinal))
+            {
+                button.Content = "打开中";
                 int port;
                 if (!int.TryParse(TextBoxPGPort.Text, out port))
                 {
                     MessageBox.Show("端口配置错误");
                     return;
                 }
-                if(this.PGService.Config.IsTCPIP) PGService.Open(CommunicateType.Tcp, TextBoxPGIP.Text, port);
+                if (this.PGService.Config.IsTCPIP) PGService.Open(CommunicateType.Tcp, TextBoxPGIP.Text, port);
                 else PGService.Open(CommunicateType.Serial, TextBoxPGIP.Text, port);
             }
+            else
+            {
+                button.Content = "关闭中";
+                this.PGService.Close();
+            }
         }
-        private void PGClose(object sender, RoutedEventArgs e)
+
+        private void PGOpen(object sender, RoutedEventArgs e)
         {
-            PGService.Close();
+            if (sender is Button button) DoOpen(button);
         }
+
         private void PGStartPG(object sender, RoutedEventArgs e) => PGService.PGStartPG();
 
         private void PGStopPG(object sender, RoutedEventArgs e) => PGService.PGStopPG();

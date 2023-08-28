@@ -8,15 +8,14 @@ using System.Windows;
 
 namespace ColorVision.Device.SMU
 {
-    public delegate void MQTTSMUHeartbeatHandler(HeartbeatParam heartbeat);
     public delegate void MQTTSMUScanResultHandler(SMUScanResultData data);
     public delegate void MQTTSMUResultHandler(SMUResultData data);
 
     public class SMUService : BaseService<SMUConfig>
     {
-        public event MQTTSMUHeartbeatHandler HeartbeatHandlerEvent;
-        public event MQTTSMUScanResultHandler ScanResultHandlerEvent;
-        public event MQTTSMUResultHandler ResultHandlerEvent;
+        public event HeartbeatEventHandler HeartbeatEvent;
+        public event MQTTSMUScanResultHandler ScanResultEvent;
+        public event MQTTSMUResultHandler ResultEvent;
         public SMUService(SMUConfig sMUConfig) : base(sMUConfig)
         {
             Config = sMUConfig;
@@ -57,12 +56,12 @@ namespace ColorVision.Device.SMU
                         else if (json.EventName == "GetData")
                         {
                             SMUResultData data = JsonConvert.DeserializeObject<SMUResultData>(JsonConvert.SerializeObject(json.Data));
-                            Application.Current.Dispatcher.Invoke(() => ResultHandlerEvent?.Invoke(data));
+                            Application.Current.Dispatcher.Invoke(() => ResultEvent?.Invoke(data));
                         }
                         else if (json.EventName == "Scan")
                         {
                             SMUScanResultData data = JsonConvert.DeserializeObject<SMUScanResultData>(JsonConvert.SerializeObject(json.Data));
-                            Application.Current.Dispatcher.Invoke(() => ScanResultHandlerEvent?.Invoke(data));
+                            Application.Current.Dispatcher.Invoke(() => ScanResultEvent?.Invoke(data));
                         }
                         else if (json.EventName == "Close")
                         {
@@ -75,7 +74,7 @@ namespace ColorVision.Device.SMU
                         else if (json.EventName == "Heartbeat")
                         {
                             HeartbeatParam heartbeat = JsonConvert.DeserializeObject<HeartbeatParam>(JsonConvert.SerializeObject(json.Data));
-                            Application.Current.Dispatcher.Invoke(() => HeartbeatHandlerEvent?.Invoke(heartbeat));
+                            Application.Current.Dispatcher.Invoke(() => HeartbeatEvent?.Invoke(heartbeat));
                         }
                     }
                 }

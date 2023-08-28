@@ -27,14 +27,6 @@ namespace ColorVision.Device.SMU
             ScanList = scan;
         }
     }
-    public class HeartbeatParam
-    {
-        //[JsonProperty("isOpen")]
-        public DeviceStatus DeviceStatus { get; set; }
-
-        [JsonProperty("time")]
-        public string Time { get; set; }
-    }
     public class SMUOpenParam
     {
         public bool IsNet { set; get; }
