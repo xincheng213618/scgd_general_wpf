@@ -21,7 +21,6 @@ int main()
 	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 	std::cout << "原生读 执行时间: " << duration.count() / 1000.0 << " 毫秒" << std::endl;
 
-
 	start = std::chrono::high_resolution_clock::now();
 
 	cv::imwrite("D:\\C#\\2.tif", test1);
