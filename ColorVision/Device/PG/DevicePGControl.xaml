@@ -48,6 +48,10 @@
                                 <TextBox Text="{Binding Config.HeartbeatTime}"/>
                             </DockPanel>
                             <DockPanel Margin="0,5" >
+                                <Label Content="类别型号"/>
+                                <ComboBox x:Name="pgCategory" DisplayMemberPath="Key"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,5" >
                                 <Label Content="通讯方式"/>
                                 <RadioButton x:Name="IsNet" Content="TCP/IP" IsChecked="{Binding  Config.IsTCPIP}"/>
                                 <RadioButton x:Name="IsComm" Content="串口" IsChecked="{Binding  Config.IsTCPIP,Converter={StaticResource Boolean2BooleanReConverter}}"/>

@@ -101,7 +101,7 @@ namespace ColorVision.Device.PG
 
         private void PGSendCmd(object sender, RoutedEventArgs e)
         {
-
+            PGService.CustomPG(PGCmdMsg.Text);
         }
     }
 }

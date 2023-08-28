@@ -1,5 +1,7 @@
 ﻿using ColorVision.MQTT.Service;
+using OpenCvSharp.Aruco;
 using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -17,6 +19,18 @@ namespace ColorVision.Device.PG
         {
             DevicePG = devicePG;
             InitializeComponent();
+
+            DevicePG.PGService.ReLoadCategoryLib();
+            pgCategory.ItemsSource = DevicePG.PGService.PGCategoryLib;
+
+            foreach (var item in DevicePG.PGService.PGCategoryLib)
+            {
+                if (item.Key.Equals(DevicePG.Config.Category, StringComparison.Ordinal))
+                {
+                    pgCategory.SelectedItem = item;
+                    break;
+                }
+            }
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -45,6 +59,8 @@ namespace ColorVision.Device.PG
         {
             MQTTEditContent.Visibility = Visibility.Collapsed;
             MQTTShowContent.Visibility = Visibility.Visible;
+
+            DevicePG.Config.Category = pgCategory.Text;
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
