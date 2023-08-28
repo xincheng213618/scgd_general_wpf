@@ -29,6 +29,8 @@ namespace ColorVision.Device.PG
 
     public class PGService : BaseService<PGConfig>
     {
+        public event HeartbeatEventHandler HeartbeatEvent;
+
         public PGService(PGConfig pGConfig) : base(pGConfig)
         {
             Config = pGConfig;
@@ -79,6 +81,14 @@ namespace ColorVision.Device.PG
                         else if (json.EventName == "UnInit")
                         {
                             MessageBox.Show("UnInit");
+                        }
+                        else if (json.EventName == "Heartbeat")
+                        {
+                            HeartbeatParam heartbeat = JsonConvert.DeserializeObject<HeartbeatParam>(JsonConvert.SerializeObject(json.Data));
+                            if (heartbeat != null && json.ServiceName.Equals(Config.Code, System.StringComparison.Ordinal))
+                            {
+                                Application.Current.Dispatcher.Invoke(() => HeartbeatEvent?.Invoke(heartbeat));
+                            }
                         }
                     }
                 }
@@ -132,6 +142,7 @@ namespace ColorVision.Device.PG
             MsgSend msg = new MsgSend
             {
                 EventName = "SetParam",
+                ServiceName = Config.Code,
                 Params = Functions
             };
             PublishAsyncClient(msg);
@@ -142,12 +153,15 @@ namespace ColorVision.Device.PG
 
         public bool Open(CommunicateType communicateType, string value1, int value2)
         {
+            //Dictionary<string, string> cmd = new Dictionary<string, string>() { { "CM_StartPG", "start\r" }, { "CM_StopPG", "stop\r" }, { "CM_SwitchUpPG", "Switch_UP\r" }, { "CM_SwitchDownPG", "Switch_DOWN\r" }, { "CM_SwitchFramePG", "frame {0}" } };
+            Dictionary<string, string> cmd = new Dictionary<string, string>() { { "CM_StartPG", "open\r" }, { "CM_StopPG", "close\r" }, { "CM_ReSetPG", "reset\r" } , { "CM_SwitchUpPG", "key UP\r" }, { "CM_SwitchDownPG", "key DN\r" }, { "CM_SwitchFramePG", "pat {0}\r" } };
             MsgSend msg = new MsgSend()
             {
                 EventName = "Open",
+                ServiceName = Config.Code,
                 Params = communicateType == CommunicateType.Serial ?
-                new Dictionary<string, object>() { { "eCOM_Type", (int)communicateType }, { "szComName", value1 }, { "BaudRate", value2 } } :
-                new Dictionary<string, object>() { { "eCOM_Type", (int)communicateType }, { "szIPAddress", value1 }, { "nPort", value2 } }
+                new Dictionary<string, object>() { { "eCOM_Type", (int)communicateType }, { "szComName", value1 }, { "BaudRate", value2 }, { "PGCustomCmd", cmd } } :
+                new Dictionary<string, object>() { { "eCOM_Type", (int)communicateType }, { "szIPAddress", value1 }, { "nPort", value2 },{ "PGCustomCmd", cmd } }
             };
 
             PublishAsyncClient(msg);
@@ -174,7 +188,8 @@ namespace ColorVision.Device.PG
         {
             MsgSend msg = new MsgSend
             {
-                EventName = "Close"
+                EventName = "Close",
+                ServiceName = Config.Code,
             };
             PublishAsyncClient(msg);
             return true;

@@ -11,7 +11,7 @@ namespace ColorVision.Device.Spectrum
 {
     public delegate void MQTTSpectrumDataHandler(SpectumData? colorPara);
     public delegate void MQTTAutoParamHandler(AutoIntTimeParam colorPara);
-    public delegate void MQTTSpectrumHeartbeatHandler(HeartbeatParam heartbeat);
+    public delegate void MQTTSpectrumHeartbeatHandler(SpectumHeartbeatParam heartbeat);
 
     public class SpectrumService : BaseService<SpectrumConfig>
     {
@@ -78,7 +78,7 @@ namespace ColorVision.Device.Spectrum
                         }
                         else if (json.EventName == "Heartbeat")
                         {
-                            HeartbeatParam heartbeat = JsonConvert.DeserializeObject<HeartbeatParam>(JsonConvert.SerializeObject(json.Data));
+                            SpectumHeartbeatParam heartbeat = JsonConvert.DeserializeObject<SpectumHeartbeatParam>(JsonConvert.SerializeObject(json.Data));
                             Application.Current.Dispatcher.Invoke(() => HeartbeatHandlerEvent?.Invoke(heartbeat));
                         }
                         else if (json.EventName == "Close")

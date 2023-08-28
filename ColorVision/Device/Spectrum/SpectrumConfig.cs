@@ -27,14 +27,9 @@ namespace ColorVision.Device.Spectrum
         }
     }
 
-    public class HeartbeatParam
+    public class SpectumHeartbeatParam : HeartbeatParam
     {
-        //[JsonProperty("isOpen")]
-        public DeviceStatus DeviceStatus { get; set; }
-        //[JsonProperty("isAutoGetData")]
         public bool IsAutoGetData { get; set; }
-        [JsonProperty("time")]
-        public string Time { get; set; }
     }
     public class AutoIntTimeParam
     {

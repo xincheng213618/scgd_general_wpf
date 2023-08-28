@@ -1,5 +1,6 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.MVVM;
+using Newtonsoft.Json;
 using System;
 
 namespace ColorVision.Device
@@ -42,5 +43,15 @@ namespace ColorVision.Device
 
         public string MD5 { get => _MD5; set { _MD5 = value; NotifyPropertyChanged(); } }
         private string _MD5;
+    }
+
+    public delegate void HeartbeatEventHandler(HeartbeatParam heartbeat);
+
+    public class HeartbeatParam
+    {
+        public DeviceStatus DeviceStatus { get; set; }
+
+        [JsonProperty("time")]
+        public string Time { get; set; }
     }
 }

@@ -31,9 +31,9 @@ namespace ColorVision.Device.SMU
         {
             this.DataContext = SMUService;
 
-            SMUService.HeartbeatHandlerEvent += (e) => SMUService_DeviceStatusHandler(e.DeviceStatus);
-            SMUService.ScanResultHandlerEvent += SMUService_ScanResultHandler;
-            SMUService.ResultHandlerEvent += SMUService_ResultHandler;
+            SMUService.HeartbeatEvent += (e) => SMUService_DeviceStatusHandler(e.DeviceStatus);
+            SMUService.ScanResultEvent += SMUService_ScanResultHandler;
+            SMUService.ResultEvent += SMUService_ResultHandler;
 
 
             passSxSource = new PassSxSource();
