@@ -32,3 +32,6 @@ double CalArtculationROI(int nw, int nh, char* data, int x, int y, int width, in
 	return value;
 }
 
+
+
+

@@ -136,7 +136,24 @@ namespace ColorVision
             ViewGridManager.GetInstance().SetViewNum(-1);
         }
 
-
+        private void ButtonCV_Click(object sender, RoutedEventArgs e)
+        {
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
+            openFileDialog.Filter = "Image files (*.custom) | *.custom";
+            openFileDialog.RestoreDirectory = true;
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                string filePath = openFileDialog.FileName;
+                if (ViewGridManager.CurrentView is ImageView imageView)
+                {
+                    imageView.OpenCVImage(filePath);
+                }
+                else
+                {
+                    ImageView1.OpenCVImage(filePath);
+                }
+            }
+        }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {

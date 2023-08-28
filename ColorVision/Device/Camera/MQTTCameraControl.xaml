@@ -31,7 +31,7 @@
                     </DockPanel>
                     <DockPanel Margin="2">
                         <Label Content="取图模式："/>
-                        <ComboBox  x:Name="ComboxCameraTakeImageMode"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20" Margin="0,0,10,0"/>
+                        <ComboBox  x:Name="ComboxCameraTakeImageMode"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Key"  Height="20" Margin="0,0,10,0"/>
                     </DockPanel>
                     <UniformGrid Columns="2">
                         <DockPanel  Margin="2">
