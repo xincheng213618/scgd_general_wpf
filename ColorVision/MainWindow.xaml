@@ -125,6 +125,7 @@
                                 <StackPanel Margin="5">
                                     <UniformGrid Columns="2" >
                                         <Button Content="打开测试图像"  Margin="10,0" Click="Button_Click"/>
+                                        <Button Content="打开二进制测试图像"  Margin="10,0" Click="ButtonCV_Click"/>
                                         <Button Content="绘制测试图形"  Margin="10,0"  Click="Button1_Click"/>
                                         <Button Content="视频测试"  Margin="10,0"  Click="Button4_Click"/>
                                         <TextBlock/>
