@@ -98,7 +98,6 @@ namespace ColorVision
         {
 
             this.ApplyTheme(Theme.Theme.Light);
-
             GlobalSetting.GetInstance();
 
             //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en");

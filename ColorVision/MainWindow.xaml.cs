@@ -72,7 +72,7 @@ namespace ColorVision
             {
                 if (WindowConfig.Icon == null)
                 {
-                    ThemeManager.SystemThemeChanged += (s, e) =>
+                    ThemeManager.Current.SystemThemeChanged += (s, e) =>
                     {
                         if (e == Theme.Theme.Dark)
                         {
@@ -84,7 +84,7 @@ namespace ColorVision
                         }
                     };
 
-                    if (ThemeManager.SystemTheme == Theme.Theme.Dark)
+                    if (ThemeManager.Current.SystemTheme == Theme.Theme.Dark)
                     {
                         this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
                     }

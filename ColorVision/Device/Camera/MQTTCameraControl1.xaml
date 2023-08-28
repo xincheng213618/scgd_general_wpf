@@ -74,6 +74,7 @@
                     </DockPanel>
                     <Button Content="设置自动曝光" Click="SendDemo5_Click" Margin="0,5"/>
                     <Button Content="取图" Click="SendDemo3_Click" Margin="0,5"/>
+                    <Button Content="视频模式" Click="SendDemo7_Click" Margin="0,5"/>
                     <DockPanel  Margin="5">
                         <Button Content="存图" Click="SendDemo3_Click" Width="80"/>
                         <TextBox x:Name="TextFilePath" BorderThickness="0,0,0,1" />
