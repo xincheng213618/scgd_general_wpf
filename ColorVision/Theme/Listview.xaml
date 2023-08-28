@@ -16,6 +16,9 @@
     <Color x:Key="LightDisabledBackgroundColor">#F3F9FF</Color>
     <Color x:Key="HighlightColor">#776EA646</Color>
     <Color x:Key="HotColor">#ADADAD</Color>
+    
+    
+    
 
     <!--#region Brushes-->
     <SolidColorBrush x:Key="ThemeBrush" Color="{StaticResource ThemeColor1}"/>

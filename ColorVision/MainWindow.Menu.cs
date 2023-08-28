@@ -323,6 +323,10 @@ namespace ColorVision
             {
                 hasDefaultProgram = false;
             }
+            catch
+            {
+                
+            }
             if (hasDefaultProgram)
             {
                 System.Diagnostics.Process.Start("explorer.exe", $"{GlobalSetting.GetInstance().SoftwareConfigFileName}");

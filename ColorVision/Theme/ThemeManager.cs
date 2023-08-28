@@ -1,6 +1,11 @@
 ﻿using Microsoft.Win32;
+using OpenCvSharp.Aruco;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
+using Wpf.Ui.Appearance;
+using Wpf.Ui.Markup;
 
 namespace ColorVision.Theme
 {
@@ -61,12 +66,66 @@ namespace ColorVision.Theme
             ApplyActTheme(app,theme);
         }
 
+        public static List<string> ResourceDictionaryDark { get; set; } = new List<string>()
+        {
+            "/HandyControl;component/themes/basic/colors/colorsdark.xaml",
+            "/HandyControl;component/Themes/Theme.xaml",
+            "/ColorVision;component/Theme/Dark.xaml",
+            "/ColorVision;component/Theme/Base.xaml",
+            "/ColorVision;component/Theme/Menu.xaml",
+            "/ColorVision;component/Theme/GroupBox.xaml" ,
+            "/ColorVision;component/Theme/Icons.xaml"
+        };
+
+        public static List<string> ResourceDictionaryWhite { get; set; } = new List<string>()
+        {
+            "/HandyControl;component/themes/basic/colors/colors.xaml",
+            "/HandyControl;component/Themes/Theme.xaml",
+            "/ColorVision;component/Theme/White.xaml",
+            "/ColorVision;component/Theme/Base.xaml",
+            "/ColorVision;component/Theme/Menu.xaml",
+            "/ColorVision;component/Theme/GroupBox.xaml" ,
+            "/ColorVision;component/Theme/Icons.xaml"
+        };
+
+
         private void ApplyActTheme(Application app, Theme theme)
         {
             if (ApplicationActTheme == theme)
                 return;
             ApplicationActTheme = theme;
-            MessageBox.Show(theme.ToString());
+
+            switch (theme)
+            {
+                case Theme.Light:
+                    var light = new Wpf.Ui.Markup.ThemesDictionary();
+                    light.Theme = ThemeType.Light;
+                    app.Resources.MergedDictionaries.Add(light);
+                    app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ControlsDictionary());
+
+                    foreach (var item in ResourceDictionaryWhite)
+                    {
+                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
+                        app.Resources.MergedDictionaries.Add(dictionary);
+                    }
+                    break;
+                case Theme.Dark:
+                    var dark = new Wpf.Ui.Markup.ThemesDictionary();
+                    dark.Theme = ThemeType.Dark;
+                    app.Resources.MergedDictionaries.Add(dark);
+                    app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ControlsDictionary());
+
+                    foreach (var item in ResourceDictionaryDark)
+                    {
+                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
+                        app.Resources.MergedDictionaries.Add(dictionary);
+                    }
+                    break;
+                case Theme.UseSystem:
+                    break;
+                default:
+                    break;
+            }
         }
 
 

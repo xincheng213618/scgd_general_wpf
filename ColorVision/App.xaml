@@ -11,6 +11,7 @@
                 <ui:ControlsDictionary />
                 <ResourceDictionary Source="/HandyControl;component/themes/basic/colors/colors.xaml"/>
                 <ResourceDictionary Source="/HandyControl;component/Themes/Theme.xaml"/>
+                <ResourceDictionary Source="/ColorVision;component/Theme/White.xaml"/>
                 <ResourceDictionary Source="/ColorVision;component/Theme/Base.xaml"/>
                 <ResourceDictionary Source="/ColorVision;component/Theme/Menu.xaml"/>
                 <ResourceDictionary Source="/ColorVision;component/Theme/GroupBox.xaml"/>
