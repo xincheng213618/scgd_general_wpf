@@ -59,9 +59,7 @@ int compressToGzip(const char* input, int inputSize, char* output, int outputSiz
 
 
 
-
-
-int WriteFile(string path , cv::Mat src, int compression) {
+int CVWrite(string path , cv::Mat src, int compression) {
     ofstream outFile(path, ios::out | ios::binary);
 
     CustomFileHeader fileHeader;
@@ -77,6 +75,8 @@ int WriteFile(string path , cv::Mat src, int compression) {
     grifMat.type = src.type();
     grifMat.srcLen = src.total() * src.elemSize();
     grifMat.compression = compression;
+
+    outFile.write((char*)&grifMat, sizeof(grifMat));
 
     if (grifMat.compression == 1) {
 
@@ -112,18 +112,20 @@ int WriteFile(string path , cv::Mat src, int compression) {
 }
 
 
-cv::Mat ReadFile(string path) {
+
+ cv::Mat CVRead(string path) {
     ifstream inFile(path, ios::in | ios::binary); //二进制读方式打开
     if (!inFile) {
         return cv::Mat::zeros(0, 0, CV_8UC3);
     }
-    CustomFileHeader grifheader;
-    inFile.read((char*)&grifheader, sizeof(CustomFileHeader));
-    if (std::string("custom").compare(grifheader.Name))
+    CustomFileHeader header;
+    inFile.read((char*)&header, sizeof(CustomFileHeader));
+    unsigned char expectedName[6] = { 0x43, 0x75, 0x73, 0x74, 0x6f, 0x6d };
+    if (memcmp(header.Name, expectedName, sizeof(header.Name))!=0)
     {
         return cv::Mat::zeros(0, 0, CV_8UC3);
     }
-    inFile.seekg(grifheader.Matoffset, ios::beg);
+    inFile.seekg(header.Matoffset, ios::beg);
 
     CustomMatFile grifMat;
     inFile.read((char*)&grifMat, sizeof(CustomMatFile));

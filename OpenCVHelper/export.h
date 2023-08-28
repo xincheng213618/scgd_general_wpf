@@ -13,4 +13,3 @@
 extern "C" OPENCV_API double CalArtculation(int nw, int nh, char* data);
 extern "C" OPENCV_API double CalArtculationROI(int nw, int nh, char* data,int x ,int y ,int width, int height);
 
-

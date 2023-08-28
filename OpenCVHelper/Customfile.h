@@ -1,6 +1,13 @@
 #pragma once
+
+
 #include <opencv2/opencv.hpp>
-#include <iostream>
+
+#ifdef OPENCV_EXPORTS
+#define OPENCV_API __declspec(dllexport)
+#else
+#define OPENCV_API __declspec(dllimport)
+#endif
 
 typedef struct CustomMatFile
 {
@@ -19,9 +26,11 @@ typedef struct  CustomFileHeader
     int Matoffset; //直接读取Mat数据的偏移量 int 限制了2G大小，如果需要更多，则需要float or double d但是这回让内存对齐比较麻烦
 }CustomFileHeader;
 
-int WriteFile(std::string path, cv::Mat src, int compression = 1);
-cv::Mat ReadFile(std::string FileName);
-int GrifToMatGz(std::string path, cv::Mat& src);
-void OsWrite(std::string path, cv::Mat src);
-void OsWrite1(std::string path, cv::Mat src);
+
+extern "C" OPENCV_API int CVWrite(std::string path, cv::Mat src, int compression = 0);
+extern OPENCV_API cv::Mat CVRead(std::string FileName);
+extern "C" OPENCV_API void OsWrite(std::string path, cv::Mat src);
+extern "C" OPENCV_API void OsWrite1(std::string path, cv::Mat src);
+
+
 
