@@ -2,7 +2,9 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <SolidColorBrush x:Key="IconSolidColorBrush" Color="#FFFFFFFF"/>
-
+    <SolidColorBrush x:Key="IconSolidColorBackgroundBrush" Color="#FF000000"/>
+    
+    
     <Color x:Key="GlobalBackgroundColor">#161616</Color>
     <Color x:Key="GlobalBroderBrushColor">#212121</Color>
     <Color x:Key="GlobalTextColor">White</Color>
