@@ -7,8 +7,7 @@
         xmlns:base ="clr-namespace:ColorVision.Controls"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-        mc:Ignorable="d"
-                 
+        mc:Ignorable="d"     
         d:DataContext="{d:DesignInstance local:SoftwareConfig}"
         Height="450" IsBlurEnabled="True" WindowStartupLocation="CenterScreen"  Background="Transparent" ResizeMode="NoResize" Width="600" Initialized="Window_Initialized">
     <Window.Resources>
@@ -24,7 +23,7 @@
                 <Border x:Name="Header" Grid.Column="1" Padding="15,0,3,0" Grid.RowSpan="2" Grid.Row="0">
                     <ContentPresenter ContentSource="Header"  RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
                 </Border>
-                <Border Grid.Row="1"  Height="1" Background="#E9E9E9"/>
+                <Border Grid.Row="1"  Height="1" Background="Transparent"/>
                 <ContentPresenter Grid.Column="1" Grid.ColumnSpan="2" Margin="{TemplateBinding Padding}" Grid.Row="2" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
             </Grid>
         </ControlTemplate>
@@ -46,7 +45,7 @@
         </ControlTemplate>
 
         <Style x:Key="BorderModuleArea" TargetType="{x:Type Border}">
-            <Setter Property="Background" Value="#F3F3F3"/>
+            <Setter Property="Background" Value="#FFFFFF"/>
             <Setter Property="BorderBrush" Value="#EAEAEA"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Margin" Value="10,10,15,5"/>
@@ -64,7 +63,7 @@
                                 <TextBlock Text="通用" FontSize="20"/>
                             </GroupBox.Header>
                             <StackPanel>
-                                <Border Style="{StaticResource BorderModuleArea}" Background="#FFFFFF" CornerRadius="8">
+                                <Border Style="{StaticResource BorderModuleArea}" CornerRadius="8">
                                     <Border.Resources>
                                         <ResourceDictionary Source="/Theme/Icons.xaml"/>
                                     </Border.Resources>

@@ -42,10 +42,6 @@
     <None Remove="Image\ColorVision.png" />
     <None Remove="Image\ColorVision1.ico" />
     <None Remove="Image\connect.png" />
-    <None Remove="Image\view1.png" />
-    <None Remove="Image\view20.png" />
-    <None Remove="Image\view21.png" />
-    <None Remove="Image\view4.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -61,8 +57,6 @@
     <PackageReference Include="OpenCvSharp4" Version="4.8.0.20230708" />
     <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.8.0.20230708" />
     <PackageReference Include="ScottPlot.WPF" Version="4.1.67" />
-    <PackageReference Include="System.IO.Ports" Version="7.0.0" />
-    <PackageReference Include="System.Text.Encoding.CodePages" Version="7.0.0" />
     <PackageReference Include="WPF-UI" Version="2.0.3" />
   </ItemGroup>
 
@@ -97,10 +91,6 @@
     <Resource Include="Image\ColorVision.png" />
     <Resource Include="Image\ColorVision1.ico" />
     <Resource Include="Image\connect.png" />
-    <Resource Include="Image\view1.png" />
-    <Resource Include="Image\view20.png" />
-    <Resource Include="Image\view21.png" />
-    <Resource Include="Image\view4.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -113,6 +103,11 @@
     <Compile Update="Device\Spectrum\DeviceSpectrumControl.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Properties\Resource.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resource.resx</DependentUpon>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>
@@ -123,6 +118,16 @@
 
   <ItemGroup>
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Properties\Resource.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resource.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Properties\Resource.en.resx">
+      <Generator></Generator>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>

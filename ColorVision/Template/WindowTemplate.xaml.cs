@@ -203,12 +203,6 @@ namespace ColorVision.Template
                             calibration.CalibrationParam = calibrationParam;
                         }
                         break;
-                        //if (UserControl is PG pg && ListConfigs[listView.SelectedIndex].Value is PGParam pGparam)
-                        //{
-                        //    pg.DataContext = pGparam;
-                        //    pg.PGParam = pGparam;
-                        //}
-                        //break;
                     case WindowTemplateType.MeasureParm:
                         if (UserControl is MeasureParamControl mpc && ListConfigs[listView.SelectedIndex].Value is MeasureParam mp)
                         {

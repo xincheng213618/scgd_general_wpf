@@ -13,9 +13,10 @@
         xmlns:converter="clr-namespace:ColorVision.Converter"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:co="clr-namespace:ColorVision.Controls"
+        xmlns:resx="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:MainWindow}"
-        Title="ColorVision" Height="720" Width="1280"  Initialized="Window_Initialized">
+        Title="ColorVision" Height="720" Width="1280"   Initialized="Window_Initialized">
     <Grid x:Name="Root">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
@@ -36,8 +37,8 @@
             </Border>
         </Grid>
         <Grid Grid.Row="0">
-            <Menu x:Name="Menu1" Height ="24" Background="#F3F3F3"  Initialized="Menu_Initialized">
-                <MenuItem x:Name="FileMenuItem" Header="文件(_F)">
+            <Menu x:Name="Menu1" Height ="24"  Initialized="Menu_Initialized">
+                <MenuItem x:Name="FileMenuItem" Header="{x:Static resx:Resource.MenuFile}">
                     <MenuItem Header="新建(_O)" Click="MenuItem_ProjectNew_Click" InputGestureText="Ctrl + O">
                         <MenuItem.Icon >
                             <TextBlock Text="&#xE8F4;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -62,8 +63,7 @@
                     <MenuItem Header="测量模板设置(_S)" Tag="MeasureParm" Click="MenuItem_Template"/>
                     <Separator/>
                     <MenuItem Header="_AOI参数模板设置" Tag="AoiParam" Click="MenuItem_Template"/>
-                    <MenuItem Header="校正模板设置(_C)" Tag="Calibration"  Click="MenuItem_Template"/>
-                    <MenuItem Header="_PG通讯模板设置" Tag="PGParam"  Click="MenuItem_Template"/>
+                    <MenuItem Header="校正模板设置(_C)" Tag="Calibration"  Click="MenuItm_Template"/>
                     <MenuItem Header="数据判断模板设置(_J)" Tag="LedReusltParams"  Click="MenuItem_Template"/>
                     <MenuItem Header="源表模板设置(_V)"  Tag="SxParms" Click="MenuItem_Template"/>
                 </MenuItem>
@@ -100,7 +100,7 @@
                     <MenuItem x:Name="Button5" Header="九" Click="Button1_Click_1"  Tag="9"/>
                 </MenuItem>
 
-                <MenuItem Header="帮助(_H)">
+                <MenuItem Header="{x:Static resx:Resource.MenuHelp}">
                     <MenuItem Header="打开日志(_L)"  Click="Log_Click"/>
                     <MenuItem Header="打开配置文件(_S)"  Click="Setting_Click"/>
                     <MenuItem Header="打开日志文件夹(_F)"  Click="LogF_Click"/>
@@ -120,7 +120,7 @@
                 <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                     <StackPanel>
                         <StackPanel Margin="0,5">
-                            <ToggleButton  x:Name="ToggleButton999"  Style="{StaticResource ButtonPageControl1}" Background="#F9F9F9"  Content="测试"  FontSize="15" Foreground="Black" IsChecked="True" />
+                            <ToggleButton  x:Name="ToggleButton999"  Style="{StaticResource ButtonPageControl1}" Background="Transparent"  Content="测试"  FontSize="15" IsChecked="True" />
                             <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton999,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
                                 <StackPanel Margin="5">
                                     <UniformGrid Columns="2" >
@@ -128,18 +128,13 @@
                                         <Button Content="打开二进制测试图像"  Margin="10,0" Click="ButtonCV_Click"/>
                                         <Button Content="绘制测试图形"  Margin="10,0"  Click="Button1_Click"/>
                                         <Button Content="视频测试"  Margin="10,0"  Click="Button4_Click"/>
-                                        <TextBlock/>
-                                        <Button Content="1窗口" Tag="0" Margin="10,0"  Click="Button10_Click"/>
-                                        <Button Content="2窗口" Tag="1" Margin="10,0"  Click="Button10_Click"/>
-                                        <Button Content="3窗口" Tag="2"  Margin="10,0"  Click="Button10_Click"/>
-                                        <Button Content="4窗口" Tag="3"  Margin="10,0"  Click="Button10_Click"/>
                                     </UniformGrid>
                                 </StackPanel>
                             </Border>
                         </StackPanel>
 
                         <StackPanel Margin="0,5" Initialized="StackPanelFlow_Initialized">
-                            <ToggleButton  x:Name="ToggleButton_flow"  Style="{StaticResource ButtonPageControl1}" Background="#F9F9F9"  Content="流程"  FontSize="15" Foreground="Black" IsChecked="True" />
+                            <ToggleButton  x:Name="ToggleButton_flow"  Style="{StaticResource ButtonPageControl1}" Background="Transparent"  Content="流程"  FontSize="15"  IsChecked="True" />
                             <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton_flow,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
                                 <StackPanel Margin="5">
                                     <StackPanel>
@@ -173,8 +168,6 @@
                 <Grid x:Name="ViewGrid"  Background="#c3c3c3">
                     <local:ImageView x:Name="ImageView1"/>
                 </Grid>
-
-
             </Grid>
 
             <GridSplitter  Grid.Column="1" Background="LightGray"  Width="2" HorizontalAlignment="Left"   DragCompleted="GridSplitter_DragCompleted"  />
@@ -204,20 +197,19 @@
                             <ResourceDictionary Source="/Theme/Icons.xaml"/>
                         </DockPanel.Resources>
                         <StackPanel Orientation="Horizontal" Margin="0">
-                            <Button  Height="15" BorderThickness="0" Click="ViewGrid_Click" Tag="1">
-                                <Image Margin="-3" Source="Image\view1.png"/>
+                            <Button  Height="15" BorderThickness="0" Background="Transparent" Click="ViewGrid_Click" Tag="1">
+                                <Image Source="{StaticResource DrawingImageSingleWindow}" Margin="-5" />
                             </Button>
-                            <Button  Height="15" BorderThickness="0"  Click="ViewGrid_Click" Tag="20">
-                                <Image Margin="-3" Source="Image\view20.png"/>
+                            <Button  Height="15" BorderThickness="0" Background="Transparent" Click="ViewGrid_Click" Tag="20">
+                                <Image Source="{StaticResource DrawingImageTwoWindow1}" Margin="-5" />
                             </Button>
-                            <Button  Height="15" BorderThickness="0"  Click="ViewGrid_Click" Tag="21">
-                                <Image Margin="-3" Source="Image\view21.png"/>
+                            <Button  Height="15" BorderThickness="0" Background="Transparent" Click="ViewGrid_Click" Tag="21">
+                                <Image Source="{StaticResource DrawingImageTwoWindow0}" Margin="-5" />
                             </Button>
-                            <Button  Height="15" BorderThickness="0"  Click="ViewGrid_Click" Tag="4">
-                                <Image Margin="-3" Source="Image\view4.png"/>
+                            <Button  Height="15" BorderThickness="0"  Click="ViewGrid_Click" Background="Transparent" Tag="4">
+                                <Image Source="{StaticResource DrawingImageFourWindow}" Margin="-5" />
                             </Button>
                         </StackPanel>
-                        <Grid Width="1" Background="Black"/>
                         <StatusBarItem  MouseLeftButtonDown="TextBlock_MouseLeftButtonDown1" Visibility="{Binding SoftwareConfig.IsUseMySql,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="MySql" >
                             <ToggleButton x:Name="StatusBarMysql" Style="{StaticResource ButtonDrawingImageMysql}"  Height="20"  Margin="0,-10" IsChecked="{Binding SoftwareConfig.MySqlControl.IsConnect,Mode=OneWay}"  IsEnabled="False"/>
                         </StatusBarItem>

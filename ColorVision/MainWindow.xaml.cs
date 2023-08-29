@@ -465,6 +465,5 @@ namespace ColorVision
             loginWindow.ShowDialog();
         }
 
-
     }
 }
