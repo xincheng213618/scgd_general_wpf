@@ -13,9 +13,10 @@
         xmlns:converter="clr-namespace:ColorVision.Converter"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:co="clr-namespace:ColorVision.Controls"
+        xmlns:resx="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:MainWindow}"
-        Title="ColorVision" Height="720" Width="1280"  Initialized="Window_Initialized">
+        Title="ColorVision" Height="720" Width="1280"   Initialized="Window_Initialized">
     <Grid x:Name="Root">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
@@ -37,7 +38,7 @@
         </Grid>
         <Grid Grid.Row="0">
             <Menu x:Name="Menu1" Height ="24"  Initialized="Menu_Initialized">
-                <MenuItem x:Name="FileMenuItem" Header="文件(_F)">
+                <MenuItem x:Name="FileMenuItem" Header="{x:Static resx:Resource.MenuFile}">
                     <MenuItem Header="新建(_O)" Click="MenuItem_ProjectNew_Click" InputGestureText="Ctrl + O">
                         <MenuItem.Icon >
                             <TextBlock Text="&#xE8F4;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -100,7 +101,7 @@
                     <MenuItem x:Name="Button5" Header="九" Click="Button1_Click_1"  Tag="9"/>
                 </MenuItem>
 
-                <MenuItem Header="帮助(_H)">
+                <MenuItem Header="{x:Static resx:Resource.MenuHelp}">
                     <MenuItem Header="打开日志(_L)"  Click="Log_Click"/>
                     <MenuItem Header="打开配置文件(_S)"  Click="Setting_Click"/>
                     <MenuItem Header="打开日志文件夹(_F)"  Click="LogF_Click"/>

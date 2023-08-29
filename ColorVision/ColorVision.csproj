@@ -130,8 +130,11 @@
 
   <ItemGroup>
     <EmbeddedResource Update="Properties\Resource.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
+      <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>Resource.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Properties\Resource.en.resx">
+      <Generator></Generator>
     </EmbeddedResource>
   </ItemGroup>
 
