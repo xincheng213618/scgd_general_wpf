@@ -61,7 +61,7 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 _File 的本地化字符串。
+        ///   查找类似 文件(_F) 的本地化字符串。
         /// </summary>
         public static string MenuFile {
             get {
@@ -70,7 +70,7 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似  的本地化字符串。
+        ///   查找类似 帮助(_H) 的本地化字符串。
         /// </summary>
         public static string MenuHelp {
             get {

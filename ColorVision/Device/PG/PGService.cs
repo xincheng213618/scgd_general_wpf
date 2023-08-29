@@ -67,28 +67,28 @@ namespace ColorVision.Device.PG
                     {
                         if (json.EventName == "Init")
                         {
-                            ServiceID = json.ServiceID;
-                            MessageBox.Show("Init");
+                            //ServiceID = json.ServiceID;
+                            //MessageBox.Show("Init");
                         }
                         else if (json.EventName == "SetParam")
                         {
-                            MessageBox.Show("SetParam");
+                            //MessageBox.Show("SetParam");
                         }
                         else if (json.EventName == "Open")
                         {
-                            MessageBox.Show("Open");
+                            //MessageBox.Show("Open");
                         }
                         else if (json.EventName == "GetData")
                         {
-                            MessageBox.Show("GetData");
+                            //MessageBox.Show("GetData");
                         }
                         else if (json.EventName == "Close")
                         {
-                            MessageBox.Show("Close");
+                            //MessageBox.Show("Close");
                         }
                         else if (json.EventName == "UnInit")
                         {
-                            MessageBox.Show("UnInit");
+                            //MessageBox.Show("UnInit");
                         }
                         else if (json.EventName == "Heartbeat")
                         {
