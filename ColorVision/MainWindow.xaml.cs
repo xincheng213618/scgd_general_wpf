@@ -38,13 +38,16 @@ namespace ColorVision
         }
         public MainWindow()
         {
-            GlobalSetting = GlobalSetting.GetInstance();
-            MQTTConfig mQTTConfig = GlobalSetting.SoftwareConfig.MQTTConfig;
-            FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
-            //this.loader = new FlowEngineLib.STNodeLoader("FlowEngineLib.dll");
-            flowView = new FlowView();
-
             InitializeComponent();
+            GlobalSetting = GlobalSetting.GetInstance();
+            if (SoftwareSetting.IsRestoreWindow && SoftwareSetting.Height != 0 && SoftwareSetting.Width != 0)
+            {
+                this.Top = SoftwareSetting.Top;
+                this.Left = SoftwareSetting.Left;
+                this.Height = SoftwareSetting.Height;
+                this.Width = SoftwareSetting.Width;
+                this.WindowState = (WindowState)SoftwareSetting.WindowState;
+            }
             this.Closed += (s, e) =>
             {
 
@@ -54,40 +57,25 @@ namespace ColorVision
                 SoftwareSetting.Width = this.Width;
                 SoftwareSetting.WindowState = (int)this.WindowState;
             };
-            if (SoftwareSetting.IsRestoreWindow && SoftwareSetting.Height != 0 && SoftwareSetting.Width != 0)
-            {
-                this.Top = SoftwareSetting.Top;
-                this.Left = SoftwareSetting.Left;
-                this.Height = SoftwareSetting.Height;
-                this.Width = SoftwareSetting.Width;
-                this.WindowState = (WindowState)SoftwareSetting.WindowState;
-            }
         }
 
         private async void Window_Initialized(object sender, EventArgs e)
         {
+            MQTTConfig mQTTConfig = GlobalSetting.SoftwareConfig.MQTTConfig;
+            FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
+            flowView = new FlowView();
             ViewGridManager.GetInstance().AddView(flowView, ComboxView, flowView.View);
+
 
             if (WindowConfig.IsExist)
             {
                 if (WindowConfig.Icon == null)
                 {
-                    ThemeManager.Current.SystemThemeChanged += (e) =>
-                    {
-                        if (e == Theme.Theme.Dark)
-                        {
-                            this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
-                        }
-                        else
-                        {
-                            this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision.ico"));
-                        }
+                    ThemeManager.Current.SystemThemeChanged += (e) => {
+                        this.Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision;component/Image/{(e == Theme.Theme.Dark? "ColorVision.ico":"ColorVision1.ico")}"));
                     };
-
                     if (ThemeManager.Current.SystemTheme == Theme.Theme.Dark)
-                    {
                         this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
-                    }
                 }
                 else
                 {
@@ -95,26 +83,20 @@ namespace ColorVision
                 }
                 this.Title = WindowConfig.Title ?? this.Title;
             }
-            else
-            {
-
-            }
 
             Application.Current.MainWindow = this;
-
             TemplateControl = TemplateControl.GetInstance();
-
             ViewGridManager = ViewGridManager.GetInstance();
             ViewGridManager.MainView = ViewGrid;
             ViewGrid.Children.Clear();
             ViewGridManager.AddView(ImageView1);
 
             await Task.Delay(30);
-
             StatusBarGrid.DataContext = GlobalSetting.GetInstance();
             SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
             MenuStatusBar.DataContext = SoftwareConfig;
             SiderBarGrid.DataContext = SoftwareConfig;
+
             try
             {
                 if (!SoftwareSetting.IsDeFaultOpenService)
@@ -131,8 +113,6 @@ namespace ColorVision
                 MessageBox.Show("窗口创建错误");
                 Environment.Exit(-1);
             }
-
-
             ViewGridManager.GetInstance().SetViewNum(-1);
         }
 
@@ -300,7 +280,14 @@ namespace ColorVision
                     {
                         if (flowView != null)
                         {
-                            flowView.FlowEngineControl.Load(fileName);
+                            try
+                            {
+                                flowView.FlowEngineControl.Load(fileName);
+                            }
+                            catch
+                            {
+
+                            }
                         }
                     }
                 }
@@ -336,41 +323,6 @@ namespace ColorVision
             ViewGridManager.AddView(new SMUView());
         }
 
-        private void Button6_Click(object sender, RoutedEventArgs e)
-        {
-            ViewGridManager.SetViewNum(1);
-            foreach (var item in ViewGridManager.Views)
-            {
-                if (item is ImageView imageView)
-                {
-                    imageView.Zoombox1.ZoomUniform();
-                }
-            }
-        }
-
-        private void Button7_Click(object sender, RoutedEventArgs e)
-        {
-            ViewGridManager.SetViewNum(2);
-            foreach (var item in ViewGridManager.Views)
-            {
-                if (item is ImageView imageView)
-                {
-                    imageView.Zoombox1.ZoomUniform();
-                }
-            }
-        }
-
-        private void Button8_Click(object sender, RoutedEventArgs e)
-        {
-            ViewGridManager.SetViewNum(4);
-            foreach (var item in ViewGridManager.Views)
-            {
-                if (item is ImageView imageView)
-                {
-                    imageView.Zoombox1.ZoomUniform();
-                }
-            }
-        }
 
         private void StackPanelMQTT_Initialized(object sender, EventArgs e)
         {
@@ -378,11 +330,6 @@ namespace ColorVision
             {
                 stackPanel.Children.Add(ServiceControl.GetInstance().MQTTStackPanel);
             }
-        }
-
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            new HandyControl.Controls.Screenshot().Start();
         }
 
         private void Button10_Click(object sender, RoutedEventArgs e)
@@ -403,10 +350,6 @@ namespace ColorVision
             }
         }
 
-        private void GridSplitter_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-
-        }
 
         private void GridSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
         {
@@ -453,10 +396,6 @@ namespace ColorVision
                         break;
                 }
             }
-        }
-
-        private void Button1_Click_2(object sender, RoutedEventArgs e)
-        {
         }
 
         private void Login_Click(object sender, RoutedEventArgs e)

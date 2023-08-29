@@ -26,14 +26,12 @@ namespace ColorVision
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-#if (DEBUG == true)
+            #if (DEBUG == true)
             labelVersion.Content = $"{(DebugBuild(Assembly.GetExecutingAssembly()) ? " (Debug) " : "(Release)")}{(Debugger.IsAttached ? " (调试中) " : "")} ({(IntPtr.Size == 4 ? "32" : "64")}位) - {System.Reflection.Assembly.GetExecutingAssembly().GetName().Version} - Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy.MM.dd}";
-#else
+            #else
             labelVersion.Content = $"{(DebugBuild(Assembly.GetExecutingAssembly()) ? " (Debug)" : "")}{(Debugger.IsAttached ? " (调试中) " : "")} ({(IntPtr.Size == 4 ? "32" : "64")}位) -  {System.Reflection.Assembly.GetExecutingAssembly().GetName().Version} - Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy/MM/dd})";
-#endif
-
+            #endif
             Dispatcher.BeginInvoke(new Action(async () => await InitializedOver()));
-
         }
         private static bool DebugBuild(Assembly assembly)
         {

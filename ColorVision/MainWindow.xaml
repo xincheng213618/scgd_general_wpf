@@ -39,12 +39,12 @@
         <Grid Grid.Row="0">
             <Menu x:Name="Menu1" Height ="24"  Initialized="Menu_Initialized">
                 <MenuItem x:Name="FileMenuItem" Header="{x:Static resx:Resource.MenuFile}">
-                    <MenuItem Header="新建(_O)" Click="MenuItem_ProjectNew_Click" InputGestureText="Ctrl + O">
+                    <MenuItem Header="新建(_N)" Click="MenuItem_ProjectNew_Click" InputGestureText="Ctrl + N">
                         <MenuItem.Icon >
                             <TextBlock Text="&#xE8F4;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="打开(_O)" Click="MenuItem_ProjectOpen_Click" InputGestureText="Ctrl + N">
+                    <MenuItem Header="打开(_O)" Click="MenuItem_ProjectOpen_Click" InputGestureText="Ctrl + O">
                         <MenuItem.Icon >
                             <TextBlock Text="&#xE8E5;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
                         </MenuItem.Icon>
