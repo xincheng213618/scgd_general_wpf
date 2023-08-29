@@ -57,14 +57,7 @@ namespace ColorVision.MQTT.Service
             {
                 if (item is DeviceCamera deviceCamera)
                 {
-                    MQTTCameraControl1 mQTTCameraControl = new MQTTCameraControl1(deviceCamera.CameraService);
-                    deviceCamera.CameraService.FileHandler += (s, e) =>
-                    {
-                        if (ViewGridManager.GetInstance().Views[1] is ImageView imageView)
-                        {
-                            imageView.OpenImage(e);
-                        }
-                    };
+                    MQTTCameraControl1 mQTTCameraControl = new MQTTCameraControl1(deviceCamera);
                     MQTTStackPanel.Children.Add(mQTTCameraControl);
 
                 }
@@ -102,14 +95,7 @@ namespace ColorVision.MQTT.Service
                     {
                         if (item is DeviceCamera deviceCamera)
                         {
-                            MQTTCameraControl1 mQTTCameraControl = new MQTTCameraControl1(deviceCamera.CameraService);
-                            deviceCamera.CameraService.FileHandler += (s, e) =>
-                            {
-                                if (ViewGridManager.GetInstance().Views[1] is ImageView imageView)
-                                {
-                                    imageView.OpenImage(e);
-                                }
-                            };
+                            MQTTCameraControl1 mQTTCameraControl = new MQTTCameraControl1(deviceCamera);
                             MQTTStackPanel.Children.Add(mQTTCameraControl);
 
                         }

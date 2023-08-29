@@ -35,7 +35,6 @@ namespace ColorVision.Device.Camera
 
         public CameraService(CameraConfig CameraConfig) : base(CameraConfig)
         {
-
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
             DeviceStatus = DeviceStatus.UnInit;
 

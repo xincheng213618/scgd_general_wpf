@@ -10,14 +10,20 @@ namespace ColorVision.Device.Camera
     /// </summary>
     public partial class MQTTCameraControl1 : UserControl
     {
-        private CameraService Service { get; set; }
+        public CameraService Service { get => Device.Service; }
 
-        public MQTTCameraControl1(CameraService service)
+        public DeviceCamera Device { get; set; }
+
+        public ImageView View { get; set; }
+
+
+        public MQTTCameraControl1(DeviceCamera device)
         {
-            Service = service;
+            Device = device;
+            View = Device.View;
             InitializeComponent();
-
         }
+
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Service;
@@ -47,6 +53,7 @@ namespace ColorVision.Device.Camera
                         CameraCloseButton.Visibility = Visibility.Collapsed;
                         CameraOpenButton.Visibility = Visibility.Visible;
                         StackPanelImage.Visibility = Visibility.Collapsed;
+                        ViewGridManager.GetInstance().RemoveView(View);
                         break;
                     case DeviceStatus.Closing:
                         break;
@@ -54,6 +61,8 @@ namespace ColorVision.Device.Camera
                         CameraCloseButton.Visibility = Visibility.Visible;
                         CameraOpenButton.Visibility = Visibility.Collapsed;
                         StackPanelImage.Visibility = Visibility.Visible;
+
+                        ViewGridManager.GetInstance().AddView(View);
                         break;
                     case DeviceStatus.Opening:
                         break;

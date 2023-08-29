@@ -9,11 +9,11 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using ColorVision.Theme;
-using ColorVision.Video;
 using ColorVision.Util;
 using ColorVision.Service;
 using ColorVision.MQTT.Service;
 using ColorVision.Device.SMU;
+using ColorVision.Device.Camera.Video;
 
 namespace ColorVision
 {

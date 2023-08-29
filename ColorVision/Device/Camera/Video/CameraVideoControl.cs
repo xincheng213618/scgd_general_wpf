@@ -9,10 +9,11 @@ using ColorVision.SettingUp;
 using log4net;
 using OpenH264Lib;
 
-namespace ColorVision.Video
+namespace ColorVision.Device.Camera.Video
 {
 
     public delegate void CameraVideoFrameHandler(System.Drawing.Bitmap bitmap);
+
     public class CameraVideoControl
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(CameraVideoControl));
@@ -94,7 +95,7 @@ namespace ColorVision.Video
                 });
                 return true;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 OpenVideo = false;
                 log.Error(ex);

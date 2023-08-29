@@ -516,8 +516,6 @@ namespace ColorVision
             }
         }
 
-
-
         private void Button7_Click(object sender, RoutedEventArgs e)
         {
             if (sender is ToggleButton toggleButton)

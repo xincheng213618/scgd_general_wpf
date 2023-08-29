@@ -6,7 +6,7 @@ namespace ColorVision.Device.Camera
 {
     public class DeviceCamera : BaseDevice<CameraConfig>
     {
-        public CameraService CameraService { get; set; }
+        public CameraService Service { get; set; }
 
         public MQTTCameraControl1 Control { get; set; }
 
@@ -14,9 +14,13 @@ namespace ColorVision.Device.Camera
 
         public DeviceCamera(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
-            CameraService = new CameraService(Config);
-            Control = new MQTTCameraControl1(CameraService);
+            Service = new CameraService(Config);
+            Control = new MQTTCameraControl1(this);
             View = new ImageView();
+            Service.FileHandler += (s, e) =>
+            {
+                View.OpenImage(e);
+            };
         }
 
         public override UserControl GenDeviceControl() => new DeviceCameraControl(this);

@@ -144,6 +144,19 @@ namespace ColorVision
             Views.RemoveAt(index);
         }
 
+        public void RemoveView(Control control)
+        {
+            if (control is IView view)
+            {
+                if (view.View.ViewType != ViewType.Hidden)
+                {
+                    SetViewIndex(control, -1);
+                }
+            }
+            Views.Remove(control);
+            MainView.Children.Remove(control);
+        }
+
         public void SetViewIndex(Control control, int viewIndex)
         {
             if (viewIndex >= 0)
@@ -216,7 +229,7 @@ namespace ColorVision
         }
 
 
-
+            
         /// <summary>
         public void SetViewNum(int num)
         {
