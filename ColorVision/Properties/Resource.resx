@@ -123,4 +123,43 @@
   <data name="MenuHelp" xml:space="preserve">
     <value>帮助(_H)</value>
   </data>
+  <data name="MenuCut" xml:space="preserve">
+    <value>剪切(_T)</value>
+  </data>
+  <data name="MenuCopy" xml:space="preserve">
+    <value>复制(_C)</value>
+  </data>
+  <data name="MenuDelete" xml:space="preserve">
+    <value>删除(_D)</value>
+  </data>
+  <data name="MenuEdit" xml:space="preserve">
+    <value>编辑(_E)</value>
+  </data>
+  <data name="MenuExit" xml:space="preserve">
+    <value>退出(_X)</value>
+  </data>
+  <data name="MenuNew" xml:space="preserve">
+    <value>新建(_N)</value>
+  </data>
+  <data name="MenuOpen" xml:space="preserve">
+    <value>打开(_O)</value>
+  </data>
+  <data name="MenuUpdate" xml:space="preserve">
+    <value>检查更新(_U)</value>
+  </data>
+  <data name="MenuView" xml:space="preserve">
+    <value>视图(_V)</value>
+  </data>
+  <data name="MenuViewSidebar" xml:space="preserve">
+    <value>侧边栏</value>
+  </data>
+  <data name="MenuViewStatusBar" xml:space="preserve">
+    <value>状态栏</value>
+  </data>
+  <data name="MenuUndo" xml:space="preserve">
+    <value>撤销(_U)</value>
+  </data>
+  <data name="MenuTool" xml:space="preserve">
+    <value>工具(_T)</value>
+  </data>
 </root>

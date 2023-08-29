@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -117,49 +117,49 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="MenuFile" xml:space="preserve">
-    <value>_File</value>
-  </data>
-  <data name="MenuHelp" xml:space="preserve">
-    <value>_Help</value>
-  </data>
-  <data name="MenuExit" xml:space="preserve">
-    <value>E_xit</value>
-  </data>
-  <data name="MenuDelete" xml:space="preserve">
-    <value>_Delete</value>
-  </data>
-  <data name="MenuEdit" xml:space="preserve">
-    <value>_Edit</value>
-  </data>
   <data name="MenuCut" xml:space="preserve">
-    <value>Cu_t</value>
+    <value>カット(_T)</value>
   </data>
   <data name="MenuCopy" xml:space="preserve">
-    <value>_Copy</value>
+    <value>コピー (_C)</value>
+  </data>
+  <data name="MenuDelete" xml:space="preserve">
+    <value>削除(_D)</value>
+  </data>
+  <data name="MenuEdit" xml:space="preserve">
+    <value>編集(_E)</value>
+  </data>
+  <data name="MenuExit" xml:space="preserve">
+    <value>出口(_X)</value>
+  </data>
+  <data name="MenuFile" xml:space="preserve">
+    <value>ファイル(_F)</value>
   </data>
   <data name="MenuNew" xml:space="preserve">
-    <value>_New</value>
+    <value>新着(_N)</value>
   </data>
   <data name="MenuOpen" xml:space="preserve">
-    <value>_Open</value>
-  </data>
-  <data name="MenuUndo" xml:space="preserve">
-    <value>_Undo</value>
-  </data>
-  <data name="MenuTool" xml:space="preserve">
-    <value>_Tool</value>
+    <value>開いた(_O)</value>
   </data>
   <data name="MenuUpdate" xml:space="preserve">
-    <value>_Update</value>
+    <value>更新(_U)</value>
   </data>
   <data name="MenuView" xml:space="preserve">
-    <value>_View</value>
+    <value>見る(_V）</value>
   </data>
   <data name="MenuViewSidebar" xml:space="preserve">
-    <value>Sidebar</value>
+    <value>サイドバー</value>
   </data>
   <data name="MenuViewStatusBar" xml:space="preserve">
-    <value>StatusBar</value>
+    <value>ステータスバー</value>
+  </data>
+  <data name="MenuUndo" xml:space="preserve">
+    <value>元に戻す(_U)</value>
+  </data>
+  <data name="MenuTool" xml:space="preserve">
+    <value>ツール(_T)</value>
+  </data>
+  <data name="MenuHelp" xml:space="preserve">
+    <value>助けて(_H)</value>
   </data>
 </root>

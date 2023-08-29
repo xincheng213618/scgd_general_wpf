@@ -47,20 +47,18 @@ namespace ColorVision.Theme
 
             AppsThemeChanged += (e) =>
             {
-                if (ApplicationTheme == Theme.UseSystem)
+                if (CurrentTheme == Theme.UseSystem)
                 {
                     ApplyActTheme(Application.Current,e);
                 }
             };
-        }
-
-
+        }   
 
         public void ApplyTheme(Application app, Theme theme) 
         {
-            if (ApplicationTheme == theme)
+            if (CurrentTheme == theme)
                 return;
-            ApplicationTheme = theme;
+            CurrentTheme = theme;
             if (theme == Theme.UseSystem)
                 theme = AppsTheme;
             ApplyActTheme(app,theme);
@@ -91,9 +89,9 @@ namespace ColorVision.Theme
 
         private void ApplyActTheme(Application app, Theme theme)
         {
-            if (ApplicationActTheme == theme)
+            if (CurrentUITheme == theme)
                 return;
-            ApplicationActTheme = theme;
+            CurrentUITheme = theme;
 
             switch (theme)
             {
@@ -133,8 +131,8 @@ namespace ColorVision.Theme
         /// <summary>
         /// 选择的主题，存在三种情况：
         /// </summary>
-        public  Theme ApplicationTheme { get;  private set; }
-        private Theme ApplicationActTheme { get;  set; }
+        public  Theme CurrentTheme { get;  private set; }
+        private Theme CurrentUITheme { get;  set; }
 
 
         /// <summary>

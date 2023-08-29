@@ -212,7 +212,6 @@ namespace ColorVision
                 }
                 CameraOpen = !CameraOpen;
             }
-
         }
 
 
@@ -300,11 +299,6 @@ namespace ColorVision
         private void MenuItem13_Click(object sender, RoutedEventArgs e)
         {
             new ServiceManagerWindow() { Owner = this }.Show();
-        }
-
-        private void Button1_Click(object sender, RoutedEventArgs e)
-        {
-            ImageView1.DrawingTest();
         }
 
         private void Button5_Click(object sender, RoutedEventArgs e)

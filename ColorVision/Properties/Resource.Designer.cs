@@ -61,6 +61,51 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 复制(_C) 的本地化字符串。
+        /// </summary>
+        public static string MenuCopy {
+            get {
+                return ResourceManager.GetString("MenuCopy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 剪切(_T) 的本地化字符串。
+        /// </summary>
+        public static string MenuCut {
+            get {
+                return ResourceManager.GetString("MenuCut", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 删除(_D) 的本地化字符串。
+        /// </summary>
+        public static string MenuDelete {
+            get {
+                return ResourceManager.GetString("MenuDelete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 编辑(_E) 的本地化字符串。
+        /// </summary>
+        public static string MenuEdit {
+            get {
+                return ResourceManager.GetString("MenuEdit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 退出(_X) 的本地化字符串。
+        /// </summary>
+        public static string MenuExit {
+            get {
+                return ResourceManager.GetString("MenuExit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 文件(_F) 的本地化字符串。
         /// </summary>
         public static string MenuFile {
@@ -75,6 +120,78 @@ namespace ColorVision.Properties {
         public static string MenuHelp {
             get {
                 return ResourceManager.GetString("MenuHelp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 新建(_N) 的本地化字符串。
+        /// </summary>
+        public static string MenuNew {
+            get {
+                return ResourceManager.GetString("MenuNew", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开(_O) 的本地化字符串。
+        /// </summary>
+        public static string MenuOpen {
+            get {
+                return ResourceManager.GetString("MenuOpen", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 工具(_T) 的本地化字符串。
+        /// </summary>
+        public static string MenuTool {
+            get {
+                return ResourceManager.GetString("MenuTool", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 撤销(_U) 的本地化字符串。
+        /// </summary>
+        public static string MenuUndo {
+            get {
+                return ResourceManager.GetString("MenuUndo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 检查更新(_U) 的本地化字符串。
+        /// </summary>
+        public static string MenuUpdate {
+            get {
+                return ResourceManager.GetString("MenuUpdate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 视图(_V) 的本地化字符串。
+        /// </summary>
+        public static string MenuView {
+            get {
+                return ResourceManager.GetString("MenuView", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 侧边栏 的本地化字符串。
+        /// </summary>
+        public static string MenuViewSidebar {
+            get {
+                return ResourceManager.GetString("MenuViewSidebar", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 状态栏 的本地化字符串。
+        /// </summary>
+        public static string MenuViewStatusBar {
+            get {
+                return ResourceManager.GetString("MenuViewStatusBar", resourceCulture);
             }
         }
     }

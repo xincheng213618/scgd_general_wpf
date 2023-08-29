@@ -494,45 +494,6 @@ namespace ColorVision
             ToolBarTop.DrawVisualImageControl(false);
         }
 
-
-
-        public void DrawingTest()
-        {
-            for (int i = 0; i < 50; i++)
-            {
-                for (int j = 0; j < 50; j++)
-                {
-                    DrawingVisualCircle drawingVisualCircle = new DrawingVisualCircle();
-                    drawingVisualCircle.Attribute.Center = new Point(i * 50, j * 50);
-                    drawingVisualCircle.Attribute.Radius = 20;
-                    drawingVisualCircle.Attribute.Brush = Brushes.Transparent;
-                    drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red, 10);
-                    drawingVisualCircle.Render();
-                    ImageShow.AddVisual(drawingVisualCircle);
-                }
-            }
-            PropertyGrid2.SelectedObject = DrawingVisualLists[0].GetAttribute();
-            DrawingVisualLists[0].GetAttribute().PropertyChanged += (s, e) =>
-            {
-                PropertyGrid2.Refresh();
-            };
-            DrawingVisualLists.CollectionChanged += (s, e) =>
-            {
-                if (DrawingVisualLists.Count == 0)
-                {
-                    ImageGroupGrid.Visibility = Visibility.Collapsed;
-                }
-                else
-                {
-                    ImageGroupGrid.Visibility = Visibility.Visible;
-                }
-            };
-
-        }
-
-
-
-
         private void Button5_Click(object sender, RoutedEventArgs e)
         {
             if (sender is ToggleButton toggleButton)

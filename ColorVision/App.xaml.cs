@@ -98,9 +98,9 @@ namespace ColorVision
         {
             var SoftwareSetting = GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting;
             this.ApplyTheme(SoftwareSetting.Theme);
-            //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en");
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(SoftwareSetting.UICulture);
             //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en");
+            //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("ja");
 
             //这里的代码是因为WPF中引用了WinForm的控件，所以需要先初始化
             System.Windows.Forms.Application.EnableVisualStyles();

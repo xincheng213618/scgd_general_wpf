@@ -39,18 +39,18 @@
         <Grid Grid.Row="0">
             <Menu x:Name="Menu1" Height ="24"  Initialized="Menu_Initialized">
                 <MenuItem x:Name="FileMenuItem" Header="{x:Static resx:Resource.MenuFile}">
-                    <MenuItem Header="新建(_N)" Click="MenuItem_ProjectNew_Click" InputGestureText="Ctrl + N">
+                    <MenuItem Header="{x:Static resx:Resource.MenuNew}" Click="MenuItem_ProjectNew_Click" InputGestureText="Ctrl + N">
                         <MenuItem.Icon >
                             <TextBlock Text="&#xE8F4;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="打开(_O)" Click="MenuItem_ProjectOpen_Click" InputGestureText="Ctrl + O">
+                    <MenuItem Header="{x:Static resx:Resource.MenuOpen}" Click="MenuItem_ProjectOpen_Click" InputGestureText="Ctrl + O">
                         <MenuItem.Icon >
                             <TextBlock Text="&#xE8E5;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
                         </MenuItem.Icon>
                     </MenuItem>
                     <Separator/>
-                    <MenuItem Header="退出(_X)" InputGestureText="Alt + F4" Click="MenuItem_Exit"/>
+                    <MenuItem Header="{x:Static resx:Resource.MenuExit}" InputGestureText="Alt + F4" Click="MenuItem_Exit"/>
                 </MenuItem>
                 <MenuItem Header="配置(_S)">
                     <MenuItem Header="管理员服务配置(_S)"  Tag="ServiceParam" Click="MenuItem_Template"/>
@@ -68,7 +68,7 @@
                     <MenuItem Header="源表模板设置(_V)"  Tag="SxParms" Click="MenuItem_Template"/>
                 </MenuItem>
 
-                <MenuItem Header="工具(_T)">
+                <MenuItem Header="{x:Static resx:Resource.MenuTool}">
                     <MenuItem Header="流程引擎(_F)" Click="MenuItem9_Click"/>
                     <MenuItem Header="MQTT日志(_Q)" Click="MenuItem_Click"/>
                     <MenuItem Header="MQTT列表(_L)" Click="MenuItem12_Click"/>
@@ -86,8 +86,8 @@
                     <MenuItem Header="四色校正" Click="MenuItem_Click8"/>
                 </MenuItem>-->
                 <MenuItem  x:Name="MenuStatusBar"  d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  Header="窗口(_W)">
-                    <MenuItem Header="侧边栏(_M)"  IsChecked="{Binding SoftwareSetting.IsOpenSidebar}"  Click="MenuStatusBar_Click"/>
-                    <MenuItem Header="状态栏(_S)" IsChecked="{Binding SoftwareSetting.IsOpenStatusBar}"  Click="MenuStatusBar_Click" />
+                    <MenuItem Header="{x:Static resx:Resource.MenuViewSidebar}"  IsChecked="{Binding SoftwareSetting.IsOpenSidebar}"  Click="MenuStatusBar_Click"/>
+                    <MenuItem Header="{x:Static resx:Resource.MenuViewStatusBar}" IsChecked="{Binding SoftwareSetting.IsOpenStatusBar}"  Click="MenuStatusBar_Click" />
                     <Separator/>
                     <MenuItem Header="保存窗口布局"  Click="MenuStatusBar_Click" />
                     <MenuItem Header="应用窗口布局"  Click="MenuStatusBar_Click" />
@@ -126,13 +126,11 @@
                                     <UniformGrid Columns="2" >
                                         <Button Content="打开测试图像"  Margin="10,0" Click="Button_Click"/>
                                         <Button Content="打开二进制测试图像"  Margin="10,0" Click="ButtonCV_Click"/>
-                                        <Button Content="绘制测试图形"  Margin="10,0"  Click="Button1_Click"/>
                                         <Button Content="视频测试"  Margin="10,0"  Click="Button4_Click"/>
                                     </UniformGrid>
                                 </StackPanel>
                             </Border>
                         </StackPanel>
-
                         <StackPanel Margin="0,5" Initialized="StackPanelFlow_Initialized">
                             <ToggleButton  x:Name="ToggleButton_flow"  Style="{StaticResource ButtonPageControl1}" Background="Transparent"  Content="流程"  FontSize="15"  IsChecked="True" />
                             <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton_flow,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
