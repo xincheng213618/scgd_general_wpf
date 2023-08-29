@@ -204,20 +204,19 @@
                             <ResourceDictionary Source="/Theme/Icons.xaml"/>
                         </DockPanel.Resources>
                         <StackPanel Orientation="Horizontal" Margin="0">
-                            <Button  Height="15" BorderThickness="0" Click="ViewGrid_Click" Tag="1">
-                                <Image Margin="-3" Source="Image\view1.png"/>
+                            <Button  Height="15" BorderThickness="0" Background="Transparent" Click="ViewGrid_Click" Tag="1">
+                                <Image  Stretch="UniformToFill"  Margin="-3"  Source="Image\view1.png"/>
                             </Button>
-                            <Button  Height="15" BorderThickness="0"  Click="ViewGrid_Click" Tag="20">
-                                <Image Margin="-3" Source="Image\view20.png"/>
+                            <Button  Height="15" BorderThickness="0" Background="Transparent" Click="ViewGrid_Click" Tag="20">
+                                <Image Stretch="UniformToFill"  Margin="-3" Source="Image\view20.png"/>
                             </Button>
-                            <Button  Height="15" BorderThickness="0"  Click="ViewGrid_Click" Tag="21">
-                                <Image Margin="-3" Source="Image\view21.png"/>
+                            <Button  Height="15" BorderThickness="0" Background="Transparent" Click="ViewGrid_Click" Tag="21">
+                                <Image Stretch="UniformToFill"  Margin="-3" Source="Image\view21.png"/>
                             </Button>
-                            <Button  Height="15" BorderThickness="0"  Click="ViewGrid_Click" Tag="4">
-                                <Image Margin="-3" Source="Image\view4.png"/>
+                            <Button  Height="15" BorderThickness="0"  Click="ViewGrid_Click" Background="Transparent" Tag="4">
+                                <Image Stretch="UniformToFill" Margin="-3"  RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled"  Source="Image\view4.png"/>
                             </Button>
                         </StackPanel>
-                        <Grid Width="1" Background="Black"/>
                         <StatusBarItem  MouseLeftButtonDown="TextBlock_MouseLeftButtonDown1" Visibility="{Binding SoftwareConfig.IsUseMySql,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="MySql" >
                             <ToggleButton x:Name="StatusBarMysql" Style="{StaticResource ButtonDrawingImageMysql}"  Height="20"  Margin="0,-10" IsChecked="{Binding SoftwareConfig.MySqlControl.IsConnect,Mode=OneWay}"  IsEnabled="False"/>
                         </StatusBarItem>
