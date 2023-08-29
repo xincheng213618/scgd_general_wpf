@@ -405,5 +405,9 @@ namespace ColorVision
             loginWindow.ShowDialog();
         }
 
+        private void MenuItm_Template(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }
