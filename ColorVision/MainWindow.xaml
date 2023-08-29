@@ -92,13 +92,6 @@
                     <Separator/>
                     <MenuItem Header="保存窗口布局"  Click="MenuStatusBar_Click" />
                     <MenuItem Header="应用窗口布局"  Click="MenuStatusBar_Click" />
-                    <Separator/>
-                    <MenuItem x:Name="Button1" Header="一" Click="Button1_Click_1" Tag="1"/>
-                    <MenuItem x:Name="Button2" Header="二(左右)" Click="Button1_Click_1"  Tag="20"/>
-                    <MenuItem x:Name="Button21" Header="二(上下)" Click="Button1_Click_1"  Tag="21"/>
-                    <MenuItem x:Name="Button3" Header="四" Click="Button1_Click_1"  Tag="4"/>
-                    <MenuItem x:Name="Button4" Header="六" Click="Button1_Click_1"  Tag="6"/>
-                    <MenuItem x:Name="Button5" Header="九" Click="Button1_Click_1"  Tag="9"/>
                 </MenuItem>
 
                 <MenuItem Header="{x:Static resx:Resource.MenuHelp}">

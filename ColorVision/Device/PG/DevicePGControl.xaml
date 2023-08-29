@@ -18,15 +18,23 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="50"/>
                         </Grid.ColumnDefinitions>
-                        <StackPanel >
-                            <TextBlock Text="{Binding Name}"/>
-                            <TextBlock Text="{Binding Config.Name}"/>
-                            <TextBlock Text="{Binding Config.ID}"/>
-                            <TextBlock Text="{Binding Config.MD5}"/>
-                            <TextBlock Text="{Binding Config.SendTopic}"/>
-                            <TextBlock Text="{Binding Config.SubscribeTopic}"/>
-                            <TextBlock Text="{Binding Config.IsAlive}"/>
-                        </StackPanel>
+                        <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5" Margin="5,0">
+                            <UniformGrid Columns="2">
+                                <StackPanel Margin="5">
+                                    <TextBlock Text="{Binding Config.Name}" FontWeight="Bold" FontSize="15"/>
+                                    <TextBlock Text="{Binding Config.SendTopic}"/>
+                                    <TextBlock Text="{Binding Config.SubscribeTopic}"/>
+                                    <TextBlock Text="{Binding Config.ID}"/>
+                                    <TextBlock Text="{Binding Config.MD5}"/>
+                                    <TextBlock Text="{Binding Config.IsAlive}"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,5">
+                                    <TextBlock Text="{Binding Config.ID}"/>
+                                </StackPanel>
+                            </UniformGrid>
+
+                        </Border>
+
                         <Button  Grid.Column="1" Content="编辑"  Click="Button_Click_1"/>
                     </Grid>
                     <Grid  x:Name="MQTTEditContent" Visibility="Collapsed">
