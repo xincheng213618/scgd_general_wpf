@@ -113,6 +113,30 @@ namespace ColorVision
                 Environment.Exit(-1);
             }
             ViewGridManager.GetInstance().SetViewNum(-1);
+
+            FlowTemplate.ItemsSource = TemplateControl.GetInstance().FlowParams;
+            FlowTemplate.SelectionChanged += (s, e) =>
+            {
+                if (FlowTemplate.SelectedValue is FlowParam flowParam)
+                {
+                    string fileName = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.GetFullFileName(flowParam.FileName ?? string.Empty);
+                    if (File.Exists(fileName))
+                    {
+                        if (flowView != null)
+                        {
+                            try
+                            {
+                                flowView.FlowEngineControl.Load(fileName);
+                            }
+                            catch
+                            {
+
+                            }
+                        }
+                    }
+                }
+            };
+            FlowTemplate.SelectedIndex = 0;
         }
 
 
@@ -199,29 +223,7 @@ namespace ColorVision
 
         private void StackPanelFlow_Initialized(object sender, EventArgs e)
         {
-            FlowTemplate.ItemsSource = TemplateControl.GetInstance().FlowParams;
-            FlowTemplate.SelectionChanged += (s, e) =>
-            {
-                if (FlowTemplate.SelectedValue is FlowParam flowParam)
-                {
-                    string fileName = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.GetFullFileName(flowParam.FileName ?? string.Empty);
-                    if (File.Exists(fileName))
-                    {
-                        if (flowView != null)
-                        {
-                            try
-                            {
-                                flowView.FlowEngineControl.Load(fileName);
-                            }
-                            catch
-                            {
 
-                            }
-                        }
-                    }
-                }
-            };
-            FlowTemplate.SelectedIndex = 0;
         }
 
 
