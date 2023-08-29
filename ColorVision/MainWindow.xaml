@@ -36,7 +36,7 @@
             </Border>
         </Grid>
         <Grid Grid.Row="0">
-            <Menu x:Name="Menu1" Height ="24" Background="#F3F3F3"  Initialized="Menu_Initialized">
+            <Menu x:Name="Menu1" Height ="24"  Initialized="Menu_Initialized">
                 <MenuItem x:Name="FileMenuItem" Header="文件(_F)">
                     <MenuItem Header="新建(_O)" Click="MenuItem_ProjectNew_Click" InputGestureText="Ctrl + O">
                         <MenuItem.Icon >
