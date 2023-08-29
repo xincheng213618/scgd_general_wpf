@@ -13,8 +13,6 @@ namespace ColorVision.Video
 {
 
     public delegate void CameraVideoFrameHandler(System.Drawing.Bitmap bitmap);
-
-
     public class CameraVideoControl
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(CameraVideoControl));

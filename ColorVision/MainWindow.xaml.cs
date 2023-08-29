@@ -38,8 +38,9 @@ namespace ColorVision
         }
         public MainWindow()
         {
-            InitializeComponent();
             GlobalSetting = GlobalSetting.GetInstance();
+
+            InitializeComponent();
             if (SoftwareSetting.IsRestoreWindow && SoftwareSetting.Height != 0 && SoftwareSetting.Width != 0)
             {
                 this.Top = SoftwareSetting.Top;

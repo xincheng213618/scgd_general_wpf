@@ -238,7 +238,7 @@ namespace ColorVision.Device.Camera
             MsgSend msg = new MsgSend
             {
                 EventName = "Open",
-                Params = new Dictionary<string, object>() { { "TakeImageMode", (int)TakeImageMode }, { "CameraID", CameraID }, { "Bpp", ImageBpp } }
+                Params = new Dictionary<string, object>() { { "TakeImageMode", TakeImageMode.Live }, { "CameraID", CameraID }, { "Bpp", ImageBpp } }
             };
             PublishAsyncClient(msg);
             return true;

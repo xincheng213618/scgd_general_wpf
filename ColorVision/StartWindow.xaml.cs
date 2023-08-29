@@ -41,7 +41,7 @@ namespace ColorVision
                 {
                     return _attribute.IsJITTrackingEnabled;
                 }
-            }
+            }   
             return false;
         }
 
