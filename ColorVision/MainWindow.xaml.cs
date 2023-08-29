@@ -89,8 +89,6 @@ namespace ColorVision
             TemplateControl = TemplateControl.GetInstance();
             ViewGridManager = ViewGridManager.GetInstance();
             ViewGridManager.MainView = ViewGrid;
-            ViewGrid.Children.Clear();
-            ViewGridManager.AddView(ImageView1);
 
             await Task.Delay(30);
             StatusBarGrid.DataContext = GlobalSetting.GetInstance();
@@ -117,43 +115,7 @@ namespace ColorVision
             ViewGridManager.GetInstance().SetViewNum(-1);
         }
 
-        private void ButtonCV_Click(object sender, RoutedEventArgs e)
-        {
-            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.custom) | *.custom";
-            openFileDialog.RestoreDirectory = true;
-            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                string filePath = openFileDialog.FileName;
-                if (ViewGridManager.CurrentView is ImageView imageView)
-                {
-                    imageView.OpenCVImage(filePath);
-                }
-                else
-                {
-                    ImageView1.OpenCVImage(filePath);
-                }
-            }
-        }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png,*.tif) | *.jpg; *.jpeg; *.png;*.tif";
-            openFileDialog.RestoreDirectory = true;
-            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                string filePath = openFileDialog.FileName;
-                if (ViewGridManager.CurrentView is ImageView imageView)
-                {
-                    imageView.OpenImage(filePath);
-                }
-                else
-                {
-                    ImageView1.OpenImage(filePath);
-                }
-            }
-        }
 
 
         private void MenuStatusBar_Click(object sender, RoutedEventArgs e)
@@ -178,39 +140,6 @@ namespace ColorVision
             {
                 FlowControlData flowControlData = (FlowControlData)sender;
                 ServiceControl.GetInstance().SpectrumDrawPlotFromDB(flowControlData.SerialNumber);
-            }
-        }
-        bool CameraOpen;
-
-        private void Button4_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button)
-            {
-                CameraVideoControl control = CameraVideoControl.GetInstance();
-                if (!CameraOpen)
-                {
-                    button.Content = "正在获取推流";
-                    control.Open();
-                    control.CameraVideoFrameReceived += (bmp) =>
-                    {
-                        button.Content = "关闭视频";
-                        if (ImageView1.ImageShow.Source is WriteableBitmap bitmap)
-                        {
-                            ImageUtil.BitmapCopyToWriteableBitmap(bmp, bitmap, new System.Drawing.Rectangle(0, 0, bmp.Width, bmp.Height), 0, 0, bmp.PixelFormat);
-                        }
-                        else
-                        {
-                            WriteableBitmap writeableBitmap = ImageUtil.BitmapToWriteableBitmap(bmp);
-                            ImageView1.ImageShow.Source = writeableBitmap;
-                        }
-                    };
-                }
-                else
-                {
-                    button.Content = "启用视频模式";
-                    control.Close();
-                }
-                CameraOpen = !CameraOpen;
             }
         }
 

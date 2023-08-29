@@ -23,6 +23,7 @@
                     <hc:ComboBox x:Name="ComboxCameraType" Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20" Margin="0,0,10,0"/>
                 </DockPanel>
                 <Button  Margin="5" x:Name="CamerInitButton" Content="初始化" Click="MQTTCamera_Init_Click"/>
+                <Button Content="视频模式" Click="Button4_Click" Margin="0,5"/>
                 <StackPanel x:Name="StackPanelOpen" Margin="5" >
                     <DockPanel Margin="2" Visibility="Collapsed">
                         <Label Content="相机ID：" />
@@ -74,11 +75,12 @@
                     </DockPanel>
                     <Button Content="设置自动曝光" Click="SendDemo5_Click" Margin="0,5"/>
                     <Button Content="取图" Click="SendDemo3_Click" Margin="0,5"/>
-                    <Button Content="视频模式" Click="SendDemo7_Click" Margin="0,5"/>
                     <DockPanel  Margin="5">
                         <Button Content="存图" Click="SendDemo3_Click" Width="80"/>
                         <TextBox x:Name="TextFilePath" BorderThickness="0,0,0,1" />
                     </DockPanel>
+                    <Button Content="打开测试图像"  Margin="10,0" Click="Button_Click"/>
+                    <Button Content="打开二进制测试图像"  Margin="10,0" Click="ButtonCV_Click"/>
                 </StackPanel>
                 <StackPanel  x:Name="StackPanelFilterWheel" Initialized="StackPanelFilterWheel_Initialized" Visibility="Collapsed">
                     <GroupBox Header="滤色轮">

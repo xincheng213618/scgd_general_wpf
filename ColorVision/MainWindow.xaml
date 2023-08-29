@@ -119,18 +119,6 @@
             <Grid  Grid.Row="0" Background="#F9F9F9" x:Name="SiderBarGrid" d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  MinWidth="150"  Visibility="{Binding SoftwareSetting.IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" >
                 <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                     <StackPanel>
-                        <StackPanel Margin="0,5">
-                            <ToggleButton  x:Name="ToggleButton999"  Style="{StaticResource ButtonPageControl1}" Background="Transparent"  Content="测试"  FontSize="15" IsChecked="True" />
-                            <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton999,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
-                                <StackPanel Margin="5">
-                                    <UniformGrid Columns="2" >
-                                        <Button Content="打开测试图像"  Margin="10,0" Click="Button_Click"/>
-                                        <Button Content="打开二进制测试图像"  Margin="10,0" Click="ButtonCV_Click"/>
-                                        <Button Content="视频测试"  Margin="10,0"  Click="Button4_Click"/>
-                                    </UniformGrid>
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
                         <StackPanel Margin="0,5" Initialized="StackPanelFlow_Initialized">
                             <ToggleButton  x:Name="ToggleButton_flow"  Style="{StaticResource ButtonPageControl1}" Background="Transparent"  Content="流程"  FontSize="15"  IsChecked="True" />
                             <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton_flow,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
@@ -164,7 +152,6 @@
             </Grid>
             <Grid Grid.Column="1">
                 <Grid x:Name="ViewGrid"  Background="#c3c3c3">
-                    <local:ImageView x:Name="ImageView1"/>
                 </Grid>
             </Grid>
 

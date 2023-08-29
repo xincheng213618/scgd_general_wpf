@@ -1,6 +1,10 @@
-﻿using System;
+﻿using ColorVision.Device.Camera.Video;
+using ColorVision.Util;
+using HandyControl.Controls;
+using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.Device.Camera
 {
@@ -61,8 +65,11 @@ namespace ColorVision.Device.Camera
                         CameraCloseButton.Visibility = Visibility.Visible;
                         CameraOpenButton.Visibility = Visibility.Collapsed;
                         StackPanelImage.Visibility = Visibility.Visible;
-
                         ViewGridManager.GetInstance().AddView(View);
+                        if (ViewGridManager.GetInstance().ViewMax > 4 || ViewGridManager.GetInstance().ViewMax == 3)
+                        {
+                            ViewGridManager.GetInstance().SetViewNum(-1);
+                        }
                         break;
                     case DeviceStatus.Opening:
                         break;
@@ -161,9 +168,65 @@ namespace ColorVision.Device.Camera
             Service.SetCfwport();
         }
 
-        private void SendDemo7_Click(object sender, RoutedEventArgs e)
+        bool CameraOpen;
+
+        private void Button4_Click(object sender, RoutedEventArgs e)
         {
-            Service.OpenVideo();
+            if (sender is Button button)
+            {
+                CameraVideoControl control = CameraVideoControl.GetInstance();
+                if (!CameraOpen)
+                {
+                    button.Content = "正在获取推流";
+                    control.Open();
+                    Service.Open(Service.Config.ID,TakeImageMode.Live, Service.Config.ImageBpp);
+
+                    control.CameraVideoFrameReceived += (bmp) =>
+                    {
+                        button.Content = "关闭视频";
+                        if (View.ImageShow.Source is WriteableBitmap bitmap)
+                        {
+                            ImageUtil.BitmapCopyToWriteableBitmap(bmp, bitmap, new System.Drawing.Rectangle(0, 0, bmp.Width, bmp.Height), 0, 0, bmp.PixelFormat);
+                        }
+                        else
+                        {
+                            WriteableBitmap writeableBitmap = ImageUtil.BitmapToWriteableBitmap(bmp);
+                            View.ImageShow.Source = writeableBitmap;
+                        }
+                    };
+                }
+                else
+                {
+                    button.Content = "启用视频模式";
+                    Service.Close();
+                    control.Close();
+                }
+                CameraOpen = !CameraOpen;
+            }
+        }
+
+        private void ButtonCV_Click(object sender, RoutedEventArgs e)
+        {
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
+            openFileDialog.Filter = "Image files (*.custom) | *.custom";
+            openFileDialog.RestoreDirectory = true;
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                string filePath = openFileDialog.FileName;
+                View.OpenCVImage(filePath);
+            }
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
+            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png,*.tif) | *.jpg; *.jpeg; *.png;*.tif";
+            openFileDialog.RestoreDirectory = true;
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                string filePath = openFileDialog.FileName;
+                View.OpenImage(filePath);
+            }
         }
     }
 }

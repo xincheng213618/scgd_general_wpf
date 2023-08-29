@@ -33,7 +33,7 @@ namespace ColorVision.MQTT
         public override string SubscribeTopic { get => Config.SubscribeTopic; set { Config.SubscribeTopic = value; } }
         public override string SendTopic { get => Config.SendTopic; set { Config.SendTopic = value; } }
 
-        public override bool IsAlive { get => Config.IsAlive; set => Config.IsAlive = value; }
+        public override bool IsAlive { get => Config.IsAlive; set { Config.IsAlive = value; NotifyPropertyChanged(); }   }
 
         public override DateTime LastAliveTime { get => Config.LastAliveTime; set => Config.LastAliveTime = value; }
 

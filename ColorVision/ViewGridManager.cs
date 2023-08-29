@@ -98,6 +98,9 @@ namespace ColorVision
 
         public int AddView(Control control)
         {
+            if (control == null)
+                return -1;
+
             if (Views.Contains(control))
                 return Views.IndexOf(control);
 
