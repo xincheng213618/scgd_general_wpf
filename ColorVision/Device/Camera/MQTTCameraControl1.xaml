@@ -23,7 +23,6 @@
                     <hc:ComboBox x:Name="ComboxCameraType" Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20" Margin="0,0,10,0"/>
                 </DockPanel>
                 <Button  Margin="5" x:Name="CamerInitButton" Content="初始化" Click="MQTTCamera_Init_Click"/>
-                <Button Content="视频模式" Click="Button4_Click" Margin="0,5"/>
                 <StackPanel x:Name="StackPanelOpen" Margin="5" >
                     <DockPanel Margin="2" Visibility="Collapsed">
                         <Label Content="相机ID：" />
@@ -49,10 +48,14 @@
                             </ComboBox>
                         </DockPanel>
                     </UniformGrid>
-                    <Grid>
-                        <Button x:Name="CameraOpenButton" Content="打开相机" Click="SendDemo2_Click" />
-                        <Button x:Name="CameraCloseButton"  Content="关闭相机" Click="SendDemo4_Click" />
-                    </Grid>
+                    <UniformGrid Columns="2">
+                        <Grid>
+                            <Button x:Name="CameraOpenButton" Content="打开相机" Click="SendDemo2_Click" />
+                            <Button x:Name="CameraCloseButton"  Content="关闭相机" Click="SendDemo4_Click" />
+                        </Grid>
+                        <Button Content="视频模式" Click="Button4_Click" Margin="0,5"/>
+
+                    </UniformGrid>
 
                 </StackPanel>
 
@@ -79,8 +82,15 @@
                         <Button Content="存图" Click="SendDemo3_Click" Width="80"/>
                         <TextBox x:Name="TextFilePath" BorderThickness="0,0,0,1" />
                     </DockPanel>
-                    <Button Content="打开测试图像"  Margin="10,0" Click="Button_Click"/>
-                    <Button Content="打开二进制测试图像"  Margin="10,0" Click="ButtonCV_Click"/>
+                    <UniformGrid Columns="2">
+
+                        <Button Content="打开测试图像"  Margin="10,0" Click="Button_Click"/>
+                        <Button Content="打开二进制测试图像"  Margin="10,0" Click="ButtonCV_Click"/>
+                    </UniformGrid>
+                    <DockPanel Margin="5">
+                        <TextBlock Text="输出视图：" VerticalAlignment="Center" Width="60"/>
+                        <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"  Height="20"  />
+                    </DockPanel>
                 </StackPanel>
                 <StackPanel  x:Name="StackPanelFilterWheel" Initialized="StackPanelFilterWheel_Initialized" Visibility="Collapsed">
                     <GroupBox Header="滤色轮">
