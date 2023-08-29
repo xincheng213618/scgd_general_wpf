@@ -63,7 +63,7 @@
                     <MenuItem Header="测量模板设置(_S)" Tag="MeasureParm" Click="MenuItem_Template"/>
                     <Separator/>
                     <MenuItem Header="_AOI参数模板设置" Tag="AoiParam" Click="MenuItem_Template"/>
-                    <MenuItem Header="校正模板设置(_C)" Tag="Calibration"  Click="MenuItm_Template"/>
+                    <MenuItem Header="校正模板设置(_C)" Tag="Calibration"  Click="MenuItem_Template"/>
                     <MenuItem Header="数据判断模板设置(_J)" Tag="LedReusltParams"  Click="MenuItem_Template"/>
                     <MenuItem Header="源表模板设置(_V)"  Tag="SxParms" Click="MenuItem_Template"/>
                 </MenuItem>
