@@ -174,35 +174,39 @@ namespace ColorVision.Device.Spectrum
 
         private void DrawPlot()
         {
-            if (MulComparison)
+            if (ScatterPlots.Count > 0)
             {
-                if (LastMulSelectComparsion != null)
+                if (MulComparison)
                 {
-                    LastMulSelectComparsion.Color = Color.DarkGoldenrod;
-                    LastMulSelectComparsion.LineWidth = 1;
-                    LastMulSelectComparsion.MarkerSize = 1;
+                    if (LastMulSelectComparsion != null)
+                    {
+                        LastMulSelectComparsion.Color = Color.DarkGoldenrod;
+                        LastMulSelectComparsion.LineWidth = 1;
+                        LastMulSelectComparsion.MarkerSize = 1;
+                    }
+
+
+                    LastMulSelectComparsion = ScatterPlots[listView1.SelectedIndex];
+                    LastMulSelectComparsion.LineWidth = 3;
+                    LastMulSelectComparsion.MarkerSize = 3;
+                    LastMulSelectComparsion.Color = Color.Red;
+                    wpfplot1.Plot.Add(LastMulSelectComparsion);
+
                 }
+                else
+                {
+                    var temp = ScatterPlots[listView1.SelectedIndex];
+                    temp.Color = Color.DarkGoldenrod;
+                    temp.LineWidth = 1;
+                    temp.MarkerSize = 1;
 
+                    wpfplot1.Plot.Add(temp);
+                    wpfplot1.Plot.Remove(LastMulSelectComparsion);
+                    LastMulSelectComparsion = temp;
 
-                LastMulSelectComparsion = ScatterPlots[listView1.SelectedIndex];
-                LastMulSelectComparsion.LineWidth = 3;
-                LastMulSelectComparsion.MarkerSize = 3;
-                LastMulSelectComparsion.Color = Color.Red;
-                wpfplot1.Plot.Add(LastMulSelectComparsion);
-
+                }
             }
-            else
-            {
-                var temp = ScatterPlots[listView1.SelectedIndex];
-                temp.Color = Color.DarkGoldenrod;
-                temp.LineWidth = 1;
-                temp.MarkerSize = 1;
 
-                wpfplot1.Plot.Add(temp);
-                wpfplot1.Plot.Remove(LastMulSelectComparsion);
-                LastMulSelectComparsion = temp;
-
-            }
             wpfplot1.Refresh();
         }
         bool First;

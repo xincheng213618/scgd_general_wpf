@@ -75,7 +75,7 @@ namespace ColorVision.MySql.Service
                 int idx = 0;
                 foreach (ModDetailModel model in de)
                 {
-                    string code = Cryptography.GetMd5Hash(model.ValueA + model.Id);
+                    string code = model.GetValueMD5();
                     codes[idx++] = code;
                 }
                 resourceDao.DeleteInCodes(codes);
@@ -113,7 +113,7 @@ namespace ColorVision.MySql.Service
             {
                 return;
             }
-            string code = Cryptography.GetMd5Hash(fn.ValueA ?? string.Empty + fn.Id ?? string.Empty);
+            string code = fn.GetValueMD5();
             SysResourceModel res = resourceDao.GetByCode(code);
             if(res != null)
             {

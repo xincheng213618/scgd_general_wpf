@@ -445,7 +445,7 @@ namespace ColorVision.Template
                     ModDetailModel fn = item.Value.GetParameter(FlowParam.FileNameKey);
                     if (fn != null)
                     {
-                        string code = Cryptography.GetMd5Hash(fn.ValueA + fn.Id);
+                        string code = fn.GetValueMD5();
                         SysResourceModel res = resourceService.GetByCode(code);
                         if (res != null)
                         {

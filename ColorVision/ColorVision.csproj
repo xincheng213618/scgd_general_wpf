@@ -75,9 +75,6 @@
     <Reference Include="FlowEngineLib">
       <HintPath>..\DLL\FlowEngineLib.dll</HintPath>
     </Reference>
-    <Reference Include="HslCommunication">
-      <HintPath>..\DLL\HslCommunication.dll</HintPath>
-    </Reference>
     <Reference Include="OpenH264Lib">
       <HintPath>..\DLL\OpenH264Lib.dll</HintPath>
     </Reference>

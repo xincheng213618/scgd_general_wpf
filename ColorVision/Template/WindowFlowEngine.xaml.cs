@@ -19,7 +19,6 @@ namespace ColorVision
     {
         public bool IsSave { get; set; } = true;
 
-        HslCommunication.BasicFramework.SoftNumericalOrder softNumerical;
         public WindowFlowEngine()
         {
             InitializeComponent();
@@ -70,13 +69,7 @@ namespace ColorVision
                     }
                 }
             };
-            softNumerical = new HslCommunication.BasicFramework.SoftNumericalOrder("CV", "yyyyMMddHH", 5, Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\softNumerical.txt");
-            TextBoxsn.Text = softNumerical.GetNumericalOrder();
-
-
-            MQTTConfig mQTTConfig = GlobalSetting.GetInstance().SoftwareConfig.MQTTConfig;
-            FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
-
+            TextBoxsn.Text = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             this.Closed +=(s,e)=>
             {
                 if (IsSave)
@@ -137,16 +130,9 @@ namespace ColorVision
             }
             else if (!IsSave)
             {
-                System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
-                ofd.Filter = "*.stn|*.stn";
-                ofd.FileName = FileName;
-                ofd.InitialDirectory = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.SolutionFullName;
-                if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                if (FlowParam != null)
-                {
-                    FlowParam.FileName = System.IO.Path.GetFileName(ofd.FileName);
-                }
-                SaveFlow(ofd.FileName,true);
+                FlowParam.FileName = FlowParam.Name + ".stn";
+                FileName = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.SolutionFullName + "\\" + FlowParam.FileName;
+                SaveFlow(FileName, true);
                 IsSave = true;
             }
             else
@@ -212,7 +198,7 @@ namespace ColorVision
 
         private void Button_Click_3(object sender, RoutedEventArgs e)
         {
-            TextBoxsn.Text = softNumerical.GetNumericalOrder();
+            TextBoxsn.Text = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
         }
 
         private async void Button_Click_4(object sender, RoutedEventArgs e)

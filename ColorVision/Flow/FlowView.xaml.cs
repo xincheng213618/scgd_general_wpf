@@ -1,4 +1,5 @@
 ﻿using FlowEngineLib;
+using ST.Library.UI.NodeEditor;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,7 +18,7 @@ namespace ColorVision.Flow
 
         public FlowView()
         {
-            flowEngine = new FlowEngineControl(true);
+            flowEngine = new FlowEngineControl(false);
             InitializeComponent();
             View = new View();
         }
@@ -25,6 +26,7 @@ namespace ColorVision.Flow
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
+            STNodePropertyGrid1.IsEditEnable = false;
             STNodeEditorMain.ActiveChanged += (s, e) => STNodePropertyGrid1.SetNode(STNodeEditorMain.ActiveNode);
             flowEngine.AttachLoader(STNodeEditorMain);
         }
