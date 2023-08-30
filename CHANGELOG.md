@@ -1,5 +1,23 @@
 # CHANGELOAG
 
+## [1.0.2.3] 2023-08-30
+
+1.Add Theme Changed
+
+2.Add LanguageChanged
+
+3.Fix ViewManager
+
+4.Fix  CameraVideo
+
+5.FixCamera
+
+6.Fix inidewindows
+
+7.Clean Code
+
+9.Fix Icon
+
 ## [1.0.2.2] 2023-08-28
 
 1.添加二进制文件以及相关的测试代码
