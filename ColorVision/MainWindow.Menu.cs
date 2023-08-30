@@ -15,8 +15,8 @@ using ColorVision.MQTT;
 using ColorVision.MySql;
 using log4net;
 using System.Diagnostics;
-using ColorVision.Video;
 using ColorVision.Service;
+using ColorVision.Device.Camera.Video;
 
 namespace ColorVision
 {

@@ -271,5 +271,10 @@ namespace ColorVision.Device.Camera
             //    View.OpenCVImage(filePath);
             //}
         }
+
+        private void VideSetting_Click(object sender, RoutedEventArgs e)
+        {
+            new CameraVideoConnect() { Owner =Application.Current.MainWindow,WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
     }
 }
