@@ -286,7 +286,7 @@ namespace ColorVision
             var fileAppender = (log4net.Appender.FileAppender)LogManager.GetRepository().GetAppenders().FirstOrDefault(a => a is log4net.Appender.FileAppender);
             if (fileAppender != null)
             {
-                System.Diagnostics.Process.Start("explorer.exe", $"{Path.GetDirectoryName(fileAppender.File)}");
+                Process.Start("explorer.exe", $"{Path.GetDirectoryName(fileAppender.File)}");
             }
         }
         private void Log_Click(object sender, RoutedEventArgs e)

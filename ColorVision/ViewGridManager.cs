@@ -114,30 +114,7 @@ namespace ColorVision
         public int AddView(Control control,ComboBox combo, View view)
         {
             int ret = AddView(control);
-            this.ViewMaxChangedEvent += (e) =>
-            {
-                List<KeyValuePair<string, int>> KeyValues = new List<KeyValuePair<string, int>>();
-                KeyValues.Add(new KeyValuePair<string, int>("独立窗口", -2));
-                KeyValues.Add(new KeyValuePair<string, int>("隐藏", -1));
-                for (int i = 0; i < e; i++)
-                {
-                    KeyValues.Add(new KeyValuePair<string, int>((i + 1).ToString(), i));
-                }
-                combo.ItemsSource = KeyValues;
-                //ComboxView.SelectedIndex = View.View.ViewIndex + 2;
-            };
-            view.ViewIndexChangedEvent += (e1, e2) =>
-            {
-                combo.SelectedIndex = e2 + 2;
-            };
-            combo.SelectionChanged += (s, e) =>
-            {
-                if (combo.SelectedItem is KeyValuePair<string, int> KeyValue)
-                {
-                   this.SetViewIndex(control, KeyValue.Value);
 
-                }
-            };
 
             return ret;
         }

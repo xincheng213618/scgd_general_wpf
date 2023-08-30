@@ -3,7 +3,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision
+namespace ColorVision.Flow
 {
     /// <summary>
     /// FlowView.xaml 的交互逻辑
