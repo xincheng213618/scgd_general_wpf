@@ -78,6 +78,7 @@ namespace ColorVision.Device.SMU
             {
                 if (ComboxView.SelectedItem is  KeyValuePair<string, int> KeyValue)
                 {
+                    View.View.ViewIndex = KeyValue.Value;
                     ViewGridManager.GetInstance().SetViewIndex(View, KeyValue.Value);
 
                 }

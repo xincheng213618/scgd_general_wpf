@@ -49,8 +49,8 @@ namespace ColorVision.Device.Spectrum
             {
                 if (ComboxView.SelectedItem is KeyValuePair<string, int> KeyValue)
                 {
+                    View.View.ViewIndex = KeyValue.Value;
                     ViewGridManager.GetInstance().SetViewIndex(View, KeyValue.Value);
-
                 }
             };
 

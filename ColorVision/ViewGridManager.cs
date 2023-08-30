@@ -21,7 +21,8 @@ namespace ColorVision
     {
         public event ViewIndexChangedHandler ViewIndexChangedEvent;
 
-        public int ViewIndex { get => _ViewIndex; set { ViewIndexChangedEvent?.Invoke(_ViewIndex, value); _ViewIndex = value; NotifyPropertyChanged(); } }
+        public int ViewIndex { get => _ViewIndex; set {
+                ViewIndexChangedEvent?.Invoke(_ViewIndex, value); _ViewIndex = value; NotifyPropertyChanged(); } }
 
         private int _ViewIndex = -1;
         public ViewType ViewType
@@ -34,7 +35,6 @@ namespace ColorVision
                     return ViewType.Window;
                 return ViewType.Hidden;
             }
-            set => throw new NotImplementedException();
         }
 
     }
@@ -140,6 +140,11 @@ namespace ColorVision
                     grid.Children.Remove(control);
 
 
+                if (Grids[viewIndex].Children.Count>0 &&Grids[viewIndex].Children[0] is IView view1)
+                {
+                    view1.View.ViewIndex = -1;
+                }
+                
                 Grids[viewIndex].Children.Clear();
                 Grids[viewIndex].Children.Add(control);
             }
@@ -182,6 +187,15 @@ namespace ColorVision
         public void SetViewGridTwo()
         {
             GenViewGrid(2, false);
+
+            foreach (var item in Views)
+            {
+                if (item is IView view && view.View.ViewIndex>0 && view.View.ViewIndex <= 2)
+                {
+                    view.View.ViewIndex = -1;
+                }      
+            }
+
             for (int i = 0; i < 2; i++)
             {
                 if (i >= Views.Count)
@@ -194,7 +208,6 @@ namespace ColorVision
                     grid.Children.Remove(Views[i]);
 
                 Grids[i].Children.Clear();
-
                 Grids[i].Children.Add(Views[i]);
             }
 
@@ -274,6 +287,8 @@ namespace ColorVision
                 };
                 view.View.ViewIndexChangedEvent += eventHandler;
 
+                if (control.Parent is Grid grid2)
+                    grid2.Children.Remove(control);
                 Views.Remove(control);
                 Grid grid1 = new Grid();
                 grid1.Children.Add(control);
@@ -316,6 +331,11 @@ namespace ColorVision
 
             if (control is IView view)
                 view.View.ViewIndex = 0;
+
+            if (Grids[0].Children[0] is IView view1)
+            {
+                view1.View.ViewIndex = -1;
+            }
 
             Grids[0].Children.Clear();
             Grids[0].Children.Add(control);

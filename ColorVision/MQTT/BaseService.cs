@@ -117,7 +117,7 @@ namespace ColorVision.MQTT
                         }
                     }
                     ///这里是因为这里先加载相机上，所以加在这里
-                    //MsgReturnReceived?.Invoke(json);
+                    MsgReturnReceived?.Invoke(json);
                 }
                 catch (Exception ex)
                 {

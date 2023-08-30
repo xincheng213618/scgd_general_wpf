@@ -34,10 +34,7 @@ namespace ColorVision.Device.Camera
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Service;
-        }
 
-        private void StackPanelCamera_Initialized(object sender, EventArgs e)
-        {
             StackPanelOpen.Visibility = Visibility.Collapsed;
             StackPanelImage.Visibility = Visibility.Collapsed;
             CameraOpenButton.Visibility = Visibility.Collapsed;
@@ -66,8 +63,8 @@ namespace ColorVision.Device.Camera
             {
                 if (ComboxView.SelectedItem is KeyValuePair<string, int> KeyValue)
                 {
+                    View.View.ViewIndex = KeyValue.Value;
                     ViewGridManager.GetInstance().SetViewIndex(View, KeyValue.Value);
-
                 }
             };
 
@@ -106,6 +103,7 @@ namespace ColorVision.Device.Camera
                         StackPanelImage.Visibility = Visibility.Collapsed;
                         CameraOpenButton.Visibility = Visibility.Collapsed;
                         CamerInitButton.Content = "连接";
+                        CameraOpenButton.Content = "打开";
                         break;
                     case DeviceStatus.Init:
                         StackPanelOpen.Visibility = Visibility.Visible;
@@ -118,7 +116,11 @@ namespace ColorVision.Device.Camera
                         break;
                 }
             };
+
+
+
         }
+
 
         private void MQTTCamera_Init_Click(object sender, RoutedEventArgs e)
         {

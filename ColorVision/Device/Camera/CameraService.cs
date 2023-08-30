@@ -143,6 +143,7 @@ namespace ColorVision.Device.Camera
                         Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(this, SaveFileName));
                         break;
                     case "Close":
+                        DeviceStatus = DeviceStatus.Closed;
                         break;
                     case "Open":
                         //MessageBox.Show("Open失败，没有许可证");
@@ -151,6 +152,7 @@ namespace ColorVision.Device.Camera
                         //MessageBox.Show("初始化失败，找不到相机" + Environment.NewLine + "请连接相机或重新初始化服务");
                         break;
                     case "Uninit":
+                        DeviceStatus = DeviceStatus.UnInit;
                         //MessageBox.Show("关闭相机失败" + Environment.NewLine + "请连接相机或重新初始化服务");
                         break;
                     default:

@@ -57,9 +57,7 @@ namespace ColorVision.MQTT.Service
             {
                 if (item is DeviceCamera deviceCamera)
                 {
-                    CameraDisplayControl mQTTCameraControl = new CameraDisplayControl(deviceCamera);
-                    MQTTStackPanel.Children.Add(mQTTCameraControl);
-
+                    MQTTStackPanel.Children.Add(deviceCamera.Control);
                 }
                 else if (item is DevicePG devicePG)
                 {
