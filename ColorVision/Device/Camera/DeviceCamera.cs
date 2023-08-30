@@ -8,7 +8,7 @@ namespace ColorVision.Device.Camera
     {
         public CameraService Service { get; set; }
 
-        public MQTTCameraControl1 Control { get; set; }
+        public CameraDisplayControl Control { get; set; }
 
         public ImageView View { get; set; }
 
@@ -20,7 +20,7 @@ namespace ColorVision.Device.Camera
             {
                 View.OpenImage(e);
             };
-            Control = new MQTTCameraControl1(this);
+            Control = new CameraDisplayControl(this);
         }
 
         public override UserControl GenDeviceControl() => new DeviceCameraControl(this);

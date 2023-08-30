@@ -92,13 +92,6 @@
                     <Separator/>
                     <MenuItem Header="保存窗口布局"  Click="MenuStatusBar_Click" />
                     <MenuItem Header="应用窗口布局"  Click="MenuStatusBar_Click" />
-                    <Separator/>
-                    <MenuItem x:Name="Button1" Header="一" Click="Button1_Click_1" Tag="1"/>
-                    <MenuItem x:Name="Button2" Header="二(左右)" Click="Button1_Click_1"  Tag="20"/>
-                    <MenuItem x:Name="Button21" Header="二(上下)" Click="Button1_Click_1"  Tag="21"/>
-                    <MenuItem x:Name="Button3" Header="四" Click="Button1_Click_1"  Tag="4"/>
-                    <MenuItem x:Name="Button4" Header="六" Click="Button1_Click_1"  Tag="6"/>
-                    <MenuItem x:Name="Button5" Header="九" Click="Button1_Click_1"  Tag="9"/>
                 </MenuItem>
 
                 <MenuItem Header="{x:Static resx:Resource.MenuHelp}">
@@ -119,40 +112,17 @@
             </Grid.ColumnDefinitions>
             <Grid  Grid.Row="0" Background="#F9F9F9" x:Name="SiderBarGrid" d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  MinWidth="150"  Visibility="{Binding SoftwareSetting.IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" >
                 <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-                    <StackPanel>
-                        <StackPanel Margin="0,5" Initialized="StackPanelFlow_Initialized">
-                            <ToggleButton  x:Name="ToggleButton_flow"  Style="{StaticResource ButtonPageControl1}" Background="Transparent"  Content="流程"  FontSize="15"  IsChecked="True" />
-                            <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton_flow,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
-                                <StackPanel Margin="5">
-                                    <StackPanel>
-                                        <DockPanel>
-                                            <Label Content="模板"/>
-                                            <ComboBox  x:Name="FlowTemplate" Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,0,5,0"/>
-                                        </DockPanel>
-                                        <UniformGrid Columns="2">
-                                            <Button  Margin="0,5" Content="执行流程"  Click="Button_FlowRun_Click"/>
-                                            <Button  Margin="5" Content="停止流程"  Click="Button_FlowStop_Click"/>
-                                        </UniformGrid>
-                                    </StackPanel>
-                                    <DockPanel>
-                                        <TextBlock Text="输出视图" VerticalAlignment="Center"/>
-                                        <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"  Height="20"  Margin="5,0,5,0" />
-                                    </DockPanel>
-                                </StackPanel>
-                            </Border>
-
-                        </StackPanel>
+                    <StackPanel x:Name="SPDisplay">
 
                         <StackPanel x:Name="StackPanelMQTT" Initialized="StackPanelMQTT_Initialized">
 
                         </StackPanel>
 
-
                     </StackPanel>
                 </ScrollViewer>
             </Grid>
             <Grid Grid.Column="1">
-                <Grid x:Name="ViewGrid"  Background="#c3c3c3">
+                <Grid x:Name="ViewGrid"  Background="LightGray">
                 </Grid>
             </Grid>
 

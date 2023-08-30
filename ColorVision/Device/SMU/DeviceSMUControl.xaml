@@ -19,7 +19,7 @@
                             <ColumnDefinition Width="50"/>
                         </Grid.ColumnDefinitions>
 
-                        <Border Background ="#FFFFFF" CornerRadius="5" Margin="5,0">
+                        <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5" Margin="5,0">
                             <UniformGrid Columns="2">
                                 <StackPanel Margin="5">
                                     <TextBlock Text="{Binding Config.Name}" FontWeight="Bold" FontSize="15"/>

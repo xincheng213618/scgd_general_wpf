@@ -1,8 +1,10 @@
 ﻿using ColorVision.Device.Camera.Video;
 using ColorVision.Util;
+using ColorVision.Extension;
 using HandyControl.Controls;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
@@ -13,7 +15,7 @@ namespace ColorVision.Device.Camera
     /// <summary>
     /// 根据服务的MQTT相机
     /// </summary>
-    public partial class MQTTCameraControl1 : UserControl
+    public partial class CameraDisplayControl : UserControl
     {
         public CameraService Service { get => Device.Service; }
 
@@ -22,7 +24,7 @@ namespace ColorVision.Device.Camera
         public ImageView View { get; set; }
 
 
-        public MQTTCameraControl1(DeviceCamera device)
+        public CameraDisplayControl(DeviceCamera device)
         {
             Device = device;
             View = Device.View;
@@ -38,8 +40,10 @@ namespace ColorVision.Device.Camera
         {
             StackPanelOpen.Visibility = Visibility.Collapsed;
             StackPanelImage.Visibility = Visibility.Collapsed;
-            CameraCloseButton.Visibility = Visibility.Collapsed;
             CameraOpenButton.Visibility = Visibility.Collapsed;
+
+            ComboxCameraTakeImageMode.ItemsSource = from e1 in Enum.GetValues(typeof(TakeImageMode)).Cast<TakeImageMode>()
+                                                    select new KeyValuePair<TakeImageMode, string>(e1, e1.ToDescription());
 
 
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
@@ -70,11 +74,8 @@ namespace ColorVision.Device.Camera
 
             if (Service.DeviceStatus == DeviceStatus.Init)
             {
-                ComboxCameraID.ItemsSource = CameraService.CameraIDs;
-                ComboxCameraID.SelectedIndex = 0;
                 StackPanelOpen.Visibility = Visibility.Visible;
                 CameraOpenButton.Visibility = Visibility.Visible;
-                CameraCloseButton.Visibility = Visibility.Collapsed;
                 CamerInitButton.Content = "断开初始化";
             }
             Service.DeviceStatusChanged += (e) =>
@@ -82,22 +83,21 @@ namespace ColorVision.Device.Camera
                 switch (e)
                 {
                     case DeviceStatus.Closed:
-                        CameraCloseButton.Visibility = Visibility.Collapsed;
                         CameraOpenButton.Visibility = Visibility.Visible;
                         StackPanelImage.Visibility = Visibility.Collapsed;
                         ViewGridManager.GetInstance().RemoveView(View);
+                        CameraOpenButton.Content = "打开";
                         break;
                     case DeviceStatus.Closing:
                         break;
                     case DeviceStatus.Opened:
-                        CameraCloseButton.Visibility = Visibility.Visible;
-                        CameraOpenButton.Visibility = Visibility.Collapsed;
                         StackPanelImage.Visibility = Visibility.Visible;
                         ViewGridManager.GetInstance().AddView(View);
                         if (ViewGridManager.GetInstance().ViewMax > 4 || ViewGridManager.GetInstance().ViewMax == 3)
                         {
                             ViewGridManager.GetInstance().SetViewNum(-1);
                         }
+                        CameraOpenButton.Content = "关闭";
                         break;
                     case DeviceStatus.Opening:
                         break;
@@ -105,15 +105,12 @@ namespace ColorVision.Device.Camera
                         StackPanelOpen.Visibility = Visibility.Collapsed;
                         StackPanelImage.Visibility = Visibility.Collapsed;
                         CameraOpenButton.Visibility = Visibility.Collapsed;
-                        CamerInitButton.Content = "初始化";
+                        CamerInitButton.Content = "连接";
                         break;
                     case DeviceStatus.Init:
-                        ComboxCameraID.ItemsSource = CameraService.CameraIDs;
-                        ComboxCameraID.SelectedIndex = 0;
                         StackPanelOpen.Visibility = Visibility.Visible;
                         CameraOpenButton.Visibility = Visibility.Visible;
-                        CameraCloseButton.Visibility = Visibility.Collapsed;
-                        CamerInitButton.Content = "断开初始化";
+                        CamerInitButton.Content = "断开连接";
                         break;
                     case DeviceStatus.UnConnected:
                         break;
@@ -125,25 +122,30 @@ namespace ColorVision.Device.Camera
 
         private void MQTTCamera_Init_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button)
+            if (Service.DeviceStatus == DeviceStatus.UnInit)
             {
-                if (Service.DeviceStatus == DeviceStatus.UnInit)
-                {
-                    Service.Init();
-                }
-                else
-                {
-                    Service.UnInit();
-
-                }
-
+                Service.Init();
+                CamerInitButton.Content = "连接中";
+            }
+            else
+            {
+                Service.UnInit();
+                CamerInitButton.Content = "断开连接中";
             }
         }
 
-
-        private void SendDemo2_Click(object sender, RoutedEventArgs e)
+        private void Open_Click(object sender, RoutedEventArgs e)
         {
-            Service.Open(Service.Config.ID, Service.Config.TakeImageMode, Service.Config.ImageBpp);
+            if (Service.DeviceStatus == DeviceStatus.Init || Service.DeviceStatus == DeviceStatus.Closed)
+            {
+                Service.Open(Service.Config.ID, Service.Config.TakeImageMode, Service.Config.ImageBpp);
+                CameraOpenButton.Content = "打开中";
+            }
+            else
+            {
+                Service.Close();
+                CameraOpenButton.Content = "关闭中";
+            }
         }
 
         private void SendDemo3_Click(object sender, RoutedEventArgs e)
@@ -255,6 +257,24 @@ namespace ColorVision.Device.Camera
                 string filePath = openFileDialog.FileName;
                 View.OpenImage(filePath);
             }
+        }
+
+        private void Save_Click(object sender, RoutedEventArgs e)
+        {
+            //using var saveFileDialog = new System.Windows.Forms.SaveFileDialog();
+            //saveFileDialog.Filter = "Image files (*.tif) | *.tif";
+            //saveFileDialog.DefaultExt = "1.tif";
+            //saveFileDialog.RestoreDirectory = true;
+            //if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            //{
+            //    string filePath = openFileDialog.FileName;
+            //    View.OpenCVImage(filePath);
+            //}
+        }
+
+        private void VideSetting_Click(object sender, RoutedEventArgs e)
+        {
+            new CameraVideoConnect() { Owner =Application.Current.MainWindow,WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
     }
 }

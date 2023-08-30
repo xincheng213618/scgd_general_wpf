@@ -45,7 +45,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Extended.Wpf.Toolkit" Version="4.5.0" />
+    <PackageReference Include="Extended.Wpf.Toolkit" Version="4.5.1" />
     <PackageReference Include="Gu.Wpf.Geometry" Version="2.2.8" />
     <PackageReference Include="HandyControl" Version="3.4.0" />
     <PackageReference Include="log4net" Version="2.0.15" />
@@ -57,7 +57,7 @@
     <PackageReference Include="OpenCvSharp4" Version="4.8.0.20230708" />
     <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.8.0.20230708" />
     <PackageReference Include="ScottPlot.WPF" Version="4.1.67" />
-    <PackageReference Include="WPF-UI" Version="2.0.3" />
+    <PackageReference Include="WPF-UI" Version="2.1.0" />
   </ItemGroup>
 
   <ItemGroup>

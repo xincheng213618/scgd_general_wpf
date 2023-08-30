@@ -102,6 +102,8 @@ namespace ColorVision.Device.Camera.Video
                 return false;
             }
         }
+
+
         public byte[]? AddPacket(byte[] buffer)
         {
             byte[] bytes;

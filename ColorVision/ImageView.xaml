@@ -114,6 +114,7 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <Grid Grid.Row="0" Height="0.5" Background="#BCBCBC"/>
+            
             <local:ZoomboxSub x:Name="Zoombox1"  MaxZoom="10"  MinZoom="0.01" Grid.Row="1" Grid.ColumnSpan="2">
                 <local:DrawCanvas x:Name="ImageShow"  Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  MouseDown="ImageShow_MouseDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
             </local:ZoomboxSub>

@@ -31,7 +31,7 @@ namespace ColorVision.Device.PG
 
     public class PGService : BaseService<PGConfig>
     {
-        public event HeartbeatEventHandler HeartbeatEvent;
+        public event HeartbeatHandler HeartbeatEvent;
         public Dictionary<string, Dictionary<string, string>> PGCategoryLib { get; }
 
         public PGService(PGConfig pGConfig) : base(pGConfig)

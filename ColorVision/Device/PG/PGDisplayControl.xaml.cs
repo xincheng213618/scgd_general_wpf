@@ -10,13 +10,13 @@ using System.Windows.Controls;
 namespace ColorVision.Device.PG
 {
     /// <summary>
-    /// MQTTPGControl.xaml 的交互逻辑
+    /// PGDisplayControl.xaml 的交互逻辑
     /// </summary>
-    public partial class MQTTPGControl : UserControl
+    public partial class PGDisplayControl : UserControl
     {
         private PGService PGService { get; set; }
 
-        public MQTTPGControl(PGService pg)
+        public PGDisplayControl(PGService pg)
         {
             PGService = pg;
             InitializeComponent();

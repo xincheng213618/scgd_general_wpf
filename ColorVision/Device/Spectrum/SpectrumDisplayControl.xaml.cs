@@ -9,16 +9,16 @@ using static cvColorVision.GCSDLL;
 namespace ColorVision.Device.Spectrum
 {
     /// <summary>
-    /// MQTTSpectrumControl.xaml 的交互逻辑
+    /// SpectrumDisplayControl.xaml 的交互逻辑
     /// </summary>
-    public partial class MQTTSpectrumControl : UserControl
+    public partial class SpectrumDisplayControl : UserControl
     {
 
         public DeviceSpectrum DeviceSpectrum { get; set; }
         public SpectrumService SpectrumService { get => DeviceSpectrum.SpectrumService; }
 
         public SpectrumView View { get => DeviceSpectrum.ChartView;}
-        public MQTTSpectrumControl(DeviceSpectrum DeviceSpectrum)
+        public SpectrumDisplayControl(DeviceSpectrum DeviceSpectrum)
         {
             this.DeviceSpectrum = DeviceSpectrum;
             InitializeComponent();

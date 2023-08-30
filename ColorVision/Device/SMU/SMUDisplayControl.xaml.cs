@@ -10,9 +10,9 @@ using System.Windows.Controls;
 namespace ColorVision.Device.SMU
 {
     /// <summary>
-    /// MQTTSMUControl.xaml 的交互逻辑
+    /// SMUDisplayControl.xaml 的交互逻辑
     /// </summary>
-    public partial class MQTTSMUControl : UserControl
+    public partial class SMUDisplayControl : UserControl
     {
 
         public DeviceSMU DeviceSMU { get; set; }
@@ -21,7 +21,7 @@ namespace ColorVision.Device.SMU
 
         PassSxSource passSxSource;
 
-        public MQTTSMUControl(DeviceSMU deviceSMU)
+        public SMUDisplayControl(DeviceSMU deviceSMU)
         {
             this.DeviceSMU = deviceSMU;
             InitializeComponent();

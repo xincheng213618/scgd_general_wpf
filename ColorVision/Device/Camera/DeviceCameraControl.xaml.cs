@@ -40,27 +40,6 @@ namespace ColorVision.Device.Camera
 
 
             CameraID.ItemsSource = CameraService.CameraIDs;
-
-            Service.DeviceStatusChanged += (s) =>
-            {
-                if (s == DeviceStatus.Init)
-                {
-                    ButtonInit.Content = "断开初始化";
-                }
-                if (s == DeviceStatus.UnInit)
-                {
-                    ButtonInit.Content = "初始化";
-                }
-            };
-
-            if (Service.DeviceStatus == DeviceStatus.Init)
-            {
-                ButtonInit.Content = "断开初始化";
-            }
-            if (Service.DeviceStatus == DeviceStatus.UnInit)
-            {
-                ButtonInit.Content = "初始化";
-            }
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
