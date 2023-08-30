@@ -13,7 +13,7 @@
              d:DataContext="{d:DesignInstance local:PGService}"
              d:DesignHeight="400" d:DesignWidth="300">
     <StackPanel Margin="0,5" x:Name="StackPanelPG" Initialized="StackPanelPG_Initialized">
-        <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Background="#F9F9F9"  Content="{Binding Config.Name }"  FontSize="15" Foreground="Black" IsChecked="True" />
+        <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Content="{Binding Config.Name }"  FontSize="15"  IsChecked="True" />
         <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="5">
                 <GroupBox Header="通讯方式" Margin="5">

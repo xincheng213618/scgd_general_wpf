@@ -110,7 +110,7 @@
                 <ColumnDefinition x:Name="SiderCol" Width="Auto" />
                 <ColumnDefinition x:Name="ViewCol" Width="*"/>
             </Grid.ColumnDefinitions>
-            <Grid  Grid.Row="0" Background="#F9F9F9" x:Name="SiderBarGrid" d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  MinWidth="150"  Visibility="{Binding SoftwareSetting.IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" >
+            <Grid  Grid.Row="0" Background="{DynamicResource GlobalBorderBrush}" x:Name="SiderBarGrid" d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  MinWidth="150"  Visibility="{Binding SoftwareSetting.IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" >
                 <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                     <StackPanel x:Name="SPDisplay">
 

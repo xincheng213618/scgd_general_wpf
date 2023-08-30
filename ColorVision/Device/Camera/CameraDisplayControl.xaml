@@ -16,7 +16,7 @@
 
     <StackPanel x:Name="StackPanelCamera"  Margin="0,5"  Initialized="StackPanelCamera_Initialized">
         <DockPanel>
-            <ToggleButton  x:Name="ToggleButton1"  Style="{StaticResource ButtonPageControl1}" Background="#F9F9F9" Content="{Binding Config.Name}"  FontSize="15" Foreground="Black" IsChecked="True" />
+            <ToggleButton  x:Name="ToggleButton1"  Style="{StaticResource ButtonPageControl1}" Content="{Binding Config.Name}"  FontSize="15"  IsChecked="True" />
             <TextBlock  FontSize="10" VerticalAlignment="Bottom" Margin="2">
                 <Run Text="("/>
                 <Run Text="{Binding Config.Code}"/>

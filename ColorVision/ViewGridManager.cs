@@ -111,14 +111,6 @@ namespace ColorVision
             return Views.IndexOf(control);
         }
 
-        public int AddView(Control control,ComboBox combo, View view)
-        {
-            int ret = AddView(control);
-
-
-            return ret;
-        }
-
         public void RemoveView(int index)
         {
             Views.RemoveAt(index);
