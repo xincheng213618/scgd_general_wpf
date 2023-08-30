@@ -1,4 +1,5 @@
 ﻿using ColorVision.MVVM;
+using EnumsNET;
 using System;
 using System.Collections.Generic;
 using System.Windows;
@@ -139,7 +140,6 @@ namespace ColorVision
                 if (control.Parent is Grid grid)
                     grid.Children.Remove(control);
 
-
                 if (Grids[viewIndex].Children.Count>0 &&Grids[viewIndex].Children[0] is IView view1)
                 {
                     view1.View.ViewIndex = -1;
@@ -168,47 +168,47 @@ namespace ColorVision
         public void SetViewGrid(int nums)
         {
             GenViewGrid(nums);
+
             for (int i = 0; i < nums; i++)
             {
-                if (i >= Views.Count)
-                    break;
+                foreach (var item in Views)
+                {
+                    if (item is IView view1)
+                    {
+                        if (view1.View.ViewIndex ==i)
+                        {
+                            if (item.Parent is Grid grid1)
+                                grid1.Children.Remove(item);
 
-                if (Views[i] is IView view)
-                    view.View.ViewIndex = i;
-
-                if (Views[i].Parent is Grid grid)
-                    grid.Children.Remove(Views[i]);
-
-                Grids[i].Children.Clear();
-
-                Grids[i].Children.Add(Views[i]);
+                            Grids[i].Children.Clear();
+                            Grids[i].Children.Add(item);
+                            break;
+                        }
+                    }
+                }
             }
         }
         public void SetViewGridTwo()
         {
             GenViewGrid(2, false);
 
-            foreach (var item in Views)
-            {
-                if (item is IView view && view.View.ViewIndex>0 && view.View.ViewIndex <= 2)
-                {
-                    view.View.ViewIndex = -1;
-                }      
-            }
-
             for (int i = 0; i < 2; i++)
             {
-                if (i >= Views.Count)
-                    break;
+                foreach (var item in Views)
+                {
+                    if (item is IView view1)
+                    {
+                        if (view1.View.ViewIndex == i)
+                        {
+                            if (item.Parent is Grid grid1)
+                                grid1.Children.Remove(item);
 
-                if (Views[i] is IView view)
-                    view.View.ViewIndex = i;
-
-                if (Views[i].Parent is Grid grid)
-                    grid.Children.Remove(Views[i]);
-
-                Grids[i].Children.Clear();
-                Grids[i].Children.Add(Views[i]);
+                            Grids[i].Children.Clear();
+                            Grids[i].Children.Add(item);
+                            break;
+                        }
+                    }
+                }
             }
 
         }

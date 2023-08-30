@@ -53,6 +53,7 @@ namespace ColorVision.Flow
                     KeyValues.Add(new KeyValuePair<string, int>((i + 1).ToString(), i));
                 }
                 ComboxView.ItemsSource = KeyValues;
+                ComboxView.SelectedValue = flowView.View.ViewIndex;
             };
             flowView.View.ViewIndexChangedEvent += (e1, e2) =>
             {
