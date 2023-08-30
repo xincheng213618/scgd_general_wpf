@@ -107,7 +107,17 @@ namespace ColorVision.Template
                         System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
                         ofd.Filter = "*.stn|*.stn";
                         if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                        CreateNewTemplate(TemplateControl.FlowParams, Path.GetFileNameWithoutExtension(ofd.FileName), new FlowParam() { FileName = ofd.FileName });
+                        //CreateNewTemplate(TemplateControl.FlowParams, Path.GetFileNameWithoutExtension(ofd.FileName), new FlowParam() { FileName = ofd.FileName });
+                        string name = Path.GetFileNameWithoutExtension(ofd.FileName);
+                        FlowParam? flowParam = TemplateControl.AddFlowParam(name);
+                        if (flowParam != null)
+                        {
+                            flowParam.FileName = Path.GetFileName(ofd.FileName); ;
+                            CreateNewTemplate(TemplateControl.FlowParams, name, flowParam);
+
+                            TemplateControl.GetInstance().Save2DB(flowParam);
+                        }
+                        else MessageBox.Show("数据库创建流程模板失败");
                     };
                     FunctionGrid.Children.Insert(2, button);
 

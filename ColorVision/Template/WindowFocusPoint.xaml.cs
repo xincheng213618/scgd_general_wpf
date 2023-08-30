@@ -1452,7 +1452,7 @@ namespace ColorVision.Template
                 WaitControlText.Text = "数据正在保存";
                 Thread thread = new Thread(() =>
                 {
-                    TemplateControl.GetInstance().SavePOI2DB(PoiParam);
+                    TemplateControl.GetInstance().Save2DB(PoiParam);
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         WaitControl.Visibility = Visibility.Collapsed;

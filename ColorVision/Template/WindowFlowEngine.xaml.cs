@@ -201,7 +201,7 @@ namespace ColorVision
                 STNodeEditor1.SaveCanvas(flowName);
             }
 
-            TemplateControl.GetInstance().SaveFlow2DB(FlowParam);
+            TemplateControl.GetInstance().Save2DB(FlowParam);
         }
 
         private string GetTopic()

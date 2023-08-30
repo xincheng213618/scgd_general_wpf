@@ -139,7 +139,7 @@ namespace ColorVision.Template
             switch (windowTemplateType)
             {
                 case WindowTemplateType.AoiParam:
-                    if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql) SaveAoi2DB(AoiParams);
+                    if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql) Save2DB(AoiParams);
                     else SaveDefault(FileNameAoiParams, AoiParams);
                     break;
                 case WindowTemplateType.Calibration:
@@ -191,7 +191,7 @@ namespace ColorVision.Template
             modService.Save(value);
         }
 
-        public void SavePOI2DB(PoiParam poiParam)
+        public void Save2DB(PoiParam poiParam)
         {
             poiService.Save(poiParam);
         }
@@ -520,18 +520,18 @@ namespace ColorVision.Template
            return modService.MasterDeleteById(id);
         }
 
-        internal void SaveAoi2DB(ObservableCollection<KeyValuePair<string, AoiParam>> aoiParams)
+        internal void Save2DB(ObservableCollection<KeyValuePair<string, AoiParam>> aoiParams)
         {
             foreach (var item in aoiParams)
             {
-                SaveAoi2DB(item.Value);
+                Save2DB(item.Value);
             }
         }
-        internal void SaveAoi2DB(AoiParam aoiParam)
+        internal void Save2DB(AoiParam aoiParam)
         {
             modService.Save(aoiParam);
         }
-        internal void SaveFlow2DB(FlowParam flowParam)
+        internal void Save2DB(FlowParam flowParam)
         {
             string fileName = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.SolutionFullName + "\\" + flowParam.FileName;
             flowParam.DataBase64 = Tool.FileToBase64(fileName);
