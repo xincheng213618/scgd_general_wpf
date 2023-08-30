@@ -77,14 +77,14 @@
                             </hc:PreviewSlider.PreviewContent>
                         </hc:PreviewSlider>
                     </DockPanel>
-                    <Button Content="设置自动曝光" Click="SendDemo5_Click" Margin="0,5"/>
-                    <Button Content="取图" Click="SendDemo3_Click" Margin="0,5"/>
+                    <Button Content="设置自动曝光" Click="SendDemo5_Click" Margin="0,2"/>
+                    <Button Content="自动聚焦" Click="SendDemo5_Click" Margin="0,2"/>
+                    <Button Content="取图" Click="SendDemo3_Click" Margin="0,2"/>
                     <DockPanel  Margin="5">
-                        <Button Content="存图" Click="SendDemo3_Click" Width="80"/>
+                        <Button Content="存图" Click="Save_Click" Width="80"/>
                         <TextBox x:Name="TextFilePath" BorderThickness="0,0,0,1" />
                     </DockPanel>
                     <UniformGrid Columns="2">
-
                         <Button Content="打开测试图像"  Margin="10,0" Click="Button_Click"/>
                         <Button Content="打开二进制测试图像"  Margin="10,0" Click="ButtonCV_Click"/>
                     </UniformGrid>

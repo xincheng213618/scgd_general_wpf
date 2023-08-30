@@ -259,6 +259,17 @@ namespace ColorVision.Device.Camera
             }
         }
 
-
+        private void Save_Click(object sender, RoutedEventArgs e)
+        {
+            //using var saveFileDialog = new System.Windows.Forms.SaveFileDialog();
+            //saveFileDialog.Filter = "Image files (*.tif) | *.tif";
+            //saveFileDialog.DefaultExt = "1.tif";
+            //saveFileDialog.RestoreDirectory = true;
+            //if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            //{
+            //    string filePath = openFileDialog.FileName;
+            //    View.OpenCVImage(filePath);
+            //}
+        }
     }
 }
