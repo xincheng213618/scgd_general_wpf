@@ -57,23 +57,23 @@ namespace ColorVision.MQTT.Service
             {
                 if (item is DeviceCamera deviceCamera)
                 {
-                    MQTTCameraControl1 mQTTCameraControl = new MQTTCameraControl1(deviceCamera);
+                    CameraDisplayControl mQTTCameraControl = new CameraDisplayControl(deviceCamera);
                     MQTTStackPanel.Children.Add(mQTTCameraControl);
 
                 }
                 else if (item is DevicePG devicePG)
                 {
-                    MQTTPGControl mQTTPGControl = new MQTTPGControl(devicePG.PGService);
+                    PGDisplayControl mQTTPGControl = new PGDisplayControl(devicePG.PGService);
                     MQTTStackPanel.Children.Add(mQTTPGControl);
                 }
                 else if (item is DeviceSpectrum deviceSpectrum)
                 {
-                    MQTTSpectrumControl mQTTSpectrumControl = new MQTTSpectrumControl(deviceSpectrum);
+                    SpectrumDisplayControl mQTTSpectrumControl = new SpectrumDisplayControl(deviceSpectrum);
                     MQTTStackPanel.Children.Add(mQTTSpectrumControl);
                 }
                 else if (item is DeviceSMU smu)
                 {
-                    MQTTSMUControl mQTTSMUControl = new MQTTSMUControl(smu);
+                    SMUDisplayControl mQTTSMUControl = new SMUDisplayControl(smu);
                     MQTTStackPanel.Children.Add(mQTTSMUControl);
                 }
                 else if (item is DeviceSensor deviceSensor)
@@ -95,23 +95,23 @@ namespace ColorVision.MQTT.Service
                     {
                         if (item is DeviceCamera deviceCamera)
                         {
-                            MQTTCameraControl1 mQTTCameraControl = new MQTTCameraControl1(deviceCamera);
+                            CameraDisplayControl mQTTCameraControl = new CameraDisplayControl(deviceCamera);
                             MQTTStackPanel.Children.Add(mQTTCameraControl);
 
                         }
                         else if (item is DevicePG devicePG)
                         {
-                            MQTTPGControl mQTTPGControl = new MQTTPGControl(devicePG.PGService);
+                            PGDisplayControl mQTTPGControl = new PGDisplayControl(devicePG.PGService);
                             MQTTStackPanel.Children.Add(mQTTPGControl);
                         }
                         else if (item is DeviceSpectrum deviceSpectrum)
                         {
-                            MQTTSpectrumControl mQTTSpectrumControl = new MQTTSpectrumControl(deviceSpectrum);
+                            SpectrumDisplayControl mQTTSpectrumControl = new SpectrumDisplayControl(deviceSpectrum);
                             MQTTStackPanel.Children.Add(mQTTSpectrumControl);
                         }
                         else if (item is DeviceSMU smu)
                         {
-                            MQTTSMUControl mQTTSMUControl = new MQTTSMUControl(smu);
+                            SMUDisplayControl mQTTSMUControl = new SMUDisplayControl(smu);
                             MQTTStackPanel.Children.Add(mQTTSMUControl);
                         }
                         else if (item is DeviceSensor deviceSensor)
@@ -175,7 +175,7 @@ namespace ColorVision.MQTT.Service
 
             foreach (UserControl ctl in MQTTStackPanel.Children)
             {
-                if (ctl is MQTTSpectrumControl spectrum)
+                if (ctl is SpectrumDisplayControl spectrum)
                 {
                     spectrum.SpectrumClear();
                     foreach (SpectumData data in datas)

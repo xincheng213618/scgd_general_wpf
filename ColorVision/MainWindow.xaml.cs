@@ -127,15 +127,10 @@ namespace ColorVision
             new MQTTList() { Owner = this }.Show();
         }
 
-
-
-
         private void MenuItem13_Click(object sender, RoutedEventArgs e)
         {
             new ServiceManagerWindow() { Owner = this }.Show();
         }
-
-
         private void StackPanelMQTT_Initialized(object sender, EventArgs e)
         {
             if (sender is StackPanel stackPanel)
@@ -144,23 +139,6 @@ namespace ColorVision
             }
         }
 
-        private void Button10_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button)
-            {
-                int v = int.Parse(button.Tag.ToString() ?? "0");
-                if (v >= ViewGridManager.Views.Count)
-                    return;
-
-                ViewGridManager.SetOneView(v);
-
-                if (ViewGridManager.Views[v] is ImageView imageView)
-                {
-                    imageView.Zoombox1.ZoomUniform();
-                }
-
-            }
-        }
 
 
         private void GridSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
@@ -168,27 +146,6 @@ namespace ColorVision
             SiderBarGrid.Width = SiderCol.ActualWidth;
             SiderCol.Width = GridLength.Auto;
             ViewCol.Width = new GridLength(1, GridUnitType.Star);
-        }
-
-        private void Button1_Click_1(object sender, RoutedEventArgs e)
-        {
-            if(sender is MenuItem button && int.TryParse(button.Tag.ToString() ,out int nums))
-            {
-                switch (nums)
-                {
-                    case 20:
-                        ViewGridManager.SetViewGridTwo();
-                        break;
-                    case 21:
-                        ViewGridManager.SetViewGrid(2);
-                        break;
-                    default:
-                        ViewGridManager.SetViewGrid(nums);
-                        break;
-                }
-
-                ViewGridManager.SetViewGrid(nums);
-            }
         }
         private void ViewGrid_Click(object sender, RoutedEventArgs e)
         {
@@ -214,11 +171,6 @@ namespace ColorVision
         {
             LoginWindow loginWindow = new LoginWindow();
             loginWindow.ShowDialog();
-        }
-
-        private void MenuItm_Template(object sender, RoutedEventArgs e)
-        {
-
         }
     }
 }
