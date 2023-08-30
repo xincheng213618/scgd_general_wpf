@@ -104,6 +104,7 @@ namespace ColorVision.MQTT
                         {
                             value.Enabled = false;
                             timers.Remove(json.MsgID);
+                            MsgReturnReceived?.Invoke(json);
                         }
                         MsgRecord foundMsgRecord = MsgRecords.FirstOrDefault(record => record.MsgID == json.MsgID);
                         if (foundMsgRecord != null)
@@ -116,7 +117,7 @@ namespace ColorVision.MQTT
                         }
                     }
                     ///这里是因为这里先加载相机上，所以加在这里
-                    MsgReturnReceived?.Invoke(json);
+                    //MsgReturnReceived?.Invoke(json);
                 }
                 catch (Exception ex)
                 {
