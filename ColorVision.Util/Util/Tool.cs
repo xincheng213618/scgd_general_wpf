@@ -39,7 +39,16 @@ namespace ColorVision.Util
             catch { return false; }
         }
 
-
+        public static bool Base64ToFile(string base64String, string fileName)
+        {
+            try
+            {
+                byte[] fileBytes = Convert.FromBase64String(base64String);
+                File.WriteAllBytes(fileName, fileBytes);
+                return true;
+            }
+            catch { return false; }
+        }
 
         /// <summary>
         /// 开机自动启动

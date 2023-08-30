@@ -2,6 +2,7 @@
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.SettingUp;
+using ColorVision.Util;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -137,7 +138,8 @@ namespace ColorVision.Template
                         ofd.Title = "导出流程";
                         ofd.FileName = TemplateControl.FlowParams[ListView1.SelectedIndex].Key;
                         if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                        CreateNewTemplate(TemplateControl.FlowParams, Path.GetFileNameWithoutExtension(ofd.FileName), new FlowParam() { FileName = ofd.FileName });
+
+                        SaveAsFile(ofd.FileName,TemplateControl.FlowParams[ListView1.SelectedIndex].Value);
                     };
                     FunctionGrid.Children.Insert(3, button1);
 
@@ -153,8 +155,10 @@ namespace ColorVision.Template
             base.ShowDialog();
 
         }
-
-
+        private void SaveAsFile(string sFileName,  FlowParam flow)
+        {
+            Tool.Base64ToFile(flow.DataBase64, sFileName);
+        }
         public ObservableCollection<ListConfig> ListConfigs { get; set; } = new ObservableCollection<ListConfig>();
         private void Window_Initialized(object sender, EventArgs e)
         {
