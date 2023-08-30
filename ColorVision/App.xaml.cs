@@ -1,26 +1,16 @@
 ﻿using ColorVision.MQTT;
-using ColorVision.MySql;
 using ColorVision.NativeMethods;
 using ColorVision.SettingUp;
 using ColorVision.Theme;
-using HslCommunication.Profinet.MegMeet;
 using log4net;
 using log4net.Config;
-using Microsoft.VisualBasic.Logging;
 using System;
 using System.CodeDom.Compiler;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Data;
 using System.Diagnostics;
-using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Resources;
 
 [assembly: XmlConfigurator(ConfigFile = "log4net.config", Watch = true)]
 namespace ColorVision
@@ -106,13 +96,11 @@ namespace ColorVision
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
-
-            this.ApplyTheme(Theme.Theme.Light);
-
-            GlobalSetting.GetInstance();
-
+            var SoftwareSetting = GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting;
+            this.ApplyTheme(SoftwareSetting.Theme);
+            Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(SoftwareSetting.UICulture);
             //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en");
-            Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("zh-Hans");
+            //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("ja");
 
             //这里的代码是因为WPF中引用了WinForm的控件，所以需要先初始化
             System.Windows.Forms.Application.EnableVisualStyles();

@@ -1,41 +1,18 @@
-﻿using ColorVision.MQTT.Camera;
+﻿using ColorVision.Device;
 using ColorVision.MVVM;
 using ColorVision.SettingUp;
-using Google.Protobuf.WellKnownTypes;
-using HandyControl.Expression.Shapes;
-using HslCommunication.MQTT;
 using log4net;
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
-using System.Windows;
-using System.Windows.Controls;
 
 namespace ColorVision.MQTT
 {
-
-    /// <summary>
-    /// MQTT服务接口
-    /// </summary>
-    public interface IMQTTServiceConfig
-    {
-        /// <summary>
-        /// 发送信道
-        /// </summary>
-        public string SendTopic { get; set; }
-
-        /// <summary>
-        /// 监听信道
-        /// </summary>
-        public string SubscribeTopic { get; set; }
-    }
 
     /// <summary>
     /// 心跳接口
@@ -47,6 +24,8 @@ namespace ColorVision.MQTT
         public bool IsAlive { get; set; }
     }
 
+
+
     public class BaseService<T> : BaseService where T :BaseDeviceConfig
     {
         public T Config { get; set; }
@@ -54,7 +33,7 @@ namespace ColorVision.MQTT
         public override string SubscribeTopic { get => Config.SubscribeTopic; set { Config.SubscribeTopic = value; } }
         public override string SendTopic { get => Config.SendTopic; set { Config.SendTopic = value; } }
 
-        public override bool IsAlive { get => Config.IsAlive; set => Config.IsAlive = value; }
+        public override bool IsAlive { get => Config.IsAlive; set { Config.IsAlive = value; NotifyPropertyChanged(); }   }
 
         public override DateTime LastAliveTime { get => Config.LastAliveTime; set => Config.LastAliveTime = value; }
 
@@ -70,13 +49,11 @@ namespace ColorVision.MQTT
     }
 
 
-    public class BaseService:ViewModelBase, IHeartbeat, IMQTTServiceConfig, IDisposable 
+    public class BaseService:ViewModelBase, IHeartbeat, IServiceConfig, IDisposable 
     {
         internal static readonly ILog log = LogManager.GetLogger(typeof(BaseService));
 
-        public MQTTConfig MQTTConfig { get; set; }
         public MQTTSetting MQTTSetting { get; set; }
-
 
         public event EventHandler Connected;
 
@@ -86,7 +63,6 @@ namespace ColorVision.MQTT
         {
             cmdMap = new Dictionary<string, MsgSend>();
             MQTTControl = MQTTControl.GetInstance();
-            MQTTConfig = MQTTControl.MQTTConfig;
             MQTTSetting = MQTTControl.MQTTSetting;
             MQTTControl.ApplicationMessageReceivedAsync += Processing;
             var timer = new System.Timers.Timer
@@ -100,7 +76,6 @@ namespace ColorVision.MQTT
 
         private Task Processing(MqttApplicationMessageReceivedEventArgs arg)
         {
-
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {
                 string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
@@ -180,7 +155,7 @@ namespace ColorVision.MQTT
         public virtual DateTime LastAliveTime { get => _LastAliveTime; set { _LastAliveTime = value; NotifyPropertyChanged(); } } 
         private DateTime _LastAliveTime = DateTime.MinValue;
 
-        public virtual bool IsAlive { get => _IsAlive; set { if (value == _IsAlive) return;  _IsAlive = value; NotifyPropertyChanged(); } }
+        public virtual bool IsAlive { get => _IsAlive; set {  _IsAlive = value; NotifyPropertyChanged(); } }
         private bool _IsAlive;
 
 
@@ -240,7 +215,7 @@ namespace ColorVision.MQTT
         }
     }
 
-    public class MsgRecord:ViewModelBase, IMQTTServiceConfig
+    public class MsgRecord:ViewModelBase, IServiceConfig
     {
         public string SubscribeTopic { get; set; }
         public string SendTopic { get; set; }

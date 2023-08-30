@@ -1,24 +1,17 @@
-﻿using ColorVision.MQTT.Camera;
-using ColorVision.MQTT.PG;
-using ColorVision.MQTT.Sensor;
-using ColorVision.MQTT.SMU;
-using ColorVision.MQTT.Spectrum;
+﻿using ColorVision.Device.Camera;
+using ColorVision.Device.PG;
+using ColorVision.Device.Sensor;
+using ColorVision.Device.SMU;
+using ColorVision.Device.Spectrum;
 using ColorVision.MySql;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.SettingUp;
-using ColorVision.Template;
 using Newtonsoft.Json;
-using NPOI.SS.Formula.Functions;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel.Design;
-using System.Windows;
-using System.Windows.Automation;
 using System.Windows.Controls;
-using System.Windows.Media.Media3D;
 using static cvColorVision.GCSDLL;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace ColorVision.MQTT.Service
 {
@@ -30,7 +23,7 @@ namespace ColorVision.MQTT.Service
 
         public ObservableCollection<MQTTServiceKind> MQTTServices { get; set; }
 
-        public ObservableCollection<MQTTDevice> MQTTDevices { get; set; }
+        public ObservableCollection<BaseDevice> MQTTDevices { get; set; }
 
 
         public SysResourceService ResourceService { get; set; }
@@ -49,7 +42,7 @@ namespace ColorVision.MQTT.Service
             DictionaryService = new SysDictionaryService();
             resultService = new ResultService();
             MQTTServices = new ObservableCollection<MQTTServiceKind>();
-            MQTTDevices = new ObservableCollection<MQTTDevice>();
+            MQTTDevices = new ObservableCollection<BaseDevice>();
             UserConfig = GlobalSetting.GetInstance().SoftwareConfig.UserConfig;
             MQTTStackPanel = new StackPanel();
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => Reload();
@@ -57,21 +50,14 @@ namespace ColorVision.MQTT.Service
         }
 
 
-        public void GenControl(ObservableCollection<MQTTDevice> MQTTDevices)
+        public void GenControl(ObservableCollection<BaseDevice> MQTTDevices)
         {
             MQTTStackPanel.Children.Clear();
             foreach (var item in MQTTDevices)
             {
                 if (item is DeviceCamera deviceCamera)
                 {
-                    MQTTCameraControl1 mQTTCameraControl = new MQTTCameraControl1(deviceCamera.CameraService);
-                    deviceCamera.CameraService.FileHandler += (s, e) =>
-                    {
-                        if (ViewGridManager.GetInstance().Views[1] is ImageView imageView)
-                        {
-                            imageView.OpenImage(e);
-                        }
-                    };
+                    MQTTCameraControl1 mQTTCameraControl = new MQTTCameraControl1(deviceCamera);
                     MQTTStackPanel.Children.Add(mQTTCameraControl);
 
                 }
@@ -109,14 +95,7 @@ namespace ColorVision.MQTT.Service
                     {
                         if (item is DeviceCamera deviceCamera)
                         {
-                            MQTTCameraControl1 mQTTCameraControl = new MQTTCameraControl1(deviceCamera.CameraService);
-                            deviceCamera.CameraService.FileHandler += (s, e) =>
-                            {
-                                if (ViewGridManager.GetInstance().Views[1] is ImageView imageView)
-                                {
-                                    imageView.OpenImage(e);
-                                }
-                            };
+                            MQTTCameraControl1 mQTTCameraControl = new MQTTCameraControl1(deviceCamera);
                             MQTTStackPanel.Children.Add(mQTTCameraControl);
 
                         }
@@ -150,7 +129,7 @@ namespace ColorVision.MQTT.Service
             List<SpectumData> datas = new List<SpectumData>();
             List<SpectumResultModel> resultSpec = resultService.SpectumSelectBySN(bid);
             List<SMUResultModel> resultSMU = resultService.SMUSelectBySN(bid);
-            for(int i=0;i< resultSpec.Count; i++)
+            for (int i = 0; i < resultSpec.Count; i++)
             {
                 var item = resultSpec[i];
                 ColorParam param = new ColorParam()

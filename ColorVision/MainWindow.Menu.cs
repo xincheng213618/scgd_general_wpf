@@ -3,24 +3,19 @@ using ColorVision.Solution;
 using ColorVision.Solution.RecentFile;
 using ColorVision.SettingUp;
 using ColorVision.Template;
-using HandyControl.Tools.Extension;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using ColorVision.MQTT;
 using ColorVision.MySql;
 using log4net;
-using log4net.Appender;
 using System.Diagnostics;
 using ColorVision.Video;
-using NPOI.XSSF.UserModel;
 using ColorVision.Service;
 
 namespace ColorVision
@@ -56,8 +51,8 @@ namespace ColorVision
                         TemplateAbb(windowTemplate, TemplateControl.CalibrationParams);
                         break;
                     case "PGParam":
-                        PG pg = new PG(TemplateControl.PGParams[0].Value);
-                        windowTemplate = new WindowTemplate(WindowTemplateType.PGParam, pg) { Title = "PG通讯设置" };
+                        //PG pg = new PG(TemplateControl.PGParams[0].Value);
+                        windowTemplate = new WindowTemplate(WindowTemplateType.PGParam) { Title = "PG设置" };
                         TemplateAbb(windowTemplate, TemplateControl.PGParams);
                         break;
                     case "LedReusltParams":
@@ -80,7 +75,7 @@ namespace ColorVision
                         new WindowService() { Owner =this,WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
                         break;
                     case "DeviceParam":
-                        new WindowService1() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+                        new WindowDevices() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
 
                         break;
                     case "MeasureParm":
@@ -327,6 +322,10 @@ namespace ColorVision
             catch (FileNotFoundException)
             {
                 hasDefaultProgram = false;
+            }
+            catch
+            {
+                
             }
             if (hasDefaultProgram)
             {

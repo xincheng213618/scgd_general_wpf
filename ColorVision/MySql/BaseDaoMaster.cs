@@ -1,16 +1,9 @@
-﻿using ColorVision.MQTT;
-using ColorVision.MySql.DAO;
-using HandyControl.Controls;
-using log4net;
+﻿using log4net;
 using MySql.Data.MySqlClient;
-using MySqlX.XDevAPI.Relational;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Documents;
 
 namespace ColorVision.MySql
 {

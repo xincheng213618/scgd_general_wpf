@@ -10,11 +10,11 @@ using System.Collections.ObjectModel;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Interop;
 
 namespace ColorVision.MQTT
 {
     public delegate void MQTTMsgHandler(MQMsg resultDataMQTT);
-
 
     public class MQTTControl : ViewModelBase
     {
@@ -70,7 +70,7 @@ namespace ColorVision.MQTT
                 MQTTMsgChanged?.Invoke(new MQMsg(1,
                     $"{DateTime.Now:HH:mm:ss.fff} 接收：{arg.ApplicationMessage.Topic} {Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment)},消息等级Qos：[{arg.ApplicationMessage.QualityOfServiceLevel}]，是否保留：[{arg.ApplicationMessage.Retain}]",
                     arg.ApplicationMessage.Topic, Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment)));
-                ApplicationMessageReceivedAsync.Invoke(arg); return Task.CompletedTask; };
+                ApplicationMessageReceivedAsync?.Invoke(arg); return Task.CompletedTask; };
             try
             {
                 await MQTTClient.ConnectAsync(options);

@@ -1,22 +1,12 @@
-﻿using ColorVision.MQTT;
-using ColorVision.MySql.DAO;
+﻿using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.SettingUp;
 using ColorVision.Util;
-using cvColorVision;
-using NPOI.SS.Formula.Functions;
-using ScottPlot.Styles;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel.Design;
 using System.IO;
-using System.Linq;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Forms.Design;
 
 namespace ColorVision.Template
 {
@@ -74,7 +64,7 @@ namespace ColorVision.Template
         private void Init()
         {
             CalibrationParams = IDefault(FileNameCalibrationParams, new CalibrationParam());
-            PGParams = IDefault(FileNamePGParams, new PGParam());
+           // PGParams = IDefault(FileNamePGParams, new PGParam());
             LedReusltParams = IDefault(FileNameLedJudgeParams, new LedReusltParam());
             //SxParams = IDefault(FileNameSxParms, new SxParam());
             //FlowParams = IDefault(FileNameFlowParms, new FlowParam());
@@ -83,11 +73,8 @@ namespace ColorVision.Template
             LoadAoiParam();
             LoadFlowParam();
             LoadSxParam();
+            LoadPGParam();
         }
-
-
-
-
 
         /// 这里是初始化模板的封装，因为模板的代码高度统一，所以使用泛型T来设置具体的模板参数。
         /// 最后在给模板的每一个元素加上一个切换的效果，即当某一个模板启用时，关闭其他已经启用的模板；
@@ -159,13 +146,14 @@ namespace ColorVision.Template
                     SaveDefault(FileNameCalibrationParams, CalibrationParams);
                     break;
                 case WindowTemplateType.PGParam:
-                    SaveDefault(FileNamePGParams, PGParams);
+                    if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql) Save2DB(PGParams);
+                    else SaveDefault(FileNamePGParams, PGParams);
                     break;
                 case WindowTemplateType.LedReuslt:
                     SaveDefault(FileNameLedJudgeParams, LedReusltParams);
                     break;
                 case WindowTemplateType.SxParm:
-                    if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql) SaveSx2DB(SxParams);
+                    if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql) Save2DB(SxParams);
                     else SaveDefault(FileNameSxParms, SxParams);
                     break;
                 case WindowTemplateType.PoiParam:
@@ -179,15 +167,26 @@ namespace ColorVision.Template
             }
         }
 
-        private void SaveSx2DB(ObservableCollection<KeyValuePair<string, SxParam>> sxParams)
+        private void Save2DB(ObservableCollection<KeyValuePair<string, PGParam>> pGParams)
+        {
+            foreach (var item in pGParams)
+            {
+                Save2DB(item.Value);
+            }
+        }
+        private void Save2DB(PGParam value)
+        {
+            modService.Save(value);
+        }
+        private void Save2DB(ObservableCollection<KeyValuePair<string, SxParam>> sxParams)
         {
             foreach (var item in sxParams)
             {
-                SaveSx2DB(item.Value);
+                Save2DB(item.Value);
             }
         }
 
-        private void SaveSx2DB(SxParam value)
+        private void Save2DB(SxParam value)
         {
             modService.Save(value);
         }
@@ -238,6 +237,18 @@ namespace ColorVision.Template
                 poiParam.PoiPoints.Add(new PoiParamData(dbModel));
             }
         }
+        internal PGParam? AddPGParam(string text)
+        {
+            ModMasterModel flowMaster = new ModMasterModel(ModMasterType.PG, text, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            modService.Save(flowMaster);
+            int pkId = flowMaster.GetPK();
+            if (pkId > 0)
+            {
+                return LoadPGParamById(pkId);
+            }
+            return null;
+        }
+
         internal SxParam? AddSxParam(string text)
         {
             ModMasterModel flowMaster = new ModMasterModel(ModMasterType.SMU, text, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
@@ -357,12 +368,46 @@ namespace ColorVision.Template
             else return null;
         }
 
+        private PGParam? LoadPGParamById(int pkId)
+        {
+            ModMasterModel pgMaster = modService.GetMasterById(pkId);
+            List<ModDetailModel> pgDetail = modService.GetDetailByPid(pkId);
+            if (pgMaster != null) return new PGParam(pgMaster, pgDetail);
+            else return null;
+        }
+
         private SxParam? LoadSxParamById(int pkId)
         {
             ModMasterModel sxMaster = modService.GetMasterById(pkId);
             List<ModDetailModel> sxDetail = modService.GetDetailByPid(pkId);
             if (sxMaster != null) return new SxParam(sxMaster, sxDetail);
             else return null;
+        }
+
+        private ObservableCollection<KeyValuePair<string, PGParam>> LoadPGParam()
+        {
+            PGParams.Clear();
+            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+            {
+                List<ModMasterModel> smus = modService.GetPGAll(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                foreach (var dbModel in smus)
+                {
+                    List<ModDetailModel> smuDetails = modService.GetDetailByPid(dbModel.Id);
+                    foreach (var dbDetail in smuDetails)
+                    {
+                        dbDetail.ValueA = dbDetail.ValueA.Replace("\\r", "\r");
+                    }
+                    KeyValuePair<string, PGParam> item = new KeyValuePair<string, PGParam>(dbModel.Name ?? "default", new PGParam(dbModel, smuDetails));
+                    PGParams.Add(item);
+                }
+            }
+            else
+            {
+                var keyValuePairs = IDefault(FileNameSxParms, new PGParam());
+                foreach (var item in keyValuePairs)
+                    PGParams.Add(item);
+            }
+            return PGParams;
         }
 
         internal ObservableCollection<KeyValuePair<string, SxParam>> LoadSxParam()

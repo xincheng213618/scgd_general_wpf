@@ -1,27 +1,15 @@
 ﻿using ColorVision.Extension;
 using ColorVision.MVVM;
-using ColorVision.MySql;
 using ColorVision.MySql.DAO;
 using ColorVision.SettingUp;
-using ColorVision.Util;
-using cvColorVision;
-using OpenCvSharp.Detail;
-using ScottPlot.Styles;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace ColorVision.Template
 {
@@ -205,6 +193,7 @@ namespace ColorVision.Template
                     case WindowTemplateType.AoiParam:
                     case WindowTemplateType.LedReuslt:
                     case WindowTemplateType.SxParm:
+                    case WindowTemplateType.PGParam:
                         PropertyGrid1.SelectedObject = ListConfigs[listView.SelectedIndex].Value;
                         break;
                     case WindowTemplateType.Calibration:
@@ -212,13 +201,6 @@ namespace ColorVision.Template
                         {
                             calibration.DataContext = calibrationParam;
                             calibration.CalibrationParam = calibrationParam;
-                        }
-                        break;
-                    case WindowTemplateType.PGParam:
-                        if (UserControl is PG pg && ListConfigs[listView.SelectedIndex].Value is PGParam pGparam)
-                        {
-                            pg.DataContext = pGparam;
-                            pg.PGParam = pGparam;
                         }
                         break;
                     case WindowTemplateType.MeasureParm:
@@ -267,7 +249,9 @@ namespace ColorVision.Template
                     CreateNewTemplate(TemplateControl.CalibrationParams, TextBox1.Text, new CalibrationParam());
                     break;
                 case WindowTemplateType.PGParam:
-                    CreateNewTemplate(TemplateControl.PGParams, TextBox1.Text, new PGParam());
+                    PGParam? pgParam = TemplateControl.AddPGParam(TextBox1.Text);
+                    if (pgParam != null) CreateNewTemplate(TemplateControl.PGParams, TextBox1.Text, pgParam);
+                    else MessageBox.Show("数据库创建PG模板失败");
                     break;
                 case WindowTemplateType.LedReuslt:
                     CreateNewTemplate(TemplateControl.LedReusltParams, TextBox1.Text, new LedReusltParam());
@@ -369,6 +353,8 @@ namespace ColorVision.Template
                             TemplateControl.CalibrationParams.RemoveAt(ListView1.SelectedIndex);
                             break;
                         case WindowTemplateType.PGParam:
+                            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+                                TemplateControl.ModMasterDeleteById(TemplateControl.PGParams[ListView1.SelectedIndex].Value.ID);
                             TemplateControl.PGParams.RemoveAt(ListView1.SelectedIndex);
                             break;
                         case WindowTemplateType.LedReuslt:

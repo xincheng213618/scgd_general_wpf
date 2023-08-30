@@ -17,7 +17,7 @@
                 <ColumnDefinition Width="200"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <TreeView x:Name="TreeView1" Background="#E6E6E6" Loaded="TreeView1_Loaded" SelectedItemChanged="TreeView1_SelectedItemChanged " Margin="5">
+            <TreeView x:Name="TreeView1" Loaded="TreeView1_Loaded" SelectedItemChanged="TreeView1_SelectedItemChanged " Margin="5">
                 <TreeView.Resources>
                     <HierarchicalDataTemplate DataType="{x:Type local:MQTTServiceKind}" ItemsSource="{Binding VisualChildren}" >
                         <StackPanel >
@@ -29,7 +29,7 @@
                             <TextBlock Text="{Binding Name}"/>
                         </StackPanel>
                     </HierarchicalDataTemplate>
-                    <HierarchicalDataTemplate DataType="{x:Type mqtt:MQTTDevice}" ItemsSource="{Binding VisualChildren}" >
+                    <HierarchicalDataTemplate DataType="{x:Type mqtt:BaseDevice}" ItemsSource="{Binding VisualChildren}" >
                         <StackPanel>
                             <TextBlock Text="{Binding Name}"/>
                         </StackPanel>

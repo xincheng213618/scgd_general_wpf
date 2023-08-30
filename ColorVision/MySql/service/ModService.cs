@@ -1,14 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Documents;
 using ColorVision.MySql.DAO;
 using ColorVision.Template;
 using ColorVision.Util;
-using cvColorVision;
-using Org.BouncyCastle.Crypto.Parameters;
 
 namespace ColorVision.MySql.Service
 {
@@ -17,6 +11,7 @@ namespace ColorVision.MySql.Service
         public const string Flow = "flow"; 
         public const string Aoi = "AOI"; 
         public const string SMU = "SMU"; 
+        public const string PG = "pg"; 
     }
     public class ModService
     {
@@ -24,6 +19,7 @@ namespace ColorVision.MySql.Service
         private ModMasterDao masterAoiDao;
         private ModMasterDao masterModDao;
         private ModMasterDao masterSMUDao;
+        private ModMasterDao masterPGDao;
         private ModDetailDao detailDao;
         private SysDictionaryModDetailDao sysDao;
         private SysDictionaryModDao sysDicDao;
@@ -33,6 +29,7 @@ namespace ColorVision.MySql.Service
             this.masterFlowDao = new ModMasterDao(ModMasterType.Flow);
             this.masterAoiDao = new ModMasterDao(ModMasterType.Aoi);
             this.masterSMUDao = new ModMasterDao(ModMasterType.SMU);
+            this.masterPGDao = new ModMasterDao(ModMasterType.PG);
             this.masterModDao = new ModMasterDao();
             this.detailDao = new ModDetailDao();
             this.sysDao = new SysDictionaryModDetailDao();
@@ -43,6 +40,10 @@ namespace ColorVision.MySql.Service
         internal List<ModDetailModel> GetDetailByPid(int pkId)
         {
             return detailDao.GetAllByPid(pkId);
+        }
+        internal List<ModMasterModel> GetPGAll(int tenantId)
+        {
+            return masterPGDao.GetAll(tenantId);
         }
         internal List<ModMasterModel> GetSMUAll(int tenantId)
         {
@@ -132,19 +133,12 @@ namespace ColorVision.MySql.Service
             }
         }
 
-        internal void Save(ColorVision.Template.AoiParam aoiParam)
-        {
-            List<ModDetailModel> list = new List<ModDetailModel>();
-            aoiParam.GetDetail(list);
-            detailDao.UpdateByPid(aoiParam.ID, list);
-        }
-
         internal List<ModMasterModel> GetMasterByPid(int pid)
         {
            return masterModDao.GetAllByPid(pid);
         }
 
-        internal void Save(SxParam value)
+        internal void Save(ParamBase value)
         {
             List<ModDetailModel> list = new List<ModDetailModel>();
             value.GetDetail(list);

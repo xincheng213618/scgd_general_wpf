@@ -1,10 +1,8 @@
-﻿using ColorVision.MQTT;
-using ColorVision.MQTT.Camera;
-using ColorVision.MQTT.PG;
-using ColorVision.MQTT.Sensor;
-using ColorVision.MQTT.Service;
-using ColorVision.MQTT.SMU;
-using ColorVision.MQTT.Spectrum;
+﻿using ColorVision.Device.Camera;
+using ColorVision.Device.PG;
+using ColorVision.Device.Sensor;
+using ColorVision.Device.SMU;
+using ColorVision.Device.Spectrum;
 using ColorVision.MySql.DAO;
 using ColorVision.SettingUp;
 using Newtonsoft.Json;
@@ -144,7 +142,7 @@ namespace ColorVision.MQTT.Service
                     ServiceControl.ResourceService.Save(sysResource);
                     int pkId = sysResource.GetPK();
                     if (pkId > 0 && ServiceControl.ResourceService.GetMasterById(pkId) is SysResourceModel model)
-                        mQTTService.AddChild(new DeviceSpectrum(model));
+                        mQTTService.AddChild(new DeviceSMU(model));
                 }else if (mQTTService.Type == DeviceType.Sensor)
                 {
                     SensorConfig config = new SensorConfig
@@ -170,14 +168,19 @@ namespace ColorVision.MQTT.Service
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            MQTTService.ServiceConfig.SubscribeTopic = MQTTService.SysResourceModel.TypeCode + "/STATUS/" + MQTTService.SysResourceModel.Code;
+            MQTTService.ServiceConfig.SendTopic = MQTTService.SysResourceModel.TypeCode + "/CMD/" + MQTTService.SysResourceModel.Code;
+
             foreach (var item in MQTTService.VisualChildren)
             {
-                if(item is MQTTDevice mQTTDevice)
+                if(item is BaseDevice mQTTDevice)
                 {
                     mQTTDevice.SendTopic = MQTTService.ServiceConfig.SendTopic;
                     mQTTDevice.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;
+                    mQTTDevice.Save();
                 }
             }
+            MQTTService.Save();
 
             MQTTEditContent.Visibility = Visibility.Collapsed;
             MQTTShowContent.Visibility = Visibility.Visible;

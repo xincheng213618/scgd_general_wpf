@@ -2,7 +2,6 @@
 using ColorVision.SettingUp;
 using ColorVision.Template;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
@@ -10,17 +9,11 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using ColorVision.Theme;
-using ColorVision.Video;
-using Microsoft.Win32;
 using ColorVision.Util;
 using ColorVision.Service;
-using ColorVision.MQTT.Camera;
-using ColorVision.MQTT.PG;
-using ColorVision.MQTT.Spectrum;
-using ColorVision.MQTT.SMU;
-using ColorVision.MQTT.Sensor;
 using ColorVision.MQTT.Service;
-using System.Threading;
+using ColorVision.Device.SMU;
+using ColorVision.Device.Camera.Video;
 
 namespace ColorVision
 {
@@ -46,12 +39,16 @@ namespace ColorVision
         public MainWindow()
         {
             GlobalSetting = GlobalSetting.GetInstance();
-            MQTTConfig mQTTConfig = GlobalSetting.SoftwareConfig.MQTTConfig;
-            FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
-            //this.loader = new FlowEngineLib.STNodeLoader("FlowEngineLib.dll");
-            flowView = new FlowView();
 
             InitializeComponent();
+            if (SoftwareSetting.IsRestoreWindow && SoftwareSetting.Height != 0 && SoftwareSetting.Width != 0)
+            {
+                this.Top = SoftwareSetting.Top;
+                this.Left = SoftwareSetting.Left;
+                this.Height = SoftwareSetting.Height;
+                this.Width = SoftwareSetting.Width;
+                this.WindowState = (WindowState)SoftwareSetting.WindowState;
+            }
             this.Closed += (s, e) =>
             {
 
@@ -61,40 +58,25 @@ namespace ColorVision
                 SoftwareSetting.Width = this.Width;
                 SoftwareSetting.WindowState = (int)this.WindowState;
             };
-            if (SoftwareSetting.IsRestoreWindow && SoftwareSetting.Height != 0 && SoftwareSetting.Width != 0)
-            {
-                this.Top = SoftwareSetting.Top;
-                this.Left = SoftwareSetting.Left;
-                this.Height = SoftwareSetting.Height;
-                this.Width = SoftwareSetting.Width;
-                this.WindowState = (WindowState)SoftwareSetting.WindowState;
-            }
         }
 
         private async void Window_Initialized(object sender, EventArgs e)
         {
+            MQTTConfig mQTTConfig = GlobalSetting.SoftwareConfig.MQTTConfig;
+            FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
+            flowView = new FlowView();
             ViewGridManager.GetInstance().AddView(flowView, ComboxView, flowView.View);
+
 
             if (WindowConfig.IsExist)
             {
                 if (WindowConfig.Icon == null)
                 {
-                    ThemeManager.SystemThemeChanged += (s, e) =>
-                    {
-                        if (e == Theme.Theme.Dark)
-                        {
-                            this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
-                        }
-                        else
-                        {
-                            this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision.ico"));
-                        }
+                    ThemeManager.Current.SystemThemeChanged += (e) => {
+                        this.Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision;component/Image/{(e == Theme.Theme.Dark? "ColorVision.ico":"ColorVision1.ico")}"));
                     };
-
-                    if (ThemeManager.SystemTheme == Theme.Theme.Dark)
-                    {
+                    if (ThemeManager.Current.SystemTheme == Theme.Theme.Dark)
                         this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
-                    }
                 }
                 else
                 {
@@ -102,67 +84,62 @@ namespace ColorVision
                 }
                 this.Title = WindowConfig.Title ?? this.Title;
             }
-            else
-            {
-
-            }
 
             Application.Current.MainWindow = this;
-
             TemplateControl = TemplateControl.GetInstance();
-
             ViewGridManager = ViewGridManager.GetInstance();
             ViewGridManager.MainView = ViewGrid;
-            ViewGrid.Children.Clear();
-            ViewGridManager.AddView(ImageView1);
 
             await Task.Delay(30);
-
             StatusBarGrid.DataContext = GlobalSetting.GetInstance();
             SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
             MenuStatusBar.DataContext = SoftwareConfig;
             SiderBarGrid.DataContext = SoftwareConfig;
+
             try
             {
                 if (!SoftwareSetting.IsDeFaultOpenService)
                 {
-                    new WindowService1() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+                    new WindowDevices() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
                 }
                 else
                 {
                     ServiceControl.GetInstance().GenContorl();
                 }
             }
-            catch(Exception ex)
+            catch
             {
                 MessageBox.Show("窗口创建错误");
                 Environment.Exit(-1);
             }
-
-
             ViewGridManager.GetInstance().SetViewNum(-1);
-        }
 
-
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png,*.tif) | *.jpg; *.jpeg; *.png;*.tif";
-            openFileDialog.RestoreDirectory = true;
-            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            FlowTemplate.ItemsSource = TemplateControl.GetInstance().FlowParams;
+            FlowTemplate.SelectionChanged += (s, e) =>
             {
-                string filePath = openFileDialog.FileName;
-                if (ViewGridManager.CurrentView is ImageView imageView)
+                if (FlowTemplate.SelectedValue is FlowParam flowParam)
                 {
-                    imageView.OpenImage(filePath);
+                    string fileName = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.GetFullFileName(flowParam.FileName ?? string.Empty);
+                    if (File.Exists(fileName))
+                    {
+                        if (flowView != null)
+                        {
+                            try
+                            {
+                                flowView.FlowEngineControl.Load(fileName);
+                            }
+                            catch
+                            {
+
+                            }
+                        }
+                    }
                 }
-                else
-                {
-                    ImageView1.OpenImage(filePath);
-                }
-            }
+            };
+            FlowTemplate.SelectedIndex = 0;
         }
+
+
 
 
         private void MenuStatusBar_Click(object sender, RoutedEventArgs e)
@@ -182,47 +159,12 @@ namespace ColorVision
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             //MessageBox.Show("流程执行完成");
             window.Close();
-            window = null;
-            flowControl = null;
+
             if (sender!=null)
             {
                 FlowControlData flowControlData = (FlowControlData)sender;
                 ServiceControl.GetInstance().SpectrumDrawPlotFromDB(flowControlData.SerialNumber);
             }
-        }
-        bool CameraOpen;
-
-        private void Button4_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button)
-            {
-                CameraVideoControl control = CameraVideoControl.GetInstance();
-                if (!CameraOpen)
-                {
-                    button.Content = "正在获取推流";
-                    control.Open();
-                    control.CameraVideoFrameReceived += (bmp) =>
-                    {
-                        button.Content = "关闭视频";
-                        if (ImageView1.ImageShow.Source is WriteableBitmap bitmap)
-                        {
-                            ImageUtil.BitmapCopyToWriteableBitmap(bmp, bitmap, new System.Drawing.Rectangle(0, 0, bmp.Width, bmp.Height), 0, 0, bmp.PixelFormat);
-                        }
-                        else
-                        {
-                            WriteableBitmap writeableBitmap = ImageUtil.BitmapToWriteableBitmap(bmp);
-                            ImageView1.ImageShow.Source = writeableBitmap;
-                        }
-                    };
-                }
-                else
-                {
-                    button.Content = "启用视频模式";
-                    control.Close();
-                }
-                CameraOpen = !CameraOpen;
-            }
-
         }
 
 
@@ -281,33 +223,13 @@ namespace ColorVision
 
         private void StackPanelFlow_Initialized(object sender, EventArgs e)
         {
-            FlowTemplate.ItemsSource = TemplateControl.GetInstance().FlowParams;
-            FlowTemplate.SelectionChanged += (s, e) =>
-            {
-                if (FlowTemplate.SelectedValue is FlowParam flowParam)
-                {
-                    string fileName = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.GetFullFileName(flowParam.FileName ?? string.Empty);
-                    if (File.Exists(fileName))
-                    {
-                        if (flowView != null)
-                        {
-                            flowView.FlowEngineControl.Load(fileName);
-                        }
-                    }
-                }
-            };
-            FlowTemplate.SelectedIndex = 0;
+
         }
 
 
         private void MenuItem13_Click(object sender, RoutedEventArgs e)
         {
             new ServiceManagerWindow() { Owner = this }.Show();
-        }
-
-        private void Button1_Click(object sender, RoutedEventArgs e)
-        {
-            ImageView1.DrawingTest();
         }
 
         private void Button5_Click(object sender, RoutedEventArgs e)
@@ -327,41 +249,6 @@ namespace ColorVision
             ViewGridManager.AddView(new SMUView());
         }
 
-        private void Button6_Click(object sender, RoutedEventArgs e)
-        {
-            ViewGridManager.SetViewNum(1);
-            foreach (var item in ViewGridManager.Views)
-            {
-                if (item is ImageView imageView)
-                {
-                    imageView.Zoombox1.ZoomUniform();
-                }
-            }
-        }
-
-        private void Button7_Click(object sender, RoutedEventArgs e)
-        {
-            ViewGridManager.SetViewNum(2);
-            foreach (var item in ViewGridManager.Views)
-            {
-                if (item is ImageView imageView)
-                {
-                    imageView.Zoombox1.ZoomUniform();
-                }
-            }
-        }
-
-        private void Button8_Click(object sender, RoutedEventArgs e)
-        {
-            ViewGridManager.SetViewNum(4);
-            foreach (var item in ViewGridManager.Views)
-            {
-                if (item is ImageView imageView)
-                {
-                    imageView.Zoombox1.ZoomUniform();
-                }
-            }
-        }
 
         private void StackPanelMQTT_Initialized(object sender, EventArgs e)
         {
@@ -369,11 +256,6 @@ namespace ColorVision
             {
                 stackPanel.Children.Add(ServiceControl.GetInstance().MQTTStackPanel);
             }
-        }
-
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            new HandyControl.Controls.Screenshot().Start();
         }
 
         private void Button10_Click(object sender, RoutedEventArgs e)
@@ -394,10 +276,6 @@ namespace ColorVision
             }
         }
 
-        private void GridSplitter_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-
-        }
 
         private void GridSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
         {
@@ -410,7 +288,39 @@ namespace ColorVision
         {
             if(sender is MenuItem button && int.TryParse(button.Tag.ToString() ,out int nums))
             {
+                switch (nums)
+                {
+                    case 20:
+                        ViewGridManager.SetViewGridTwo();
+                        break;
+                    case 21:
+                        ViewGridManager.SetViewGrid(2);
+                        break;
+                    default:
+                        ViewGridManager.SetViewGrid(nums);
+                        break;
+                }
+
                 ViewGridManager.SetViewGrid(nums);
+            }
+        }
+        private void ViewGrid_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && int.TryParse(button.Tag.ToString(), out int nums))
+            {
+                switch (nums)
+                {
+
+                    case 20:
+                        ViewGridManager.SetViewGridTwo();
+                        break;
+                    case 21:
+                        ViewGridManager.SetViewGrid(2);
+                        break;
+                    default:
+                        ViewGridManager.SetViewGrid(nums);
+                        break;
+                }
             }
         }
 
@@ -418,6 +328,11 @@ namespace ColorVision
         {
             LoginWindow loginWindow = new LoginWindow();
             loginWindow.ShowDialog();
+        }
+
+        private void MenuItm_Template(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

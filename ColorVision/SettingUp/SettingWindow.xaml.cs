@@ -6,19 +6,15 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Unicode;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
+using ColorVision.Extension;
+using ColorVision.Theme;
 
 namespace ColorVision.SettingUp
 {
@@ -43,8 +39,20 @@ namespace ColorVision.SettingUp
                 cmbloglevel.Items.Add(it);
             });
 
+            cmtheme.ItemsSource = from e1 in Enum.GetValues(typeof(Theme.Theme)).Cast<Theme.Theme>()
+                                  select new KeyValuePair<Theme.Theme, string>(e1, e1.ToDescription());
+
+            cmtheme.SelectedValuePath = "Key";
+            cmtheme.DisplayMemberPath = "Value";
+            cmtheme.SelectionChanged += Cmtheme_SelectionChanged;
+
             //BitmapImage bitmapImage = new BitmapImage(new Uri(AppDomain.CurrentDomain.BaseDirectory + SoftwareConfig.UserConfig.UserImage));
             //HeaderImage.Source = bitmapImage;
+        }
+
+        private void Cmtheme_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            Application.Current.ApplyTheme(SoftwareConfig.SoftwareSetting.Theme);
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -128,6 +136,11 @@ namespace ColorVision.SettingUp
         private void TextBlock_MouseLeftButtonDown1(object sender, MouseButtonEventArgs e)
         {
             new MySqlConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+
+        private void cmtheme_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
         }
     }
 }

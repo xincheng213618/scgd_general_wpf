@@ -1,12 +1,7 @@
 ﻿#pragma warning disable CS8602,CA1806,CA2201
-using System;
-using System.Collections.Generic;
 using System.Data;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 
 namespace ColorVision.Util
 {

@@ -1,13 +1,11 @@
-﻿using ColorVision.MQTT;
-using ColorVision.MQTT.Camera;
+﻿using ColorVision.Device;
+using ColorVision.Device.Camera;
+using ColorVision.Device.PG;
+using ColorVision.Device.SMU;
+using ColorVision.Device.Spectrum;
+using ColorVision.MQTT;
 using ColorVision.MQTT.Service;
-using ColorVision.MQTT.SMU;
-using ColorVision.MQTT.Spectrum;
-using ColorVision.MySql.DAO;
-using ColorVision.MySql.Service;
-using ColorVision.SettingUp;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -36,43 +34,19 @@ namespace ColorVision.Service
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             StackPanelShow.Children.Clear();
-
-            if (TreeView1.SelectedItem is MQTTServiceKind mQTTServiceKind)
-            {
-                StackPanelShow.Children.Add( new MQTTServiceKindControl(mQTTServiceKind));
-            }
-            else if (TreeView1.SelectedItem is MQTTService mQTTService)
-            {
-                StackPanelShow.Children.Add(new MQTTServiceControl(mQTTService));
-            }
-            else if (TreeView1.SelectedItem is DeviceCamera  mQTTDeviceCamera)
-            {
-                StackPanelShow.Children.Add(new DeviceCameraControl(mQTTDeviceCamera));
-            }
-            else if (TreeView1.SelectedItem is DeviceSpectrum mQTTDeviceSpectrum)
-            {
-                StackPanelShow.Children.Add(new DeviceSpectrumControl(mQTTDeviceSpectrum));
-            }
-            else if (TreeView1.SelectedItem is DeviceSMU mQTTDeviceSMU)
-            {
-                StackPanelShow.Children.Add(new DeviceSMUControl(mQTTDeviceSMU));
-            }
-
+            if (TreeView1.SelectedItem is BaseObject baseObject)
+                StackPanelShow.Children.Add(baseObject.GenDeviceControl());
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-
             ServiceControl.GetInstance().GenContorl();
-
-
             this.Close();
         }
 
         private void TreeView1_Loaded(object sender, RoutedEventArgs e)
         {
             TreeViewItem firstNode = TreeView1.ItemContainerGenerator.ContainerFromIndex(0) as TreeViewItem;
-
             // 选中第一个节点
             if (firstNode != null)
             {

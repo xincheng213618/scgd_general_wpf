@@ -1,25 +1,18 @@
 ﻿using ColorVision.Extension;
 using ColorVision.MVVM;
-using ColorVision.SettingUp;
-using NPOI.POIFS.Properties;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace ColorVision
 {
@@ -501,45 +494,6 @@ namespace ColorVision
             ToolBarTop.DrawVisualImageControl(false);
         }
 
-
-
-        public void DrawingTest()
-        {
-            for (int i = 0; i < 50; i++)
-            {
-                for (int j = 0; j < 50; j++)
-                {
-                    DrawingVisualCircle drawingVisualCircle = new DrawingVisualCircle();
-                    drawingVisualCircle.Attribute.Center = new Point(i * 50, j * 50);
-                    drawingVisualCircle.Attribute.Radius = 20;
-                    drawingVisualCircle.Attribute.Brush = Brushes.Transparent;
-                    drawingVisualCircle.Attribute.Pen = new Pen(Brushes.Red, 10);
-                    drawingVisualCircle.Render();
-                    ImageShow.AddVisual(drawingVisualCircle);
-                }
-            }
-            PropertyGrid2.SelectedObject = DrawingVisualLists[0].GetAttribute();
-            DrawingVisualLists[0].GetAttribute().PropertyChanged += (s, e) =>
-            {
-                PropertyGrid2.Refresh();
-            };
-            DrawingVisualLists.CollectionChanged += (s, e) =>
-            {
-                if (DrawingVisualLists.Count == 0)
-                {
-                    ImageGroupGrid.Visibility = Visibility.Collapsed;
-                }
-                else
-                {
-                    ImageGroupGrid.Visibility = Visibility.Visible;
-                }
-            };
-
-        }
-
-
-
-
         private void Button5_Click(object sender, RoutedEventArgs e)
         {
             if (sender is ToggleButton toggleButton)
@@ -561,8 +515,6 @@ namespace ColorVision
                     ImageShow.RemoveVisual(ImageRuler);
             }
         }
-
-
 
         private void Button7_Click(object sender, RoutedEventArgs e)
         {
@@ -636,11 +588,70 @@ namespace ColorVision
             }
         }
 
+        [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")]
+        private static extern void RtlMoveMemory(IntPtr Destination, IntPtr Source, uint Length);
+
+        [DllImport("OpenCVHelper.dll")]
+        private static extern void ReadCVFile(string FullPath);
+
+        [DllImport("OpenCVHelper.dll")]
+        public unsafe static extern void SetInitialFrame(nint pRoutineHandler);
+
+
+
+        [UnmanagedCallersOnly(CallConvs = new System.Type[] { typeof(CallConvCdecl) })]
+        [SuppressGCTransition]
+        private static int InitialFrame(IntPtr buff, int rows, int cols, int type)
+        {
+            PixelFormat format = type switch
+            {
+                1 => PixelFormats.Gray8,
+                3 => PixelFormats.Bgr24,
+                4 => PixelFormats.Bgr32,
+                _ => PixelFormats.Default,
+            };
+            if (rows == 0) { return 2; }
+
+            Application.Current.Dispatcher.Invoke(delegate
+            {
+                WriteableBitmap writeableBitmap = new WriteableBitmap(cols, rows, 96.0, 96.0, format, null);
+                RtlMoveMemory(writeableBitmap.BackBuffer, buff, (uint)(cols * rows * type));
+                writeableBitmap.Lock();
+                writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight));
+                writeableBitmap.Unlock();
+                if (ViewGridManager.GetInstance().Views[1] is ImageView view)
+                {
+                    view.ImageShow.Source = writeableBitmap;
+                }
+            });
+            return 0;
+        }
+
+        public unsafe void OpenCVImage(string? filePath)
+        {
+            SetInitialFrame((nint)(delegate* unmanaged[Cdecl]<IntPtr, int, int, int,int >)(&InitialFrame));
+
+            if (filePath != null && File.Exists(filePath))
+            {
+
+                ReadCVFile(filePath);
+
+                //BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
+                //ImageShow.Source = bitmapImage;
+                //DrawGridImage(DrawingVisualGrid, bitmapImage);
+                Zoombox1.ZoomUniform();
+                ToolBar1.Visibility = Visibility.Visible;
+
+            }
+        }
+
+
         public void OpenImage(string? filePath)
         {
             if (filePath != null && File.Exists(filePath))
             {
                 BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
+  
                 ImageShow.Source = bitmapImage;
                 DrawGridImage(DrawingVisualGrid, bitmapImage);
                 Zoombox1.ZoomUniform();
