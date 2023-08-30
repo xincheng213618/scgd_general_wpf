@@ -2463,57 +2463,130 @@ namespace cvColorVision
             fs.Close();
         }
 
-        //public bool MTF() 
-        //{
+        public bool MTF(List<RoiData> roiDatas, HImage tImg, byte[] srcrawRGB, ref string ErrorData)
+        {
 
-        //    FOVParam pm = FOVParam.Load();
+            FOVParam pm = FOVParam.Load();
 
-        //    DoMTF(pm, true);
-        //    return true;
+            bool result=DoMTF(roiDatas, tImg, srcrawRGB,pm, true,ref ErrorData);
+            return result;
 
-        //}
+        }
 
-        //public class MTFResult
-        //{
-        //    public double articulation = 1.0;
-        //    public RoiPointData rpd;
+        public class MTFResult
+        {
+            public double articulation = 1.0;
+            public RoiData rpd;
 
-        //    public MTFResult(RoiPointData rpd, double articulation)
-        //    {
-        //        this.rpd = rpd;
-        //        this.articulation = articulation;
-        //    }
-        //}
+            public MTFResult(RoiData rpd, double articulation)
+            {
+                this.rpd = rpd;
+                this.articulation = articulation;
+            }
+        }
 
-        //private void DoMTF(PoiParam poi,FOVParam pm, bool saveCsv)
-        //{
-        //    List<MTFResult> MTFResults = new List<MTFResult>();
-        //    foreach (RoiPointData pd in pot.riPoints)
-        //    {
-        //        HImage tImg = getHImg(pd, srcrawRGB);
-        //        double articulation = -1.0;
+        public class RoiData 
+        {
+            public int Img_x { set; get; }
+            public int Img_y { set; get; }
+            public int w { set; get; }
+            public int h { set; get; }
+        }
 
-        //        try
-        //        {
-        //            articulation = cvCameraCSLib.cvCalArticulation(EvaFunc.CalResol, tImg, 0, 1, 5, pm.MTF_dRatio);
-        //        }
-        //        finally
-        //        {
-        //            //Marshal.FreeHGlobal(tImg.pData);
-        //        }
+        private bool DoMTF(List<RoiData> roiDatas, HImage tImg, byte[] srcrawRGB,FOVParam pm, bool saveCsv, ref string ErrorData)
+        {
+            List<MTFResult> MTFResults = new List<MTFResult>();
+            foreach (RoiData pd in roiDatas)
+            {
+                double articulation = -1.0;
 
-        //        if (articulation < 0)
-        //        {
-        //            MessageBox.Show("MTFCalculation执行结果失败！");
-        //        }
-        //        else
-        //        {
-        //            MTFResult result = new MTFResult(pd, articulation);
-        //            MTFResults.Add(result);
-        //        }
-        //    }
-        //    if (saveCsv) saveCsv_MTF("Result", MTFResults);
-        //    OnDraw();
-        //}
+                try
+                {
+                    articulation = cvCameraCSLib.cvCalArticulation(EvaFunc.CalResol, tImg, 0, 1, 5, pm.MTF_dRatio);
+                }
+                finally
+                {
+                    //Marshal.FreeHGlobal(tImg.pData);
+                }
+
+                if (articulation < 0)
+                {
+                    //MessageBox.Show("MTFCalculation执行结果失败！");
+                    ErrorData = "MTFCalculation执行结果失败！";
+                    return false;
+                }
+                else
+                {
+                    MTFResult result = new MTFResult(pd, articulation);
+                    MTFResults.Add(result);
+                }
+            }
+            if (saveCsv) 
+            {
+                saveCsv_MTF("Result", MTFResults);
+            }
+            return true;
+        }
+
+        private void saveCsv_MTF(string path, List<MTFResult> arts)
+        {
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+            if (path.Substring(path.Length - 1, 1) != "/")
+            {
+                path = path + "\\MTFResult_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
+            }
+            else
+            {
+                path = path + "MTFResult_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
+            }
+            if (!File.Exists(path))
+            {
+                //首先模拟建立将要导出的数据，这些数据都存于DataTable中  
+                System.Data.DataTable dt = new System.Data.DataTable();
+                dt.Columns.Add("X", typeof(string));
+                dt.Columns.Add("Y", typeof(string));
+                dt.Columns.Add("Width", typeof(string));
+                dt.Columns.Add("Height", typeof(string));
+                dt.Columns.Add("Value", typeof(string));
+                System.IO.FileStream fs2 = new FileStream(path, System.IO.FileMode.Create, System.IO.FileAccess.Write);
+                StreamWriter sw2 = new StreamWriter(fs2, UnicodeEncoding.UTF8);
+                //string path = saveFileDialog.FileName.ToString();//保存路径
+                //Tabel header
+                for (int i = 0; i < dt.Columns.Count; i++)
+                {
+                    if (i != 0)
+                    {
+                        sw2.Write(",");
+                    }
+                    sw2.Write(dt.Columns[i].ColumnName);
+                }
+                sw2.WriteLine("");
+                sw2.Flush();
+                sw2.Close();
+                fs2.Close();
+            }
+            System.IO.FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
+            StreamWriter sw = new StreamWriter(fs, UnicodeEncoding.UTF8);
+            for (int i = 0; i < arts.Count; i++)
+            {
+                MTFResult re = arts[i];
+                sw.Write(re.rpd.Img_x);
+                sw.Write(",");
+                sw.Write(re.rpd.Img_y);
+                sw.Write(",");
+                sw.Write(re.rpd.w);
+                sw.Write(",");
+                sw.Write(re.rpd.h);
+                sw.Write(",");
+                sw.Write(re.articulation);
+                sw.WriteLine("");
+            }
+            sw.Flush();
+            sw.Close();
+            fs.Close();
+        }
     }
 }
