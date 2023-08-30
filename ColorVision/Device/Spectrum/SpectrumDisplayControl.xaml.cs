@@ -39,7 +39,7 @@ namespace ColorVision.Device.Spectrum
                     KeyValues.Add(new KeyValuePair<string, int>((i + 1).ToString(), i));
                 }
                 ComboxView.ItemsSource = KeyValues;
-                //ComboxView.SelectedIndex = View.View.ViewIndex + 2;
+                ComboxView.SelectedValue = View.View.ViewIndex;
             };
             View.View.ViewIndexChangedEvent += (e1, e2) =>
             {
@@ -49,8 +49,8 @@ namespace ColorVision.Device.Spectrum
             {
                 if (ComboxView.SelectedItem is KeyValuePair<string, int> KeyValue)
                 {
+                    View.View.ViewIndex = KeyValue.Value;
                     ViewGridManager.GetInstance().SetViewIndex(View, KeyValue.Value);
-
                 }
             };
 

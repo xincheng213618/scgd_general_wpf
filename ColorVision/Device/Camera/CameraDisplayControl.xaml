@@ -9,14 +9,15 @@
              xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
              xmlns:SettingUp ="clr-namespace:ColorVision.SettingUp"
              xmlns:converter="clr-namespace:ColorVision.Converter"
+             xmlns:cv="clr-namespace:ColorVision"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:CameraService}"
              d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized">
 
-    <StackPanel x:Name="StackPanelCamera"  Margin="0,5"  Initialized="StackPanelCamera_Initialized">
+    <StackPanel x:Name="StackPanelCamera"  Margin="0,5">
         <DockPanel>
-            <ToggleButton  x:Name="ToggleButton1"  Style="{StaticResource ButtonPageControl1}" Background="#F9F9F9" Content="{Binding Config.Name}"  FontSize="15" Foreground="Black" IsChecked="True" />
+            <ToggleButton  x:Name="ToggleButton1"  Style="{StaticResource ButtonPageControl1}" Content="{Binding Config.Name}"  FontSize="15"  IsChecked="True" />
             <TextBlock  FontSize="10" VerticalAlignment="Bottom" Margin="2">
                 <Run Text="("/>
                 <Run Text="{Binding Config.Code}"/>
@@ -89,7 +90,7 @@
                         <Button Content="打开测试图像"  Margin="10,0" Click="Button_Click"/>
                         <Button Content="打开二进制测试图像"  Margin="10,0" Click="ButtonCV_Click"/>
                     </UniformGrid>
-                    <DockPanel Margin="5">
+                    <DockPanel Margin="5" >
                         <TextBlock Text="输出视图：" VerticalAlignment="Center" Width="60"/>
                         <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"  Height="20"  />
                     </DockPanel>

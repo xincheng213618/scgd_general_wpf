@@ -104,6 +104,7 @@ namespace ColorVision.MQTT
                         {
                             value.Enabled = false;
                             timers.Remove(json.MsgID);
+                            MsgReturnReceived?.Invoke(json);
                         }
                         MsgRecord foundMsgRecord = MsgRecords.FirstOrDefault(record => record.MsgID == json.MsgID);
                         if (foundMsgRecord != null)

@@ -10,7 +10,7 @@
              d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized">
 
     <StackPanel Margin="0,5" x:Name="StackPanelSpectrum"  >
-        <ToggleButton  x:Name="ToggleButton3"  Style="{StaticResource ButtonPageControl1}" Background="#F9F9F9"   Content="{Binding Config.Name}"  FontSize="15" Foreground="Black" IsChecked="True" />
+        <ToggleButton  x:Name="ToggleButton3"  Style="{StaticResource ButtonPageControl1}"   Content="{Binding Config.Name}"  FontSize="15"  IsChecked="True" />
         <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton3,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel >
                 <DockPanel Margin="5">
