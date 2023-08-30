@@ -13,7 +13,7 @@ namespace ColorVision.Device.SMU
 
     public class SMUService : BaseService<SMUConfig>
     {
-        public event HeartbeatEventHandler HeartbeatEvent;
+        public event HeartbeatHandler HeartbeatEvent;
         public event MQTTSMUScanResultHandler ScanResultEvent;
         public event MQTTSMUResultHandler ResultEvent;
         public SMUService(SMUConfig sMUConfig) : base(sMUConfig)

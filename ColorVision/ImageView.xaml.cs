@@ -591,12 +591,11 @@ namespace ColorVision
         [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")]
         private static extern void RtlMoveMemory(IntPtr Destination, IntPtr Source, uint Length);
 
-        [DllImport("OpenCVHelper.dll")]
+        [DllImport("OpenCVHelper.dll", CharSet = CharSet.Unicode)]
         private static extern void ReadCVFile(string FullPath);
 
         [DllImport("OpenCVHelper.dll")]
-        public unsafe static extern void SetInitialFrame(nint pRoutineHandler);
-
+        private unsafe static extern void SetInitialFrame(nint pRoutineHandler);
 
 
         [UnmanagedCallersOnly(CallConvs = new System.Type[] { typeof(CallConvCdecl) })]

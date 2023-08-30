@@ -96,14 +96,6 @@
                         <Button Grid.Column="1"  Content="提交" Click="Button_Click" Command="{Binding SaveCommand}" />
                     </Grid>
                 </Grid>
-
-                <Border  Background="White" Margin="10,10,5,10" CornerRadius="5">
-                    <DockPanel Margin="5">
-                        <Button x:Name="ButtonInit" Click="Button_Click_2"  Content="初始化" />
-                        <TextBlock DockPanel.Dock="Right" Text="{Binding CameraService.DeviceStatus}"/>
-                        <TextBlock/>
-                    </DockPanel>
-                </Border>
             </StackPanel>
         </Grid>
     </Grid>
