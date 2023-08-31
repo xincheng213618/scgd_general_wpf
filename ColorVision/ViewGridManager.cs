@@ -1,5 +1,6 @@
 ﻿using ColorVision.MVVM;
 using EnumsNET;
+using NPOI.POIFS.Storage;
 using System;
 using System.Collections.Generic;
 using System.Windows;
@@ -210,11 +211,35 @@ namespace ColorVision
                     }
                 }
             }
+        }
 
+        public void SetViewGridThree()
+        {
+            GenViewGrid(3);
+            Grid.SetRowSpan(Grids[1], 2);
+            MainView.Children.Remove(gridSplitters[1][0]);
+            for (int i = 0; i < 3; i++)
+            {
+                foreach (var item in Views)
+                {
+                    if (item is IView view1)
+                    {
+                        if (view1.View.ViewIndex == i)
+                        {
+                            if (item.Parent is Grid grid1)
+                                grid1.Children.Remove(item);
+
+                            Grids[i].Children.Clear();
+                            Grids[i].Children.Add(item);
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
 
-            
+
         /// <summary>
         public void SetViewNum(int num)
         {
@@ -347,7 +372,7 @@ namespace ColorVision
 
 
 
-
+        private List<List<GridSplitter>> gridSplitters = new List<List<GridSplitter>>();
 
         private void GenViewGrid(int Nums,bool defaultmap =true)
         {
@@ -359,6 +384,7 @@ namespace ColorVision
             MainView.Children.Clear();
             MainView.ColumnDefinitions.Clear();
             MainView.RowDefinitions.Clear();
+            gridSplitters.Clear();
 
             for (int i = 0; i < Nums; i++)
             {
@@ -389,6 +415,8 @@ namespace ColorVision
                 grid.SetValue(Grid.ColumnProperty, col);
                 MainView.Children.Add(grid);
 
+                gridSplitters.Add(new List<GridSplitter>());
+
                 if (MainView.ColumnDefinitions.Count - 1 != col)
                 {
                     GridSplitter gridSplitter = new GridSplitter()
@@ -401,6 +429,7 @@ namespace ColorVision
                     gridSplitter.SetValue(Grid.RowProperty, row);
                     gridSplitter.SetValue(Grid.ColumnProperty, col);
                     MainView.Children.Add(gridSplitter);
+                    gridSplitters[i].Add(gridSplitter);
                 }
 
                 if (MainView.RowDefinitions.Count - 1 != row)
@@ -415,7 +444,7 @@ namespace ColorVision
 
                     gridSplitter1.SetValue(Grid.RowProperty, row);
                     gridSplitter1.SetValue(Grid.ColumnProperty, col);
-
+                    gridSplitters[i].Add(gridSplitter1);
                     MainView.Children.Add(gridSplitter1);
                 }
             }

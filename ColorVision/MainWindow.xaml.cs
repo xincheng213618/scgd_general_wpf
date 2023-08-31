@@ -153,9 +153,11 @@ namespace ColorVision
             {
                 switch (nums)
                 {
-
                     case 20:
                         ViewGridManager.SetViewGridTwo();
+                        break;
+                    case 30:
+                        ViewGridManager.SetViewGridThree();
                         break;
                     case 21:
                         ViewGridManager.SetViewGrid(2);

@@ -306,5 +306,18 @@
         </DrawingImage.Drawing>
     </DrawingImage>
 
+    <DrawingImage x:Key="DrawingImageLeft2Right1">
+        <DrawingImage.Drawing>
+            <DrawingGroup ClipGeometry="M0,0 V200 H200 V0 H0 Z">
+                <GeometryDrawing Brush="{DynamicResource IconSolidColorBrush}" Geometry="F1 M200,200z M0,0z M22.5,8.5L82.5,8.5C91.4,8.5,95.9,12.9,95.9,21.8L95.9,81.8C95.9,90.7,91.5,95.1,82.6,95.1L22.6,95.1C13.7,95.1,9.30000000000001,90.7,9.30000000000001,81.8L9.30000000000001,21.8C9.2,12.9,13.6,8.5,22.5,8.5z" />
+                <GeometryDrawing Brush="{DynamicResource IconSolidColorBrush}" Geometry="F1 M200,200z M0,0z M22.5,102L82.5,102C91.4,102,95.8,106.4,95.8,115.3L95.8,175.3C95.8,184.2,91.4,188.6,82.5,188.6L22.5,188.6C13.6,188.6,9.2,184.2,9.2,175.3L9.2,115.3C9.2,106.5,13.6,102,22.5,102z" />
+                <GeometryDrawing Brush="{DynamicResource IconSolidColorBackgroundBrush}" Geometry="F1 M200,200z M0,0z M27,19.3L78,19.3C81.7,19.3,84.7,22.3,84.7,26L84.7,26 84.7,77.8C84.7,81.5,81.7,84.5,78,84.5L78,84.5 27,84.5C23.3,84.5,20.3,81.5,20.3,77.8L20.3,77.8 20.3,25.9C20.4,22.2,23.4,19.3,27,19.3L27,19.3z" />
+                <GeometryDrawing Brush="{DynamicResource IconSolidColorBackgroundBrush}" Geometry="F1 M200,200z M0,0z M27,112.8L78,112.8C81.7,112.8,84.7,115.8,84.7,119.5L84.7,119.5 84.7,171.3C84.7,175,81.7,178,78,178L78,178 27,178C23.3,178,20.3,175,20.3,171.3L20.3,171.3 20.3,119.5C20.4,115.8,23.4,112.8,27,112.8L27,112.8z" />
+                <GeometryDrawing Brush="{DynamicResource IconSolidColorBrush}" Geometry="F1 M200,200z M0,0z M117.5,8.7L177.5,8.7C186.4,8.7,190.8,13.1,190.8,22L190.8,175.3C190.8,184.2,186.4,188.6,177.5,188.6L117.5,188.6C108.6,188.6,104.2,184.2,104.2,175.3L104.2,22C104.2,13.1,108.7,8.7,117.5,8.7z" />
+                <GeometryDrawing Brush="{DynamicResource IconSolidColorBackgroundBrush}" Geometry="F1 M200,200z M0,0z M122.9,18.2L173.9,18.2C177.6,18.2,180.6,21.2,180.6,24.9L180.6,169.4C180.6,173.1,177.6,176.1,173.9,176.1L122.9,176.1C119.2,176.1,116.2,173.1,116.2,169.4L116.2,24.8C116.2,21.1,119.2,18.2,122.9,18.2z" />
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+
 
 </ResourceDictionary>

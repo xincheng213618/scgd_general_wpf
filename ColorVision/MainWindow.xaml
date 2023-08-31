@@ -162,6 +162,9 @@
                             <Button  Height="15" BorderThickness="0" Background="Transparent" Click="ViewGrid_Click" Tag="21">
                                 <Image Source="{StaticResource DrawingImageTwoWindow0}" Margin="-5" />
                             </Button>
+                            <Button  Height="15" BorderThickness="0"  Click="ViewGrid_Click" Background="Transparent" Tag="30">
+                                <Image Source="{StaticResource DrawingImageLeft2Right1}" Margin="-5" />
+                            </Button>
                             <Button  Height="15" BorderThickness="0"  Click="ViewGrid_Click" Background="Transparent" Tag="4">
                                 <Image Source="{StaticResource DrawingImageFourWindow}" Margin="-5" />
                             </Button>
