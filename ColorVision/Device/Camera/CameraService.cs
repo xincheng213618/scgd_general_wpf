@@ -74,9 +74,10 @@ namespace ColorVision.Device.Camera
                                 MD5.Add(MD5IDs[i].ToString());
 
 
-                            if (ServicesDevices.TryGetValue(SubscribeTopic, out ObservableCollection<string> list) && !list.Contains(SnIDs[i].ToString()))
+                            if (ServicesDevices.TryGetValue(SubscribeTopic, out ObservableCollection<string> list))
                             {
-                                list.Add(SnIDs[i].ToString());
+                                if (!list.Contains(SnIDs[i].ToString()))
+                                    list.Add(SnIDs[i].ToString());
                             }
                             else
                             {
@@ -239,7 +240,7 @@ namespace ColorVision.Device.Camera
             MsgSend msg = new MsgSend
             {
                 EventName = "Open",
-                Params = new Dictionary<string, object>() { { "TakeImageMode", (int)TakeImageMode }, { "CameraID", CameraID }, { "Bpp", ImageBpp } }
+                Params = new Dictionary<string, object>() { { "TakeImageMode", (int)TakeImageMode }, { "CameraID", CameraID }, { "Bpp", ImageBpp },{"IP","127.0.0.1" },{"Host","9002" } }
             };
             PublishAsyncClient(msg);
             return true;
