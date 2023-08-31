@@ -57,19 +57,19 @@
                                 <hc:ComboBox x:Name="ComboxCameraType" Style="{StaticResource ComboBox.Small}"  SelectedValue="{Binding Config.CameraType}" SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20" Margin="0,0,10,0"/>
                             </DockPanel>
                             <DockPanel Margin="2">
-                                <Label Content="取图模式："/>
+                                <Label Content="默认取图模式："/>
                                 <ComboBox  x:Name="ComboxCameraTakeImageMode"  Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding Config.TakeImageMode}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20" Margin="0,0,10,0"/>
                             </DockPanel>
                             <UniformGrid Columns="2">
                                 <DockPanel  Margin="2">
-                                    <Label Content="通道数："/>
+                                    <Label Content="默认通道数："/>
                                     <hc:ComboBox  x:Name="ComboxCameraChannel"  Style="{StaticResource ComboBox.Small}"  Height="20" Margin="0,0,10,0">
                                         <ComboBoxItem Content="1"/>
                                         <ComboBoxItem Content="3"/>
                                     </hc:ComboBox>
                                 </DockPanel>
                                 <DockPanel  Margin="2">
-                                    <Label Content="Bpp："/>
+                                    <Label Content="默认Bpp："/>
                                     <ComboBox  x:Name="ComboxCameraImageBpp"  Style="{StaticResource ComboBox.Small}"  Height="20" Margin="0,0,10,0" >
                                         <ComboBoxItem Content="8"/>
                                         <ComboBoxItem Content="16"/>
@@ -77,15 +77,15 @@
                                 </DockPanel>
                             </UniformGrid>
                             <DockPanel Margin="0,5">
-                                <TextBlock  Text="增益" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0" />
-                                <hc:PreviewSlider x:Name="SliderGain"   TickFrequency ="0.1" IsSnapToTickEnabled="True"  SmallChange ="0.1" Value="1" Maximum="10"  >
+                                <TextBlock  Text="默认增益" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0" />
+                                <hc:PreviewSlider x:Name="SliderGain" TickFrequency ="0.1" IsSnapToTickEnabled="True"  SmallChange ="0.1" Value="1" Maximum="10"  >
                                     <hc:PreviewSlider.PreviewContent>
                                         <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0.00"/>
                                     </hc:PreviewSlider.PreviewContent>
                                 </hc:PreviewSlider>
                             </DockPanel>
                             <DockPanel Margin="0,5">
-                                <TextBlock  Text="曝光" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                                <TextBlock  Text="默认曝光" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
                                 <hc:PreviewSlider x:Name="SliderexpTime"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="100" Maximum="6000">
                                     <hc:PreviewSlider.PreviewContent>
                                         <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0.00"/>

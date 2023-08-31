@@ -14,6 +14,32 @@ namespace ColorVision.Util
         private static readonly ILog log = LogManager.GetLogger(typeof(Tool));
 
 
+        public static string GetNoRepeatFileName(string DirectoryPath, string FileName,string Ex)
+        {
+            if (!File.Exists($"{DirectoryPath}\\{FileName}.{Ex}"))
+                return FileName;
+            for (int i = 1; i < 999; i++)
+            {
+                if (!File.Exists($"{DirectoryPath}\\{FileName}{i}.{Ex}"))
+                    return $"{FileName}{i}";
+            }
+            return FileName;
+        }
+
+
+        public static string GetNoRepeatFilePath(string DirectoryPath, string FileName)
+        {
+            if (!Directory.Exists($"{DirectoryPath}\\{FileName}"))
+                return FileName;
+            for (int i = 1; i < 999; i++)
+            {
+                if (!Directory.Exists($"{DirectoryPath}\\{FileName}{i}"))
+                    return $"{FileName}{i}";
+            }
+            return FileName;
+        }
+
+
         public static string FileToBase64(string fileName)
         {
             if (File.Exists(fileName))

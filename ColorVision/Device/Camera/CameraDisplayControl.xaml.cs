@@ -8,6 +8,8 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
+using ColorVision.SettingUp;
+using ColorVision.Solution;
 
 namespace ColorVision.Device.Camera
 {
@@ -152,7 +154,8 @@ namespace ColorVision.Device.Camera
 
         private void SendDemo3_Click(object sender, RoutedEventArgs e)
         {
-            Service.GetData(SliderexpTime.Value, SliderGain.Value);
+            string filename = DateTime.Now.ToString("yyyyMMddHHmmss") + ".tif";
+            Service.GetData(SliderexpTime.Value, SliderGain.Value, filename);
         }
 
         private void SendDemo4_Click(object sender, RoutedEventArgs e)
