@@ -6,22 +6,26 @@ namespace ColorVision.MySql.DAO
 {
     public class BatchResultMasterModel : PKModel
     {
-        public BatchResultMasterModel()
+        public BatchResultMasterModel() : this(null,-1)
         {
 
         }
-        public BatchResultMasterModel(string sn, int tenantId)
+        public BatchResultMasterModel(string? sn, int tenantId)
         {
             Name = sn;
             Code = sn;
             TenantId = tenantId;
             TId = -1;
+            CreateDate = DateTime.Now;
+            TotalTime = 0;
         }
 
         public int? TId { get; set; }
         public string? Name { get; set; }
         public string? Code { get; set; }
-        public DateTime? CreateDate { get; set; } = DateTime.Now;
+        public DateTime? CreateDate { get; set; }
+        public int TotalTime { get; set; }
+        public string? Result { get; set; }
         public int TenantId { get; set; }
     }
     public class BatchResultMasterDao : BaseDaoMaster<BatchResultMasterModel>
@@ -39,6 +43,8 @@ namespace ColorVision.MySql.DAO
                 Name = item.Field<string>("name"),
                 Code = item.Field<string>("code"),
                 TenantId = item.Field<int>("tenant_id"),
+                TotalTime = item.Field<int>("total_time"),
+                Result = item.Field<string>("result"),
                 CreateDate = item.Field<DateTime?>("create_date"),
             };
 
@@ -54,6 +60,8 @@ namespace ColorVision.MySql.DAO
                 if (item.Code != null) row["code"] = item.Code;
                 if (item.TId >= 0) row["t_id"] = item.TId;
                 row["create_date"] = item.CreateDate;
+                row["result"] = item.Result;
+                row["total_time"] = item.TotalTime;
                 row["tenant_id"] = item.TenantId;
             }
             return row;
@@ -68,6 +76,12 @@ namespace ColorVision.MySql.DAO
             };
             DataTable d_info = GetData(sql, param);
             return (d_info !=null && d_info.Rows.Count == 1) ? GetModel(d_info.Rows[0]) : default;
+        }
+
+        public int UpdateEnd(string bid, int totalTime, string result)
+        {
+            string sql = $"update {TableName} set result='{result}',total_time={totalTime} where code='{bid}'";
+            return ExecuteNonQuery(sql);
         }
     }
 }
