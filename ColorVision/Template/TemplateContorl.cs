@@ -41,7 +41,6 @@ namespace ColorVision.Template
             if (!Directory.Exists(AppDomain.CurrentDomain.BaseDirectory+ "cfg"))
                 Directory.CreateDirectory(AppDomain.CurrentDomain.BaseDirectory + "cfg");
 
-
             AoiParams = new ObservableCollection<KeyValuePair<string, AoiParam>>();
             CalibrationParams = new ObservableCollection<KeyValuePair<string, CalibrationParam>>();
             PGParams = new ObservableCollection<KeyValuePair<string, PGParam>>();

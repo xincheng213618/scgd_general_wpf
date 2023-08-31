@@ -143,7 +143,7 @@ namespace ColorVision.Device.Spectrum
 
                 listView2.Items.Clear();
 
-                for (int i = 0; i < 4000; i += 10)
+                for (int i = 0; i < (colorParams[listview.SelectedIndex].fSpect2 -380)*10; i += 10)
                 {
                     ListViewItem listViewItem2 = new ListViewItem();
 
@@ -157,14 +157,14 @@ namespace ColorVision.Device.Spectrum
 
                 }
 
-                ListViewItem listViewItem3= new ListViewItem();
+                //ListViewItem listViewItem3= new ListViewItem();
 
-                List<string> strings1 = new List<string>();
-                strings1.Add("780");
-                strings1.Add(colorParams[listview.SelectedIndex].fPL[3998].ToString());
-                strings1.Add((colorParams[listview.SelectedIndex].fPL[3998] * colorParams[listview.SelectedIndex].fPlambda).ToString());
-                listViewItem3.Content = strings1;
-                listView2.Items.Add(listViewItem3);
+                //List<string> strings1 = new List<string>();
+                //strings1.Add("780");
+                //strings1.Add(colorParams[listview.SelectedIndex].fPL[3998].ToString());
+                //strings1.Add((colorParams[listview.SelectedIndex].fPL[3998] * colorParams[listview.SelectedIndex].fPlambda).ToString());
+                //listViewItem3.Content = strings1;
+                //listView2.Items.Add(listViewItem3);
 
             }
         }
@@ -300,9 +300,9 @@ namespace ColorVision.Device.Spectrum
         private void ReDrawPlot()
         {
             wpfplot1.Plot.Clear();
-            wpfplot1.Plot.SetAxisLimitsX(380, 810);
+            wpfplot1.Plot.SetAxisLimitsX(colorParams[listView1.SelectedIndex].fSpect1, colorParams[listView1.SelectedIndex].fSpect2);
             wpfplot1.Plot.SetAxisLimitsY(0, 1);
-            wpfplot1.Plot.XAxis.SetBoundary(370, 850);
+            wpfplot1.Plot.XAxis.SetBoundary(colorParams[listView1.SelectedIndex].fSpect1-10, colorParams[listView1.SelectedIndex].fSpect2+10);
             wpfplot1.Plot.YAxis.SetBoundary(0, 1);
             LastMulSelectComparsion = null;
             if (MulComparison)

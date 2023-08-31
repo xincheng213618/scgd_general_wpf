@@ -5,40 +5,44 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision"
         mc:Ignorable="d"
-        Title="LoginWindow" Height="450" Width="800" Initialized="Window_Initialized">
+        Title="LoginWindow" Height="500" Background="#ECEFFF" Width="400" Initialized="Window_Initialized">
     <Grid>
-        <StackPanel Margin="50" Height="300" Width="400">
-            <TextBox x:Name="Account" Text="" InputMethod.IsInputMethodEnabled="True"  BorderBrush="Transparent" VerticalAlignment="Center" BorderThickness="3" Foreground="Black" Margin="20,0,0,0">
-                <TextBox.Resources>
-                    <VisualBrush x:Key="HintText" TileMode="None" Opacity="0.6" Stretch="None" AlignmentX="Left">
-                        <VisualBrush.Visual>
-                            <TextBlock Text="请输入账户" Foreground="Black" FontSize="15" VerticalAlignment="Center"/>
-                        </VisualBrush.Visual>
-                    </VisualBrush>
-                </TextBox.Resources>
-                <TextBox.Style>
-                    <Style TargetType="TextBox">
-                        <Style.Triggers>
-                            <Trigger Property="Text" Value="{x:Null}">
-                                <Setter Property="Background" Value="{StaticResource HintText}"/>
-                            </Trigger>
-                            <Trigger Property="Text" Value="" >
-                                <Setter Property="Background" Value="{StaticResource HintText}"/>
-                            </Trigger>
-                            <Trigger Property="IsFocused" Value="True">
-                                <Setter Property="BorderBrush" Value="#1a73e8"/>
-                                <Setter Property="FontWeight" Value="Bold"/>
-                            </Trigger>
-                            <Trigger Property="IsFocused" Value="False">
-                                <Setter Property="BorderBrush" Value="Transparent"/>
-                                <Setter Property="FontWeight" Value="Normal"/>
-                            </Trigger>
-                        </Style.Triggers>
-                        <Setter Property="Background" Value="Transparent" />
-                    </Style>
-                </TextBox.Style>
-            </TextBox>
-            <PasswordBox x:Name="txtPassword" Password="" Grid.Row="1" />
-        </StackPanel>
+        <Border Background="White" Margin="40" CornerRadius="10">
+            <StackPanel Margin="10">
+                <Image Source="Image\ColorVision.png"  Stretch="Uniform" Height="20"/>
+
+                <TextBox x:Name="Account" Text="" InputMethod.IsInputMethodEnabled="True"  BorderBrush="Transparent" VerticalAlignment="Center" BorderThickness="3" Foreground="Black" Margin="20,0,0,0">
+                    <TextBox.Resources>
+                        <VisualBrush x:Key="HintText" TileMode="None" Opacity="0.6" Stretch="None" AlignmentX="Left">
+                            <VisualBrush.Visual>
+                                <TextBlock Text="请输入账户" Foreground="Black" FontSize="15" VerticalAlignment="Center"/>
+                            </VisualBrush.Visual>
+                        </VisualBrush>
+                    </TextBox.Resources>
+                    <TextBox.Style>
+                        <Style TargetType="TextBox">
+                            <Style.Triggers>
+                                <Trigger Property="Text" Value="{x:Null}">
+                                    <Setter Property="Background" Value="{StaticResource HintText}"/>
+                                </Trigger>
+                                <Trigger Property="Text" Value="" >
+                                    <Setter Property="Background" Value="{StaticResource HintText}"/>
+                                </Trigger>
+                                <Trigger Property="IsFocused" Value="True">
+                                    <Setter Property="BorderBrush" Value="#1a73e8"/>
+                                    <Setter Property="FontWeight" Value="Bold"/>
+                                </Trigger>
+                                <Trigger Property="IsFocused" Value="False">
+                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                    <Setter Property="FontWeight" Value="Normal"/>
+                                </Trigger>
+                            </Style.Triggers>
+                            <Setter Property="Background" Value="Transparent" />
+                        </Style>
+                    </TextBox.Style>
+                </TextBox>
+                <PasswordBox x:Name="txtPassword" Password="" Grid.Row="1" />
+            </StackPanel>
+        </Border>
     </Grid>
 </Window>
