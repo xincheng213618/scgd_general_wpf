@@ -1232,9 +1232,6 @@ namespace ColorVision.Template
                     WaitControlProgressBar.Visibility = Visibility.Collapsed;
                     WaitControlProgressBar.Value = 0;
                 }
-
-
-
                 ScrollViewer1.ScrollToEnd();
             }
         }

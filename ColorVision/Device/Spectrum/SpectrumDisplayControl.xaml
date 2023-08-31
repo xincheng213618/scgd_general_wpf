@@ -10,7 +10,16 @@
              d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized">
 
     <StackPanel Margin="0,5" x:Name="StackPanelSpectrum"  >
-        <ToggleButton  x:Name="ToggleButton3"  Style="{StaticResource ButtonPageControl1}"   Content="{Binding Config.Name}"  FontSize="15"  IsChecked="True" />
+        <DockPanel>
+            <ToggleButton  x:Name="ToggleButton3"  Style="{StaticResource ButtonPageControl1}"  Content="{Binding Config.Name}"  FontSize="15"  IsChecked="True" />
+            <TextBlock  FontSize="10" VerticalAlignment="Bottom" Margin="2">
+                <Run Text="("/>
+                <Run Text="{Binding Config.Code}"/>
+                <Run Text=","/>
+                <Run Text="{Binding Config.ID}"/>
+                <Run Text=")"/>
+            </TextBlock>
+        </DockPanel>
         <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton3,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel >
                 <DockPanel Margin="5">

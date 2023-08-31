@@ -50,7 +50,7 @@ namespace ColorVision.Device.SMU
             MenuItem menuItem2 = new MenuItem() { Header = "独立窗口中显示" };
             menuItem2.Click += (s, e) =>
             {
-                ViewGridManager.GetInstance().SetSingleWindowView(this);
+                View.ViewIndex = -2;
             };
             ContextMenu.Items.Add(menuItem2);
 

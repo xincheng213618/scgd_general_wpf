@@ -10,18 +10,19 @@
     <Grid>
         <Grid.ColumnDefinitions >
             <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
-        <Grid Grid.Column="1">
-            <WindowsFormsHost>
-                <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
-            </WindowsFormsHost>
-        </Grid>
-        <Grid Grid.Column="0">
-            <WindowsFormsHost x:Name="winf1">
+
+        <Grid Grid.Column="0" Grid.ColumnSpan="2">
+            
+            <WindowsFormsHost x:Name="winf1" >
                 <st:STNodeEditor  x:Name="STNodeEditorMain" EnableEdit="False"/>
             </WindowsFormsHost>
         </Grid>
-
+        <Grid Grid.Column="1">
+            <WindowsFormsHost x:Name="winf2" Width="200">
+                <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
+            </WindowsFormsHost>
+        </Grid>
     </Grid>
 </UserControl>

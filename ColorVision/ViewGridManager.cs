@@ -228,7 +228,6 @@ namespace ColorVision
                     if (Views[i].Parent is Grid grid)
                         grid.Children.Remove(Views[i]);
 
-
                     if (Views[i] is IView view)
                         view.View.ViewIndex = i;
                     Grids[i].Children.Clear();
@@ -332,7 +331,7 @@ namespace ColorVision
             if (control is IView view)
                 view.View.ViewIndex = 0;
 
-            if (Grids[0].Children[0] is IView view1)
+            if (Grids[0].Children.Count>0 && Grids[0].Children[0] is IView view1)
             {
                 view1.View.ViewIndex = -1;
             }
