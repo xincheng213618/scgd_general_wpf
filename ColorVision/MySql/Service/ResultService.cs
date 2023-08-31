@@ -1,4 +1,5 @@
 ﻿using ColorVision.MySql.DAO;
+using System;
 using System.Collections.Generic;
 
 namespace ColorVision.MySql.Service
@@ -43,6 +44,11 @@ namespace ColorVision.MySql.Service
         public int BatchSave(BatchResultMasterModel model)
         {
             return batchDao.Save(model);
+        }
+
+        internal int BatchUpdateEnd(string bid, int totalTime, string result)
+        {
+            return batchDao.UpdateEnd(bid, totalTime, result);
         }
     }
 }

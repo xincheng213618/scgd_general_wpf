@@ -7,7 +7,9 @@ using ColorVision.MySql;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.SettingUp;
+using MySqlX.XDevAPI.Common;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
@@ -253,6 +255,12 @@ namespace ColorVision.MQTT.Service
 
         }
 
+        public void ProcResult(FlowControlData flowControlData)
+        {
+            int totalTime = flowControlData.Params.TTL;
+            resultService.BatchUpdateEnd(flowControlData.SerialNumber, totalTime, flowControlData.EventName);
 
+            SpectrumDrawPlotFromDB(flowControlData.SerialNumber);
+        }
     }
 }

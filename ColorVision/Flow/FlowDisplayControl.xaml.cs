@@ -108,7 +108,7 @@ namespace ColorVision.Flow
             if (sender != null)
             {
                 FlowControlData flowControlData = (FlowControlData)sender;
-                ServiceControl.GetInstance().SpectrumDrawPlotFromDB(flowControlData.SerialNumber);
+                ServiceControl.GetInstance().ProcResult(flowControlData);
             }
         }
 
