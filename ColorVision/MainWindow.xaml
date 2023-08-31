@@ -73,7 +73,6 @@
                     <MenuItem Header="流程引擎(_F)" Click="MenuItem9_Click"/>
                     <MenuItem Header="MQTT日志(_Q)" Click="MenuItem_Click"/>
                     <MenuItem Header="MQTT列表(_L)" Click="MenuItem12_Click"/>
-                    <MenuItem Header="MQTT服务(_S)" Click="MenuItem13_Click"/>
                     <MenuItem Header="登录"  Click="Login_Click"/>
 
                     <Separator/>
