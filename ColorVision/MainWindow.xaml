@@ -163,11 +163,16 @@
                                 <Image Source="{StaticResource DrawingImageTwoWindow0}" Margin="-5" />
                             </Button>
                             <Button  Height="15" BorderThickness="0"  Click="ViewGrid_Click" Background="Transparent" Tag="30">
+                                <Image Source="{StaticResource DrawingImageLeft1Right2}" Margin="-5" />
+                            </Button>
+                            <Button  Height="15" BorderThickness="0"  Click="ViewGrid_Click" Background="Transparent" Tag="31">
                                 <Image Source="{StaticResource DrawingImageLeft2Right1}" Margin="-5" />
                             </Button>
+
                             <Button  Height="15" BorderThickness="0"  Click="ViewGrid_Click" Background="Transparent" Tag="4">
                                 <Image Source="{StaticResource DrawingImageFourWindow}" Margin="-5" />
                             </Button>
+    
                         </StackPanel>
                         <StatusBarItem  MouseLeftButtonDown="TextBlock_MouseLeftButtonDown1" Visibility="{Binding SoftwareConfig.IsUseMySql,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="MySql" >
                             <ToggleButton x:Name="StatusBarMysql" Style="{StaticResource ButtonDrawingImageMysql}"  Height="20"  Margin="0,-10" IsChecked="{Binding SoftwareConfig.MySqlControl.IsConnect,Mode=OneWay}"  IsEnabled="False"/>

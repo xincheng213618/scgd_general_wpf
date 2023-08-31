@@ -156,11 +156,15 @@ namespace ColorVision
                     case 20:
                         ViewGridManager.SetViewGridTwo();
                         break;
+
+                    case 21:
+                        ViewGridManager.SetViewGrid(2);
+                        break;
                     case 30:
                         ViewGridManager.SetViewGridThree();
                         break;
-                    case 21:
-                        ViewGridManager.SetViewGrid(2);
+                    case 31:
+                        ViewGridManager.SetViewGridThree(false);
                         break;
                     default:
                         ViewGridManager.SetViewGrid(nums);

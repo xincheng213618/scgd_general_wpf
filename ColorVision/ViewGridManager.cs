@@ -213,11 +213,22 @@ namespace ColorVision
             }
         }
 
-        public void SetViewGridThree()
+        public void SetViewGridThree(bool left =true)
         {
             GenViewGrid(3);
-            Grid.SetRowSpan(Grids[1], 2);
-            MainView.Children.Remove(gridSplitters[1][0]);
+            if (left)
+            {
+                Grid.SetRowSpan(Grids[0], 2);
+                MainView.Children.Remove(gridSplitters[0][0]);
+                Grid.SetColumn(Grids[2],1);
+            }
+            else
+            {
+                Grid.SetRowSpan(Grids[1], 2);
+                MainView.Children.Remove(gridSplitters[1][0]);
+            }
+
+
             for (int i = 0; i < 3; i++)
             {
                 foreach (var item in Views)
