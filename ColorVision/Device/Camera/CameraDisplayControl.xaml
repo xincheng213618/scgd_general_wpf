@@ -54,10 +54,8 @@
                             </ComboBox>
                         </DockPanel>
                     </UniformGrid>
-                    <UniformGrid Columns="2">
-                        <Button x:Name="CameraOpenButton" Content="打开" Click="Open_Click" />
-                        <Button Content="视频模式" Click="Button4_Click"/>
-                    </UniformGrid>
+                    <Button x:Name="CameraOpenButton" Content="打开" Click="Open_Click" />
+
                     <Button x:Name="CameraVideoSetButton" Content="视频模式配置" Click="VideSetting_Click"/>
 
                 </StackPanel>

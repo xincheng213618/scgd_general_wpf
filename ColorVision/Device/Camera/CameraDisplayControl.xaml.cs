@@ -44,7 +44,7 @@ namespace ColorVision.Device.Camera
             ComboxCameraTakeImageMode.ItemsSource = from e1 in Enum.GetValues(typeof(TakeImageMode)).Cast<TakeImageMode>()
                                                     select new KeyValuePair<TakeImageMode, string>(e1, e1.ToDescription());
 
-
+            ComboxCameraTakeImageMode.SelectedValue = Service.Config.TakeImageMode;
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
             {
                 List<KeyValuePair<string, int>> KeyValues = new List<KeyValuePair<string, int>>();
@@ -142,11 +142,22 @@ namespace ColorVision.Device.Camera
         {
             if (Service.DeviceStatus == DeviceStatus.Init || Service.DeviceStatus == DeviceStatus.Closed)
             {
-                Service.Open(Service.Config.ID, Service.Config.TakeImageMode, Service.Config.ImageBpp);
-                CameraOpenButton.Content = "打开中";
+                if (ComboxCameraTakeImageMode.SelectedValue is TakeImageMode takeImageMode)
+                {
+                    if (takeImageMode == TakeImageMode.Live)
+                    {
+                        Button4_Click(sender, e);
+                    }
+                    else
+                    {
+                        Service.Open(Service.Config.ID, takeImageMode, Service.Config.ImageBpp);
+                        CameraOpenButton.Content = "打开中";
+                    }
+                }
             }
             else
             {
+                Button4_Click(sender, e);
                 Service.Close();
                 CameraOpenButton.Content = "关闭中";
             }
@@ -210,11 +221,11 @@ namespace ColorVision.Device.Camera
             if (sender is Button button)
             {
                 CameraVideoControl control = CameraVideoControl.GetInstance();
-                if (!CameraOpen)
+                if (Service.DeviceStatus == DeviceStatus.Init|| Service.DeviceStatus == DeviceStatus.Closed)
                 {
                     button.Content = "正在获取推流";
-                    control.Open();
-                    Service.Open(Service.Config.ID,TakeImageMode.Live, Service.Config.ImageBpp);
+                    control.Open(Service.Config.Host, Service.Config.Port);
+                    Service.Open(Service.Config.ID, TakeImageMode.Live, Service.Config.ImageBpp);
 
                     control.CameraVideoFrameReceived += (bmp) =>
                     {
@@ -232,11 +243,9 @@ namespace ColorVision.Device.Camera
                 }
                 else
                 {
-                    button.Content = "启用视频模式";
                     Service.Close();
                     control.Close();
                 }
-                CameraOpen = !CameraOpen;
             }
         }
 

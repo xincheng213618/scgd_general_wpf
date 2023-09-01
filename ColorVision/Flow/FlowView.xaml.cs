@@ -19,9 +19,9 @@ namespace ColorVision.Flow
 
         public FlowView()
         {
+            View = new View();
             flowEngine = new FlowEngineControl(false);
             InitializeComponent();
-            View = new View();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -35,10 +35,36 @@ namespace ColorVision.Flow
             };
             flowEngine.AttachLoader(STNodeEditorMain);
 
-            STNodeEditorMain.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
-            STNodeEditorMain.ContextMenuStrip.Items.Add("设为主窗口", null, (s, e1) => ViewGridManager.GetInstance().SetOneView(this));
-            STNodeEditorMain.ContextMenuStrip.Items.Add("显示全部窗口", null, (s, e1) => ViewGridManager.GetInstance().SetViewNum(-1));
-            STNodeEditorMain.ContextMenuStrip.Items.Add("独立窗口中显示", null, (s, e1) =>  View.ViewIndex =-2);
+
+            View.ViewIndexChangedEvent += (s, e) =>
+            {
+                if (e == -2)
+                {
+                    STNodeEditorMain.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
+                    STNodeEditorMain.ContextMenuStrip.Items.Add("还原到主窗口中", null, (s, e1) =>
+                    {
+
+                        if (ViewGridManager.GetInstance().IsGridEmpty(View.PreViewIndex))
+                        {
+                            View.ViewIndex = View.PreViewIndex;
+                        }
+                        else
+                        {
+                            View.ViewIndex = -1;
+                        }
+                    }
+
+                    );
+                }
+                else
+                {
+                    STNodeEditorMain.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
+                    STNodeEditorMain.ContextMenuStrip.Items.Add("设为主窗口", null, (s, e1) => ViewGridManager.GetInstance().SetOneView(this));
+                    STNodeEditorMain.ContextMenuStrip.Items.Add("显示全部窗口", null, (s, e1) => ViewGridManager.GetInstance().SetViewNum(-1));
+                    STNodeEditorMain.ContextMenuStrip.Items.Add("独立窗口中显示", null, (s, e1) => View.ViewIndex = -2);
+                }
+            };
+
         }
 
         private void UserControl_SizeChanged(object sender, SizeChangedEventArgs e)

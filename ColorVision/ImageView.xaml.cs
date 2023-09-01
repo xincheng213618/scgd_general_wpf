@@ -27,8 +27,8 @@ namespace ColorVision
 
         public ImageView()
         {
-            InitializeComponent();
             View = new View();
+            InitializeComponent();
         }
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
@@ -38,31 +38,45 @@ namespace ColorVision
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            ContextMenu ContextMenu  = new ContextMenu();
-
-            MenuItem menuItem = new MenuItem() { Header = "设为主窗口" };
-            menuItem.Click += (s, e) =>
+            View = new View();
+            View.ViewIndexChangedEvent += (s, e) =>
             {
-                ViewGridManager.GetInstance().SetOneView(this);
-            };
-            ContextMenu.Items.Add(menuItem);
+                if (e == -2)
+                {
+                    MenuItem menuItem3 = new MenuItem { Header = "还原到主窗口中" };
+                    menuItem3.Click += (s, e) =>
+                    {
+                        if (ViewGridManager.GetInstance().IsGridEmpty(View.PreViewIndex))
+                        {
+                            View.ViewIndex = View.PreViewIndex;
+                        }
+                        else
+                        {
+                            View.ViewIndex = -1;
+                        }
+                    };
+                    this.ContextMenu = new ContextMenu();
+                    this.ContextMenu.Items.Add(menuItem3);
 
-            MenuItem menuItem1 = new MenuItem() { Header = "展示全部窗口" };
-            menuItem1.Click += (s, e) =>
-            {
-                ViewGridManager.GetInstance().SetViewNum(-1);
+                }
+                else
+                {
+                    MenuItem menuItem = new MenuItem() { Header = "设为主窗口" };
+                    menuItem.Click += (s, e) => { ViewGridManager.GetInstance().SetOneView(this); };
+                    MenuItem menuItem1 = new MenuItem() { Header = "展示全部窗口" };
+                    menuItem1.Click += (s, e) => { ViewGridManager.GetInstance().SetViewNum(-1); };
+                    MenuItem menuItem2 = new MenuItem() { Header = "独立窗口中显示" };
+                    menuItem2.Click += (s, e) => { View.ViewIndex = -2; };
+                    this.ContextMenu = new ContextMenu();
+                    this.ContextMenu.Items.Add(menuItem);
+                    this.ContextMenu.Items.Add(menuItem1);
+                    this.ContextMenu.Items.Add(menuItem2);
+
+                }
             };
 
 
-            MenuItem menuItem2 = new MenuItem() { Header = "独立窗口中显示" };
-            menuItem2.Click += (s, e) =>
-            {
-                View.ViewIndex = -2;
-            };
-            ContextMenu.Items.Add(menuItem1);
-            this.ContextMenu = ContextMenu;
             ToolBar1.Visibility = Visibility.Collapsed;
-
             ToolBarTop = new ToolBarTop(Zoombox1, ImageShow);
             ToolBar1.DataContext = ToolBarTop;
             ListView1.ItemsSource = DrawingVisualLists;
@@ -164,13 +178,13 @@ namespace ColorVision
             }
         }
 
-        private DrawingVisual SelectRect = new DrawingVisual();
 
         private static void DrawSelectRect(DrawingVisual drawingVisual, Rect rect)
         {
             using DrawingContext dc = drawingVisual.RenderOpen();
             dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), rect);
         }
+        private DrawingVisual SelectRect = new DrawingVisual();
 
         private bool IsMouseDown;
         private Point MouseDownP;

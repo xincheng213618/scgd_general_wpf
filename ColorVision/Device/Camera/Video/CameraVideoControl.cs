@@ -21,7 +21,6 @@ namespace ColorVision.Device.Camera.Video
         private static CameraVideoControl _instance;
         private static readonly object _locker = new();
         public static CameraVideoControl GetInstance() { lock (_locker) { return _instance ??= new CameraVideoControl(); } }
-
         public SoftwareConfig SoftwareConfig { get; set; }
         public CameraVideoConfig Config { get => SoftwareConfig.CameraVideoConfig; }
 
@@ -34,15 +33,13 @@ namespace ColorVision.Device.Camera.Video
             SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
             Decoder = new OpenH264Lib.Decoder(H264DllName);
         }
-
-
         private UdpClient UdpClient { get; set; }
 
         private Dictionary<int, List<byte[]>> packets;
         private int headLen;
 
         bool OpenVideo;
-        public bool Open()
+        public bool Open(string Host,int Port)
         {
             try
             {
@@ -50,8 +47,8 @@ namespace ColorVision.Device.Camera.Video
                 {
                     UdpClient?.Dispose();
                 }
-                IPAddress locateIp = IPAddress.Parse(Config.Host);
-                IPEndPoint locatePoint = new IPEndPoint(locateIp, Config.Port);
+                IPAddress locateIp = IPAddress.Parse(Host);
+                IPEndPoint locatePoint = new IPEndPoint(locateIp, Port);
                 UdpClient = new UdpClient(locatePoint);
                 OpenVideo = true;
                 headLen = 4;

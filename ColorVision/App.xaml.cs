@@ -118,12 +118,6 @@ namespace ColorVision
         {
             log.Info("程序关闭");
 
-            foreach (var item in ServiceManagerWindow.ServiceDictionary)
-            {
-                item.Value.Kill();
-                item.Value.Close();
-                item.Value.Dispose();
-            }
             Environment.Exit(0);
         }
     }

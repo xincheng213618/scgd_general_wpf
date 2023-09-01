@@ -112,8 +112,6 @@ namespace ColorVision
             }
             ViewGridManager.GetInstance().SetViewNum(-1);
         }
-
-
         private void MenuStatusBar_Click(object sender, RoutedEventArgs e)
         {
             if (sender is MenuItem menuItem)
@@ -127,10 +125,6 @@ namespace ColorVision
             new MQTTList() { Owner = this }.Show();
         }
 
-        private void MenuItem13_Click(object sender, RoutedEventArgs e)
-        {
-            new ServiceManagerWindow() { Owner = this }.Show();
-        }
         private void StackPanelMQTT_Initialized(object sender, EventArgs e)
         {
             if (sender is StackPanel stackPanel)
@@ -176,6 +170,11 @@ namespace ColorVision
         {
             LoginWindow loginWindow = new LoginWindow();
             loginWindow.ShowDialog();
+        }
+
+        private void Test_Click(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

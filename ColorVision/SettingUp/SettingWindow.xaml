@@ -208,6 +208,10 @@
                                             <TextBox DockPanel.Dock="Right" Height="20" Text="{Binding MQTTSetting.CacheLength}"/>
                                             <TextBlock Text="指令缓存数据长度"/>
                                         </DockPanel>
+                                        <DockPanel Margin="5" Height="20">
+                                            <Button  DockPanel.Dock="Right" Content="清除" Click="Button_Click_1"/>
+                                            <TextBlock Text="历史缓存"/>
+                                        </DockPanel>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>

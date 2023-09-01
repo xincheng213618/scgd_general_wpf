@@ -73,7 +73,6 @@
                     <MenuItem Header="流程引擎(_F)" Click="MenuItem9_Click"/>
                     <MenuItem Header="MQTT日志(_Q)" Click="MenuItem_Click"/>
                     <MenuItem Header="MQTT列表(_L)" Click="MenuItem12_Click"/>
-                    <MenuItem Header="MQTT服务(_S)" Click="MenuItem13_Click"/>
                     <MenuItem Header="登录"  Click="Login_Click"/>
 
                     <Separator/>
@@ -113,7 +112,7 @@
             <Grid  Grid.Row="0" Background="{DynamicResource GlobalBorderBrush}" x:Name="SiderBarGrid" d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  MinWidth="150"  Visibility="{Binding SoftwareSetting.IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" >
                 <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                     <StackPanel x:Name="SPDisplay">
-
+                        <Button x:Name="Test" Content="Test" Click="Test_Click"/>
                         <StackPanel x:Name="StackPanelMQTT" Initialized="StackPanelMQTT_Initialized">
 
                         </StackPanel>

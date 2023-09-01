@@ -29,6 +29,8 @@
                                 <TextBlock Text="{Binding Config.ImageBpp}"/>
                                 <TextBlock Text="{Binding Config.TakeImageMode}"/>
                                 <TextBlock Text="{Binding Config.IsAlive}"/>
+                                <TextBlock Text="{Binding Config.Host}"/>
+                                <TextBlock Text="{Binding Config.Port}"/>
                             </StackPanel>
                         </Border>
                         <Button Margin="0,0"  Grid.Column="1" Content="编辑"  Click="Button_Click_1"/>
@@ -91,6 +93,14 @@
                                         <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0.00"/>
                                     </hc:PreviewSlider.PreviewContent>
                                 </hc:PreviewSlider>
+                            </DockPanel>
+                            <DockPanel Margin="0,5" >
+                                <Label Content="默认视频推流地址"/>
+                                <TextBox Text="{Binding Config.Host}"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,5" >
+                                <Label Content="默认视频推流端口"/>
+                                <TextBox Text="{Binding Config.Port}"/>
                             </DockPanel>
                         </StackPanel>
                         <Button Grid.Column="1"  Content="提交" Click="Button_Click" Command="{Binding SaveCommand}" />

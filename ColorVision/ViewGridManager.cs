@@ -24,6 +24,9 @@ namespace ColorVision
         public event ViewIndexChangedHandler ViewIndexChangedEvent;
 
         public int ViewIndex { get => _ViewIndex; set {
+                if (_ViewIndex == value)
+                    return;
+                PreViewIndex = ViewIndex;
                 ViewIndexChangedEvent?.Invoke(_ViewIndex, value); _ViewIndex = value; NotifyPropertyChanged(); } }
 
         private int _ViewIndex = -1;
@@ -38,6 +41,10 @@ namespace ColorVision
                 return ViewType.Hidden;
             }
         }
+
+        public int PreViewIndex { get => _PreViewIndex; private set { _PreViewIndex = value;   } }
+
+        private int _PreViewIndex = -1;
 
     }
 
@@ -98,6 +105,13 @@ namespace ColorVision
             Views = new List<Control>();
         }
 
+        public bool IsGridEmpty(int index)
+        {
+            if (index < 0 || index >= Grids.Count)
+                return false;
+            return Grids[index].Children.Count == 0;
+        }
+
         public int AddView(Control control)
         {
             if (control == null)
@@ -109,7 +123,17 @@ namespace ColorVision
             Views.Add(control);
 
             if (control is IView view)
-                view.View.ViewIndex = Views.IndexOf(control);
+            {
+                if (IsGridEmpty(view.View.ViewIndex))
+                {
+                    Grids[view.View.ViewIndex].Children.Add(control);
+                }
+                else
+                {
+                    view.View.ViewIndex = Views.IndexOf(control);
+                }
+
+            }
             return Views.IndexOf(control);
         }
 
@@ -160,40 +184,11 @@ namespace ColorVision
             }
 
 
-        }   
+        }  
 
-        /// <summary>
-        /// 设置一共有几个窗口
-        /// </summary>
-        /// <param name="nums"></param>
-        public void SetViewGrid(int nums)
+        private void SetView(int nums)
         {
-            GenViewGrid(nums);
-
             for (int i = 0; i < nums; i++)
-            {
-                foreach (var item in Views)
-                {
-                    if (item is IView view1)
-                    {
-                        if (view1.View.ViewIndex ==i)
-                        {
-                            if (item.Parent is Grid grid1)
-                                grid1.Children.Remove(item);
-
-                            Grids[i].Children.Clear();
-                            Grids[i].Children.Add(item);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        public void SetViewGridTwo()
-        {
-            GenViewGrid(2, false);
-
-            for (int i = 0; i < 2; i++)
             {
                 foreach (var item in Views)
                 {
@@ -211,6 +206,21 @@ namespace ColorVision
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// 设置一共有几个窗口
+        /// </summary>
+        /// <param name="nums"></param>
+        public void SetViewGrid(int nums)
+        {
+            GenViewGrid(nums);
+            SetView(nums);
+        }
+        public void SetViewGridTwo()
+        {
+            GenViewGrid(2, false);
+            SetView(2);
         }
 
         public void SetViewGridThree(bool left =true)
@@ -227,26 +237,7 @@ namespace ColorVision
                 Grid.SetRowSpan(Grids[1], 2);
                 MainView.Children.Remove(gridSplitters[1][0]);
             }
-
-
-            for (int i = 0; i < 3; i++)
-            {
-                foreach (var item in Views)
-                {
-                    if (item is IView view1)
-                    {
-                        if (view1.View.ViewIndex == i)
-                        {
-                            if (item.Parent is Grid grid1)
-                                grid1.Children.Remove(item);
-
-                            Grids[i].Children.Clear();
-                            Grids[i].Children.Add(item);
-                            break;
-                        }
-                    }
-                }
-            }
+            SetView(3);
         }
 
 
@@ -331,7 +322,7 @@ namespace ColorVision
                 window.Closed += (s, e) =>
                 {
                     view.View.ViewIndexChangedEvent -= eventHandler;
-                    view.View.ViewIndex = -1;
+                    view.View.ViewIndex = IsGridEmpty(view.View.PreViewIndex)?view.View.PreViewIndex: -1;
                     Views.Add(control);
                 };
                 window.Show();
