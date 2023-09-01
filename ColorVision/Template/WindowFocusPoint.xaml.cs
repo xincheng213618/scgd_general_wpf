@@ -325,6 +325,7 @@ namespace ColorVision.Template
         {
             UpdateVisualLayout(true);
         }
+        public ToolBarTop ToolBarTop { get; set; }
 
         private void UpdateVisualLayout(bool IsLayoutUpdated)
         {
@@ -375,6 +376,10 @@ namespace ColorVision.Template
                 }
             };
             WindowState = WindowState.Maximized;
+
+
+            ToolBarTop = new ToolBarTop(Zoombox1, ImageShow);
+            ToolBar1.DataContext = ToolBarTop;
 
 
             ImageShow.VisualsAdd += (s, e) =>
@@ -822,6 +827,24 @@ namespace ColorVision.Template
             }
 
         }
+
+        private static void DrawSelectRect(DrawingVisual drawingVisual, Rect rect)
+        {
+            using DrawingContext dc = drawingVisual.RenderOpen();
+            dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), rect);
+        }
+        private DrawingVisual SelectRect = new DrawingVisual();
+
+        private bool IsMouseDown;
+        private Point MouseDownP;
+        private DrawingVisualCircle? SelectDCircle;
+        private DrawingVisualRectangle? SelectDRectangle;
+
+        private DrawingVisualCircle DrawCircleCache;
+        private DrawingVisualRectangle DrawingRectangleCache;
+        private DrawingVisualPolygon DrawingVisualPolygonCache;
+
+
         private void ImageShow_MouseLeave(object sender, MouseEventArgs e)
         {
 
@@ -834,23 +857,153 @@ namespace ColorVision.Template
 
         private void ImageShow_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            if (sender is DrawCanvas drawCanvas)
+            if (sender is DrawCanvas drawCanvas && !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn))
             {
-                var MouseDownP = e.GetPosition(drawCanvas);
+                MouseDownP = e.GetPosition(drawCanvas);
 
-                if (drawCanvas.GetVisual(MouseDownP) is IDrawingVisual drawingVisual)
+
+                IsMouseDown = true;
+                drawCanvas.CaptureMouse();
+
+
+
+                if (ToolBarTop.EraseVisual)
+                {
+                    DrawSelectRect(SelectRect, new Rect(MouseDownP, MouseDownP)); ;
+                    drawCanvas.AddVisual(SelectRect);
+                }
+                else if (ToolBarTop.DrawCircle)
+                {
+                    DrawCircleCache = new DrawingVisualCircle() { AutoAttributeChanged = false };
+                    DrawCircleCache.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                    DrawCircleCache.Attribute.Center = MouseDownP;
+                    DrawCircleCache.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
+                    drawCanvas.AddVisual(DrawCircleCache);
+                }
+                else if (ToolBarTop.DrawRect)
+                {
+                    DrawingRectangleCache = new DrawingVisualRectangle() { AutoAttributeChanged = false };
+                    DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, new Point(MouseDownP.X + 30, MouseDownP.Y + 30));
+                    DrawingRectangleCache.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+
+                    drawCanvas.AddVisual(DrawingRectangleCache);
+                }
+                else  if (drawCanvas.GetVisual(MouseDownP) is IDrawingVisual drawingVisual)
                 {
                     PropertyGrid2.SelectedObject = drawingVisual.GetAttribute();
 
                     ListView1.ScrollIntoView(drawingVisual);
                     ListView1.SelectedIndex = DrawingVisualLists.IndexOf(drawingVisual);
+
+                    if (ToolBarTop.Activate == true)
+                    {
+                        if (drawingVisual is DrawingVisualRectangle Rectangle)
+                        {
+                            SelectDRectangle = Rectangle;
+                        }
+                        else if (drawingVisual is DrawingVisualCircle Circl)
+                        {
+                            SelectDCircle = Circl;
+                        }
+
+                    }
                 }
             }
         }
+        Point LastMouseMove;
 
+
+        private void ImageShow_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (sender is DrawCanvas drawCanvas && (Zoombox1.ActivateOn == ModifierKeys.None || !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn)))
+            {
+                var point = e.GetPosition(drawCanvas);
+
+                var controlWidth = drawCanvas.ActualWidth;
+                var controlHeight = drawCanvas.ActualHeight;
+
+                if (IsMouseDown)
+                {
+                    if (ToolBarTop.EraseVisual)
+                    {
+                        DrawSelectRect(SelectRect, new Rect(MouseDownP, point)); ;
+                    }
+                    else if (ToolBarTop.DrawCircle)
+                    {
+                        double Radius = Math.Sqrt((Math.Pow(point.X - MouseDownP.X, 2) + Math.Pow(point.Y - MouseDownP.Y, 2)));
+                        DrawCircleCache.Attribute.Radius = Radius;
+                        DrawCircleCache.Render();
+                    }
+                    else if (ToolBarTop.DrawRect)
+                    {
+                        DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, point);
+                        DrawingRectangleCache.Render();
+                    }
+                    else if (ToolBarTop.DrawPolygon)
+                    {
+                        DrawingVisualPolygonCache.Attribute.Points[^1] = point;
+                        DrawingVisualPolygonCache.Render();
+                    }
+                    else if (SelectDCircle != null)
+                    {
+                        SelectDCircle.Attribute.Center += point - LastMouseMove;
+                    }
+                    else if (SelectDRectangle != null)
+                    {
+                        var OldRect = SelectDRectangle.Attribute.Rect;
+                        SelectDRectangle.Attribute.Rect = new Rect(OldRect.X + point.X - LastMouseMove.X, OldRect.Y + point.Y - LastMouseMove.Y, OldRect.Width, OldRect.Height);
+
+                    }
+                }
+                LastMouseMove = point;
+            }
+        }
         private void ImageShow_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            if (sender is DrawCanvas drawCanvas && !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn))
+            {
+                IsMouseDown = false;
+                var MouseUpP = e.GetPosition(drawCanvas);
+                if (ToolBarTop.EraseVisual)
+                {
+                    drawCanvas.RemoveVisual(drawCanvas.GetVisual(MouseDownP));
+                    drawCanvas.RemoveVisual(drawCanvas.GetVisual(MouseUpP));
+                    foreach (var item in drawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP))))
+                    {
+                        drawCanvas.RemoveVisual(item);
+                    }
+                    drawCanvas.RemoveVisual(SelectRect);
+                }
+                else if (ToolBarTop.DrawCircle)
+                {
+                    if (DrawCircleCache.Attribute.Radius == 30)
+                        DrawCircleCache.Render();
+                    
+                    PropertyGrid2.SelectedObject = DrawCircleCache.GetAttribute();
 
+                    DrawCircleCache.AutoAttributeChanged = true;
+
+                    ListView1.ScrollIntoView(DrawCircleCache);
+                    ListView1.SelectedIndex = DrawingVisualLists.IndexOf(DrawCircleCache);
+
+                }
+                else if (ToolBarTop.DrawRect)
+                {
+                    if (DrawingRectangleCache.Attribute.Rect.Width == 30 && DrawingRectangleCache.Attribute.Rect.Height == 30)
+                    {
+                        DrawingRectangleCache.Render();
+                    }
+
+                    PropertyGrid2.SelectedObject = DrawingRectangleCache.GetAttribute();
+                    DrawingRectangleCache.AutoAttributeChanged = true;
+                    ListView1.ScrollIntoView(DrawingRectangleCache);
+                    ListView1.SelectedIndex = DrawingVisualLists.IndexOf(DrawingRectangleCache);
+
+                }
+
+                drawCanvas.ReleaseMouseCapture();
+                SelectDCircle = null;
+            }
         }
 
         private void ImageShow_MouseWheel(object sender, MouseWheelEventArgs e)
@@ -858,10 +1011,7 @@ namespace ColorVision.Template
 
         }
 
-        private void ImageShow_MouseMove(object sender, MouseEventArgs e)
-        {
 
-        }
 
         private async void Button2_Click(object sender, RoutedEventArgs e)
         {

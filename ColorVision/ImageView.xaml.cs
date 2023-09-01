@@ -178,13 +178,13 @@ namespace ColorVision
             }
         }
 
-        private DrawingVisual SelectRect = new DrawingVisual();
 
         private static void DrawSelectRect(DrawingVisual drawingVisual, Rect rect)
         {
             using DrawingContext dc = drawingVisual.RenderOpen();
             dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), rect);
         }
+        private DrawingVisual SelectRect = new DrawingVisual();
 
         private bool IsMouseDown;
         private Point MouseDownP;

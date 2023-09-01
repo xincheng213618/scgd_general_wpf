@@ -375,6 +375,42 @@
                 <local:DrawCanvas x:Name="ImageShow" Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_MouseDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
             </local:ZoomboxSub>
 
+            <StackPanel Grid.Row="0" Grid.RowSpan="2" >
+                <ToolBar x:Name="ToolBar1" DataContext="{Binding ToolBarTop}"    Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" HorizontalAlignment="Center">
+                    <ToolBar.Resources>
+                        <ResourceDictionary Source="/Theme/Icons.xaml"/>
+                    </ToolBar.Resources>
+                    <ToggleButton x:Name="ToggleButtonMouse"  IsChecked="{Binding Path=Move}"  Margin="4,0,1,0">
+                        <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageMouse}"/>
+                    </ToggleButton>
+                    <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding Activate}"  Margin="1,0" ToolTip="可以按下Ctrl缩放和移动图像">
+                        <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImagedrag}"/>
+                    </ToggleButton>
+                    <Button Command="{Binding ZoomUniform}"  Margin="1,0">
+                        <Image  Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImage1_1}"/>
+                    </Button>
+                    <Button Command="{Binding ZoomIncrease}"  Margin="1,0">
+                        <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImagezoom_in}" />
+                    </Button>
+                    <Button  Command="{Binding ZoomDecrease}"  Margin="1,0">
+                        <Image  Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImagezoom_out}"/>
+                    </Button>
+                    <Button Command="{Binding ZoomNone}"  Margin="1,0">
+                        <Image  Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageexpend}"/>
+                    </Button>
+                    <ToggleButton  IsChecked="{Binding EraseVisual}" Margin="1,0" >
+                        <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageeraser}"/>
+                    </ToggleButton>
+                    <ToggleButton IsChecked="{Binding DrawCircle}" Margin="1,0">
+                        <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageCircle}"/>
+                    </ToggleButton>
+                    <ToggleButton IsChecked="{Binding DrawRect}" Margin="1,0">
+                        <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageRect}"/>
+                    </ToggleButton>
+                </ToolBar>
+            </StackPanel>
+
+
             <Grid x:Name="FocusPointGrid" Visibility="Collapsed" Grid.Row="1" Height="200" >
                 <Grid DockPanel.Dock="Top">
                     <Grid.ColumnDefinitions>
