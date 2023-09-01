@@ -18,7 +18,7 @@
                 <RowDefinition x:Name="ListRow1" Height="*"/>
                 <RowDefinition x:Name="ListRow2" Height="Auto"/>
             </Grid.RowDefinitions>
-            <ScottPlot:WpfPlot  x:Name="wpfplot1"  Visibility="{Binding ElementName=ToggleButtonChoice,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}" />
+            <ScottPlot:WpfPlot  x:Name="wpfplot1" Visibility="{Binding ElementName=ToggleButtonChoice,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}" />
             <ScottPlot:WpfPlot  x:Name="wpfplot2" Visibility="{Binding ElementName=ToggleButtonChoice,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" />
 
             <Grid x:Name="Grid1" Grid.Row="1">

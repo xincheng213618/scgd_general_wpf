@@ -142,5 +142,12 @@ namespace ColorVision.SettingUp
         {
 
         }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            SoftwareConfig.MQTTSetting.MsgRecords.Clear();
+            GlobalSetting.GetInstance().SaveSoftwareConfig();
+            MessageBox.Show("MQTT历史记录清理完毕", "ColorVision");
+        }
     }
 }
