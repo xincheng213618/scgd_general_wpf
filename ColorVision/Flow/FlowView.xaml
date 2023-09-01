@@ -20,7 +20,7 @@
             </WindowsFormsHost>
         </Grid>
         <Grid Grid.Column="1">
-            <WindowsFormsHost x:Name="winf2" Width="200">
+            <WindowsFormsHost x:Name="winf2" Visibility="Collapsed" Width="200">
                 <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
             </WindowsFormsHost>
         </Grid>
