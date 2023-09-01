@@ -17,6 +17,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using ColorVision.SettingUp;
 using System.IO;
+using Panuon.UI.Silver;
 
 namespace ColorVision.Flow
 {
@@ -112,7 +113,7 @@ namespace ColorVision.Flow
             }
         }
 
-        private void Button_FlowRun_Click(object sender, RoutedEventArgs e)
+        private  void Button_FlowRun_Click(object sender, RoutedEventArgs e)
         {
             if (FlowTemplate.SelectedValue is FlowParam flowParam)
             {
@@ -120,6 +121,24 @@ namespace ColorVision.Flow
                 if (!string.IsNullOrWhiteSpace(startNode))
                 {
                     flowControl = new FlowControl(MQTTControl.GetInstance(), flowView.FlowEngineControl);
+
+
+                    //var handler = PendingBox.Show("Please wait (1/2)...", "Processing", true, Application.Current.MainWindow, new PendingBoxConfigurations()
+                    //{
+                    //    LoadingForeground = "#5DBBEC".ToColor().ToBrush(),
+                    //    ButtonBrush = "#5DBBEC".ToColor().ToBrush(),
+                    //    LoadingSize = 50,
+                    //    PendingBoxStyle = PendingBoxStyle.Classic,
+                    //    FontSize = 14,
+                    //});
+                    //handler.Cancel += delegate
+                    //{
+                    //    handler.Close();
+                    //};
+
+                    //handler.UpdateMessage("Almost complete (2/2)...");
+                    //handler.Close();
+
 
                     window = new Window() { Width = 400, Height = 400, Title = "流程返回信息", Owner = Application.Current.MainWindow, ResizeMode = ResizeMode.NoResize, WindowStyle = WindowStyle.None, WindowStartupLocation = WindowStartupLocation.CenterOwner };
                     TextBox textBox = new TextBox() { IsReadOnly = true, Background = Brushes.Black, Foreground = Brushes.White, TextWrapping = TextWrapping.Wrap, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };

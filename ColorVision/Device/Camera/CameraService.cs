@@ -152,7 +152,7 @@ namespace ColorVision.Device.Camera
                     case "Init":
                         DeviceStatus = DeviceStatus.UnInit;
                         break;
-                    case "Uninit":
+                    case "UnInit":
                         DeviceStatus = DeviceStatus.UnInit;
                         break;
                     default:
@@ -169,6 +169,9 @@ namespace ColorVision.Device.Camera
 
         public bool Init(CameraType CameraType, string CameraID)
         {
+            if (CameraIDs.Count == 0)
+                GetAllCameraID();
+
             CurrentCameraType = CameraType;
             SnID = CameraID;
             MsgSend msg = new MsgSend

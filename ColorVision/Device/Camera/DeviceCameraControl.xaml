@@ -49,7 +49,6 @@
                                 <Label Content="设备昵称"/>
                                 <TextBox Text="{Binding Config.Name}"/>
                             </DockPanel>
-
                             <DockPanel Margin="0,5" >
                                 <Label Content="相机ID："/>
                                 <hc:ComboBox  x:Name="CameraID" Margin="0,0,0,20" Width="400" HorizontalAlignment="Left"  IsEditable="True" SelectedIndex="0" Text="{Binding Config.ID}"  hc:InfoElement.ShowClearButton="True" />
