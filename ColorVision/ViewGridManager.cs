@@ -123,7 +123,12 @@ namespace ColorVision
             Views.Add(control);
 
             if (control is IView view)
-                view.View.ViewIndex = Views.IndexOf(control);
+            {
+                if (IsGridEmpty(view.View.ViewIndex))
+                {
+                    Grids[view.View.ViewIndex].Children.Add(control);
+                }
+            }
             return Views.IndexOf(control);
         }
 
