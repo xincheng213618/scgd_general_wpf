@@ -95,13 +95,9 @@ namespace ColorVision.MQTT
             }
         }
 
-
-
         public event EventHandler FlowCompleted;
         public event EventHandler FlowMsg;
         public event EventHandler FlowData;
-
-
 
         private Task MQTTControl_ApplicationMessageReceivedAsync(MQTTnet.Client.MqttApplicationMessageReceivedEventArgs arg)
         {
@@ -132,8 +128,5 @@ namespace ColorVision.MQTT
 
             return Task.CompletedTask;
         }
-
-
-
     }
 }
