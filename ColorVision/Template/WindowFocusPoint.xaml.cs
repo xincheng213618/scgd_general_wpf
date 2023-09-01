@@ -461,9 +461,9 @@ namespace ColorVision.Template
 
                 CreateImage(PoiParam.Width, PoiParam.Height, System.Windows.Media.Colors.White,false);
                 WaitControlProgressBar.Value = 20;
-                PoiParamToDrawingVisual(PoiParam);
                 DatumSet();
                 ShowDatumArea();
+                PoiParamToDrawingVisual(PoiParam);
                 log.Debug("Render Poi end");
             }
             else

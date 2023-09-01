@@ -171,5 +171,10 @@ namespace ColorVision
             LoginWindow loginWindow = new LoginWindow();
             loginWindow.ShowDialog();
         }
+
+        private void Test_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }

@@ -240,7 +240,7 @@ namespace ColorVision.Device.Camera
             MsgSend msg = new MsgSend
             {
                 EventName = "Open",
-                Params = new Dictionary<string, object>() { { "TakeImageMode", (int)TakeImageMode }, { "CameraID", CameraID }, { "Bpp", ImageBpp },{ "remoteIp", "127.0.0.1" },{ "remotePort", 9002 } }
+                Params = new Dictionary<string, object>() { { "TakeImageMode", (int)TakeImageMode }, { "CameraID", CameraID }, { "Bpp", ImageBpp },{ "remoteIp", "192.168.1.9" },{ "remotePort", 9002 } }
             };
             PublishAsyncClient(msg);
             return true;

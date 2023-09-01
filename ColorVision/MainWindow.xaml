@@ -112,7 +112,7 @@
             <Grid  Grid.Row="0" Background="{DynamicResource GlobalBorderBrush}" x:Name="SiderBarGrid" d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  MinWidth="150"  Visibility="{Binding SoftwareSetting.IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" >
                 <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                     <StackPanel x:Name="SPDisplay">
-
+                        <Button x:Name="Test" Content="Test" Click="Test_Click"/>
                         <StackPanel x:Name="StackPanelMQTT" Initialized="StackPanelMQTT_Initialized">
 
                         </StackPanel>

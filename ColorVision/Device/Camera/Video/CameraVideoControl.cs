@@ -39,7 +39,7 @@ namespace ColorVision.Device.Camera.Video
         private int headLen;
 
         bool OpenVideo;
-        public bool Open()
+        public bool Open(string Host,int Port)
         {
             try
             {
@@ -47,8 +47,8 @@ namespace ColorVision.Device.Camera.Video
                 {
                     UdpClient?.Dispose();
                 }
-                IPAddress locateIp = IPAddress.Parse("127.0.0.1");
-                IPEndPoint locatePoint = new IPEndPoint(locateIp, Config.Port);
+                IPAddress locateIp = IPAddress.Parse(Host);
+                IPEndPoint locatePoint = new IPEndPoint(locateIp, Port);
                 UdpClient = new UdpClient(locatePoint);
                 OpenVideo = true;
                 headLen = 4;

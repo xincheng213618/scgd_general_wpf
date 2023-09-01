@@ -157,6 +157,7 @@ namespace ColorVision.Device.Camera
             }
             else
             {
+                Button4_Click(sender, e);
                 Service.Close();
                 CameraOpenButton.Content = "关闭中";
             }
@@ -220,11 +221,11 @@ namespace ColorVision.Device.Camera
             if (sender is Button button)
             {
                 CameraVideoControl control = CameraVideoControl.GetInstance();
-                if (!CameraOpen)
+                if (Service.DeviceStatus == DeviceStatus.Init|| Service.DeviceStatus == DeviceStatus.Closed)
                 {
                     button.Content = "正在获取推流";
-                    control.Open();
-                    Service.Open(Service.Config.ID,TakeImageMode.Live, Service.Config.ImageBpp);
+                    control.Open(Service.Config.Host, Service.Config.Port);
+                    Service.Open(Service.Config.ID, TakeImageMode.Live, Service.Config.ImageBpp);
 
                     control.CameraVideoFrameReceived += (bmp) =>
                     {
@@ -242,11 +243,9 @@ namespace ColorVision.Device.Camera
                 }
                 else
                 {
-                    button.Content = "启用视频模式";
                     Service.Close();
                     control.Close();
                 }
-                CameraOpen = !CameraOpen;
             }
         }
 
