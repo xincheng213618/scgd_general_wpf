@@ -128,6 +128,11 @@ namespace ColorVision
                 {
                     Grids[view.View.ViewIndex].Children.Add(control);
                 }
+                else
+                {
+                    view.View.ViewIndex = Views.IndexOf(control);
+                }
+
             }
             return Views.IndexOf(control);
         }
