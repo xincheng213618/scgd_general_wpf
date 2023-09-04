@@ -10,6 +10,7 @@ using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using ColorVision.SettingUp;
 using ColorVision.Solution;
+using FlowEngineLib;
 
 namespace ColorVision.Device.Camera
 {
@@ -216,18 +217,20 @@ namespace ColorVision.Device.Camera
 
         bool CameraOpen;
 
+        public CameraVideoControl CameraVideoControl { get; set; }
+
         private void Button4_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
             {
-                CameraVideoControl control = CameraVideoControl.GetInstance();
+                CameraVideoControl??= new CameraVideoControl();
                 if (Service.DeviceStatus == DeviceStatus.Init|| Service.DeviceStatus == DeviceStatus.Closed)
                 {
                     button.Content = "正在获取推流";
-                    control.Open(Service.Config.Host, Service.Config.Port);
+                    CameraVideoControl.Open(Service.Config.Host, Service.Config.Port);
                     Service.Open(Service.Config.ID, TakeImageMode.Live, Service.Config.ImageBpp);
 
-                    control.CameraVideoFrameReceived += (bmp) =>
+                    CameraVideoControl.CameraVideoFrameReceived += (bmp) =>
                     {
                         button.Content = "关闭视频";
                         if (View.ImageShow.Source is WriteableBitmap bitmap)
@@ -244,7 +247,7 @@ namespace ColorVision.Device.Camera
                 else
                 {
                     Service.Close();
-                    control.Close();
+                    CameraVideoControl.Close();
                 }
             }
         }

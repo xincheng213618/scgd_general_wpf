@@ -18,9 +18,6 @@ namespace ColorVision.Device.Camera.Video
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(CameraVideoControl));
 
-        private static CameraVideoControl _instance;
-        private static readonly object _locker = new();
-        public static CameraVideoControl GetInstance() { lock (_locker) { return _instance ??= new CameraVideoControl(); } }
         public SoftwareConfig SoftwareConfig { get; set; }
         public CameraVideoConfig Config { get => SoftwareConfig.CameraVideoConfig; }
 
@@ -28,7 +25,7 @@ namespace ColorVision.Device.Camera.Video
         public OpenH264Lib.Decoder Decoder { get; set; }
 
         public event CameraVideoFrameHandler CameraVideoFrameReceived;
-        private CameraVideoControl()
+        public CameraVideoControl()
         {
             SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
             Decoder = new OpenH264Lib.Decoder(H264DllName);

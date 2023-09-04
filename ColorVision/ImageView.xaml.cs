@@ -123,7 +123,7 @@ namespace ColorVision
                 }
             };
 
-            PreviewKeyDown += (s, e) =>
+            this.PreviewKeyDown += (s, e) =>
             {
                 if (e.Key == Key.Left)
                 {
