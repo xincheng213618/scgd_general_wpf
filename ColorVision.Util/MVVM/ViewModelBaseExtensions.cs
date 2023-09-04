@@ -14,7 +14,14 @@ namespace ColorVision.MVVM
     /// </summary>
     public static class ViewModeBaseExtensions
     {
-
+        //复制一个新的对象
+        public static T CopyTo<T>(this T source) where T : ViewModelBase, new()
+        {
+            T target = new T();
+            source.CopyTo(target);
+            return target;
+        }
+        //复制一个新的对象
         public static void CopyTo<T>(this T source, T target) where T:ViewModelBase
         {
             Type type = source.GetType();

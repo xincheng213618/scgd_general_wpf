@@ -279,7 +279,6 @@ namespace ColorVision
         }
         private void MenuItem10_Click(object sender, RoutedEventArgs e)
         {
-            new CameraVideoConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
         private void LogF_Click(object sender, RoutedEventArgs e)
         {

@@ -13,9 +13,31 @@ namespace ColorVision.Device.Camera.Video
     /// </summary>
     public partial class CameraVideoConnect : Window
     {
-        public CameraVideoConnect()
+
+        public CameraVideoConfig CameraVideoConfig { get; set; }
+
+        private CameraVideoConfig CameraVideoConfigCopy { get; set; }
+
+        public CameraVideoConnect(CameraVideoConfig config)
         {
+            CameraVideoConfig = config;
+            CameraVideoConfigCopy = config.CopyTo();
             InitializeComponent();
+        }
+
+        public ObservableCollection<CameraVideoConfig> CameraVideoConfigs { get; set; }
+
+        private void Window_Initialized(object sender, EventArgs e)
+        {
+            GridMQTT.DataContext = CameraVideoConfigCopy;
+            CameraVideoConfigs = new ObservableCollection<CameraVideoConfig>();
+            ListViewMySql.ItemsSource = CameraVideoConfigs;
+            CameraVideoConfigs.Insert(0, CameraVideoConfig);
+            ListViewMySql.SelectedIndex = 0;
+            this.Closed += (s, e) =>
+            {
+                CameraVideoConfigs.Remove(CameraVideoConfig);
+            };
         }
 
         public void NumberValidationTextBox(object sender, KeyEventArgs e)
@@ -37,46 +59,18 @@ namespace ColorVision.Device.Camera.Video
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(CameraVideoConfig.Name))
+            if (string.IsNullOrEmpty(CameraVideoConfigCopy.Name))
             {
-                CameraVideoConfig.Name = CameraVideoConfig.Host +"_" + CameraVideoConfig.Port;
+                CameraVideoConfigCopy.Name = CameraVideoConfigCopy.Host +"_" + CameraVideoConfigCopy.Port;
             }
-
-            GlobalSetting.GetInstance().SaveSoftwareConfig();
+            CameraVideoConfigCopy.CopyTo(CameraVideoConfig);
             this.Close();
         }
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
-            CameraVideoConfigBackUp.CopyTo(CameraVideoConfig);
             this.Close();
         }
-
-
-        public CameraVideoConfig CameraVideoConfig { get;set;}
-
-        private CameraVideoConfig CameraVideoConfigBackUp { get; set; }
-
-        public ObservableCollection<CameraVideoConfig> CameraVideoConfigs { get; set; }
-
-        private void Window_Initialized(object sender, EventArgs e)
-        {
-            CameraVideoConfig= GlobalSetting.GetInstance().SoftwareConfig.CameraVideoConfig;
-            GridMQTT.DataContext = CameraVideoConfig;
-            CameraVideoConfigBackUp = new CameraVideoConfig();
-            CameraVideoConfig.CopyTo(CameraVideoConfigBackUp);
-            CameraVideoConfigs = GlobalSetting.GetInstance().SoftwareConfig.CameraVideoConfigs;
-
-            ListViewMySql.ItemsSource = CameraVideoConfigs;
-            CameraVideoConfigs.Insert(0, CameraVideoConfig);
-            ListViewMySql.SelectedIndex = 0;
-
-            this.Closed += (s, e) =>
-            {
-                CameraVideoConfigs.Remove(CameraVideoConfig);
-            };
-        }
-
 
         private void Button_Click_Test1(object sender, RoutedEventArgs e)
         {
@@ -101,9 +95,8 @@ namespace ColorVision.Device.Camera.Video
         {
             if (sender is ListView listView && listView.SelectedIndex > -1)
             {
-                CameraVideoConfig = CameraVideoConfigs[listView.SelectedIndex];
-                GridMQTT.DataContext = CameraVideoConfig;
-                GlobalSetting.GetInstance().SoftwareConfig.CameraVideoConfig = CameraVideoConfig;
+                CameraVideoConfigCopy = CameraVideoConfigs[listView.SelectedIndex];
+                GridMQTT.DataContext = CameraVideoConfigCopy;
             }
         }
 

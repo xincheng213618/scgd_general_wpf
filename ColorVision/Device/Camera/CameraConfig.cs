@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using ColorVision.SettingUp;
+using System.ComponentModel;
 
 namespace ColorVision.Device.Camera
 {
@@ -56,10 +57,7 @@ namespace ColorVision.Device.Camera
         public int Channel { get => _Channel; set { _Channel = value; NotifyPropertyChanged(); } }
         private int _Channel;
 
-        public string Host { get => _Host; set { _Host = value; NotifyPropertyChanged(); } }
-        private string _Host = "127.0.0.1";
-        public int Port { get => _Port; set { _Port = value; NotifyPropertyChanged(); } }
-        private int _Port = 9002;
-    
+        public CameraVideoConfig VideoConfig { get; set; } = new CameraVideoConfig();
+
     }
 }

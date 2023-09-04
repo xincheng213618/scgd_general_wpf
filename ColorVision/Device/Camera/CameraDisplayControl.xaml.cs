@@ -46,6 +46,12 @@ namespace ColorVision.Device.Camera
                                                     select new KeyValuePair<TakeImageMode, string>(e1, e1.ToDescription());
 
             ComboxCameraTakeImageMode.SelectedValue = Service.Config.TakeImageMode;
+            ComboxCameraTakeImageMode.SelectionChanged += (s, e) =>
+            {
+                CameraVideoSetButton.Visibility = ComboxCameraTakeImageMode.SelectedValue is TakeImageMode mode && mode == TakeImageMode.Live ? Visibility.Visible : Visibility.Collapsed;
+            };
+
+
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
             {
                 List<KeyValuePair<string, int>> KeyValues = new List<KeyValuePair<string, int>>();
@@ -71,7 +77,6 @@ namespace ColorVision.Device.Camera
                 }
             };
 
-
             if (Service.DeviceStatus == DeviceStatus.Init)
             {
                 StackPanelOpen.Visibility = Visibility.Visible;
@@ -85,18 +90,13 @@ namespace ColorVision.Device.Camera
                     case DeviceStatus.Closed:
                         CameraOpenButton.Visibility = Visibility.Visible;
                         StackPanelImage.Visibility = Visibility.Collapsed;
-                        ViewGridManager.GetInstance().RemoveView(View);
                         CameraOpenButton.Content = "打开";
                         break;
                     case DeviceStatus.Closing:
                         break;
                     case DeviceStatus.Opened:
                         StackPanelImage.Visibility = Visibility.Visible;
-                        ViewGridManager.GetInstance().AddView(View);
-                        if (ViewGridManager.GetInstance().ViewMax > 4 || ViewGridManager.GetInstance().ViewMax == 3)
-                        {
-                            ViewGridManager.GetInstance().SetViewNum(-1);
-                        }
+
                         CameraOpenButton.Content = "关闭";
                         break;
                     case DeviceStatus.Opening:
@@ -107,11 +107,18 @@ namespace ColorVision.Device.Camera
                         CameraOpenButton.Visibility = Visibility.Collapsed;
                         CamerInitButton.Content = "连接";
                         CameraOpenButton.Content = "打开";
+                        ViewGridManager.GetInstance().RemoveView(View);
                         break;
                     case DeviceStatus.Init:
                         StackPanelOpen.Visibility = Visibility.Visible;
                         CameraOpenButton.Visibility = Visibility.Visible;
                         CamerInitButton.Content = "断开连接";
+
+                        ViewGridManager.GetInstance().AddView(View);
+                        if (ViewGridManager.GetInstance().ViewMax > 4 || ViewGridManager.GetInstance().ViewMax == 3)
+                        {
+                            ViewGridManager.GetInstance().SetViewNum(-1);
+                        }
                         break;
                     case DeviceStatus.UnConnected:
                         break;
@@ -210,7 +217,7 @@ namespace ColorVision.Device.Camera
             ComboxFilterWheelChannel.SelectedIndex = 0;
         }
 
-        private void SendDemo5_Click(object sender, RoutedEventArgs e)
+        private void AutoExplose_Click(object sender, RoutedEventArgs e)
         {
             Service.SetCfwport();
         }
@@ -227,7 +234,7 @@ namespace ColorVision.Device.Camera
                 if (Service.DeviceStatus == DeviceStatus.Init|| Service.DeviceStatus == DeviceStatus.Closed)
                 {
                     button.Content = "正在获取推流";
-                    CameraVideoControl.Open(Service.Config.Host, Service.Config.Port);
+                    CameraVideoControl.Open(Service.Config.VideoConfig.Host, Service.Config.VideoConfig.Port);
                     Service.Open(Service.Config.ID, TakeImageMode.Live, Service.Config.ImageBpp);
 
                     CameraVideoControl.CameraVideoFrameReceived += (bmp) =>
@@ -291,7 +298,35 @@ namespace ColorVision.Device.Camera
 
         private void VideSetting_Click(object sender, RoutedEventArgs e)
         {
-            new CameraVideoConnect() { Owner =Application.Current.MainWindow,WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new CameraVideoConnect(Service.Config.VideoConfig) { Owner =Application.Current.MainWindow,WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+
+        private void AutoFocus_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        /// <summary>
+        /// FSR
+        /// </summary>
+        private void FSR_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+        /// <summary>
+        /// FOV
+        /// </summary>
+        private void FOV_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        /// <summary>
+        /// 鬼影
+        /// </summary>
+        private void GhostShadow_Click(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

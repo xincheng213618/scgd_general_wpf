@@ -4,6 +4,8 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Threading.Tasks;
+using System.Windows;
 
 namespace ColorVision.SettingUp
 {
@@ -25,8 +27,10 @@ namespace ColorVision.SettingUp
             }
             else
                 MsgRecords = new ObservableCollection<MsgRecord>();
-            MsgRecords.CollectionChanged += (s, e) =>
+            MsgRecords.CollectionChanged +=  async (s, e) =>  
             {
+                await Task.Delay(10);
+
                 if (MsgRecords.Count > CacheLength)
                 {
                     int itemsToRemoveCount = MsgRecords.Count - CacheLength;
@@ -34,7 +38,10 @@ namespace ColorVision.SettingUp
                     // 移除旧的对象
                     for (int i = 0; i < itemsToRemoveCount; i++)
                     {
-                        MsgRecords.RemoveAt(MsgRecords.Count-1); // 移除第一个元素
+                        if (MsgRecords.Count > 0)
+                        {
+                            MsgRecords.RemoveAt(MsgRecords.Count - 1); // 移除第一个元素
+                        }
                     }
                 }  
             };
