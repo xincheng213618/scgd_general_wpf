@@ -123,21 +123,28 @@ namespace ColorVision.Flow
                 {
                     flowControl = new FlowControl(MQTTControl.GetInstance(), flowView.FlowEngineControl);
 
-                    var handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
+                    handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
                     handler.Cancelling += delegate
                     {
-                        handler?.Close();
                         if (flowControl != null)
                         {
                             flowControl.Stop();
                         }
+                        handler?.Close();
                     };
 
                     flowControl.FlowData += (s, e) =>
                     {
                         if (s is FlowControlData msg)
                         {
-                            handler?.UpdateMessage("TTL: " + msg.Params.TTL.ToString());
+                            try
+                            {
+                                handler?.UpdateMessage("TTL: " + msg.Params.TTL.ToString());
+                            }
+                            catch 
+                            {
+
+                            }
                         }
                     };
                     flowControl.FlowCompleted += FlowControl_FlowCompleted;
