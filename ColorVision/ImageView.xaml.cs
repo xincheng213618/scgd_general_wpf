@@ -7,6 +7,7 @@ using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -654,6 +655,9 @@ namespace ColorVision
         [DllImport("OpenCVHelper.dll")]
         private unsafe static extern void SetInitialFrame(nint pRoutineHandler);
 
+        [DllImport("OpenCVHelper.dll", CharSet = CharSet.Unicode)]
+        private static extern void ReadVideoTest(string FullPath);
+
 
         [UnmanagedCallersOnly(CallConvs = new System.Type[] { typeof(CallConvCdecl) })]
         [SuppressGCTransition]
@@ -675,7 +679,7 @@ namespace ColorVision
                 writeableBitmap.Lock();
                 writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight));
                 writeableBitmap.Unlock();
-                if (ViewGridManager.GetInstance().Views[1] is ImageView view)
+                if (ViewGridManager.GetInstance().Views[3] is ImageView view)
                 {
                     view.ImageShow.Source = writeableBitmap;
                 }
@@ -690,12 +694,16 @@ namespace ColorVision
             if (filePath != null && File.Exists(filePath))
             {
 
-                ReadCVFile(filePath);
+                //ReadCVFile(filePath);
+                Task.Run(() =>
+                {
+                    ReadVideoTest("23");
+                });
 
                 //BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
                 //ImageShow.Source = bitmapImage;
                 //DrawGridImage(DrawingVisualGrid, bitmapImage);
-                Zoombox1.ZoomUniform();
+                //Zoombox1.ZoomUniform();  
                 ToolBar1.Visibility = Visibility.Visible;
 
             }

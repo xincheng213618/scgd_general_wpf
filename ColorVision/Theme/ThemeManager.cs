@@ -96,6 +96,7 @@ namespace ColorVision.Theme
             switch (theme)
             {
                 case Theme.Light:
+                    Panuon.WPF.UI.GlobalSettings.ChangeTheme("Light");
                     var light = new Wpf.Ui.Markup.ThemesDictionary();
                     light.Theme = ThemeType.Light;
                     app.Resources.MergedDictionaries.Add(light);
@@ -108,6 +109,7 @@ namespace ColorVision.Theme
                     }
                     break;
                 case Theme.Dark:
+                    Panuon.WPF.UI.GlobalSettings.ChangeTheme("Dark");
                     var dark = new Wpf.Ui.Markup.ThemesDictionary();
                     dark.Theme = ThemeType.Dark;
                     app.Resources.MergedDictionaries.Add(dark);

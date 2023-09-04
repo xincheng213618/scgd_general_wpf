@@ -17,7 +17,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using ColorVision.SettingUp;
 using System.IO;
-using Panuon.UI.Silver;
+using Panuon.WPF.UI;
 
 namespace ColorVision.Flow
 {
@@ -98,20 +98,21 @@ namespace ColorVision.Flow
 
 
         private FlowControl flowControl;
-        Window window;
 
         private void FlowControl_FlowCompleted(object? sender, EventArgs e)
         {
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
-            //MessageBox.Show("流程执行完成");
-            window.Close();
 
             if (sender != null)
             {
                 FlowControlData flowControlData = (FlowControlData)sender;
                 ServiceControl.GetInstance().ProcResult(flowControlData);
             }
+            handler?.Close();
+
         }
+
+        IPendingHandler handler { get; set; }
 
         private  void Button_FlowRun_Click(object sender, RoutedEventArgs e)
         {
@@ -122,47 +123,27 @@ namespace ColorVision.Flow
                 {
                     flowControl = new FlowControl(MQTTControl.GetInstance(), flowView.FlowEngineControl);
 
+                    var handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
+                    handler.Cancelling += delegate
+                    {
+                        handler?.Close();
+                        if (flowControl != null)
+                        {
+                            flowControl.Stop();
+                        }
+                    };
 
-                    //var handler = PendingBox.Show("Please wait (1/2)...", "Processing", true, Application.Current.MainWindow, new PendingBoxConfigurations()
-                    //{
-                    //    LoadingForeground = "#5DBBEC".ToColor().ToBrush(),
-                    //    ButtonBrush = "#5DBBEC".ToColor().ToBrush(),
-                    //    LoadingSize = 50,
-                    //    PendingBoxStyle = PendingBoxStyle.Classic,
-                    //    FontSize = 14,
-                    //});
-                    //handler.Cancel += delegate
-                    //{
-                    //    handler.Close();
-                    //};
-
-                    //handler.UpdateMessage("Almost complete (2/2)...");
-                    //handler.Close();
-
-
-                    window = new Window() { Width = 400, Height = 400, Title = "流程返回信息", Owner = Application.Current.MainWindow, ResizeMode = ResizeMode.NoResize, WindowStyle = WindowStyle.None, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                    TextBox textBox = new TextBox() { IsReadOnly = true, Background = Brushes.Black, Foreground = Brushes.White, TextWrapping = TextWrapping.Wrap, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
-
-                    Grid grid = new Grid();
-                    grid.Children.Add(textBox);
-
-                    grid.Children.Add(new Controls.ProgressRing() { Margin = new Thickness(100, 100, 100, 100) });
-
-                    window.Content = grid;
-
-                    textBox.Text = "TTL:" + "0";
                     flowControl.FlowData += (s, e) =>
                     {
                         if (s is FlowControlData msg)
                         {
-                            textBox.Text = "TTL:" + msg.Params.TTL.ToString();
+                            handler?.UpdateMessage("TTL: " + msg.Params.TTL.ToString());
                         }
                     };
                     flowControl.FlowCompleted += FlowControl_FlowCompleted;
                     string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
                     ServiceControl.GetInstance().ResultBatchSave(sn);
                     flowControl.Start(sn);
-                    window.Show();
                 }
                 else
                 {
