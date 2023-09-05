@@ -726,6 +726,33 @@ namespace ColorVision
             }
         }
 
+        public BitmapImage ByteArrayToBitmapImage(byte[] byteArray)
+        {
+            using (Stream stream = new MemoryStream(byteArray))
+            {
+                BitmapImage image = new BitmapImage();
+                stream.Position = 0;
+                image.BeginInit();
+                image.CacheOption = BitmapCacheOption.OnLoad;
+                image.StreamSource = stream;
+                image.EndInit();
+                image.Freeze();
+                return image;
+            }
+        }
+
+        public void OpenImage(byte[] data)
+        {
+            if (data != null)
+            {
+                BitmapImage bitmapImage = ByteArrayToBitmapImage(data);
+
+                ImageShow.Source = bitmapImage;
+                DrawGridImage(DrawingVisualGrid, bitmapImage);
+                Zoombox1.ZoomUniform();
+                ToolBar1.Visibility = Visibility.Visible;
+            }
+        }
 
         public void OpenImage(string? filePath)
         {
