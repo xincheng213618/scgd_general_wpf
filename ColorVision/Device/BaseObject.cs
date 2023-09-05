@@ -73,5 +73,10 @@ namespace ColorVision.Device
             throw new NotImplementedException();
         }
 
+        public virtual UserControl GenDisplayControl()
+        {
+            throw new NotImplementedException();
+        }
+
     }
 }

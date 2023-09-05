@@ -12,5 +12,7 @@ namespace ColorVision.Device.FilterWheel
             MQTTControl.SubscribeCache(SubscribeTopic);
         }
 
+
+
     }
 }

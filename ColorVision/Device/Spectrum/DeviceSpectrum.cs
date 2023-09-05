@@ -11,6 +11,8 @@ namespace ColorVision.Device.Spectrum
 
         public SpectrumView ChartView { get; set; }
 
+        public SpectrumDisplayControl Control { get; set; }
+
         public DeviceSpectrum(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             SpectrumService = new SpectrumService(Config);
@@ -18,6 +20,8 @@ namespace ColorVision.Device.Spectrum
         }
 
         public override UserControl GenDeviceControl() => new DeviceSpectrumControl(this);
+
+        public override UserControl GenDisplayControl() => Control ?? new SpectrumDisplayControl(this);
 
     }
 }

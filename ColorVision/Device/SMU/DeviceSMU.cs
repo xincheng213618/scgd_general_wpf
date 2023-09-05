@@ -10,12 +10,17 @@ namespace ColorVision.Device.SMU
 
         public SMUView View { get; set; }
 
+        public SMUDisplayControl Control { get; set; }
+
         public DeviceSMU(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             SMUService = new SMUService(Config);
             View = new SMUView();
+           
         }
         public override UserControl GenDeviceControl() => new DeviceSMUControl(this);
+        public override UserControl GenDisplayControl() => Control ??new SMUDisplayControl(this);
+
 
     }
 }

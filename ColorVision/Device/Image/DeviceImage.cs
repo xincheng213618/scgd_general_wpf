@@ -32,5 +32,7 @@ namespace ColorVision.Device.Image
         }
 
         public override UserControl GenDeviceControl() => new DeviceImageControl(this);
+        public override UserControl GenDisplayControl() => Control;
+
     }
 }
