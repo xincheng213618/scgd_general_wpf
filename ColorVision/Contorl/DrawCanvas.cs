@@ -2,12 +2,15 @@
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace ColorVision
 {
     public class DrawCanvas : Image
     {
+
+
         private List<Visual> visuals = new List<Visual>();
 
         protected override Visual GetVisualChild(int index) => visuals[index];
@@ -21,9 +24,6 @@ namespace ColorVision
 
         public event EventHandler? VisualsAdd;
         public event EventHandler? VisualsRemove;
-
-
-
 
         public void Clear()
         {

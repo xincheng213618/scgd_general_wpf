@@ -20,6 +20,7 @@
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="auto"/>
         </Grid.ColumnDefinitions>
+        <TextBox Grid.Column="0" x:Name="TextBox1" Background="Transparent" Width="5" BorderThickness="0" Foreground="Transparent"/>
         <Grid x:Name="ImageGroupGrid" Grid.Column="1"  Width="300"  Visibility="Collapsed">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
@@ -92,7 +93,7 @@
                                             <Run Text="{Binding Attribute.Rect.Y,StringFormat={}{0:F0}}"/>
                                             <Run Text="{Binding Attribute.Rect.Width,StringFormat={}{0:F0}}"/>
                                             <Run Text="{Binding Attribute.Rect.Height,StringFormat={}{0:F0}}"/>
-\</TextBlock>
+                                </TextBlock>
                             </StackPanel>
                         </DataTemplate>
                         <converter:DrawCanvasTemplateSelector x:Key="DrawCanvasTemplateSelector"  DrawingVisualRectangleTemplate ="{StaticResource DrawingVisualRectangleTemplate}"  DrawingVisualCircleTemplate ="{StaticResource DrawingVisualCircleTemplate}" />
@@ -104,14 +105,12 @@
                 </Grid>
             </DockPanel>
         </Grid>
-
         <Grid x:Name="ZoomGrid"  Grid.Column="0" Background="#c3c3c3">
             <Grid.RowDefinitions>
                 <RowDefinition Height="auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <Grid Grid.Row="0" Height="0.5" Background="#BCBCBC"/>
-            
             <local:ZoomboxSub x:Name="Zoombox1"  MaxZoom="10"  MinZoom="0.01" Grid.Row="1" Grid.ColumnSpan="2">
                 <local:DrawCanvas x:Name="ImageShow"  Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  MouseDown="ImageShow_MouseDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
             </local:ZoomboxSub>

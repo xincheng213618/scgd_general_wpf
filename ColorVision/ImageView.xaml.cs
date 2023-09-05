@@ -39,6 +39,14 @@ namespace ColorVision
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            TextBox TextBox1 = new TextBox() { Width = 10,Background =Brushes.Transparent, BorderThickness = new Thickness(0),Foreground = Brushes.Transparent };
+            Grid.SetColumn(TextBox1,0);
+            Grid.SetRow(TextBox1, 0);
+            ImageContentGrid.Children.Insert(0,TextBox1);
+            this.MouseDown += (s, e) =>
+            {
+                TextBox1.Focus();
+            };
             View = new View();
             View.ViewIndexChangedEvent += (s, e) =>
             {
@@ -82,6 +90,7 @@ namespace ColorVision
             ToolBar1.DataContext = ToolBarTop;
             ListView1.ItemsSource = DrawingVisualLists;
 
+            this.Focusable = true;
 
             ImageShow.VisualsAdd += (s, e) =>
             {
@@ -157,6 +166,14 @@ namespace ColorVision
                     translateTransform.SetCurrentValue(System.Windows.Media.TranslateTransform.XProperty, vector.X);
                     translateTransform.SetCurrentValue(System.Windows.Media.TranslateTransform.YProperty, vector.Y);
                     Zoombox1.SetCurrentValue(ZoomboxSub.ContentMatrixProperty, Matrix.Multiply(Zoombox1.ContentMatrix, translateTransform.Value));
+                }
+                else if (e.Key == Key.Add)
+                {
+                    Zoombox1.Zoom(1.1);
+                }
+                else if (e.Key == Key.Subtract)
+                {
+                    Zoombox1.Zoom(0.9);
                 }
             };
         }
@@ -766,10 +783,6 @@ namespace ColorVision
                 ImageShow.TopVisual(visual);
             }
         }
-
-
-
-
     }
 
 

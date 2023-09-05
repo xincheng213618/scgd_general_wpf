@@ -17,6 +17,7 @@
 
 
     <Style TargetType="{x:Type TextBox}">
+        <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
         <Setter Property="BorderBrush" Value="#CCCEDB"/>
         <EventSetter  Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown" />
         <Setter Property="Template">
