@@ -13,6 +13,7 @@ namespace ColorVision.MQTT.Service
         Spectum = 3,
         SMU = 4,
         Sensor = 5,
+        Image = 6,
     }
 
     public class MQTTServiceKind : BaseObject

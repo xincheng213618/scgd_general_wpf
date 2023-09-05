@@ -1,4 +1,5 @@
 ﻿using ColorVision.Device.Camera;
+using ColorVision.Device.Image;
 using ColorVision.Device.PG;
 using ColorVision.Device.Sensor;
 using ColorVision.Device.SMU;
@@ -114,6 +115,11 @@ namespace ColorVision.MQTT.Service
                             SMUDisplayControl mQTTSMUControl = new SMUDisplayControl(smu);
                             MQTTStackPanel.Children.Add(mQTTSMUControl);
                         }
+                        else if (item is DeviceImage img)
+                        {
+                            ImageDisplayControl ctl = new ImageDisplayControl(img);
+                            MQTTStackPanel.Children.Add(ctl);
+                        }
                         else if (item is DeviceSensor deviceSensor)
                         {
                             HandyControl.Controls.Growl.Info("SensorService开发中");
@@ -214,7 +220,6 @@ namespace ColorVision.MQTT.Service
                         {
                             if (device.Pid == service.Id)
                             {
-
                                 switch ((DeviceType)device.Type)
                                 {
                                     case DeviceType.Camera:
@@ -241,6 +246,11 @@ namespace ColorVision.MQTT.Service
                                         DeviceSensor device1 = new DeviceSensor(device);
                                         mQTTService.AddChild(device1);
                                         MQTTDevices.Add(device1);
+                                        break;
+                                    case DeviceType.Image:
+                                        DeviceImage img = new DeviceImage(device);
+                                        mQTTService.AddChild(img);
+                                        MQTTDevices.Add(img);
                                         break;
                                     default:
                                         break;
