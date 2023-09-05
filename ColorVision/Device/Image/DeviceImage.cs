@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Controls;
 using Wpf.Ui.Mvvm.Contracts;
 
@@ -24,10 +25,14 @@ namespace ColorVision.Device.Image
         {
             Service = new ImageService(Config);
             View = new ImageView();
-            //Service.FileHandler += (s, e) =>
-            //{
-            //    View.OpenImage(e);
-            //};
+            Service.OnImageData += (s, e) =>
+            {
+
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    View.OpenImage(e);
+                });
+            };
             Control = new ImageDisplayControl(this);
         }
 
