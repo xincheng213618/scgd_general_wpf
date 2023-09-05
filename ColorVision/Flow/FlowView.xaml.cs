@@ -3,6 +3,8 @@ using ST.Library.UI.NodeEditor;
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
 using static OpenCvSharp.ML.DTrees;
 
 namespace ColorVision.Flow
@@ -73,6 +75,40 @@ namespace ColorVision.Flow
             {
                 winf1.Height = (int)this.ActualHeight;
                 winf1.Width = (int)this.ActualWidth;
+            }
+        }
+
+        private void UserControl_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == Key.Left)
+            {
+                STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX +100, STNodeEditorMain.CanvasOffsetY, bAnimation: true, CanvasMoveArgs.Left);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Right)
+            {
+                STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX- 100, STNodeEditorMain.CanvasOffsetY, bAnimation: true, CanvasMoveArgs.Left);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Up)
+            {
+                STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX, STNodeEditorMain.CanvasOffsetY - 100, bAnimation: true, CanvasMoveArgs.Top);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Down)
+            {
+                STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX, STNodeEditorMain.CanvasOffsetY + 100, bAnimation: true, CanvasMoveArgs.Top);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Add)
+            {
+                STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale + 0.1f, (STNodeEditorMain.Width / 2), (STNodeEditorMain.Height / 2));
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Subtract)
+            {
+                STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale - 0.1f, (STNodeEditorMain.Width / 2), (STNodeEditorMain.Height / 2));
+                e.Handled = true;
             }
         }
     }

@@ -16,7 +16,9 @@ namespace ColorVision.MQTT.Service
         Image = 6,
     }
 
-    public class MQTTServiceKind : BaseObject
+
+
+    public class MQTTServiceKind : BaseMQTTService
     {
         public SysDictionaryModel SysDictionaryModel { get; set; }
         public MQTTServiceKind() : base()

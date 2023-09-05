@@ -74,37 +74,10 @@ namespace ColorVision.MQTT.Service
                 {
                     foreach (var item in mQTTService.VisualChildren)
                     {
-                        if (item is DeviceCamera deviceCamera)
+                        if (item is BaseDevice device)
                         {
-                            CameraDisplayControl mQTTCameraControl = new CameraDisplayControl(deviceCamera);
-                            MQTTStackPanel.Children.Add(mQTTCameraControl);
-
+                            MQTTStackPanel.Children.Add(device.GenDisplayControl());
                         }
-                        else if (item is DevicePG devicePG)
-                        {
-                            PGDisplayControl mQTTPGControl = new PGDisplayControl(devicePG.PGService);
-                            MQTTStackPanel.Children.Add(mQTTPGControl);
-                        }
-                        else if (item is DeviceSpectrum deviceSpectrum)
-                        {
-                            SpectrumDisplayControl mQTTSpectrumControl = new SpectrumDisplayControl(deviceSpectrum);
-                            MQTTStackPanel.Children.Add(mQTTSpectrumControl);
-                        }
-                        else if (item is DeviceSMU smu)
-                        {
-                            SMUDisplayControl mQTTSMUControl = new SMUDisplayControl(smu);
-                            MQTTStackPanel.Children.Add(mQTTSMUControl);
-                        }
-                        else if (item is DeviceImage img)
-                        {
-                            ImageDisplayControl ctl = new ImageDisplayControl(img);
-                            MQTTStackPanel.Children.Add(ctl);
-                        }
-                        else if (item is DeviceSensor deviceSensor)
-                        {
-                            HandyControl.Controls.Growl.Info("SensorService开发中");
-                        }
-
                     }
                 }
             }
