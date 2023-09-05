@@ -25,14 +25,6 @@ namespace ColorVision.Device.Image
         {
             Service = new ImageService(Config);
             View = new ImageView();
-            Service.OnImageData += (s, e) =>
-            {
-
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    View.OpenImage(e);
-                });
-            };
             Control = new ImageDisplayControl(this);
         }
 

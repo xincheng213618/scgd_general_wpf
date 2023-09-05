@@ -1,4 +1,7 @@
 ﻿using ColorVision.Device.SMU;
+using NetMQ;
+using NetMQ.Sockets;
+using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -67,13 +70,58 @@ namespace ColorVision.Device.Image
             {
                 ViewGridManager.GetInstance().SetViewNum(-1);
             }
-
-
         }
+
+        IPendingHandler handler { get; set; }
 
         private void Button_Click_Open(object sender, RoutedEventArgs e)
         {
-            DeviceImg.Service.Open("F:\\img\\0524MTF-H.tif");
+            doOpen("F:\\img\\20230407175926_1_src.tif");
+        }
+
+        private void Button2_Click_Open(object sender, RoutedEventArgs e)
+        {
+            doOpen("F:\\img\\0524MTF-H.tif");
+        }
+
+        private void doOpen(string fileName)
+        {
+            DeviceImg.Service.Open(fileName);
+
+            DealerSocket client = new DealerSocket("tcp://192.168.1.7:5556");
+            Task t = new(() => { Task_Start(client); });
+            t.Start();
+
+            handler = PendingBox.Show(Application.Current.MainWindow, "", "打开图片", true);
+            handler.Cancelling += delegate
+            {
+                client.Close();
+                client.Dispose();
+                handler?.Close();
+            };
+        }
+
+        private void Task_Start(DealerSocket client)
+        {
+            try
+            {
+                List<byte[]> data = client.ReceiveMultipartBytes();
+                if (data.Count == 1)
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        View.OpenImage(data[0]);
+                    });
+                }
+                client.Close();
+                client.Dispose();
+            }catch (Exception ex)
+            {
+                client.Close();
+                client.Dispose();
+            }
+
+            handler?.Close();
         }
     }
 }

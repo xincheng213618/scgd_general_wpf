@@ -11,10 +11,10 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Device.Image
 {
-    public delegate void MQTTImageDataHandler(object sender, byte[] data);
+    //public delegate void MQTTImageDataHandler(object sender, byte[] data);
     public class ImageService : BaseService<ImageConfig>
     {
-        public event MQTTImageDataHandler OnImageData;
+        //public event MQTTImageDataHandler OnImageData;
         public ImageService(ImageConfig config) : base(config)
         {
             Config = config;
@@ -48,19 +48,6 @@ namespace ColorVision.Device.Image
                 Params = openParam
             };
             PublishAsyncClient(msg);
-
-            DealerSocket client = new DealerSocket("tcp://localhost:5556");
-            Task t = new(() => { Task_Start(client); });
-            t.Start();
-        }
-
-        private void Task_Start(DealerSocket client)
-        {
-            List<byte[]> data = client.ReceiveMultipartBytes();
-            if(data.Count == 1)
-            {
-                OnImageData?.Invoke(this, data[0]);
-            }
         }
     }
 
