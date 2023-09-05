@@ -47,6 +47,7 @@ namespace ColorVision.MQTT
 
             SendTopic = Config.SendTopic;
             SubscribeTopic = Config.SubscribeTopic;
+            MQTTControl = MQTTControl.GetInstance();
             MQTTControl.SubscribeCache(SubscribeTopic);
         }
     }

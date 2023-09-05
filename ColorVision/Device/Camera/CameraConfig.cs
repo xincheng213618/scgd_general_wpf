@@ -41,6 +41,23 @@ namespace ColorVision.Device.Camera
         FastExt
     };
 
+
+    public enum ImageChannel
+    {
+        [Description("单通道")]
+        One = 1,
+        [Description("三通道")]
+        Three = 3
+    }
+
+    public enum ImageBpp
+    {
+        [Description("8Bits")]
+        Gray = 8,
+        [Description("16Bits")]
+        Three = 16,
+    }
+
     /// <summary>
     /// 相机配置
     /// </summary>
@@ -54,8 +71,14 @@ namespace ColorVision.Device.Camera
 
         public int ImageBpp { get => _ImageBpp; set { _ImageBpp = value; NotifyPropertyChanged(); } }
         private int _ImageBpp;
-        public int Channel { get => _Channel; set { _Channel = value; NotifyPropertyChanged(); } }
-        private int _Channel;
+        public ImageChannel Channel { get => _Channel; set { _Channel = value; NotifyPropertyChanged(); } }
+        private ImageChannel _Channel;
+
+        public double DefalutGain { get => _DefalutGain; set { _DefalutGain = value; NotifyPropertyChanged(); } }
+        private double _DefalutGain;
+
+        public int DefalutExpTime { get => _DefalutExpTime; set { _DefalutExpTime = value; NotifyPropertyChanged(); } }
+        private int _DefalutExpTime;
 
         public CameraVideoConfig VideoConfig { get; set; } = new CameraVideoConfig();
 

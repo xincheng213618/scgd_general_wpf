@@ -81,7 +81,7 @@ namespace ColorVision.MQTT.Service
                         ID = TextBox_Code.Text,
                         CameraType = CameraType.LVQ,
                         TakeImageMode = TakeImageMode.Normal,
-                        ImageBpp = 8
+                        ImageBpp =8 
                     };
                     cameraConfig1.Name = TextBox_Name.Text;
                     cameraConfig1.Code = TextBox_Code.Text;

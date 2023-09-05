@@ -40,16 +40,14 @@ namespace ColorVision.Device.Image
 
         public void Open(string fileName)
         {
-            ImageOpenParam openParam = new ImageOpenParam(fileName);
             MsgSend msg = new MsgSend
             {
                 EventName = "Open",
                 ServiceName = Config.Code,
-                Params = openParam
+                Params = new Dictionary<string,object> { { "FileName", fileName } }
             };
             PublishAsyncClient(msg);
-
-            DealerSocket client = new DealerSocket("tcp://localhost:5556");
+            DealerSocket client = new DealerSocket("tcp://192.168.1.7:5556");
             Task t = new(() => { Task_Start(client); });
             t.Start();
         }
@@ -61,16 +59,6 @@ namespace ColorVision.Device.Image
             {
                 OnImageData?.Invoke(this, data[0]);
             }
-        }
-    }
-
-    public class ImageOpenParam
-    {
-        public string FileName { get; set; }
-
-        public ImageOpenParam(string fileName)
-        {
-            FileName = fileName;
         }
     }
 }

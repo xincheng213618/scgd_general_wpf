@@ -73,7 +73,7 @@ namespace ColorVision.Device.Image
 
         private void Button_Click_Open(object sender, RoutedEventArgs e)
         {
-            DeviceImg.Service.Open("F:\\img\\0524MTF-H.tif");
+            DeviceImg.Service.Open("F:\\img\\20230407175926_1_src.tif");
         }
     }
 }

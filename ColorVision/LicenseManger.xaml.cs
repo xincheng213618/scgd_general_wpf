@@ -52,7 +52,6 @@ namespace ColorVision
             ListViewLicense.SelectedIndex = 0;
         }
 
-
         private void Import_Click(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();

@@ -158,7 +158,7 @@ namespace ColorVision.Device.Camera
                     }
                     else
                     {
-                        Service.Open(Service.Config.ID, takeImageMode, Service.Config.ImageBpp);
+                        Service.Open(Service.Config.ID, takeImageMode, (int)Service.Config.ImageBpp);
                         CameraOpenButton.Content = "打开中";
                     }
                 }
@@ -235,7 +235,7 @@ namespace ColorVision.Device.Camera
                 {
                     button.Content = "正在获取推流";
                     CameraVideoControl.Open(Service.Config.VideoConfig.Host, Service.Config.VideoConfig.Port);
-                    Service.Open(Service.Config.ID, TakeImageMode.Live, Service.Config.ImageBpp);
+                    Service.Open(Service.Config.ID, TakeImageMode.Live, (int)Service.Config.ImageBpp);
 
                     CameraVideoControl.CameraVideoFrameReceived += (bmp) =>
                     {
