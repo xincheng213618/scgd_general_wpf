@@ -19,20 +19,41 @@
                             <ColumnDefinition Width="50"/>
                         </Grid.ColumnDefinitions>
                         <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5" Margin="0,0,5,0">
-                            <UniformGrid Columns="2">
-                                <StackPanel Margin="5">
-                                    <TextBlock Text="{Binding Config.Name}" FontWeight="Bold" FontSize="15"/>
-                                    <TextBlock Text="{Binding Config.SendTopic}"/>
-                                    <TextBlock Text="{Binding Config.SubscribeTopic}"/>
-                                    <TextBlock Text="{Binding Config.ID}"/>
-                                    <TextBlock Text="{Binding Config.MD5}"/>
-                                    <TextBlock Text="{Binding Config.TimeLimit}"/>
-                                    <TextBlock Text="{Binding Config.TimeFrom}"/>
-                                </StackPanel>
-                                <StackPanel Margin="0,5">
-                                    <TextBlock Text="{Binding Config.ID}"/>
-                                </StackPanel>
-                            </UniformGrid>
+                            <StackPanel Margin="5">
+                                <DockPanel Margin="5,2">
+                                    <TextBlock Text="{Binding Config.Name}" FontWeight="Bold" FontSize="20"/>
+                                    <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  Height="20" Width="20"  HorizontalAlignment="Right" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
+                                </DockPanel>
+                                <GroupBox Header="基本信息" Margin="0,5">
+                                    <StackPanel Margin="5">
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="光谱仪ID:" Width="120"/>
+                                            <TextBlock Text="{Binding Config.ID}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="发送信道:" Width="120"/>
+                                            <TextBlock Text="{Binding Config.SendTopic}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="接收信道:" Width="120"/>
+                                            <TextBlock Text="{Binding Config.SubscribeTopic}"/>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </GroupBox>
+                                <GroupBox Header="配置" Margin="0,5">
+                                    <StackPanel Margin="5">
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="最大积分时间:" Width="120"/>
+                                            <TextBlock Text="{Binding Config.TimeLimit}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="起始积分时间:" Width="120"/>
+                                            <TextBlock Text="{Binding Config.TimeFrom}"/>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </GroupBox>
+                            </StackPanel>
+
 
                         </Border>
                         <Button  Grid.Column="1" Content="编辑"  Click="Button_Click_1"/>

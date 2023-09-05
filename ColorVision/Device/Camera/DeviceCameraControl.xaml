@@ -6,6 +6,7 @@
              xmlns:local="clr-namespace:ColorVision.Device.Camera"
              mc:Ignorable="d" 
              xmlns:hc="https://handyorg.github.io/handycontrol"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              d:DataContext="{d:DesignInstance local:DeviceCamera}"
              d:DesignHeight="400" d:DesignWidth="600" Initialized="UserControl_Initialized">
     <Grid>
@@ -20,15 +21,60 @@
                         </Grid.ColumnDefinitions>
                         <Border Background ="{DynamicResource GlobalBackground}"  CornerRadius="5" Margin="0,0,5,0">
                             <StackPanel Margin="5" >
-                                <TextBlock Text="{Binding Config.Name}" FontWeight="Bold" FontSize="15"/>
-                                <TextBlock Text="{Binding Config.ID}"/>
-                                <TextBlock Text="{Binding Config.MD5}"/>
-                                <TextBlock Text="{Binding Config.SendTopic}"/>
-                                <TextBlock Text="{Binding Config.SubscribeTopic}"/>
-                                <TextBlock Text="{Binding Config.CameraType}"/>
-                                <TextBlock Text="{Binding Config.ImageBpp}"/>
-                                <TextBlock Text="{Binding Config.TakeImageMode}"/>
-                                <TextBlock Text="{Binding Config.IsAlive}"/>
+                                <DockPanel Margin="5,2">
+                                    <TextBlock Text="{Binding Config.Name}" FontWeight="Bold" FontSize="20"/>
+                                    <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  Height="20" Width="20"  HorizontalAlignment="Right" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
+                                </DockPanel>
+                                <GroupBox Header="基本信息" Margin="0,5">
+                                    <StackPanel Margin="5">
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="相机类型:" Width="120"/>
+                                            <TextBlock Text="{Binding Config.CameraType}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="相机ID:" Width="120"/>
+                                            <TextBlock Text="{Binding Config.ID}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="相机MD5:" Width="120"/>
+                                            <TextBlock Text="{Binding Config.MD5}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="发送信道:" Width="120"/>
+                                            <TextBlock Text="{Binding Config.SendTopic}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="接收信道:" Width="120"/>
+                                            <TextBlock Text="{Binding Config.SubscribeTopic}"/>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </GroupBox>
+
+                                <GroupBox Header="默认参数配置" Margin="0,5">
+                                    <StackPanel Margin="5">
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="打开方式:" Width="120"/>
+                                            <TextBlock Text="{Binding Config.TakeImageMode}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="图像位数:" Width="120"/>
+                                            <TextBlock Text="{Binding Config.ImageBpp}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="图像通道:" Width="120"/>
+                                            <TextBlock Text="{Binding Config.Channel}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="默认增益:" Width="120"/>
+                                            <TextBlock Text="{Binding Config.DefalutGain}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="默认曝光:" Width="120"/>
+                                            <TextBlock Text="{Binding Config.DefalutExpTime}"/>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </GroupBox>
+
                                 <GroupBox Header="远程视频串流配置" Margin="0,5">
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="0,2">
@@ -74,14 +120,13 @@
                             <UniformGrid Columns="2">
                                 <DockPanel  Margin="2">
                                     <Label Content="默认通道数："/>
-                                    <hc:ComboBox  x:Name="ComboxCameraChannel"  Style="{StaticResource ComboBox.Small}"  Height="20" Margin="0,0,10,0">
-                                        <ComboBoxItem Content="1"/>
-                                        <ComboBoxItem Content="3"/>
-                                    </hc:ComboBox>
+                                    <hc:ComboBox  x:Name="ComboxCameraChannel"  Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding Config.Channel}"   SelectedValuePath="Key"  DisplayMemberPath="Value" Height="20" Margin="0,0,10,0"/>
+
+
                                 </DockPanel>
                                 <DockPanel  Margin="2">
                                     <Label Content="默认Bpp："/>
-                                    <ComboBox  x:Name="ComboxCameraImageBpp"  Style="{StaticResource ComboBox.Small}"  Height="20" Margin="0,0,10,0" >
+                                    <ComboBox  x:Name="ComboxCameraImageBpp"  Style="{StaticResource ComboBox.Small}"   SelectedValue="{Binding Config.ImageBpp}" Height="20" Margin="0,0,10,0" >
                                         <ComboBoxItem Content="8"/>
                                         <ComboBoxItem Content="16"/>
                                     </ComboBox>
@@ -89,7 +134,7 @@
                             </UniformGrid>
                             <DockPanel Margin="0,5">
                                 <TextBlock  Text="默认增益" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0" />
-                                <hc:PreviewSlider x:Name="SliderGain" TickFrequency ="0.1" IsSnapToTickEnabled="True"  SmallChange ="0.1" Value="1" Maximum="10"  >
+                                <hc:PreviewSlider x:Name="SliderGain" TickFrequency ="0.1" IsSnapToTickEnabled="True"  SmallChange ="0.1" Value="{Binding Config.DefalutGain}" Maximum="10"  >
                                     <hc:PreviewSlider.PreviewContent>
                                         <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0.00"/>
                                     </hc:PreviewSlider.PreviewContent>
@@ -97,7 +142,7 @@
                             </DockPanel>
                             <DockPanel Margin="0,5">
                                 <TextBlock  Text="默认曝光" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
-                                <hc:PreviewSlider x:Name="SliderexpTime"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="100" Maximum="6000">
+                                <hc:PreviewSlider x:Name="SliderexpTime"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="{Binding Config.DefalutExpTime}" Maximum="6000">
                                     <hc:PreviewSlider.PreviewContent>
                                         <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0.00"/>
                                     </hc:PreviewSlider.PreviewContent>

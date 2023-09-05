@@ -35,8 +35,8 @@ namespace ColorVision.Device.Camera
 
 
 
-            ComboxCameraChannel.Text = MQTTDeviceCamera.Config.Channel.ToString();
-            ComboxCameraImageBpp.Text = MQTTDeviceCamera.Config.ImageBpp.ToString();
+            ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
+                                  select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
 
 
             CameraID.ItemsSource = CameraService.CameraIDs;
@@ -44,9 +44,6 @@ namespace ColorVision.Device.Camera
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            MQTTDeviceCamera.Config.Channel = int.Parse(ComboxCameraChannel.Text.ToString());
-            MQTTDeviceCamera.Config.ImageBpp = int.Parse(ComboxCameraImageBpp.Text.ToString());
-
             MQTTEditContent.Visibility = Visibility.Collapsed;
             MQTTShowContent.Visibility = Visibility.Visible;
         }

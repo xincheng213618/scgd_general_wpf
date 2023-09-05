@@ -40,24 +40,13 @@ namespace ColorVision.Device.Image
 
         public void Open(string fileName)
         {
-            ImageOpenParam openParam = new ImageOpenParam(fileName);
             MsgSend msg = new MsgSend
             {
                 EventName = "Open",
                 ServiceName = Config.Code,
-                Params = openParam
+                Params = new Dictionary<string,object> { { "FileName", fileName } }
             };
             PublishAsyncClient(msg);
-        }
-    }
-
-    public class ImageOpenParam
-    {
-        public string FileName { get; set; }
-
-        public ImageOpenParam(string fileName)
-        {
-            FileName = fileName;
         }
     }
 }
