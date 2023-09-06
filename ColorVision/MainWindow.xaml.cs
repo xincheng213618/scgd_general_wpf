@@ -66,20 +66,18 @@ namespace ColorVision
             SPDisplay.Children.Insert(0, flowDisplayControl);
 
 
+            if (!WindowConfig.IsExist||(WindowConfig.IsExist&& WindowConfig.Icon == null)) {
+                ThemeManager.Current.SystemThemeChanged += (e) => {
+                    this.Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision;component/Image/{(e == Theme.Theme.Light ? "ColorVision.ico" : "ColorVision1.ico")}"));
+                };
+                if (ThemeManager.Current.SystemTheme == Theme.Theme.Dark)
+                    this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
+            }
+
             if (WindowConfig.IsExist)
             {
-                if (WindowConfig.Icon == null)
-                {
-                    ThemeManager.Current.SystemThemeChanged += (e) => {
-                        this.Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision;component/Image/{(e == Theme.Theme.Dark? "ColorVision.ico":"ColorVision1.ico")}"));
-                    };
-                    if (ThemeManager.Current.SystemTheme == Theme.Theme.Dark)
-                        this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
-                }
-                else
-                {
+                if (WindowConfig.Icon != null)
                     this.Icon = WindowConfig.Icon;
-                }
                 this.Title = WindowConfig.Title ?? this.Title;
             }
 
