@@ -160,6 +160,8 @@ namespace ColorVision.MQTT.Service
         public void Reload()
         {
             MQTTServices.Clear();
+            MQTTDevices.Clear();
+            LastGenControl?.Clear();
             List<SysResourceModel> Services = ResourceService.GetAllServices(UserConfig.TenantId);
             List<SysResourceModel> devices = ResourceService.GetAllDevices(UserConfig.TenantId);
 

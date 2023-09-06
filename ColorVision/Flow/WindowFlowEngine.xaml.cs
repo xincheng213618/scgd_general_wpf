@@ -1,5 +1,6 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.SettingUp;
+using ColorVision.Solution;
 using ColorVision.Template;
 using FlowEngineLib;
 using FlowEngineLib.Start;
@@ -9,6 +10,7 @@ using System;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace ColorVision
 {
@@ -25,6 +27,7 @@ namespace ColorVision
             ButtonSave.Visibility = Visibility.Collapsed;
             ButtonClear.Visibility = Visibility.Collapsed;
         }
+
         public WindowFlowEngine(string FileName)
         {
             InitializeComponent();
@@ -49,23 +52,57 @@ namespace ColorVision
             FlowParam = flowParam;
         }
 
+        private void UserControl_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == Key.Left)
+            {
+                STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX + 100, STNodeEditorMain.CanvasOffsetY, bAnimation: true, CanvasMoveArgs.Left);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Right)
+            {
+                STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX - 100, STNodeEditorMain.CanvasOffsetY, bAnimation: true, CanvasMoveArgs.Left);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Up)
+            {
+                STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX, STNodeEditorMain.CanvasOffsetY + 100, bAnimation: true, CanvasMoveArgs.Top);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Down)
+            {
+                STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX, STNodeEditorMain.CanvasOffsetY - 100, bAnimation: true, CanvasMoveArgs.Top);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Add)
+            {
+                STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale + 0.1f, (STNodeEditorMain.Width / 2), (STNodeEditorMain.Height / 2));
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Subtract)
+            {
+                STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale - 0.1f, (STNodeEditorMain.Width / 2), (STNodeEditorMain.Height / 2));
+                e.Handled = true;
+            }
+        }
+
         private void Window_Initialized(object sender, EventArgs e)
         {
             STNodePropertyGrid1.Text = "属性";
             STNodeTreeView1.LoadAssembly("FlowEngineLib.dll");
-            STNodeEditor1.LoadAssembly("FlowEngineLib.dll");
-            STNodeEditor1.ActiveChanged += (s, e) => STNodePropertyGrid1.SetNode(STNodeEditor1.ActiveNode);
-            STNodeEditor1.NodeAdded += StNodeEditor1_NodeAdded;
+            STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
+            STNodeEditorMain.ActiveChanged += (s, e) => STNodePropertyGrid1.SetNode(STNodeEditorMain.ActiveNode);
+            STNodeEditorMain.NodeAdded += StNodeEditor1_NodeAdded;
             ;
-            STNodeEditor1.PreviewKeyDown += (s, e) =>
+            STNodeEditorMain.PreviewKeyDown += (s, e) =>
             {
                 if (e.KeyCode == System.Windows.Forms.Keys.Delete)
                 {
-                    if (STNodeEditor1.ActiveNode !=null)
-                        STNodeEditor1.Nodes.Remove(STNodeEditor1.ActiveNode);
-                    foreach (var item in STNodeEditor1.GetSelectedNode())
+                    if (STNodeEditorMain.ActiveNode !=null)
+                        STNodeEditorMain.Nodes.Remove(STNodeEditorMain.ActiveNode);
+                    foreach (var item in STNodeEditorMain.GetSelectedNode())
                     {
-                        STNodeEditor1.Nodes.Remove(item);
+                        STNodeEditorMain.Nodes.Remove(item);
                     }
                 }
             };
@@ -108,7 +145,7 @@ namespace ColorVision
                 startNodeName = nodeStart.NodeName;
             }
             node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
-            node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => STNodeEditor1.Nodes.Remove(node));
+            node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => STNodeEditorMain.Nodes.Remove(node));
         }
 
         private void Button_Click_New(object sender, RoutedEventArgs e)
@@ -118,7 +155,7 @@ namespace ColorVision
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
             SaveFlow(FileName);
-            STNodeEditor1.Nodes.Clear();
+            STNodeEditorMain.Nodes.Clear();
         }
 
         private void Button_Click_Save(object sender, RoutedEventArgs e)
@@ -143,7 +180,7 @@ namespace ColorVision
         private void Button_Click_Clear(object sender, RoutedEventArgs e)
         {
             if (MessageBox.Show("您是否清空已经创建流程\n\r清空后自动保存关闭", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-                STNodeEditor1.Nodes.Clear();
+                STNodeEditorMain.Nodes.Clear();
         }
 
         string FileName { get; set; }
@@ -154,6 +191,7 @@ namespace ColorVision
         {
             System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
             ofd.Filter = "*.stn|*.stn";
+            ofd.InitialDirectory = SolutionControl.GetInstance().SolutionConfig.SolutionFullName;
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
             ButtonSave.Visibility = Visibility.Visible;
@@ -164,8 +202,8 @@ namespace ColorVision
         private void OpenFlow(string flowName)
         {
             FileName = flowName;
-            STNodeEditor1.Nodes.Clear();
-            STNodeEditor1.LoadCanvas(flowName);
+            STNodeEditorMain.Nodes.Clear();
+            STNodeEditorMain.LoadCanvas(flowName);
             svrName = "";
            
             flowControl = new FlowControl(MQTTControl.GetInstance(), startNodeName);
@@ -184,7 +222,7 @@ namespace ColorVision
 
             if (File.Exists(flowName)|| IsForceSave)
             {
-                STNodeEditor1.SaveCanvas(flowName);
+                STNodeEditorMain.SaveCanvas(flowName);
             }
 
             TemplateControl.GetInstance().Save2DB(FlowParam);
