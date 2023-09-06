@@ -15,7 +15,6 @@
             <TextBlock Text="编辑资料" HorizontalAlignment="Center"/>
             <Grid Height="1"  Background="#E9E9E9"  VerticalAlignment="Bottom"/>
 
-
             <Grid Grid.Row="1">
 
                 <StackPanel  Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="15">
