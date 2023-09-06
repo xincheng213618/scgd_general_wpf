@@ -166,13 +166,7 @@ namespace ColorVision
 
         private void Login_Click(object sender, RoutedEventArgs e)
         {
-            LoginWindow loginWindow = new LoginWindow();
-            loginWindow.ShowDialog();
-        }
-
-        private void Test_Click(object sender, RoutedEventArgs e)
-        {
-
+            new LoginWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
     }
 }

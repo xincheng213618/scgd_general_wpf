@@ -4,45 +4,48 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         Title="LoginWindow" Height="500" Background="#ECEFFF" Width="400" Initialized="Window_Initialized">
-    <Grid>
-        <Border Background="White" Margin="40" CornerRadius="10">
-            <StackPanel Margin="10">
-                <Image Source="Image\ColorVision.png"  Stretch="Uniform" Height="20"/>
+    <Grid x:Name="MainGrid">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="61*"/>
+            <RowDefinition Height="36*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Margin="10,10,10,10" Grid.RowSpan="2">
+            <Image Source="Image\ColorVision.png"  Stretch="Uniform" Height="80" Margin="10"/>
+            <Border Background="#F9F9F9" Margin="20,10" Height="250" CornerRadius="10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Border Grid.Row="0" BorderBrush="#F5F5F6" BorderThickness="0,0,0,1">
+                        <TextBlock Text="账号登录"  HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Margin="0,15,0,10"/>
+                    </Border>
 
-                <TextBox x:Name="Account" Text="" InputMethod.IsInputMethodEnabled="True"  BorderBrush="Transparent" VerticalAlignment="Center" BorderThickness="3" Foreground="Black" Margin="20,0,0,0">
-                    <TextBox.Resources>
-                        <VisualBrush x:Key="HintText" TileMode="None" Opacity="0.6" Stretch="None" AlignmentX="Left">
-                            <VisualBrush.Visual>
-                                <TextBlock Text="请输入账户" Foreground="Black" FontSize="15" VerticalAlignment="Center"/>
-                            </VisualBrush.Visual>
-                        </VisualBrush>
-                    </TextBox.Resources>
-                    <TextBox.Style>
-                        <Style TargetType="TextBox">
-                            <Style.Triggers>
-                                <Trigger Property="Text" Value="{x:Null}">
-                                    <Setter Property="Background" Value="{StaticResource HintText}"/>
-                                </Trigger>
-                                <Trigger Property="Text" Value="" >
-                                    <Setter Property="Background" Value="{StaticResource HintText}"/>
-                                </Trigger>
-                                <Trigger Property="IsFocused" Value="True">
-                                    <Setter Property="BorderBrush" Value="#1a73e8"/>
-                                    <Setter Property="FontWeight" Value="Bold"/>
-                                </Trigger>
-                                <Trigger Property="IsFocused" Value="False">
-                                    <Setter Property="BorderBrush" Value="Transparent"/>
-                                    <Setter Property="FontWeight" Value="Normal"/>
-                                </Trigger>
-                            </Style.Triggers>
-                            <Setter Property="Background" Value="Transparent" />
-                        </Style>
-                    </TextBox.Style>
-                </TextBox>
-                <PasswordBox x:Name="txtPassword" Password="" Grid.Row="1" />
-            </StackPanel>
-        </Border>
+                    <StackPanel Margin="30,0" Grid.Row="1">
+                        <DockPanel Margin="5">
+                            <hc:TextBox x:Name="Account1" ToolTip="账号"  VerticalAlignment="Center" Text="{Binding Name}" hc:InfoElement.Placeholder="账号"  BorderThickness="0,0,0,1"   />
+                        </DockPanel>
+                        <DockPanel Margin="5">
+                            <hc:PasswordBox x:Name="PasswordBox1"  ToolTip="账号"  VerticalAlignment="Center"  hc:InfoElement.Placeholder="密码"  BorderThickness="0,0,0,1"  hc:ShowEyeButton="True" />
+                        </DockPanel>
+                        <Button Content="登录" Foreground="White" FontSize="15"  Padding="6" Margin="0,15"  Click="Button_Click">
+                            <Button.Background>
+                                <LinearGradientBrush EndPoint="1,1" StartPoint="0,0">
+                                    <GradientStop Color="#476FFE"/>
+                                    <GradientStop Color="#879BFE" Offset="1"/>
+                                    <GradientStop Color="#FF6382FE" Offset="0.449"/>
+                                    <GradientStop Color="#FF708BFE" Offset="0.663"/>
+                                </LinearGradientBrush>
+                            </Button.Background>
+                        </Button>
+
+
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </StackPanel>
     </Grid>
 </Window>

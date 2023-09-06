@@ -52,9 +52,11 @@ namespace ColorVision.MQTT.Service
             Reload();
         }
 
+        public ObservableCollection<BaseDevice> LastGenControl { get; set; }
 
         public void GenControl(ObservableCollection<BaseDevice> MQTTDevices)
         {
+            LastGenControl = MQTTDevices;
             MQTTStackPanel.Children.Clear();
             foreach (var item in MQTTDevices)
             {
@@ -67,6 +69,7 @@ namespace ColorVision.MQTT.Service
 
         public void GenContorl()
         {
+            LastGenControl = new ObservableCollection<BaseDevice>();
             MQTTStackPanel.Children.Clear();
             foreach (var mQTTServiceKind in MQTTServices)
             {
@@ -76,11 +79,13 @@ namespace ColorVision.MQTT.Service
                     {
                         if (item is BaseDevice device)
                         {
+                            LastGenControl.Add(device);
                             MQTTStackPanel.Children.Add(device.GenDisplayControl());
                         }
                     }
                 }
             }
+            LastGenControl = MQTTDevices;
         }
 
         public void SpectrumDrawPlotFromDB(string bid)

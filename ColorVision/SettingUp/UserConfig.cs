@@ -8,12 +8,8 @@ namespace ColorVision.SettingUp
         /// <summary>
         /// 账号
         /// </summary>
-        public string UserName { get => _UserName; set { _UserName = value; NotifyPropertyChanged(); } }
-        private string _UserName = string.Empty;
-
-        public Guid UserID { get => _UserID; set { _UserID = value; NotifyPropertyChanged(); } }
-        private Guid _UserID = System.Guid.NewGuid();
-
+        public string Account{ get => _Account; set { _Account = value; NotifyPropertyChanged(); } }
+        private string _Account = string.Empty;
         /// <summary>
         /// 密码
         /// </summary>
@@ -23,6 +19,9 @@ namespace ColorVision.SettingUp
 
         public PerMissionMode PerMissionMode { get => _PerMissionMode; set { _PerMissionMode = value; NotifyPropertyChanged(); } }
         private PerMissionMode _PerMissionMode;
+
+        public string UserName { get => _UserName; set { _UserName = value; NotifyPropertyChanged(); } }
+        private string _UserName = string.Empty;
 
         /// <summary>
         /// 租户ID
