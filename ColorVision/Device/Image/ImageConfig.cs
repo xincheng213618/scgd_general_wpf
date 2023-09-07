@@ -8,5 +8,7 @@ namespace ColorVision.Device.Image
 {
     public class ImageConfig : BaseDeviceConfig
     {
+        public string Endpoint { get; set; }
+        public string ImgPath { get; set; }
     }
 }
