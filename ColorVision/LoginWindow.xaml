@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ColorVision"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
-        Title="LoginWindow" Height="500" Background="#ECEFFF" Width="400" Initialized="Window_Initialized">
+        Title="ColorVision" Height="500" Background="#ECEFFF" Width="400" Initialized="Window_Initialized">
     <Grid x:Name="MainGrid">
         <Grid.RowDefinitions>
             <RowDefinition Height="61*"/>
@@ -24,7 +24,7 @@
                         <TextBlock Text="账号登录"  HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Margin="0,15,0,10"/>
                     </Border>
 
-                    <StackPanel Margin="30,0" Grid.Row="1">
+                    <StackPanel Margin="30,20" Grid.Row="1">
                         <DockPanel Margin="5">
                             <hc:TextBox x:Name="Account1" ToolTip="账号"  VerticalAlignment="Center" Text="{Binding Name}" hc:InfoElement.Placeholder="账号"  BorderThickness="0,0,0,1"   />
                         </DockPanel>
