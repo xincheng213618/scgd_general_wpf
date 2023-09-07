@@ -75,8 +75,6 @@ namespace ColorVision.Device.Image
         private void doOpen(string fileName)
         {
             DeviceImg.Service.Open(fileName);
-
-            //DealerSocket client = new DealerSocket("tcp://192.168.1.7:5556");
             DealerSocket client = new DealerSocket(DeviceImg.Config.Endpoint);
             Task t = new(() => { Task_Start(client); });
             t.Start();
