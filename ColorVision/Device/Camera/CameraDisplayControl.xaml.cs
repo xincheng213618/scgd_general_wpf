@@ -235,29 +235,31 @@ namespace ColorVision.Device.Camera
                 {
                     button.Content = "正在获取推流";
                     CameraVideoControl.Open(Service.Config.VideoConfig.Host, Service.Config.VideoConfig.Port);
-                    //Service.Open(Service.Config.ID, TakeImageMode.Live, (int)Service.Config.ImageBpp);
-
-                    CameraVideoControl.CameraVideoFrameReceived += (bmp) =>
-                    {
-                        button.Content = "关闭视频";
-                        if (View.ImageShow.Source is WriteableBitmap bitmap)
-                        {
-                            ImageUtil.BitmapCopyToWriteableBitmap(bmp, bitmap, new System.Drawing.Rectangle(0, 0, bmp.Width, bmp.Height), 0, 0, bmp.PixelFormat);
-                        }
-                        else
-                        {
-                            WriteableBitmap writeableBitmap = ImageUtil.BitmapToWriteableBitmap(bmp);
-                            View.ImageShow.Source = writeableBitmap;
-                        }
-                    };
+                    Service.Open(Service.Config.ID, TakeImageMode.Live, (int)Service.Config.ImageBpp);
+                    CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
+                    CameraVideoControl.CameraVideoFrameReceived += CameraVideoFrameReceived;
                 }
                 else
                 {
-                    //Service.Close();
+                    Service.Close();
                     CameraVideoControl.Close();
                 }
             }
         }
+
+        public void CameraVideoFrameReceived(System.Drawing.Bitmap bmp)
+        {
+            if (View.ImageShow.Source is WriteableBitmap bitmap)
+            {
+                ImageUtil.BitmapCopyToWriteableBitmap(bmp, bitmap, new System.Drawing.Rectangle(0, 0, bmp.Width, bmp.Height), 0, 0, bmp.PixelFormat);
+            }
+            else
+            {
+                WriteableBitmap writeableBitmap = ImageUtil.BitmapToWriteableBitmap(bmp);
+                View.ImageShow.Source = writeableBitmap;
+            }
+        }
+
 
         private void ButtonCV_Click(object sender, RoutedEventArgs e)
         {
