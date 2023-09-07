@@ -284,7 +284,7 @@ namespace ColorVision.Device.Camera
 
 
 
-        public bool SetCfwport()
+        public MsgRecord SetCfwport()
         {
             MsgSend msg = new MsgSend
             {
@@ -306,8 +306,7 @@ namespace ColorVision.Device.Camera
                     }
                 }
             };
-            PublishAsyncClient(msg);
-            return true;
+            return PublishAsyncClient(msg);
         }
 
         public bool SetLicense(string md5, string FileData)

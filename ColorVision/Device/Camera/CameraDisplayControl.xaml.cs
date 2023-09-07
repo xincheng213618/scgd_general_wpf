@@ -11,6 +11,8 @@ using System.Windows.Media.Imaging;
 using ColorVision.SettingUp;
 using ColorVision.Solution;
 using FlowEngineLib;
+using ColorVision.MQTT;
+using System.Threading.Tasks;
 
 namespace ColorVision.Device.Camera
 {
@@ -219,7 +221,23 @@ namespace ColorVision.Device.Camera
 
         private void AutoExplose_Click(object sender, RoutedEventArgs e)
         {
-            Service.SetCfwport();
+            if (sender is Button button)
+            {
+                MsgRecord msgRecord = Service.SetCfwport();
+
+                var temp = button.Content;
+                button.Content = msgRecord.MsgRecordState.ToDescription();
+                MsgRecordStateChangedHandler msgRecordStateChangedHandler = async (e) =>
+                {
+                    button.Content = e.ToDescription();
+                    if (e != MsgRecordState.Send)
+                    {
+                        await Task.Delay(1000);
+                        button.Content = temp;
+                    }
+                };
+                msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
+            }
         }
 
         bool CameraOpen;

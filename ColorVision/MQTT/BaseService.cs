@@ -6,10 +6,12 @@ using MQTTnet.Client;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.MQTT
@@ -174,7 +176,7 @@ namespace ColorVision.MQTT
         /// 这里修改成可以继承的
         /// </summary>
         /// <param name="msg"></param>
-        internal virtual void PublishAsyncClient(MsgSend msg)
+        internal virtual MsgRecord PublishAsyncClient(MsgSend msg)
         {
             Guid guid = Guid.NewGuid(); 
             msg.MsgID = guid;
@@ -188,9 +190,6 @@ namespace ColorVision.MQTT
             string json = JsonConvert.SerializeObject(msg, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
 
             Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, json, false));
-
-            if (msg.EventName == "CM_GetAllSnID")
-                return;
 
             MsgRecord msgRecord = new MsgRecord {SendTopic=SendTopic,SubscribeTopic =SubscribeTopic ,MsgID = guid.ToString(), SendTime = DateTime.Now, MsgSend = msg,MsgRecordState = MsgRecordState.Send};
             
@@ -211,6 +210,7 @@ namespace ColorVision.MQTT
             timer.Start();
             timers.Add(guid.ToString(), timer);
 
+            return msgRecord;
         }
 
         public void Dispose()
@@ -220,8 +220,12 @@ namespace ColorVision.MQTT
         }
     }
 
+    public delegate void MsgRecordStateChangedHandler(MsgRecordState msgRecordState);
+
     public class MsgRecord:ViewModelBase, IServiceConfig
     {
+        public event MsgRecordStateChangedHandler MsgRecordStateChanged;
+
         public string SubscribeTopic { get; set; }
         public string SendTopic { get; set; }
 
@@ -237,6 +241,7 @@ namespace ColorVision.MQTT
             {
                 _MsgRecordState = value;
                 NotifyPropertyChanged();
+                Application.Current.Dispatcher.Invoke(()=> MsgRecordStateChanged?.Invoke(MsgRecordState));
                 if (value == MsgRecordState.Success ||  value == MsgRecordState.Fail)
                 {
                     NotifyPropertyChanged(nameof(IsRecive));
@@ -267,9 +272,13 @@ namespace ColorVision.MQTT
     }
     public enum MsgRecordState
     {
+        [Description("已经发送")]
         Send,
+        [Description("命令成功")]
         Success,
+        [Description("命令失败")]
         Fail,
+        [Description("命令超时")]
         Timeout
     }
 
