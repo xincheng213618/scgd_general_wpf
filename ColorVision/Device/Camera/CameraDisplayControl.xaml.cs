@@ -11,6 +11,10 @@ using System.Windows.Media.Imaging;
 using ColorVision.SettingUp;
 using ColorVision.Solution;
 using FlowEngineLib;
+using ColorVision.MQTT;
+using System.Threading.Tasks;
+using Panuon.WPF.UI;
+using System.Reflection.Emit;
 
 namespace ColorVision.Device.Camera
 {
@@ -173,15 +177,18 @@ namespace ColorVision.Device.Camera
 
         private void SendDemo3_Click(object sender, RoutedEventArgs e)
         {
-            string filename = DateTime.Now.ToString("yyyyMMddHHmmss") + ".tif";
-            Service.GetData(SliderexpTime.Value, SliderGain.Value, filename);
+            if (sender is Button button)
+            {
+                string filename = DateTime.Now.ToString("yyyyMMddHHmmss") + ".tif";
+                MsgRecord msgRecord = Service.GetData(SliderexpTime.Value, SliderGain.Value, filename);
+                SendCommand( msgRecord);
+            }
         }
 
         private void SendDemo4_Click(object sender, RoutedEventArgs e)
         {
             Service.Close();
         }
-
 
         private void FilterWheelSetPort_Click(object sender, RoutedEventArgs e)
         {
@@ -219,8 +226,52 @@ namespace ColorVision.Device.Camera
 
         private void AutoExplose_Click(object sender, RoutedEventArgs e)
         {
-            Service.SetCfwport();
+            if (sender is Button button)
+            {
+                MsgRecord msgRecord = Service.SetCfwport();
+                SendCommand(button, msgRecord);
+            }
         }
+        IPendingHandler handler { get; set; }
+
+
+        public void SendCommand(MsgRecord msgRecord)
+        {
+            handler = PendingBox.Show(Application.Current.MainWindow, "ColorVision", true);
+            handler.Cancelling += delegate
+            {
+
+            };
+            handler?.UpdateMessage(msgRecord.MsgRecordState.ToDescription());
+            MsgRecordStateChangedHandler msgRecordStateChangedHandler = async (e) =>
+            {
+                handler?.UpdateMessage(e.ToDescription());
+                if (e != MsgRecordState.Send)
+                {
+                    await Task.Delay(500);
+                    handler?.Close();
+                }
+            };
+            msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
+        }
+
+
+        public void SendCommand(Button button, MsgRecord msgRecord)
+        {
+            var temp = button.Content;
+            button.Content = msgRecord.MsgRecordState.ToDescription();
+            MsgRecordStateChangedHandler msgRecordStateChangedHandler = async (e) =>
+            {
+                button.Content = e.ToDescription();
+                if (e != MsgRecordState.Send)
+                {
+                    await Task.Delay(1000);
+                    button.Content = temp;
+                }
+            };
+            msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
+        }
+
 
         bool CameraOpen;
 
@@ -315,6 +366,7 @@ namespace ColorVision.Device.Camera
         {
 
         }
+
         /// <summary>
         /// FOV
         /// </summary>
