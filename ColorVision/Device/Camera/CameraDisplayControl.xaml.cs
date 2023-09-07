@@ -13,6 +13,8 @@ using ColorVision.Solution;
 using FlowEngineLib;
 using ColorVision.MQTT;
 using System.Threading.Tasks;
+using Panuon.WPF.UI;
+using System.Reflection.Emit;
 
 namespace ColorVision.Device.Camera
 {
@@ -179,7 +181,7 @@ namespace ColorVision.Device.Camera
             {
                 string filename = DateTime.Now.ToString("yyyyMMddHHmmss") + ".tif";
                 MsgRecord msgRecord = Service.GetData(SliderexpTime.Value, SliderGain.Value, filename);
-                SendCommand(button, msgRecord);
+                SendCommand( msgRecord);
             }
         }
 
@@ -231,6 +233,29 @@ namespace ColorVision.Device.Camera
                 SendCommand(button, msgRecord);
             }
         }
+        IPendingHandler handler { get; set; }
+
+
+        public void SendCommand(MsgRecord msgRecord)
+        {
+            handler = PendingBox.Show(Application.Current.MainWindow, "ColorVision", true);
+            handler.Cancelling += delegate
+            {
+
+            };
+            handler?.UpdateMessage(msgRecord.MsgRecordState.ToDescription());
+            MsgRecordStateChangedHandler msgRecordStateChangedHandler = async (e) =>
+            {
+                handler?.UpdateMessage(e.ToDescription());
+                if (e != MsgRecordState.Send)
+                {
+                    await Task.Delay(500);
+                    handler?.Close();
+                }
+            };
+            msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
+        }
+
 
         public void SendCommand(Button button, MsgRecord msgRecord)
         {
@@ -342,6 +367,7 @@ namespace ColorVision.Device.Camera
         {
 
         }
+
         /// <summary>
         /// FOV
         /// </summary>
