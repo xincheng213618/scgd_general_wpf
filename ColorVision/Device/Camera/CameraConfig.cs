@@ -74,13 +74,23 @@ namespace ColorVision.Device.Camera
         public ImageChannel Channel { get => _Channel; set { _Channel = value; NotifyPropertyChanged(); } }
         private ImageChannel _Channel;
 
-        public double DefalutGain { get => _DefalutGain; set { _DefalutGain = value; NotifyPropertyChanged(); } }
-        private double _DefalutGain;
-
-        public int DefalutExpTime { get => _DefalutExpTime; set { _DefalutExpTime = value; NotifyPropertyChanged(); } }
-        private int _DefalutExpTime;
-
         public CameraVideoConfig VideoConfig { get; set; } = new CameraVideoConfig();
+
+        public double ExpTime { get => _ExpTime; set { _ExpTime = value; NotifyPropertyChanged(); } }
+        private double _ExpTime;
+
+        public double Gain { get => _Gain; set { _Gain = value; NotifyPropertyChanged(); } }
+        private double _Gain;
+
+
+        public double ExpTimeR { get => _ExpTimeR; set { _ExpTimeR = value; NotifyPropertyChanged(); } }
+        private double _ExpTimeR;
+
+        public double ExpTimeG { get => _ExpTimeG; set { _ExpTimeG = value; NotifyPropertyChanged(); } }
+        private double _ExpTimeG;
+
+        public double ExpTimeB { get => _ExpTimeB; set { _ExpTimeB = value; NotifyPropertyChanged(); } }
+        private double _ExpTimeB;
 
     }
 }
