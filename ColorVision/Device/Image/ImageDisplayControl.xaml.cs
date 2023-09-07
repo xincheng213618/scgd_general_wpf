@@ -1,4 +1,5 @@
 ﻿using ColorVision.Device.SMU;
+using MySqlX.XDevAPI;
 using NetMQ;
 using NetMQ.Sockets;
 using Newtonsoft.Json;
@@ -38,7 +39,8 @@ namespace ColorVision.Device.Image
                 case "GetAllFiles":
                     List<string> data = JsonConvert.DeserializeObject<List<string>>(JsonConvert.SerializeObject(arg.Data));
                     Application.Current.Dispatcher.Invoke(() => {
-                        FilesView.ItemsSource = data; 
+                        FilesView.ItemsSource = data;
+                        FilesView.SelectedIndex = 0;
                     });
                     break;
                 case "":
@@ -82,6 +84,9 @@ namespace ColorVision.Device.Image
             {
                 ViewGridManager.GetInstance().SetViewNum(-1);
             }
+
+            Task t = new(() => { DeviceImg.Service.GetAllFiles(); });
+            t.Start();
         }
 
         IPendingHandler handler { get; set; }
