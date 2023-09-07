@@ -17,7 +17,7 @@
             </TextBlock>
         </DockPanel>
 
-        <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton3,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
+        <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel >
                 <DockPanel Margin="2">
                     <Button x:Name="btn_connect2"  Margin="10,0" DockPanel.Dock="Right" Content="打开" Click="Button_Click_Open" />

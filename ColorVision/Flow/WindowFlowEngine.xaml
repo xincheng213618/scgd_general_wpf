@@ -7,6 +7,7 @@
         xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         xmlns:st ="clr-namespace:ST.Library.UI.NodeEditor;assembly=ST.Library.UI"
         mc:Ignorable="d"
+        PreviewKeyDown="UserControl_PreviewKeyDown"
         Title="流程引擎调试窗口" Height="600" Width="1000" Initialized="Window_Initialized">
     <Grid  x:Name="Grid1">
         <Grid.RowDefinitions>
@@ -71,7 +72,7 @@
            
             <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                 <WindowsFormsHost >
-                    <st:STNodeEditor  x:Name="STNodeEditor1"  />
+                    <st:STNodeEditor  x:Name="STNodeEditorMain"  />
                 </WindowsFormsHost>
             </ScrollViewer>
 

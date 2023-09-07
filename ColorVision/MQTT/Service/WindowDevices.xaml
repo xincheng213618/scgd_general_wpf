@@ -16,7 +16,13 @@
         </Grid.RowDefinitions>
         <Grid  x:Name="Grid1" d:DataContext="{d:DesignInstance set:UserConfig}">
             <Border>
-                <TextBlock Text="{Binding UserName}"  HorizontalAlignment="Center"/>
+                <Grid Margin="10">
+                    <TextBlock  HorizontalAlignment="Left" FontSize="15"  VerticalAlignment="Center">
+                        <Run Text="尊敬的："/>
+                        <Run Text="{Binding UserName}"/>
+                        <Run Text="用户您好，请选择您要加载的资源："/>
+                    </TextBlock>
+                </Grid>
             </Border>
             <StackPanel HorizontalAlignment="Right" VerticalAlignment="Bottom">
                 <Button Content="高级设置" Click="Button_Click_1" />

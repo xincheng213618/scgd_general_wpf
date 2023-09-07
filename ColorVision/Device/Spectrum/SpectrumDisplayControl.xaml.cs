@@ -13,7 +13,6 @@ namespace ColorVision.Device.Spectrum
     /// </summary>
     public partial class SpectrumDisplayControl : UserControl
     {
-
         public DeviceSpectrum DeviceSpectrum { get; set; }
         public SpectrumService SpectrumService { get => DeviceSpectrum.SpectrumService; }
 

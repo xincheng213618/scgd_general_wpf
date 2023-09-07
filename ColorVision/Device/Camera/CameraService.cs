@@ -156,6 +156,7 @@ namespace ColorVision.Device.Camera
                         DeviceStatus = DeviceStatus.UnInit;
                         break;
                     default:
+                        DeviceStatus = DeviceStatus.UnInit;
                         break;
                 }
             }

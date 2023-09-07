@@ -55,7 +55,6 @@
                 <MenuItem Header="配置(_S)">
                     <MenuItem Header="管理员服务配置(_S)"  Tag="ServiceParam" Click="MenuItem_Template"/>
                     <MenuItem Header="设备配置(_D)"  Tag="DeviceParam" Click="MenuItem_Template"/>
-                    <MenuItem Header="相机视频配置(_V)" Click="MenuItem10_Click"/>
                 </MenuItem>
                 <MenuItem Header="模板(_M)">
                     <MenuItem Header="流程模板设置(_F)" Tag="FlowParam"  Click="MenuItem_Template"/>
