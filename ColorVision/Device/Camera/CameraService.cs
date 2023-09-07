@@ -127,6 +127,19 @@ namespace ColorVision.Device.Camera
                         Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(this, SaveFileName));
                         break;
                     case "GetAutoExpTime":
+                        if (msg.Data != null && msg.Data.result[0].result != null)
+                        {
+                            if (Config.Channel == ImageChannel.One)
+                            {
+                                Config.ExpTime = msg.Data.result[0].result;
+                            }
+                            else
+                            {
+                                Config.ExpTimeR = msg.Data.result[0].result;
+                                Config.ExpTimeG = msg.Data.result[1].result;
+                                Config.ExpTimeB = msg.Data.result[2].result;
+                            }
+                        } 
                         break;
                     case "SaveLicense":
                         break;

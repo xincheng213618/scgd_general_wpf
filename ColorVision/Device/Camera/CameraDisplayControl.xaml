@@ -9,11 +9,16 @@
              xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
              xmlns:SettingUp ="clr-namespace:ColorVision.SettingUp"
              xmlns:converter="clr-namespace:ColorVision.Converter"
+             xmlns:converter1="clr-namespace:ColorVision.Device.Camera.Converter"
              xmlns:cv="clr-namespace:ColorVision"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:CameraService}"
              d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized">
+    <UserControl.Resources>
+        <converter1:ChannelToVisibilityConverter x:Key="ChannelToVisibilityConverter"/>
+        <converter1:ChannelToVisibilityReConverter x:Key="ChannelToVisibilityReConverter"/>
+    </UserControl.Resources>
 
     <StackPanel x:Name="StackPanelCamera"  Margin="0,5">
         <DockPanel>
@@ -41,41 +46,57 @@
                     </DockPanel>
                     <Button x:Name="CameraVideoSetButton" Visibility="Collapsed" Content="视频模式配置" Click="VideSetting_Click"/>
                     <Button x:Name="CameraOpenButton" Content="打开" Click="Open_Click" />
-                    <UniformGrid Columns="2" Visibility="Collapsed">
-                        <DockPanel  Margin="2">
-                            <Label Content="通道数："/>
-                            <hc:ComboBox  x:Name="ComboxCameraChannel"  Style="{StaticResource ComboBox.Small}"  SelectedIndex="1" Height="20" Margin="0,0,10,0">
-                                <ComboBoxItem Content="1"/>
-                                <ComboBoxItem Content="3"/>
-                            </hc:ComboBox>
-                        </DockPanel>
-                        <DockPanel Margin="2">
-                            <Label Content="Bpp："/>
-                            <ComboBox  x:Name="ComboxCameraImageBpp"  Style="{StaticResource ComboBox.Small}"  SelectedIndex="0" Height="20" Margin="0,0,10,0" >
-                                <ComboBoxItem Content="8"/>
-                                <ComboBoxItem Content="16"/>
-                            </ComboBox>
-                        </DockPanel>
-                    </UniformGrid>
                     <StackPanel x:Name="StackPanelImage">
                         <DockPanel Margin="0,2">
                             <TextBlock  Text="增益" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0" />
                             <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=SliderGain,Path=Value}"  Width="50"/>
-                            <hc:PreviewSlider x:Name="SliderGain"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="1" Maximum="100">
+                            <hc:PreviewSlider x:Name="SliderGain"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="{Binding Config.Gain}" Maximum="100">
                                 <hc:PreviewSlider.PreviewContent>
                                     <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0"/>
                                 </hc:PreviewSlider.PreviewContent>
                             </hc:PreviewSlider>
                         </DockPanel>
-                        <DockPanel Margin="0,2">
-                            <TextBlock  Text="曝光" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
-                            <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=SliderexpTime,Path=Value}"  Width="50"/>
-                            <hc:PreviewSlider x:Name="SliderexpTime"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="100" Maximum="6000">
-                                <hc:PreviewSlider.PreviewContent>
-                                    <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0."/>
-                                </hc:PreviewSlider.PreviewContent>
-                            </hc:PreviewSlider>
-                        </DockPanel>
+                        <StackPanel Visibility="{Binding Config.Channel,Converter={StaticResource ChannelToVisibilityConverter}}">
+                            <DockPanel Margin="0,2">
+                                <TextBlock  Text="曝光" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                                <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTime}"  Width="50"/>
+                                <hc:PreviewSlider x:Name="SliderexpTime"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="{Binding Config.ExpTime}" Maximum="6000">
+                                    <hc:PreviewSlider.PreviewContent>
+                                        <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0."/>
+                                    </hc:PreviewSlider.PreviewContent>
+                                </hc:PreviewSlider>
+                            </DockPanel>
+                        </StackPanel>
+                        <StackPanel Visibility="{Binding Config.Channel,Converter={StaticResource ChannelToVisibilityReConverter}}">
+                            <DockPanel Margin="0,2">
+                                <TextBlock  Text="曝光R" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                                <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeR}"  Width="50"/>
+                                <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="100"  Value="{Binding Config.ExpTimeR}" Maximum="6000">
+                                    <hc:PreviewSlider.PreviewContent>
+                                        <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0."/>
+                                    </hc:PreviewSlider.PreviewContent>
+                                </hc:PreviewSlider>
+                            </DockPanel>
+                            <DockPanel Margin="0,2">
+                                <TextBlock  Text="曝光G" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                                <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeG}"  Width="50"/>
+                                <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="100"  Value="{Binding Config.ExpTimeG}" Maximum="6000">
+                                    <hc:PreviewSlider.PreviewContent>
+                                        <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0."/>
+                                    </hc:PreviewSlider.PreviewContent>
+                                </hc:PreviewSlider>
+                            </DockPanel>
+                            <DockPanel Margin="0,2">
+                                <TextBlock  Text="曝光B" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                                <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeB}"  Width="50"/>
+                                <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="100"  Value="{Binding Config.ExpTimeB}" Maximum="6000">
+                                    <hc:PreviewSlider.PreviewContent>
+                                        <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0."/>
+                                    </hc:PreviewSlider.PreviewContent>
+                                </hc:PreviewSlider>
+                            </DockPanel>
+                        </StackPanel>
+
                         <Button Content="自动曝光" Click="AutoExplose_Click" Margin="0,2"/>
                         <Button Content="自动聚焦" Click="AutoFocus_Click" Margin="0,2"/>
                         <Button Content="取图" Click="SendDemo3_Click" Margin="0,2"/>
