@@ -1,4 +1,5 @@
 ﻿using ColorVision.SettingUp;
+using Newtonsoft.Json;
 using System.ComponentModel;
 
 namespace ColorVision.Device.Camera
@@ -63,7 +64,7 @@ namespace ColorVision.Device.Camera
     /// </summary>
     public class CameraConfig : BaseDeviceConfig
     {
-        public CameraType CameraType { get => _CameraType; set { _CameraType = value; NotifyPropertyChanged(); } }
+        public CameraType CameraType { get => _CameraType; set { _CameraType = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsExpThree)); } }
         private CameraType _CameraType;
 
         public TakeImageMode TakeImageMode { get => _TakeImageMode; set { _TakeImageMode = value; NotifyPropertyChanged(); } }
@@ -71,18 +72,25 @@ namespace ColorVision.Device.Camera
 
         public ImageBpp ImageBpp { get => _ImageBpp; set { _ImageBpp = value; NotifyPropertyChanged(); } }
         private ImageBpp _ImageBpp;
-        public ImageChannel Channel { get => _Channel; set { _Channel = value; NotifyPropertyChanged(); } }
+        public ImageChannel Channel { get => _Channel; set { _Channel = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsExpThree)); } }
         private ImageChannel _Channel;
 
         public CameraVideoConfig VideoConfig { get; set; } = new CameraVideoConfig();
-
-        public double ExpTime { get => _ExpTime; set { _ExpTime = value; NotifyPropertyChanged(); } }
-        private double _ExpTime;
-
         public double Gain { get => _Gain; set { _Gain = value; NotifyPropertyChanged(); } }
         private double _Gain;
 
+        [JsonIgnore]
+        public bool IsExpThree {
+            get 
+            {
+                if (Channel == ImageChannel.Three && CameraType == CameraType.CVQ)
+                    return true;
+                return false;
+            }
+            set => NotifyPropertyChanged();}
 
+        public double ExpTime { get => _ExpTime; set { _ExpTime = value; NotifyPropertyChanged(); } }
+        private double _ExpTime;
         public double ExpTimeR { get => _ExpTimeR; set { _ExpTimeR = value; NotifyPropertyChanged(); } }
         private double _ExpTimeR;
 

@@ -12,7 +12,7 @@ namespace ColorVision.MQTT
         public HeartbeatService(ServiceConfig serviceConfig) : base(serviceConfig)
         {
             ServiceConfig = serviceConfig;
-
+            ServiceConfig.HeartbeatTime = 2000;
             MsgReturnReceived +=(msg)=>
             {
                 switch (msg.EventName)

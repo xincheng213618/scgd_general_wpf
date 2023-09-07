@@ -158,7 +158,7 @@ namespace ColorVision.MQTT
         public string ServiceName { get; set; }
 
         public virtual int HeartbeatTime { get => _HeartbeatTime; set { _HeartbeatTime = value; NotifyPropertyChanged(); } }
-        private int _HeartbeatTime = 2;
+        private int _HeartbeatTime = 2000;
 
         public virtual DateTime LastAliveTime { get => _LastAliveTime; set { _LastAliveTime = value; NotifyPropertyChanged(); } } 
         private DateTime _LastAliveTime = DateTime.MinValue;

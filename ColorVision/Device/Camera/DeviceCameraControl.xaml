@@ -77,13 +77,13 @@
                                             <TextBlock Text="默认增益:" Width="120"/>
                                             <TextBlock Text="{Binding Config.Gain}"/>
                                         </DockPanel>
-                                        <StackPanel Visibility="{Binding Config.Channel,Converter={StaticResource ChannelToVisibilityConverter}}">
+                                        <StackPanel Visibility="{Binding Config.IsExpThree,Converter={StaticResource bool2VisibilityConverter1}}">
                                             <DockPanel Margin="0,2">
                                                 <TextBlock Text="默认曝光:" Width="120"/>
                                                 <TextBlock Text="{Binding Config.ExpTime}"/>
                                             </DockPanel>
                                         </StackPanel>
-                                        <StackPanel Visibility="{Binding Config.Channel,Converter={StaticResource ChannelToVisibilityReConverter}}">
+                                        <StackPanel Visibility="{Binding Config.IsExpThree,Converter={StaticResource bool2VisibilityConverter}}">
                                             <DockPanel Margin="0,2">
                                                 <TextBlock Text="默认R通道曝光:" Width="120"/>
                                                 <TextBlock Text="{Binding Config.ExpTimeR}"/>
@@ -176,7 +176,7 @@
                                                     </hc:PreviewSlider.PreviewContent>
                                                 </hc:PreviewSlider>
                                             </DockPanel>
-                                            <StackPanel Margin="0.2" Visibility="{Binding Config.Channel,Converter={StaticResource ChannelToVisibilityConverter}}">
+                                            <StackPanel Margin="0.2" Visibility="{Binding Config.IsExpThree,Converter={StaticResource bool2VisibilityConverter1}}">
                                                 <DockPanel  >
                                                     <TextBlock  Text="默认曝光" Width="120" />
                                                     <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTime}"  Width="50"/>
@@ -187,7 +187,7 @@
                                                     </hc:PreviewSlider>
                                                 </DockPanel>
                                             </StackPanel>
-                                            <StackPanel Margin="0.2" Visibility="{Binding Config.Channel,Converter={StaticResource ChannelToVisibilityReConverter}}">
+                                            <StackPanel Margin="0.2" Visibility="{Binding Config.IsExpThree,Converter={StaticResource bool2VisibilityConverter}}">
                                                 <DockPanel Margin="0,2">
                                                     <TextBlock  Text="默认R通道曝光" Width="120"/>
                                                     <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeR}"  Width="50"/>
