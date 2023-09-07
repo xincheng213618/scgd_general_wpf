@@ -52,6 +52,10 @@
                                             <TextBlock Text="接收信道:" Width="120"/>
                                             <TextBlock Text="{Binding Config.SubscribeTopic}"/>
                                         </DockPanel>
+                                        <DockPanel Margin="0,5" >
+                                            <TextBlock Text="心跳时间"  Width="120"/>
+                                            <TextBlock Text="{Binding Config.HeartbeatTime}"/>
+                                        </DockPanel>
                                     </StackPanel>
                                 </GroupBox>
 
@@ -130,6 +134,14 @@
                                                 <TextBlock Text="界面展示名称" Width="120"/>
                                                 <TextBox Text="{Binding Config.Name}"/>
                                             </DockPanel>
+                                            <DockPanel Margin="0,5" >
+                                                <TextBlock Text="心跳时间"  Width="120"/>
+                                                <TextBox Text="{Binding Config.HeartbeatTime}"/>
+                                            </DockPanel>
+                                        </StackPanel>
+                                    </GroupBox>
+                                    <GroupBox Header="配置信息" Margin="0,5">
+                                        <StackPanel Margin="5">
                                             <DockPanel Margin="0,2"  >
                                                 <TextBlock Text="相机ID" Width="120"/>
                                                 <hc:ComboBox  x:Name="CameraID" Style="{StaticResource ComboBox.Small}"  IsEditable="True" SelectedIndex="0" Text="{Binding Config.ID}"  hc:InfoElement.ShowClearButton="True" />
@@ -138,11 +150,6 @@
                                                 <TextBlock Text="相机类型" Width="120"/>
                                                 <hc:ComboBox x:Name="ComboxCameraType" Style="{StaticResource ComboBox.Small}"  SelectedValue="{Binding Config.CameraType}" SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20" Margin="0,0,10,0"/>
                                             </DockPanel>
-                                        </StackPanel>
-                                    </GroupBox>
-
-                                    <GroupBox Header="相机信息" Margin="0,5">
-                                        <StackPanel Margin="5">
                                             <DockPanel Margin="0,2" >
                                                 <TextBlock Text="默认取图模式" Width="120"/>
                                                 <ComboBox  x:Name="ComboxCameraTakeImageMode"  Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding Config.TakeImageMode}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Height="20" Margin="0,0,10,0"/>
@@ -153,10 +160,7 @@
                                             </DockPanel>
                                             <DockPanel Margin="0,2" >
                                                 <TextBlock Text="默认图像位数" Width="120"/>
-                                                <ComboBox  x:Name="ComboxCameraImageBpp"  Style="{StaticResource ComboBox.Small}"   SelectedValue="{Binding Config.ImageBpp}" Height="20" Margin="0,0,10,0" >
-                                                    <ComboBoxItem Content="8"/>
-                                                    <ComboBoxItem Content="16"/>
-                                                </ComboBox>
+                                                <ComboBox  x:Name="ComboxCameraImageBpp"  Style="{StaticResource ComboBox.Small}"   SelectedValue="{Binding Config.ImageBpp}"  SelectedValuePath="Key"  DisplayMemberPath="Value" Height="20" Margin="0,0,10,0" />
                                             </DockPanel>
                                         </StackPanel>
                                     </GroupBox>
@@ -166,7 +170,7 @@
                                             <DockPanel Margin="0,2">
                                                 <TextBlock  Text="默认增益" Width="120" />
                                                 <TextBox DockPanel.Dock="Right" Text="{Binding Config.Gain}"  Width="50"/>
-                                                <hc:PreviewSlider  TickFrequency ="0.1" IsSnapToTickEnabled="True"  SmallChange ="0.1" Value="{Binding Config.Gain}" Maximum="10"  >
+                                                <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" Value="{Binding Config.Gain}" Maximum="10"  >
                                                     <hc:PreviewSlider.PreviewContent>
                                                         <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0.00"/>
                                                     </hc:PreviewSlider.PreviewContent>
@@ -185,7 +189,7 @@
                                             </StackPanel>
                                             <StackPanel Margin="0.2" Visibility="{Binding Config.Channel,Converter={StaticResource ChannelToVisibilityReConverter}}">
                                                 <DockPanel Margin="0,2">
-                                                    <TextBlock  Text="默认R通道曝光" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                                                    <TextBlock  Text="默认R通道曝光" Width="120"/>
                                                     <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeR}"  Width="50"/>
                                                     <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="100"  Value="{Binding Config.ExpTimeR}" Maximum="6000">
                                                         <hc:PreviewSlider.PreviewContent>
@@ -194,7 +198,7 @@
                                                     </hc:PreviewSlider>
                                                 </DockPanel>
                                                 <DockPanel Margin="0,2">
-                                                    <TextBlock  Text="默认G通道曝光" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                                                    <TextBlock  Text="默认G通道曝光" Width="120" />
                                                     <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeG}"  Width="50"/>
                                                     <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="100"  Value="{Binding Config.ExpTimeG}" Maximum="6000">
                                                         <hc:PreviewSlider.PreviewContent>
@@ -203,7 +207,7 @@
                                                     </hc:PreviewSlider>
                                                 </DockPanel>
                                                 <DockPanel Margin="0,2">
-                                                    <TextBlock  Text="默认B通道曝光" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                                                    <TextBlock  Text="默认B通道曝光" Width="120" />
                                                     <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeB}"  Width="50"/>
                                                     <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="100"  Value="{Binding Config.ExpTimeB}" Maximum="6000">
                                                         <hc:PreviewSlider.PreviewContent>

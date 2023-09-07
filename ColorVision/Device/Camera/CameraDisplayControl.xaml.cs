@@ -175,8 +175,7 @@ namespace ColorVision.Device.Camera
                     }
                     else
                     {
-                        Service.Close();
-
+                        Helpers.SendCommand(Service.Close(),"正在关闭相机") ;
                     }
                     CameraOpenButton.Content = "关闭中";
                 }
@@ -190,7 +189,7 @@ namespace ColorVision.Device.Camera
             {
                 string filename = DateTime.Now.ToString("yyyyMMddHHmmss") + ".tif";
                 MsgRecord msgRecord = Service.GetData(SliderexpTime.Value, SliderGain.Value, filename);
-                SendCommand( msgRecord);
+                Helpers.SendCommand(msgRecord,msgRecord.MsgRecordState.ToDescription());
             }
         }
 
@@ -238,47 +237,8 @@ namespace ColorVision.Device.Camera
             if (sender is Button button)
             {
                 MsgRecord msgRecord = Service.SetCfwport();
-                SendCommand(button, msgRecord);
+                Helpers.SendCommand(button, msgRecord);
             }
-        }
-        IPendingHandler handler { get; set; }
-
-
-        public void SendCommand(MsgRecord msgRecord)
-        {
-            handler = PendingBox.Show(Application.Current.MainWindow, "ColorVision", true);
-            handler.Cancelling += delegate
-            {
-
-            };
-            handler?.UpdateMessage(msgRecord.MsgRecordState.ToDescription());
-            MsgRecordStateChangedHandler msgRecordStateChangedHandler = async (e) =>
-            {
-                handler?.UpdateMessage(e.ToDescription());
-                if (e != MsgRecordState.Send)
-                {
-                    await Task.Delay(500);
-                    handler?.Close();
-                }
-            };
-            msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
-        }
-
-
-        public void SendCommand(Button button, MsgRecord msgRecord)
-        {
-            var temp = button.Content;
-            button.Content = msgRecord.MsgRecordState.ToDescription();
-            MsgRecordStateChangedHandler msgRecordStateChangedHandler = async (e) =>
-            {
-                button.Content = e.ToDescription();
-                if (e != MsgRecordState.Send)
-                {
-                    await Task.Delay(1000);
-                    button.Content = temp;
-                }
-            };
-            msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
         }
 
 

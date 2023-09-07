@@ -52,10 +52,10 @@ namespace ColorVision.Device.Camera
 
     public enum ImageBpp
     {
-        [Description("8Bits")]
-        Gray = 8,
-        [Description("16Bits")]
-        Three = 16,
+        [Description("8位")]
+        bpp8 = 8,
+        [Description("16位")]
+        bpp16 = 16,
     }
 
     /// <summary>
@@ -69,8 +69,8 @@ namespace ColorVision.Device.Camera
         public TakeImageMode TakeImageMode { get => _TakeImageMode; set { _TakeImageMode = value; NotifyPropertyChanged(); } }
         private TakeImageMode _TakeImageMode;
 
-        public int ImageBpp { get => _ImageBpp; set { _ImageBpp = value; NotifyPropertyChanged(); } }
-        private int _ImageBpp;
+        public ImageBpp ImageBpp { get => _ImageBpp; set { _ImageBpp = value; NotifyPropertyChanged(); } }
+        private ImageBpp _ImageBpp;
         public ImageChannel Channel { get => _Channel; set { _Channel = value; NotifyPropertyChanged(); } }
         private ImageChannel _Channel;
 

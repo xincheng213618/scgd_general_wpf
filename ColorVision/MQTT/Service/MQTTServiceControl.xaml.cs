@@ -96,7 +96,7 @@ namespace ColorVision.MQTT.Service
                         ID = TextBox_Code.Text,
                         CameraType = CameraType.LVQ,
                         TakeImageMode = TakeImageMode.Normal,
-                        ImageBpp = 8
+                        ImageBpp = ImageBpp.bpp8
                     };
                     SysResourceModel model = saveConfigInfo(cameraConfig1, sysResource);
                     if (model != null)

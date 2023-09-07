@@ -319,14 +319,13 @@ namespace ColorVision.Device.Camera
             return true;
         }
 
-        public bool Close()
+        public MsgRecord Close()
         {
             MsgSend msg = new MsgSend
             {
                 EventName = "Close"
             };
-            PublishAsyncClient(msg);
-            return true;
+            return PublishAsyncClient(msg);
         }
 
 

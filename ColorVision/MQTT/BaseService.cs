@@ -1,6 +1,7 @@
 ﻿using ColorVision.Device;
 using ColorVision.MVVM;
 using ColorVision.SettingUp;
+using FlowEngineLib;
 using log4net;
 using MQTTnet.Client;
 using Newtonsoft.Json;
@@ -35,12 +36,11 @@ namespace ColorVision.MQTT
 
         public override string SubscribeTopic { get => Config.SubscribeTopic; set { Config.SubscribeTopic = value; } }
         public override string SendTopic { get => Config.SendTopic; set { Config.SendTopic = value; } }
+        public override int HeartbeatTime { get => Config.HeartbeatTime; set { Config.HeartbeatTime = value; NotifyPropertyChanged(); } }
 
         public override bool IsAlive { get => Config.IsAlive; set { Config.IsAlive = value; NotifyPropertyChanged(); }   }
 
         public override DateTime LastAliveTime { get => Config.LastAliveTime; set => Config.LastAliveTime = value; }
-
-
 
         public BaseService(T config)
         {
@@ -104,8 +104,6 @@ namespace ColorVision.MQTT
 
                     lock (_locker)
                     {
-
-
                         if (timers.TryGetValue(json.MsgID, out var value))
                         {
                             value.Enabled = false;
@@ -137,7 +135,7 @@ namespace ColorVision.MQTT
 
         private void Timer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
         {
-            if (DateTime.Now - LastAliveTime > TimeSpan.FromSeconds(MQTTSetting.AliveTimeout))
+            if (DateTime.Now - LastAliveTime > TimeSpan.FromMilliseconds(HeartbeatTime))
             {
                 IsAlive = false;
             }
@@ -158,6 +156,9 @@ namespace ColorVision.MQTT
         public ulong ServiceID { get; set; }
         public string SnID { get; set; }
         public string ServiceName { get; set; }
+
+        public virtual int HeartbeatTime { get => _HeartbeatTime; set { _HeartbeatTime = value; NotifyPropertyChanged(); } }
+        private int _HeartbeatTime = 2;
 
         public virtual DateTime LastAliveTime { get => _LastAliveTime; set { _LastAliveTime = value; NotifyPropertyChanged(); } } 
         private DateTime _LastAliveTime = DateTime.MinValue;
