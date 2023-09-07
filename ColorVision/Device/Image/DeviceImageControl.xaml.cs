@@ -1,4 +1,5 @@
-﻿using ColorVision.Device.Sensor;
+﻿using ColorVision.Device.PG;
+using ColorVision.Device.Sensor;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,6 +27,24 @@ namespace ColorVision.Device.Image
         {
             DeviceImg = device;
             InitializeComponent();
+        }
+
+        private void UserControl_Initialized(object sender, EventArgs e)
+        {
+            this.DataContext = DeviceImg;
+        }
+
+
+        private void Button_Click_Edit(object sender, RoutedEventArgs e)
+        {
+            MQTTShowContent.Visibility = Visibility.Collapsed;
+            MQTTEditContent.Visibility = Visibility.Visible;
+        }
+
+        private void Button_Click_Save(object sender, RoutedEventArgs e)
+        {
+            MQTTEditContent.Visibility = Visibility.Collapsed;
+            MQTTShowContent.Visibility = Visibility.Visible;
         }
     }
 }

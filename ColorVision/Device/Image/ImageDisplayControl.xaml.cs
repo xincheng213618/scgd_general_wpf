@@ -9,13 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+
 
 namespace ColorVision.Device.Image
 {
@@ -37,8 +31,7 @@ namespace ColorVision.Device.Image
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = DeviceImg.Service;
-
-
+            TextBox_fileName.Text = "20230407175926_1_src.tif";
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
             {
                 List<KeyValuePair<string, int>> KeyValues = new List<KeyValuePair<string, int>>();
@@ -76,19 +69,15 @@ namespace ColorVision.Device.Image
 
         private void Button_Click_Open(object sender, RoutedEventArgs e)
         {
-            doOpen("F:\\img\\20230407175926_1_src.tif");
-        }
-
-        private void Button2_Click_Open(object sender, RoutedEventArgs e)
-        {
-            doOpen("F:\\img\\0524MTF-H.tif");
+            doOpen(TextBox_fileName.Text);
         }
 
         private void doOpen(string fileName)
         {
             DeviceImg.Service.Open(fileName);
 
-            DealerSocket client = new DealerSocket("tcp://192.168.1.7:5556");
+            //DealerSocket client = new DealerSocket("tcp://192.168.1.7:5556");
+            DealerSocket client = new DealerSocket(DeviceImg.Config.Endpoint);
             Task t = new(() => { Task_Start(client); });
             t.Start();
 
