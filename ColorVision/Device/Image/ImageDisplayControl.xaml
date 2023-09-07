@@ -20,8 +20,9 @@
         <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel >
                 <DockPanel Margin="2">
-                    <Button x:Name="btn_connect2"  Margin="10,0" DockPanel.Dock="Right" Content="打开" Click="Button_Click_Open" />
-                    <TextBox x:Name="TextBox_fileName" BorderThickness="0,0,0,1"/>
+                    <Button Content="刷新" Click="Button_Click_Refresh" />
+                    <Button DockPanel.Dock="Right" Content="打开" Click="Button_Click_Open" />
+                    <ComboBox x:Name="FilesView"  Style="{StaticResource ComboBox.Small}" Height="20"  />
                 </DockPanel>
                 <DockPanel Margin="5" >
                     <TextBlock Text="输出视图：" VerticalAlignment="Center" Width="60"/>
