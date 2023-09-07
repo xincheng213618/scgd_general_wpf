@@ -127,8 +127,13 @@
                         <Button Content="FSR" Click="FSR_Click"/>
                         <Button Content="FOV" Click="FOV_Click"/>
                         <Button Content="鬼影" Click="GhostShadow_Click"/>
-
                     </UniformGrid>
+                    
+                    
+                    <GroupBox  Header="矫正模板">
+                        <Template:Calibration x:Name="Calibration1" />
+                    </GroupBox>
+
                     <DockPanel Margin="5" >
                         <TextBlock Text="输出视图：" VerticalAlignment="Center" Width="60"/>
                         <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"  Height="20"  />

@@ -18,7 +18,7 @@ namespace ColorVision.Device.Camera
     /// <summary>
     /// 根据服务的MQTT相机
     /// </summary>
-    public partial class CameraDisplayControl : UserControl    {
+    public partial class CameraDisplayLocal : UserControl    {
 
         public CameraService Service { get => Device.Service; }
 
@@ -27,7 +27,7 @@ namespace ColorVision.Device.Camera
         public ImageView View { get; set; }
 
 
-        public CameraDisplayControl(DeviceCamera device)
+        public CameraDisplayLocal(DeviceCamera device)
         {
             Device = device;
             View = Device.View;

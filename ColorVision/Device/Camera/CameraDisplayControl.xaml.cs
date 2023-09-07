@@ -18,7 +18,7 @@ namespace ColorVision.Device.Camera
     /// <summary>
     /// 根据服务的MQTT相机
     /// </summary>
-    public partial class CameraDisplayLocal : UserControl
+    public partial class CameraDisplayControl : UserControl
     {
         public CameraService Service { get => Device.Service; }
 
@@ -27,7 +27,7 @@ namespace ColorVision.Device.Camera
         public ImageView View { get; set; }
 
 
-        public CameraDisplayLocal(DeviceCamera device)
+        public CameraDisplayControl(DeviceCamera device)
         {
             Device = device;
             View = Device.View;
@@ -224,18 +224,18 @@ namespace ColorVision.Device.Camera
 
         bool CameraOpen;
 
-        public CameraVideoControl CameraVideoControl { get; set; }
+        public CameraVideoControl1 CameraVideoControl { get; set; }
 
         private void Button4_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
             {
-                CameraVideoControl??= new CameraVideoControl();
+                CameraVideoControl??= new CameraVideoControl1();
                 if (Service.DeviceStatus == DeviceStatus.Init|| Service.DeviceStatus == DeviceStatus.Closed)
                 {
                     button.Content = "正在获取推流";
                     CameraVideoControl.Open(Service.Config.VideoConfig.Host, Service.Config.VideoConfig.Port);
-                    Service.Open(Service.Config.ID, TakeImageMode.Live, (int)Service.Config.ImageBpp);
+                    //Service.Open(Service.Config.ID, TakeImageMode.Live, (int)Service.Config.ImageBpp);
 
                     CameraVideoControl.CameraVideoFrameReceived += (bmp) =>
                     {
@@ -253,7 +253,7 @@ namespace ColorVision.Device.Camera
                 }
                 else
                 {
-                    Service.Close();
+                    //Service.Close();
                     CameraVideoControl.Close();
                 }
             }
