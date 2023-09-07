@@ -1,4 +1,6 @@
 ﻿using ColorVision.Device.SMU;
+using log4net;
+using log4net.Repository.Hierarchy;
 using MySqlX.XDevAPI;
 using NetMQ;
 using NetMQ.Sockets;
@@ -6,6 +8,7 @@ using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,6 +23,7 @@ namespace ColorVision.Device.Image
     /// </summary>
     public partial class ImageDisplayControl : UserControl
     {
+        private static readonly ILog logger = LogManager.GetLogger(typeof(ImageDisplayControl));
         public DeviceImage DeviceImg { get; set; }
 
         public ImageView View { get => DeviceImg.View; }
@@ -36,14 +40,15 @@ namespace ColorVision.Device.Image
         {
             switch (arg.EventName)
             {
-                case "GetAllFiles":
+                case ImageEventName.GetAllFiles:
                     List<string> data = JsonConvert.DeserializeObject<List<string>>(JsonConvert.SerializeObject(arg.Data));
                     Application.Current.Dispatcher.Invoke(() => {
                         FilesView.ItemsSource = data;
                         FilesView.SelectedIndex = 0;
                     });
                     break;
-                case "":
+                case ImageEventName.UploadFile:
+                    handler?.Close();
                     break;
                 default:
                     break;
@@ -99,23 +104,22 @@ namespace ColorVision.Device.Image
         private void doOpen(string fileName)
         {
             DeviceImg.Service.Open(fileName);
-            DealerSocket client = new DealerSocket(DeviceImg.Config.Endpoint);
-            Task t = new(() => { Task_Start(client); });
+            Task t = new(() => { Task_Start(); });
             t.Start();
 
             handler = PendingBox.Show(Application.Current.MainWindow, "", "打开图片", true);
             handler.Cancelling += delegate
             {
-                client.Close();
-                client.Dispose();
                 handler?.Close();
             };
         }
 
-        private void Task_Start(DealerSocket client)
+        private void Task_Start()
         {
+            DealerSocket client = null;
             try
             {
+                client = new DealerSocket(DeviceImg.Config.Endpoint);
                 List<byte[]> data = client.ReceiveMultipartBytes();
                 if (data.Count == 1)
                 {
@@ -124,12 +128,13 @@ namespace ColorVision.Device.Image
                         View.OpenImage(data[0]);
                     });
                 }
-                client.Close();
-                client.Dispose();
+                client?.Close();
+                client?.Dispose();
             }catch (Exception ex)
             {
-                client.Close();
-                client.Dispose();
+                logger.Error(ex);
+                client?.Close();
+                client?.Dispose();
             }
 
             handler?.Close();
@@ -138,6 +143,50 @@ namespace ColorVision.Device.Image
         private void Button_Click_Refresh(object sender, RoutedEventArgs e)
         {
             DeviceImg.Service.GetAllFiles();
+        }
+
+        private void Button_Click_Upload(object sender, RoutedEventArgs e)
+        {
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
+            openFileDialog.InitialDirectory = Environment.CurrentDirectory;
+            openFileDialog.Filter = "TIF|*.tif||";
+            openFileDialog.RestoreDirectory = true;
+            openFileDialog.FilterIndex = 1;
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                DeviceImg.Service.UploadFile(Path.GetFileName(openFileDialog.FileName));
+                Task t = new(() => { Task_StartUpload(openFileDialog.FileName); });
+                t.Start();
+
+                handler = PendingBox.Show(Application.Current.MainWindow, "", "上传", true);
+                handler.Cancelling += delegate
+                {
+                    t.Dispose();
+                    handler?.Close();
+                };
+            }
+        }
+
+        private byte[] readFile(string path)
+        {
+            FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read);
+            BinaryReader binaryReader = new BinaryReader(fileStream);
+            //获取文件长度
+            long length = fileStream.Length;
+            byte[] bytes = new byte[length];
+            //读取文件中的内容并保存到字节数组中
+            binaryReader.Read(bytes, 0, bytes.Length);
+            return bytes;
+        }
+
+        private void Task_StartUpload(string fileName)
+        {
+            DealerSocket client = new DealerSocket(DeviceImg.Config.Endpoint);
+            var message = new List<byte[]>();
+            message.Add(readFile(fileName));
+            client.TrySendMultipartBytes(TimeSpan.FromMilliseconds(3000), message);
+            client.Close();
+            client.Dispose();
         }
     }
 }

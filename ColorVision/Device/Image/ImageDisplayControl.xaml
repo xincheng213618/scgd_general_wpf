@@ -21,6 +21,7 @@
             <StackPanel >
                 <DockPanel Margin="2">
                     <Button Content="刷新" Click="Button_Click_Refresh" />
+                    <Button DockPanel.Dock="Right" Content="上传" Click="Button_Click_Upload" />
                     <Button DockPanel.Dock="Right" Content="打开" Click="Button_Click_Open" />
                     <ComboBox x:Name="FilesView"  Style="{StaticResource ComboBox.Small}" Height="20"  />
                 </DockPanel>
