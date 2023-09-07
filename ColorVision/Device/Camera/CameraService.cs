@@ -157,7 +157,7 @@ namespace ColorVision.Device.Camera
                         Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(this, SaveFileName));
                         break;
                     case "Close":
-                        DeviceStatus = DeviceStatus.Closed;
+                        DeviceStatus = DeviceStatus.UnInit;
                         break;
                     case "Open":
                         DeviceStatus = DeviceStatus.UnInit;

@@ -15,6 +15,7 @@ using ColorVision.MQTT;
 using System.Threading.Tasks;
 using Panuon.WPF.UI;
 using System.Reflection.Emit;
+using cvColorVision;
 
 namespace ColorVision.Device.Camera
 {
@@ -152,9 +153,9 @@ namespace ColorVision.Device.Camera
 
         private void Open_Click(object sender, RoutedEventArgs e)
         {
-            if (Service.DeviceStatus == DeviceStatus.Init || Service.DeviceStatus == DeviceStatus.Closed)
+            if(ComboxCameraTakeImageMode.SelectedValue is TakeImageMode takeImageMode)
             {
-                if (ComboxCameraTakeImageMode.SelectedValue is TakeImageMode takeImageMode)
+                if ((Service.DeviceStatus == DeviceStatus.Init || Service.DeviceStatus == DeviceStatus.Closed))
                 {
                     if (takeImageMode == TakeImageMode.Live)
                     {
@@ -166,13 +167,21 @@ namespace ColorVision.Device.Camera
                         CameraOpenButton.Content = "打开中";
                     }
                 }
+                else
+                {
+                    if (takeImageMode == TakeImageMode.Live)
+                    {
+                        Button4_Click(sender, e);
+                    }
+                    else
+                    {
+                        Service.Close();
+
+                    }
+                    CameraOpenButton.Content = "关闭中";
+                }
             }
-            else
-            {
-                Button4_Click(sender, e);
-                Service.Close();
-                CameraOpenButton.Content = "关闭中";
-            }
+
         }
 
         private void SendDemo3_Click(object sender, RoutedEventArgs e)
