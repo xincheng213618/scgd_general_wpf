@@ -29,7 +29,7 @@ namespace ColorVision.SettingUp
                 MsgRecords = new ObservableCollection<MsgRecord>();
             MsgRecords.CollectionChanged +=  async (s, e) =>  
             {
-                await Task.Delay(10);
+                await Task.Delay(100);
 
                 if (MsgRecords.Count > CacheLength)
                 {
@@ -40,7 +40,7 @@ namespace ColorVision.SettingUp
                     {
                         if (MsgRecords.Count > 0)
                         {
-                            MsgRecords.RemoveAt(MsgRecords.Count - 1); // 移除第一个元素
+                            Application.Current.Dispatcher.Invoke(() => MsgRecords.RemoveAt(MsgRecords.Count - 1));
                         }
                     }
                 }  

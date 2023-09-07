@@ -51,7 +51,10 @@ namespace ColorVision.MQTT
             };
             this.Connected += (s, e) =>
             {
-                GetAllSnID();
+                if (SendTopic.Contains("camera"))
+                {
+                    GetAllSnID();
+                }
             };
         }
         public static Dictionary<string, ObservableCollection<string>> ServicesDevices { get; set; } = new Dictionary<string, ObservableCollection<string>>();

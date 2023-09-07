@@ -190,7 +190,6 @@ namespace ColorVision.Device.Camera
             Service.Close();
         }
 
-
         private void FilterWheelSetPort_Click(object sender, RoutedEventArgs e)
         {
             if (ComboxFilterWheelChannel.SelectedIndex > -1)
