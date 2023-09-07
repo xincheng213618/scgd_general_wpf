@@ -1941,7 +1941,6 @@ namespace cvColorVision
                     //int imgw = 0, imgh = 0;
                     //imgw = (int)(fRoi.width / m_cDib.GetScale());
                     //imgh = (int)(fRoi.height / m_cDib.GetScale());
-
                     HImage tImg = new HImage();
                     tImg.nBpp = (uint)bppRGB;
                     tImg.nChannels = (uint)channalsRGB;
