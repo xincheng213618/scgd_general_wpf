@@ -29,16 +29,20 @@
                                 <GroupBox Header="基本信息" Margin="0,5">
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="0,2">
-                                            <TextBlock Text="源表地址:" Width="120"/>
+                                            <TextBlock Text="源表地址" Width="120"/>
                                             <TextBlock Text="{Binding Config.ID}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,2">
-                                            <TextBlock Text="发送信道:" Width="120"/>
+                                            <TextBlock Text="发送信道" Width="120"/>
                                             <TextBlock Text="{Binding Config.SendTopic}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,2">
-                                            <TextBlock Text="接收信道:" Width="120"/>
+                                            <TextBlock Text="接收信道" Width="120"/>
                                             <TextBlock Text="{Binding Config.SubscribeTopic}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2" >
+                                            <TextBlock Text="心跳时间(ms)"  Width="120"/>
+                                            <TextBlock Text="{Binding Config.HeartbeatTime}"/>
                                         </DockPanel>
                                     </StackPanel>
                                 </GroupBox>
@@ -66,7 +70,7 @@
                                             <TextBox Text="{Binding Config.Name}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,5" >
-                                            <TextBlock Text="心跳时间"  Width="120"/>
+                                            <TextBlock Text="心跳时间(ms)"  Width="120"/>
                                             <TextBox Text="{Binding Config.HeartbeatTime}"/>
                                         </DockPanel>
                                     </StackPanel>

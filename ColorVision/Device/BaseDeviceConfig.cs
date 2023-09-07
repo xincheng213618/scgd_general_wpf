@@ -25,8 +25,11 @@ namespace ColorVision.Device
         public string Code { get => _Code; set { _Code = value; NotifyPropertyChanged(); } }
         private string _Code;
 
+        /// <summary>
+        /// 心跳时间
+        /// </summary>
         public int HeartbeatTime { get => _HeartbeatTime; set { _HeartbeatTime = value; NotifyPropertyChanged(); } }
-        private int _HeartbeatTime;
+        private int _HeartbeatTime = 2000;
         /// <summary>
         /// 是否存活
         /// </summary>

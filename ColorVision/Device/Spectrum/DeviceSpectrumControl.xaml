@@ -27,27 +27,31 @@
                                 <GroupBox Header="基本信息" Margin="0,5">
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="0,2">
-                                            <TextBlock Text="光谱仪ID:" Width="120"/>
+                                            <TextBlock Text="光谱仪ID" Width="120"/>
                                             <TextBlock Text="{Binding Config.ID}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,2">
-                                            <TextBlock Text="发送信道:" Width="120"/>
+                                            <TextBlock Text="发送信道" Width="120"/>
                                             <TextBlock Text="{Binding Config.SendTopic}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,2">
-                                            <TextBlock Text="接收信道:" Width="120"/>
+                                            <TextBlock Text="接收信道" Width="120"/>
                                             <TextBlock Text="{Binding Config.SubscribeTopic}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2" >
+                                            <TextBlock Text="心跳时间(ms)"  Width="120"/>
+                                            <TextBlock Text="{Binding Config.HeartbeatTime}"/>
                                         </DockPanel>
                                     </StackPanel>
                                 </GroupBox>
                                 <GroupBox Header="配置" Margin="0,5">
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="0,2">
-                                            <TextBlock Text="最大积分时间:" Width="120"/>
+                                            <TextBlock Text="最大积分时间" Width="120"/>
                                             <TextBlock Text="{Binding Config.TimeLimit}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,2">
-                                            <TextBlock Text="起始积分时间:" Width="120"/>
+                                            <TextBlock Text="起始积分时间" Width="120"/>
                                             <TextBlock Text="{Binding Config.TimeFrom}"/>
                                         </DockPanel>
                                     </StackPanel>
@@ -76,7 +80,7 @@
                                             <TextBox Text="{Binding Config.Name}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,5" >
-                                            <TextBlock Text="心跳时间"  Width="120"/>
+                                            <TextBlock Text="心跳时间(ms)"  Width="120"/>
                                             <TextBox Text="{Binding Config.HeartbeatTime}"/>
                                         </DockPanel>
                                     </StackPanel>

@@ -26,11 +26,11 @@
                                 <GroupBox Header="基本信息" Margin="0,5">
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="0,2">
-                                            <TextBlock Text="图片目录:" Width="120"/>
+                                            <TextBlock Text="图片目录" Width="120"/>
                                             <TextBlock Text="{Binding Config.ImgPath}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,2">
-                                            <TextBlock Text="端口地址:" Width="120"/>
+                                            <TextBlock Text="端口地址" Width="120"/>
                                             <TextBlock Text="{Binding Config.Endpoint}"/>
                                         </DockPanel>
                                     </StackPanel>
@@ -59,7 +59,7 @@
                                             <TextBox Text="{Binding Config.Name}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,5" >
-                                            <TextBlock Text="心跳时间"  Width="120"/>
+                                            <TextBlock Text="心跳时间(ms)"  Width="120"/>
                                             <TextBox Text="{Binding Config.HeartbeatTime}"/>
                                         </DockPanel>
                                     </StackPanel>

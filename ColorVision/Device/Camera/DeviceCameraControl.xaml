@@ -52,6 +52,10 @@
                                             <TextBlock Text="接收信道:" Width="120"/>
                                             <TextBlock Text="{Binding Config.SubscribeTopic}"/>
                                         </DockPanel>
+                                        <DockPanel Margin="0,5" >
+                                            <TextBlock Text="心跳时间"  Width="120"/>
+                                            <TextBlock Text="{Binding Config.HeartbeatTime}"/>
+                                        </DockPanel>
                                     </StackPanel>
                                 </GroupBox>
 
@@ -129,6 +133,10 @@
                                             <DockPanel Margin="0,2" >
                                                 <TextBlock Text="界面展示名称" Width="120"/>
                                                 <TextBox Text="{Binding Config.Name}"/>
+                                            </DockPanel>
+                                            <DockPanel Margin="0,5" >
+                                                <TextBlock Text="心跳时间"  Width="120"/>
+                                                <TextBox Text="{Binding Config.HeartbeatTime}"/>
                                             </DockPanel>
                                         </StackPanel>
                                     </GroupBox>

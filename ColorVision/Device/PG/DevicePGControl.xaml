@@ -27,16 +27,20 @@
                                 <GroupBox Header="基本信息" Margin="0,5">
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="0,2">
-                                            <TextBlock Text="PG ID:" Width="120"/>
+                                            <TextBlock Text="PG ID" Width="120"/>
                                             <TextBlock Text="{Binding Config.ID}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,2">
-                                            <TextBlock Text="发送信道:" Width="120"/>
+                                            <TextBlock Text="发送信道" Width="120"/>
                                             <TextBlock Text="{Binding Config.SendTopic}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,2">
-                                            <TextBlock Text="接收信道:" Width="120"/>
+                                            <TextBlock Text="接收信道" Width="120"/>
                                             <TextBlock Text="{Binding Config.SubscribeTopic}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2" >
+                                            <TextBlock Text="心跳时间(ms)"  Width="120"/>
+                                            <TextBlock Text="{Binding Config.HeartbeatTime}"/>
                                         </DockPanel>
                                     </StackPanel>
                                 </GroupBox>
@@ -46,7 +50,7 @@
 
                         <Button  Grid.Column="1" Content="编辑"  Click="Button_Click_1"/>
                     </Grid>
-                    <Grid  x:Name="MQTTEditContent" Visibility="Visible">
+                    <Grid  x:Name="MQTTEditContent" Visibility="Collapsed">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="50"/>
@@ -64,7 +68,7 @@
                                             <TextBox Text="{Binding Config.Name}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,5" >
-                                            <TextBlock Text="心跳时间"  Width="120"/>
+                                            <TextBlock Text="心跳时间(ms)"  Width="120"/>
                                             <TextBox Text="{Binding Config.HeartbeatTime}"/>
                                         </DockPanel>
                                     </StackPanel>
