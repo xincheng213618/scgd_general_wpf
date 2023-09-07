@@ -1,6 +1,7 @@
 ﻿using ColorVision.Device.SMU;
 using NetMQ;
 using NetMQ.Sockets;
+using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
@@ -26,12 +27,30 @@ namespace ColorVision.Device.Image
         {
             DeviceImg = deviceImg;
             InitializeComponent();
+
+            DeviceImg.Service.OnImageData += Service_OnImageData;
+        }
+
+        private void Service_OnImageData(object sender, ImageDataEventArgs arg)
+        {
+            switch (arg.EventName)
+            {
+                case "GetAllFiles":
+                    List<string> data = JsonConvert.DeserializeObject<List<string>>(JsonConvert.SerializeObject(arg.Data));
+                    Application.Current.Dispatcher.Invoke(() => {
+                        FilesView.ItemsSource = data; 
+                    });
+                    break;
+                case "":
+                    break;
+                default:
+                    break;
+            }
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = DeviceImg.Service;
-            TextBox_fileName.Text = "20230407175926_1_src.tif";
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
             {
                 List<KeyValuePair<string, int>> KeyValues = new List<KeyValuePair<string, int>>();
@@ -69,7 +88,7 @@ namespace ColorVision.Device.Image
 
         private void Button_Click_Open(object sender, RoutedEventArgs e)
         {
-            doOpen(TextBox_fileName.Text);
+            doOpen(FilesView.Text);
         }
 
         private void doOpen(string fileName)
@@ -109,6 +128,11 @@ namespace ColorVision.Device.Image
             }
 
             handler?.Close();
+        }
+
+        private void Button_Click_Refresh(object sender, RoutedEventArgs e)
+        {
+            DeviceImg.Service.GetAllFiles();
         }
     }
 }
