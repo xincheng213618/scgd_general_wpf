@@ -13,6 +13,13 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Device.Image
 {
+    public class ImageEventName
+    {
+        public const string GetAllFiles = "GetAllFiles";
+        public const string UploadFile = "UploadFile";
+        public const string Open = "Open";
+        public const string Heartbeat = "Heartbeat";
+    }
     public class ImageDataEventArgs
     {
         public string EventName { get; set; }
@@ -54,32 +61,9 @@ namespace ColorVision.Device.Image
                         return Task.CompletedTask;
                     if (json.Code == 0 && json.ServiceName.Equals(Config.Code))
                     {
-                        if (json.EventName == "GetAllFiles")
+                        if (!json.EventName.Equals(ImageEventName.Heartbeat, StringComparison.Ordinal))
                         {
                             OnImageData?.Invoke(this, new ImageDataEventArgs(json.EventName, json.Data));
-                        }
-                        else if (json.EventName == "SetParam")
-                        {
-                            //MessageBox.Show("SetParam");
-                        }
-                        else if (json.EventName == "Open")
-                        {
-                            //MessageBox.Show("Open");
-                        }
-                        else if (json.EventName == "GetData")
-                        {
-                            //MessageBox.Show("GetData");
-                        }
-                        else if (json.EventName == "Close")
-                        {
-                            //MessageBox.Show("Close");
-                        }
-                        else if (json.EventName == "UnInit")
-                        {
-                            //MessageBox.Show("UnInit");
-                        }
-                        else if (json.EventName == "Heartbeat")
-                        {
 
                         }
                     }
@@ -96,19 +80,30 @@ namespace ColorVision.Device.Image
         {
             MsgSend msg = new MsgSend
             {
-                EventName = "Open",
+                EventName = ImageEventName.Open,
                 ServiceName = Config.Code,
                 Params = new Dictionary<string,object> { { "FileName", fileName } }
             };
             PublishAsyncClient(msg);
         }
 
-        internal void GetAllFiles()
+        public void GetAllFiles()
         {
             MsgSend msg = new MsgSend
             {
-                EventName = "GetAllFiles",
+                EventName = ImageEventName.GetAllFiles,
                 ServiceName = Config.Code
+            };
+            PublishAsyncClient(msg);
+        }
+
+        public void UploadFile(string fileName)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = ImageEventName.UploadFile,
+                ServiceName = Config.Code,
+                Params = new Dictionary<string, object> { { "FileName", fileName } }
             };
             PublishAsyncClient(msg);
         }
