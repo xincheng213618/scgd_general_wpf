@@ -175,8 +175,12 @@ namespace ColorVision.Device.Camera
 
         private void SendDemo3_Click(object sender, RoutedEventArgs e)
         {
-            string filename = DateTime.Now.ToString("yyyyMMddHHmmss") + ".tif";
-            Service.GetData(SliderexpTime.Value, SliderGain.Value, filename);
+            if (sender is Button button)
+            {
+                string filename = DateTime.Now.ToString("yyyyMMddHHmmss") + ".tif";
+                MsgRecord msgRecord = Service.GetData(SliderexpTime.Value, SliderGain.Value, filename);
+                SendCommand(button, msgRecord);
+            }
         }
 
         private void SendDemo4_Click(object sender, RoutedEventArgs e)
@@ -224,21 +228,26 @@ namespace ColorVision.Device.Camera
             if (sender is Button button)
             {
                 MsgRecord msgRecord = Service.SetCfwport();
-
-                var temp = button.Content;
-                button.Content = msgRecord.MsgRecordState.ToDescription();
-                MsgRecordStateChangedHandler msgRecordStateChangedHandler = async (e) =>
-                {
-                    button.Content = e.ToDescription();
-                    if (e != MsgRecordState.Send)
-                    {
-                        await Task.Delay(1000);
-                        button.Content = temp;
-                    }
-                };
-                msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
+                SendCommand(button, msgRecord);
             }
         }
+
+        public void SendCommand(Button button, MsgRecord msgRecord)
+        {
+            var temp = button.Content;
+            button.Content = msgRecord.MsgRecordState.ToDescription();
+            MsgRecordStateChangedHandler msgRecordStateChangedHandler = async (e) =>
+            {
+                button.Content = e.ToDescription();
+                if (e != MsgRecordState.Send)
+                {
+                    await Task.Delay(1000);
+                    button.Content = temp;
+                }
+            };
+            msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
+        }
+
 
         bool CameraOpen;
 

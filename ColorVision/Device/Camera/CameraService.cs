@@ -261,15 +261,14 @@ namespace ColorVision.Device.Camera
             return true;
         }
 
-        public bool GetData(double expTime, double gain, string saveFileName = "1.tif")
+        public MsgRecord GetData(double expTime, double gain, string saveFileName = "1.tif")
         {
             MsgSend msg = new MsgSend
             {
                 EventName = "GetData",
                 Params = new Dictionary<string, object>() { { "expTime", expTime }, { "gain", gain }, { "savefilename", saveFileName } }
             };
-            PublishAsyncClient(msg);
-            return true;
+            return PublishAsyncClient(msg);
         }
 
         public bool GetAllCameraID()
