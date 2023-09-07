@@ -153,10 +153,7 @@
                                             </DockPanel>
                                             <DockPanel Margin="0,2" >
                                                 <TextBlock Text="默认图像位数" Width="120"/>
-                                                <ComboBox  x:Name="ComboxCameraImageBpp"  Style="{StaticResource ComboBox.Small}"   SelectedValue="{Binding Config.ImageBpp}" Height="20" Margin="0,0,10,0" >
-                                                    <ComboBoxItem Content="8"/>
-                                                    <ComboBoxItem Content="16"/>
-                                                </ComboBox>
+                                                <ComboBox  x:Name="ComboxCameraImageBpp"  Style="{StaticResource ComboBox.Small}"   SelectedValue="{Binding Config.ImageBpp}"  SelectedValuePath="Key"  DisplayMemberPath="Value" Height="20" Margin="0,0,10,0" />
                                             </DockPanel>
                                         </StackPanel>
                                     </GroupBox>
@@ -166,7 +163,7 @@
                                             <DockPanel Margin="0,2">
                                                 <TextBlock  Text="默认增益" Width="120" />
                                                 <TextBox DockPanel.Dock="Right" Text="{Binding Config.Gain}"  Width="50"/>
-                                                <hc:PreviewSlider  TickFrequency ="0.1" IsSnapToTickEnabled="True"  SmallChange ="0.1" Value="{Binding Config.Gain}" Maximum="10"  >
+                                                <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" Value="{Binding Config.Gain}" Maximum="10"  >
                                                     <hc:PreviewSlider.PreviewContent>
                                                         <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0.00"/>
                                                     </hc:PreviewSlider.PreviewContent>
