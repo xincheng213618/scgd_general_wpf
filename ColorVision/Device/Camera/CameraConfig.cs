@@ -76,8 +76,8 @@ namespace ColorVision.Device.Camera
         private ImageChannel _Channel;
 
         public CameraVideoConfig VideoConfig { get; set; } = new CameraVideoConfig();
-        public double Gain { get => _Gain; set { _Gain = value; NotifyPropertyChanged(); } }
-        private double _Gain;
+        public int Gain { get => _Gain; set { _Gain = value; NotifyPropertyChanged(); } }
+        private int _Gain;
 
         [JsonIgnore]
         public bool IsExpThree {
