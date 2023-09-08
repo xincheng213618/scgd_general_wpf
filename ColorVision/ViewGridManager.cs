@@ -272,7 +272,7 @@ namespace ColorVision
                 if (Views[i].Parent is Grid grid)
                     grid.Children.Remove(Views[i]);
 
-                Grids[i].Children.Clear();
+                //Grids[i].Children.Clear();
                 Grids[i].Children.Add(Views[i]);
             }
         }
@@ -410,6 +410,11 @@ namespace ColorVision
             {
                 Grid grid = new Grid() { Margin = new Thickness(2, 2, 2, 2), };
                 Grids.Add(grid);
+
+                var text = new TextBlock { Text = (i + 1).ToString(),Foreground =Brushes.Red,HorizontalAlignment =HorizontalAlignment.Center,FontSize=30};
+                Panel.SetZIndex(text,999);
+
+                grid.Children.Add(text);
                 int location = Array.IndexOf(maps, i);
                 int row = (location / 10);
                 int col = (location % 10);
