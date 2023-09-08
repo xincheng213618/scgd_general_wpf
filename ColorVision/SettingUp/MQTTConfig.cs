@@ -11,6 +11,7 @@ namespace ColorVision.SettingUp
 {
     public class MQTTSetting : ViewModelBase
     {
+        private static readonly object _locker = new();
         public MQTTSetting()
         {
             if (File.Exists(GlobalConst.MQTTMsgRecordsFileName))
@@ -30,20 +31,23 @@ namespace ColorVision.SettingUp
             MsgRecords.CollectionChanged +=  async (s, e) =>  
             {
                 await Task.Delay(100);
-
-                if (MsgRecords.Count > CacheLength)
+                lock (_locker)
                 {
-                    int itemsToRemoveCount = MsgRecords.Count - CacheLength;
-
-                    // 移除旧的对象
-                    for (int i = 0; i < itemsToRemoveCount; i++)
+                    if (MsgRecords.Count > CacheLength)
                     {
-                        if (MsgRecords.Count > 0)
+                        int itemsToRemoveCount = MsgRecords.Count - CacheLength;
+
+                        // 移除旧的对象
+                        for (int i = 0; i < itemsToRemoveCount; i++)
                         {
-                            Application.Current.Dispatcher.Invoke(() => MsgRecords.RemoveAt(MsgRecords.Count - 1));
+                            if (MsgRecords.Count > 0)
+                            {
+                                Application.Current.Dispatcher.Invoke(() => MsgRecords.RemoveAt(MsgRecords.Count - 1));
+                            }
                         }
                     }
-                }  
+                }
+
             };
             AppDomain.CurrentDomain.ProcessExit += (s, e) =>
             {
