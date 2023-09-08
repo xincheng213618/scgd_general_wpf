@@ -3,6 +3,7 @@ using ColorVision.MVVM;
 using ColorVision.Template;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using NPOI.OpenXmlFormats.Spreadsheet;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -170,7 +171,7 @@ namespace ColorVision.Device.Camera
                         DeviceStatus = DeviceStatus.UnInit;
                         break;
                     default:
-                        DeviceStatus = DeviceStatus.UnInit;
+                        //DeviceStatus = DeviceStatus.UnInit;
                         break;
                 }
             }
@@ -198,19 +199,13 @@ namespace ColorVision.Device.Camera
             return true;
         }
 
-        public bool UnInit()
+        public MsgRecord UnInit()
         {
-            if (CheckIsRun())
-                return false;
-            MsgSend msg = new MsgSend
-            {
-                EventName = "UnInit",
-            };
-            PublishAsyncClient(msg);
-            return true;
+            MsgSend msg = new MsgSend  {  EventName = "UnInit", };
+            return PublishAsyncClient(msg);
         }
 
-        public void FilterWheelSetPort(int nIndex, int nPort, int eImgChlType)
+        public MsgRecord FilterWheelSetPort(int nIndex, int nPort, int eImgChlType)
         {
             MsgSend msg = new MsgSend
             {
@@ -218,7 +213,7 @@ namespace ColorVision.Device.Camera
                 Params = new Dictionary<string, object>() { { "Func",new List<ParamFunction> (){
                     new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", nIndex }, { "nPort", nPort },{ "eImgChlType" , eImgChlType } }  } } } }
             };
-            PublishAsyncClient(msg);
+            return PublishAsyncClient(msg);
         }
 
 
@@ -238,25 +233,143 @@ namespace ColorVision.Device.Camera
             };
             return PublishAsyncClient(msg);
         }
+        enum ImageChannelType
+        {
+            CM_Unknown = -1,
+            Gray_X = 0,
+            Gray_Y = 1,
+            Gray_Z = 2,
+            Gray_N = 20,
+            xCIE = 3,
+            yCIE = 4,
+            uCIE = 5,
+            vCIE = 6,
+            CIE_X = 7,
+            CIE_Y = 8,
+            CIE_Z = 9,
+            CIE_LvCxCy = 10,
+            LvCIE = 11
+        };
 
+        enum CalibrationType
+        {
+            DarkNoise = 0,
+            DefectWPoint = 1,
+            DefectBPoint = 2,
+            DefectPoint = 3,
+            DSNU = 4,
+            Uniformity = 5,
+            Luminance = 6,
+            LumOneColor = 7,
+            LumFourColor = 8,
+            LumMultiColor = 9,
+            LumColor = 10,
+            Distortion = 11,
+            ColorShift = 12,
+            Empty_Num = 13,
+        };
 
+        private static List<ParamFunction> Calibrations(CalibrationParam item)
+        {
+            var param = new List<ParamFunction>() { };
+            param.Add(SetPath("DarkNoise", item.SelectedDarkNoise, item.FileNameDarkNoise));
+            param.Add(SetPath("Luminance", item.SelectedLuminance, item.FileNameLuminance));
+            param.Add(SetPath("LumOneColor", item.SelectedColorOne, item.FileNameColorOne));
+            param.Add(SetPath("LumFourColor", item.SelectedColorFour, item.FileNameColorFour));
+            param.Add(SetPath("LumMultiColor", item.SelectedColorMulti, item.FileNameColorMulti));
+            param.Add(SetPath("DSNU", item.SelectedDSNU, item.FileNameDSNU));
+            param.Add(SetPath("Distortion", item.SelectedDistortion, item.FileNameDistortion));
+            param.Add(SetPath("DefectWPoint", item.SelectedDefectWPoint, item.FileNameDefectWPoint));
+            param.Add(SetPath("DefectBPoint", item.SelectedDefectBPoint, item.FileNameDefectBPoint));
+            param.Add(SetPath("FileNameUniformityX",item.SelectedUniformityX, item.FileNameUniformityX));
+            param.Add(SetPath("FileNameUniformityY",item.SelectedUniformityY, item.FileNameUniformityY));
+            param.Add(SetPath("FileNameUniformityZ", item.SelectedUniformityZ, item.FileNameUniformityZ));
+
+            ParamFunction SetPath(string typeName, bool bEnabled, string fileName)
+            {
+                CalibrationType eCaliType =0;
+                ImageChannelType eImgChlType =0;
+                switch (typeName)
+                {
+                    case "DarkNoise":
+                        eImgChlType = ImageChannelType.uCIE;
+                        eCaliType = CalibrationType.DarkNoise;
+                        break;
+                    case "DefectWPoint":
+                        eImgChlType = ImageChannelType.uCIE;
+                        eCaliType = CalibrationType.DefectWPoint;
+                        break;
+                    case "DefectBPoint":
+                        eImgChlType = ImageChannelType.uCIE;
+                        eCaliType = CalibrationType.DefectBPoint;
+                        break; 
+                    case "Luminance":
+                        eImgChlType = ImageChannelType.uCIE;
+                        eCaliType = CalibrationType.Luminance;
+                        break;
+                    case "LumOneColor":
+                        eImgChlType = ImageChannelType.uCIE;
+                        eCaliType = CalibrationType.LumOneColor;
+                        break;
+                    case "LumFourColor":
+                        eImgChlType = ImageChannelType.uCIE;
+                        eCaliType = CalibrationType.LumFourColor;
+                        break;
+                    case "LumMultiColor":
+                        eImgChlType = ImageChannelType.uCIE;
+                        eCaliType = CalibrationType.LumMultiColor;
+                        break;
+                    case "Distortion":
+                        eImgChlType = ImageChannelType.uCIE;
+                        eCaliType = CalibrationType.Distortion;
+                        break;
+                    case "DSNU":
+                        eImgChlType = ImageChannelType.uCIE;
+                        eCaliType = CalibrationType.DSNU;
+                        break;
+                    case "FileNameUniformityX":
+                        eImgChlType = ImageChannelType.CIE_X;
+                        eCaliType = CalibrationType.Uniformity;
+                        break;
+                    case "FileNameUniformityY":
+                        eImgChlType = ImageChannelType.CIE_X;
+                        eCaliType = CalibrationType.Uniformity;
+                        break;
+                    case "FileNameUniformityZ":
+                        eImgChlType = ImageChannelType.CIE_Z;
+                        eCaliType = CalibrationType.Uniformity;
+                        break;
+                };
+                
+                return new ParamFunction()
+                {
+                    Name = "CM_SetItemFile",
+                    Params = new Dictionary<string, object>() {
+                            { "eImgChlType",eImgChlType } ,
+                            { "eCaliType", eCaliType } ,
+                            { "bEnabled", bEnabled} ,
+                            { "filename", fileName }
+                        }
+
+                };
+            }
+
+            return param;
+        }
         public MsgRecord Calibration(CalibrationParam item)
         {
             MsgSend msg = new MsgSend
             {
-                EventName = "SetParam",
+                EventName = "Calibration",
                 Params = new Dictionary<string, object>() {
                 {
-                    "NameFuc", new List<ParamFunction>()
-                    {
-                        new ParamFunction(){ Name ="CM_InitCalibration" },
-                        new ParamFunction(){ Name ="CM_Calibration",Params =new CalibrationParamMQTT(item)},
-                    }
+                    "Func", Calibrations(item)
                 }
                 }
             };
 
-
+            //new ParamFunction() { Name = "CM_AddChannel" },
+            //new ParamFunction() { Name = "CM_InitCalibration" },
             //new ParamFunction() { Name = "CM_UnInitCalibration" },
             return PublishAsyncClient(msg);
         }
@@ -292,19 +405,10 @@ namespace ColorVision.Device.Camera
             return PublishAsyncClient(msg);
         }
 
-        public bool GetAllCameraID()
-        {
-            MsgSend msg = new MsgSend
-            {
-                EventName = "CM_GetAllSnID",
-            };
-            PublishAsyncClient(msg);
-            return true;
-        }
+        public MsgRecord GetAllCameraID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });
 
 
-
-        public MsgRecord SetCfwport()
+        public MsgRecord GetAutoExpTime()
         {
             MsgSend msg = new MsgSend
             {
@@ -329,23 +433,20 @@ namespace ColorVision.Device.Camera
             return PublishAsyncClient(msg);
         }
 
-        public bool SetLicense(string md5, string FileData)
+        public MsgRecord SetLicense(string md5, string FileData)
         {
             MsgSend msg = new MsgSend
             {
                 EventName = "SaveLicense",
-                Params = new Dictionary<string, object>() { { "eType", 0 }, { "FileName", md5 }, { "FileData", FileData } }
+                Params = new Dictionary<string, object>() { { "FileName", md5 }, { "FileData", FileData }, { "eType", 0 }}
             };
-            PublishAsyncClient(msg);
-            return true;
+
+            return PublishAsyncClient(msg); 
         }
 
         public MsgRecord Close()
         {
-            MsgSend msg = new MsgSend
-            {
-                EventName = "Close"
-            };
+            MsgSend msg = new MsgSend {  EventName = "Close" };
             return PublishAsyncClient(msg);
         }
 
@@ -360,58 +461,8 @@ namespace ColorVision.Device.Camera
                 MessageBox.Show("正在运行中");
                 return true;
             }
-            IsRun = false;
             return IsRun;
         }
-
-
-
-        public class CalibrationParamMQTT : ViewModelBase
-        {
-            public CalibrationParamMQTT(CalibrationParam item)
-            {
-                Luminance = SetPath(item.SelectedLuminance, item.FileNameLuminance);
-                LumOneColor = SetPath(item.SelectedColorOne, item.FileNameColorOne);
-                LumFourColor = SetPath(item.SelectedColorFour, item.FileNameColorFour);
-                LumMultiColor = SetPath(item.SelectedColorMulti, item.FileNameColorMulti);
-                DarkNoise = SetPath(item.SelectedDarkNoise, item.FileNameDarkNoise);
-                DSNU = SetPath(item.SelectedDSNU, item.FileNameDSNU);
-                Distortion = SetPath(item.SelectedDistortion, item.FileNameDistortion);
-                DefectWPoint = SetPath(item.SelectedDefectWPoint, item.FileNameDefectWPoint);
-                DefectBPoint = SetPath(item.SelectedDefectBPoint, item.FileNameDefectBPoint);
-                UniformityX = SetPath(item.SelectedUniformityX, item.FileNameUniformityX);
-                UniformityY = SetPath(item.SelectedUniformityY, item.FileNameUniformityY);
-                UniformityZ = SetPath(item.SelectedUniformityZ, item.FileNameUniformityZ);
-
-            }
-            private static string? SetPath(bool Check, string Name)
-            {
-                return Check && Name != null ? Path.IsPathRooted(Name) ? Name : Environment.CurrentDirectory + "\\" + Name : null;
-            }
-
-            public string? Luminance { get; set; }
-            [JsonProperty("Uniformity_X")]
-            public string? UniformityX { get; set; }
-            [JsonProperty("Uniformity_Y")]
-            public string? UniformityY { get; set; }
-            [JsonProperty("Uniformity_Z")]
-            public string? UniformityZ { get; set; }
-            public string? LumOneColor { get; set; }
-            public string? LumFourColor { get; set; }
-            public string? LumMultiColor { get; set; }
-            public string? DarkNoise { get; set; }
-            public string? DSNU { get; set; }
-            public string? Distortion { get; set; }
-            public string? DefectWPoint { get; set; }
-            public string? DefectBPoint { get; set; }
-
-
-
-
-        }
-
-
-
     }
 
 

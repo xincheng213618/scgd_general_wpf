@@ -219,7 +219,7 @@ namespace ColorVision.Device.Camera
 
         private void AutoExplose_Click(object sender, RoutedEventArgs e)
         {
-            Service.SetCfwport();
+            Service.GetAutoExpTime();
         }
 
         bool CameraOpen;

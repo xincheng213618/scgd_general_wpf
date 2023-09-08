@@ -242,7 +242,7 @@ namespace ColorVision.Device.Camera
         {
             if (sender is Button button)
             {
-                MsgRecord msgRecord = Service.SetCfwport();
+                MsgRecord msgRecord = Service.GetAutoExpTime();
                 Helpers.SendCommand(button, msgRecord);
             }
         }
