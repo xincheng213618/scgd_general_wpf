@@ -615,11 +615,11 @@ namespace ColorVision
             public WindowState WindowState { get; set; }
 
             public ResizeMode ResizeMode { get; set; }
-
-
         }
-        private WindowStatus OldWindowStatus { get; set; }
 
+
+
+        private WindowStatus OldWindowStatus { get; set; }
 
         private void Button8_Click(object sender, RoutedEventArgs e)
         {
