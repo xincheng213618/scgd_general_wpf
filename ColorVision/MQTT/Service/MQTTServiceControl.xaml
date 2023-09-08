@@ -48,6 +48,10 @@
                                     <TextBlock Text="上次连接:" Width="120"/>
                                     <TextBlock Text="{Binding ServiceConfig.LastAliveTime}"/>
                                 </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="心跳:" Width="120"/>
+                                    <TextBlock Text="{Binding ServiceConfig.HeartbeatTime}"/>
+                                </DockPanel>
                             </StackPanel>
                         </GroupBox>
 
@@ -74,6 +78,10 @@
                     <DockPanel Margin="5" >
                         <TextBlock Text="服务Code" Width="120"/>
                         <TextBox Text="{Binding SysResourceModel.Code}"/>
+                    </DockPanel>
+                    <DockPanel Margin="5">
+                        <TextBlock Text="上次连接:" Width="120"/>
+                        <TextBox Text="{Binding ServiceConfig.HeartbeatTime}"/>
                     </DockPanel>
                 </StackPanel>
                 <Button Grid.Column="1"  Content="提交" Click="Button_Click" Command="{Binding SaveCommand}" />
