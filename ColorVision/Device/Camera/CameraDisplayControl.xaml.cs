@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 using Panuon.WPF.UI;
 using System.Reflection.Emit;
 using cvColorVision;
+using ColorVision.Template;
 
 namespace ColorVision.Device.Camera
 {
@@ -42,6 +43,11 @@ namespace ColorVision.Device.Camera
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Service;
+
+            ComboxCalibrationTemplate.ItemsSource = TemplateControl.GetInstance().CalibrationParams;
+            ComboxCalibrationTemplate.SelectedIndex = 0;
+            ComboxPoiTemplate.ItemsSource = TemplateControl.GetInstance().PoiParams;
+            ComboxPoiTemplate.SelectedIndex = 0;
 
             StackPanelOpen.Visibility = Visibility.Collapsed;
             StackPanelImage.Visibility = Visibility.Collapsed;
@@ -350,6 +356,31 @@ namespace ColorVision.Device.Camera
         private void GhostShadow_Click(object sender, RoutedEventArgs e)
         {
 
+        }
+
+        private void ComboxCalibrationTemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
+            {
+                Calibration1.SetCalibrationParam(param);
+            }
+        }
+
+        private void Calibration_Click(object sender, RoutedEventArgs e)
+        {
+            if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
+            {
+                Service.Calibration(param);
+            }
+        }
+
+        private void PoiClick(object sender, RoutedEventArgs e)
+        {
+            if (ComboxPoiTemplate.SelectedValue is PoiParam param)
+            {
+                Helpers.SendCommand(Service.SetPoiParam(param),"正在计算关注点");
+            }
+            
         }
     }
 }

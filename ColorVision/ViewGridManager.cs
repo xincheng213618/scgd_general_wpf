@@ -229,7 +229,7 @@ namespace ColorVision
             if (left)
             {
                 Grid.SetRowSpan(Grids[0], 2);
-                MainView.Children.Remove(gridSplitters[0][0]);
+                MainView.Children.Remove(gridSplitters[0][1]);
                 Grid.SetColumn(Grids[2],1);
             }
             else

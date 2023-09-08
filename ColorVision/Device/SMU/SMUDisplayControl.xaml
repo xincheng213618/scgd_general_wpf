@@ -73,8 +73,8 @@
                     </StackPanel>
                 </GroupBox>
                 <DockPanel Margin="2">
-                    <TextBlock Text="模板：" VerticalAlignment="Center" Width="40"/>
-                    <ComboBox  x:Name="ComboxVITemplate"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,0,5,0"/>
+                    <TextBlock Text="资源模板：" VerticalAlignment="Center" Width="60"/>
+                    <ComboBox  x:Name="ComboxVITemplate"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key"  Margin="0,0,0,0"/>
                 </DockPanel>
 
                 <GroupBox Margin="0,5" Header="扫描" >
@@ -115,7 +115,7 @@
 
                 <DockPanel>
                     <TextBlock Text="输出视图：" VerticalAlignment="Center" Width="60"/>
-                    <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"  Height="20"  />
+                    <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"   />
                 </DockPanel>
             </StackPanel>
         </Border>

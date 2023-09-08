@@ -14,7 +14,7 @@
              xmlns:hc="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:CameraService}"
-             d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized">
+             d:DesignHeight="800" d:DesignWidth="300" Initialized="UserControl_Initialized">
     <StackPanel x:Name="StackPanelCamera"  Margin="0,5">
         <DockPanel>
             <ToggleButton  x:Name="ToggleButton1"  Style="{StaticResource ButtonPageControl1}" Content="{Binding Config.Name}"  FontSize="15"  IsChecked="True" />
@@ -141,21 +141,44 @@
                     <UniformGrid Columns="2">
                         <Button Content="打开测试图像"   Click="Button_Click"/>
                         <Button Content="打开二进制测试图像" Click="ButtonCV_Click"/>
-                        <Button Content="关注点" Click="ButtonCV_Click"/>
                         <Button Content="FSR" Click="FSR_Click"/>
                         <Button Content="FOV" Click="FOV_Click"/>
                         <Button Content="鬼影" Click="GhostShadow_Click"/>
                     </UniformGrid>
-                    
-                    
-                    <GroupBox  Header="矫正模板">
-                        <Template:Calibration x:Name="Calibration1" />
+
+                    <GroupBox Header="关注点" Margin="0,5">
+                        <StackPanel>
+                            <DockPanel Margin="0,2">
+                                <TextBlock Text="关注点模板：" VerticalAlignment="Center" Width="100"/>
+                                <ComboBox  x:Name="ComboxPoiTemplate"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                            </DockPanel>
+                            <DockPanel Margin="0,2">
+                                <Button  Content="应用"  HorizontalAlignment="Right" Click="PoiClick" />
+                            </DockPanel>
+                        </StackPanel>
                     </GroupBox>
 
-                    <DockPanel Margin="5" >
-                        <TextBlock Text="输出视图：" VerticalAlignment="Center" Width="60"/>
+                    <GroupBox Header="校正" Margin="0,5">
+                        <StackPanel>
+                            <DockPanel Margin="0,2">
+                                <TextBlock Text="校正模板：" VerticalAlignment="Center" Width="80"/>
+                                <CheckBox x:Name="CheckBoxCalibration" DockPanel.Dock="Right"  Margin="5,0"  />
+                                <ComboBox  x:Name="ComboxCalibrationTemplate"  Style="{StaticResource ComboBox.Small}"  SelectionChanged="ComboxCalibrationTemplate_SelectionChanged" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                            </DockPanel>
+                            <DockPanel Margin="0,2">
+                                <Button  Content="应用"  HorizontalAlignment="Right" Click="Calibration_Click" />
+                            </DockPanel>
+                            <Template:Calibration x:Name="Calibration1"  Visibility="{Binding ElementName=CheckBoxCalibration,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}"  />
+                        </StackPanel>
+                    </GroupBox>
+
+
+
+                    <DockPanel Margin="5,2" >
+                        <TextBlock Text="输出视图：" VerticalAlignment="Center" Width="100"/>
                         <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"  Height="20"  />
                     </DockPanel>
+
                 </StackPanel>
 
 

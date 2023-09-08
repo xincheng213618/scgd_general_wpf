@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Reflection.Emit;
 using System.Windows;
 using System.Windows.Media.Media3D;
 
@@ -114,7 +115,7 @@ namespace ColorVision.Device.Camera
                         DeviceStatus = DeviceStatus.UnInit;
                         break;
                     case "SetParam":
-                        MessageBox.Show("SetParam");
+
                         break;
                     case "Close":
                         DeviceStatus = DeviceStatus.Closed;
@@ -220,7 +221,8 @@ namespace ColorVision.Device.Camera
             PublishAsyncClient(msg);
         }
 
-        public bool Calibration()
+
+        public MsgRecord SetPoiParam(PoiParam param)
         {
             MsgSend msg = new MsgSend
             {
@@ -229,15 +231,34 @@ namespace ColorVision.Device.Camera
                 {
                     "NameFuc", new List<ParamFunction>()
                     {
-                        new ParamFunction(){Name ="CM_InitCalibration" },
-                        new ParamFunction(){Name ="CM_UnInitCalibration" },
+                        new ParamFunction(){ Name ="CM_SetPoiParam",Params  = param},
+                    }
+                }
+                }
+            };
+            return PublishAsyncClient(msg);
+        }
+
+
+        public MsgRecord Calibration(CalibrationParam item)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "SetParam",
+                Params = new Dictionary<string, object>() {
+                {
+                    "NameFuc", new List<ParamFunction>()
+                    {
+                        new ParamFunction(){ Name ="CM_InitCalibration" },
+                        new ParamFunction(){ Name ="CM_Calibration",Params =new CalibrationParamMQTT(item)},
                     }
                 }
                 }
             };
 
-            PublishAsyncClient(msg);
-            return true;
+
+            //new ParamFunction() { Name = "CM_UnInitCalibration" },
+            return PublishAsyncClient(msg);
         }
 
         public void OpenVideo()
@@ -358,6 +379,10 @@ namespace ColorVision.Device.Camera
                 Distortion = SetPath(item.SelectedDistortion, item.FileNameDistortion);
                 DefectWPoint = SetPath(item.SelectedDefectWPoint, item.FileNameDefectWPoint);
                 DefectBPoint = SetPath(item.SelectedDefectBPoint, item.FileNameDefectBPoint);
+                UniformityX = SetPath(item.SelectedUniformityX, item.FileNameUniformityX);
+                UniformityY = SetPath(item.SelectedUniformityY, item.FileNameUniformityY);
+                UniformityZ = SetPath(item.SelectedUniformityZ, item.FileNameUniformityZ);
+
             }
             private static string? SetPath(bool Check, string Name)
             {

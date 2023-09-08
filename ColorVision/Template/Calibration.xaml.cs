@@ -26,6 +26,12 @@ namespace ColorVision.Template
             this.DataContext = CalibrationParam;
         }
 
+        public void SetCalibrationParam(CalibrationParam calibrationParam)
+        {
+            this.CalibrationParam = calibrationParam;
+            this.DataContext = CalibrationParam;
+        }
+
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
