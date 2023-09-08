@@ -161,6 +161,13 @@
                     </ToggleButton>
                 </ToolBar>
             </StackPanel>
+
+            <Border x:Name="BorderPropertieslayers" Background="#22000000" Visibility="Collapsed" Grid.Row="0" Grid.RowSpan="2" VerticalAlignment="Top" Margin="0,60,20,0" HorizontalAlignment="Right"  Height="50" Width="150" CornerRadius="10" >
+                <StackPanel Margin="5">
+                    <TextBlock Text="{Binding ElementName=ImageShow,Path=Source.Width}" Foreground="White" HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding ElementName=ImageShow,Path=Source.Height}" Foreground="White"  HorizontalAlignment="Center" />
+                </StackPanel>
+            </Border>
         </Grid>
     </Grid>
 

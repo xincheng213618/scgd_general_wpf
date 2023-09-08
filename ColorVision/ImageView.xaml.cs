@@ -175,6 +175,10 @@ namespace ColorVision
                 {
                     Zoombox1.Zoom(0.9);
                 }
+                else if (e.Key ==Key.R )
+                {
+                    BorderPropertieslayers.Visibility = BorderPropertieslayers.Visibility == Visibility.Visible? Visibility.Collapsed: Visibility.Visible;
+                }
             };
         }
         
