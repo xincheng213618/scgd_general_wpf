@@ -104,7 +104,7 @@ namespace ColorVision.Device.Spectrum
             btn_autoTest.IsEnabled = enable;
             btn_oneTest.IsEnabled = enable;
             btn_oneInitDark.IsEnabled = enable;
-            btn_getPatam.IsEnabled = enable;
+            //btn_getPatam.IsEnabled = enable;
         }
 
         public void SpectrumClear()

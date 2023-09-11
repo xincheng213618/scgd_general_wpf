@@ -47,11 +47,15 @@
                                 <GroupBox Header="配置" Margin="0,5">
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="0,2">
-                                            <TextBlock Text="最大积分时间" Width="120"/>
+                                            <TextBlock Text="自动测试间隔(ms)" Width="120"/>
+                                            <TextBlock Text="{Binding Config.AutoTestTime}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="最大积分时间(ms)" Width="120"/>
                                             <TextBlock Text="{Binding Config.TimeLimit}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,2">
-                                            <TextBlock Text="起始积分时间" Width="120"/>
+                                            <TextBlock Text="起始积分时间(ms)" Width="120"/>
                                             <TextBlock Text="{Binding Config.TimeFrom}"/>
                                         </DockPanel>
                                     </StackPanel>
@@ -88,17 +92,17 @@
                                 <GroupBox Header="配置信息" Margin="0,5">
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="0,5" >
-                                            <TextBlock Text="自动测试间隔"  Width="120"/>
+                                            <TextBlock Text="自动测试间隔(ms)"  Width="120"/>
                                             <TextBox Text="{Binding Config.AutoTestTime}"/>
                                         </DockPanel>
 
                                         <DockPanel Margin="0,5" >
-                                            <TextBlock Text="最大积分时间"  Width="120"/>
+                                            <TextBlock Text="最大积分时间(ms)"  Width="120"/>
                                             <TextBox Text="{Binding Config.TimeLimit}"/>
                                         </DockPanel>
 
                                         <DockPanel Margin="0,5" >
-                                            <TextBlock Text="起始积分时间"  Width="120"/>
+                                            <TextBlock Text="起始积分时间(ms)"  Width="120"/>
                                             <TextBox Text="{Binding Config.TimeFrom}"/>
                                         </DockPanel>
                                     </StackPanel>

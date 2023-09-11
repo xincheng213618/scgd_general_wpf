@@ -30,7 +30,7 @@ namespace ColorVision.Device.PG
 
             this.PGService.HeartbeatEvent += (e) => PGService_DeviceStatusHandler(e.DeviceStatus);
 
-            if (this.PGService.Config.IsTCPIP)
+            if (this.PGService.Config.IsNet)
             {
                 TextBlockPGIP.Text = "IP地址";
                 TextBlockPGPort.Text = "端口";
@@ -74,7 +74,7 @@ namespace ColorVision.Device.PG
                     MessageBox.Show("端口配置错误");
                     return;
                 }
-                if (this.PGService.Config.IsTCPIP) PGService.Open(CommunicateType.Tcp, TextBoxPGIP.Text, port);
+                if (this.PGService.Config.IsNet) PGService.Open(CommunicateType.Tcp, TextBoxPGIP.Text, port);
                 else PGService.Open(CommunicateType.Serial, TextBoxPGIP.Text, port);
             }
             else
