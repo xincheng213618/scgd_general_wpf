@@ -44,7 +44,26 @@
                                         </DockPanel>
                                     </StackPanel>
                                 </GroupBox>
-
+                                <GroupBox Header="配置信息" Margin="0,5">
+                                    <StackPanel Margin="5">
+                                        <DockPanel Margin="0,5" >
+                                            <TextBlock Text="类别型号" Width="120"/>
+                                            <TextBlock Text="{Binding Config.Category}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,5" >
+                                            <TextBlock Text="通讯方式" Width="120"/>
+                                            <TextBlock Text="{Binding IsNet}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,5" >
+                                            <TextBlock  Text="IP地址" Width="120"/>
+                                            <TextBlock Text="{Binding Config.Addr}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,5" >
+                                            <TextBlock  Text="端口" Width="120"/>
+                                            <TextBlock Text="{Binding Config.Port}"/>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </GroupBox>
                             </StackPanel>
                         </Border>
 

@@ -21,5 +21,13 @@ namespace ColorVision.Device.PG
         public override UserControl GenDeviceControl() => new DevicePGControl(this);
         public override UserControl GenDisplayControl() => Control;
 
+        public string IsNet
+        {
+            get
+            {
+                if (Config.IsNet) { return "网络"; }
+                else { return "串口"; }
+            }
+        }
     }
 }
