@@ -69,10 +69,14 @@ namespace ColorVision.Device.SMU
                     menuItem1.Click += (s, e) => { ViewGridManager.GetInstance().SetViewNum(-1); };
                     MenuItem menuItem2 = new MenuItem() { Header = "独立窗口中显示" };
                     menuItem2.Click += (s, e) => { View.ViewIndex = -2; };
+                    MenuItem menuItem3 = new MenuItem() { Header = "隐藏" };
+                    menuItem3.Click += (s, e) => { View.ViewIndex = -1; };
                     this.ContextMenu = new ContextMenu();
                     this.ContextMenu.Items.Add(menuItem);
                     this.ContextMenu.Items.Add(menuItem1);
                     this.ContextMenu.Items.Add(menuItem2);
+                    this.ContextMenu.Items.Add(menuItem3);
+
 
                 }
             };

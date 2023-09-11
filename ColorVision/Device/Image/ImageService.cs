@@ -59,7 +59,7 @@ namespace ColorVision.Device.Image
                     MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg);
                     if (json == null)
                         return Task.CompletedTask;
-                    if (json.Code == 0 && json.ServiceName.Equals(Config.Code))
+                    if (json.Code == 0 && json.ServiceName.Equals(Config.Code, StringComparison.Ordinal))
                     {
                         if (!json.EventName.Equals(ImageEventName.Heartbeat, StringComparison.Ordinal))
                         {

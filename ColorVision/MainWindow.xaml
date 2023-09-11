@@ -85,7 +85,6 @@
                     <MenuItem Header="四色校正" Click="MenuItem_Click8"/>
                 </MenuItem>-->
                 <MenuItem  x:Name="MenuStatusBar"  d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  Header="窗口(_W)">
-                    <MenuItem Header="{x:Static resx:Resource.MenuViewSidebar}"  IsChecked="{Binding SoftwareSetting.IsOpenSidebar}"  Click="MenuStatusBar_Click"/>
                     <MenuItem Header="{x:Static resx:Resource.MenuViewStatusBar}" IsChecked="{Binding SoftwareSetting.IsOpenStatusBar}"  Click="MenuStatusBar_Click" />
                     <Separator/>
                     <MenuItem Header="保存窗口布局"  Click="MenuStatusBar_Click" />
@@ -119,8 +118,10 @@
                 </UIElement.RenderTransform>
                 <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" >
                     <StackPanel x:Name="SPDisplay" >
-                        <StackPanel x:Name="StackPanelMQTT" Initialized="StackPanelMQTT_Initialized" Width="300" >
-                        </StackPanel>
+                        <Viewbox Width="{Binding ElementName=LeftMainContent,Path=ActualWidth}" >
+                            <StackPanel x:Name="StackPanelMQTT" Width="300" Initialized="StackPanelMQTT_Initialized"  >
+                            </StackPanel>
+                        </Viewbox>
                     </StackPanel>
                 </ScrollViewer>
             </Grid>

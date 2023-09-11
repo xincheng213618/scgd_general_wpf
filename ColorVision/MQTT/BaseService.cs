@@ -208,9 +208,11 @@ namespace ColorVision.MQTT
             };
             timer.AutoReset = false;
             timer.Enabled = true;
+            lock (_locker)
+            {
+                timers.Add(guid.ToString(), timer);
+            }
             timer.Start();
-            timers.Add(guid.ToString(), timer);
-
             return msgRecord;
         }
 
@@ -273,7 +275,7 @@ namespace ColorVision.MQTT
     }
     public enum MsgRecordState
     {
-        [Description("命令发送")]
+        [Description("已经发送")]
         Send,
         [Description("命令成功")]
         Success,

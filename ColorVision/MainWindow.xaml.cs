@@ -115,7 +115,7 @@ namespace ColorVision
                 MessageBox.Show("窗口创建错误");
                 Environment.Exit(-1);
             }
-            //ViewGridManager.GetInstance().SetViewNum(-1);
+            ViewGridManager.GetInstance().SetViewNum(1);
 
             SPDisplay.Children.Add(new POIDisplayControl());
         }

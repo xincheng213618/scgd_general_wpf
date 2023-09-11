@@ -15,7 +15,6 @@ namespace ColorVision.Device
 {
     internal static class Helpers
     {
-
         static IPendingHandler handler { get; set; }
         public static IPendingHandler SendCommand(MsgRecord msgRecord,string Msg)
         {
@@ -26,12 +25,16 @@ namespace ColorVision.Device
             };
             MsgRecordStateChangedHandler msgRecordStateChangedHandler = async (e) =>
             {
-                handler?.UpdateMessage(e.ToDescription());
-                if (e != MsgRecordState.Send)
+                try
                 {
-                    await Task.Delay(500);
-                    handler?.Close();
+                    handler?.UpdateMessage(e.ToDescription());
+                    if (e != MsgRecordState.Send)
+                    {
+                        await Task.Delay(500);
+                        handler?.Close();
+                    }
                 }
+                catch { }
             };
             msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
             return handler;
