@@ -87,6 +87,8 @@ namespace ColorVision.Device.Camera
                     ViewGridManager.GetInstance().SetViewIndex(View, KeyValue.Value);
                 }
             };
+            View.View.ViewIndex = -1;
+
 
             if (Service.DeviceStatus == DeviceStatus.Init)
             {

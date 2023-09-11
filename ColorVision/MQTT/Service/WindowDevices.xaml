@@ -58,10 +58,11 @@
                 </TreeView.ItemContainerStyle>
 
             </TreeView>
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Grid.Column="1" Margin="5">
+                <StackPanel x:Name="StackPanelShow" Grid.Column="1" Margin="5" >
+                </StackPanel>
+            </ScrollViewer>
 
-            <StackPanel x:Name="StackPanelShow" Grid.Column="1" Margin="5" >
-
-            </StackPanel>
         </Grid>
         
         <Border  Grid.Row="2">

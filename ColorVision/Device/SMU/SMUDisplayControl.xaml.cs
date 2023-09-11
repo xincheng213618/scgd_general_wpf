@@ -83,6 +83,7 @@ namespace ColorVision.Device.SMU
 
                 }
             };
+            View.View.ViewIndex = -1;
         }
 
         private void SMUService_ResultHandler(SMUResultData data)

@@ -94,6 +94,7 @@ namespace ColorVision.MQTT.Service
                     CameraConfig cameraConfig1 = new CameraConfig
                     {
                         ID = TextBox_Code.Text,
+                        Name = TextBox_Name.Text,
                         CameraType = CameraType.LVQ,
                         TakeImageMode = TakeImageMode.Normal,
                         ImageBpp = ImageBpp.bpp8
@@ -106,7 +107,8 @@ namespace ColorVision.MQTT.Service
                 {
                     PGConfig pGConfig = new PGConfig
                     {
-                        ID = TextBox_Code.Text
+                        ID = TextBox_Code.Text,
+                        Name = TextBox_Name.Text
                     };
                     SysResourceModel model = saveConfigInfo(pGConfig, sysResource);
                     if (model != null)
@@ -116,7 +118,8 @@ namespace ColorVision.MQTT.Service
                 {
                     SpectrumConfig config = new SpectrumConfig
                     {
-                        ID = TextBox_Code.Text
+                        ID = TextBox_Code.Text,
+                        Name = TextBox_Name.Text
                     };
                     SysResourceModel model = saveConfigInfo(config, sysResource);
                     if (model != null)
@@ -127,7 +130,8 @@ namespace ColorVision.MQTT.Service
                 {
                     SMUConfig config = new SMUConfig
                     {
-                        ID = TextBox_Code.Text
+                        ID = TextBox_Code.Text,
+                        Name = TextBox_Name.Text
                     };
                     SysResourceModel model = saveConfigInfo(config, sysResource);
                     if (model != null)
