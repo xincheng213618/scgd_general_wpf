@@ -16,39 +16,34 @@ namespace ColorVision.SettingUp
         {
             if (File.Exists(GlobalConst.MQTTMsgRecordsFileName))
             {
-                try
-                {
-                    MsgRecords = Newtonsoft.Json.JsonConvert.DeserializeObject<ObservableCollection<MsgRecord>>(File.ReadAllText(GlobalConst.MQTTMsgRecordsFileName)) ?? new ObservableCollection<MsgRecord>();
-
+                try {
+                    MsgRecords = JsonConvert.DeserializeObject<ObservableCollection<MsgRecord>>(File.ReadAllText(GlobalConst.MQTTMsgRecordsFileName)) ?? new ObservableCollection<MsgRecord>();
                 }
-                catch
-                {
+                catch {
                     MsgRecords = new ObservableCollection<MsgRecord>();
                 }
             }
             else
                 MsgRecords = new ObservableCollection<MsgRecord>();
-            MsgRecords.CollectionChanged +=  async (s, e) =>  
+
+
+            var timer = new System.Timers.Timer
             {
-                await Task.Delay(100);
+                Interval = TimeSpan.FromSeconds(1).TotalMilliseconds,
+                AutoReset = true,
+            };
+            timer.Elapsed +=(s,e)=>
+            {
                 lock (_locker)
                 {
-                    if (MsgRecords.Count > CacheLength)
-                    {
-                        int itemsToRemoveCount = MsgRecords.Count - CacheLength;
-
-                        // 移除旧的对象
+                    int itemsToRemoveCount = MsgRecords.Count - CacheLength;
+                    if (itemsToRemoveCount > 0)
                         for (int i = 0; i < itemsToRemoveCount; i++)
-                        {
-                            if (MsgRecords.Count > 0)
-                            {
-                                Application.Current.Dispatcher.Invoke(() => MsgRecords.RemoveAt(MsgRecords.Count - 1));
-                            }
-                        }
-                    }
+                            if (MsgRecords.Count > 1)
+                                MsgRecords.RemoveAt(MsgRecords.Count - 1);
                 }
-
             };
+            timer.Start();
             AppDomain.CurrentDomain.ProcessExit += (s, e) =>
             {
                 JsonSerializerSettings settings = new JsonSerializerSettings
