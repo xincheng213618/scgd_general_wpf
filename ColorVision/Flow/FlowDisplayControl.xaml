@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Flow"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800" Initialized="UserControl_Initialized" >
+             d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized" >
         <StackPanel Margin="0,5" >
             <ToggleButton  x:Name="ToggleButton_flow"  Style="{StaticResource ButtonPageControl1}" Background="Transparent"  Content="流程"  FontSize="15"  IsChecked="True" />
             <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton_flow,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >

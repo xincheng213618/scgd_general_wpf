@@ -195,7 +195,6 @@ namespace ColorVision.MQTT
             MsgRecord msgRecord = new MsgRecord {SendTopic=SendTopic,SubscribeTopic =SubscribeTopic ,MsgID = guid.ToString(), SendTime = DateTime.Now, MsgSend = msg,MsgRecordState = MsgRecordState.Send};
             
             MQTTSetting.MsgRecords.Insert(0,msgRecord);
-
             MsgRecords.Add(msgRecord);
 
             Timer timer = new Timer(MQTTSetting.SendTimeout*1000);
@@ -208,9 +207,11 @@ namespace ColorVision.MQTT
             };
             timer.AutoReset = false;
             timer.Enabled = true;
+            lock (_locker)
+            {
+                timers.Add(guid.ToString(), timer);
+            }
             timer.Start();
-            timers.Add(guid.ToString(), timer);
-
             return msgRecord;
         }
 

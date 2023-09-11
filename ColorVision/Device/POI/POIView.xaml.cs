@@ -1,4 +1,5 @@
 ﻿using ColorVision.MySql.Service;
+using ColorVision.Template;
 using ScottPlot;
 using ScottPlot.Plottable;
 using System;
@@ -11,32 +12,25 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
-using static cvColorVision.GCSDLL;
 
-namespace ColorVision.Device.Spectrum
+namespace ColorVision.Device.POI
 {
-
-
     /// <summary>
     /// SpectrumView.xaml 的交互逻辑
     /// </summary>
-    public partial class SpectrumView : UserControl,IView
+    public partial class POIView : UserControl,IView
     {
-        private ResultService spectumResult;
-
         public View View { get; set; }
-
-        public SpectrumView()
+        private ResultService spectumResult;
+        public POIView()
         {
             spectumResult = new ResultService();
             InitializeComponent();
         }
 
-
         static int ResultNum;
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-
             TextBox TextBox1 = new TextBox() { Width = 10, Background = System.Windows.Media.Brushes.Transparent, BorderThickness = new Thickness(0), Foreground = System.Windows.Media.Brushes.Transparent };
             Grid.SetColumn(TextBox1, 0);
             Grid.SetRow(TextBox1, 0);
@@ -82,23 +76,22 @@ namespace ColorVision.Device.Spectrum
                     this.ContextMenu.Items.Add(menuItem1);
                     this.ContextMenu.Items.Add(menuItem2);
                     this.ContextMenu.Items.Add(menuItem3);
+
                 }
             };
-            wpfplot1.Plot.Title("相对光谱曲线");
-            wpfplot1.Plot.XLabel("波长[nm]");
-            wpfplot1.Plot.YLabel("相对光谱");
+
+
+
 
             GridView gridView = new GridView();
-
-            List<string> headers = new List<string> { "序号", "测量时间", "IP", "亮度Lv(cd/m2)", "蓝光", "色度x", "色度y", "色度u", "色度v", "相关色温(K)", "主波长Ld(nm)", "色纯度(%)", "峰值波长Lp(nm)", "显色性指数Ra", "半波宽", "电压", "电流" };
-
+            List<string> headers = new List<string> { "序号","属性", "测量时间" };
             for (int i = 0; i < headers.Count; i++)
             {
                 gridView.Columns.Add(new GridViewColumn() { Header = headers[i], Width = 100, DisplayMemberBinding = new Binding(string.Format("[{0}]", i)) });
             }
             listView1.View = gridView;
 
-            List<string> headers2 = new List<string> { "波长", "相对光谱", "绝对光谱" };
+            List<string> headers2 = new List<string> { "电流","电压" };
 
             GridView gridView2 = new GridView();
             for (int i = 0; i < headers2.Count; i++)
@@ -109,14 +102,18 @@ namespace ColorVision.Device.Spectrum
             listView2.View = gridView2;
 
             wpfplot1.Plot.Clear();
-            wpfplot1.Plot.SetAxisLimitsX(380, 810);
-            wpfplot1.Plot.SetAxisLimitsY(0, 1);
-            wpfplot1.Plot.XAxis.SetBoundary(370, 850);
-            wpfplot1.Plot.YAxis.SetBoundary(0, 1);
+            wpfplot2.Plot.Clear();
 
             listView1.Visibility = Visibility.Collapsed;
             listView2.Visibility = Visibility.Collapsed;
 
+            wpfplot1.Plot.XLabel("电流(A)");
+            wpfplot1.Plot.YLabel("电压(V)");
+            wpfplot1.Plot.Title("电流曲线");
+
+            wpfplot2.Plot.XLabel("电压(V)");
+            wpfplot2.Plot.YLabel("电流(A)");
+            wpfplot2.Plot.Title("电压曲线");
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -155,157 +152,186 @@ namespace ColorVision.Device.Spectrum
 
         private List<List<string>> ListContents { get; set; } = new List<List<string>>() { };
 
-        public List<ColorParam> colorParams { get; set; } = new List<ColorParam>() { };
-
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (sender is ListView listview && listview.SelectedIndex > -1)
             {
                 DrawPlot();
-                //listView2.ItemsSource = colorParams[listview.SelectedIndex].fPL;
-
-                listView2.Items.Clear();
-
-                for (int i = 0; i < (colorParams[listview.SelectedIndex].fSpect2 -380)*10; i += 10)
-                {
-                    ListViewItem listViewItem2 = new ListViewItem();
-
-                    List<string> strings = new List<string>();
-                    strings.Add((i/10 +380).ToString());
-                    strings.Add(colorParams[listview.SelectedIndex].fPL[i].ToString());
-                    strings.Add((colorParams[listview.SelectedIndex].fPL[i]* colorParams[listview.SelectedIndex].fPlambda).ToString());
-
-                    listViewItem2.Content = strings;
-                    listView2.Items.Add(listViewItem2);
-
-                }
-
-                //ListViewItem listViewItem3= new ListViewItem();
-
-                //List<string> strings1 = new List<string>();
-                //strings1.Add("780");
-                //strings1.Add(colorParams[listview.SelectedIndex].fPL[3998].ToString());
-                //strings1.Add((colorParams[listview.SelectedIndex].fPL[3998] * colorParams[listview.SelectedIndex].fPlambda).ToString());
-                //listViewItem3.Content = strings1;
-                //listView2.Items.Add(listViewItem3);
-
+                //listView2.ItemsSource;
             }
         }
+
+
 
         bool MulComparison;
         ScatterPlot? LastMulSelectComparsion;
 
         private void DrawPlot()
         {
-            if (ScatterPlots.Count > 0)
+            if (MulComparison)
             {
-                if (MulComparison)
+                if (LastMulSelectComparsion != null)
                 {
-                    if (LastMulSelectComparsion != null)
-                    {
-                        LastMulSelectComparsion.Color = Color.DarkGoldenrod;
-                        LastMulSelectComparsion.LineWidth = 1;
-                        LastMulSelectComparsion.MarkerSize = 1;
-                    }
+                    LastMulSelectComparsion.Color = Color.DarkGoldenrod;
+                    LastMulSelectComparsion.LineWidth = 1;
+                    LastMulSelectComparsion.MarkerSize = 1;
+                }
 
 
-                    LastMulSelectComparsion = ScatterPlots[listView1.SelectedIndex];
-                    LastMulSelectComparsion.LineWidth = 3;
-                    LastMulSelectComparsion.MarkerSize = 3;
-                    LastMulSelectComparsion.Color = Color.Red;
-                    wpfplot1.Plot.Add(LastMulSelectComparsion);
+                LastMulSelectComparsion = ScatterPlots[listView1.SelectedIndex];
+                LastMulSelectComparsion.LineWidth = 3;
+                LastMulSelectComparsion.MarkerSize = 3;
+                LastMulSelectComparsion.Color = Color.Red;
+                wpfplot1.Plot.Add(LastMulSelectComparsion);
 
+            }
+            else
+            {
+               
+                var temp = ScatterPlots[listView1.SelectedIndex];
+                temp.Color = Color.DarkGoldenrod;
+                temp.LineWidth = 1;
+                temp.MarkerSize = 1;
+
+
+
+                ToggleButtonChoice.IsChecked = PassSxSources[listView1.SelectedIndex].IsSourceV;
+
+                if (PassSxSources[listView1.SelectedIndex].IsSourceV)
+                {
+                    wpfplot2.Plot.Add(temp);
+                    wpfplot1.Plot.Remove(LastMulSelectComparsion);
+                    wpfplot2.Plot.Remove(LastMulSelectComparsion);
                 }
                 else
                 {
-                    var temp = ScatterPlots[listView1.SelectedIndex];
-                    temp.Color = Color.DarkGoldenrod;
-                    temp.LineWidth = 1;
-                    temp.MarkerSize = 1;
-
                     wpfplot1.Plot.Add(temp);
                     wpfplot1.Plot.Remove(LastMulSelectComparsion);
-                    LastMulSelectComparsion = temp;
+                    wpfplot2.Plot.Remove(LastMulSelectComparsion);
 
                 }
-            }
 
+                LastMulSelectComparsion = temp;
+
+            }
             wpfplot1.Refresh();
         }
-        bool First;
 
-        public void SpectrumDrawPlot(SpectumData data)
+        List<PassSxSource> PassSxSources = new List<PassSxSource>();
+
+        public void DrawPlot(bool isSourceV, double endVal,double[] VList, double[] IList)
         {
-            
-            if (!First)
-            {
-                listView1.Visibility = Visibility.Visible;
-                First = true;
-            }
 
-            ColorParam colorParam = data.Data;
-            colorParams.Add(colorParam);
+            PassSxSource passSxSources = new PassSxSource();
+            passSxSources.IsSourceV = isSourceV;
+            PassSxSources.Add(passSxSources);
+
+
+            List<double> listV = new List<double>();
+            List<double> listI = new List<double>();
+            double VMax = 0, IMax = 0, VMin = 10000, IMin = 10000;
+            for (int i = 0; i < VList.Length; i++)
+            {
+                if (VList[i] > VMax) VMax = VList[i];
+                if (IList[i] > IMax) IMax = IList[i];
+                if (VList[i] < VMin) VMin = VList[i];
+                if (IList[i] < IMin) IMin = IList[i];
+
+                listV.Add(VList[i]);
+                listI.Add(IList[i]);
+            }
+            int step = 10;
+            double xMin = 0;
+            double xMax = VMax + VMax / step;
+            double yMin = 0 - IMax / step;
+            double yMax = IMax + IMax / step;
+            double[] xs, ys;
+            if (isSourceV)
+            {
+                xMin = VMin - VMin / step;
+                xMax = endVal + VMax / step;
+                yMin = IMin - IMin / step;
+                yMax = IMax + IMax / step;
+                if (VMax < endVal)
+                {
+                    double addPointStep = (endVal - VMax) / 2.0;
+                    listV.Add(VMax + addPointStep);
+                    listV.Add(endVal);
+                    listI.Add(IMax);
+                    listI.Add(IMax);
+                }
+                xs = listV.ToArray();
+                ys = listI.ToArray();
+
+                ScatterPlot scatterPlot = new ScatterPlot(xs, ys)
+                {
+                    Color = Color.DarkGoldenrod,
+                    LineWidth = 1,
+                    MarkerSize = 1,
+                    Label = null,
+                    MarkerShape = MarkerShape.none,
+                    LineStyle = LineStyle.Solid
+                };
+
+                wpfplot2.Plot.SetAxisLimitsX(xMin, xMax);
+                wpfplot2.Plot.SetAxisLimitsY(yMin, yMax);
+                wpfplot2.Plot.Add(scatterPlot);
+                wpfplot2.Refresh();
+                ScatterPlots.Add(scatterPlot);
+
+
+            }
+            else
+            {
+                endVal = endVal / 1000;
+                xMin = IMin - IMin / step;
+                xMax = endVal + IMax / step;
+                yMin = VMin - VMin / step;
+                yMax = VMax + VMax / step;
+                if (IMax < endVal)
+                {
+                    double addPointStep = (endVal - IMax) / 2.0;
+                    listI.Add(IMax + addPointStep);
+                    listI.Add(endVal);
+                    listV.Add(VMax);
+                    listV.Add(VMax);
+                }
+                xs = listV.ToArray();
+                ys = listI.ToArray();
+
+                ScatterPlot scatterPlot = new ScatterPlot(xs, ys)
+                {
+                    Color = Color.DarkGoldenrod,
+                    LineWidth = 1,
+                    MarkerSize = 1,
+                    Label = null,
+                    MarkerShape = MarkerShape.none,
+                    LineStyle = LineStyle.Solid
+                };
+                wpfplot1.Plot.SetAxisLimitsY(xMin, xMax);
+                wpfplot1.Plot.SetAxisLimitsX(yMin, yMax);
+                wpfplot1.Plot.Add(scatterPlot);
+                wpfplot1.Refresh();
+                ScatterPlots.Add(scatterPlot);
+
+            }
+            ToggleButtonChoice.IsChecked = isSourceV;
+
 
             ListViewItem listViewItem = new ListViewItem();
-
-            double sum1 = 0, sum2 = 0;
-            for (int i = 35; i <= 75; i++)
-                sum1 += colorParam.fPL[i * 10];
-            for (int i = 20; i <= 120; i++)
-                sum2 += colorParam.fPL[i * 10];
             ResultNum++;
-            List<string> Contents = new List<string>
-            {
-                ResultNum.ToString(),
-                DateTime.Now.ToString(),
-                Math.Round(colorParam.fIp / 65535 * 100, 2).ToString() + "%",
-                (colorParam.fPh / 1).ToString(),
-                Math.Round(sum1 / sum2 * 100, 2).ToString(),
-                Convert.ToString(Math.Round(colorParam.fx, 4)),
-                Convert.ToString(Math.Round(colorParam.fy, 4)),
-                Convert.ToString(Math.Round(colorParam.fu, 4)),
-                Convert.ToString(Math.Round(colorParam.fv, 4)),
-                Convert.ToString(Math.Round(colorParam.fCCT, 1)),
-                Convert.ToString(Math.Round(colorParam.fLd, 1)),
-                Convert.ToString(Math.Round(colorParam.fPur, 2)),
-                Convert.ToString(Math.Round(colorParam.fLp, 1)),
-                Convert.ToString(Math.Round(colorParam.fRa, 2)),
-                Convert.ToString(Math.Round(colorParam.fHW, 4)),
-                string.Format("{0:0.0000}",data.V),
-                string.Format("{0:0.0000}",data.I),
-
-                data.ID.ToString(),
-            };
-
-
-
-            double[] x = new double[colorParam.fPL.Length];
-            double[] y = new double[colorParam.fPL.Length];
-            for (int i = 0; i < colorParam.fPL.Length; i++)
-            {
-                x[i] = ((double)colorParam.fSpect1 + Math.Round(colorParam.fInterval, 1) * i);
-                y[i] = colorParam.fPL[i];
-            }
-
-            ScatterPlot scatterPlot = new ScatterPlot(x, y)
-            {
-                Color = Color.DarkGoldenrod,
-                LineWidth = 1,
-                MarkerSize = 1,
-                Label = null,
-                MarkerShape = MarkerShape.none,
-                LineStyle = LineStyle.Solid
-            };
-
-            ScatterPlots.Add(scatterPlot);
-            listViewItem.Content = Contents;
+            List<string> strings = new List<string>();
+            strings.Add(ResultNum.ToString());
+            strings.Add(isSourceV ? "V" : "I");
+            strings.Add(DateTime.Now.ToString());
+            listViewItem.Content = strings;
             listView1.Items.Add(listViewItem);
-            listView1.SelectedIndex = colorParams.Count - 1;
+            listView1.SelectedIndex = PassSxSources.Count - 1;
             listView1.ScrollIntoView(listViewItem);
+
         }
 
         private List<ScatterPlot> ScatterPlots { get; set; } = new List<ScatterPlot>();
-
 
         private void Button1_Click(object sender, RoutedEventArgs e)
         {
@@ -323,15 +349,11 @@ namespace ColorVision.Device.Spectrum
         private void ReDrawPlot()
         {
             wpfplot1.Plot.Clear();
-            wpfplot1.Plot.SetAxisLimitsX(colorParams[listView1.SelectedIndex].fSpect1, colorParams[listView1.SelectedIndex].fSpect2);
-            wpfplot1.Plot.SetAxisLimitsY(0, 1);
-            wpfplot1.Plot.XAxis.SetBoundary(colorParams[listView1.SelectedIndex].fSpect1-10, colorParams[listView1.SelectedIndex].fSpect2+10);
-            wpfplot1.Plot.YAxis.SetBoundary(0, 1);
             LastMulSelectComparsion = null;
             if (MulComparison)
             {
                 listView1.SelectedIndex = listView1.Items.Count > 0 && listView1.SelectedIndex == -1 ? 0 : listView1.SelectedIndex;
-                for (int i = 0; i < colorParams.Count; i++)
+                for (int i = 0; i < ScatterPlots.Count; i++)
                 {
                     if (i == listView1.SelectedIndex)
                         continue;
@@ -348,7 +370,7 @@ namespace ColorVision.Device.Spectrum
 
         private void Button2_Click(object sender, RoutedEventArgs e)
         {
-            if (listView1.SelectedIndex < 0 || colorParams.Count <= 0)
+            if (listView1.SelectedIndex < 0)
             {
                 MessageBox.Show("您需要先选择数据");
                 return;
@@ -366,8 +388,6 @@ namespace ColorVision.Device.Spectrum
                 if (item.IsSelected)
                 {
                     int index = listView1.Items.IndexOf(item);
-                    colorParams.RemoveAt(index);
-
                     ScatterPlots.RemoveAt(index);
 
                     listView1.Items.RemoveAt(index);
@@ -404,7 +424,6 @@ namespace ColorVision.Device.Spectrum
             if (e.Key == Key.Delete && listView1.SelectedIndex > -1)
             {
                 int temp = listView1.SelectedIndex;
-                colorParams.RemoveAt(listView1.SelectedIndex);
                 listView1.Items.RemoveAt(listView1.SelectedIndex);
 
 
@@ -422,8 +441,6 @@ namespace ColorVision.Device.Spectrum
 
         }
 
-
-
         MarkerPlot markerPlot1;
 
         private void listView2_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -434,7 +451,6 @@ namespace ColorVision.Device.Spectrum
                 markerPlot1 = new MarkerPlot
                 {
                     X = listView2.SelectedIndex + 380,
-                    Y = colorParams[listView1.SelectedIndex].fPL[listView2.SelectedIndex * 10],
                     MarkerShape = MarkerShape.filledCircle,
                     MarkerSize = 10f,
                     Color = Color.Orange,
@@ -443,8 +459,8 @@ namespace ColorVision.Device.Spectrum
                 wpfplot1.Plot.Add(markerPlot1);
             }
             wpfplot1.Refresh();
-
         }
+
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
@@ -465,7 +481,7 @@ namespace ColorVision.Device.Spectrum
         }
         private void GridSplitter_DragCompleted(object sender, DragCompletedEventArgs e)
         {
-            listView1.Height = ListRow2.ActualHeight - 38;
+            listView1.Height = ListRow2.ActualHeight -38;
             ListRow2.Height = GridLength.Auto;
             ListRow1.Height = new GridLength(1, GridUnitType.Star);
         }
@@ -477,12 +493,9 @@ namespace ColorVision.Device.Spectrum
             ListCol2.Width = GridLength.Auto;
         }
 
-        internal void Clear()
+        private void Button3_Click(object sender, RoutedEventArgs e)
         {
-            wpfplot1.Plot.Clear();
-            listView1.Items.Clear();
-            listView2.Items.Clear();
-            ResultNum = 0;
+
         }
     }
 }

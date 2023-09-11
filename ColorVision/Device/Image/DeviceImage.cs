@@ -25,11 +25,10 @@ namespace ColorVision.Device.Image
         {
             Service = new ImageService(Config);
             View = new ImageView();
-            Control = new ImageDisplayControl(this);
         }
 
         public override UserControl GenDeviceControl() => new DeviceImageControl(this);
-        public override UserControl GenDisplayControl() => Control;
+        public override UserControl GenDisplayControl() => Control??new ImageDisplayControl(this);
 
     }
 }

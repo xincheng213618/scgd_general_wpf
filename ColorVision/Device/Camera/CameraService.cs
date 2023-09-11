@@ -272,6 +272,9 @@ namespace ColorVision.Device.Camera
         private static List<ParamFunction> Calibrations(CalibrationParam item)
         {
             var param = new List<ParamFunction>() { };
+
+            param.Add( new ParamFunction(){  Name="CM_InitCalibration" });
+            param.Add(new ParamFunction() { Name = "CM_AddChannel",Params=new Dictionary<string, object>() { { "eImgChlType", 1 } } });
             param.Add(SetPath("DarkNoise", item.SelectedDarkNoise, item.FileNameDarkNoise));
             param.Add(SetPath("Luminance", item.SelectedLuminance, item.FileNameLuminance));
             param.Add(SetPath("LumOneColor", item.SelectedColorOne, item.FileNameColorOne));
@@ -364,8 +367,7 @@ namespace ColorVision.Device.Camera
                 Params = new Dictionary<string, object>() {
                 {
                     "Func", Calibrations(item)
-                }
-                }
+                }   }
             };
 
             //new ParamFunction() { Name = "CM_AddChannel" },
