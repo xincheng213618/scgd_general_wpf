@@ -273,7 +273,7 @@ namespace ColorVision.MQTT
     }
     public enum MsgRecordState
     {
-        [Description("已经发送")]
+        [Description("命令发送")]
         Send,
         [Description("命令成功")]
         Success,

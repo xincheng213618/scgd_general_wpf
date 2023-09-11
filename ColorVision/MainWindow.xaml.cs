@@ -18,6 +18,7 @@ using ColorVision.Flow;
 using HandyControl.Tools.Extension;
 using HandyControl.Tools;
 using System.Windows.Media.Animation;
+using ColorVision.Device.POI;
 
 namespace ColorVision
 {
@@ -69,6 +70,8 @@ namespace ColorVision
             FlowDisplayControl flowDisplayControl = new FlowDisplayControl();
             SPDisplay.Children.Insert(0, flowDisplayControl);
 
+            
+
 
             if (!WindowConfig.IsExist||(WindowConfig.IsExist&& WindowConfig.Icon == null)) {
                 ThemeManager.Current.SystemThemeChanged += (e) => {
@@ -113,6 +116,8 @@ namespace ColorVision
                 Environment.Exit(-1);
             }
             ViewGridManager.GetInstance().SetViewNum(-1);
+
+            SPDisplay.Children.Add(new POIDisplayControl());
         }
         private void MenuStatusBar_Click(object sender, RoutedEventArgs e)
         {
