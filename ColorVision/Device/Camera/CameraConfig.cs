@@ -1,64 +1,10 @@
 ﻿using ColorVision.SettingUp;
 using Newtonsoft.Json;
 using System.ComponentModel;
+using cvColorVision;
 
 namespace ColorVision.Device.Camera
 {
-    public enum CameraType
-    {
-        [Description("CV_Q")]
-        CVQ,
-        [Description("LV_Q")]
-        LVQ,
-        [Description("BV_Q")]
-        BVQ,
-        [Description("MIL_CL")]
-        MILCL,
-        [Description("MIL_CXP")]
-        MILCXP,
-        [Description("BV_H")]
-        BVH,
-        [Description("LV_H")]
-        LVH,
-        [Description("HK_CXP")]
-        HKCXP,
-        [Description("LV_MIL_CL")]
-        LVMILCL,
-        [Description("MIL_CXP_VIDEO")]
-        MILCXPVIDEO,
-        [Description("CameraType_Total")]
-        CameraTypeTotal,
-    };
-
-    public enum TakeImageMode
-    {
-        [Description("Measure_Normal")]
-        Normal = 0,
-        [Description("Live")]
-        Live,
-        [Description("Measure_Fast")]
-        Fast,
-        [Description("Measure_FastEx")]
-        FastExt
-    };
-
-
-    public enum ImageChannel
-    {
-        [Description("单通道")]
-        One = 1,
-        [Description("三通道")]
-        Three = 3
-    }
-
-    public enum ImageBpp
-    {
-        [Description("8位")]
-        bpp8 = 8,
-        [Description("16位")]
-        bpp16 = 16,
-    }
-
     /// <summary>
     /// 相机配置
     /// </summary>
@@ -83,7 +29,7 @@ namespace ColorVision.Device.Camera
         public bool IsExpThree {
             get 
             {
-                if (Channel == ImageChannel.Three && CameraType == CameraType.CVQ)
+                if (Channel == ImageChannel.Three && CameraType == CameraType.CV_Q)
                     return true;
                 return false;
             }
@@ -99,6 +45,14 @@ namespace ColorVision.Device.Camera
 
         public double ExpTimeB { get => _ExpTimeB; set { _ExpTimeB = value; NotifyPropertyChanged(); } }
         private double _ExpTimeB;
+    }
+
+
+    public class MotorConfig  
+    { 
+        public FOCUS_COMMUN eFOCUSCOMMUN { get; set; }
+
+
 
     }
 }

@@ -169,7 +169,7 @@ namespace ColorVision.Device.Image
             }
         }
 
-        private byte[] readFile(string path)
+        private static byte[] readFile(string path)
         {
             FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read);
             BinaryReader binaryReader = new BinaryReader(fileStream);

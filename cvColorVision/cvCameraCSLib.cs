@@ -455,13 +455,6 @@ namespace cvColorVision
         public uint nBpp;
         public IntPtr pData;
     };
-    public enum FOCUS_COMMUN
-    {
-        VID_SERIAL,
-        CANON_SERIAL,
-        NED_SERIAL,
-    };
-
 
     public struct AutoFocusCfg
     {
@@ -561,28 +554,9 @@ namespace cvColorVision
         Channel_Z = 2
 
     };
-    public enum TakeImageMode
-    {
-        Measure_Normal = 0,
-        Live,
-        Measure_Fast,
-        Measure_FastEx,
-    };
 
-    public enum CameraType 
-    {
-        CV_Q = 0,
-        LV_Q,
-        BV_Q,
-        MIL_CL,
-        MIL_CXP,
-        BV_H,
-        LV_H,
-        HK_CXP,
-        LV_MIL_CL,
-        MIL_CXP_VIDEO,
-        CameraType_Total,
-    };
+
+
 
     public partial class cvCameraCSLib
     {
@@ -1747,11 +1721,6 @@ namespace cvColorVision
                                         ErrorData = "Vertical FOV执行失败！";
                                         return false;
                                     } 
-                                    if (!fovResult)
-                                    {
-                                        ErrorData = "FOV执行失败！";
-                                        return false;
-                                    }
                                 }
                                 catch (Exception ex)
                                 {
@@ -2521,7 +2490,7 @@ namespace cvColorVision
             return true;
         }
 
-        private void saveCsv_MTF(string path, List<MTFResult> arts)
+        private static  void saveCsv_MTF(string path, List<MTFResult> arts)
         {
             if (!Directory.Exists(path))
             {

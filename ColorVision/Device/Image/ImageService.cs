@@ -1,4 +1,6 @@
-﻿using ColorVision.Device.Sensor;
+﻿#pragma warning disable CA1710 // 标识符应具有正确的后缀
+
+using ColorVision.Device.Sensor;
 using ColorVision.Device.SMU;
 using ColorVision.MQTT;
 using MQTTnet.Client;
@@ -68,7 +70,7 @@ namespace ColorVision.Device.Image
                         }
                     }
                 }
-                catch(Exception ex)
+                catch
                 {
                     return Task.CompletedTask;
                 }

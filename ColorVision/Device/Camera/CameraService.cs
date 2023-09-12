@@ -1,6 +1,9 @@
-﻿using ColorVision.MQTT;
+﻿#pragma warning disable CS8602  
+
+using ColorVision.MQTT;
 using ColorVision.MVVM;
 using ColorVision.Template;
+using cvColorVision;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NPOI.OpenXmlFormats.Spreadsheet;
@@ -170,6 +173,8 @@ namespace ColorVision.Device.Camera
                     case "UnInit":
                         DeviceStatus = DeviceStatus.UnInit;
                         break;
+                    case "Calibrations":
+                        break;
                     default:
                         //DeviceStatus = DeviceStatus.UnInit;
                         break;
@@ -273,8 +278,9 @@ namespace ColorVision.Device.Camera
         {
             var param = new List<ParamFunction>() { };
 
+            ImageChannelType eImgChlType = ImageChannelType.Gray_Y;
             param.Add( new ParamFunction(){  Name="CM_InitCalibration" });
-            param.Add(new ParamFunction() { Name = "CM_AddChannel",Params=new Dictionary<string, object>() { { "eImgChlType", 1 } } });
+            param.Add(new ParamFunction() { Name = "CM_AddChannel",Params=new Dictionary<string, object>() { { "eImgChlType", eImgChlType } } });
             param.Add(SetPath("DarkNoise", item.SelectedDarkNoise, item.FileNameDarkNoise));
             param.Add(SetPath("Luminance", item.SelectedLuminance, item.FileNameLuminance));
             param.Add(SetPath("LumOneColor", item.SelectedColorOne, item.FileNameColorOne));
@@ -291,59 +297,46 @@ namespace ColorVision.Device.Camera
             ParamFunction SetPath(string typeName, bool bEnabled, string fileName)
             {
                 CalibrationType eCaliType =0;
-                ImageChannelType eImgChlType =0;
                 switch (typeName)
                 {
                     case "DarkNoise":
-                        eImgChlType = ImageChannelType.uCIE;
                         eCaliType = CalibrationType.DarkNoise;
                         break;
                     case "DefectWPoint":
-                        eImgChlType = ImageChannelType.uCIE;
                         eCaliType = CalibrationType.DefectWPoint;
                         break;
                     case "DefectBPoint":
-                        eImgChlType = ImageChannelType.uCIE;
                         eCaliType = CalibrationType.DefectBPoint;
                         break; 
                     case "Luminance":
-                        eImgChlType = ImageChannelType.uCIE;
                         eCaliType = CalibrationType.Luminance;
                         break;
                     case "LumOneColor":
-                        eImgChlType = ImageChannelType.uCIE;
                         eCaliType = CalibrationType.LumOneColor;
                         break;
                     case "LumFourColor":
-                        eImgChlType = ImageChannelType.uCIE;
                         eCaliType = CalibrationType.LumFourColor;
                         break;
                     case "LumMultiColor":
-                        eImgChlType = ImageChannelType.uCIE;
                         eCaliType = CalibrationType.LumMultiColor;
                         break;
                     case "Distortion":
-                        eImgChlType = ImageChannelType.uCIE;
                         eCaliType = CalibrationType.Distortion;
                         break;
                     case "DSNU":
-                        eImgChlType = ImageChannelType.uCIE;
                         eCaliType = CalibrationType.DSNU;
                         break;
                     case "FileNameUniformityX":
-                        eImgChlType = ImageChannelType.CIE_X;
                         eCaliType = CalibrationType.Uniformity;
                         break;
                     case "FileNameUniformityY":
-                        eImgChlType = ImageChannelType.CIE_X;
                         eCaliType = CalibrationType.Uniformity;
                         break;
                     case "FileNameUniformityZ":
-                        eImgChlType = ImageChannelType.CIE_Z;
                         eCaliType = CalibrationType.Uniformity;
                         break;
                 };
-                
+                param.Add(new ParamFunction() { Name = "CM_InsertItem", Params = new Dictionary<string, object>() { { "eImgChlType", eImgChlType }, { "eCaliType", eCaliType } } });
                 return new ParamFunction()
                 {
                     Name = "CM_SetItemFile",

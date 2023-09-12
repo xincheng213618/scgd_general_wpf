@@ -9,7 +9,6 @@
              xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
              xmlns:SettingUp ="clr-namespace:ColorVision.SettingUp"
              xmlns:converter="clr-namespace:ColorVision.Converter"
-             xmlns:converter1="clr-namespace:ColorVision.Device.Camera.Converter"
              xmlns:cv="clr-namespace:ColorVision"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d" 

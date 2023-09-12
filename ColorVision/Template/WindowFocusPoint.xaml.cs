@@ -886,7 +886,6 @@ namespace ColorVision.Template
 
         private DrawingVisualCircle DrawCircleCache;
         private DrawingVisualRectangle DrawingRectangleCache;
-        private DrawingVisualPolygon DrawingVisualPolygonCache;
 
 
         private void ImageShow_MouseLeave(object sender, MouseEventArgs e)
@@ -985,8 +984,7 @@ namespace ColorVision.Template
                     }
                     else if (ToolBarTop.DrawPolygon)
                     {
-                        DrawingVisualPolygonCache.Attribute.Points[^1] = point;
-                        DrawingVisualPolygonCache.Render();
+
                     }
                     else if (SelectDCircle != null)
                     {

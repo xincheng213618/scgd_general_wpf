@@ -5,15 +5,10 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
              xmlns:local="clr-namespace:ColorVision.Device.Camera"
-             xmlns:converter1="clr-namespace:ColorVision.Device.Camera.Converter"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              d:DataContext="{d:DesignInstance local:DeviceCamera}"
              d:DesignHeight="400" d:DesignWidth="600" Initialized="UserControl_Initialized">
-    <UserControl.Resources>
-        <converter1:ChannelToVisibilityConverter x:Key="ChannelToVisibilityConverter"/>
-        <converter1:ChannelToVisibilityReConverter x:Key="ChannelToVisibilityReConverter"/>
-    </UserControl.Resources>
     <Grid>
         <Grid Margin="0,0,0,5">
             <Border Background="#EEEEEE" CornerRadius="5"/>

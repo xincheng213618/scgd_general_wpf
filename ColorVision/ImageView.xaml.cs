@@ -734,7 +734,7 @@ namespace ColorVision
             }
         }
 
-        public BitmapImage ByteArrayToBitmapImage(byte[] byteArray)
+        public static BitmapImage ByteArrayToBitmapImage(byte[] byteArray)
         {
             using (Stream stream = new MemoryStream(byteArray))
             {

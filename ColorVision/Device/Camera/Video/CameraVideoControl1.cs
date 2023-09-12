@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable CS8603  
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -81,7 +82,7 @@ namespace ColorVision.Device.Camera.Video
                 });
                 return true;
             }
-            catch (Exception ex)
+            catch 
             {
                 OpenVideo = false;
                 return false;
