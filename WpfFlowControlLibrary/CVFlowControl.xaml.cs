@@ -34,11 +34,8 @@ namespace WpfFlowControlLibrary
 
             InitializeComponent();
 
-            Application.Current.MainWindow.Closing += OnClosing;
 
         }
-
-        private void CVFlowControl_Loaded(object sender, RoutedEventArgs e) => Window.GetWindow(this).Closing += OnClosing;
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -155,29 +152,5 @@ namespace WpfFlowControlLibrary
             }
         }
 
-        private void OnClosing(object? sender, CancelEventArgs e)
-        {
-
-            // 析构
-        }
-
-        private void OnClosing(object? sender, CancelEventArgs e)
-        {
-            if (!Grid1.Children.Contains(winf1))
-            {
-                Grid1.Children.Remove(airspace1);
-                airspace1.Content = null;
-                Grid1.Children.Add(winf1);
-            }
-
-            if (!Grid2.Children.Contains(winf2))
-            {
-                Grid2.Children.Remove(airspace2);
-                airspace2.Content = null;
-                Grid2.Children.Add(winf2);
-            }
-
-            GC.SuppressFinalize(this);
-        }
     }
 }

@@ -117,6 +117,11 @@ namespace ColorVision
             ViewGridManager.GetInstance().SetViewNum(1);
 
             SPDisplay.Children.Add(new POIDisplayControl());
+            this.Closed += (s, e) =>
+            {
+                Environment.Exit(-1);
+            };
+
         }
         private void MenuStatusBar_Click(object sender, RoutedEventArgs e)
         {
