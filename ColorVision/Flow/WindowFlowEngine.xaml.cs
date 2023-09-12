@@ -230,7 +230,7 @@ namespace ColorVision
 
         private string GetTopic()
         {
-            return "SYS/CMD/" + startNodeName;
+            return "FLOW/CMD/" + startNodeName;
         }
 
 
