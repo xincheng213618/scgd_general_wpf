@@ -403,6 +403,41 @@ namespace ColorVision.Device.Camera
         public MsgRecord GetAllCameraID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });
 
 
+        public MsgRecord AutoFocus()
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "AutoFocus",
+                Params = new Dictionary<string, object>() { {
+                    "Func", new List<ParamFunction>() {
+                        new ParamFunction(){ 
+                            Name ="CM_InitCOM" ,
+                            Params = new Dictionary<string,object>(){
+                                { "eFOCUS_COMMUN", Config.MotorConfig.eFOCUSCOMMUN} ,
+                                { "szComName", Config.MotorConfig.szComName},
+                                { "BaudRate", Config.MotorConfig.BaudRate}
+                            }
+                        },
+                        new ParamFunction()  {
+                            Name ="CM_CalcAutoFocus",
+                            Params = new Dictionary<string,object>(){
+                                { "forwardparam", Config.MotorConfig.AutoFocusConfig.forwardparam} ,
+                                { "curtailparam", Config.MotorConfig.AutoFocusConfig.curtailparam},
+                                { "curStep", Config.MotorConfig.AutoFocusConfig.curStep},
+                                { "stopStep", Config.MotorConfig.AutoFocusConfig.stopStep},
+                                { "minPosition", Config.MotorConfig.AutoFocusConfig.minPosition},
+                                { "maxPosition", Config.MotorConfig.AutoFocusConfig.maxPosition},
+                                { "eEvaFunc", Config.MotorConfig.AutoFocusConfig.eEvaFunc},
+                                { "dMinValue", Config.MotorConfig.AutoFocusConfig.dMinValue}
+                            }
+                        }
+                    }
+                  }
+                }
+            };
+            return PublishAsyncClient(msg);
+        }
+
         public MsgRecord GetAutoExpTime()
         {
             MsgSend msg = new MsgSend

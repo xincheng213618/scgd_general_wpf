@@ -118,60 +118,60 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="MenuFile" xml:space="preserve">
-    <value>_File</value>
+    <value>文件(_F)</value>
   </data>
   <data name="MenuHelp" xml:space="preserve">
-    <value>_Help</value>
+    <value>帮助(_H)</value>
   </data>
   <data name="MenuExit" xml:space="preserve">
-    <value>E_xit</value>
-  </data>
-  <data name="MenuDelete" xml:space="preserve">
-    <value>_Delete</value>
+    <value>退出(_X)</value>
   </data>
   <data name="MenuEdit" xml:space="preserve">
-    <value>_Edit</value>
+    <value>編輯(_E)</value>
   </data>
   <data name="MenuCut" xml:space="preserve">
-    <value>Cu_t</value>
+    <value>剪下(_T)</value>
   </data>
   <data name="MenuCopy" xml:space="preserve">
-    <value>_Copy</value>
+    <value>複製(_C)</value>
   </data>
   <data name="MenuNew" xml:space="preserve">
-    <value>_New</value>
+    <value>新建(_N)</value>
   </data>
   <data name="MenuOpen" xml:space="preserve">
-    <value>_Open</value>
+    <value>打开(_O)</value>
   </data>
   <data name="MenuUndo" xml:space="preserve">
-    <value>_Undo</value>
+    <value>撤銷(_U)</value>
   </data>
   <data name="MenuTool" xml:space="preserve">
-    <value>_Tool</value>
+    <value>工具(_T)</value>
   </data>
   <data name="MenuUpdate" xml:space="preserve">
-    <value>Check For _Updates</value>
+    <value>檢查更新(_U)</value>
   </data>
   <data name="MenuView" xml:space="preserve">
-    <value>_View</value>
+    <value>視圖(_V)</value>
   </data>
   <data name="MenuViewSidebar" xml:space="preserve">
-    <value>Sidebar</value>
+    <value>側邊欄</value>
   </data>
   <data name="MenuViewStatusBar" xml:space="preserve">
-    <value>StatusBar</value>
+    <value>狀態欄</value>
   </data>
-  <data name="MenuAbout" xml:space="preserve">
-    <value>_Abot</value>
-  </data>
-  <data name="MenuSettings" xml:space="preserve">
-    <value>_Settings</value>
-  </data>
-  <data name="MenuOptions" xml:space="preserve">
-    <value>_Options</value>
+  <data name="MenuDelete" xml:space="preserve">
+    <value>刪除(_D)</value>
   </data>
   <data name="Login" xml:space="preserve">
-    <value>_Login</value>
+    <value>登入</value>
+  </data>
+  <data name="MenuAbout" xml:space="preserve">
+    <value>關於(_A)</value>
+  </data>
+  <data name="MenuSettings" xml:space="preserve">
+    <value>設置(_S)</value>
+  </data>
+  <data name="MenuOptions" xml:space="preserve">
+    <value>選項(_O）</value>
   </data>
 </root>

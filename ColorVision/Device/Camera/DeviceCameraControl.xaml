@@ -94,6 +94,54 @@
                                         </StackPanel>
                                     </StackPanel>
                                 </GroupBox>
+                                <GroupBox Header="电机配置" Margin="0,5">
+                                    <StackPanel Margin="5">
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="电机类型:" Width="120"/>
+                                            <TextBlock Text="{Binding Config.MotorConfig.eFOCUSCOMMUN}" />
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="串口:" Width="120"/>
+                                            <TextBlock Text="{Binding Config.MotorConfig.szComName}" />
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="波特率:" Width="120"/>
+                                            <TextBlock Text="{Binding Config.MotorConfig.BaudRate}" />
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="forwardparam:" Width="120"/>
+                                            <TextBlock Text="{Binding Config.MotorConfig.AutoFocusConfig.forwardparam}" />
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="curtailparam:" Width="120"/>
+                                            <TextBlock Text="{Binding Config.MotorConfig.AutoFocusConfig.curtailparam}" />
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="curStep:" Width="120"/>
+                                            <TextBlock Text="{Binding Config.MotorConfig.AutoFocusConfig.curStep}" />
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="stopStep:" Width="120"/>
+                                            <TextBlock Text="{Binding Config.MotorConfig.AutoFocusConfig.stopStep}" />
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="minPosition:" Width="120"/>
+                                            <TextBlock Text="{Binding Config.MotorConfig.AutoFocusConfig.minPosition}" />
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="maxPosition:" Width="120"/>
+                                            <TextBlock Text="{Binding Config.MotorConfig.AutoFocusConfig.maxPosition}" />
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="eEvaFunc:" Width="120"/>
+                                            <TextBlock Text="{Binding Config.MotorConfig.AutoFocusConfig.eEvaFunc}" />
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="dMinValue:" Width="120"/>
+                                            <TextBlock Text="{Binding Config.MotorConfig.AutoFocusConfig.dMinValue}" />
+                                        </DockPanel>
+                                    </StackPanel>
+                                </GroupBox>
 
                                 <GroupBox Header="远程视频串流配置" Margin="0,5">
                                     <StackPanel Margin="5">
@@ -211,6 +259,54 @@
                                                     </hc:PreviewSlider>
                                                 </DockPanel>
                                             </StackPanel>
+                                        </StackPanel>
+                                    </GroupBox>
+                                    <GroupBox Header="电机配置" Margin="0,5">
+                                        <StackPanel Margin="5">
+                                            <DockPanel Margin="0,2">
+                                                <TextBlock Text="电机类型:" Width="120"/>
+                                                <TextBox Text="{Binding Config.MotorConfig.eFOCUSCOMMUN}" />
+                                            </DockPanel>
+                                            <DockPanel Margin="0,2">
+                                                <TextBlock Text="串口:" Width="120"/>
+                                                <TextBox Text="{Binding Config.MotorConfig.szComName}" />
+                                            </DockPanel>
+                                            <DockPanel Margin="0,2">
+                                                <TextBlock Text="波特率:" Width="120"/>
+                                                <TextBox Text="{Binding Config.MotorConfig.BaudRate}" />
+                                            </DockPanel>
+                                            <DockPanel Margin="0,2">
+                                                <TextBlock Text="forwardparam:" Width="120"/>
+                                                <TextBox Text="{Binding Config.MotorConfig.AutoFocusConfig.forwardparam}" />
+                                            </DockPanel>
+                                            <DockPanel Margin="0,2">
+                                                <TextBlock Text="curtailparam:" Width="120"/>
+                                                <TextBox Text="{Binding Config.MotorConfig.AutoFocusConfig.curtailparam}" />
+                                            </DockPanel>
+                                            <DockPanel Margin="0,2">
+                                                <TextBlock Text="curStep:" Width="120"/>
+                                                <TextBox Text="{Binding Config.MotorConfig.AutoFocusConfig.curStep}" />
+                                            </DockPanel>
+                                            <DockPanel Margin="0,2">
+                                                <TextBlock Text="stopStep:" Width="120"/>
+                                                <TextBox Text="{Binding Config.MotorConfig.AutoFocusConfig.stopStep}" />
+                                            </DockPanel>
+                                            <DockPanel Margin="0,2">
+                                                <TextBlock Text="minPosition:" Width="120"/>
+                                                <TextBox Text="{Binding Config.MotorConfig.AutoFocusConfig.minPosition}" />
+                                            </DockPanel>
+                                            <DockPanel Margin="0,2">
+                                                <TextBlock Text="maxPosition:" Width="120"/>
+                                                <TextBox Text="{Binding Config.MotorConfig.AutoFocusConfig.maxPosition}" />
+                                            </DockPanel>
+                                            <DockPanel Margin="0,2">
+                                                <TextBlock Text="eEvaFunc:" Width="120"/>
+                                                <TextBox Text="{Binding Config.MotorConfig.AutoFocusConfig.eEvaFunc}" />
+                                            </DockPanel>
+                                            <DockPanel Margin="0,2">
+                                                <TextBlock Text="dMinValue:" Width="120"/>
+                                                <TextBox Text="{Binding Config.MotorConfig.AutoFocusConfig.dMinValue}" />
+                                            </DockPanel>
                                         </StackPanel>
                                     </GroupBox>
 

@@ -394,7 +394,7 @@ namespace ColorVision.Template
                     List<ModDetailModel> smuDetails = modService.GetDetailByPid(dbModel.Id);
                     foreach (var dbDetail in smuDetails)
                     {
-                        dbDetail.ValueA = dbDetail.ValueA.Replace("\\r", "\r");
+                        dbDetail.ValueA = dbDetail?.ValueA.Replace("\\r", "\r");
                     }
                     KeyValuePair<string, PGParam> item = new KeyValuePair<string, PGParam>(dbModel.Name ?? "default", new PGParam(dbModel, smuDetails));
                     PGParams.Add(item);
