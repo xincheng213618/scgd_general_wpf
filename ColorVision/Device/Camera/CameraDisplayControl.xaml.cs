@@ -330,6 +330,12 @@ namespace ColorVision.Device.Camera
 
         private void AutoFocus_Click(object sender, RoutedEventArgs e)
         {
+            if (sender is Button button)
+            {
+                MsgRecord msgRecord = Service.AutoFocus();
+                Helpers.SendCommand(button, msgRecord);
+            }
+            
 
         }
 
