@@ -38,6 +38,8 @@ namespace WpfFlowControlLibrary
 
         }
 
+        private void CVFlowControl_Loaded(object sender, RoutedEventArgs e) => Window.GetWindow(this).Closing += OnClosing;
+
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
@@ -151,6 +153,12 @@ namespace WpfFlowControlLibrary
                 STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale - 0.1f, (STNodeEditorMain.Width / 2), (STNodeEditorMain.Height / 2));
                 e.Handled = true;
             }
+        }
+
+        private void OnClosing(object? sender, CancelEventArgs e)
+        {
+
+            // 析构
         }
 
         private void OnClosing(object? sender, CancelEventArgs e)
