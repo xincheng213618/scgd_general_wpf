@@ -18,6 +18,7 @@ using System.Windows.Shapes;
 using ColorVision.SettingUp;
 using System.IO;
 using Panuon.WPF.UI;
+using WpfFlowControlLibrary;
 
 namespace ColorVision.Flow
 {
@@ -26,7 +27,7 @@ namespace ColorVision.Flow
     /// </summary>
     public partial class FlowDisplayControl : UserControl
     {
-        public FlowView flowView { get; set; }
+        public CVFlowControl flowView { get; set; }
 
         public FlowDisplayControl()
         {
@@ -40,9 +41,8 @@ namespace ColorVision.Flow
             GlobalSetting = GlobalSetting.GetInstance();
             MQTTConfig mQTTConfig = GlobalSetting.SoftwareConfig.MQTTConfig;
             FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
-            flowView = new FlowView();
+            flowView = new CVFlowControl();
             ViewGridManager.GetInstance().AddView(flowView);
-
 
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
             {

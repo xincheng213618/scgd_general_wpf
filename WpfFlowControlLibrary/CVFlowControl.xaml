@@ -15,19 +15,17 @@
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
 
-        <Grid Grid.Column="0" Grid.ColumnSpan="2">
-            <airspace:AirspaceDecorator AirspaceMode="Redirect" IsInputRedirectionEnabled="True" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsOutputRedirectionEnabled="True">
+        <Grid Grid.Column="0" Grid.ColumnSpan="2" x:Name="Grid1">
+            <airspace:AirspaceDecorator x:Name="airspace1" AirspaceMode="Redirect" IsInputRedirectionEnabled="True" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsOutputRedirectionEnabled="True">
                 <WindowsFormsHost x:Name="winf1" Visibility="Visible" VerticalAlignment="Stretch">
                     <st:STNodeEditor  x:Name="STNodeEditorMain"  Height="50" Width="50" EnableEdit="False" />
                 </WindowsFormsHost>
             </airspace:AirspaceDecorator>
         </Grid>
         <Grid Grid.Column="1">
-            <airspace:AirspaceDecorator AirspaceMode="Redirect" IsInputRedirectionEnabled="True" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsOutputRedirectionEnabled="True">
-                <WindowsFormsHost x:Name="winf2" Width="200" Visibility="Visible" VerticalAlignment="Stretch">
-                    <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
-                </WindowsFormsHost>
-            </airspace:AirspaceDecorator>
+            <WindowsFormsHost x:Name="winf2" Width="200" Visibility="Visible" VerticalAlignment="Stretch">
+                <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
+            </WindowsFormsHost>
         </Grid>
     </Grid>
 </UserControl>

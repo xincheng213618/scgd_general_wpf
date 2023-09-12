@@ -12,6 +12,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ColorVision.Util\ColorVision.Util.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="FlowEngineLib">
       <HintPath>..\DLL\FlowEngineLib.dll</HintPath>
     </Reference>

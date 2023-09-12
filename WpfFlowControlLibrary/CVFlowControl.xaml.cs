@@ -1,4 +1,5 @@
-﻿using ST.Library.UI.NodeEditor;
+﻿using ColorVision;
+using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,13 +20,16 @@ namespace WpfFlowControlLibrary
     /// <summary>
     /// CVFlowControl.xaml 的交互逻辑
     /// </summary>
-    public partial class CVFlowControl : UserControl
+    public partial class CVFlowControl : UserControl,IView
     {
         private FlowEngineLib.FlowEngineControl flowEngine;
         public FlowEngineLib.FlowEngineControl FlowEngineControl { get { return flowEngine; } }
+        public View View { get; set; }
+
         public CVFlowControl()
         {
             flowEngine = new FlowEngineLib.FlowEngineControl(false);
+
             InitializeComponent();
         }
 
@@ -39,6 +43,51 @@ namespace WpfFlowControlLibrary
                 STNodePropertyGrid1.SetNode(STNodeEditorMain.ActiveNode);
             };
             flowEngine.AttachLoader(STNodeEditorMain);
+            View = new View();
+
+            View.ViewIndexChangedEvent += (s, e) =>
+            {
+
+                if (e == -2)
+                {
+                    if (!Grid1.Children.Contains(winf1))
+                    {
+                        Grid1.Children.Remove(airspace1);
+                        airspace1.Content = null;
+                        Grid1.Children.Add(winf1);
+                    }
+                    STNodeEditorMain.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
+                    STNodeEditorMain.ContextMenuStrip.Items.Add("还原到主窗口中", null, (s, e1) =>
+                    {
+
+                        if (ViewGridManager.GetInstance().IsGridEmpty(View.PreViewIndex))
+                        {
+                            View.ViewIndex = View.PreViewIndex;
+                        }
+                        else
+                        {
+                            View.ViewIndex = -1;
+                        }
+                    }
+
+                    );
+                }
+                else
+                {
+                    if (!Grid1.Children.Contains(airspace1))
+                    {
+                        Grid1.Children.Remove(winf1);
+                        airspace1.Content = winf1;
+                        Grid1.Children.Add(airspace1);
+                    }
+
+                    STNodeEditorMain.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
+                    STNodeEditorMain.ContextMenuStrip.Items.Add("设为主窗口", null, (s, e1) => ViewGridManager.GetInstance().SetOneView(this));
+                    STNodeEditorMain.ContextMenuStrip.Items.Add("显示全部窗口", null, (s, e1) => ViewGridManager.GetInstance().SetViewNum(-1));
+                    STNodeEditorMain.ContextMenuStrip.Items.Add("独立窗口中显示", null, (s, e1) => View.ViewIndex = -2);
+                }
+            };
+
         }
 
         private void UserControl_SizeChanged(object sender, SizeChangedEventArgs e)
