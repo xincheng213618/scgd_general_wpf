@@ -72,10 +72,7 @@
                         </UniformGrid>
                     </StackPanel>
                 </GroupBox>
-                <DockPanel Margin="2">
-                    <TextBlock Text="资源模板：" VerticalAlignment="Center" Width="60"/>
-                    <ComboBox  x:Name="ComboxVITemplate"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key"  Margin="0,0,0,0"/>
-                </DockPanel>
+
 
                 <GroupBox Margin="0,5" Header="扫描" >
                     <StackPanel  x:Name="StackPanelVITemplate">
@@ -110,7 +107,12 @@
                             <Button Content="扫描" Click="VIScan_Click" Margin="2" />
                         </UniformGrid>
 
+                        <DockPanel Margin="2">
+                            <TextBlock Text="资源模板：" VerticalAlignment="Center" Width="60"/>
+                            <ComboBox  x:Name="ComboxVITemplate"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key"  Margin="0,0,0,0"/>
+                        </DockPanel>
                     </StackPanel>
+                    
                 </GroupBox>
 
                 <DockPanel>
