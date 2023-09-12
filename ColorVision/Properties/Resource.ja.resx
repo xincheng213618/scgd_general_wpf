@@ -118,48 +118,60 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="MenuCut" xml:space="preserve">
-    <value>カット(_T)</value>
+    <value>切り取る (_T) </value>
   </data>
   <data name="MenuCopy" xml:space="preserve">
-    <value>コピー (_C)</value>
+    <value>コピーする (_C)</value>
   </data>
   <data name="MenuDelete" xml:space="preserve">
-    <value>削除(_D)</value>
+    <value>削除する (_D)</value>
   </data>
   <data name="MenuEdit" xml:space="preserve">
-    <value>編集(_E)</value>
+    <value>編集する (_E) </value>
   </data>
   <data name="MenuExit" xml:space="preserve">
-    <value>出口(_X)</value>
+    <value>終了する (_X)</value>
   </data>
   <data name="MenuFile" xml:space="preserve">
-    <value>ファイル(_F)</value>
+    <value>ファイル (_F)</value>
   </data>
   <data name="MenuNew" xml:space="preserve">
-    <value>新着(_N)</value>
+    <value>新規作成 (_N)</value>
   </data>
   <data name="MenuOpen" xml:space="preserve">
-    <value>開いた(_O)</value>
+    <value>開く (_O)</value>
   </data>
   <data name="MenuUpdate" xml:space="preserve">
-    <value>更新(_U)</value>
+    <value>更新を確認する (_U)</value>
   </data>
   <data name="MenuView" xml:space="preserve">
-    <value>見る(_V）</value>
+    <value>表示 (_V)</value>
   </data>
   <data name="MenuViewSidebar" xml:space="preserve">
-    <value>サイドバー</value>
+    <value>サイドバー </value>
   </data>
   <data name="MenuViewStatusBar" xml:space="preserve">
     <value>ステータスバー</value>
   </data>
   <data name="MenuUndo" xml:space="preserve">
-    <value>元に戻す(_U)</value>
+    <value>取り消す (_U) </value>
   </data>
   <data name="MenuTool" xml:space="preserve">
-    <value>ツール(_T)</value>
+    <value>ツール (_T)</value>
   </data>
   <data name="MenuHelp" xml:space="preserve">
-    <value>助けて(_H)</value>
+    <value>ヘルプ (_H) </value>
+  </data>
+  <data name="Login" xml:space="preserve">
+    <value>ログイン</value>
+  </data>
+  <data name="MenuAbout" xml:space="preserve">
+    <value>について (_A)</value>
+  </data>
+  <data name="MenuSettings" xml:space="preserve">
+    <value>設定 (_S)</value>
+  </data>
+  <data name="MenuOptions" xml:space="preserve">
+    <value>オプション (_O)</value>
   </data>
 </root>

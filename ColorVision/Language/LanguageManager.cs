@@ -1,12 +1,7 @@
-﻿using ColorVision.Theme;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Language
@@ -14,7 +9,7 @@ namespace ColorVision.Language
     public class LanguageManager
     {
         public static LanguageManager Current { get; set; } = new LanguageManager();
-        public List<string> Languages { get; set; } = new List<string>() { "zh-Hans", "en", "ja" };
+        public List<string> Languages { get; set; } = GetLanguages();
         public LanguageManager()
         {
 
@@ -25,9 +20,9 @@ namespace ColorVision.Language
             List<string>  list =  new List<string>() { };
             string exeFolderPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
 
-            foreach (var subDirectory in Directory.GetDirectories(exeFolderPath))
+            foreach (var subDirectory in Directory.GetDirectories(exeFolderPath??string.Empty))
             {
-                string[] files = System.IO.Directory.GetFiles(subDirectory, "ColorVision.resources.dll", System.IO.SearchOption.AllDirectories);
+                string[] files = Directory.GetFiles(subDirectory, "ColorVision.resources.dll", System.IO.SearchOption.AllDirectories);
 
                 if (files.Length > 0)
                 {

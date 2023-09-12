@@ -50,7 +50,8 @@ namespace ColorVision.SettingUp
             cmlauage.ItemsSource = LanguageManager.Current.Languages;
             cmlauage.SelectionChanged += (s, e) =>
             {
-                LanguageManager.Current.LanguageChange(cmlauage.SelectedValue.ToString());
+                if (cmlauage.SelectedValue is string str)
+                    LanguageManager.Current.LanguageChange(str);
             };
 
             //BitmapImage bitmapImage = new BitmapImage(new Uri(AppDomain.CurrentDomain.BaseDirectory + SoftwareConfig.UserConfig.UserImage));

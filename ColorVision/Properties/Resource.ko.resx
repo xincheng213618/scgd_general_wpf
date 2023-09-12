@@ -118,60 +118,60 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="MenuFile" xml:space="preserve">
-    <value>_File</value>
+    <value>파일 (_F) </value>
   </data>
   <data name="MenuHelp" xml:space="preserve">
-    <value>_Help</value>
+    <value>도움 (_H) </value>
   </data>
   <data name="MenuExit" xml:space="preserve">
-    <value>E_xit</value>
+    <value>종료 (_X)</value>
   </data>
   <data name="MenuDelete" xml:space="preserve">
-    <value>_Delete</value>
+    <value>삭제 (_D)</value>
   </data>
   <data name="MenuEdit" xml:space="preserve">
-    <value>_Edit</value>
+    <value>편집 (_E) </value>
   </data>
   <data name="MenuCut" xml:space="preserve">
-    <value>Cu_t</value>
+    <value>잘라내기 (_T)</value>
   </data>
   <data name="MenuCopy" xml:space="preserve">
-    <value>_Copy</value>
+    <value>복사 (_C)</value>
   </data>
   <data name="MenuNew" xml:space="preserve">
-    <value>_New</value>
+    <value>새로 만들기 (_N) </value>
   </data>
   <data name="MenuOpen" xml:space="preserve">
-    <value>_Open</value>
+    <value>열기 (_O)</value>
   </data>
   <data name="MenuUndo" xml:space="preserve">
-    <value>_Undo</value>
+    <value>취소 (_U)</value>
   </data>
   <data name="MenuTool" xml:space="preserve">
-    <value>_Tool</value>
+    <value>도구 (_T) </value>
   </data>
   <data name="MenuUpdate" xml:space="preserve">
-    <value>Check For _Updates</value>
+    <value>업데이트 확인 (_U) </value>
   </data>
   <data name="MenuView" xml:space="preserve">
-    <value>_View</value>
+    <value>보기 (_V)</value>
   </data>
   <data name="MenuViewSidebar" xml:space="preserve">
-    <value>Sidebar</value>
+    <value>사이드바 </value>
   </data>
   <data name="MenuViewStatusBar" xml:space="preserve">
     <value>StatusBar</value>
   </data>
+  <data name="Login" xml:space="preserve">
+    <value>로그인</value>
+  </data>
   <data name="MenuAbout" xml:space="preserve">
-    <value>_Abot</value>
+    <value>소개 (_A)</value>
   </data>
   <data name="MenuSettings" xml:space="preserve">
-    <value>_Settings</value>
+    <value>구성 (_S) </value>
   </data>
   <data name="MenuOptions" xml:space="preserve">
-    <value>_Options</value>
-  </data>
-  <data name="Login" xml:space="preserve">
-    <value>_Login</value>
+    <value>옵션 (_O)</value>
   </data>
 </root>

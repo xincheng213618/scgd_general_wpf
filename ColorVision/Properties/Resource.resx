@@ -162,4 +162,16 @@
   <data name="MenuTool" xml:space="preserve">
     <value>工具(_T)</value>
   </data>
+  <data name="Login" xml:space="preserve">
+    <value>登录</value>
+  </data>
+  <data name="MenuAbout" xml:space="preserve">
+    <value>关于(_A)</value>
+  </data>
+  <data name="MenuSettings" xml:space="preserve">
+    <value>设置(_S)</value>
+  </data>
+  <data name="MenuOptions" xml:space="preserve">
+    <value>选项(_O)</value>
+  </data>
 </root>
