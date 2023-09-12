@@ -87,7 +87,6 @@ namespace ColorVision
                     this.Icon = WindowConfig.Icon;
                 this.Title = WindowConfig.Title ?? this.Title;
             }
-
             Application.Current.MainWindow = this;
             TemplateControl = TemplateControl.GetInstance();
             ViewGridManager = ViewGridManager.GetInstance();

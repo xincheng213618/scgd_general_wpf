@@ -1,7 +1,9 @@
 ﻿using ColorVision;
+using Microsoft.DwayneNeed.Extensions;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -31,6 +33,9 @@ namespace WpfFlowControlLibrary
             flowEngine = new FlowEngineLib.FlowEngineControl(false);
 
             InitializeComponent();
+
+            Application.Current.MainWindow.Closing += OnClosing;
+
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -56,6 +61,14 @@ namespace WpfFlowControlLibrary
                         airspace1.Content = null;
                         Grid1.Children.Add(winf1);
                     }
+
+                    if (!Grid2.Children.Contains(winf2))
+                    {
+                        Grid2.Children.Remove(airspace2);
+                        airspace2.Content = null;
+                        Grid2.Children.Add(winf2);
+                    }
+
                     STNodeEditorMain.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
                     STNodeEditorMain.ContextMenuStrip.Items.Add("还原到主窗口中", null, (s, e1) =>
                     {
@@ -79,6 +92,13 @@ namespace WpfFlowControlLibrary
                         Grid1.Children.Remove(winf1);
                         airspace1.Content = winf1;
                         Grid1.Children.Add(airspace1);
+                    }
+
+                    if (!Grid2.Children.Contains(airspace2))
+                    {
+                        Grid2.Children.Remove(winf2);
+                        airspace2.Content = winf2;
+                        Grid2.Children.Add(airspace2);
                     }
 
                     STNodeEditorMain.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
@@ -131,6 +151,25 @@ namespace WpfFlowControlLibrary
                 STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale - 0.1f, (STNodeEditorMain.Width / 2), (STNodeEditorMain.Height / 2));
                 e.Handled = true;
             }
+        }
+
+        private void OnClosing(object? sender, CancelEventArgs e)
+        {
+            if (!Grid1.Children.Contains(winf1))
+            {
+                Grid1.Children.Remove(airspace1);
+                airspace1.Content = null;
+                Grid1.Children.Add(winf1);
+            }
+
+            if (!Grid2.Children.Contains(winf2))
+            {
+                Grid2.Children.Remove(airspace2);
+                airspace2.Content = null;
+                Grid2.Children.Add(winf2);
+            }
+
+            GC.SuppressFinalize(this);
         }
     }
 }

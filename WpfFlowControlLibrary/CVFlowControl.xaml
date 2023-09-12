@@ -8,7 +8,7 @@
              xmlns:airspace="clr-namespace:Microsoft.DwayneNeed.Interop;assembly=Microsoft.DwayneNeed"
              mc:Ignorable="d" 
              PreviewKeyDown="UserControl_PreviewKeyDown"
-             d:DesignHeight="300" d:DesignWidth="400" Initialized="UserControl_Initialized"  SizeChanged="UserControl_SizeChanged">
+             d:DesignHeight="300" d:DesignWidth="400" Initialized="UserControl_Initialized"  SizeChanged="UserControl_SizeChanged" >
     <Grid>
         <Grid.ColumnDefinitions >
             <ColumnDefinition Width="*"/>
@@ -22,10 +22,12 @@
                 </WindowsFormsHost>
             </airspace:AirspaceDecorator>
         </Grid>
-        <Grid Grid.Column="1">
-            <WindowsFormsHost x:Name="winf2" Width="200" Visibility="Visible" VerticalAlignment="Stretch">
-                <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
-            </WindowsFormsHost>
+        <Grid Grid.Column="1"  x:Name="Grid2">
+            <airspace:AirspaceDecorator x:Name="airspace2" AirspaceMode="Redirect" IsInputRedirectionEnabled="True" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsOutputRedirectionEnabled="True">
+                <WindowsFormsHost x:Name="winf2" Width="200" Visibility="Visible" VerticalAlignment="Stretch">
+                    <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
+                </WindowsFormsHost>
+            </airspace:AirspaceDecorator>
         </Grid>
     </Grid>
 </UserControl>
