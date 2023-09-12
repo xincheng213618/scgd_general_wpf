@@ -2,6 +2,7 @@
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -31,7 +32,11 @@ namespace WpfFlowControlLibrary
             flowEngine = new FlowEngineLib.FlowEngineControl(false);
 
             InitializeComponent();
+
+            Loaded += CVFlowControl_Loaded;
         }
+
+        private void CVFlowControl_Loaded(object sender, RoutedEventArgs e) => Window.GetWindow(this).Closing += OnClosing;
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -131,6 +136,12 @@ namespace WpfFlowControlLibrary
                 STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale - 0.1f, (STNodeEditorMain.Width / 2), (STNodeEditorMain.Height / 2));
                 e.Handled = true;
             }
+        }
+
+        private void OnClosing(object? sender, CancelEventArgs e)
+        {
+
+            // 析构
         }
     }
 }

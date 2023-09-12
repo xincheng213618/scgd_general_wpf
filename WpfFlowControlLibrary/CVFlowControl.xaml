@@ -8,7 +8,7 @@
              xmlns:airspace="clr-namespace:Microsoft.DwayneNeed.Interop;assembly=Microsoft.DwayneNeed"
              mc:Ignorable="d" 
              PreviewKeyDown="UserControl_PreviewKeyDown"
-             d:DesignHeight="300" d:DesignWidth="400" Initialized="UserControl_Initialized"  SizeChanged="UserControl_SizeChanged">
+             d:DesignHeight="300" d:DesignWidth="400" Initialized="UserControl_Initialized"  SizeChanged="UserControl_SizeChanged" >
     <Grid>
         <Grid.ColumnDefinitions >
             <ColumnDefinition Width="*"/>
