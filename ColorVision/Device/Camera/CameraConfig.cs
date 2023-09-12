@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using System.ComponentModel;
 using cvColorVision;
+using ColorVision.MVVM;
 
 namespace ColorVision.Device.Camera
 {
@@ -26,14 +27,16 @@ namespace ColorVision.Device.Camera
         private int _Gain;
 
         [JsonIgnore]
-        public bool IsExpThree {
-            get 
+        public bool IsExpThree
+        {
+            get
             {
                 if (Channel == ImageChannel.Three && CameraType == CameraType.CV_Q)
                     return true;
                 return false;
             }
-            set => NotifyPropertyChanged();}
+            set => NotifyPropertyChanged();
+        }
 
         public double ExpTime { get => _ExpTime; set { _ExpTime = value; NotifyPropertyChanged(); } }
         private double _ExpTime;
@@ -45,13 +48,50 @@ namespace ColorVision.Device.Camera
 
         public double ExpTimeB { get => _ExpTimeB; set { _ExpTimeB = value; NotifyPropertyChanged(); } }
         private double _ExpTimeB;
+
+        public MotorConfig MotorConfig { get; set; } = new MotorConfig();
     }
 
 
-    public class MotorConfig  
-    { 
-        public FOCUS_COMMUN eFOCUSCOMMUN { get; set; }
+    public class MotorConfig : ViewModelBase
+    {
+        public FOCUS_COMMUN eFOCUSCOMMUN { get => _eFOCUSCOMMUN; set { _eFOCUSCOMMUN = value; NotifyPropertyChanged(); } }
+        private FOCUS_COMMUN _eFOCUSCOMMUN;
 
+        public string szComName { get => _szComName; set { _szComName = value; NotifyPropertyChanged(); } }
+        private string _szComName;
+
+        public int BaudRate { get => _BaudRate; set { _BaudRate = value; NotifyPropertyChanged(); } }
+        private int _BaudRate;
+
+        public AutoFocusConfig AutoFocusConfig { get; set; } = new AutoFocusConfig();
+    }
+
+
+    public class AutoFocusConfig : ViewModelBase
+    {
+        public double forwardparam { get => _forwardpara; set { _forwardpara = value; NotifyPropertyChanged(); } }
+        private double _forwardpara;
+
+        public double curtailparam { get => _curtailparam; set { _curtailparam = value; NotifyPropertyChanged(); } }
+        private double _curtailparam;
+
+
+        public int curStep { get => _curStep; set { _curStep = value; NotifyPropertyChanged(); } }
+        private int _curStep;
+
+        public int stopStep { get => _stopStep; set { _stopStep = value; NotifyPropertyChanged(); } }
+        private int _stopStep;
+
+        public int minPosition { get => _minPosition; set { _minPosition = value; NotifyPropertyChanged(); } }
+        private int _minPosition;
+
+        public int maxPosition { get => _maxPosition; set { _maxPosition = value; NotifyPropertyChanged(); } }
+        private int _maxPosition;
+        public double eEvaFunc { get => _dMinValue; set { _dMinValue = value; NotifyPropertyChanged(); } }
+        private double _eEvaFunc;
+        public double dMinValue { get => _dMinValue; set { _dMinValue = value; NotifyPropertyChanged(); } }
+        private double _dMinValue;
 
 
     }
