@@ -1,4 +1,5 @@
 ﻿using ColorVision.Extension;
+using cvColorVision;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -38,7 +39,7 @@ namespace ColorVision.Device.Camera
 
             var type = MQTTDeviceCamera.Config.CameraType;
 
-            if (type == CameraType.LVQ || type == CameraType.LVH || type == CameraType.LVMILCL || type == CameraType.MILCL)
+            if (type == CameraType.LV_Q || type == CameraType.LV_H || type == CameraType.LV_MIL_CL || type == CameraType.MIL_CL)
             {
                 ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
                                                   where e1 != ImageChannel.Three
@@ -55,7 +56,7 @@ namespace ColorVision.Device.Camera
             {
                 if (ComboxCameraType.SelectedValue is CameraType type)
                 {
-                    if (type == CameraType.LVQ || type == CameraType.LVH || type == CameraType.LVMILCL || type == CameraType.MILCL)
+                    if (type == CameraType.LV_Q || type == CameraType.LV_H || type == CameraType.LV_MIL_CL || type == CameraType.MIL_CL)
                     {
                         ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
                                                           where e1 != ImageChannel.Three

@@ -11,6 +11,7 @@ using System.Windows.Media.Imaging;
 using ColorVision.SettingUp;
 using ColorVision.Solution;
 using FlowEngineLib;
+using cvColorVision;
 
 namespace ColorVision.Device.Camera
 {
@@ -221,8 +222,6 @@ namespace ColorVision.Device.Camera
         {
             Service.GetAutoExpTime();
         }
-
-        bool CameraOpen;
 
         public CameraVideoControl CameraVideoControl { get; set; }
 

@@ -1,4 +1,6 @@
-﻿using System;
+﻿#pragma warning disable CS8602 // 取消引用可能出现的空引用。
+
+using System;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using System.Windows.Media;

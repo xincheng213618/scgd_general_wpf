@@ -249,9 +249,6 @@ namespace ColorVision.Device.Camera
             }
         }
 
-
-        bool CameraOpen;
-
         public CameraVideoControl1 CameraVideoControl { get; set; }
 
         private void Button4_Click(object sender, RoutedEventArgs e)

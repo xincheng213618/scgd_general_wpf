@@ -7,6 +7,7 @@ using ColorVision.Device.SMU;
 using ColorVision.Device.Spectrum;
 using ColorVision.MySql.DAO;
 using ColorVision.SettingUp;
+using cvColorVision;
 using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
@@ -95,8 +96,8 @@ namespace ColorVision.MQTT.Service
                     {
                         ID = TextBox_Code.Text,
                         Name = TextBox_Name.Text,
-                        CameraType = CameraType.LVQ,
-                        TakeImageMode = TakeImageMode.Normal,
+                        CameraType = CameraType.LV_Q,
+                        TakeImageMode = TakeImageMode.Measure_Normal,
                         ImageBpp = ImageBpp.bpp8
                     };
                     SysResourceModel model = saveConfigInfo(cameraConfig1, sysResource);

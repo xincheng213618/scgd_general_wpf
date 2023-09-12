@@ -155,7 +155,7 @@ namespace ColorVision.Template
             base.ShowDialog();
 
         }
-        private void SaveAsFile(string sFileName,  FlowParam flow)
+        private static void SaveAsFile(string sFileName,  FlowParam flow)
         {
             Tool.Base64ToFile(flow.DataBase64, sFileName);
         }

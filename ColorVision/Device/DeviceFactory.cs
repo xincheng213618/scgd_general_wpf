@@ -1,4 +1,6 @@
-﻿using ColorVision.Device.Camera;
+﻿#pragma warning disable CS8603 
+
+using ColorVision.Device.Camera;
 using ColorVision.Device.PG;
 using ColorVision.Device.Sensor;
 using ColorVision.Device.SMU;
