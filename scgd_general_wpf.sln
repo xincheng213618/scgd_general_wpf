@@ -28,6 +28,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zlib", "3rdparty\zlib\zlib.
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "3rdparty", "3rdparty", "{8C2994F6-EF3C-40D2-A3C2-187B234805A0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WpfFlowControlLibrary", "WpfFlowControlLibrary\WpfFlowControlLibrary.csproj", "{3E1B8F68-8051-4FBB-8372-4E55B43F61DF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -136,6 +138,22 @@ Global
 		{45568694-A158-4A03-ACF8-3848AB1CA1A7}.Release|x64.Build.0 = Release|x64
 		{45568694-A158-4A03-ACF8-3848AB1CA1A7}.Release|x86.ActiveCfg = Release|Win32
 		{45568694-A158-4A03-ACF8-3848AB1CA1A7}.Release|x86.Build.0 = Release|Win32
+		{3E1B8F68-8051-4FBB-8372-4E55B43F61DF}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{3E1B8F68-8051-4FBB-8372-4E55B43F61DF}.Debug|Any CPU.Build.0 = Debug|x64
+		{3E1B8F68-8051-4FBB-8372-4E55B43F61DF}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{3E1B8F68-8051-4FBB-8372-4E55B43F61DF}.Debug|ARM64.Build.0 = Debug|ARM64
+		{3E1B8F68-8051-4FBB-8372-4E55B43F61DF}.Debug|x64.ActiveCfg = Debug|x64
+		{3E1B8F68-8051-4FBB-8372-4E55B43F61DF}.Debug|x64.Build.0 = Debug|x64
+		{3E1B8F68-8051-4FBB-8372-4E55B43F61DF}.Debug|x86.ActiveCfg = Debug|x64
+		{3E1B8F68-8051-4FBB-8372-4E55B43F61DF}.Debug|x86.Build.0 = Debug|x64
+		{3E1B8F68-8051-4FBB-8372-4E55B43F61DF}.Release|Any CPU.ActiveCfg = Release|x64
+		{3E1B8F68-8051-4FBB-8372-4E55B43F61DF}.Release|Any CPU.Build.0 = Release|x64
+		{3E1B8F68-8051-4FBB-8372-4E55B43F61DF}.Release|ARM64.ActiveCfg = Release|ARM64
+		{3E1B8F68-8051-4FBB-8372-4E55B43F61DF}.Release|ARM64.Build.0 = Release|ARM64
+		{3E1B8F68-8051-4FBB-8372-4E55B43F61DF}.Release|x64.ActiveCfg = Release|x64
+		{3E1B8F68-8051-4FBB-8372-4E55B43F61DF}.Release|x64.Build.0 = Release|x64
+		{3E1B8F68-8051-4FBB-8372-4E55B43F61DF}.Release|x86.ActiveCfg = Release|x64
+		{3E1B8F68-8051-4FBB-8372-4E55B43F61DF}.Release|x86.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
