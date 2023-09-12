@@ -336,7 +336,7 @@ namespace ColorVision.Device.Camera
                 Helpers.SendCommand(button, msgRecord);
             }
             
-
+              
         }
 
         /// <summary>

@@ -15,6 +15,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using ColorVision.Extension;
 using ColorVision.Theme;
+using ColorVision.Language;
 
 namespace ColorVision.SettingUp
 {
@@ -45,6 +46,12 @@ namespace ColorVision.SettingUp
             cmtheme.SelectedValuePath = "Key";
             cmtheme.DisplayMemberPath = "Value";
             cmtheme.SelectionChanged += Cmtheme_SelectionChanged;
+
+            cmlauage.ItemsSource = LanguageManager.Current.Languages;
+            cmlauage.SelectionChanged += (s, e) =>
+            {
+                LanguageManager.Current.LanguageChange(cmlauage.SelectedValue.ToString());
+            };
 
             //BitmapImage bitmapImage = new BitmapImage(new Uri(AppDomain.CurrentDomain.BaseDirectory + SoftwareConfig.UserConfig.UserImage));
             //HeaderImage.Source = bitmapImage;
@@ -137,17 +144,12 @@ namespace ColorVision.SettingUp
         {
             new MySqlConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
-
-        private void cmtheme_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-
-        }
-
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             SoftwareConfig.MQTTSetting.MsgRecords.Clear();
             GlobalSetting.GetInstance().SaveSoftwareConfig();
             MessageBox.Show("MQTT历史记录清理完毕", "ColorVision");
         }
+
     }
 }

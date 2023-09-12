@@ -6,7 +6,7 @@ namespace ColorVision.SettingUp
     {
         public string DefaultCreatName { get => _DefaultCreatName; set { _DefaultCreatName = value; NotifyPropertyChanged(); } }
         private string _DefaultCreatName = "新建工程";
-
+         
         public string DefaultSaveName { get => _DefaultSaveName; set { _DefaultSaveName = value; NotifyPropertyChanged(); } }
         private string _DefaultSaveName = "yyyy/dd/MM HH:mm:ss";
     }
