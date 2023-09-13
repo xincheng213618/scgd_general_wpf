@@ -66,6 +66,7 @@ namespace ColorVision
 
         private async void Window_Initialized(object sender, EventArgs e)
         {
+            
             GlobalSetting = GlobalSetting.GetInstance();
             FlowDisplayControl flowDisplayControl = new FlowDisplayControl();
             SPDisplay.Children.Insert(0, flowDisplayControl);
@@ -102,7 +103,7 @@ namespace ColorVision
             {
                 if (!SoftwareSetting.IsDeFaultOpenService)
                 {
-                    new WindowDevices() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+                    new WindowDevices() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
                 }
                 else
                 {
@@ -121,6 +122,8 @@ namespace ColorVision
             {
                 Environment.Exit(-1);
             };
+            this.Visibility = Visibility.Visible;
+
 
         }
         private void MenuStatusBar_Click(object sender, RoutedEventArgs e)
