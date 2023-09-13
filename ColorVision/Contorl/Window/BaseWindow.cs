@@ -80,7 +80,8 @@ namespace ColorVision.Controls
                         wac.Color = ThemeManager.Current.CurrentUITheme == Theme.Theme.Light ?  Color.FromArgb(200, 255, 255, 255) : Color.FromArgb(180, 0, 0, 0);
                     }
                     wac.IsEnabled = true;
-                    ThemeManager.Current.CurrentUIThemeChanged += (s) => {
+                    ThemeChangedHandler themeChangedHandler = (s) => {
+
                         if (UseLightTheme) {
                             wac.Color = Color.FromArgb(200, 255, 255, 255);
                         }
@@ -89,9 +90,16 @@ namespace ColorVision.Controls
                         }
                         wac.IsEnabled = true;
                     };
+
+                    ThemeManager.Current.CurrentUIThemeChanged += themeChangedHandler;
+                    Closing += (s, e) => {
+                        ThemeManager.Current.CurrentUIThemeChanged -= themeChangedHandler;
+                    };
                 }
             };
         }
+
+
 
         public static readonly bool IsWin11 = Environment.OSVersion.Version >= new Version(10, 0, 21996);
         public static readonly bool IsWin10 = !IsWin11 && Environment.OSVersion.Version >= new Version(10, 0);
