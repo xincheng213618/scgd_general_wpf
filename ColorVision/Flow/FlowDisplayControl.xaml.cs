@@ -42,7 +42,7 @@ namespace ColorVision.Flow
             MQTTConfig mQTTConfig = GlobalSetting.SoftwareConfig.MQTTConfig;
             FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
             flowView = new CVFlowControl();
-            ViewGridManager.GetInstance().AddView(flowView);
+            ViewGridManager.GetInstance().AddView(0,flowView);
 
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
             {

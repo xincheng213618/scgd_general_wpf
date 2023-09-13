@@ -65,6 +65,32 @@ namespace ColorVision
             return Grids[index].Children.Count == 0;
         }
 
+        public int AddView(int index,Control control)
+        {
+            if (control == null)
+                return -1;
+
+            if (Views.Contains(control))
+                return Views.IndexOf(control);
+
+            Views.Insert(0, control);
+
+            if (control is IView view)
+            {
+                if (IsGridEmpty(view.View.ViewIndex))
+                {
+                    Grids[view.View.ViewIndex].Children.Add(control);
+                }
+                else
+                {
+                    view.View.ViewIndex = Views.IndexOf(control);
+                }
+
+            }
+            return Views.IndexOf(control);
+        }
+
+
         public int AddView(Control control)
         {
             if (control == null)

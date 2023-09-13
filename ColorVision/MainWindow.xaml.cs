@@ -64,16 +64,14 @@ namespace ColorVision
             };
         }
 
-        private async void Window_Initialized(object sender, EventArgs e)
+        private void Window_Initialized(object sender, EventArgs e)
         {
             
             GlobalSetting = GlobalSetting.GetInstance();
             FlowDisplayControl flowDisplayControl = new FlowDisplayControl();
             SPDisplay.Children.Insert(0, flowDisplayControl);
 
-            
-
-
+        
             if (!WindowConfig.IsExist||(WindowConfig.IsExist&& WindowConfig.Icon == null)) {
                 ThemeManager.Current.SystemThemeChanged += (e) => {
                     this.Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision;component/Image/{(e == Theme.Theme.Light ? "ColorVision.ico" : "ColorVision1.ico")}"));
@@ -88,43 +86,15 @@ namespace ColorVision
                     this.Icon = WindowConfig.Icon;
                 this.Title = WindowConfig.Title ?? this.Title;
             }
-            Application.Current.MainWindow = this;
             TemplateControl = TemplateControl.GetInstance();
             ViewGridManager = ViewGridManager.GetInstance();
             ViewGridManager.MainView = ViewGrid;
 
-            await Task.Delay(30);
             StatusBarGrid.DataContext = GlobalSetting.GetInstance();
-            SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
-            MenuStatusBar.DataContext = SoftwareConfig;
-            //SiderBarGrid.DataContext = SoftwareConfig;
+            MenuStatusBar.DataContext = GlobalSetting.GetInstance().SoftwareConfig;
 
-            try
-            {
-                if (!SoftwareSetting.IsDeFaultOpenService)
-                {
-                    new WindowDevices() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-                }
-                else
-                {
-                    ServiceControl.GetInstance().GenContorl();
-                }
-            }
-            catch
-            {
-                MessageBox.Show("窗口创建错误");
-                Environment.Exit(-1);
-            }
             ViewGridManager.GetInstance().SetViewNum(1);
-
-            SPDisplay.Children.Add(new POIDisplayControl());
-            this.Closed += (s, e) =>
-            {
-                Environment.Exit(-1);
-            };
-            this.Visibility = Visibility.Visible;
-
-
+            this.Closed += (s, e) => {  Environment.Exit(-1); };
         }
         private void MenuStatusBar_Click(object sender, RoutedEventArgs e)
         {
