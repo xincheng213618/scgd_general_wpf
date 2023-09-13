@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="ColorVision.Device.POI.POIDisplayControl"
+﻿<UserControl x:Class="ColorVision.Device.POI.AlgorithmDisplayControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -18,6 +18,9 @@
 
         <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel >
+                <Button  Content="初始化"  HorizontalAlignment="Right" Click="Algorithm_INI" />
+                <Button  Content="GETSN"  HorizontalAlignment="Right" Click="Algorithm_GET" />
+
                 <DockPanel Margin="0,2">
                     <TextBlock Text="关注点模板：" VerticalAlignment="Center" Width="100"/>
                     <ComboBox  x:Name="ComboxPoiTemplate"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />

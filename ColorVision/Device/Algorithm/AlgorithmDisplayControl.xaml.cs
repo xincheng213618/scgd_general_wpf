@@ -1,4 +1,5 @@
-﻿using ColorVision.Template;
+﻿using ColorVision.Device.Algorithm;
+using ColorVision.Template;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,12 +18,18 @@ using System.Windows.Shapes;
 namespace ColorVision.Device.POI
 {
     /// <summary>
-    /// POIDisplayControl.xaml 的交互逻辑
+    /// AlgorithmDisplayControl.xaml 的交互逻辑
     /// </summary>
-    public partial class POIDisplayControl : UserControl
+    public partial class AlgorithmDisplayControl : UserControl
     {
-        public POIDisplayControl()
+        public DeviceAlgorithm Device { get; set; }
+
+        public AlgorithmService Service { get => Device.Service; }
+
+
+        public AlgorithmDisplayControl(DeviceAlgorithm device)
         {
+            Device = device;
             InitializeComponent();
         }
 
@@ -30,15 +37,21 @@ namespace ColorVision.Device.POI
         {
             ComboxPoiTemplate.ItemsSource = TemplateControl.GetInstance().PoiParams;
             ComboxPoiTemplate.SelectedIndex = 0;
-
-
-
-
         }
 
         private void PoiClick(object sender, RoutedEventArgs e)
         {
+            Service.GetData(1,1);
+        }
 
+        private void Algorithm_INI(object sender, RoutedEventArgs e)
+        {
+            Service.Init();
+        }
+
+        private void Algorithm_GET(object sender, RoutedEventArgs e)
+        {
+            Service.GetAllSnID();
         }
     }
 }

@@ -18,11 +18,11 @@ namespace ColorVision.Device.POI
     /// <summary>
     /// SpectrumView.xaml 的交互逻辑
     /// </summary>
-    public partial class POIView : UserControl,IView
+    public partial class AlgorithmView : UserControl,IView
     {
         public View View { get; set; }
         private ResultService spectumResult;
-        public POIView()
+        public AlgorithmView()
         {
             spectumResult = new ResultService();
             InitializeComponent();

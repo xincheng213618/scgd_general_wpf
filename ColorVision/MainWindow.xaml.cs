@@ -19,6 +19,8 @@ using HandyControl.Tools.Extension;
 using HandyControl.Tools;
 using System.Windows.Media.Animation;
 using ColorVision.Device.POI;
+using ColorVision.Device.Camera;
+using ColorVision.Device.Algorithm;
 
 namespace ColorVision
 {
@@ -71,7 +73,6 @@ namespace ColorVision
             FlowDisplayControl flowDisplayControl = new FlowDisplayControl();
             SPDisplay.Children.Insert(0, flowDisplayControl);
 
-        
             if (!WindowConfig.IsExist||(WindowConfig.IsExist&& WindowConfig.Icon == null)) {
                 ThemeManager.Current.SystemThemeChanged += (e) => {
                     this.Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision;component/Image/{(e == Theme.Theme.Light ? "ColorVision.ico" : "ColorVision1.ico")}"));
@@ -92,6 +93,10 @@ namespace ColorVision
 
             StatusBarGrid.DataContext = GlobalSetting.GetInstance();
             MenuStatusBar.DataContext = GlobalSetting.GetInstance().SoftwareConfig;
+
+
+            DeviceAlgorithm deviceAlgorithm = new DeviceAlgorithm(new MySql.DAO.SysResourceModel());
+            SPDisplay.Children.Add(deviceAlgorithm.Control);
 
             ViewGridManager.GetInstance().SetViewNum(1);
             this.Closed += (s, e) => {  Environment.Exit(-1); };

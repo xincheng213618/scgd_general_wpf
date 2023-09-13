@@ -45,7 +45,7 @@ namespace ColorVision.Device.Camera
 
             //Connected += (s, e) =>
             //{
-            //    GetAllCameraID();
+            //    CM_GetAllSnID();
             //};
         }
 
