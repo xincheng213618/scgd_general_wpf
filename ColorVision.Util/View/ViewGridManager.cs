@@ -365,7 +365,7 @@ namespace ColorVision
                 Grids.Add(grid);
 
                 var text = new TextBlock { Text = (i + 1).ToString(),Foreground =Brushes.Red,HorizontalAlignment =HorizontalAlignment.Center,FontSize=30};
-                Panel.SetZIndex(text,999);
+                Panel.SetZIndex(text,0);
 
                 grid.Children.Add(text);
                 int location = Array.IndexOf(maps, i);
@@ -385,7 +385,6 @@ namespace ColorVision
                         Width = 2,
                         HorizontalAlignment = HorizontalAlignment.Right,
                     };
-
                     gridSplitter.SetValue(Grid.RowProperty, row);
                     gridSplitter.SetValue(Grid.ColumnProperty, col);
                     MainView.Children.Add(gridSplitter);
