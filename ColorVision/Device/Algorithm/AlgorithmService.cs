@@ -84,7 +84,6 @@ namespace ColorVision.Device.Algorithm
                         break;
                     case "GetData":
                         DeviceStatus = DeviceStatus.Opened;
-
                         break;
                     case "SaveLicense":
                         break;

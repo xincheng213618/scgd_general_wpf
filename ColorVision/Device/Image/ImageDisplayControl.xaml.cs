@@ -61,8 +61,8 @@ namespace ColorVision.Device.Image
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
             {
                 List<KeyValuePair<string, int>> KeyValues = new List<KeyValuePair<string, int>>();
-                KeyValues.Add(new KeyValuePair<string, int>("独立窗口", -2));
-                KeyValues.Add(new KeyValuePair<string, int>("隐藏", -1));
+                KeyValues.Add(new KeyValuePair<string, int>(Properties.Resource.WindowSingle, -2));
+                KeyValues.Add(new KeyValuePair<string, int>(Properties.Resource.WindowHidden, -1));
                 for (int i = 0; i < e; i++)
                 {
                     KeyValues.Add(new KeyValuePair<string, int>((i + 1).ToString(), i));

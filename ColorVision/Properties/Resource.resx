@@ -216,4 +216,10 @@
   <data name="TbSettingsStartBoot" xml:space="preserve">
     <value>开机启动(可能会不成功)</value>
   </data>
+  <data name="WindowHidden" xml:space="preserve">
+    <value>隐藏</value>
+  </data>
+  <data name="WindowSingle" xml:space="preserve">
+    <value>独立窗口</value>
+  </data>
 </root>
