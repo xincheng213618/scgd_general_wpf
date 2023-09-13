@@ -162,7 +162,7 @@
   <data name="MenuTool" xml:space="preserve">
     <value>工具(_T)</value>
   </data>
-  <data name="Login" xml:space="preserve">
+  <data name="Sign_in" xml:space="preserve">
     <value>登录</value>
   </data>
   <data name="MenuAbout" xml:space="preserve">
@@ -173,5 +173,20 @@
   </data>
   <data name="MenuOptions" xml:space="preserve">
     <value>选项(_O)</value>
+  </data>
+  <data name="Account" xml:space="preserve">
+    <value>账号</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>密码</value>
+  </data>
+  <data name="AccountLogin" xml:space="preserve">
+    <value>账号登录</value>
+  </data>
+  <data name="Sign_out" xml:space="preserve">
+    <value>退出</value>
+  </data>
+  <data name="Create_an_account" xml:space="preserve">
+    <value>注册一个</value>
   </data>
 </root>

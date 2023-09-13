@@ -162,7 +162,7 @@
   <data name="MenuDelete" xml:space="preserve">
     <value>刪除(_D)</value>
   </data>
-  <data name="Login" xml:space="preserve">
+  <data name="Sign_in" xml:space="preserve">
     <value>登入</value>
   </data>
   <data name="MenuAbout" xml:space="preserve">
@@ -173,5 +173,20 @@
   </data>
   <data name="MenuOptions" xml:space="preserve">
     <value>選項(_O）</value>
+  </data>
+  <data name="Account" xml:space="preserve">
+    <value>賬號</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>密碼</value>
+  </data>
+  <data name="AccountLogin" xml:space="preserve">
+    <value>賬號登入</value>
+  </data>
+  <data name="Sign_out" xml:space="preserve">
+    <value>退出</value>
+  </data>
+  <data name="Create_an_account" xml:space="preserve">
+    <value>創建一個帳號</value>
   </data>
 </root>

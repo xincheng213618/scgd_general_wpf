@@ -69,7 +69,7 @@
                     <MenuItem Header="MQTT列表(_L)" Click="MenuItem12_Click"/>
                     <MenuItem Header="管理员服务配置(_S)"  Tag="ServiceParam" Click="MenuItem_Template"/>
                     <MenuItem Header="设备配置(_D)"  Tag="DeviceParam" Click="MenuItem_Template"/>
-                    <MenuItem Header="{x:Static resx:Resource.Login}"  Click="Login_Click"/>
+                    <MenuItem Header="{x:Static resx:Resource.Sign_in}"  Click="Login_Click"/>
                     <Separator/>
                     <MenuItem Header="{x:Static resx:Resource.MenuOptions}"  Click="MenuItem_Click_2"   InputGestureText="Ctrl + I"  >
                         <MenuItem.Icon >

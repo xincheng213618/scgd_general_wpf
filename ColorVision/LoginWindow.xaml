@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision"
         xmlns:hc="https://handyorg.github.io/handycontrol"
+        xmlns:resx="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         Title="ColorVision" Height="500" Background="#ECEFFF" Width="400" Initialized="Window_Initialized">
     <Grid x:Name="MainGrid">
@@ -14,24 +15,24 @@
         </Grid.RowDefinitions>
         <StackPanel Margin="10,10,10,10" Grid.RowSpan="2">
             <Image Source="Image\ColorVision.png"  Stretch="Uniform" Height="80" Margin="10"/>
-            <Border Background="#F9F9F9" Margin="20,10" Height="250" CornerRadius="10">
+            <Border Background="{DynamicResource GlobalBorderBrush}" Margin="20,10" Height="250" CornerRadius="10">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <Border Grid.Row="0" BorderBrush="#F5F5F6" BorderThickness="0,0,0,1">
-                        <TextBlock Text="账号登录"  HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Margin="0,15,0,10"/>
+                    <Border Grid.Row="0" BorderBrush="{DynamicResource MenuHighBrushKey}" BorderThickness="0,0,0,1">
+                        <TextBlock  Text="{x:Static resx:Resource.AccountLogin}" HorizontalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush }" VerticalAlignment="Center" FontSize="20" Margin="0,15,0,10"/>
                     </Border>
 
                     <StackPanel Margin="30,20" Grid.Row="1">
                         <DockPanel Margin="5">
-                            <hc:TextBox x:Name="Account1" ToolTip="账号"  VerticalAlignment="Center" Text="{Binding Name}" hc:InfoElement.Placeholder="账号"  BorderThickness="0,0,0,1"   />
+                            <hc:TextBox x:Name="Account1" ToolTip="{x:Static resx:Resource.Account}"  VerticalAlignment="Center" Text="{Binding Name}" hc:InfoElement.Placeholder="{x:Static resx:Resource.Account}"  BorderThickness="0,0,0,1"   />
                         </DockPanel>
                         <DockPanel Margin="5">
-                            <hc:PasswordBox x:Name="PasswordBox1"  ToolTip="账号"  VerticalAlignment="Center"  hc:InfoElement.Placeholder="密码"  BorderThickness="0,0,0,1"  hc:ShowEyeButton="True" />
+                            <hc:PasswordBox x:Name="PasswordBox1"  ToolTip="{x:Static resx:Resource.Password}"  VerticalAlignment="Center"  hc:InfoElement.Placeholder="{x:Static resx:Resource.Password}"  BorderThickness="0,0,0,1"  hc:ShowEyeButton="True" />
                         </DockPanel>
-                        <Button Content="登录" Foreground="White" FontSize="15"  Padding="6" Margin="0,15"  Click="Button_Click">
+                        <Button Content="{x:Static resx:Resource.Sign_in}" Foreground="White" FontSize="15" BorderThickness="0"  Padding="6" Margin="0,15"  Click="Button_Click">
                             <Button.Background>
                                 <LinearGradientBrush EndPoint="1,1" StartPoint="0,0">
                                     <GradientStop Color="#476FFE"/>
@@ -41,9 +42,10 @@
                                 </LinearGradientBrush>
                             </Button.Background>
                         </Button>
-
-
+                        <TextBlock Text="{x:Static resx:Resource.Create_an_account}" HorizontalAlignment="Center"  Foreground="{DynamicResource GlobalTextBrush}"/>
                     </StackPanel>
+
+                    
                 </Grid>
             </Border>
         </StackPanel>

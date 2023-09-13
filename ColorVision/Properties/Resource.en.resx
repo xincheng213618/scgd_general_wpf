@@ -171,7 +171,22 @@
   <data name="MenuOptions" xml:space="preserve">
     <value>_Options</value>
   </data>
-  <data name="Login" xml:space="preserve">
-    <value>_Login</value>
+  <data name="Sign_in" xml:space="preserve">
+    <value>Sign in</value>
+  </data>
+  <data name="Account" xml:space="preserve">
+    <value>Account</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="AccountLogin" xml:space="preserve">
+    <value>Sign in to ColorVision</value>
+  </data>
+  <data name="Sign_out" xml:space="preserve">
+    <value>Sign out</value>
+  </data>
+  <data name="Create_an_account" xml:space="preserve">
+    <value>Create an account</value>
   </data>
 </root>

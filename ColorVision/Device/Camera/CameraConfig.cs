@@ -88,7 +88,7 @@ namespace ColorVision.Device.Camera
 
         public int maxPosition { get => _maxPosition; set { _maxPosition = value; NotifyPropertyChanged(); } }
         private int _maxPosition;
-        public double eEvaFunc { get => _dMinValue; set { _dMinValue = value; NotifyPropertyChanged(); } }
+        public double eEvaFunc { get => _eEvaFunc; set { _eEvaFunc = value; NotifyPropertyChanged(); } }
         private double _eEvaFunc;   
         public double dMinValue { get => _dMinValue; set { _dMinValue = value; NotifyPropertyChanged(); } }
         private double _dMinValue;

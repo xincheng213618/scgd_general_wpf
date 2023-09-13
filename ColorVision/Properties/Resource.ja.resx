@@ -118,7 +118,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="MenuCut" xml:space="preserve">
-    <value>切り取る (_T) </value>
+    <value>切り取る (_T)</value>
   </data>
   <data name="MenuCopy" xml:space="preserve">
     <value>コピーする (_C)</value>
@@ -127,7 +127,7 @@
     <value>削除する (_D)</value>
   </data>
   <data name="MenuEdit" xml:space="preserve">
-    <value>編集する (_E) </value>
+    <value>編集する (_E)</value>
   </data>
   <data name="MenuExit" xml:space="preserve">
     <value>終了する (_X)</value>
@@ -148,21 +148,21 @@
     <value>表示 (_V)</value>
   </data>
   <data name="MenuViewSidebar" xml:space="preserve">
-    <value>サイドバー </value>
+    <value>サイドバー</value>
   </data>
   <data name="MenuViewStatusBar" xml:space="preserve">
     <value>ステータスバー</value>
   </data>
   <data name="MenuUndo" xml:space="preserve">
-    <value>取り消す (_U) </value>
+    <value>取り消す (_U)</value>
   </data>
   <data name="MenuTool" xml:space="preserve">
     <value>ツール (_T)</value>
   </data>
   <data name="MenuHelp" xml:space="preserve">
-    <value>ヘルプ (_H) </value>
+    <value>ヘルプ (_H)</value>
   </data>
-  <data name="Login" xml:space="preserve">
+  <data name="Sign_in" xml:space="preserve">
     <value>ログイン</value>
   </data>
   <data name="MenuAbout" xml:space="preserve">
@@ -173,5 +173,20 @@
   </data>
   <data name="MenuOptions" xml:space="preserve">
     <value>オプション (_O)</value>
+  </data>
+  <data name="Account" xml:space="preserve">
+    <value>アカウン</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>パスワード</value>
+  </data>
+  <data name="AccountLogin" xml:space="preserve">
+    <value>アカウントログイン</value>
+  </data>
+  <data name="Sign_out" xml:space="preserve">
+    <value>サインアウト</value>
+  </data>
+  <data name="Create_an_account" xml:space="preserve">
+    <value>アカウントを作成する</value>
   </data>
 </root>
