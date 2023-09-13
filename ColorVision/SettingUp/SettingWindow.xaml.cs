@@ -47,6 +47,10 @@ namespace ColorVision.SettingUp
             cmtheme.DisplayMemberPath = "Value";
             cmtheme.SelectionChanged += Cmtheme_SelectionChanged;
 
+            
+            if (LanguageManager.Current.Languages.Count <= 1)
+                lauagDock.Visibility = Visibility.Collapsed;
+
             cmlauage.ItemsSource = LanguageManager.Current.Languages;
             cmlauage.SelectionChanged += (s, e) =>
             {
