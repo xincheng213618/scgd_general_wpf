@@ -209,15 +209,12 @@ namespace ColorVision
             Application.Current.MainWindow.AddHotKeys(new HotKeys("打开工程", new Hotkey(Key.O, ModifierKeys.Control), OpenSolution));
             Application.Current.MainWindow.AddHotKeys(new HotKeys("新建工程", new Hotkey(Key.N, ModifierKeys.Control), NewCreatSolution));
             Application.Current.MainWindow.AddHotKeys(new HotKeys("设置", new Hotkey(Key.I, ModifierKeys.Control), OpenSetting));
-            Application.Current.MainWindow.AddHotKeys(new HotKeys("关于", new Hotkey(Key.F1, ModifierKeys.Control), AboutMsg));
+            Application.Current.MainWindow.AddHotKeys(new HotKeys(Properties.Resource.About, new Hotkey(Key.F1, ModifierKeys.Control), AboutMsg));
 
             MenuItem RecentListMenuItem = null;
 
-
-
-
             RecentListMenuItem ??= new MenuItem();
-            RecentListMenuItem.Header = "最近使用过的文件(_F)";
+            RecentListMenuItem.Header = Properties.Resource.RecentFiles;
             RecentListMenuItem.SubmenuOpened += (s, e) =>
             {
                 var firstMenuItem = RecentListMenuItem.Items[0];

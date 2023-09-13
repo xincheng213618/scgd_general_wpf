@@ -189,4 +189,31 @@
   <data name="Create_an_account" xml:space="preserve">
     <value>アカウントを作成する</value>
   </data>
+  <data name="RecentFiles" xml:space="preserve">
+    <value>最近のファイル(_F)</value>
+  </data>
+  <data name="About" xml:space="preserve">
+    <value>について</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>言語</value>
+  </data>
+  <data name="MenuLanguage" xml:space="preserve">
+    <value>言語(_L)</value>
+  </data>
+  <data name="Theme" xml:space="preserve">
+    <value>テーマ</value>
+  </data>
+  <data name="MenuTheme" xml:space="preserve">
+    <value>テーマ（_H）</value>
+  </data>
+  <data name="FillPassword" xml:space="preserve">
+    <value>パスワードを入力してください</value>
+  </data>
+  <data name="FillAccount" xml:space="preserve">
+    <value>アカウントを入力してください</value>
+  </data>
+  <data name="TbSettingsStartBoot" xml:space="preserve">
+    <value>自動起動</value>
+  </data>
 </root>

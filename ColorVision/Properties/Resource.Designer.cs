@@ -61,6 +61,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 关于 的本地化字符串。
+        /// </summary>
+        public static string About {
+            get {
+                return ResourceManager.GetString("About", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 账号 的本地化字符串。
         /// </summary>
         public static string Account {
@@ -84,6 +93,33 @@ namespace ColorVision.Properties {
         public static string Create_an_account {
             get {
                 return ResourceManager.GetString("Create_an_account", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请输入账号 的本地化字符串。
+        /// </summary>
+        public static string FillAccount {
+            get {
+                return ResourceManager.GetString("FillAccount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请输入密码 的本地化字符串。
+        /// </summary>
+        public static string FillPassword {
+            get {
+                return ResourceManager.GetString("FillPassword", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 语言 的本地化字符串。
+        /// </summary>
+        public static string Language {
+            get {
+                return ResourceManager.GetString("Language", resourceCulture);
             }
         }
         
@@ -160,6 +196,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 语言(_L) 的本地化字符串。
+        /// </summary>
+        public static string MenuLanguage {
+            get {
+                return ResourceManager.GetString("MenuLanguage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 新建(_N) 的本地化字符串。
         /// </summary>
         public static string MenuNew {
@@ -192,6 +237,15 @@ namespace ColorVision.Properties {
         public static string MenuSettings {
             get {
                 return ResourceManager.GetString("MenuSettings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 主题(_H) 的本地化字符串。
+        /// </summary>
+        public static string MenuTheme {
+            get {
+                return ResourceManager.GetString("MenuTheme", resourceCulture);
             }
         }
         
@@ -259,6 +313,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 最近使用过的文件(_F) 的本地化字符串。
+        /// </summary>
+        public static string RecentFiles {
+            get {
+                return ResourceManager.GetString("RecentFiles", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 登录 的本地化字符串。
         /// </summary>
         public static string Sign_in {
@@ -273,6 +336,24 @@ namespace ColorVision.Properties {
         public static string Sign_out {
             get {
                 return ResourceManager.GetString("Sign_out", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 开机启动(可能会不成功) 的本地化字符串。
+        /// </summary>
+        public static string TbSettingsStartBoot {
+            get {
+                return ResourceManager.GetString("TbSettingsStartBoot", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 主题 的本地化字符串。
+        /// </summary>
+        public static string Theme {
+            get {
+                return ResourceManager.GetString("Theme", resourceCulture);
             }
         }
     }

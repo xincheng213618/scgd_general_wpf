@@ -27,10 +27,10 @@
 
                     <StackPanel Margin="30,20" Grid.Row="1">
                         <DockPanel Margin="5">
-                            <hc:TextBox x:Name="Account1" ToolTip="{x:Static resx:Resource.Account}"  VerticalAlignment="Center" Text="{Binding Name}" hc:InfoElement.Placeholder="{x:Static resx:Resource.Account}"  BorderThickness="0,0,0,1"   />
+                            <hc:TextBox x:Name="Account1" ToolTip="{x:Static resx:Resource.Account}"  VerticalAlignment="Center" Text="{Binding Name}" hc:InfoElement.Placeholder="{x:Static resx:Resource.FillAccount}"  BorderThickness="0,0,0,1"   />
                         </DockPanel>
                         <DockPanel Margin="5">
-                            <hc:PasswordBox x:Name="PasswordBox1"  ToolTip="{x:Static resx:Resource.Password}"  VerticalAlignment="Center"  hc:InfoElement.Placeholder="{x:Static resx:Resource.Password}"  BorderThickness="0,0,0,1"  hc:ShowEyeButton="True" />
+                            <hc:PasswordBox x:Name="PasswordBox1"  ToolTip="{x:Static resx:Resource.Password}"  VerticalAlignment="Center"  hc:InfoElement.Placeholder="{x:Static resx:Resource.FillPassword}"  BorderThickness="0,0,0,1"  hc:ShowEyeButton="True" />
                         </DockPanel>
                         <Button Content="{x:Static resx:Resource.Sign_in}" Foreground="White" FontSize="15" BorderThickness="0"  Padding="6" Margin="0,15"  Click="Button_Click">
                             <Button.Background>

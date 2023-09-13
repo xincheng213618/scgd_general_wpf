@@ -163,7 +163,7 @@
     <value>StatusBar</value>
   </data>
   <data name="MenuAbout" xml:space="preserve">
-    <value>_Abot</value>
+    <value>_About</value>
   </data>
   <data name="MenuSettings" xml:space="preserve">
     <value>_Settings</value>
@@ -188,5 +188,32 @@
   </data>
   <data name="Create_an_account" xml:space="preserve">
     <value>Create an account</value>
+  </data>
+  <data name="RecentFiles" xml:space="preserve">
+    <value>Recent _Files</value>
+  </data>
+  <data name="About" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="MenuLanguage" xml:space="preserve">
+    <value>_Language</value>
+  </data>
+  <data name="Theme" xml:space="preserve">
+    <value>Theme</value>
+  </data>
+  <data name="MenuTheme" xml:space="preserve">
+    <value>T_heme</value>
+  </data>
+  <data name="FillPassword" xml:space="preserve">
+    <value>Please enter your password</value>
+  </data>
+  <data name="FillAccount" xml:space="preserve">
+    <value>Please enter your account</value>
+  </data>
+  <data name="TbSettingsStartBoot" xml:space="preserve">
+    <value>Start on boot</value>
   </data>
 </root>

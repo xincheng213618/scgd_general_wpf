@@ -189,4 +189,31 @@
   <data name="Create_an_account" xml:space="preserve">
     <value>注册一个</value>
   </data>
+  <data name="RecentFiles" xml:space="preserve">
+    <value>最近使用过的文件(_F)</value>
+  </data>
+  <data name="About" xml:space="preserve">
+    <value>关于</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>语言</value>
+  </data>
+  <data name="MenuLanguage" xml:space="preserve">
+    <value>语言(_L)</value>
+  </data>
+  <data name="Theme" xml:space="preserve">
+    <value>主题</value>
+  </data>
+  <data name="MenuTheme" xml:space="preserve">
+    <value>主题(_H)</value>
+  </data>
+  <data name="FillPassword" xml:space="preserve">
+    <value>请输入密码</value>
+  </data>
+  <data name="FillAccount" xml:space="preserve">
+    <value>请输入账号</value>
+  </data>
+  <data name="TbSettingsStartBoot" xml:space="preserve">
+    <value>开机启动(可能会不成功)</value>
+  </data>
 </root>
