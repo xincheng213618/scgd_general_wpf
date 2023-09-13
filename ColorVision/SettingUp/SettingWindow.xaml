@@ -310,8 +310,8 @@
             </Grid.ColumnDefinitions>
             <Grid Grid.Column="1" Background="{DynamicResource GlobalBorderBrush}" Panel.ZIndex="0">
             </Grid>
-            <Grid Grid.Column="1" Width="1" Background="#E0E0E0" HorizontalAlignment="Left">
-            </Grid>
+            <Grid Grid.Column="1" Width="1" Background="{DynamicResource GlobalBorderBrush}" HorizontalAlignment="Left"/>
+
         </Grid>
 
     </Grid>

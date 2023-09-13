@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Shell;
 using System.Windows.Media;
+using System.Reflection.Metadata;
 
 namespace WindowEffectTest
 {
@@ -96,6 +97,7 @@ namespace WindowEffectTest
             Window window = _window;
             var handle = new WindowInteropHelper(window).EnsureHandle();
             Composite(handle, isEnabled);
+
         }
         /// <summary>
         /// 在win11下对特定窗口启用模糊特效

@@ -133,8 +133,15 @@ namespace ColorVision.Theme
         /// <summary>
         /// 选择的主题，存在三种情况：
         /// </summary>
-        public  Theme CurrentTheme { get;  private set; }
-        private Theme CurrentUITheme { get;  set; }
+        public  Theme CurrentTheme { get => _CurrentTheme;  private set { if (value == _CurrentTheme) return; _CurrentTheme = value; CurrentThemeChanged?.Invoke(value); } }
+        private Theme _CurrentTheme;
+
+        public Theme CurrentUITheme { get => _CurrentUITheme; private set { if (value == _CurrentUITheme) return; _CurrentUITheme = value; CurrentUIThemeChanged?.Invoke(value);  } }
+        private Theme _CurrentUITheme;
+
+
+        public event ThemeChangedHandler? CurrentThemeChanged;
+        public event ThemeChangedHandler? CurrentUIThemeChanged;
 
 
         /// <summary>

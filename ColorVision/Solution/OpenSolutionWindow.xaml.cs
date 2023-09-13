@@ -63,7 +63,6 @@ namespace ColorVision.Solution
                 if (listView.SelectedIndex > -1)
                 {
                     FullName = SolutionInfos[listView.SelectedIndex].FullName;
-
                     this.Close();
                 }
 
