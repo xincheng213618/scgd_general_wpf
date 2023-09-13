@@ -94,6 +94,8 @@
                     <MenuItem Header="{x:Static resx:Resource.MenuAbout}" Click="About_Click"/>
                 </MenuItem>
             </Menu>
+            <Image Source="{DynamicResource DrawingImageUser}" Width="20" HorizontalAlignment="Right" Margin="0,0,10,0"/>
+            <Button Background="Transparent" BorderThickness="0" Click="Button_Click" Width="20"   HorizontalAlignment="Right" Margin="0,0,10,0"/>
         </Grid>
         <Grid x:Name="ContentGrid" Grid.Row="1">
             <Grid.ColumnDefinitions>

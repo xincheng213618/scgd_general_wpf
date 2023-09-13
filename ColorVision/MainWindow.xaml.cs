@@ -199,5 +199,11 @@ namespace ColorVision
                 ButtonShiftOut.Show();
             }
         }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            LoginWindow loginWindow = new LoginWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            loginWindow.ShowDialog();
+        }
     }
 }
