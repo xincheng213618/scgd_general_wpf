@@ -1,4 +1,6 @@
 ﻿using ColorVision.MQTT;
+using ColorVision.MQTT.Service;
+using ColorVision.MySql;
 using ColorVision.NativeMethods;
 using ColorVision.SettingUp;
 using ColorVision.Theme;
@@ -21,8 +23,10 @@ namespace ColorVision
     public partial class App : Application
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(App));
-
         private static Mutex mutex;
+
+        public static bool IsReStart { get; set; }
+
         [STAThread]
         [DebuggerNonUserCode]
         [GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
@@ -38,6 +42,10 @@ namespace ColorVision
                     if (args[i].ToLower() == "-d" || args[i].ToLower() == "-debug")
                     {
                         IsDebug = true;
+                    }
+                    if (args[i].ToLower() == "-r" || args[i].ToLower() == "-restart")
+                    {
+                        IsReStart = true;
                     }
                 }
             }
@@ -107,8 +115,20 @@ namespace ColorVision
             System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
 
             //代码先进入启动窗口
-            StartWindow StartWindow = new StartWindow();
-            StartWindow.Show();
+
+            if (!IsReStart)
+            {
+                StartWindow StartWindow = new StartWindow();
+                StartWindow.Show();
+            }
+            else
+            {
+                MainWindow MainWindow = new MainWindow();
+                ServiceControl.GetInstance().GenContorl();
+                MainWindow.Show();
+            }
+
+
         }
 
         /// <summary>

@@ -40,7 +40,7 @@ namespace ColorVision.Language
                 if (MessageBox.Show("您即将切换语言并重启窗口!", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                 {
                     Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(lang);
-                    Process.Start(Application.ResourceAssembly.Location.Replace(".dll",".exe"));
+                    Process.Start(Application.ResourceAssembly.Location.Replace(".dll",".exe"),"-r");
                     Application.Current.Shutdown();
                 }
             }

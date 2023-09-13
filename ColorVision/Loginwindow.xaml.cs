@@ -22,7 +22,7 @@ namespace ColorVision
                 new WindowService() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show(); ;
                 return true;
             }
-            else
+            else if (account != "admin")
             {
                 GlobalSetting.GetInstance().SoftwareConfig.UserConfig.UserName = account;
                 GlobalSetting.GetInstance().SoftwareConfig.UserConfig.UserPwd = password;
@@ -31,14 +31,11 @@ namespace ColorVision
                 new WindowDevices() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show(); ;
                 return true;
             }
-            if (GlobalSetting.GetInstance().SoftwareConfig.UserConfig.Account == account && GlobalSetting.GetInstance().SoftwareConfig.UserConfig.UserPwd == password)
-            {
-                return true;
-            }
-            else
+            else 
             {
                 return false;
             }
+
         }
     }
 
