@@ -45,7 +45,7 @@ namespace ColorVision.Device.Algorithm
                 case "CM_GetAllSnID":
                     try
                     {
-                        SnID = msg.Data.SnID;
+                        SnID = msg.Data.SnID[0];
                     }
                     catch (Exception ex)
                     {
@@ -83,8 +83,8 @@ namespace ColorVision.Device.Algorithm
                         DeviceStatus = DeviceStatus.Opened;
                         break;
                     case "GetData":
-                        string SaveFileName = msg.Data.SaveFileName;
-                        Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(this, SaveFileName));
+                        DeviceStatus = DeviceStatus.Opened;
+
                         break;
                     case "SaveLicense":
                         break;
@@ -144,7 +144,7 @@ namespace ColorVision.Device.Algorithm
             MsgSend msg = new MsgSend
             {
                 EventName = "GetData",
-                Params = new Dictionary<string, object>() { { "snID", SnID }, { "nPid", pid }, { "nBatch", Batchid },{ "szFileName","1.tif" } }
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid },{ "szFileNameX", "X.tif " }, { "szFileNameY", "Y.tif " }, { "szFileNameZ", "Z.tif " } }
             };
             return PublishAsyncClient(msg);
         }

@@ -21,8 +21,6 @@
                 <Run Text="("/>
                 <Run Text="{Binding Config.Code}"/>
                 <Run Text=","/>
-                <Run Text="{Binding Config.ID}"/>
-                <Run Text=","/>
                 <Run Text="{Binding Config.CameraType}"/>
                 <Run Text=","/>
                 <Run Text="{Binding Config.Channel}"/>

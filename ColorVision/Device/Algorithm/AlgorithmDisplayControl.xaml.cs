@@ -41,7 +41,10 @@ namespace ColorVision.Device.POI
 
         private void PoiClick(object sender, RoutedEventArgs e)
         {
-            Service.GetData(1,1);
+            if (ComboxPoiTemplate.SelectedValue is PoiParam poiParam)
+            {
+                Service.GetData(poiParam.ID, 1);
+            }
         }
 
         private void Algorithm_INI(object sender, RoutedEventArgs e)
