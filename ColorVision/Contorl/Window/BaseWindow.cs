@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ColorVision.Theme;
+using System;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -66,16 +67,28 @@ namespace ColorVision.Controls
                     });
 
 
-                    if (IsWin10)
-                    {
+                    if (IsWin10) {
                         //这里逻辑不一样
                         IsDragMoveEnabled = false;
                         this.WindowStyle = WindowStyle.None;
                     }
 
-
-                    wac.Color = (bool)false ? Color.FromArgb(180, 0, 0, 0) : Color.FromArgb(200, 255, 255, 255);
+                    if (UseLightTheme) {
+                        wac.Color = Color.FromArgb(200, 255, 255, 255);
+                    }
+                    else {
+                        wac.Color = ThemeManager.Current.CurrentUITheme == Theme.Theme.Light ?  Color.FromArgb(200, 255, 255, 255) : Color.FromArgb(180, 0, 0, 0);
+                    }
                     wac.IsEnabled = true;
+                    ThemeManager.Current.CurrentUIThemeChanged += (s) => {
+                        if (UseLightTheme) {
+                            wac.Color = Color.FromArgb(200, 255, 255, 255);
+                        }
+                        else {
+                            wac.Color = ThemeManager.Current.CurrentUITheme == Theme.Theme.Light ? Color.FromArgb(200, 255, 255, 255) : Color.FromArgb(180, 0, 0, 0);
+                        }
+                        wac.IsEnabled = true;
+                    };
                 }
             };
         }
@@ -144,6 +157,14 @@ namespace ColorVision.Controls
             set => SetValue(ShowIconProperty, value);
         }
 
+        public static readonly DependencyProperty UseLightThemeProperty = DependencyProperty.Register(
+    nameof(UseLightTheme), typeof(bool), typeof(BaseWindow), new PropertyMetadata(false));
+
+        public bool UseLightTheme {
+            get => (bool)GetValue(UseLightThemeProperty);
+            set => SetValue(UseLightThemeProperty, value);
+        }
+
 
         protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
         {
@@ -151,6 +172,8 @@ namespace ColorVision.Controls
             if (IsDragMoveEnabled && e.ButtonState == MouseButtonState.Pressed)
                 DragMove();
         }
+
+
         protected override void OnPreviewKeyDown(KeyEventArgs e)
         {
             base.OnPreviewKeyDown(e);
