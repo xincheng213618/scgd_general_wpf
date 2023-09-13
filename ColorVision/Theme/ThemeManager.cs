@@ -72,7 +72,8 @@ namespace ColorVision.Theme
             "/ColorVision;component/Theme/Base.xaml",
             "/ColorVision;component/Theme/Menu.xaml",
             "/ColorVision;component/Theme/GroupBox.xaml" ,
-            "/ColorVision;component/Theme/Icons.xaml"
+            "/ColorVision;component/Theme/Icons.xaml",
+            "/ColorVision;component/Contorl/Window/BaseWindow.xaml"
         };
 
         public static List<string> ResourceDictionaryWhite { get; set; } = new List<string>()
@@ -83,7 +84,8 @@ namespace ColorVision.Theme
             "/ColorVision;component/Theme/Base.xaml",
             "/ColorVision;component/Theme/Menu.xaml",
             "/ColorVision;component/Theme/GroupBox.xaml" ,
-            "/ColorVision;component/Theme/Icons.xaml"
+            "/ColorVision;component/Theme/Icons.xaml",
+            "/ColorVision;component/Contorl/Window/BaseWindow.xaml"
         };
 
 

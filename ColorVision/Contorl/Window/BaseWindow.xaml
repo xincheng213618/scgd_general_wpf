@@ -6,7 +6,6 @@
     <BooleanToVisibilityConverter x:Key="bool2VisibilityConverter"/>
     <WindowChrome x:Key="DefaultWindowChrome" x:Shared="False"  CornerRadius="0" GlassFrameThickness="-1" ResizeBorderThickness="1"  UseAeroCaptionButtons="False"/>
 
-
     <Style x:Key="CaptionButtonStyleDefault" TargetType="Button">
         <Setter Property="Foreground" Value="{DynamicResource CaptionButtonForeground}"/>
         <Setter Property="Background" Value="Transparent"/>

@@ -7,7 +7,7 @@
         xmlns:base ="clr-namespace:ColorVision.Controls"
         xmlns:hc ="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
-        Height="500" Width="800"  MinWidth="500" MinHeight="450" Background="#FBFBFB" WindowStyle="ToolWindow" WindowStartupLocation="CenterScreen" Initialized="BaseWindow_Initialized">
+        Height="500" Width="800"  MinWidth="500" MinHeight="450" Background="{DynamicResource GlobalBackground}" WindowStyle="ToolWindow" WindowStartupLocation="CenterScreen" Initialized="BaseWindow_Initialized">
     <Grid>
         <TextBlock Text="打开" FontSize="20"  HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,-20,0,0"/>
         <Grid Margin="10,20" >
@@ -54,7 +54,7 @@
             </Grid>
 
             <StackPanel Grid.Column="1"   Margin="20" >
-                <Button  Height="50"  IsEnabled="False"  Click="Button_Click">
+                <Button  Height="50" Click="Button_Click">
                     <Button.Template>
                         <ControlTemplate TargetType="{x:Type Button}">
                             <Border x:Name="Bd" Background="{TemplateBinding Background}" 	BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"	CornerRadius="3">
