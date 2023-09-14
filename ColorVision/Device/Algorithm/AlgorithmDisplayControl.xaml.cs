@@ -1,4 +1,7 @@
 ﻿using ColorVision.Device.Algorithm;
+using ColorVision.MQTT.Service;
+using ColorVision.MySql.DAO;
+using ColorVision.MySql.Service;
 using ColorVision.Template;
 using System;
 using System.Collections.Generic;
@@ -43,7 +46,9 @@ namespace ColorVision.Device.POI
         {
             if (ComboxPoiTemplate.SelectedValue is PoiParam poiParam)
             {
-                Service.GetData(poiParam.ID, 1);
+                string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+                var model = ServiceControl.GetInstance().GetResultBatch(sn);
+                Service.GetData(poiParam.ID, model.Id);
             }
         }
 

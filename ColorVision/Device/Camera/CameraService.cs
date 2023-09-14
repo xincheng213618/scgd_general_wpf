@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8602  
 
 using ColorVision.MQTT;
+using ColorVision.MQTT.Service;
 using ColorVision.MVVM;
 using ColorVision.Template;
 using cvColorVision;
@@ -392,10 +393,12 @@ namespace ColorVision.Device.Camera
 
         public MsgRecord GetData(double expTime, double gain, string saveFileName = "1.tif")
         {
+            string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            var model = ServiceControl.GetInstance().GetResultBatch(sn);
             MsgSend msg = new MsgSend
             {
                 EventName = "GetData",
-                Params = new Dictionary<string, object>() { { "expTime", expTime }, { "gain", gain }, { "savefilename", saveFileName } }
+                Params = new Dictionary<string, object>() { { "nBatch", model.Id }, { "expTime", expTime }, { "gain", gain }, { "savefilename", saveFileName } }
             };
             return PublishAsyncClient(msg);
         }

@@ -117,9 +117,7 @@ namespace ColorVision
         private void StackPanelMQTT_Initialized(object sender, EventArgs e)
         {
             if (sender is StackPanel stackPanel)
-            {
-               stackPanel.Children.Add(ServiceControl.GetInstance().MQTTStackPanel);
-            }
+                stackPanel.Children.Add(ServiceControl.GetInstance().StackPanel);
         }
 
         private void ViewGrid_Click(object sender, RoutedEventArgs e)

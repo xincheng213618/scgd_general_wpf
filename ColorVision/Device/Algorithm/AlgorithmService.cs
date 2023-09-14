@@ -2,6 +2,7 @@
 
 using ColorVision.Device.Camera;
 using ColorVision.MQTT;
+using ColorVision.MQTT.Service;
 using ColorVision.MVVM;
 using ColorVision.Template;
 using cvColorVision;
