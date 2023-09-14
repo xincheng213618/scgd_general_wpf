@@ -16,7 +16,7 @@ namespace ColorVision.MySql.DAO
     }
     public class PoiResultDao : BaseDaoMaster<PoiResultModel>
     {
-        public PoiResultDao() : base(string.Empty, "t_scgd_cfg_poi_reslut_detail", "id", true)
+        public PoiResultDao() : base(string.Empty, "t_scgd_cfg_poi_reslut_detail", "id", false)
         {
         }
 
@@ -34,6 +34,7 @@ namespace ColorVision.MySql.DAO
             }
             return list;
         }
+
 
         private DataTable GetTableAllBySN(string bid)
         {
@@ -54,26 +55,6 @@ namespace ColorVision.MySql.DAO
             };
 
             return model;
-        }
-
-        public override DataRow Model2Row(PoiDetailModel item, DataRow row)
-        {
-            if (item != null)
-            {
-                if (item.Id > 0) row["id"] = item.Id;
-                if (item.Name != null) row["name"] = item.Name;
-                if (item.Type >= 0) row["pt_type"] = item.Type;
-                if (item.Pid > 0) row["pid"] = item.Pid;
-                if (item.PixWidth > 0) row["pix_width"] = item.PixWidth;
-                if (item.PixHeight > 0) row["pix_height"] = item.PixHeight;
-                if (item.PixX >= 0) row["pix_x"] = item.PixX;
-                if (item.PixY >= 0) row["pix_y"] = item.PixY;
-                //row["create_date"] = item.CreateDate;
-                //row["is_enable"] = item.IsEnable;
-                //row["is_delete"] = item.IsDelete;
-                if (item.Remark != null) row["remark"] = item.Remark;
-            }
-            return row;
         }
     }
 }

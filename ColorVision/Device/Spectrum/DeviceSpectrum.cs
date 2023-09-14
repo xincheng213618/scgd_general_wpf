@@ -19,9 +19,9 @@ namespace ColorVision.Device.Spectrum
             ChartView = new SpectrumView();
         }
 
-        public override UserControl GenDeviceControl() => new DeviceSpectrumControl(this);
+        public override UserControl GetDeviceControl() => new DeviceSpectrumControl(this);
 
-        public override UserControl GenDisplayControl() => Control ?? new SpectrumDisplayControl(this);
+        public override UserControl GetDisplayControl() => Control ?? new SpectrumDisplayControl(this);
 
     }
 }

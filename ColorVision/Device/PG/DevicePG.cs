@@ -18,8 +18,8 @@ namespace ColorVision.Device.PG
             Control = new PGDisplayControl(PGService);
         }
 
-        public override UserControl GenDeviceControl() => new DevicePGControl(this);
-        public override UserControl GenDisplayControl() => Control;
+        public override UserControl GetDeviceControl() => new DevicePGControl(this);
+        public override UserControl GetDisplayControl() => Control;
 
         public string IsNet
         {

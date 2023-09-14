@@ -18,8 +18,9 @@
 
         <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel >
-                <Button  Content="初始化"  HorizontalAlignment="Right" Click="Algorithm_INI" />
                 <Button  Content="GETSN"  HorizontalAlignment="Right" Click="Algorithm_GET" />
+                <Button  Content="初始化"  HorizontalAlignment="Right" Click="Algorithm_INI" />
+                <Button  Content="GetData"  HorizontalAlignment="Right" Click="Button_Click" />
 
                 <DockPanel Margin="0,2">
                     <TextBlock Text="关注点模板：" VerticalAlignment="Center" Width="100"/>

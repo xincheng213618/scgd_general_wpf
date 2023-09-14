@@ -11,15 +11,18 @@ namespace ColorVision.Device.Algorithm
 
         public AlgorithmDisplayControl Control { get; set; }
 
+        public AlgorithmView View { get; set; }
+
+
         public DeviceAlgorithm(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             Config = new AlgorithmConfig() { SendTopic = "Algorithm", SubscribeTopic = "AlgorithmService" };
             Service = new AlgorithmService(Config);
             Control = new AlgorithmDisplayControl(this);
+            View ??= new AlgorithmView();
         }
 
-        //public override UserControl GenDeviceControl() => new DeviceCameraControl(this);
 
-        public override UserControl GenDisplayControl() => Control;
+        public override UserControl GetDisplayControl() => Control;
     }
 }

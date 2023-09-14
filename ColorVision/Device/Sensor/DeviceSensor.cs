@@ -14,7 +14,7 @@ namespace ColorVision.Device.Sensor
             SensorService = new SensorService(Config);
         }
 
-        public override UserControl GenDeviceControl() => new DeviceSensorControl(this);
+        public override UserControl GetDeviceControl() => new DeviceSensorControl(this);
 
 
 

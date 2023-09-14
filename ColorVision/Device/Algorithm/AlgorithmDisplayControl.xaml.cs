@@ -61,5 +61,12 @@ namespace ColorVision.Device.POI
         {
             Service.GetAllSnID();
         }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            var a = new ResultService().PoiSelectByBatchID(1);
+            MessageBox.Show("!");
+
+        }
     }
 }

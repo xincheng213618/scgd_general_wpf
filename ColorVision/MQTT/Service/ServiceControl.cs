@@ -62,7 +62,7 @@ namespace ColorVision.MQTT.Service
             {
                 if (item is BaseDevice device)
                 {
-                    StackPanel.Children.Add(device.GenDisplayControl());
+                    StackPanel.Children.Add(device.GetDisplayControl());
                 }
             }
         }
@@ -80,7 +80,7 @@ namespace ColorVision.MQTT.Service
                         if (item is BaseDevice device)
                         {
                             LastGenControl.Add(device);
-                            StackPanel.Children.Add(device.GenDisplayControl());
+                            StackPanel.Children.Add(device.GetDisplayControl());
                         }
                     }
                 }

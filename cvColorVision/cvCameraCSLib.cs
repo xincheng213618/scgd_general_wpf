@@ -214,24 +214,6 @@ namespace cvColorVision
         }
     }
 
-    public enum CalibrationType 
-    {
-        DarkNoise = 0,
-        DefectWPoint = 1,
-        DefectBPoint = 2,
-        DefectPoint = 3,
-        DSNU = 4,
-        Uniformity = 5,
-        Luminance = 6,
-        LumOneColor = 7,
-        LumFourColor = 8,
-        LumMultiColor = 9,
-        LumColor = 10,
-        Distortion = 11,
-        ColorShift = 12,
-        Empty = 9999
-    };
-
     public class CalibrationItem
     {
         public CalibrationType type { set; get; }
@@ -547,16 +529,6 @@ namespace cvColorVision
         Color_Filter = 0,//滤色片
         ND = 1//
     };
-    public enum ImageChannelType
-    {
-        Channel_X = 0,
-        Channel_Y = 1,
-        Channel_Z = 2
-
-    };
-
-
-
 
     public partial class cvCameraCSLib
     {
