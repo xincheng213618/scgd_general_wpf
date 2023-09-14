@@ -18,7 +18,6 @@
     </UserControl.Resources>
     <Grid>
         <Grid Margin="0,0,0,5">
-            <Border Background="#EEEEEE" CornerRadius="5"/>
             <StackPanel>
                 <Grid x:Name="MQTTShow" Margin="5">
                     <Grid  x:Name="MQTTShowContent">
