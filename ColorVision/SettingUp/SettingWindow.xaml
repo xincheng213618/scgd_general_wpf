@@ -99,15 +99,15 @@
                                             <TextBlock Text="启动恢复界面布局"/>
                                         </DockPanel>
                                         <DockPanel  Margin="5">
-                                            <hc:ComboBox x:Name="cmbloglevel" Text="{Binding SoftwareSetting.LogLevel}" hc:InfoElement.Placeholder="Level"  DockPanel.Dock="Right"  Style="{StaticResource ComboBox.Small}" Width="100"  />
+                                            <hc:ComboBox x:Name="cmbloglevel" Text="{Binding SoftwareSetting.LogLevel}" hc:InfoElement.Placeholder="Level"  DockPanel.Dock="Right"  Style="{StaticResource ComboBox.Small}" Width="150"  />
                                             <TextBlock Text="日志级别"/>
                                         </DockPanel>
                                         <DockPanel  Margin="5" >
-                                            <hc:ComboBox x:Name="cmtheme" SelectedValue="{Binding SoftwareSetting.Theme}" hc:InfoElement.Placeholder="{x:Static resx:Resource.Theme}"  DockPanel.Dock="Right" Style="{StaticResource ComboBox.Small}" Width="100"  />
+                                            <hc:ComboBox x:Name="cmtheme" SelectedValue="{Binding SoftwareSetting.Theme}" hc:InfoElement.Placeholder="{x:Static resx:Resource.Theme}"  DockPanel.Dock="Right" Style="{StaticResource ComboBox.Small}" Width="150"  />
                                             <TextBlock Text="{x:Static resx:Resource.Theme}"/>
                                         </DockPanel>
                                         <DockPanel  Margin="5" x:Name="lauagDock">
-                                            <hc:ComboBox x:Name="cmlauage" SelectedValue="{Binding SoftwareSetting.UICulture}" hc:InfoElement.Placeholder="{x:Static resx:Resource.Language}"  DockPanel.Dock="Right" Style="{StaticResource ComboBox.Small}" Width="100" />
+                                            <hc:ComboBox x:Name="cmlauage" SelectedValue="{Binding SoftwareSetting.UICulture}" hc:InfoElement.Placeholder="{x:Static resx:Resource.Language}"  DockPanel.Dock="Right" Style="{StaticResource ComboBox.Small}" Width="150" />
                                             <TextBlock Text="{x:Static resx:Resource.Language}"/>
                                         </DockPanel>
                                     </StackPanel>
@@ -273,7 +273,7 @@
                 </Grid>
             </TabItem>
 
-            <TabItem  Header="{x:Static resx:Resource.Shortcuts}" Background="Transparent">
+            <TabItem  Header="{x:Static resx:Resource.HotKeys}" Background="Transparent">
                 <Grid Background="{DynamicResource GlobalBorderBrush}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
@@ -284,7 +284,7 @@
                         <StackPanel>
                             <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
                                 <GroupBox.Header>
-                                    <TextBlock Text="{x:Static resx:Resource.Shortcuts}" FontSize="20"/>
+                                    <TextBlock Text="{x:Static resx:Resource.HotKeys}" FontSize="20"/>
                                 </GroupBox.Header>
                                 <Border  Style="{StaticResource BorderModuleArea}" >
                                     <StackPanel x:Name="HotKeyStackPanel"  Margin="10" Initialized="HotKeyStackPanel_Initialized"/>

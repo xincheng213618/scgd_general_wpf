@@ -16,6 +16,8 @@ using System.Windows.Input;
 using ColorVision.Extension;
 using ColorVision.Theme;
 using ColorVision.Language;
+using System.Globalization;
+using OpenCvSharp.Aruco;
 
 namespace ColorVision.SettingUp
 {
@@ -41,7 +43,7 @@ namespace ColorVision.SettingUp
             });
 
             cmtheme.ItemsSource = from e1 in Enum.GetValues(typeof(Theme.Theme)).Cast<Theme.Theme>()
-                                  select new KeyValuePair<Theme.Theme, string>(e1, e1.ToDescription());
+                                  select new KeyValuePair<Theme.Theme, string>(e1, Properties.Resource.ResourceManager.GetString(e1.ToDescription(), CultureInfo.CurrentUICulture));
 
             cmtheme.SelectedValuePath = "Key";
             cmtheme.DisplayMemberPath = "Value";
@@ -51,7 +53,10 @@ namespace ColorVision.SettingUp
             if (LanguageManager.Current.Languages.Count <= 1)
                 lauagDock.Visibility = Visibility.Collapsed;
 
-            cmlauage.ItemsSource = LanguageManager.Current.Languages;
+            cmlauage.ItemsSource = from e1 in LanguageManager.Current.Languages
+                                   select new KeyValuePair<string, string>(e1, LanguageManager.keyValuePairs.TryGetValue(e1.ToLower(), out string value) ? value : e1);
+            cmlauage.SelectedValuePath = "Key";
+            cmlauage.DisplayMemberPath = "Value";
             cmlauage.SelectionChanged += (s, e) =>
             {
                 if (cmlauage.SelectedValue is string str)

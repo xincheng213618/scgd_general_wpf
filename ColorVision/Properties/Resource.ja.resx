@@ -222,7 +222,34 @@
   <data name="WindowSingle" xml:space="preserve">
     <value>独立したウィンドウ</value>
   </data>
-  <data name="Shortcuts" xml:space="preserve">
+  <data name="HotKeys" xml:space="preserve">
     <value>ショートカットキー</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>閉じる</value>
+  </data>
+  <data name="Minimize" xml:space="preserve">
+    <value>最小化</value>
+  </data>
+  <data name="Maximize" xml:space="preserve">
+    <value>最大化</value>
+  </data>
+  <data name="Pin" xml:space="preserve">
+    <value>ピン留めする</value>
+  </data>
+  <data name="Restore" xml:space="preserve">
+    <value>リセットする</value>
+  </data>
+  <data name="ThemeLight" xml:space="preserve">
+    <value>ライトテーマ</value>
+  </data>
+  <data name="ThemeDark" xml:space="preserve">
+    <value>ダークカラー</value>
+  </data>
+  <data name="ThemeUseSystem" xml:space="preserve">
+    <value>システムのテーマを使用する</value>
+  </data>
+  <data name="LanguageResartSign" xml:space="preserve">
+    <value>新しい言語設定を使用するためには、再起動が必要です</value>
   </data>
 </root>

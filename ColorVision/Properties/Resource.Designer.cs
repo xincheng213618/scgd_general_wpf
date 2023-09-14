@@ -88,6 +88,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 关闭 的本地化字符串。
+        /// </summary>
+        public static string Close {
+            get {
+                return ResourceManager.GetString("Close", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 注册一个 的本地化字符串。
         /// </summary>
         public static string Create_an_account {
@@ -115,11 +124,38 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 语言 的本地化字符串。
+        ///   查找类似 快捷键 的本地化字符串。
+        /// </summary>
+        public static string HotKeys {
+            get {
+                return ResourceManager.GetString("HotKeys", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 用户界面语言 的本地化字符串。
         /// </summary>
         public static string Language {
             get {
                 return ResourceManager.GetString("Language", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 您必须重新启动才能使用新的语言设置 的本地化字符串。
+        /// </summary>
+        public static string LanguageResartSign {
+            get {
+                return ResourceManager.GetString("LanguageResartSign", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 最大化 的本地化字符串。
+        /// </summary>
+        public static string Maximize {
+            get {
+                return ResourceManager.GetString("Maximize", resourceCulture);
             }
         }
         
@@ -304,11 +340,29 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 最小化 的本地化字符串。
+        /// </summary>
+        public static string Minimize {
+            get {
+                return ResourceManager.GetString("Minimize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 密码 的本地化字符串。
         /// </summary>
         public static string Password {
             get {
                 return ResourceManager.GetString("Password", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 置顶 的本地化字符串。
+        /// </summary>
+        public static string Pin {
+            get {
+                return ResourceManager.GetString("Pin", resourceCulture);
             }
         }
         
@@ -322,11 +376,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 快捷键 的本地化字符串。
+        ///   查找类似 向下还原 的本地化字符串。
         /// </summary>
-        public static string Shortcuts {
+        public static string Restore {
             get {
-                return ResourceManager.GetString("Shortcuts", resourceCulture);
+                return ResourceManager.GetString("Restore", resourceCulture);
             }
         }
         
@@ -363,6 +417,33 @@ namespace ColorVision.Properties {
         public static string Theme {
             get {
                 return ResourceManager.GetString("Theme", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 深色 的本地化字符串。
+        /// </summary>
+        public static string ThemeDark {
+            get {
+                return ResourceManager.GetString("ThemeDark", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 浅色 的本地化字符串。
+        /// </summary>
+        public static string ThemeLight {
+            get {
+                return ResourceManager.GetString("ThemeLight", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 跟随系统 的本地化字符串。
+        /// </summary>
+        public static string ThemeUseSystem {
+            get {
+                return ResourceManager.GetString("ThemeUseSystem", resourceCulture);
             }
         }
         

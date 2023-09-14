@@ -1,6 +1,7 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:root="clr-namespace:ColorVision"
+                    xmlns:resx="clr-namespace:ColorVision.Properties"
                     xmlns:local="clr-namespace:ColorVision.Controls">
     
     <BooleanToVisibilityConverter x:Key="bool2VisibilityConverter"/>
@@ -54,23 +55,23 @@
 
     <Style x:Key="MinimizeButtonStyle" TargetType="Button" BasedOn="{StaticResource CaptionButtonStyleDefault}">
         <Setter Property="Content" Value="&#xE949;"/>
-        <Setter Property="ToolTip" Value="最小化"/>
+        <Setter Property="ToolTip" Value="{x:Static resx:Resource.Minimize}"/>
     </Style>
     <Style x:Key="MaximizeButtonStyle" TargetType="Button" BasedOn="{StaticResource CaptionButtonStyleDefault}">
         <Setter Property="Content" Value="&#xE739;"/>
-        <Setter Property="ToolTip" Value="最大化"/>
+        <Setter Property="ToolTip" Value="{x:Static resx:Resource.Maximize}"/>
     </Style>
     <Style x:Key="TopMostButtonStyle" TargetType="Button" BasedOn="{StaticResource CaptionButtonStyleDefault}">
         <Setter Property="Content" Value="&#xE718;"/>
-        <Setter Property="ToolTip" Value="置顶"/>
+        <Setter Property="ToolTip" Value="{x:Static resx:Resource.Pin}"/>
     </Style>
     <Style x:Key="RestoreButtonStyle" TargetType="Button" BasedOn="{StaticResource CaptionButtonStyleDefault}">
         <Setter Property="Content" Value="&#xE923;"/>
-        <Setter Property="ToolTip" Value="向下还原"/>
+        <Setter Property="ToolTip" Value="{x:Static resx:Resource.Restore}"/>
     </Style>
     <Style x:Key="CloseButtonStyle" TargetType="Button" BasedOn="{StaticResource CaptionButtonStyleClose}">
         <Setter Property="Content" Value="&#xE8BB;"/>
-        <Setter Property="ToolTip" Value="关闭"/>
+        <Setter Property="ToolTip" Value="{x:Static resx:Resource.Close}"/>
     </Style>
 
 

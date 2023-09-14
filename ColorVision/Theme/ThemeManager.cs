@@ -11,11 +11,11 @@ namespace ColorVision.Theme
 {
     public enum Theme
     {
-        [Description("浅色")]
+        [Description("ThemeLight")]
         Light,
-        [Description("深色")]
+        [Description("ThemeDark")]
         Dark,
-        [Description("跟随系统")]
+        [Description("ThemeUseSystem")]
         UseSystem
     };
 

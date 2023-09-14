@@ -222,7 +222,34 @@
   <data name="WindowSingle" xml:space="preserve">
     <value>獨立視窗</value>
   </data>
-  <data name="Shortcuts" xml:space="preserve">
+  <data name="HotKeys" xml:space="preserve">
     <value>快捷鍵</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>關閉</value>
+  </data>
+  <data name="Minimize" xml:space="preserve">
+    <value>最小化</value>
+  </data>
+  <data name="Maximize" xml:space="preserve">
+    <value>最大化</value>
+  </data>
+  <data name="Pin" xml:space="preserve">
+    <value>置頂</value>
+  </data>
+  <data name="Restore" xml:space="preserve">
+    <value>向下還原</value>
+  </data>
+  <data name="ThemeLight" xml:space="preserve">
+    <value>白色</value>
+  </data>
+  <data name="ThemeDark" xml:space="preserve">
+    <value>黑色</value>
+  </data>
+  <data name="ThemeUseSystem" xml:space="preserve">
+    <value>跟随系统</value>
+  </data>
+  <data name="LanguageResartSign" xml:space="preserve">
+    <value>您必須重新啟動才能使用新的語言設定</value>
   </data>
 </root>

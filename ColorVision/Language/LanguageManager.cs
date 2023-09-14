@@ -15,6 +15,14 @@ namespace ColorVision.Language
 
         }
 
+        public static Dictionary<string, string> keyValuePairs { get; set; } = new Dictionary<string, string>() {
+            { "zh-hans" ,"简体中文" },
+            { "zh-hant" ,"繁体中文" },
+            { "en","English" },
+            { "ja","日语" },
+            { "ko","韩语"},
+        };
+
         public static List<string> GetLanguages()
         {
             List<string>  list =  new List<string>() { };
@@ -37,7 +45,7 @@ namespace ColorVision.Language
         {
             if (Thread.CurrentThread.CurrentUICulture.Name != lang)
             {
-                if (MessageBox.Show("您即将切换语言并重启窗口!", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                if (MessageBox.Show(Properties.Resource.LanguageResartSign, "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                 {
                     Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(lang);
                     Process.Start(Application.ResourceAssembly.Location.Replace(".dll",".exe"),"-r");
