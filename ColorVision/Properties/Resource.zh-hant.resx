@@ -222,4 +222,7 @@
   <data name="WindowSingle" xml:space="preserve">
     <value>獨立視窗</value>
   </data>
+  <data name="Shortcuts" xml:space="preserve">
+    <value>快捷鍵</value>
+  </data>
 </root>

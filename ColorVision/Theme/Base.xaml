@@ -17,6 +17,14 @@
         <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
     </Style>
 
+    <Style x:Key="TextBlock1" TargetType="{x:Type TextBlock}">
+        <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+    </Style>
+
+
     <!--<Style TargetType="{x:Type TextBox}">
         <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
         <Setter Property="BorderBrush" Value="#CCCEDB"/>

@@ -14,10 +14,18 @@
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:CameraService}"
              d:DesignHeight="800" d:DesignWidth="300" Initialized="UserControl_Initialized">
+    <UserControl.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        </Style>
+    </UserControl.Resources>
     <StackPanel x:Name="StackPanelCamera"  Margin="0,5">
         <DockPanel>
             <ToggleButton  x:Name="ToggleButton1"  Style="{StaticResource ButtonPageControl1}" Content="{Binding Config.Name}"  FontSize="15"  IsChecked="True" />
-            <TextBlock  FontSize="10" VerticalAlignment="Bottom" Margin="2">
+            <TextBlock  FontSize="10" VerticalAlignment="Bottom" Margin="2" Style="{DynamicResource TextBlock1}">
                 <Run Text="("/>
                 <Run Text="{Binding Config.Code}"/>
                 <Run Text=","/>
@@ -50,7 +58,7 @@
                         </DockPanel>
                         <StackPanel Visibility="{Binding Config.IsExpThree,Converter={StaticResource bool2VisibilityConverter1}}">
                             <DockPanel Margin="0,2">
-                                <TextBlock  Text="曝光" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                                <TextBlock  Text="曝光" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0" />
                                 <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTime}"  Width="50"/>
                                 <hc:PreviewSlider x:Name="SliderexpTime"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="{Binding Config.ExpTime}" Maximum="6000">
                                     <hc:PreviewSlider.PreviewContent>

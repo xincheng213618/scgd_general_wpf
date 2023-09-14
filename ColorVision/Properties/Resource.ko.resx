@@ -222,4 +222,7 @@
   <data name="WindowSingle" xml:space="preserve">
     <value>독립 창</value>
   </data>
+  <data name="Shortcuts" xml:space="preserve">
+    <value>키보드 단축키</value>
+  </data>
 </root>

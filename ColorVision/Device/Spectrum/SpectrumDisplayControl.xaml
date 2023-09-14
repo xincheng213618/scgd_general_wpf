@@ -8,6 +8,14 @@
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:SpectrumService}"
              d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized">
+    <UserControl.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        </Style>
+    </UserControl.Resources>
 
     <StackPanel Margin="0,5" x:Name="StackPanelSpectrum"  >
         <DockPanel>

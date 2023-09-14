@@ -273,7 +273,7 @@
                 </Grid>
             </TabItem>
 
-            <TabItem  Header="快捷键" Background="Transparent">
+            <TabItem  Header="{x:Static resx:Resource.Shortcuts}" Background="Transparent">
                 <Grid Background="{DynamicResource GlobalBorderBrush}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
@@ -284,7 +284,7 @@
                         <StackPanel>
                             <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
                                 <GroupBox.Header>
-                                    <TextBlock Text="快捷键" FontSize="20"/>
+                                    <TextBlock Text="{x:Static resx:Resource.Shortcuts}" FontSize="20"/>
                                 </GroupBox.Header>
                                 <Border  Style="{StaticResource BorderModuleArea}" >
                                     <StackPanel x:Name="HotKeyStackPanel"  Margin="10" Initialized="HotKeyStackPanel_Initialized"/>

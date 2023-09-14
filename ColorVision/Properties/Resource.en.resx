@@ -220,6 +220,9 @@
     <value>Hide</value>
   </data>
   <data name="WindowSingle" xml:space="preserve">
-    <value>Independent </value>
+    <value>Independent</value>
+  </data>
+  <data name="Shortcuts" xml:space="preserve">
+    <value>Shortcuts</value>
   </data>
 </root>
