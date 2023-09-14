@@ -23,11 +23,11 @@
                     <Button Content="刷新" Click="Button_Click_Refresh" />
                     <Button DockPanel.Dock="Right" Content="上传" Click="Button_Click_Upload" />
                     <Button DockPanel.Dock="Right" Content="打开" Click="Button_Click_Open" />
-                    <ComboBox x:Name="FilesView"  Style="{StaticResource ComboBox.Small}" Height="20"  />
+                    <ComboBox x:Name="FilesView"  Style="{StaticResource ComboBox.Small}"  />
                 </DockPanel>
                 <DockPanel Margin="5" >
                     <TextBlock Text="输出视图：" VerticalAlignment="Center" Width="60"/>
-                    <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"  Height="20"  />
+                    <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"   />
                 </DockPanel>
             </StackPanel>
         </Border>

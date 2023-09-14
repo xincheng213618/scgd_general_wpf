@@ -12,6 +12,7 @@
         d:DataContext="{d:DesignInstance local:SoftwareConfig}"
         Height="450" IsBlurEnabled="True" WindowStartupLocation="CenterScreen"  Background="Transparent" ResizeMode="NoResize" Width="600" Initialized="Window_Initialized">
     <Window.Resources>
+       
         <ControlTemplate x:Key="GroupBoxHeader1" TargetType="{x:Type GroupBox}">
             <Grid SnapsToDevicePixels="true"    Margin="0,-10,0,0">
                 <Grid.RowDefinitions>
@@ -47,7 +48,7 @@
 
         <Style x:Key="BorderModuleArea" TargetType="{x:Type Border}">
             <Setter Property="Background" Value="{DynamicResource GlobalBackground}"/>
-            <Setter Property="BorderBrush" Value="#EAEAEA"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush1}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Margin" Value="10,10,15,5"/>
             <Setter Property="CornerRadius" Value="8"/>
@@ -72,7 +73,7 @@
                                             <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding IsUseMySql}"/>
                                             <TextBlock Text="启用数据库    "/>
                                             <DockPanel  MouseLeftButtonDown="TextBlock_MouseLeftButtonDown1" Visibility="{Binding IsUseMySql,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="MySql" >
-                                                <ToggleButton x:Name="StatusBarMysql" Style="{StaticResource ButtonDrawingImageMysql}"  Height="20"  Margin="0,-10" IsChecked="{Binding MySqlControl.IsConnect,Mode=OneWay}"  IsEnabled="False"/>
+                                                <ToggleButton x:Name="StatusBarMysql" Style="{StaticResource ButtonDrawingImageMysql}"   Margin="0,-10" IsChecked="{Binding MySqlControl.IsConnect,Mode=OneWay}" Height="20" IsEnabled="False"/>
                                             </DockPanel>
                                             <TextBlock Text="  (启用数据库后，模板等信息会从数据库中读取)" Visibility="{Binding IsUseMySql,Converter={StaticResource bool2VisibilityConverter1}}"  FontSize="8" Margin="0,3,0,0" />
                                         </DockPanel>
@@ -81,7 +82,7 @@
                                             <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding IsUseMQTT}"/>
                                             <TextBlock Text="启用MQTT    "/>
                                             <DockPanel MouseLeftButtonDown="TextBlock_MouseLeftButtonDown" Visibility="{Binding IsUseMQTT,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="MQTT">
-                                                <ToggleButton  x:Name="StatusBarMqtt"   Style="{StaticResource ButtonDrawingImageMQTT}"  Height="20"  Margin="0,-10" IsChecked="{Binding MQTTControl.IsConnect,Mode=OneWay}" IsEnabled="False" />
+                                                <ToggleButton  x:Name="StatusBarMqtt"   Style="{StaticResource ButtonDrawingImageMQTT}"   Margin="0,-10" IsChecked="{Binding MQTTControl.IsConnect,Mode=OneWay}"  Height="20" IsEnabled="False" />
                                             </DockPanel>
                                             <TextBlock Text="  (这里必须要配置）" Visibility="{Binding IsUseMQTT,Converter={StaticResource bool2VisibilityConverter1}}"  FontSize="8" Margin="0,3,0,0" />
                                         </DockPanel>
@@ -157,11 +158,11 @@
                             <StackPanel>
                                 <Border Style="{StaticResource BorderModuleArea}" >
                                     <StackPanel Margin="5">
-                                        <DockPanel Margin="5" Height="20">
+                                        <DockPanel Margin="5" >
                                             <TextBlock Text="当前工程: " />
                                             <TextBlock Text="{Binding SolutionConfig.SolutionName}"  />
                                         </DockPanel>
-                                        <DockPanel Margin="5" Height="20">
+                                        <DockPanel Margin="5">
                                             <TextBlock Text="当前工程路径: "/>
                                             <TextBlock Text="{Binding SolutionConfig.SolutionFullName}"  />
                                         </DockPanel>
@@ -170,13 +171,13 @@
                                 </Border>
                                 <Border Style="{StaticResource BorderModuleArea}" CornerRadius="8">
                                     <StackPanel Margin="5">
-                                        <DockPanel Margin="5" Height="20">
+                                        <DockPanel Margin="5" >
                                             <Button DockPanel.Dock="Right" Content="重置" Click="SetProjectDefaultCreatName_Click"  Width="80"/>
                                             <TextBlock Text="新建工程格式:" Width="110" />
                                             <TextBox Text="{Binding SolutionConfig.SolutionSetting.DefaultCreatName}" HorizontalAlignment="Left" Width="200"/>
                                         </DockPanel>
 
-                                        <DockPanel Margin="5" Height="20">
+                                        <DockPanel Margin="5" >
                                             <Button DockPanel.Dock="Right" Content="重置" Click="SetProjectDefault__Click"  Width="80"/>
                                             <TextBlock Text="默认文件存储格式:" Width="110" />
                                             <TextBox Text="{Binding SolutionConfig.SolutionSetting.DefaultSaveName}" HorizontalAlignment="Left" Width="200" />
@@ -200,20 +201,20 @@
                             <StackPanel>
                                 <Border Style="{StaticResource BorderModuleArea}" >
                                     <StackPanel Margin="5">
-                                        <DockPanel Margin="5" Height="20">
-                                            <TextBox DockPanel.Dock="Right" Height="20" Text="{Binding MQTTSetting.AliveTimeout}"/>
+                                        <DockPanel Margin="5,2">
+                                            <TextBox DockPanel.Dock="Right"  Text="{Binding MQTTSetting.AliveTimeout}" Width="80"/>
                                             <TextBlock Text="心跳检测失败时间"/>
                                         </DockPanel>
-                                        <DockPanel Margin="5" Height="20">
-                                            <TextBox DockPanel.Dock="Right" Height="20" Text="{Binding MQTTSetting.SendTimeout}"/>
+                                        <DockPanel Margin="5,2">
+                                            <TextBox DockPanel.Dock="Right" Text="{Binding MQTTSetting.SendTimeout}" Width="80"/>
                                             <TextBlock Text="指令超时时间"/>
                                         </DockPanel>
-                                        <DockPanel Margin="5" Height="20">
-                                            <TextBox DockPanel.Dock="Right" Height="20" Text="{Binding MQTTSetting.CacheLength}"/>
+                                        <DockPanel Margin="5,2">
+                                            <TextBox DockPanel.Dock="Right" Text="{Binding MQTTSetting.CacheLength}" Width="80"/>
                                             <TextBlock Text="指令缓存数据长度"/>
                                         </DockPanel>
-                                        <DockPanel Margin="5" Height="20">
-                                            <Button  DockPanel.Dock="Right" Content="清除" Click="Button_Click_1"/>
+                                        <DockPanel Margin="5">
+                                            <Button  DockPanel.Dock="Right" Content="清除" Click="Button_Click_1" Width="80"/>
                                             <TextBlock Text="历史缓存"/>
                                         </DockPanel>
                                     </StackPanel>
@@ -241,23 +242,23 @@
                                 <StackPanel>
                                     <Border Style="{StaticResource BorderModuleArea}" >
                                         <StackPanel Margin="5">
-                                            <DockPanel Margin="5" Height="20">
-                                                <TextBlock Text="更新速度:  " />
-                                                <TextBox Text="{Binding PerformanceControl.UpdateSpeed}" HorizontalAlignment="Left" Width="200"/>
+                                            <DockPanel Margin="5,2">
+                                                <TextBox DockPanel.Dock="Right"   Text="{Binding PerformanceControl.UpdateSpeed}" HorizontalAlignment="Left" Width="200"/>
+                                                <TextBlock Text="更新速度" />
                                             </DockPanel>
-                                            <DockPanel Margin="5" Height="20">
-                                                <TextBlock Text="日期格式:  " />
-                                                <TextBox Text="{Binding PerformancSetting.DefaultTimeFormat}" HorizontalAlignment="Left" Width="200"/>
+                                            <DockPanel Margin="5,2">
+                                                <TextBox  DockPanel.Dock="Right"  Text="{Binding PerformancSetting.DefaultTimeFormat}"  Width="200"/>
+                                                <TextBlock Text="日期格式" />
                                             </DockPanel>
                                         </StackPanel>
                                     </Border>
                                     <Border  Style="{StaticResource BorderModuleArea}" >
                                         <StackPanel Orientation="Horizontal" Margin="15">
-                                            <Grid>
+                                            <Grid Margin="10,0">
                                                 <hc:WaveProgressBar  Value="{Binding PerformanceControl.RAMPercent}"/>
                                                 <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="RAM"/>
                                             </Grid>
-                                            <Grid >
+                                            <Grid  Margin="10,0">
                                                 <hc:WaveProgressBar  Value="{Binding PerformanceControl.RAMThisPercent}"/>
                                                 <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="{Binding PerformanceControl.RAMThis}"/>
                                             </Grid>
@@ -278,7 +279,7 @@
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <TextBox  Width="50" Height="0"/>
+                    <TextBox  Width="1" Height="0" Margin="0,-200,0,0"/>
                     <ScrollViewer HorizontalScrollBarVisibility="Disabled"  VerticalScrollBarVisibility="Auto" >
                         <StackPanel>
                             <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
@@ -286,8 +287,7 @@
                                     <TextBlock Text="快捷键" FontSize="20"/>
                                 </GroupBox.Header>
                                 <Border  Style="{StaticResource BorderModuleArea}" >
-                                    <StackPanel x:Name="HotKeyStackPanel"  Margin="5" Initialized="HotKeyStackPanel_Initialized">
-                                    </StackPanel>
+                                    <StackPanel x:Name="HotKeyStackPanel"  Margin="10" Initialized="HotKeyStackPanel_Initialized"/>
                                 </Border>
                             </GroupBox>
                         </StackPanel>
@@ -305,13 +305,11 @@
 
         <Grid Margin="0,-30,0,0" Height="30" VerticalAlignment="Top">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="101"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <Grid Grid.Column="1" Background="{DynamicResource GlobalBorderBrush}" Panel.ZIndex="0">
             </Grid>
-            <Grid Grid.Column="1" Width="1" Background="{DynamicResource GlobalBorderBrush}" HorizontalAlignment="Left"/>
-
         </Grid>
 
     </Grid>

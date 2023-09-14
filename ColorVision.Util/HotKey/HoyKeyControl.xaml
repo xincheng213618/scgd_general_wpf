@@ -13,12 +13,12 @@
         <local:HotKeyToStringConverer  x:Key="HotKeyToStringConverer"/>
     </UserControl.Resources>
     <StackPanel Orientation="Horizontal" Margin="0,2">
-        <Label Content="{Binding Name}" Width="100"/>
+        <TextBlock Text="{Binding Name}" Width="100"/>
         <Grid>
-            <TextBox  x:Name="HotkeyTextBox"  Text="{Binding Hotkey,Converter={StaticResource HotKeyToStringConverer},Mode=OneWay}" Width="200" HorizontalContentAlignment="Center" GotFocus="HotkeyTextBox_GotFocus" VerticalContentAlignment="Center" IsReadOnly="True" IsReadOnlyCaretVisible="False" IsUndoEnabled="False"  PreviewKeyDown="HotkeyTextBox_PreviewKeyDown" />
-            <TextBox  x:Name="HotkeyTextBox1"  Text="" Visibility="Collapsed" Width="200" HorizontalContentAlignment="Center" LostFocus="HotkeyTextBox_LostFocus" VerticalContentAlignment="Center" IsReadOnly="True" IsReadOnlyCaretVisible="False" IsUndoEnabled="False"  PreviewKeyDown="HotkeyTextBox_PreviewKeyDown" />
+            <TextBox  x:Name="HotkeyTextBox" Background="Transparent" Text="{Binding Hotkey,Converter={StaticResource HotKeyToStringConverer},Mode=OneWay}" Width="200" HorizontalContentAlignment="Center" GotFocus="HotkeyTextBox_GotFocus" VerticalContentAlignment="Center" IsReadOnly="True" IsReadOnlyCaretVisible="False" IsUndoEnabled="False"  PreviewKeyDown="HotkeyTextBox_PreviewKeyDown" />
+            <TextBox  x:Name="HotkeyTextBox1" Background="Transparent" Text="" Visibility="Collapsed" Width="200" HorizontalContentAlignment="Center" LostFocus="HotkeyTextBox_LostFocus" VerticalContentAlignment="Center" IsReadOnly="True" IsReadOnlyCaretVisible="False" IsUndoEnabled="False"  PreviewKeyDown="HotkeyTextBox_PreviewKeyDown" />
         </Grid>
         <Label Content="{Binding IsRegistered,Converter={StaticResource BoolToStringConverer}}" Width="60"/>
-        <CheckBox   Content="全局模式" IsChecked="{Binding IsGlobal}"  VerticalContentAlignment="Center" Padding="5,0" VerticalAlignment="Center"/>
+        <CheckBox  Content="全局模式" IsChecked="{Binding IsGlobal}"  VerticalContentAlignment="Center" Padding="5,0" VerticalAlignment="Center"/>
     </StackPanel>
 </UserControl>

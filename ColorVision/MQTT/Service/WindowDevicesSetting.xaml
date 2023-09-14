@@ -27,7 +27,7 @@
                     </Grid.RowDefinitions>
                     <DockPanel >
                         <TextBlock x:Name="TextBock1" Text="资源" Margin="0,0,0,5"/>
-                        <Button x:Name="FilterButton" Width="100"  Height="20" BorderThickness="0" HorizontalContentAlignment="Right"  Background="Transparent" ToolTip="筛选" Click="FilterButton_Click" HorizontalAlignment="Right">
+                        <Button x:Name="FilterButton" Width="100"  BorderThickness="0" HorizontalContentAlignment="Right"  Background="Transparent" ToolTip="筛选" Click="FilterButton_Click" HorizontalAlignment="Right">
                             <Viewbox>
                                 <Path  Stretch="Fill" Fill="Black" Data="M128 192a64 64 0 0 1 64-64h640a64 64 0 0 1 64 64v114.304l-272 160V896h-224V466.304L128 306.304V192z m704 0H192v77.696l272 160V832h96V429.696l272-160V192z"/>
                             </Viewbox>
@@ -69,7 +69,6 @@
                                 </HierarchicalDataTemplate>
                             </TreeView.Resources>
                         </TreeView>
-
                     </Border>
                 </Grid>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">

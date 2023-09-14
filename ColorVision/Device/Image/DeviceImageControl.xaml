@@ -21,7 +21,7 @@
                             <StackPanel Margin="5">
                                 <DockPanel Margin="5,2">
                                     <TextBlock Text="{Binding Config.Name}" FontWeight="Bold" FontSize="20"/>
-                                    <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  Height="20" Width="20"  HorizontalAlignment="Right" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
+                                    <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  Width="20"  HorizontalAlignment="Right" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
                                 </DockPanel>
                                 <GroupBox Header="基本信息" Margin="0,5">
                                     <StackPanel Margin="5">

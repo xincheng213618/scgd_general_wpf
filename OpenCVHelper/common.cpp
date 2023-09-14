@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "common.h"
 #include "Customfile.h"
+#include <atltime.h>
 
 InitialFrame initialFrame = NULL;
 UpdateFrame updateFrame = NULL;

@@ -9,22 +9,20 @@
         <StackPanel Margin="0,5" >
             <ToggleButton  x:Name="ToggleButton_flow"  Style="{StaticResource ButtonPageControl1}" Background="Transparent"  Content="流程"  FontSize="15"  IsChecked="True" />
             <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton_flow,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
-                <StackPanel Margin="5">
-                    <StackPanel>
-                        <DockPanel>
-                            <Label Content="模板"/>
-                            <ComboBox  x:Name="FlowTemplate" Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,0,5,0"/>
-                        </DockPanel>
-                        <UniformGrid Columns="2">
-                            <Button  Margin="0,5" Content="执行流程"  Click="Button_FlowRun_Click"/>
-                            <Button  Margin="5" Content="停止流程"  Click="Button_FlowStop_Click"/>
-                        </UniformGrid>
-                    </StackPanel>
-                    <DockPanel>
-                        <TextBlock Text="输出视图" VerticalAlignment="Center"/>
-                        <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"  Height="20"  Margin="5,0,5,0" />
-                    </DockPanel>
-                </StackPanel>
-            </Border>
+            <StackPanel Margin="5">
+                <DockPanel Margin="0,2">
+                    <TextBlock Text="模板" Width="60"/>
+                    <ComboBox  x:Name="FlowTemplate" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                </DockPanel>
+                <UniformGrid Columns="2"  Margin="60,0,0,0">
+                    <Button  Margin="0,5" Content="执行流程"  Click="Button_FlowRun_Click"/>
+                    <Button  Margin="5" Content="停止流程"  Click="Button_FlowStop_Click"/>
+                </UniformGrid>
+                <DockPanel Margin="0,2">
+                    <TextBlock Text="输出视图" VerticalAlignment="Center"  Width="60"/>
+                    <ComboBox x:Name="ComboxView" Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"/>
+                </DockPanel>
+            </StackPanel>
+        </Border>
         </StackPanel>
 </UserControl>

@@ -3,10 +3,10 @@
 
     <SolidColorBrush x:Key="IconSolidColorBrush" Color="#FFFFFFFF"/>
     <SolidColorBrush x:Key="IconSolidColorBackgroundBrush" Color="#FF000000"/>
-    
-    
-    <Color x:Key="GlobalBackgroundColor">#161616</Color>
-    <Color x:Key="GlobalBroderBrushColor">#212121</Color>
+
+
+    <Color x:Key="GlobalBackgroundColor">#262626</Color>
+    <Color x:Key="GlobalBroderBrushColor">#111111</Color>
     <Color x:Key="GlobalTextColor">White</Color>
 
     <Color x:Key="SelectedBackgroundColor">#FFC5CBF9</Color>
@@ -14,6 +14,9 @@
 
     <SolidColorBrush x:Key="GlobalBackground" Color="{StaticResource GlobalBackgroundColor}" />
     <SolidColorBrush x:Key="GlobalBorderBrush" Color="{StaticResource GlobalBroderBrushColor}"/>
+    <SolidColorBrush x:Key="GlobalBorderBrush1" Color="#151515"/>
+    
+    
 
     <SolidColorBrush x:Key="GlobalTextBrush"  Color="{StaticResource GlobalTextColor}" />
     

@@ -35,7 +35,7 @@
                     <StackPanel Margin="5,10,5,5">
                         <DockPanel Margin="5">
                             <Button DockPanel.Dock="Right" Content="复制序列号" Click="Copy_Click"  Width="80"/>
-                            <TextBlock  Text="序列号:  " />
+                            <TextBlock  Text="序列号:  " VerticalAlignment="Center" />
                             <TextBox x:Name="TextBoxSn" VerticalAlignment="Center" IsReadOnly="True"  Background="Transparent" BorderThickness="0" FontSize="13"  FontWeight="Bold" FontFamily="Consolas" Text="{Binding Sn}" />
                         </DockPanel>
                         <TextBlock AllowDrop="True" Text="{Binding Tag}"  Background="Transparent" Margin="5" />

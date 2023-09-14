@@ -31,9 +31,9 @@
                             <TextBlock DockPanel.Dock="Right" Text="dB" />
                             <TextBox BorderThickness="0,0,0,1" Margin="4,0"/>
                         </DockPanel>
-                        <Button Content="计算自动曝光" Height="20" Margin="5,2"/>
-                        <TextBlock Height="20" HorizontalAlignment="Center"  Text="时间"/>
-                        <TextBlock Height="20" HorizontalAlignment="Center" Text="饱和度"/>
+                        <Button Content="计算自动曝光" Margin="5,2"/>
+                        <TextBlock HorizontalAlignment="Center"  Text="时间"/>
+                        <TextBlock HorizontalAlignment="Center" Text="饱和度"/>
                         <DockPanel Margin="0,2" >
                             <TextBlock  Text="x:" Margin="3,0" />
                             <TextBlock DockPanel.Dock="Right" Text="ms" />

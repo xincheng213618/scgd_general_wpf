@@ -202,7 +202,7 @@
                                                 <TextBox  x:Name="TextBoxRight"  Text="10" Margin="5,0" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
                                             </DockPanel>
                                         </UniformGrid>
-                                        <ComboBox x:Name="ComboBoxBorderType"   SelectedValuePath="Key"  DisplayMemberPath="Value" Height="20" Margin="0,0,6,0"/>
+                                        <ComboBox x:Name="ComboBoxBorderType"   SelectedValuePath="Key"  DisplayMemberPath="Value" Margin="0,0,6,0"/>
                                     </StackPanel>
                                     <StackPanel Margin="5"  Visibility="{Binding ElementName=RadioButtonBuildMode3, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
                                         <UniformGrid Columns="2">
@@ -497,7 +497,7 @@
                     <Grid>
                         <control:ProgressRing  BorderBrush="Red" Margin="30" />
                         <TextBlock x:Name="WaitControlText" Text="数据生成中" HorizontalAlignment="Center" FontSize="16"/>
-                        <ProgressBar x:Name="WaitControlProgressBar" Visibility="Collapsed" BorderThickness="0"  Maximum="100" Minimum="0"  Height="20" Margin="5" VerticalAlignment="Bottom" />
+                        <ProgressBar x:Name="WaitControlProgressBar" Visibility="Collapsed" BorderThickness="0"  Maximum="100" Minimum="0"  Margin="5" VerticalAlignment="Bottom" />
                     </Grid>
                 </Border>
 

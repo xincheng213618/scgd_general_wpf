@@ -17,6 +17,11 @@
     <SolidColorBrush x:Key="GlobalBackground" Color="{StaticResource GlobalBackgroundColor}" />
     <SolidColorBrush x:Key="GlobalBorderBrush" Color="{StaticResource GlobalBroderBrushColor}"/>
 
+
+    <SolidColorBrush x:Key="GlobalBorderBrush1" Color="#EAEAEA"/>
+
+    
+
     <SolidColorBrush x:Key="GlobalTextBrush" Color="{StaticResource GlobalTextColor}" />
     <SolidColorBrush x:Key="StatusBarBackgroundBrush" Color="#007ACC"/>
     <SolidColorBrush x:Key="MeasureBackground" Color="{StaticResource GlobalBackgroundColor}"/>

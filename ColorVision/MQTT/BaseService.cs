@@ -195,9 +195,15 @@ namespace ColorVision.MQTT
             Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, json, false));
 
             MsgRecord msgRecord = new MsgRecord {SendTopic=SendTopic,SubscribeTopic =SubscribeTopic ,MsgID = guid.ToString(), SendTime = DateTime.Now, MsgSend = msg,MsgRecordState = MsgRecordState.Send};
-            
-            MQTTSetting.MsgRecords.Insert(0,msgRecord);
-            MsgRecords.Add(msgRecord);
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                MQTTSetting.MsgRecords.Insert(0, msgRecord);
+                MsgRecords.Add(msgRecord);
+            }
+            );
+
+  
 
             Timer timer = new Timer(MQTTSetting.SendTimeout*1000);
             timer.Elapsed += (s, e) =>

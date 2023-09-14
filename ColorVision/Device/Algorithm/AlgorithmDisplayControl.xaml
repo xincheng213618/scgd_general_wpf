@@ -31,7 +31,7 @@
                 </DockPanel>
                 <DockPanel Margin="5" >
                     <TextBlock Text="输出视图：" VerticalAlignment="Center" Width="60"/>
-                    <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"  Height="20"  />
+                    <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"   />
                 </DockPanel>
             </StackPanel>
         </Border>

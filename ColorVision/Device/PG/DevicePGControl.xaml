@@ -22,7 +22,7 @@
                             <StackPanel Margin="5">
                                 <DockPanel Margin="5,2">
                                     <TextBlock Text="{Binding Config.Name}" FontWeight="Bold" FontSize="20"/>
-                                    <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  Height="20" Width="20"  HorizontalAlignment="Right" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
+                                    <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  Width="20"  HorizontalAlignment="Right" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
                                 </DockPanel>
                                 <GroupBox Header="基本信息" Margin="0,5">
                                     <StackPanel Margin="5">
@@ -46,19 +46,19 @@
                                 </GroupBox>
                                 <GroupBox Header="配置信息" Margin="0,5">
                                     <StackPanel Margin="5">
-                                        <DockPanel Margin="0,5" >
+                                        <DockPanel Margin="0,2" >
                                             <TextBlock Text="类别型号" Width="120"/>
                                             <TextBlock Text="{Binding Config.Category}"/>
                                         </DockPanel>
-                                        <DockPanel Margin="0,5" >
+                                        <DockPanel Margin="0,2" >
                                             <TextBlock Text="通讯方式" Width="120"/>
                                             <TextBlock Text="{Binding IsNet}"/>
                                         </DockPanel>
-                                        <DockPanel Margin="0,5" >
+                                        <DockPanel Margin="0,2" >
                                             <TextBlock  Text="IP地址" Width="120"/>
                                             <TextBlock Text="{Binding Config.Addr}"/>
                                         </DockPanel>
-                                        <DockPanel Margin="0,5" >
+                                        <DockPanel Margin="0,2" >
                                             <TextBlock  Text="端口" Width="120"/>
                                             <TextBlock Text="{Binding Config.Port}"/>
                                         </DockPanel>
@@ -86,7 +86,7 @@
                                             <TextBlock Text="界面展示名称" Width="120"/>
                                             <TextBox Text="{Binding Config.Name}"/>
                                         </DockPanel>
-                                        <DockPanel Margin="0,5" >
+                                        <DockPanel Margin="0,2" >
                                             <TextBlock Text="心跳时间(ms)"  Width="120"/>
                                             <TextBox Text="{Binding Config.HeartbeatTime}"/>
                                         </DockPanel>
@@ -95,20 +95,20 @@
 
                                 <GroupBox Header="配置信息" Margin="0,5">
                                     <StackPanel Margin="5">
-                                        <DockPanel Margin="0,5" >
+                                        <DockPanel Margin="0,2" >
                                             <TextBlock Text="类别型号" Width="120"/>
-                                            <ComboBox x:Name="pgCategory" Style="{StaticResource ComboBox.Small}" DisplayMemberPath="Key"/>
+                                            <ComboBox x:Name="pgCategory" DisplayMemberPath="Key"/>
                                         </DockPanel>
-                                        <DockPanel Margin="0,5" >
+                                        <DockPanel Margin="0,2" >
                                             <TextBlock Text="通讯方式" Width="120"/>
                                             <RadioButton x:Name="IsNet" Content="TCP/IP" IsChecked="{Binding  Config.IsTCPIP}"/>
                                             <RadioButton x:Name="IsComm" Content="串口" IsChecked="{Binding  Config.IsTCPIP,Converter={StaticResource Boolean2BooleanReConverter}}"/>
                                         </DockPanel>
-                                        <DockPanel Margin="0,5" >
+                                        <DockPanel Margin="0,2" >
                                             <TextBlock  x:Name="TextBlockPGIP"   Text="IP地址" Width="120"/>
                                             <TextBox Text="{Binding Config.Addr}"/>
                                         </DockPanel>
-                                        <DockPanel Margin="0,5" >
+                                        <DockPanel Margin="0,2" >
                                             <TextBlock  x:Name="TextBlockPGPort"   Text="端口" Width="120"/>
                                             <TextBox Text="{Binding Config.Port}"/>
                                         </DockPanel>
