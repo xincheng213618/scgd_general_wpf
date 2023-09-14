@@ -223,7 +223,6 @@ namespace ColorVision.MQTT
     }
 
     public delegate void MsgRecordStateChangedHandler(MsgRecordState msgRecordState);
-
     public class MsgRecord:ViewModelBase, IServiceConfig
     {
         public event MsgRecordStateChangedHandler MsgRecordStateChanged;

@@ -483,19 +483,6 @@ namespace ColorVision.Device.Camera
             return PublishAsyncClient(msg);
         }
 
-
-        private bool CheckIsRun()
-        {
-            if (!MQTTControl.IsConnect)
-                return true;
-
-            if (IsRun)
-            {
-                MessageBox.Show("正在运行中");
-                return true;
-            }
-            return IsRun;
-        }
     }
 
 
