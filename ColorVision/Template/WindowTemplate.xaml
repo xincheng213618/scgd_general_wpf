@@ -10,7 +10,7 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         ShowInTaskbar="False"
-        Title="WindowTemplate" Height="500" Width="600"  MinWidth="600" WindowStartupLocation="CenterOwner" Initialized="Window_Initialized">
+        Title="WindowTemplate" Height="500" Width="600"  MinWidth="600" Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner" Initialized="Window_Initialized">
     <Grid Margin="5">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="2*"/>
@@ -91,7 +91,7 @@
 
         <StackPanel x:Name="CreateGrid"  Grid.Column="1" Grid.Row="1" HorizontalAlignment="Center">
             <DockPanel  >
-                <Label Content="模板名称："/>
+                <TextBlock Text="模板名称："/>
                 <TextBox x:Name="TextBox1" Margin="3,3,0,3"/>
             </DockPanel>
             <UniformGrid x:Name="FunctionGrid" Columns="3" Margin="0,8"  Width="345"  HorizontalAlignment="Center">
