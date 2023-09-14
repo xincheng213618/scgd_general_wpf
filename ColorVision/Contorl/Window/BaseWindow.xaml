@@ -160,7 +160,7 @@
                         </Trigger>
 
                         <Trigger Property="IsBlurEnabled" Value="True">
-                            <Setter TargetName="RootBorderActive" Property="BorderThickness" Value="0"/>
+                            <Setter TargetName="RootBorderActive" Property="BorderThickness" Value="0.5"/>
                         </Trigger>
                         <MultiTrigger>
                             <MultiTrigger.Conditions>
