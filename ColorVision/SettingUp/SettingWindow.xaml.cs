@@ -54,7 +54,7 @@ namespace ColorVision.SettingUp
                 lauagDock.Visibility = Visibility.Collapsed;
 
             cmlauage.ItemsSource = from e1 in LanguageManager.Current.Languages
-                                   select new KeyValuePair<string, string>(e1, LanguageManager.keyValuePairs.TryGetValue(e1.ToLower(), out string value) ? value : e1);
+                                   select new KeyValuePair<string, string>(e1, LanguageManager.keyValuePairs.TryGetValue(e1.ToLower(CultureInfo.CurrentCulture), out string value) ? value : e1);
             cmlauage.SelectedValuePath = "Key";
             cmlauage.DisplayMemberPath = "Value";
             cmlauage.SelectionChanged += (s, e) =>

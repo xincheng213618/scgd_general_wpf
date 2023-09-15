@@ -1,4 +1,5 @@
-﻿using ColorVision.MySql.DAO;
+﻿#pragma  warning disable CA1708, CS8602， CS8604
+using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.Template;
 using Newtonsoft.Json;
@@ -46,7 +47,6 @@ namespace ColorVision.Device.Algorithm
             InitializeComponent();
         }
 
-        static int ResultNum;
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             TextBox TextBox1 = new TextBox() { Width = 10, Background = System.Windows.Media.Brushes.Transparent, BorderThickness = new Thickness(0), Foreground = System.Windows.Media.Brushes.Transparent };

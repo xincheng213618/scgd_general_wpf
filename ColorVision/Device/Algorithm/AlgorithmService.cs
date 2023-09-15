@@ -21,7 +21,6 @@ namespace ColorVision.Device.Algorithm
 {
     public class AlgorithmService : BaseService<AlgorithmConfig>
     {
-        public event MQTTCameraFileHandler FileHandler;
 
         public event DeviceStatusChangedHandler DeviceStatusChanged;
 

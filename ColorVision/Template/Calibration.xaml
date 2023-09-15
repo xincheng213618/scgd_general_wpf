@@ -19,7 +19,7 @@
             <DockPanel  Margin="0,2">
                 <TextBlock DockPanel.Dock="Left" Text="暗噪声"  Width="80" />
                 <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding SelectedDarkNoise}"   Margin="5,0"/>
-                <Button DockPanel.Dock="Right" Content="..." Click="Button_Click" Tag="DarkNoise" Width="40"  Margin="5,0"/>
+                <Button DockPanel.Dock="Right" Content="..."  Click="Button_Click" Tag="DarkNoise" Width="40"  Margin="5,0"/>
                 <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding FileNameDarkNoise}" />
             </DockPanel>
             <DockPanel  Margin="0,2">
