@@ -267,4 +267,7 @@
   <data name="OK" xml:space="preserve">
     <value>OK</value>
   </data>
+  <data name="Edit" xml:space="preserve">
+    <value>編集する</value>
+  </data>
 </root>
