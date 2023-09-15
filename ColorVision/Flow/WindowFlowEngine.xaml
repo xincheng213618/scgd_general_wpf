@@ -24,7 +24,6 @@
                     <Button x:Name="ButtonOpen"  Content="加载" Click="Button_Click_Open" Width="60" />
                     <Button x:Name="ButtonNew"  Content="新建" Click="Button_Click_New"  Width="60" />
                     <Button x:Name="ButtonClear"  Content="清空" Click="Button_Click_Clear"  Width="60" />
-
                     <Button x:Name="ButtonSave"  Content="保存" Click="Button_Click_Save" Width="60" />
                 </UniformGrid>
                 <Grid  x:Name="OperateGrid" Grid.Column="1"  Visibility="Collapsed">
@@ -32,18 +31,16 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="200"/>
                     </Grid.ColumnDefinitions>
-                    <UniformGrid Grid.Column="1" Columns="2">
+                    <UniformGrid Grid.Column="1">
                         <Button x:Name="ButtonFlowOpen" Content="开始流程" Click="Button_Click_4" Width="80"/>
                         <Button x:Name="ButtonFlowPause" Content="暂停流程" IsEnabled="False" Visibility="Collapsed" Click="Button_Click_5" Width="80"/>
+                        <Button x:Name="ButtonFlowStop" Content="停止流程" Click="Button_Click_Stop" Width="80"/>
                     </UniformGrid>
                     <DockPanel Grid.Column="0"  Width="300" HorizontalAlignment="Right">
                         <Button Content="生成流水号" Click="Button_Click_3" Width="80"/>
-                        <TextBox  x:Name="TextBoxsn" Margin="5,0" BorderThickness="0,0,0,1"   Text="" Width="130" VerticalAlignment="Center"  />
+                        <TextBox  x:Name="TextBoxsn" Margin="5,0" BorderThickness="0,0,0,1"   Text="" Width="250" VerticalAlignment="Center"  />
                     </DockPanel>
                 </Grid>
-
-
-
             </Grid>
         </Border>
 
@@ -69,7 +66,7 @@
                     </WindowsFormsHost>
                 </ScrollViewer>
             </Grid>
-           
+
             <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                 <WindowsFormsHost >
                     <st:STNodeEditor  x:Name="STNodeEditorMain"  />
@@ -77,7 +74,5 @@
             </ScrollViewer>
 
         </Grid>
-        
-
     </Grid>
 </Window>

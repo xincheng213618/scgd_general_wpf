@@ -287,6 +287,9 @@ namespace ColorVision
             }
         }
 
+        private void Button_Click_Stop(object sender, RoutedEventArgs e)
+        {
 
+        }
     }
 }
