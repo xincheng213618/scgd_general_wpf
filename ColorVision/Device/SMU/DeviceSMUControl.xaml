@@ -83,10 +83,10 @@
                                 </GroupBox>
                                 <GroupBox Header="配置信息" Margin="0,5">
                                     <StackPanel Margin="5">
-                                        <DockPanel Margin="0,5" >
+                                        <DockPanel Margin="0,2" >
+                                            <CheckBox DockPanel.Dock="Right" Content="网络" Width="50" Margin="5" IsChecked="{Binding Config.IsNet}"/>
                                             <TextBlock Text="设备地址"  Width="120"/>
-                                            <TextBox Text="{Binding Config.ID}" Width="350"/>
-                                            <CheckBox Content="网络" Width="50" IsChecked="{Binding Config.IsNet}"/>
+                                            <TextBox Text="{Binding Config.ID}"/>
                                         </DockPanel>
                                     </StackPanel>
                                 </GroupBox>
