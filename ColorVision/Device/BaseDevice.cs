@@ -17,12 +17,16 @@ namespace ColorVision.MQTT
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; NotifyPropertyChanged(); } }
         private bool _IsSelected;
 
-        public virtual UserControl GenDeviceControl()
+        public virtual UserControl GetDeviceControl()
         {
             throw new NotImplementedException();
         }
 
-        public virtual UserControl GenDisplayControl()
+        public virtual UserControl GetDisplayControl()
+        {
+            throw new NotImplementedException();
+        }
+        public virtual View GetView()
         {
             throw new NotImplementedException();
         }

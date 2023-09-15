@@ -33,7 +33,7 @@ namespace ColorVision.Service
         {
             StackPanelShow.Children.Clear();
             if (TreeView1.SelectedItem is BaseDevice baseObject)
-                StackPanelShow.Children.Add(baseObject.GenDeviceControl());
+                StackPanelShow.Children.Add(baseObject.GetDeviceControl());
 
             if (TreeView1.SelectedItem is BaseMQTTService baseService)
                 StackPanelShow.Children.Add(baseService.GenDeviceControl());

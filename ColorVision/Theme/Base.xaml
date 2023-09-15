@@ -124,7 +124,7 @@
 
 
     <Style x:Key="BorderModuleArea" TargetType="{x:Type Border}">
-        <Setter Property="Background" Value="{DynamicResource GlobalBackground}"/>
+        <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush}"/>
         <Setter Property="BorderBrush" Value="#EAEAEA"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Margin" Value="5,2"/>

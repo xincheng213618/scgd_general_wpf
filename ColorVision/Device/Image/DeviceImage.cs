@@ -27,8 +27,8 @@ namespace ColorVision.Device.Image
             View = new ImageView();
         }
 
-        public override UserControl GenDeviceControl() => new DeviceImageControl(this);
-        public override UserControl GenDisplayControl() => Control??new ImageDisplayControl(this);
+        public override UserControl GetDeviceControl() => new DeviceImageControl(this);
+        public override UserControl GetDisplayControl() => Control??new ImageDisplayControl(this);
 
     }
 }

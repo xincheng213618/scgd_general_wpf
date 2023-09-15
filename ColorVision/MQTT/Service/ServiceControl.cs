@@ -36,7 +36,7 @@ namespace ColorVision.MQTT.Service
 
         private ResultService resultService;
 
-        public StackPanel MQTTStackPanel { get; set; }
+        public StackPanel StackPanel { get; set; }
 
 
         public ServiceControl()
@@ -47,7 +47,7 @@ namespace ColorVision.MQTT.Service
             MQTTServices = new ObservableCollection<MQTTServiceKind>();
             MQTTDevices = new ObservableCollection<BaseDevice>();
             UserConfig = GlobalSetting.GetInstance().SoftwareConfig.UserConfig;
-            MQTTStackPanel = new StackPanel();
+            StackPanel = new StackPanel();
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => Reload();
             Reload();
         }
@@ -57,12 +57,12 @@ namespace ColorVision.MQTT.Service
         public void GenControl(ObservableCollection<BaseDevice> MQTTDevices)
         {
             LastGenControl = MQTTDevices;
-            MQTTStackPanel.Children.Clear();
+            StackPanel.Children.Clear();
             foreach (var item in MQTTDevices)
             {
                 if (item is BaseDevice device)
                 {
-                    MQTTStackPanel.Children.Add(device.GenDisplayControl());
+                    StackPanel.Children.Add(device.GetDisplayControl());
                 }
             }
         }
@@ -70,7 +70,7 @@ namespace ColorVision.MQTT.Service
         public void GenContorl()
         {
             LastGenControl = new ObservableCollection<BaseDevice>();
-            MQTTStackPanel.Children.Clear();
+            StackPanel.Children.Clear();
             foreach (var mQTTServiceKind in MQTTServices)
             {
                 foreach (var mQTTService in mQTTServiceKind.VisualChildren)
@@ -80,7 +80,7 @@ namespace ColorVision.MQTT.Service
                         if (item is BaseDevice device)
                         {
                             LastGenControl.Add(device);
-                            MQTTStackPanel.Children.Add(device.GenDisplayControl());
+                            StackPanel.Children.Add(device.GetDisplayControl());
                         }
                     }
                 }
@@ -137,7 +137,7 @@ namespace ColorVision.MQTT.Service
                 datas.Add(data);
             }
 
-            foreach (UserControl ctl in MQTTStackPanel.Children)
+            foreach (UserControl ctl in StackPanel.Children)
             {
                 if (ctl is SpectrumDisplayControl spectrum)
                 {
@@ -150,6 +150,12 @@ namespace ColorVision.MQTT.Service
             }
         }
 
+        public BatchResultMasterModel GetResultBatch(string sn)
+        {
+            BatchResultMasterModel model = new BatchResultMasterModel(sn, UserConfig.TenantId);
+            resultService.BatchSave(model);
+            return model;
+        }
 
         public int ResultBatchSave(string sn)
         {

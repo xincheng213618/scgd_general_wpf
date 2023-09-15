@@ -10,7 +10,7 @@ namespace ColorVision.MySql.DAO
         public DateTime? CreateDate { get; set; } = DateTime.Now;
         public bool IsEnable { get; set; } = true;
         public bool? IsDelete { get; set; } = false;
-        public string? Remark { get; set; }
+        public string? Remark { get; set; }    
         public int TenantId { get; set; }
     }
     public class SysModMasterDao : BaseDaoMaster<SysModMasterModel>

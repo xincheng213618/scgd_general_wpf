@@ -155,6 +155,7 @@ namespace ColorVision.MQTT
         public MQTTControl MQTTControl { get; set; }
         public ulong ServiceID { get; set; }
         public string SnID { get; set; }
+        public string SerialNumber { get; set; }
         public string ServiceName { get; set; }
 
         public virtual int HeartbeatTime { get => _HeartbeatTime; set { _HeartbeatTime = value; NotifyPropertyChanged(); } }
@@ -183,6 +184,7 @@ namespace ColorVision.MQTT
             msg.MsgID = guid;
             msg.ServiceID = ServiceID;
             msg.SnID = SnID;
+            msg.SerialNumber = SerialNumber;
             ///这里是为了兼容只前的写法，后面会修改掉
             if (string.IsNullOrWhiteSpace(msg.ServiceName))
             {
@@ -223,7 +225,6 @@ namespace ColorVision.MQTT
     }
 
     public delegate void MsgRecordStateChangedHandler(MsgRecordState msgRecordState);
-
     public class MsgRecord:ViewModelBase, IServiceConfig
     {
         public event MsgRecordStateChangedHandler MsgRecordStateChanged;

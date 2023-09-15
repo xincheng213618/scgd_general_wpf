@@ -12,7 +12,41 @@ namespace cvColorVision
         NED_SERIAL,
         LONGFOOT_SERIAL,
     };
+    public enum ImageChannelType
+    {
+        CM_Unknown = -1,
+        Gray_X = 0,
+        Gray_Y = 1,
+        Gray_Z = 2,
+        Gray_N = 20,
+        xCIE = 3,
+        yCIE = 4,
+        uCIE = 5,
+        vCIE = 6,
+        CIE_X = 7,
+        CIE_Y = 8,
+        CIE_Z = 9,
+        CIE_LvCxCy = 10,
+        LvCIE = 11
+    };
 
+    public enum CalibrationType
+    {
+        DarkNoise = 0,
+        DefectWPoint = 1,
+        DefectBPoint = 2,
+        DefectPoint = 3,
+        DSNU = 4,
+        Uniformity = 5,
+        Luminance = 6,
+        LumOneColor = 7,
+        LumFourColor = 8,
+        LumMultiColor = 9,
+        LumColor = 10,
+        Distortion = 11,
+        ColorShift = 12,
+        Empty_Num = 13,
+    };
 
     public enum CameraType
     {

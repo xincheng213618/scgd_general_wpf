@@ -104,10 +104,9 @@
             </Grid.ColumnDefinitions>
             <Button x:Name="ButtonShiftOut" Panel.ZIndex="100" Click="OnLeftMainContentShiftOut" hc:IconElement.Geometry="{StaticResource LeftGeometry}" Padding="8 8 0 8" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0 0 -16 0" Style="{StaticResource ButtonIconCircular}" />
             <Grid Grid.Column="1" x:Name="MainContent">
-                <Grid x:Name="ViewGrid"  Background="LightGray">
-                </Grid>
+                <Grid x:Name="ViewGrid"  Background="LightGray"/>
             </Grid>
-            <Grid Grid.Row="0" Panel.ZIndex="101" Background="{DynamicResource GlobalBorderBrush}" Margin="-1,0,0,0" x:Name="LeftMainContent" d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  Visibility="{Binding SoftwareSetting.IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" >
+            <Grid Grid.Row="0" Panel.ZIndex="101" Background="{DynamicResource GlobalBackground}" Margin="-1,0,0,0" x:Name="LeftMainContent" d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  Visibility="{Binding SoftwareSetting.IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" >
                 <UIElement.RenderTransform>
                     <TranslateTransform />
                 </UIElement.RenderTransform>

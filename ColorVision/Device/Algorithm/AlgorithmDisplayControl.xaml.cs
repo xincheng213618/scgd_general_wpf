@@ -1,4 +1,7 @@
 ﻿using ColorVision.Device.Algorithm;
+using ColorVision.MQTT.Service;
+using ColorVision.MySql.DAO;
+using ColorVision.MySql.Service;
 using ColorVision.Template;
 using System;
 using System.Collections.Generic;
@@ -41,7 +44,12 @@ namespace ColorVision.Device.POI
 
         private void PoiClick(object sender, RoutedEventArgs e)
         {
-            Service.GetData(1,1);
+            if (ComboxPoiTemplate.SelectedValue is PoiParam poiParam)
+            {
+                string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+                var model = ServiceControl.GetInstance().GetResultBatch(sn);
+                Service.GetData(poiParam.ID, model.Id);
+            }
         }
 
         private void Algorithm_INI(object sender, RoutedEventArgs e)
@@ -52,6 +60,13 @@ namespace ColorVision.Device.POI
         private void Algorithm_GET(object sender, RoutedEventArgs e)
         {
             Service.GetAllSnID();
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            var a = new ResultService().PoiSelectByBatchID(1);
+            MessageBox.Show("!");
+
         }
     }
 }

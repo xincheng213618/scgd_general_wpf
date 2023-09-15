@@ -23,8 +23,8 @@ namespace ColorVision.Device.Camera
             Control = new CameraDisplayControl(this);
         }
 
-        public override UserControl GenDeviceControl() => new DeviceCameraControl(this);
+        public override UserControl GetDeviceControl() => new DeviceCameraControl(this);
 
-        public override UserControl GenDisplayControl() => Control;
+        public override UserControl GetDisplayControl() => Control;
     }
 }

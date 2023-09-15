@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8602  
 
 using ColorVision.MQTT;
+using ColorVision.MQTT.Service;
 using ColorVision.MVVM;
 using ColorVision.Template;
 using cvColorVision;
@@ -128,8 +129,8 @@ namespace ColorVision.Device.Camera
                         DeviceStatus = DeviceStatus.Opened;
                         break;
                     case "GetData":
-                        string SaveFileName = msg.Data.SaveFileName;
-                        Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(this, SaveFileName));
+                        //string SaveFileName = msg.Data.SaveFileName;
+                        //Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(this, SaveFileName));
                         break;
                     case "GetAutoExpTime":
                         if (msg.Data != null && msg.Data.result[0].result != null)
@@ -158,8 +159,8 @@ namespace ColorVision.Device.Camera
                 switch (msg.EventName)
                 {
                     case "GetData":
-                        string SaveFileName = msg.Data.SaveFileName;
-                        Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(this, SaveFileName));
+                        //string SaveFileName = msg.Data.SaveFileName;
+                        //Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(this, SaveFileName));
                         break;
                     case "Close":
                         DeviceStatus = DeviceStatus.UnInit;
@@ -238,41 +239,7 @@ namespace ColorVision.Device.Camera
             };
             return PublishAsyncClient(msg);
         }
-        enum ImageChannelType
-        {
-            CM_Unknown = -1,
-            Gray_X = 0,
-            Gray_Y = 1,
-            Gray_Z = 2,
-            Gray_N = 20,
-            xCIE = 3,
-            yCIE = 4,
-            uCIE = 5,
-            vCIE = 6,
-            CIE_X = 7,
-            CIE_Y = 8,
-            CIE_Z = 9,
-            CIE_LvCxCy = 10,
-            LvCIE = 11
-        };
 
-        enum CalibrationType
-        {
-            DarkNoise = 0,
-            DefectWPoint = 1,
-            DefectBPoint = 2,
-            DefectPoint = 3,
-            DSNU = 4,
-            Uniformity = 5,
-            Luminance = 6,
-            LumOneColor = 7,
-            LumFourColor = 8,
-            LumMultiColor = 9,
-            LumColor = 10,
-            Distortion = 11,
-            ColorShift = 12,
-            Empty_Num = 13,
-        };
 
         private static List<ParamFunction> Calibrations(CalibrationParam item)
         {
@@ -384,7 +351,7 @@ namespace ColorVision.Device.Camera
             MsgSend msg = new MsgSend
             {
                 EventName = "Open",
-                Params = new Dictionary<string, object>() { { "TakeImageMode", (int)TakeImageMode }, { "CameraID", CameraID }, { "Bpp", ImageBpp },{ "remoteIp", "192.168.1.9" },{ "remotePort", 9002 } }
+                Params = new Dictionary<string, object>() { { "TakeImageMode", (int)TakeImageMode }, { "CameraID", CameraID }, { "Bpp", ImageBpp },{ "remoteIp", Config.VideoConfig.Host },{ "remotePort", Config.VideoConfig.Port } }
             };
             PublishAsyncClient(msg);
             return true;
@@ -392,10 +359,14 @@ namespace ColorVision.Device.Camera
 
         public MsgRecord GetData(double expTime, double gain, string saveFileName = "1.tif")
         {
+            SerialNumber  = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            var model = ServiceControl.GetInstance().GetResultBatch(SerialNumber);
+
+
             MsgSend msg = new MsgSend
             {
                 EventName = "GetData",
-                Params = new Dictionary<string, object>() { { "expTime", expTime }, { "gain", gain }, { "savefilename", saveFileName } }
+                Params = new Dictionary<string, object>() { { "nBatchIp", model.Id }, { "expTime", expTime }, { "gain", gain }, { "savefilename", saveFileName }, {"eCaliblype", CalibrationType.LumFourColor } }
             };
             return PublishAsyncClient(msg);
         }
@@ -480,19 +451,6 @@ namespace ColorVision.Device.Camera
             return PublishAsyncClient(msg);
         }
 
-
-        private bool CheckIsRun()
-        {
-            if (!MQTTControl.IsConnect)
-                return true;
-
-            if (IsRun)
-            {
-                MessageBox.Show("正在运行中");
-                return true;
-            }
-            return IsRun;
-        }
     }
 
 
