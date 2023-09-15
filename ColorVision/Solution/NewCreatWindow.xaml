@@ -7,7 +7,7 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:NewCreateViewMode}"
-        Title="配置新工程" Height="300" Width="500" Background="#F9F9F9">
+        Title="配置新工程" Height="300" Width="500" Background="{DynamicResource GlobalBackground}" >
     <Grid>
         <Grid Margin="30,20,20,20" >
             <StackPanel>

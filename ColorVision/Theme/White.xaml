@@ -14,6 +14,9 @@
     <Color x:Key="SelectedUnfocusedColor">#FFDDDDDD</Color>
 
 
+    <SolidColorBrush x:Key="ButtonBackground" Color="#FBFBFB" />
+    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#E5E5E5" />
+
     <SolidColorBrush x:Key="GlobalBackground" Color="{StaticResource GlobalBackgroundColor}" />
     <SolidColorBrush x:Key="GlobalBorderBrush" Color="{StaticResource GlobalBroderBrushColor}"/>
 
