@@ -270,4 +270,7 @@
   <data name="Edit" xml:space="preserve">
     <value>Edit</value>
   </data>
+  <data name="Submit" xml:space="preserve">
+    <value>Submit</value>
+  </data>
 </root>

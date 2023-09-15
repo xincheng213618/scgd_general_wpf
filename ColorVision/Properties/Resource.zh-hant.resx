@@ -270,4 +270,7 @@
   <data name="Edit" xml:space="preserve">
     <value>編輯</value>
   </data>
+  <data name="Submit" xml:space="preserve">
+    <value>提交</value>
+  </data>
 </root>

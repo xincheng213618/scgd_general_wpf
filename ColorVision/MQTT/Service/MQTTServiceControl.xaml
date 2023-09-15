@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.MQTT.Service"
              xmlns:mqtt="clr-namespace:ColorVision.MQTT"
+             xmlns:resx="clr-namespace:ColorVision.Properties"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:MQTTService}"
              d:DesignHeight="500" d:DesignWidth="600" Initialized="UserControl_Initialized">
@@ -89,7 +90,7 @@
                         <TextBox Text="{Binding ServiceConfig.HeartbeatTime}"/>
                     </DockPanel>
                 </StackPanel>
-                <Button Grid.Column="1"  Content="提交" Click="Button_Click" Command="{Binding SaveCommand}" />
+                <Button Grid.Column="1"  Content="{x:Static resx:Resource.Submit}" Click="Button_Click" Command="{Binding SaveCommand}" />
             </Grid>
 
         </Grid>

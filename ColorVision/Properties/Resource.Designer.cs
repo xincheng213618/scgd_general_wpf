@@ -457,6 +457,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 提交 的本地化字符串。
+        /// </summary>
+        public static string Submit {
+            get {
+                return ResourceManager.GetString("Submit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 开机启动(可能会不成功) 的本地化字符串。
         /// </summary>
         public static string TbSettingsStartBoot {

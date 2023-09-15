@@ -57,7 +57,7 @@
                                 <TextBox Text="{Binding Config.ID}"/>
                             </DockPanel>
                         </StackPanel>
-                        <Button Grid.Column="1"  Content="提交" Click="Button_Click" Command="{Binding SaveCommand}" />
+                        <Button Grid.Column="1"  Content="{x:Static resx:Resource.Submit}" Click="Button_Click" Command="{Binding SaveCommand}" />
                     </Grid>
                 </Grid>
             </StackPanel>
