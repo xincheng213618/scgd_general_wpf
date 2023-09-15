@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:ColorVision.Device.Camera.Video"
         xmlns:setting="clr-namespace:ColorVision.SettingUp"
         xmlns:hc ="https://handyorg.github.io/handycontrol"
+        xmlns:resx="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         Title="相机视频配置" Background="#F0F0F0" Height="500" Width="400" Initialized="Window_Initialized">
     <Grid>
@@ -76,8 +77,8 @@
             </StackPanel>
             <StackPanel Grid.Row="1" Margin="0,5"   HorizontalAlignment="Right" VerticalAlignment="Bottom">
                 <UniformGrid x:Name="FunctionGrid" Columns="2" Width="180"   HorizontalAlignment="Center">
-                    <Button Content="确定" Width="80"  Click="Button_Click"/>
-                    <Button Content="取消" Width="80" Click="Button_Click_2"/>
+                    <Button Content="{x:Static resx:Resource.OK}" Width="80"  Click="Button_Click"/>
+                    <Button Content="{x:Static resx:Resource.Cancel}" Width="80" Click="Button_Click_2"/>
                 </UniformGrid>
             </StackPanel>
 

@@ -1,4 +1,4 @@
-﻿#pragma  warning disable CA1708, CS8602， CS8604
+﻿#pragma  warning disable CA1708,CS8602,CS8604
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.Template;
