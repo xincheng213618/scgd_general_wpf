@@ -94,7 +94,7 @@ namespace ColorVision.Device.POI
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            var a = new ResultService().PoiSelectByBatchID(3);
+            var a = new ResultService().PoiSelectByBatchID(10);
             Device.View.PoiDataDraw(a);
         }
 
