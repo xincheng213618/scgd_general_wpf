@@ -34,7 +34,7 @@
                 <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
             </Trigger>
             <Trigger Property="UIElement.IsMouseOver" Value="True">
-                <Setter Property="UIElement.Opacity" Value=".6" />
+                <Setter Property="UIElement.Opacity" Value=".8" />
             </Trigger>
             <Trigger Property="IsPressed" Value="True">
                 <Setter Property="UIElement.Opacity" Value=".6" />

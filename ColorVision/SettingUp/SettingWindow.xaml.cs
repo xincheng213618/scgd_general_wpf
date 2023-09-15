@@ -109,9 +109,9 @@ namespace ColorVision.SettingUp
 
         private void ButtonSave_Click(object sender, RoutedEventArgs e)
         {
-            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions() { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
-            string Json = JsonSerializer.Serialize(HotKeys.HotKeysList, jsonSerializerOptions);
-            File.WriteAllText("Hotkey", Json);
+            //JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions() { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
+            //string Json = JsonSerializer.Serialize(HotKeys.HotKeysList, jsonSerializerOptions);
+            //File.WriteAllText("Hotkey", Json);
         }
 
         private void SetProjectDefault__Click(object sender, RoutedEventArgs e)
