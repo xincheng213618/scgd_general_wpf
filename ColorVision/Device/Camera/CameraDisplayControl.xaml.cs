@@ -46,8 +46,7 @@ namespace ColorVision.Device.Camera
 
             ComboxCalibrationTemplate.ItemsSource = TemplateControl.GetInstance().CalibrationParams;
             ComboxCalibrationTemplate.SelectedIndex = 0;
-            ComboxPoiTemplate.ItemsSource = TemplateControl.GetInstance().PoiParams;
-            ComboxPoiTemplate.SelectedIndex = 0;
+
 
             StackPanelOpen.Visibility = Visibility.Collapsed;
             StackPanelImage.Visibility = Visibility.Collapsed;
@@ -377,15 +376,6 @@ namespace ColorVision.Device.Camera
             {
                 Service.Calibration(param);
             }
-        }
-
-        private void PoiClick(object sender, RoutedEventArgs e)
-        {
-            if (ComboxPoiTemplate.SelectedValue is PoiParam param)
-            {
-                Helpers.SendCommand(Service.SetPoiParam(param),"正在计算关注点");
-            }
-            
         }
     }
 }

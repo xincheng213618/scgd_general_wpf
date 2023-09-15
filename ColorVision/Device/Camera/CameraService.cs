@@ -223,24 +223,6 @@ namespace ColorVision.Device.Camera
         }
 
 
-        public MsgRecord SetPoiParam(PoiParam param)
-        {
-            MsgSend msg = new MsgSend
-            {
-                EventName = "SetParam",
-                Params = new Dictionary<string, object>() {
-                {
-                    "NameFuc", new List<ParamFunction>()
-                    {
-                        new ParamFunction(){ Name ="CM_SetPoiParam",Params  = param},
-                    }
-                }
-                }
-            };
-            return PublishAsyncClient(msg);
-        }
-
-
         private static List<ParamFunction> Calibrations(CalibrationParam item)
         {
             var param = new List<ParamFunction>() { };

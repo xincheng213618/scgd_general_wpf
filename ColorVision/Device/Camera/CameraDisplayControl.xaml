@@ -151,18 +151,6 @@
                         <Button Content="鬼影" Click="GhostShadow_Click"/>
                     </UniformGrid>
 
-                    <GroupBox Header="关注点" Margin="0,5">
-                        <StackPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="关注点模板：" VerticalAlignment="Center" Width="100"/>
-                                <ComboBox  x:Name="ComboxPoiTemplate"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <Button  Content="应用"  HorizontalAlignment="Right" Click="PoiClick" />
-                            </DockPanel>
-                        </StackPanel>
-                    </GroupBox>
-
                     <GroupBox Header="校正" Margin="0,5">
                         <StackPanel>
                             <DockPanel Margin="0,2">

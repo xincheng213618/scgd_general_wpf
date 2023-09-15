@@ -17,18 +17,15 @@
     <StackPanel Margin="0,5">
         <DockPanel>
             <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Content="关注点服务"  FontSize="15"  IsChecked="True" />
-            <TextBlock  FontSize="10" VerticalAlignment="Bottom" Margin="2">
-                <Run Text="("/>
-                <Run Text="{Binding Config.Code}"/>
-                <Run Text=")"/>
-            </TextBlock>
         </DockPanel>
+        
 
         <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
-            <StackPanel >
-                <Button  Content="GETSN"  HorizontalAlignment="Right" Click="Algorithm_GET" />
-                <Button  Content="初始化"  HorizontalAlignment="Right" Click="Algorithm_INI" />
-                <Button  Content="GetData"  HorizontalAlignment="Right" Click="Button_Click" />
+            <StackPanel Margin="5" >
+                    
+                <Button Content="GETSN"  HorizontalAlignment="Right" Click="Algorithm_GET" />
+                <Button Content="初始化"  HorizontalAlignment="Right" Click="Algorithm_INI" />
+                <Button Content="GetData"  HorizontalAlignment="Right" Click="Button_Click" />
 
                 <DockPanel Margin="0,2">
                     <TextBlock Text="关注点模板：" VerticalAlignment="Center" Width="100"/>

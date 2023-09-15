@@ -1,9 +1,13 @@
-﻿using ColorVision.MySql.Service;
+﻿using ColorVision.MySql.DAO;
+using ColorVision.MySql.Service;
 using ColorVision.Template;
+using Newtonsoft.Json;
+using NPOI.SS.Formula.Functions;
 using ScottPlot;
 using ScottPlot.Plottable;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Drawing;
 using System.IO;
 using System.Text;
@@ -15,16 +19,30 @@ using System.Windows.Input;
 
 namespace ColorVision.Device.Algorithm
 {
+
+    public class PoiResult
+    {
+        public double CCT { get; set; }
+        public double Wave { get; set; }
+        public double X { get; set; }
+        public double Y { get; set; }
+        public double Z { get; set; }
+        public double u { get; set; }
+        public double v { get; set; }
+        public double x { get; set; }
+        public double y { get; set; }
+
+
+    }
+
     /// <summary>
     /// SpectrumView.xaml 的交互逻辑
     /// </summary>
     public partial class AlgorithmView : UserControl,IView
     {
         public View View { get; set; }
-        private ResultService spectumResult;
         public AlgorithmView()
         {
-            spectumResult = new ResultService();
             InitializeComponent();
         }
 
@@ -87,16 +105,20 @@ namespace ColorVision.Device.Algorithm
                 gridView.Columns.Add(new GridViewColumn() { Header = headers[i], Width = 100, DisplayMemberBinding = new Binding(string.Format("[{0}]", i)) });
             }
             listView1.View = gridView;
-            List<string> headers2 = new List<string> { "电流","电压" };
+            List<string> headers2 = new List<string> { "CCT","Wave","X","Y","Z","u","v","x","y" };
 
             GridView gridView2 = new GridView();
             for (int i = 0; i < headers2.Count; i++)
             {
-                gridView2.Columns.Add(new GridViewColumn() { Header = headers2[i], DisplayMemberBinding = new Binding(string.Format("[{0}]", i)) });
+                gridView2.Columns.Add(new GridViewColumn() { Header = headers2[i], DisplayMemberBinding = new Binding(headers2[i]) });
             }
-
             listView2.View = gridView2;
+
+            listView2.ItemsSource = PoiResults;
+
         }
+
+        public ObservableCollection<PoiResult> PoiResults { get; set; } = new ObservableCollection<PoiResult>();
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -129,14 +151,35 @@ namespace ColorVision.Device.Algorithm
                 }
                 file.WriteLine(value);
             }
+        }
+
+        public void PoiDataDraw(List<PoiResultModel> poiResultModels)
+        {
+            foreach (var item in poiResultModels)
+            {
+                try
+                {
+                    PoiResult poiResult = JsonConvert.DeserializeObject<PoiResult>(item.Value.ToString());
+                    PoiResults.Add(poiResult);
+                }
+                catch
+                {
+
+                }
+
+            }
 
         }
+
+
+
+
 
         private List<List<string>> ListContents { get; set; } = new List<List<string>>() { };
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
-
+            
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)

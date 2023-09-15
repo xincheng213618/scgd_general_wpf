@@ -17,9 +17,9 @@ namespace ColorVision.Device.Algorithm
         public DeviceAlgorithm(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             Config = new AlgorithmConfig() { SendTopic = "Algorithm", SubscribeTopic = "AlgorithmService" };
+            View ??= new AlgorithmView();
             Service = new AlgorithmService(Config);
             Control = new AlgorithmDisplayControl(this);
-            View ??= new AlgorithmView();
         }
 
 
