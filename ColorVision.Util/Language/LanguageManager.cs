@@ -45,7 +45,7 @@ namespace ColorVision.Language
         {
             if (Thread.CurrentThread.CurrentUICulture.Name != lang)
             {
-                if (MessageBox.Show(Properties.Resource.LanguageResartSign, "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                if (MessageBox.Show(Util.Properties.Resource.LanguageResartSign, "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                 {
                     Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(lang);
                     Process.Start(Application.ResourceAssembly.Location.Replace(".dll",".exe"),"-r");
