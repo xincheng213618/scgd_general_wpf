@@ -120,4 +120,19 @@
   <data name="LanguageResartSign" xml:space="preserve">
     <value>새로운 언어 설정을 적용하려면 재시작해야 합니다</value>
   </data>
+  <data name="Maximize" xml:space="preserve">
+    <value>최대화</value>
+  </data>
+  <data name="Minimize" xml:space="preserve">
+    <value>최소화</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>닫기</value>
+  </data>
+  <data name="Pin" xml:space="preserve">
+    <value>상단 고정</value>
+  </data>
+  <data name="Restore" xml:space="preserve">
+    <value>아래로 복원</value>
+  </data>
 </root>

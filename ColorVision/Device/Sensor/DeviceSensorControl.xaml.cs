@@ -1,5 +1,4 @@
-﻿using ColorVision.Device.Sensor;
-using ColorVision.MQTT.Service;
+﻿using ColorVision.MQTT.Service;
 using System;
 using System.Windows;
 using System.Windows.Controls;

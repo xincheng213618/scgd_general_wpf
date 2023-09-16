@@ -1,7 +1,4 @@
-﻿using ColorVision.Device.SMU;
-using log4net;
-using log4net.Repository.Hierarchy;
-using MySqlX.XDevAPI;
+﻿using log4net;
 using NetMQ;
 using NetMQ.Sockets;
 using Newtonsoft.Json;
@@ -9,8 +6,6 @@ using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;

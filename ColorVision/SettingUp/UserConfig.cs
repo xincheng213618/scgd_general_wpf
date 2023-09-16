@@ -1,5 +1,4 @@
 ﻿using ColorVision.MVVM;
-using System;
 using System.ComponentModel;
 
 namespace ColorVision.SettingUp

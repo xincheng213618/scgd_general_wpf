@@ -8,11 +8,6 @@ using ColorVision.Device.Spectrum;
 using ColorVision.MQTT;
 using ColorVision.MQTT.Service;
 using ColorVision.MySql.DAO;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ColorVision.Device
 {

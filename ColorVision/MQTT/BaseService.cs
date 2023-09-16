@@ -1,7 +1,6 @@
 ﻿using ColorVision.Device;
 using ColorVision.MVVM;
 using ColorVision.SettingUp;
-using FlowEngineLib;
 using log4net;
 using MQTTnet.Client;
 using Newtonsoft.Json;
@@ -13,7 +12,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace ColorVision.MQTT
 {

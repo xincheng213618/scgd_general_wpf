@@ -1,5 +1,4 @@
-﻿using ColorVision.Theme;
-using System;
+﻿using System;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -7,7 +6,7 @@ using System.Windows.Media;
 using System.Windows.Shell;
 using WindowEffectTest;
 
-namespace ColorVision.Controls
+namespace ColorVision.Theme.Controls
 {
     public class WindowNotifications
     {
@@ -34,7 +33,7 @@ namespace ColorVision.Controls
             }
             else
             {
-                ResourceDictionary dictionary1 = Application.LoadComponent(new Uri("/ColorVision;component/Contorl/Window/BaseWindow.xaml", UriKind.Relative)) as ResourceDictionary;
+                ResourceDictionary dictionary1 = Application.LoadComponent(new Uri("/ColorVision.Util;component/Theme/Window/BaseWindow.xaml", UriKind.Relative)) as ResourceDictionary;
                 Application.Current.Resources.MergedDictionaries.Add(dictionary1);
                 return Application.Current.FindResource(typeof(BaseWindow)) as Style ?? null;
             }
@@ -75,7 +74,7 @@ namespace ColorVision.Controls
                         wac.Color = Color.FromArgb(200, 255, 255, 255);
                     }
                     else {
-                        wac.Color = ThemeManager.Current.CurrentUITheme == Theme.Theme.Light ?  Color.FromArgb(200, 255, 255, 255) : Color.FromArgb(180, 0, 0, 0);
+                        wac.Color = ThemeManager.Current.CurrentUITheme == Theme.Light ?  Color.FromArgb(200, 255, 255, 255) : Color.FromArgb(180, 0, 0, 0);
                     }
                     wac.IsEnabled = true;
                     ThemeChangedHandler themeChangedHandler = (s) => {
@@ -84,7 +83,7 @@ namespace ColorVision.Controls
                             wac.Color = Color.FromArgb(200, 255, 255, 255);
                         }
                         else {
-                            wac.Color = ThemeManager.Current.CurrentUITheme == Theme.Theme.Light ? Color.FromArgb(200, 255, 255, 255) : Color.FromArgb(180, 0, 0, 0);
+                            wac.Color = ThemeManager.Current.CurrentUITheme == Theme.Light ? Color.FromArgb(200, 255, 255, 255) : Color.FromArgb(180, 0, 0, 0);
                         }
                         wac.IsEnabled = true;
                     };

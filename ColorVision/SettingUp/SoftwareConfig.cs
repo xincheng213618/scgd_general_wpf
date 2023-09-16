@@ -5,7 +5,6 @@ using ColorVision.Template;
 using log4net;
 using log4net.Core;
 using log4net.Repository.Hierarchy;
-using NPOI.OpenXml4Net.OPC.Internal;
 using System;
 using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;

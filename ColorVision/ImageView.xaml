@@ -4,17 +4,36 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision"
-             xmlns:effects="http://gu.se/Geometry"
-             xmlns:Template ="clr-namespace:ColorVision.Template"
              xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
-             xmlns:mqtt ="clr-namespace:ColorVision.MQTT"
-             xmlns:SettingUp ="clr-namespace:ColorVision.SettingUp"
              xmlns:converter="clr-namespace:ColorVision.Converter"
-             xmlns:hc="https://handyorg.github.io/handycontrol"
-             xmlns:co="clr-namespace:ColorVision.Controls"
              d:DataContext="{d:DesignInstance local:ImageView}"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800" Initialized="UserControl_Initialized">
+    <UserControl.Resources>
+        <DataTemplate x:Key="DrawingVisualCircleTemplate" >
+            <StackPanel  Orientation="Horizontal">
+                <TextBlock Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}" Text="{Binding Path=ID}" HorizontalAlignment="Center"/>
+                <CheckBox Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}" IsChecked="True" Tag="{Binding .}"/>
+                <TextBlock Width="{Binding ElementName=GridListHeader3,Path=ActualWidth}" HorizontalAlignment="Center">
+                                                    <Run Text="("/>
+                                                    <Run Text="{Binding Path = CenterX,StringFormat={}{0:F0}}"/>
+                                                    <Run Text=","/>
+                                                    <Run Text="{Binding Path = CenterY,StringFormat={}{0:F0}}"/>
+                                                    <Run Text=")"/>
+                </TextBlock>
+                <TextBlock  Width="{Binding ElementName=GridListHeader4,Path=ActualWidth}" Text="{Binding Path=Radius}" />
+            </StackPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="DrawingVisualRectangleTemplate" >
+            <StackPanel  Orientation="Horizontal">
+                <TextBlock Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}" Text="{Binding Path=ID}" HorizontalAlignment="Center"/>
+                <CheckBox Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}" IsChecked="True" Tag="{Binding .}"/>
+                <TextBlock  Width="{Binding ElementName=GridListHeader4,Path=ActualWidth}" Text="{Binding Attribute.Rect}" />
+            </StackPanel>
+        </DataTemplate>
+
+        <converter:DrawCanvasTemplateSelector x:Key="DrawCanvasTemplateSelector"  DrawingVisualRectangleTemplate ="{StaticResource DrawingVisualRectangleTemplate}"  DrawingVisualCircleTemplate ="{StaticResource DrawingVisualCircleTemplate}" />
+    </UserControl.Resources>
     <Grid x:Name="ImageContentGrid" >
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
@@ -116,9 +135,6 @@
             </local:ZoomboxSub>
             <StackPanel Grid.Row="0" Grid.RowSpan="2" >
                 <ToolBar x:Name="ToolBar1" DataContext="{Binding ToolBarTop}"   Loaded="ToolBar1_Loaded" Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" HorizontalAlignment="Center">
-                    <ToolBar.Resources>
-                        <ResourceDictionary Source="/Theme/Icons.xaml"/>
-                    </ToolBar.Resources>
                     <ToggleButton x:Name="ToggleButtonMouse"  IsChecked="{Binding Path=Move}"  Margin="4,0,1,0">
                         <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageMouse}"/>
                     </ToggleButton>

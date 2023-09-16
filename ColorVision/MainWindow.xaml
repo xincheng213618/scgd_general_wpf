@@ -4,15 +4,8 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision"
-        xmlns:effects="http://gu.se/Geometry"
-        xmlns:ScottPlot="clr-namespace:ScottPlot;assembly=ScottPlot.WPF"
-        xmlns:Template ="clr-namespace:ColorVision.Template"
-        xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
-        xmlns:mqtt ="clr-namespace:ColorVision.MQTT"
         xmlns:SettingUp ="clr-namespace:ColorVision.SettingUp"
-        xmlns:converter="clr-namespace:ColorVision.Converter"
         xmlns:hc="https://handyorg.github.io/handycontrol"
-        xmlns:co="clr-namespace:ColorVision.Controls"
         xmlns:resx="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:MainWindow}"
@@ -28,7 +21,6 @@
             <Border   Background="#F9F9F9"  Height="250" Width="250"  CornerRadius="10">
                 <Border Background="#F3F3F3" BorderBrush="#EAEAEA" BorderThickness="1" CornerRadius="5" Margin="5">
                     <Grid>
-                        <co:ProgressRing  BorderBrush="Red" Margin="30" />
                         <TextBlock x:Name="WaitControlText" Text="正在计算" HorizontalAlignment="Center" FontSize="16"/>
                         <ProgressBar x:Name="WaitControlProgressBar" Visibility="Collapsed" BorderThickness="0"  Maximum="100" Minimum="0"  Height="20" Margin="5" VerticalAlignment="Bottom" />
                     </Grid>
@@ -144,9 +136,6 @@
 
                 <StatusBarItem Grid.Column="1" >
                     <DockPanel>
-                        <DockPanel.Resources>
-                            <ResourceDictionary Source="/Theme/Icons.xaml"/>
-                        </DockPanel.Resources>
                         <StackPanel Orientation="Horizontal" Margin="0">
                             <Button  Height="15" BorderThickness="0" Background="Transparent" Click="ViewGrid_Click" Tag="1">
                                 <Image Source="{StaticResource DrawingImageSingleWindow}" Margin="-5" />
@@ -163,7 +152,6 @@
                             <Button  Height="15" BorderThickness="0"  Click="ViewGrid_Click" Background="Transparent" Tag="31">
                                 <Image Source="{StaticResource DrawingImageLeft2Right1}" Margin="-5" />
                             </Button>
-
                             <Button  Height="15" BorderThickness="0"  Click="ViewGrid_Click" Background="Transparent" Tag="4">
                                 <Image Source="{StaticResource DrawingImageFourWindow}" Margin="-5" />
                             </Button>

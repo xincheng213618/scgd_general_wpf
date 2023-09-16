@@ -1,20 +1,13 @@
 ﻿using ColorVision.Device.Camera.Video;
 using ColorVision.Util;
 using ColorVision.Extension;
-using HandyControl.Controls;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
-using ColorVision.SettingUp;
-using ColorVision.Solution;
-using FlowEngineLib;
 using ColorVision.MQTT;
-using System.Threading.Tasks;
-using Panuon.WPF.UI;
-using System.Reflection.Emit;
 using cvColorVision;
 using ColorVision.Template;
 

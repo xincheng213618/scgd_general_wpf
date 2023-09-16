@@ -27,9 +27,6 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <ToolBar Grid.Row="0"  Background ="#EEF4F9" Loaded="ToolBar1_Loaded" ToolBarTray.IsLocked="True">
-                    <ToolBar.Resources>
-                        <ResourceDictionary Source="/Theme/Icons.xaml"/>
-                    </ToolBar.Resources>
                     <ToggleButton Click="Button1_Click" Margin="2,0,0,0" >
                         <Image  Stretch="Uniform" Source="{StaticResource DrawingImageSwitch}" />
                     </ToggleButton>

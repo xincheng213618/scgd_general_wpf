@@ -19,9 +19,6 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <ToolBar Grid.Row="0"  Background ="#EEF4F9" ToolBarTray.IsLocked="True">
-                <ToolBar.Resources>
-                    <ResourceDictionary Source="/Theme/Icons.xaml"/>
-                </ToolBar.Resources>
                 <ToggleButton x:Name="toggle1" Click="Button_Click_1" Margin="2,0,0,0" >
                     <Image Stretch="Uniform" Source="{StaticResource DrawingImageList}" >
                         <Image.RenderTransform>

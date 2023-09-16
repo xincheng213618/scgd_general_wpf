@@ -1,15 +1,9 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604
 using ColorVision.MySql.DAO;
-using ColorVision.MySql.Service;
-using ColorVision.Template;
 using Newtonsoft.Json;
-using NPOI.SS.Formula.Functions;
-using ScottPlot;
-using ScottPlot.Plottable;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Drawing;
 using System.IO;
 using System.Text;
 using System.Windows;

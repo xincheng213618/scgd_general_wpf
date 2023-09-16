@@ -13,7 +13,6 @@ using System;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Xps.Packaging;
 
 namespace ColorVision.MQTT.Service
 {

@@ -120,4 +120,19 @@
   <data name="LanguageResartSign" xml:space="preserve">
     <value>新しい言語設定を使用するためには、再起動が必要です</value>
   </data>
+  <data name="Maximize" xml:space="preserve">
+    <value>最大化</value>
+  </data>
+  <data name="Minimize" xml:space="preserve">
+    <value>最小化</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>キャンセル</value>
+  </data>
+  <data name="Pin" xml:space="preserve">
+    <value>ピン留めする</value>
+  </data>
+  <data name="Restore" xml:space="preserve">
+    <value>リセットする</value>
+  </data>
 </root>

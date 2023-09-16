@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.SettingUp"
-        xmlns:base ="clr-namespace:ColorVision.Controls"
+        xmlns:base ="clr-namespace:ColorVision.Theme.Controls;assembly=ColorVision.Util"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:resx="clr-namespace:ColorVision.Properties"
@@ -65,9 +65,6 @@
                             </GroupBox.Header>
                             <StackPanel>
                                 <Border Style="{StaticResource BorderModuleArea}">
-                                    <Border.Resources>
-                                        <ResourceDictionary Source="/Theme/Icons.xaml"/>
-                                    </Border.Resources>
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="5" ToolTip="模板数据保存Mysql数据库">
                                             <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding IsUseMySql}"/>

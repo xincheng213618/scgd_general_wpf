@@ -1,14 +1,11 @@
-﻿using ColorVision.Controls;
-using ColorVision.HotKey;
+﻿using ColorVision.HotKey;
 using ColorVision.MQTT;
 using ColorVision.MySql;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.Encodings.Web;
 using System.Text.Json;
-using System.Text.Unicode;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,7 +14,7 @@ using ColorVision.Extension;
 using ColorVision.Theme;
 using ColorVision.Language;
 using System.Globalization;
-using OpenCvSharp.Aruco;
+using ColorVision.Theme.Controls;
 
 namespace ColorVision.SettingUp
 {

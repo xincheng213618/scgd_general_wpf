@@ -8,7 +8,7 @@ using System.Windows.Media;
 using ColorVision.NativeMethods;
 using static ColorVision.NativeMethods.User32;
 
-namespace ColorVision.Controls
+namespace ColorVision.Theme.Controls
 {
     public static class WindowHelper
     {

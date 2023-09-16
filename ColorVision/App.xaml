@@ -11,11 +11,11 @@
                 <ui:ControlsDictionary />
                 <ResourceDictionary Source="/HandyControl;component/themes/basic/colors/colors.xaml"/>
                 <ResourceDictionary Source="/HandyControl;component/Themes/Theme.xaml"/>
-                <ResourceDictionary Source="/ColorVision;component/Theme/White.xaml"/>
-                <ResourceDictionary Source="/ColorVision;component/Theme/Base.xaml"/>
-                <ResourceDictionary Source="/ColorVision;component/Theme/Menu.xaml"/>
-                <ResourceDictionary Source="/ColorVision;component/Theme/GroupBox.xaml"/>
-                <ResourceDictionary Source="/ColorVision;component/Theme/Icons.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Util;component/Theme/White.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Util;component/Theme/Base.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Util;component/Theme/Menu.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Util;component/Theme/GroupBox.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Util;component/Theme/Icons.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

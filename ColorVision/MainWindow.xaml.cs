@@ -2,24 +2,12 @@
 using ColorVision.SettingUp;
 using ColorVision.Template;
 using System;
-using System.IO;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using ColorVision.Theme;
-using ColorVision.Util;
-using ColorVision.Service;
 using ColorVision.MQTT.Service;
-using ColorVision.Device.SMU;
-using ColorVision.Device.Camera.Video;
 using ColorVision.Flow;
-using HandyControl.Tools.Extension;
-using HandyControl.Tools;
-using System.Windows.Media.Animation;
-using ColorVision.Device.POI;
-using ColorVision.Device.Camera;
 using ColorVision.Device.Algorithm;
 
 namespace ColorVision

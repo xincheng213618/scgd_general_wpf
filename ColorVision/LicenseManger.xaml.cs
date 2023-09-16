@@ -1,4 +1,4 @@
-﻿using ColorVision.Controls;
+﻿using ColorVision.Theme.Controls;
 using ColorVision.Device.Camera;
 using ColorVision.MVVM;
 using System;

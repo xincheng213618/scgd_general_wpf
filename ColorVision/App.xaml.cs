@@ -1,6 +1,4 @@
-﻿using ColorVision.MQTT;
-using ColorVision.MQTT.Service;
-using ColorVision.MySql;
+﻿using ColorVision.MQTT.Service;
 using ColorVision.NativeMethods;
 using ColorVision.SettingUp;
 using ColorVision.Theme;

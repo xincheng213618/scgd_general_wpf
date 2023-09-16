@@ -16,7 +16,6 @@ using ColorVision.MySql;
 using log4net;
 using System.Diagnostics;
 using ColorVision.Service;
-using ColorVision.Device.Camera.Video;
 
 namespace ColorVision
 {

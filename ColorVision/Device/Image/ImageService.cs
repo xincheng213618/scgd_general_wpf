@@ -1,15 +1,10 @@
 ﻿#pragma warning disable CA1710 // 标识符应具有正确的后缀
 
-using ColorVision.Device.Sensor;
-using ColorVision.Device.SMU;
 using ColorVision.MQTT;
 using MQTTnet.Client;
-using NetMQ;
-using NetMQ.Sockets;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
