@@ -9,7 +9,6 @@ namespace ColorVision
     public class DrawCanvas : Image
     {
 
-
         private List<Visual> visuals = new List<Visual>();
 
         protected override Visual GetVisualChild(int index) => visuals[index];
