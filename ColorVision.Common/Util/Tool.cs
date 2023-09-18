@@ -1,4 +1,4 @@
-﻿using log4net;
+﻿using Microsoft.VisualBasic.Logging;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -11,9 +11,6 @@ namespace ColorVision.Util
 {
     public static partial class Tool
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(Tool));
-
-
         public static string GetNoRepeatFileName(string DirectoryPath, string FileName,string Ex)
         {
             if (!File.Exists($"{DirectoryPath}\\{FileName}.{Ex}"))
@@ -111,7 +108,7 @@ namespace ColorVision.Util
             }
             catch (Exception ex)
             {
-                log.Error(ex);
+               Trace.TraceError(ex.Message);
             }
         }
 
@@ -133,7 +130,7 @@ namespace ColorVision.Util
             }
             catch (Exception ex)
             {
-                log.Error(ex);
+                Trace.TraceError(ex.Message);
                 return false;
             }
         }
@@ -159,7 +156,7 @@ namespace ColorVision.Util
             }
             catch (Exception ex)
             {
-                log.Error(ex);
+                Debug.WriteLine(ex.Message);
             }
             return false;
         }

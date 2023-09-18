@@ -9,6 +9,7 @@ using ColorVision.Themes;
 using ColorVision.MQTT.Service;
 using ColorVision.Flow;
 using ColorVision.Device.Algorithm;
+using System.Diagnostics;
 
 namespace ColorVision
 {
@@ -88,6 +89,7 @@ namespace ColorVision
 
             ViewGridManager.GetInstance().SetViewNum(1);
             this.Closed += (s, e) => {  Environment.Exit(-1); };
+            Debug.WriteLine("启动成功");
         }
         private void MenuStatusBar_Click(object sender, RoutedEventArgs e)
         {

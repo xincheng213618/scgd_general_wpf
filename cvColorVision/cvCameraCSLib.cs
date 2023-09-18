@@ -1948,7 +1948,7 @@ namespace cvColorVision
             }
             catch
             {
-                System.Windows.Forms.MessageBox.Show("畸变计算超时"); 
+                MessageBox.Show("畸变计算超时"); 
                 return false; 
             }
         }

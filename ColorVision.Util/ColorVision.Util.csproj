@@ -18,6 +18,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <ProjectReference Include="..\ColorVision.Common\ColorVision.Common.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
 	  <Compile Update="Properties\Resource.Designer.cs">
 	    <DesignTime>True</DesignTime>
 	    <AutoGen>True</AutoGen>
