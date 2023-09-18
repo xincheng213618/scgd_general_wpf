@@ -161,7 +161,7 @@ namespace ColorVision.Device.Spectrum
             return true;
         }
 
-        public bool GetData(float IntTime, int AveNum, bool bUseAutoIntTime = false, bool bUseAutoDark = false)
+        public bool GetData(float IntTime, int AveNum, bool bUseAutoIntTime = false, bool bUseAutoDark = false, bool bUseAutoShutterDark = false)
         {
             string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             MsgSend msg = new MsgSend
@@ -174,7 +174,8 @@ namespace ColorVision.Device.Spectrum
                     IntTime = IntTime,
                     AveNum = AveNum,
                     BUseAutoIntTime = bUseAutoIntTime,
-                    BUseAutoDark = bUseAutoDark
+                    BUseAutoDark = bUseAutoDark,
+                    BUseAutoShutterDark = bUseAutoShutterDark,
                 }
             };
             PublishAsyncClient(msg);
@@ -214,7 +215,7 @@ namespace ColorVision.Device.Spectrum
             return true;
         }
 
-        internal void GetDataAuto(float IntTime, int AveNum, bool bUseAutoIntTime, bool bUseAutoDark)
+        internal void GetDataAuto(float IntTime, int AveNum, bool bUseAutoIntTime = false, bool bUseAutoDark = false, bool bUseAutoShutterDark = false)
         {
             MsgSend msg = new MsgSend
             {
@@ -225,7 +226,8 @@ namespace ColorVision.Device.Spectrum
                     IntTime = IntTime,
                     AveNum = AveNum,
                     BUseAutoIntTime = bUseAutoIntTime,
-                    BUseAutoDark = bUseAutoDark
+                    BUseAutoDark = bUseAutoDark,
+                    BUseAutoShutterDark = bUseAutoShutterDark,
                 }
             };
             PublishAsyncClient(msg);
