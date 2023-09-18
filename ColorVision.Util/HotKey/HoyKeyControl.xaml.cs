@@ -12,7 +12,7 @@ namespace ColorVision.HotKey
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            return (value is bool boll) && (boll) ? "正常" : "热键冲突";
+            return (value is bool boll) && (boll) ? ColorVision.Util.Properties.Resource.HotkeyNormal : Util.Properties.Resource.HotkeyNormal;
 
         }
 

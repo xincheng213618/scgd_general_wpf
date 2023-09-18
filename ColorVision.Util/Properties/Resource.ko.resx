@@ -135,4 +135,13 @@
   <data name="Restore" xml:space="preserve">
     <value>아래로 복원</value>
   </data>
+  <data name="GlobalMode" xml:space="preserve">
+    <value>글로벌 모드</value>
+  </data>
+  <data name="HotkeyConflict" xml:space="preserve">
+    <value>충돌</value>
+  </data>
+  <data name="HotkeyNormal" xml:space="preserve">
+    <value>정상</value>
+  </data>
 </root>

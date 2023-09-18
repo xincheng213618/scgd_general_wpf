@@ -135,4 +135,13 @@
   <data name="Restore" xml:space="preserve">
     <value>Restore</value>
   </data>
+  <data name="GlobalMode" xml:space="preserve">
+    <value>GlobalMode</value>
+  </data>
+  <data name="HotkeyConflict" xml:space="preserve">
+    <value>Hotkey Conflict</value>
+  </data>
+  <data name="HotkeyNormal" xml:space="preserve">
+    <value>HotkeyNormal</value>
+  </data>
 </root>
