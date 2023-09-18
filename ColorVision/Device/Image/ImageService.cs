@@ -17,18 +17,18 @@ namespace ColorVision.Device.Image
         public const string Open = "Open";
         public const string Heartbeat = "Heartbeat";
     }
-    public class ImageDataEventArgs
+    public class ImageDataEvent
     {
         public string EventName { get; set; }
         public dynamic Data { get; set; }
 
-        public ImageDataEventArgs(string EventName, dynamic Data)
+        public ImageDataEvent(string EventName, dynamic Data)
         {
             this.EventName = EventName;
             this.Data = Data;
         }
     }
-    public delegate void MQTTImageDataHandler(object sender, ImageDataEventArgs arg);
+    public delegate void MQTTImageDataHandler(object sender, ImageDataEvent arg);
     public class ImageService : BaseService<ImageConfig>
     {
         public event MQTTImageDataHandler OnImageData;
@@ -60,7 +60,7 @@ namespace ColorVision.Device.Image
                     {
                         if (!json.EventName.Equals(ImageEventName.Heartbeat, StringComparison.Ordinal))
                         {
-                            OnImageData?.Invoke(this, new ImageDataEventArgs(json.EventName, json.Data));
+                            OnImageData?.Invoke(this, new ImageDataEvent(json.EventName, json.Data));
 
                         }
                     }

@@ -31,7 +31,7 @@ namespace ColorVision.Device.Image
             DeviceImg.Service.OnImageData += Service_OnImageData;
         }
 
-        private void Service_OnImageData(object sender, ImageDataEventArgs arg)
+        private void Service_OnImageData(object sender, ImageDataEvent arg)
         {
             switch (arg.EventName)
             {

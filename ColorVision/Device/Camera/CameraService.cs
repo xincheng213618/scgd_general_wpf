@@ -123,8 +123,13 @@ namespace ColorVision.Device.Camera
                         DeviceStatus = DeviceStatus.Opened;
                         break;
                     case "GetData":
-                        //string SaveFileName = msg.Data.SaveFileName;
-                        //Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(this, SaveFileName));
+                        try
+                        {
+                            string SaveFileName = msg.Data.SaveFileName;
+                            Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(this, SaveFileName));
+                        }
+                        catch { }
+
                         break;
                     case "GetAutoExpTime":
                         if (msg.Data != null && msg.Data.result[0].result != null)

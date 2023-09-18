@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Unicode;
+using static System.Windows.Forms.Design.AxImporter;
 
 namespace ColorVision.MVVM
 {
@@ -38,20 +39,18 @@ namespace ColorVision.MVVM
             }
         }
 
+        private static JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions() { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
 
-
-        public static string ToJson(this ViewModelBase viewModelBase)
+        public static string ToJson(this ViewModelBase viewModelBase, JsonSerializerOptions? options =null)
         {
-            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions() { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
-            return JsonSerializer.Serialize(viewModelBase, jsonSerializerOptions);
+            return JsonSerializer.Serialize(viewModelBase, options??jsonSerializerOptions);
         }
 
-        public static bool ToJsonFile(this ViewModelBase viewModelBase, string filePath)
+        public static bool ToJsonFile(this ViewModelBase viewModelBase, string filePath,JsonSerializerOptions? options = null)
         {
             try
             {
-                JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions();
-                string jsonString = JsonSerializer.Serialize(viewModelBase, jsonSerializerOptions);
+                string jsonString = JsonSerializer.Serialize(viewModelBase, options??jsonSerializerOptions);
                 File.WriteAllText(filePath, jsonString);
                 return true;
             }

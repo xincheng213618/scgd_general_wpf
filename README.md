@@ -4,6 +4,18 @@
 默认分辨率：1920x1080
 项目在版本相同的情况下，不支持多开
 
+
+
+
+
+Resx 配置：
+
+Google apikey  AIzaSyBElxN8V59CXS0ML-Q5YC7Do-Rza8FGawE
+
+Baidu  AppID：20180402000142443
+
+​            SecretKey:bTLryuKSa4vWCJLs0ECO
+
 支持操作系统：Win10,Win11
 
 支持主题：深色，浅色，跟随系统

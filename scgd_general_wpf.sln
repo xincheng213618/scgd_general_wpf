@@ -30,7 +30,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "3rdparty", "3rdparty", "{8C
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WpfFlowControlLibrary", "WpfFlowControlLibrary\WpfFlowControlLibrary.csproj", "{3E1B8F68-8051-4FBB-8372-4E55B43F61DF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColorVision.Common", "ColorVision.Common\ColorVision.Common.csproj", "{C8071225-73B5-4559-A22E-CD057B424A3C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Common", "ColorVision.Common\ColorVision.Common.csproj", "{C8071225-73B5-4559-A22E-CD057B424A3C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -183,6 +183,8 @@ Global
 		{8C2994F6-EF3C-40D2-A3C2-187B234805A0} = {55F5939D-C4F5-498D-97B0-8117E84F0FB1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
+		RESX_PrefixTranslations = False
+		RESX_NeutralResourcesLanguage = zh-Hans
 		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
 	EndGlobalSection
 EndGlobal

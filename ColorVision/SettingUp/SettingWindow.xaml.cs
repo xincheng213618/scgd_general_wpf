@@ -40,7 +40,7 @@ namespace ColorVision.SettingUp
             });
 
             cmtheme.ItemsSource = from e1 in Enum.GetValues(typeof(Theme)).Cast<Theme>()
-                                  select new KeyValuePair<Theme, string>(e1, Properties.Resource.ResourceManager.GetString(e1.ToDescription(), CultureInfo.CurrentUICulture));
+                                  select new KeyValuePair<Theme, string>(e1, Properties.Resource.ResourceManager.GetString(e1.ToDescription(), CultureInfo.CurrentUICulture)??"");
 
             cmtheme.SelectedValuePath = "Key";
             cmtheme.DisplayMemberPath = "Value";
@@ -51,7 +51,7 @@ namespace ColorVision.SettingUp
                 lauagDock.Visibility = Visibility.Collapsed;
 
             cmlauage.ItemsSource = from e1 in LanguageManager.Current.Languages
-                                   select new KeyValuePair<string, string>(e1, LanguageManager.keyValuePairs.TryGetValue(e1.ToLower(CultureInfo.CurrentCulture), out string value) ? value : e1);
+                                   select new KeyValuePair<string, string>(e1, LanguageManager.keyValuePairs.TryGetValue(e1, out string value) ? value : e1);
             cmlauage.SelectedValuePath = "Key";
             cmlauage.DisplayMemberPath = "Value";
             cmlauage.SelectionChanged += (s, e) =>

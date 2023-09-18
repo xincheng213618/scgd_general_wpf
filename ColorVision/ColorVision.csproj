@@ -10,28 +10,8 @@
     <ApplicationIcon>Image\ColorVision.ico</ApplicationIcon>
     <StartupObject>ColorVision.App</StartupObject>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <TargetFramework>net6.0-windows</TargetFramework>
   </PropertyGroup>
 	
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <NoWarn>1701;1702;WFAC010</NoWarn>
-    <Prefer32Bit>False</Prefer32Bit>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <NoWarn>1701;1702;WFAC010</NoWarn>
-    <Prefer32Bit>False</Prefer32Bit>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <NoWarn>1701;1702;WFAC010</NoWarn>
-    <Prefer32Bit>False</Prefer32Bit>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <NoWarn>1701;1702;WFAC010</NoWarn>
-    <Prefer32Bit>False</Prefer32Bit>
-  </PropertyGroup>
 
   <ItemGroup>
     <ApplicationDefinition Remove="App.xaml" />

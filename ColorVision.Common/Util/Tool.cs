@@ -181,9 +181,9 @@ namespace ColorVision.Util
                 return (T)new object();
             object retval;
             MemoryStream ms = new MemoryStream();
+#pragma warning disable SYSLIB0011
             BinaryFormatter bf = new BinaryFormatter();
             //序列化成流
-#pragma warning disable SYSLIB0011
             bf.Serialize(ms, obj);
             ms.Seek(0, SeekOrigin.Begin);
             //反序列化成对象
