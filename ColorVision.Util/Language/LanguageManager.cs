@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Windows;
@@ -15,30 +16,35 @@ namespace ColorVision.Language
 
         }
 
-        public static Dictionary<string, string> keyValuePairs { get; set; } = new Dictionary<string, string>() {
-            { "zh-hans" ,"简体中文" },
-            { "zh-hant" ,"繁体中文" },
-            { "en","English" },
-            { "ja","日语" },
-            { "ko","韩语"},
-        };
+        public static Dictionary<string, string> keyValuePairs { get; set; }
 
 
         public static List<string> GetLanguages(string DefalutProcessDllName = "ColorVision.resources.dll")
         {
+            keyValuePairs ??= new Dictionary<string, string>();
+            keyValuePairs.Clear();
+
             List<string>  list =  new List<string>() { };
+            list.Add(Thread.CurrentThread.CurrentUICulture.Name);
+            keyValuePairs.Add(Thread.CurrentThread.CurrentUICulture.Name, Util.Properties.Resource.ResourceManager.GetString(Thread.CurrentThread.CurrentUICulture.Name, CultureInfo.CurrentUICulture) ?? "");
+
             string exeFolderPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
 
             foreach (var subDirectory in Directory.GetDirectories(exeFolderPath??string.Empty))
             {
                 string[] files = Directory.GetFiles(subDirectory, DefalutProcessDllName, System.IO.SearchOption.AllDirectories);
 
-                if (files.Length > 0)
+                if (files.Length > 0  && new DirectoryInfo(subDirectory).Name is string Name && !list.Contains(Name))
                 {
-                    list.Add(new DirectoryInfo(subDirectory).Name);
+                    list.Add(Name);
+                    keyValuePairs.TryAdd(Name, Util.Properties.Resource.ResourceManager.GetString(Name, CultureInfo.CurrentUICulture) ?? "");
                 }
             }
-            list.Add("zh-Hans");
+            if (!list.Contains("zh-Hans"))
+            {
+                list.Add("zh-Hans");
+                keyValuePairs.TryAdd("zh-Hans", Util.Properties.Resource.ResourceManager.GetString("zh-Hans", CultureInfo.CurrentUICulture) ?? "");
+            }
             return list;
         }
         private string DefalutProcessName = "ColorVision";

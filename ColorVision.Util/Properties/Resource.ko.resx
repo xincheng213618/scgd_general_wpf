@@ -150,4 +150,22 @@
   <data name="HotKeySet2" xml:space="preserve">
     <value>클릭하여 핫키 설정하기</value>
   </data>
+  <data name="zh-Hans" xml:space="preserve">
+    <value>중국어 간체</value>
+  </data>
+  <data name="zh-Hant" xml:space="preserve">
+    <value>중국어 번체</value>
+  </data>
+  <data name="ja" xml:space="preserve">
+    <value>일본어</value>
+  </data>
+  <data name="ko" xml:space="preserve">
+    <value>한국인</value>
+  </data>
+  <data name="en" xml:space="preserve">
+    <value>영어</value>
+  </data>
+  <data name="ru" xml:space="preserve">
+    <value>러시아인</value>
+  </data>
 </root>

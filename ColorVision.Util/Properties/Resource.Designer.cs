@@ -70,6 +70,15 @@ namespace ColorVision.Util.Properties {
         }
         
         /// <summary>
+        ///   查找类似 英语 的本地化字符串。
+        /// </summary>
+        public static string en {
+            get {
+                return ResourceManager.GetString("en", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 全局 的本地化字符串。
         /// </summary>
         public static string GlobalMode {
@@ -115,6 +124,24 @@ namespace ColorVision.Util.Properties {
         }
         
         /// <summary>
+        ///   查找类似 日语 的本地化字符串。
+        /// </summary>
+        public static string ja {
+            get {
+                return ResourceManager.GetString("ja", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 韩语 的本地化字符串。
+        /// </summary>
+        public static string ko {
+            get {
+                return ResourceManager.GetString("ko", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 您必须重新启动才能使用新的语言设置 的本地化字符串。
         /// </summary>
         public static string LanguageResartSign {
@@ -156,6 +183,33 @@ namespace ColorVision.Util.Properties {
         public static string Restore {
             get {
                 return ResourceManager.GetString("Restore", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 俄语 的本地化字符串。
+        /// </summary>
+        public static string ru {
+            get {
+                return ResourceManager.GetString("ru", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 简体中文 的本地化字符串。
+        /// </summary>
+        public static string zh_hans {
+            get {
+                return ResourceManager.GetString("zh-hans", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 繁体中文 的本地化字符串。
+        /// </summary>
+        public static string zh_hant {
+            get {
+                return ResourceManager.GetString("zh-hant", resourceCulture);
             }
         }
     }
