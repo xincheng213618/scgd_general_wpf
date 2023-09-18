@@ -21,7 +21,7 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
+                    <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Margin="15,0">
                         <TextBlock  Text="{x:Static resx:Resource.AccountLogin}" HorizontalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush }" VerticalAlignment="Center" FontSize="20" Margin="0,15,0,10"/>
                     </Border>
                     <StackPanel Margin="30,20" Grid.Row="1">

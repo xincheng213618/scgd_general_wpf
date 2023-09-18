@@ -7,6 +7,7 @@
         xmlns:Template="clr-namespace:ColorVision.Template"
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         xmlns:converter="clr-namespace:ColorVision.Converter"
+        xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Template:PoiParam}"
         Title="关注点编辑"  Height="720" Width="1280" Initialized="Window_Initialized">
@@ -476,6 +477,7 @@
             <Border   Background="#F9F9F9"  Height="250" Width="250"  CornerRadius="10">
                 <Border Background="#F3F3F3" BorderBrush="#EAEAEA" BorderThickness="1" CornerRadius="5" Margin="5">
                     <Grid>
+                        <base:ProgressRing  BorderBrush="Red" Margin="30" />
                         <TextBlock x:Name="WaitControlText" Text="数据生成中" HorizontalAlignment="Center" FontSize="16"/>
                         <ProgressBar x:Name="WaitControlProgressBar" Visibility="Collapsed" BorderThickness="0"  Maximum="100" Minimum="0"  Margin="5" VerticalAlignment="Bottom" />
                     </Grid>
