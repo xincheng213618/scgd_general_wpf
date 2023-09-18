@@ -15,22 +15,13 @@
             <ColumnDefinition Width="300"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        <Grid Grid.Row="0">
+        <Grid Grid.Row="0"  Background="{DynamicResource GlobalBackground}">
             <Grid.RowDefinitions>
                 <RowDefinition  Height="*"/>
                 <RowDefinition  Height="auto"/>
             </Grid.RowDefinitions>
             <ScrollViewer x:Name="ScrollViewer1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="5" Grid.Row="0" Background="#F9F9F9">
-                    <StackPanel.Resources>
-                        <Style x:Key="BorderModuleArea" TargetType="{x:Type Border}">
-                            <Setter Property="Background" Value="#F3F3F3"/>
-                            <Setter Property="BorderBrush" Value="#EAEAEA"/>
-                            <Setter Property="BorderThickness" Value="1"/>
-                            <Setter Property="Margin" Value="5,2"/>
-                            <Setter Property="CornerRadius" Value="5"/>
-                        </Style>
-                    </StackPanel.Resources>
+                <StackPanel Margin="5" Grid.Row="0" >
                     <Border Margin="5" Style="{StaticResource BorderModuleArea}">
                         <StackPanel >
                             <GroupBox Header="设置" Margin="5">

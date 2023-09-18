@@ -387,7 +387,7 @@ namespace ColorVision
             Grids.Clear();
             for (int i = 0; i < Nums; i++)
             {
-                Grid grid = new Grid() { Margin = new Thickness(2, 2, 2, 2), };
+                Grid grid = new Grid() { Margin = new Thickness(0), };
                 Grids.Add(grid);
 
                 var text = new TextBlock { Text = (i + 1).ToString(),Foreground =Brushes.Red,HorizontalAlignment =HorizontalAlignment.Center,FontSize=30};
