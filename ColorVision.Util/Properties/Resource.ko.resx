@@ -136,12 +136,18 @@
     <value>아래로 복원</value>
   </data>
   <data name="GlobalMode" xml:space="preserve">
-    <value>글로벌 모드</value>
+    <value>글로벌</value>
   </data>
   <data name="HotkeyConflict" xml:space="preserve">
     <value>충돌</value>
   </data>
   <data name="HotkeyNormal" xml:space="preserve">
     <value>정상</value>
+  </data>
+  <data name="HotKeySet1" xml:space="preserve">
+    <value>Set Hotkeys by Pressing Keys</value>
+  </data>
+  <data name="HotKeySet2" xml:space="preserve">
+    <value>클릭하여 핫키 설정하기</value>
   </data>
 </root>
