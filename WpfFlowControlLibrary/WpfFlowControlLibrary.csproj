@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="log4net" Version="2.0.15" />
+    <PackageReference Include="MahApps.Microsoft.DwayneNeed" Version="1.0.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -18,12 +19,6 @@
   <ItemGroup>
     <Reference Include="FlowEngineLib">
       <HintPath>..\DLL\FlowEngineLib.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.DwayneNeed">
-      <HintPath>..\DLL\Microsoft.DwayneNeed.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.DwayneNeed.Win32">
-      <HintPath>..\DLL\Microsoft.DwayneNeed.Win32.dll</HintPath>
     </Reference>
     <Reference Include="ST.Library.UI">
       <HintPath>..\DLL\ST.Library.UI.dll</HintPath>

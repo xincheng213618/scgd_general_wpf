@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:WpfFlowControlLibrary"
              xmlns:st ="clr-namespace:ST.Library.UI.NodeEditor;assembly=ST.Library.UI"
-             xmlns:airspace="clr-namespace:Microsoft.DwayneNeed.Interop;assembly=Microsoft.DwayneNeed"
+             xmlns:airspace="clr-namespace:Microsoft.DwayneNeed.Interop;assembly=MahApps.Microsoft.DwayneNeed"
              mc:Ignorable="d" 
              PreviewKeyDown="UserControl_PreviewKeyDown"
              d:DesignHeight="300" d:DesignWidth="400" Initialized="UserControl_Initialized"  SizeChanged="UserControl_SizeChanged" >
