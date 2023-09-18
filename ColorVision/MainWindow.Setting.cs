@@ -59,7 +59,7 @@ namespace ColorVision
             double targetValue = -ColumnDefinitionLeft.MaxWidth;
             _columnDefinitionWidth = ColumnDefinitionLeft.Width;
 
-            DoubleAnimation animation = AnimationHelper.CreateAnimation(targetValue, milliseconds: 100);
+            DoubleAnimation animation = AnimationHelper.CreateAnimation(targetValue, milliseconds: 1);
             animation.FillBehavior = FillBehavior.Stop;
             animation.Completed += OnAnimationCompleted;
             LeftMainContent.RenderTransform.BeginAnimation(TranslateTransform.XProperty, animation);
@@ -85,7 +85,7 @@ namespace ColorVision
 
             double targetValue = ColumnDefinitionLeft.Width.Value;
 
-            DoubleAnimation animation = AnimationHelper.CreateAnimation(targetValue, milliseconds: 100);
+            DoubleAnimation animation = AnimationHelper.CreateAnimation(targetValue, milliseconds: 1);
             animation.FillBehavior = FillBehavior.Stop;
             animation.Completed += OnAnimationCompleted;
             LeftMainContent.RenderTransform.BeginAnimation(TranslateTransform.XProperty, animation);
