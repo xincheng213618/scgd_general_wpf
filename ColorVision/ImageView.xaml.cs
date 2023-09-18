@@ -2,7 +2,6 @@
 using ColorVision.MVVM;
 using System;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -684,7 +683,7 @@ namespace ColorVision
         private static extern void ReadVideoTest(string FullPath);
 
 
-        [UnmanagedCallersOnly(CallConvs = new System.Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         [SuppressGCTransition]
         private static int InitialFrame(IntPtr buff, int rows, int cols, int type)
         {

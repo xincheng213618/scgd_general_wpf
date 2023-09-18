@@ -7,19 +7,12 @@
              d:DataContext="{d:DesignInstance Type=local:CalibrationParam}"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="400">
-    <UserControl.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/ColorVision;component/Theme/GroupBox.xaml"/>
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </UserControl.Resources>
     <Grid>
         <StackPanel Margin="2">
             <DockPanel  Margin="0,2">
                 <TextBlock DockPanel.Dock="Left" Text="暗噪声"  Width="80" />
                 <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding SelectedDarkNoise}"   Margin="5,0"/>
-                <Button DockPanel.Dock="Right" Content="..." Click="Button_Click" Tag="DarkNoise" Width="40"  Margin="5,0"/>
+                <Button DockPanel.Dock="Right" Content="..."  Click="Button_Click" Tag="DarkNoise" Width="40"  Margin="5,0"/>
                 <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding FileNameDarkNoise}" />
             </DockPanel>
             <DockPanel  Margin="0,2">

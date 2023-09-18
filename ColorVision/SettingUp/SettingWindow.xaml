@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.SettingUp"
-        xmlns:base ="clr-namespace:ColorVision.Controls"
+        xmlns:base ="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:resx="clr-namespace:ColorVision.Properties"
@@ -55,8 +55,18 @@
         </Style>
     </Window.Resources>
     <Grid>
-        <TabControl TabStripPlacement="Left" Background="Transparent">
-            <TabItem  Header="通用设置" Width="100" Background="Transparent" >
+        <TabControl TabStripPlacement="Left" Background="Transparent"  Style="{StaticResource  TabControlBaseStyle}">
+            <TabItem  Header="通用设置" Width="100" >
+                <TabItem.Style>
+                    <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">
+                        <Style.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
+                            </Trigger>
+                        </Style.Triggers>
+                        <Setter Property="Background" Value="Transparent"/>
+                    </Style>
+                </TabItem.Style>
                 <ScrollViewer   Background="{DynamicResource GlobalBorderBrush}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" >
                     <StackPanel>
                         <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
@@ -65,9 +75,6 @@
                             </GroupBox.Header>
                             <StackPanel>
                                 <Border Style="{StaticResource BorderModuleArea}">
-                                    <Border.Resources>
-                                        <ResourceDictionary Source="/Theme/Icons.xaml"/>
-                                    </Border.Resources>
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="5" ToolTip="模板数据保存Mysql数据库">
                                             <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding IsUseMySql}"/>
@@ -119,7 +126,18 @@
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
-            <TabItem  Header="用户设置" Background="Transparent" Height="30" VerticalAlignment="Bottom">
+            <TabItem  Header="用户设置">
+                <TabItem.Style>
+                    <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">
+                        <Style.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Opacity" Value="0.8" />
+                                <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
+                            </Trigger>
+                        </Style.Triggers>
+                        <Setter Property="Background" Value="Transparent"/>
+                    </Style>
+                </TabItem.Style>
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" Background="{DynamicResource GlobalBorderBrush}" VerticalScrollBarVisibility="Auto" >
                     <StackPanel>
                         <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
@@ -148,7 +166,18 @@
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
-            <TabItem  Header="工程设置" Background="Transparent">
+            <TabItem  Header="工程设置" >
+                <TabItem.Style>
+                    <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">
+                        <Style.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Opacity" Value="0.8" />
+                                <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
+                            </Trigger>
+                        </Style.Triggers>
+                        <Setter Property="Background" Value="Transparent"/>
+                    </Style>
+                </TabItem.Style>
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" Background="{DynamicResource GlobalBorderBrush}" VerticalScrollBarVisibility="Auto" >
                     <StackPanel>
                         <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
@@ -191,7 +220,18 @@
                 </ScrollViewer>
             </TabItem>
 
-            <TabItem  Header="MQTT" Background="Transparent">
+            <TabItem  Header="MQTT">
+                <TabItem.Style>
+                    <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">
+                        <Style.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Opacity" Value="0.8" />
+                                <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
+                            </Trigger>
+                        </Style.Triggers>
+                        <Setter Property="Background" Value="Transparent"/>
+                    </Style>
+                </TabItem.Style>
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" Background="{DynamicResource GlobalBorderBrush}" VerticalScrollBarVisibility="Auto" >
                     <StackPanel>
                         <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
@@ -226,10 +266,18 @@
                 </ScrollViewer>
             </TabItem>
 
-
-
-
-            <TabItem  Header="性能检测" Background="Transparent">
+            <TabItem  Header="性能检测" >
+                <TabItem.Style>
+                    <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">
+                        <Style.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Opacity" Value="0.8" />
+                                <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
+                            </Trigger>
+                        </Style.Triggers>
+                        <Setter Property="Background" Value="Transparent"/>
+                    </Style>
+                </TabItem.Style>
                 <Grid>
                     <TextBox  Width="50" Height="0"/>
                     <ScrollViewer HorizontalScrollBarVisibility="Disabled" Background="{DynamicResource GlobalBorderBrush}" VerticalScrollBarVisibility="Auto" >
@@ -273,7 +321,18 @@
                 </Grid>
             </TabItem>
 
-            <TabItem  Header="{x:Static resx:Resource.HotKeys}" Background="Transparent">
+            <TabItem  Header="{x:Static resx:Resource.HotKeys}">
+                <TabItem.Style>
+                    <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">
+                        <Style.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Opacity" Value="0.8" />
+                                <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
+                            </Trigger>
+                        </Style.Triggers>
+                        <Setter Property="Background" Value="Transparent"/>
+                    </Style>
+                </TabItem.Style>
                 <Grid Background="{DynamicResource GlobalBorderBrush}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
@@ -305,11 +364,11 @@
 
         <Grid Margin="0,-30,0,0" Height="30" VerticalAlignment="Top">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="101"/>
+                <ColumnDefinition Width="100"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <Grid Grid.Column="1" Background="{DynamicResource GlobalBorderBrush}" Panel.ZIndex="0">
-            </Grid>
+            <Grid Grid.Column="1" Background="{DynamicResource GlobalBorderBrush}" Panel.ZIndex="0"/>
+            <Grid Grid.Column="1" Background="{DynamicResource BorderBrush}"  HorizontalAlignment="Left" Width="1" />
         </Grid>
 
     </Grid>

@@ -4,8 +4,9 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Device.SMU"
-             mc:Ignorable="d" 
+             xmlns:resx="clr-namespace:ColorVision.Properties"
              xmlns:hc="https://handyorg.github.io/handycontrol"
+             mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:DeviceSMU}"
              d:DesignHeight="400" d:DesignWidth="600" Initialized="UserControl_Initialized">
         <UserControl.Resources>
@@ -56,7 +57,7 @@
 
 
                         </Border>
-                        <Button  Grid.Column="1" Content="编辑"  Click="Button_Click_Edit"/>
+                        <Button  Grid.Column="1" Content="{x:Static resx:Resource.Edit}"  Click="Button_Click_Edit"/>
                     </Grid>
                     <Grid  x:Name="MQTTEditContent" Visibility="Collapsed">
                         <Grid.ColumnDefinitions>
@@ -92,7 +93,7 @@
                                 </GroupBox>
                             </StackPanel>
                         </Border>
-                        <Button Grid.Column="1"  Content="提交" Click="Button_Click_Submit" Command="{Binding SaveCommand}" />
+                        <Button Grid.Column="1"  Content="{x:Static resx:Resource.Submit}" Click="Button_Click_Submit" Command="{Binding SaveCommand}" />
                     </Grid>
                 </Grid>
             </StackPanel>

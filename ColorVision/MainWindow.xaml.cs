@@ -2,24 +2,12 @@
 using ColorVision.SettingUp;
 using ColorVision.Template;
 using System;
-using System.IO;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using ColorVision.Theme;
-using ColorVision.Util;
-using ColorVision.Service;
+using ColorVision.Themes;
 using ColorVision.MQTT.Service;
-using ColorVision.Device.SMU;
-using ColorVision.Device.Camera.Video;
 using ColorVision.Flow;
-using HandyControl.Tools.Extension;
-using HandyControl.Tools;
-using System.Windows.Media.Animation;
-using ColorVision.Device.POI;
-using ColorVision.Device.Camera;
 using ColorVision.Device.Algorithm;
 
 namespace ColorVision
@@ -75,9 +63,9 @@ namespace ColorVision
 
             if (!WindowConfig.IsExist||(WindowConfig.IsExist&& WindowConfig.Icon == null)) {
                 ThemeManager.Current.SystemThemeChanged += (e) => {
-                    this.Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision;component/Image/{(e == Theme.Theme.Light ? "ColorVision.ico" : "ColorVision1.ico")}"));
+                    this.Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision;component/Image/{(e == Themes.Theme.Light ? "ColorVision.ico" : "ColorVision1.ico")}"));
                 };
-                if (ThemeManager.Current.SystemTheme == Theme.Theme.Dark)
+                if (ThemeManager.Current.SystemTheme == Themes.Theme.Dark)
                     this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
             }
 

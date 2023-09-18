@@ -1,5 +1,5 @@
 ﻿using ColorVision.MVVM;
-using System;
+using System.ComponentModel;
 
 namespace ColorVision.SettingUp
 {
@@ -29,7 +29,9 @@ namespace ColorVision.SettingUp
         public int TenantId { get=>_TenantId; set { _TenantId = value; NotifyPropertyChanged(); } }
         private int _TenantId;
 
-
+        //性别
+        public Gender Gender { get => _Gender; set { _Gender = value; NotifyPropertyChanged(); } }
+        private Gender _Gender;
         public string Email { get => _Email; set { _Email = value; NotifyPropertyChanged(); } }
         private string _Email = string.Empty;
 
@@ -53,10 +55,14 @@ namespace ColorVision.SettingUp
 
         public string UserImage { get => _UserImage; set { _UserImage = value; NotifyPropertyChanged(); } }
         private string _UserImage = "Config\\user.jpg";
+    }
 
-
-    
-    
+    public enum Gender
+    {
+        [Description("Male")]
+        Male,
+        [Description("Female")]
+        Female,
     }
 
     public enum PerMissionMode

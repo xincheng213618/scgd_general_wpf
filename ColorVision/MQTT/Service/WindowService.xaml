@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.MQTT.Service"
         xmlns:mqtt="clr-namespace:ColorVision.MQTT"
+        xmlns:resx="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         Title="WindowService" Height="600" Width="800" Initialized="Window_Initialized" >
     <Grid>

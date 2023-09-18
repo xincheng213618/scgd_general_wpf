@@ -16,8 +16,8 @@
     <SolidColorBrush x:Key="GlobalBorderBrush" Color="{StaticResource GlobalBroderBrushColor}"/>
     <SolidColorBrush x:Key="GlobalBorderBrush1" Color="#151515"/>
 
-    <SolidColorBrush x:Key="ButtonBackground" Color="#040404" />
-    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#1A1A1A" />
+    <SolidColorBrush x:Key="ButtonBackground" Color="#1C1C1C" />
+    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#3F3F46" />
 
     <SolidColorBrush x:Key="GlobalTextBrush"  Color="{StaticResource GlobalTextColor}" />
     

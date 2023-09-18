@@ -1,10 +1,4 @@
-﻿using System;
-using System.Windows.Interop;
-using System.Windows.Media.Imaging;
-using System.Windows.Media;
-using System.Windows;
-using System.ComponentModel;
-using System.Reflection;
+﻿using System.Windows;
 using Panuon.WPF.UI;
 using ColorVision.MQTT;
 using ColorVision.Extension;

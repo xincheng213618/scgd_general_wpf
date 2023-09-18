@@ -1,6 +1,5 @@
 ﻿using ColorVision.SettingUp;
 using Newtonsoft.Json;
-using System.ComponentModel;
 using cvColorVision;
 using ColorVision.MVVM;
 

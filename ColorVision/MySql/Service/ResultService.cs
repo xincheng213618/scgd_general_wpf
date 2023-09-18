@@ -1,6 +1,4 @@
 ﻿using ColorVision.MySql.DAO;
-using ColorVision.SettingUp;
-using System;
 using System.Collections.Generic;
 
 namespace ColorVision.MySql.Service
@@ -27,7 +25,7 @@ namespace ColorVision.MySql.Service
             return spectumDao.DeleteById(id);
         }
 
-        internal List<PoiResultModel> PoiSelectByBatchID(int batchid) => poiResultDao.GetAllByPid(batchid);
+        internal List<PoiResultModel> PoiSelectByBatchID(int batchid) => poiResultDao.GetAllByBatchid(batchid);
 
         internal List<PoiResultModel> PoiSelectBySN(string sn) 
         {

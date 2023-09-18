@@ -22,7 +22,6 @@ namespace ColorVision.Device.Algorithm
             Control = new AlgorithmDisplayControl(this);
         }
 
-
         public override UserControl GetDisplayControl() => Control;
     }
 }

@@ -1,13 +1,11 @@
 ﻿#pragma warning disable CS8603  
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using log4net;
 using OpenH264Lib;
 
 namespace ColorVision.Device.Camera.Video

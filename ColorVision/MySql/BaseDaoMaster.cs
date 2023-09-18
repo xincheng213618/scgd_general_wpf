@@ -324,6 +324,13 @@ namespace ColorVision.MySql
             return d_info;
         }
 
+        public virtual DataTable GetTableAllByBatchid(int Batchid)
+        {
+            string sql = $"select * from {GetTableName()} where batch_id={Batchid}" + GetDelSQL(true) + $" order by {PKField}";
+            DataTable d_info = GetData(sql);
+            return d_info;
+        }
+
         public virtual DataTable GetUpdateTableAllByPid(int pid)
         {
             string sql = $"select * from {TableName} where pid={pid}" + GetDelSQL(true);
@@ -397,6 +404,22 @@ namespace ColorVision.MySql
             }
             return list;
         }
+
+        public List<T> GetAllByBatchid(int pid)
+        {
+            List<T> list = new List<T>();
+            DataTable d_info = GetTableAllByBatchid(pid);
+            foreach (var item in d_info.AsEnumerable())
+            {
+                T? model = GetModel(item);
+                if (model != null)
+                {
+                    list.Add(model);
+                }
+            }
+            return list;
+        }
+
 
         public List<T> GetAllByPcode(string pcode)
         {

@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Template"
-        xmlns:base ="clr-namespace:ColorVision.Controls"
+        xmlns:base ="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util"
         mc:Ignorable="d"
         Background="Transparent" IsBlurEnabled="True"  ResizeMode="NoResize" Height="450" Width="200">
     <Grid >

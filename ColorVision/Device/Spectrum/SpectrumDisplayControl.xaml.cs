@@ -181,7 +181,7 @@ namespace ColorVision.Device.Spectrum
         #endregion
         #region Spectrum
 
-        private GCSDLL.ColorParamReturn SpectrumData;
+        private ColorParamReturn SpectrumData;
 
         private bool ConnectSpectrum()
         {

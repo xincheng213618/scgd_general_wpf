@@ -1,23 +1,20 @@
-﻿using ColorVision.Controls;
-using ColorVision.HotKey;
+﻿using ColorVision.HotKey;
 using ColorVision.MQTT;
 using ColorVision.MySql;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.Encodings.Web;
 using System.Text.Json;
-using System.Text.Unicode;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using ColorVision.Extension;
-using ColorVision.Theme;
+using ColorVision.Themes;
 using ColorVision.Language;
 using System.Globalization;
-using OpenCvSharp.Aruco;
+using ColorVision.Themes.Controls;
 
 namespace ColorVision.SettingUp
 {
@@ -42,8 +39,8 @@ namespace ColorVision.SettingUp
                 cmbloglevel.Items.Add(it);
             });
 
-            cmtheme.ItemsSource = from e1 in Enum.GetValues(typeof(Theme.Theme)).Cast<Theme.Theme>()
-                                  select new KeyValuePair<Theme.Theme, string>(e1, Properties.Resource.ResourceManager.GetString(e1.ToDescription(), CultureInfo.CurrentUICulture));
+            cmtheme.ItemsSource = from e1 in Enum.GetValues(typeof(Theme)).Cast<Theme>()
+                                  select new KeyValuePair<Theme, string>(e1, Properties.Resource.ResourceManager.GetString(e1.ToDescription(), CultureInfo.CurrentUICulture));
 
             cmtheme.SelectedValuePath = "Key";
             cmtheme.DisplayMemberPath = "Value";
@@ -54,7 +51,7 @@ namespace ColorVision.SettingUp
                 lauagDock.Visibility = Visibility.Collapsed;
 
             cmlauage.ItemsSource = from e1 in LanguageManager.Current.Languages
-                                   select new KeyValuePair<string, string>(e1, LanguageManager.keyValuePairs.TryGetValue(e1.ToLower(), out string value) ? value : e1);
+                                   select new KeyValuePair<string, string>(e1, LanguageManager.keyValuePairs.TryGetValue(e1.ToLower(CultureInfo.CurrentCulture), out string value) ? value : e1);
             cmlauage.SelectedValuePath = "Key";
             cmlauage.DisplayMemberPath = "Value";
             cmlauage.SelectionChanged += (s, e) =>
@@ -92,26 +89,26 @@ namespace ColorVision.SettingUp
 
         private void ButtonLoad_Click(object sender, RoutedEventArgs e)
         {
-            string json = File.ReadAllText("Hotkey");
-            List<HotKeys> HotKeysList = JsonSerializer.Deserialize<List<HotKeys>>(json) ?? new List<HotKeys>();
-            foreach (HotKeys hotKeys in HotKeysList)
-            {
-                foreach (var item in HotKeys.HotKeysList)
-                {
-                    if (hotKeys.Name == item.Name)
-                    {
-                        item.Hotkey = hotKeys.Hotkey;
-                        item.Kinds = hotKeys.Kinds;
-                    }
-                }
-            }
+            //string json = File.ReadAllText("Hotkey");
+            //List<HotKeys> HotKeysList = JsonSerializer.Deserialize<List<HotKeys>>(json) ?? new List<HotKeys>();
+            //foreach (HotKeys hotKeys in HotKeysList)
+            //{
+            //    foreach (var item in HotKeys.HotKeysList)
+            //    {
+            //        if (hotKeys.Name == item.Name)
+            //        {
+            //            item.Hotkey = hotKeys.Hotkey;
+            //            item.Kinds = hotKeys.Kinds;
+            //        }
+            //    }
+            //}
         }
 
         private void ButtonSave_Click(object sender, RoutedEventArgs e)
         {
-            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions() { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
-            string Json = JsonSerializer.Serialize(HotKeys.HotKeysList, jsonSerializerOptions);
-            File.WriteAllText("Hotkey", Json);
+            //JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions() { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
+            //string Json = JsonSerializer.Serialize(HotKeys.HotKeysList, jsonSerializerOptions);
+            //File.WriteAllText("Hotkey", Json);
         }
 
         private void SetProjectDefault__Click(object sender, RoutedEventArgs e)

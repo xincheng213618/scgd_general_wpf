@@ -24,7 +24,7 @@
         </Grid>
         <Grid Grid.Column="1"  x:Name="Grid2">
             <airspace:AirspaceDecorator x:Name="airspace2" AirspaceMode="Redirect" IsInputRedirectionEnabled="True" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsOutputRedirectionEnabled="True">
-                <WindowsFormsHost x:Name="winf2" Width="300" Visibility="Visible" VerticalAlignment="Stretch">
+                <WindowsFormsHost x:Name="winf2" Width="300" Visibility="Collapsed" VerticalAlignment="Stretch">
                     <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
                 </WindowsFormsHost>
             </airspace:AirspaceDecorator>

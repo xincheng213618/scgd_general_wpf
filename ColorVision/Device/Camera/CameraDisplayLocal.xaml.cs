@@ -1,16 +1,12 @@
 ﻿using ColorVision.Device.Camera.Video;
 using ColorVision.Util;
 using ColorVision.Extension;
-using HandyControl.Controls;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
-using ColorVision.SettingUp;
-using ColorVision.Solution;
-using FlowEngineLib;
 using cvColorVision;
 
 namespace ColorVision.Device.Camera

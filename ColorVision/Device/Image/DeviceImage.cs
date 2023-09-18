@@ -1,15 +1,6 @@
-﻿using ColorVision.Device.Camera;
-using ColorVision.Device.Sensor;
-using ColorVision.MQTT;
+﻿using ColorVision.MQTT;
 using ColorVision.MySql.DAO;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Controls;
-using Wpf.Ui.Mvvm.Contracts;
 
 namespace ColorVision.Device.Image
 {

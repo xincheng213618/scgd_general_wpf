@@ -41,7 +41,7 @@
                     <ListView.Resources>
                         <ResourceDictionary>
                             <ResourceDictionary.MergedDictionaries>
-                                <ResourceDictionary Source="/Theme/Listview.xaml"/>
+                                <ResourceDictionary Source="/ColorVision.Util;component/Themes/ListView.xaml"/>
                             </ResourceDictionary.MergedDictionaries>
                         </ResourceDictionary>
                     </ListView.Resources>

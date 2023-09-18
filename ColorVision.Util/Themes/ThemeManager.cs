@@ -1,13 +1,11 @@
 ﻿using Microsoft.Win32;
-using OpenCvSharp.Aruco;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
 using Wpf.Ui.Appearance;
-using Wpf.Ui.Markup;
 
-namespace ColorVision.Theme
+namespace ColorVision.Themes
 {
     public enum Theme
     {
@@ -68,24 +66,24 @@ namespace ColorVision.Theme
         {
             "/HandyControl;component/themes/basic/colors/colorsdark.xaml",
             "/HandyControl;component/Themes/Theme.xaml",
-            "/ColorVision;component/Theme/Dark.xaml",
-            "/ColorVision;component/Theme/Base.xaml",
-            "/ColorVision;component/Theme/Menu.xaml",
-            "/ColorVision;component/Theme/GroupBox.xaml" ,
-            "/ColorVision;component/Theme/Icons.xaml",
-            "/ColorVision;component/Contorl/Window/BaseWindow.xaml"
+            "/ColorVision.Util;component/Themes/Dark.xaml",
+            "/ColorVision.Util;component/Themes/Base.xaml",
+            "/ColorVision.Util;component/Themes/Menu.xaml",
+            "/ColorVision.Util;component/Themes/GroupBox.xaml" ,
+            "/ColorVision.Util;component/Themes/Icons.xaml",
+            "/ColorVision.Util;component/Themes/Window/BaseWindow.xaml"
         };
 
         public static List<string> ResourceDictionaryWhite { get; set; } = new List<string>()
         {
-            "/HandyControl;component/themes/basic/colors/colors.xaml",
+            "/HandyControl;component/Themes/basic/colors/colors.xaml",
             "/HandyControl;component/Themes/Theme.xaml",
-            "/ColorVision;component/Theme/White.xaml",
-            "/ColorVision;component/Theme/Base.xaml",
-            "/ColorVision;component/Theme/Menu.xaml",
-            "/ColorVision;component/Theme/GroupBox.xaml" ,
-            "/ColorVision;component/Theme/Icons.xaml",
-            "/ColorVision;component/Contorl/Window/BaseWindow.xaml"
+            "/ColorVision.Util;component/Themes/White.xaml",
+            "/ColorVision.Util;component/Themes/Base.xaml",
+            "/ColorVision.Util;component/Themes/Menu.xaml",
+            "/ColorVision.Util;component/Themes/GroupBox.xaml" ,
+            "/ColorVision.Util;component/Themes/Icons.xaml",
+            "/ColorVision.Util;component/Themes/Window/BaseWindow.xaml"
         };
 
 

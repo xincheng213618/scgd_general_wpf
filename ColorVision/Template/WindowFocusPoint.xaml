@@ -5,41 +5,23 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision"
         xmlns:Template="clr-namespace:ColorVision.Template"
-        xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         xmlns:converter="clr-namespace:ColorVision.Converter"
-        xmlns:control ="clr-namespace:ColorVision.Controls"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Template:PoiParam}"
         Title="关注点编辑"  Height="720" Width="1280" Initialized="Window_Initialized">
-    <Window.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/ColorVision;component/Theme/GroupBox.xaml"/>
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="300"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        <Grid Grid.Row="0">
+        <Grid Grid.Row="0"  Background="{DynamicResource GlobalBackground}">
             <Grid.RowDefinitions>
                 <RowDefinition  Height="*"/>
                 <RowDefinition  Height="auto"/>
             </Grid.RowDefinitions>
             <ScrollViewer x:Name="ScrollViewer1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="5" Grid.Row="0" Background="#F9F9F9">
-                    <StackPanel.Resources>
-                        <Style x:Key="BorderModuleArea" TargetType="{x:Type Border}">
-                            <Setter Property="Background" Value="#F3F3F3"/>
-                            <Setter Property="BorderBrush" Value="#EAEAEA"/>
-                            <Setter Property="BorderThickness" Value="1"/>
-                            <Setter Property="Margin" Value="5,2"/>
-                            <Setter Property="CornerRadius" Value="5"/>
-                        </Style>
-                    </StackPanel.Resources>
+                <StackPanel Margin="5" Grid.Row="0" >
                     <Border Margin="5" Style="{StaticResource BorderModuleArea}">
                         <StackPanel >
                             <GroupBox Header="设置" Margin="5">
@@ -374,11 +356,10 @@
             <local:ZoomboxSub x:Name="Zoombox1" >
                 <local:DrawCanvas x:Name="ImageShow" Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_MouseDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
             </local:ZoomboxSub>
-
             <StackPanel Grid.Row="0" Grid.RowSpan="2" >
-                <ToolBar x:Name="ToolBar1" DataContext="{Binding ToolBarTop}"    Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" HorizontalAlignment="Center">
+                <ToolBar x:Name="ToolBar1" DataContext="{Binding ToolBarTop}"   Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" HorizontalAlignment="Center">
                     <ToolBar.Resources>
-                        <ResourceDictionary Source="/Theme/Icons.xaml"/>
+                        <ResourceDictionary Source="/ColorVision.Util;component/Themes/Icons.xaml"/>
                     </ToolBar.Resources>
                     <ToggleButton x:Name="ToggleButtonMouse"  IsChecked="{Binding Path=Move}"  Margin="4,0,1,0">
                         <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageMouse}"/>
@@ -495,7 +476,6 @@
             <Border   Background="#F9F9F9"  Height="250" Width="250"  CornerRadius="10">
                 <Border Background="#F3F3F3" BorderBrush="#EAEAEA" BorderThickness="1" CornerRadius="5" Margin="5">
                     <Grid>
-                        <control:ProgressRing  BorderBrush="Red" Margin="30" />
                         <TextBlock x:Name="WaitControlText" Text="数据生成中" HorizontalAlignment="Center" FontSize="16"/>
                         <ProgressBar x:Name="WaitControlProgressBar" Visibility="Collapsed" BorderThickness="0"  Maximum="100" Minimum="0"  Margin="5" VerticalAlignment="Bottom" />
                     </Grid>

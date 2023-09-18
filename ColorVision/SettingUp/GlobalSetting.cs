@@ -127,7 +127,7 @@ namespace ColorVision.SettingUp
             else
             {
                 T t = (T)Activator.CreateInstance(typeof(T));
-                WriteConfig<T>(fileName,t);
+                WriteConfig(fileName,t);
                 return t;
             }
         }

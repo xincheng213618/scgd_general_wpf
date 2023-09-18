@@ -1,9 +1,4 @@
-﻿using ColorVision.Device;
-using ColorVision.Device.Camera;
-using ColorVision.Device.PG;
-using ColorVision.Device.SMU;
-using ColorVision.Device.Spectrum;
-using ColorVision.MQTT;
+﻿using ColorVision.MQTT;
 using ColorVision.MQTT.Service;
 using System;
 using System.Collections.ObjectModel;

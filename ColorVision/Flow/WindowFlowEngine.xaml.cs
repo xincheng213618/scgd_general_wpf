@@ -52,7 +52,7 @@ namespace ColorVision
             FlowParam = flowParam;
         }
 
-        private void UserControl_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        private void UserControl_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Left)
             {
@@ -246,7 +246,7 @@ namespace ColorVision
                 if (button.Content.ToString() == "开始流程")
                 {
                     svrName = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-                    FlowEngineLib.CVBaseDataFlow baseEvent = new FlowEngineLib.CVBaseDataFlow(svrName, "Start", TextBoxsn.Text);
+                    CVBaseDataFlow baseEvent = new CVBaseDataFlow(svrName, "Start", TextBoxsn.Text);
                     await MQTTControl.GetInstance().PublishAsyncClient(GetTopic(), JsonConvert.SerializeObject(baseEvent), false);
                     
                     button.Content = "停止流程";

@@ -16,7 +16,6 @@ using ColorVision.MySql;
 using log4net;
 using System.Diagnostics;
 using ColorVision.Service;
-using ColorVision.Device.Camera.Video;
 
 namespace ColorVision
 {
@@ -118,7 +117,7 @@ namespace ColorVision
 
         private void MenuItem9_Click(object sender, RoutedEventArgs e)
         {
-            new ColorVision.WindowFlowEngine() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            new WindowFlowEngine() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
 
 

@@ -1,5 +1,4 @@
-﻿using ColorVision.Device.SMU;
-using ColorVision.MQTT;
+﻿using ColorVision.MQTT;
 using ColorVision.MySql.DAO;
 using System.Windows.Controls;
 

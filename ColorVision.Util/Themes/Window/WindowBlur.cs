@@ -6,7 +6,6 @@ using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Shell;
 using System.Windows.Media;
-using System.Reflection.Metadata;
 
 namespace WindowEffectTest
 {

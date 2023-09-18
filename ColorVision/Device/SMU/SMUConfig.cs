@@ -1,6 +1,4 @@
-﻿using Newtonsoft.Json;
-
-namespace ColorVision.Device.SMU
+﻿namespace ColorVision.Device.SMU
 {
     public class SMUResultData
     {
