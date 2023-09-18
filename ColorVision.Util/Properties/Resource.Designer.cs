@@ -198,18 +198,18 @@ namespace ColorVision.Util.Properties {
         /// <summary>
         ///   查找类似 简体中文 的本地化字符串。
         /// </summary>
-        public static string zh_hans {
+        public static string zh_Hans {
             get {
-                return ResourceManager.GetString("zh-hans", resourceCulture);
+                return ResourceManager.GetString("zh-Hans", resourceCulture);
             }
         }
         
         /// <summary>
         ///   查找类似 繁体中文 的本地化字符串。
         /// </summary>
-        public static string zh_hant {
+        public static string zh_Hant {
             get {
-                return ResourceManager.GetString("zh-hant", resourceCulture);
+                return ResourceManager.GetString("zh-Hant", resourceCulture);
             }
         }
     }
