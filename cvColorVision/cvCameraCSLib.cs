@@ -1626,8 +1626,9 @@ namespace cvColorVision
                 {
                     FOVParam pm = CfgFile.Load<FOVParam>(fovParamCfg);
 
+                    if (pm == null)
+                        return false;
                     HImage himage_Fov = new HImage();
-
                     himage_Fov.nWidth = wRGB;
                     himage_Fov.nHeight = hRGB;
                     himage_Fov.nBpp = bppRGB;
@@ -2397,7 +2398,7 @@ namespace cvColorVision
             fs.Close();
         }
 
-        public bool MTF(List<RoiData> roiDatas, HImage tImg, byte[] srcrawRGB, ref string ErrorData)
+        public static bool MTF(List<RoiData> roiDatas, HImage tImg, byte[] srcrawRGB, ref string ErrorData)
         {
 
             FOVParam pm = FOVParam.Load();
@@ -2427,7 +2428,7 @@ namespace cvColorVision
             public int h { set; get; }
         }
 
-        private bool DoMTF(List<RoiData> roiDatas, HImage tImg, byte[] srcrawRGB,FOVParam pm, bool saveCsv, ref string ErrorData)
+        private static bool DoMTF(List<RoiData> roiDatas, HImage tImg, byte[] srcrawRGB,FOVParam pm, bool saveCsv, ref string ErrorData)
         {
             List<MTFResult> MTFResults = new List<MTFResult>();
             foreach (RoiData pd in roiDatas)

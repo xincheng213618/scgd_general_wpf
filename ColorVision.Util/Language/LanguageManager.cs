@@ -23,14 +23,15 @@ namespace ColorVision.Language
             { "ko","韩语"},
         };
 
-        public static List<string> GetLanguages()
+
+        public static List<string> GetLanguages(string DefalutProcessDllName = "ColorVision.resources.dll")
         {
             List<string>  list =  new List<string>() { };
             string exeFolderPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
 
             foreach (var subDirectory in Directory.GetDirectories(exeFolderPath??string.Empty))
             {
-                string[] files = Directory.GetFiles(subDirectory, "ColorVision.resources.dll", System.IO.SearchOption.AllDirectories);
+                string[] files = Directory.GetFiles(subDirectory, DefalutProcessDllName, System.IO.SearchOption.AllDirectories);
 
                 if (files.Length > 0)
                 {
@@ -40,18 +41,20 @@ namespace ColorVision.Language
             list.Add("zh-Hans");
             return list;
         }
-
-        public void LanguageChange(string lang)
+        private string DefalutProcessName = "ColorVision";
+        public bool LanguageChange(string lang)
         {
             if (Thread.CurrentThread.CurrentUICulture.Name != lang)
             {
-                if (MessageBox.Show(Util.Properties.Resource.LanguageResartSign, "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                if (MessageBox.Show(Util.Properties.Resource.LanguageResartSign, DefalutProcessName, MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                 {
                     Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(lang);
                     Process.Start(Application.ResourceAssembly.Location.Replace(".dll",".exe"),"-r");
                     Application.Current.Shutdown();
+                    return true;
                 }
             }
+            return false;
         }
 
 

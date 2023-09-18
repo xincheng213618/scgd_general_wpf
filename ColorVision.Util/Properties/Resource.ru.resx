@@ -118,10 +118,10 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="HotKeySet1" xml:space="preserve">
-    <value>Нажмите сочетание клавиш настройки клавиатуры!</value>
+    <value>Нажмите сочетание клавиш настройки клавиатуры</value>
   </data>
   <data name="LanguageResartSign" xml:space="preserve">
-    <value>Необходимо перезагрузить компьютер, чтобы использовать новые языковые настройки.</value>
+    <value>Необходимо перезагрузить компьютер, чтобы использовать новые языковые настройки</value>
   </data>
   <data name="Maximize" xml:space="preserve">
     <value>максимизировать</value>

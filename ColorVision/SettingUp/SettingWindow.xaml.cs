@@ -40,7 +40,7 @@ namespace ColorVision.SettingUp
             });
 
             cmtheme.ItemsSource = from e1 in Enum.GetValues(typeof(Theme)).Cast<Theme>()
-                                  select new KeyValuePair<Theme, string>(e1, Properties.Resource.ResourceManager.GetString(e1.ToDescription(), CultureInfo.CurrentUICulture));
+                                  select new KeyValuePair<Theme, string>(e1, Properties.Resource.ResourceManager.GetString(e1.ToDescription(), CultureInfo.CurrentUICulture)??"");
 
             cmtheme.SelectedValuePath = "Key";
             cmtheme.DisplayMemberPath = "Value";

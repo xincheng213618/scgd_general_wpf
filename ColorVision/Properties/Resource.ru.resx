@@ -250,7 +250,7 @@
     <value>Следуйте системе</value>
   </data>
   <data name="LanguageResartSign" xml:space="preserve">
-    <value>Необходимо перезагрузить компьютер, чтобы использовать новые языковые настройки.</value>
+    <value>Необходимо перезагрузить компьютер, чтобы использовать новые языковые настройки</value>
   </data>
   <data name="Save" xml:space="preserve">
     <value>сохранять</value>

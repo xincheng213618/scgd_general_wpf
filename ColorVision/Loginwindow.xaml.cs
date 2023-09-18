@@ -13,12 +13,14 @@ namespace ColorVision
         {
 
         }
+        private string daccount = "admin";
+
+        private string dpassword = "123456";
 
         public bool Login(string account,string password)
         {
-            if (account == "admin" && password == "123456")
+            if (account == daccount && password == dpassword)
             {
-                MessageBox.Show("进入管理员模式");
                 new WindowService() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show(); ;
                 return true;
             }
@@ -27,7 +29,6 @@ namespace ColorVision
                 GlobalSetting.GetInstance().SoftwareConfig.UserConfig.UserName = account;
                 GlobalSetting.GetInstance().SoftwareConfig.UserConfig.UserPwd = password;
 
-                MessageBox.Show("进入用户模式");
                 new WindowDevices() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show(); ;
                 return true;
             }

@@ -55,9 +55,9 @@ namespace ColorVision.MQTT
             MenuItem menuItem = new MenuItem() { Header = "删除资源" };
             menuItem.Click += (s, e) =>
             {
-                Parent.RemoveChild(this);
                 if (SysResourceModel != null)
                     ServiceControl.GetInstance().ResourceService.DeleteById(SysResourceModel.Id);
+                Parent.RemoveChild(this);
 
             };
             ContextMenu.Items.Add(menuItem);
