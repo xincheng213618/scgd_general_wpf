@@ -6,7 +6,7 @@ using System.Windows.Media;
 using System.Windows.Shell;
 using WindowEffectTest;
 
-namespace ColorVision.Theme.Controls
+namespace ColorVision.Themes.Controls
 {
     public class WindowNotifications
     {
@@ -33,7 +33,7 @@ namespace ColorVision.Theme.Controls
             }
             else
             {
-                ResourceDictionary dictionary1 = Application.LoadComponent(new Uri("/ColorVision.Util;component/Theme/Window/BaseWindow.xaml", UriKind.Relative)) as ResourceDictionary;
+                ResourceDictionary dictionary1 = Application.LoadComponent(new Uri("/ColorVision.Util;component/Themes/Window/BaseWindow.xaml", UriKind.Relative)) as ResourceDictionary;
                 Application.Current.Resources.MergedDictionaries.Add(dictionary1);
                 return Application.Current.FindResource(typeof(BaseWindow)) as Style ?? null;
             }

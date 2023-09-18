@@ -2,7 +2,7 @@
 using System.Windows.Input;
 using System.Windows;
 
-namespace ColorVision.Theme
+namespace ColorVision.Themes
 {
     public partial class BaseEvent : ResourceDictionary
     {

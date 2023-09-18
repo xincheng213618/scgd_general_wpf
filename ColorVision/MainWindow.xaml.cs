@@ -5,7 +5,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
-using ColorVision.Theme;
+using ColorVision.Themes;
 using ColorVision.MQTT.Service;
 using ColorVision.Flow;
 using ColorVision.Device.Algorithm;
@@ -63,9 +63,9 @@ namespace ColorVision
 
             if (!WindowConfig.IsExist||(WindowConfig.IsExist&& WindowConfig.Icon == null)) {
                 ThemeManager.Current.SystemThemeChanged += (e) => {
-                    this.Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision;component/Image/{(e == Theme.Theme.Light ? "ColorVision.ico" : "ColorVision1.ico")}"));
+                    this.Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision;component/Image/{(e == Themes.Theme.Light ? "ColorVision.ico" : "ColorVision1.ico")}"));
                 };
-                if (ThemeManager.Current.SystemTheme == Theme.Theme.Dark)
+                if (ThemeManager.Current.SystemTheme == Themes.Theme.Dark)
                     this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
             }
 

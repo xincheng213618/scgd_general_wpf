@@ -295,51 +295,51 @@ namespace cvColorVision
 
     public class BlobThreParams
     {
-        [CategoryAttribute("\t\t\t全局"), DescriptionAttribute("是否使用颜色过滤")]
+        [Category("\t\t\t全局"), Description("是否使用颜色过滤")]
         public bool filterByColor { set; get; } //是否使用颜色过滤
                                                 //unsigned char blobColor; //亮斑255暗斑0
-        [CategoryAttribute("\t\t\t全局"), DescriptionAttribute("筛选亮斑写255暗斑写0")]
+        [Category("\t\t\t全局"), Description("筛选亮斑写255暗斑写0")]
         public int blobColor { set; get; } //亮斑255暗斑0
-        [CategoryAttribute("\t\t\t全局"), DescriptionAttribute("重复次数认定次数(达到筛选出是斑点的次数几次后认定是斑点，结合扫描图像的阈值步进值理解这条)")]
+        [Category("\t\t\t全局"), Description("重复次数认定次数(达到筛选出是斑点的次数几次后认定是斑点，结合扫描图像的阈值步进值理解这条)")]
         public int minRepeatability { set; get; }  //重复次数认定
-        [CategoryAttribute("\t\t\t全局"), DescriptionAttribute("角点提取类型[Circlepoint/圆点,Checkerboard/棋盘格]")]
+        [Category("\t\t\t全局"), Description("角点提取类型[Circlepoint/圆点,Checkerboard/棋盘格]")]
         public CornerType cornerType { set; get; }
 
-        [CategoryAttribute("\t阈值"), DescriptionAttribute("斑点最小灰度阈值")]
+        [Category("\t阈值"), Description("斑点最小灰度阈值")]
         public float minThreshold { set; get; } //阈值每次间隔值
-        [CategoryAttribute("\t阈值"), DescriptionAttribute("每次扫描图像时阈值的步进值")]
+        [Category("\t阈值"), Description("每次扫描图像时阈值的步进值")]
         public float thresholdStep { set; get; } //斑点最小灰度
-        [CategoryAttribute("\t阈值"), DescriptionAttribute("斑点最大灰度阈值")]
+        [Category("\t阈值"), Description("斑点最大灰度阈值")]
         public float maxThreshold { set; get; }//斑点最大灰度
-        [CategoryAttribute("\t阈值"), DescriptionAttribute("斑点间隔距离")]
+        [Category("\t阈值"), Description("斑点间隔距离")]
         public float minDistBetweenBlobs { set; get; } //斑点间隔距离
-        [CategoryAttribute("面积"), DescriptionAttribute("是否使用面积过滤")]
+        [Category("面积"), Description("是否使用面积过滤")]
         public bool filterByArea { set; get; } //是否使用面积过滤
-        [CategoryAttribute("面积"), DescriptionAttribute("最小面积阈值")]
+        [Category("面积"), Description("最小面积阈值")]
         public float minArea { set; get; }//斑点最小面积值
-        [CategoryAttribute("面积"), DescriptionAttribute("最大面积阈值")]
+        [Category("面积"), Description("最大面积阈值")]
         public float maxArea { set; get; }  //斑点最大面积值
-        [CategoryAttribute("形状圆控制"), DescriptionAttribute("形状控制（圆，方）是否调用")]
+        [Category("形状圆控制"), Description("形状控制（圆，方）是否调用")]
         public bool filterByCircularity { set; get; } //形状控制（圆，方）
-        [CategoryAttribute("形状圆控制"), DescriptionAttribute("离1越近越接近圆")]
+        [Category("形状圆控制"), Description("离1越近越接近圆")]
         public float minCircularity { set; get; }
-        [CategoryAttribute("形状圆控制"), DescriptionAttribute("越大越圆")]
+        [Category("形状圆控制"), Description("越大越圆")]
         public float maxCircularity { set; get; }
-        [CategoryAttribute("形状豁口控制"), DescriptionAttribute("豁口是否调用")]
+        [Category("形状豁口控制"), Description("豁口是否调用")]
         public bool filterByConvexity { set; get; }  //形状控制（豁口）
-        [CategoryAttribute("形状豁口控制"), DescriptionAttribute("离1越近越没豁口")]
+        [Category("形状豁口控制"), Description("离1越近越没豁口")]
         public float minConvexity { set; get; }
-        [CategoryAttribute("形状豁口控制"), DescriptionAttribute("越大越圆")]
+        [Category("形状豁口控制"), Description("越大越圆")]
         public float maxConvexity { set; get; }
-        [CategoryAttribute("形状椭圆控制"), DescriptionAttribute("椭圆度是否调用")]
+        [Category("形状椭圆控制"), Description("椭圆度是否调用")]
         public bool filterByInertia { set; get; }  //形状控制（椭圆度）
-        [CategoryAttribute("形状椭圆控制"), DescriptionAttribute("0的话可以近似认为是直线，1的话基本是圆")]
+        [Category("形状椭圆控制"), Description("0的话可以近似认为是直线，1的话基本是圆")]
         public float minInertiaRatio { set; get; }
-        [CategoryAttribute("形状椭圆控制"), DescriptionAttribute("越大越圆")]
+        [Category("形状椭圆控制"), Description("越大越圆")]
         public float maxInertiaRatio { set; get; }
-        [CategoryAttribute("\t\t大小"), DescriptionAttribute("宽度")]
+        [Category("\t\t大小"), Description("宽度")]
         public int cx { set; get; }
-        [CategoryAttribute("\t\t大小"), DescriptionAttribute("高度")]
+        [Category("\t\t大小"), Description("高度")]
         public int cy { set; get; }
 
         public static BlobThreParams cfg;
@@ -378,7 +378,7 @@ namespace cvColorVision
 
                 blobThreParams.st_cfg = new ST_BlobThreParams();
 
-                CfgFile.Save<BlobThreParams>(DistoParamCfg, blobThreParams);
+                CfgFile.Save(DistoParamCfg, blobThreParams);
             }
             cfg = blobThreParams;
             blobThreParams.setValue();
@@ -411,7 +411,7 @@ namespace cvColorVision
         internal static void Save(BlobThreParams blobThreParams)
         {
             blobThreParams.setValue();
-            CfgFile.Save<BlobThreParams>(DistoParamCfg, blobThreParams);
+            CfgFile.Save(DistoParamCfg, blobThreParams);
         }
     }
 
@@ -1451,46 +1451,46 @@ namespace cvColorVision
 
         public class FOVParam
         {
-            [CategoryAttribute("FOV"), DescriptionAttribute("计算FOV时中心区亮度的百分比多少认为是暗区")]
+            [Category("FOV"), Description("计算FOV时中心区亮度的百分比多少认为是暗区")]
             public double radio { get; set; }
-            [CategoryAttribute("FOV"), DescriptionAttribute("相机镜头有效像素对应的角度")]
+            [Category("FOV"), Description("相机镜头有效像素对应的角度")]
             public double cameraDegrees { get; set; }
-            [CategoryAttribute("FOV"), DescriptionAttribute("FOV中计算圆心或者矩心时使用的二值化阈值")]
+            [Category("FOV"), Description("FOV中计算圆心或者矩心时使用的二值化阈值")]
             public int thresholdValus { get; set; }
 
-            [CategoryAttribute("FOV"), DescriptionAttribute("相机镜头使用的有效像素")]
+            [Category("FOV"), Description("相机镜头使用的有效像素")]
             public double dFovDist { get; set; }
 
-            [CategoryAttribute("FOV"), DescriptionAttribute("计算pattern(FovCircle-圆形；FovRectangle-矩形)")]
+            [Category("FOV"), Description("计算pattern(FovCircle-圆形；FovRectangle-矩形)")]
             public FovPattern fovPattern { get; set; }
-            [CategoryAttribute("FOV"), DescriptionAttribute("计算路线(Horizontal-水平；Vertical-垂直；Leaning-斜向)")]
+            [Category("FOV"), Description("计算路线(Horizontal-水平；Vertical-垂直；Leaning-斜向)")]
             public FovType fovType { get; set; }
 
-            [CategoryAttribute("SFR"), DescriptionAttribute("SFR gamma")]
+            [Category("SFR"), Description("SFR gamma")]
             public double SFR_gamma { get; set; }
-            [CategoryAttribute("MTF"), DescriptionAttribute("MTF dRatio")]
+            [Category("MTF"), Description("MTF dRatio")]
             public double MTF_dRatio { get; set; }
 
-            [CategoryAttribute("Ghost"), DescriptionAttribute("待检测鬼影点阵的半径长度(像素)")]
+            [Category("Ghost"), Description("待检测鬼影点阵的半径长度(像素)")]
             public int Ghost_radius { get; set; }
-            [CategoryAttribute("Ghost"), DescriptionAttribute("待检测鬼影点阵的列数")]
+            [Category("Ghost"), Description("待检测鬼影点阵的列数")]
             public int Ghost_cols { get; set; }
-            [CategoryAttribute("Ghost"), DescriptionAttribute("待检测鬼影点阵的行数")]
+            [Category("Ghost"), Description("待检测鬼影点阵的行数")]
             public int Ghost_rows { get; set; }
-            [CategoryAttribute("Ghost"), DescriptionAttribute("待检测鬼影的中心灰度百分比上限")]
+            [Category("Ghost"), Description("待检测鬼影的中心灰度百分比上限")]
             public float Ghost_ratioH { get; set; }
-            [CategoryAttribute("Ghost"), DescriptionAttribute("待检测鬼影的中心灰度百分比下限")]
+            [Category("Ghost"), Description("待检测鬼影的中心灰度百分比下限")]
             public float Ghost_ratioL { get; set; }
 
-            [CategoryAttribute("CentreLine"), DescriptionAttribute("图像进行二值化的阈值")]
+            [Category("CentreLine"), Description("图像进行二值化的阈值")]
             public int CL_iThresh { get; set; }
-            [CategoryAttribute("CentreLine"), DescriptionAttribute("轮廓的周长阈值")]
+            [Category("CentreLine"), Description("轮廓的周长阈值")]
             public int CL_minSize { get; set; }
-            [CategoryAttribute("CentreLine"), DescriptionAttribute("最终获取的中心线点集最小内部坐标数量")]
+            [Category("CentreLine"), Description("最终获取的中心线点集最小内部坐标数量")]
             public int CL_minCentresSize { get; set; }
-            [CategoryAttribute("CentreLine"), DescriptionAttribute("中心线的大概宽度")]
+            [Category("CentreLine"), Description("中心线的大概宽度")]
             public int CL_lineWidth { get; set; }
-            [CategoryAttribute("CentreLine"), DescriptionAttribute("中心线递归使用递归线段长度(一般默认20即可)")]
+            [Category("CentreLine"), Description("中心线递归使用递归线段长度(一般默认20即可)")]
             public int CL_LENGTH { get; set; }
 
 
@@ -1524,7 +1524,7 @@ namespace cvColorVision
                 if (pm == null)
                 {
                     pm = new FOVParam();
-                    CfgFile.Save<FOVParam>(fovParamCfg, pm);
+                    CfgFile.Save(fovParamCfg, pm);
                 }
                 cfg = pm;
                 return cfg;
@@ -1532,7 +1532,7 @@ namespace cvColorVision
 
             public static void Save(FOVParam pm)
             {
-                CfgFile.Save<FOVParam>(fovParamCfg, pm);
+                CfgFile.Save(fovParamCfg, pm);
             }
         }
 
@@ -1760,7 +1760,7 @@ namespace cvColorVision
                 saveHeader = true;
             }
 
-            System.IO.FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
+            FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
             StreamWriter sw = new StreamWriter(fs, UnicodeEncoding.UTF8);
 
             if (saveHeader)
@@ -1833,7 +1833,7 @@ namespace cvColorVision
                 System.Data.DataTable dt = new System.Data.DataTable();
                 dt.Columns.Add("pdfrequency", typeof(string));
                 dt.Columns.Add("pdomainSamplingData", typeof(string));
-                System.IO.FileStream fs2 = new FileStream(path, System.IO.FileMode.Create, System.IO.FileAccess.Write);
+                FileStream fs2 = new FileStream(path, System.IO.FileMode.Create, System.IO.FileAccess.Write);
                 StreamWriter sw2 = new StreamWriter(fs2, UnicodeEncoding.UTF8);
                 //string path = saveFileDialog.FileName.ToString();//保存路径
                 //Tabel header
@@ -1850,7 +1850,7 @@ namespace cvColorVision
                 sw2.Close();
                 fs2.Close();
             }
-            System.IO.FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
+            FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
             StreamWriter sw = new StreamWriter(fs, UnicodeEncoding.UTF8);
             for (int i = 0; i < pdfrequency.Length; i++)
             {
@@ -2110,7 +2110,7 @@ namespace cvColorVision
                 dt.Columns.Add("maxErrorRatio", typeof(string));
                 dt.Columns.Add("t", typeof(string));
                 dt.Columns.Add("DistortionType", typeof(string));
-                System.IO.FileStream fs2 = new FileStream(path, System.IO.FileMode.Create, System.IO.FileAccess.Write);
+                FileStream fs2 = new FileStream(path, System.IO.FileMode.Create, System.IO.FileAccess.Write);
                 StreamWriter sw2 = new StreamWriter(fs2, UnicodeEncoding.UTF8);
                 //string path = saveFileDialog.FileName.ToString();//保存路径
                 //Tabel header
@@ -2127,7 +2127,7 @@ namespace cvColorVision
                 sw2.Close();
                 fs2.Close();
             }
-            System.IO.FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
+            FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
             StreamWriter sw = new StreamWriter(fs, UnicodeEncoding.UTF8);
             sw.Write(DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss.fff"));
             sw.Write(",");
@@ -2313,7 +2313,7 @@ namespace cvColorVision
                 saveHeader = true;
             }
 
-            System.IO.FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
+            FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
             StreamWriter sw = new StreamWriter(fs, UnicodeEncoding.UTF8);
 
             if (saveHeader)
@@ -2365,7 +2365,7 @@ namespace cvColorVision
                 saveHeader = true;
             }
 
-            System.IO.FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
+            FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
             StreamWriter sw = new StreamWriter(fs, UnicodeEncoding.UTF8);
 
             if (saveHeader)
@@ -2485,7 +2485,7 @@ namespace cvColorVision
                 dt.Columns.Add("Width", typeof(string));
                 dt.Columns.Add("Height", typeof(string));
                 dt.Columns.Add("Value", typeof(string));
-                System.IO.FileStream fs2 = new FileStream(path, System.IO.FileMode.Create, System.IO.FileAccess.Write);
+                FileStream fs2 = new FileStream(path, System.IO.FileMode.Create, System.IO.FileAccess.Write);
                 StreamWriter sw2 = new StreamWriter(fs2, UnicodeEncoding.UTF8);
                 //string path = saveFileDialog.FileName.ToString();//保存路径
                 //Tabel header
@@ -2502,7 +2502,7 @@ namespace cvColorVision
                 sw2.Close();
                 fs2.Close();
             }
-            System.IO.FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
+            FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
             StreamWriter sw = new StreamWriter(fs, UnicodeEncoding.UTF8);
             for (int i = 0; i < arts.Count; i++)
             {

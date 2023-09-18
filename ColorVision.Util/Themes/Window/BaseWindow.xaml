@@ -2,7 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:root="clr-namespace:ColorVision"
                     xmlns:resx="clr-namespace:ColorVision.Util.Properties"
-                    xmlns:local="clr-namespace:ColorVision.Theme.Controls">
+                    xmlns:local="clr-namespace:ColorVision.Themes.Controls">
     
     <BooleanToVisibilityConverter x:Key="bool2VisibilityConverter"/>
     <WindowChrome x:Key="DefaultWindowChrome" x:Shared="False"  CornerRadius="0" GlassFrameThickness="-1" ResizeBorderThickness="1"  UseAeroCaptionButtons="False"/>

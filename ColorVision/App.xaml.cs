@@ -1,7 +1,7 @@
 ﻿using ColorVision.MQTT.Service;
 using ColorVision.NativeMethods;
 using ColorVision.SettingUp;
-using ColorVision.Theme;
+using ColorVision.Themes;
 using log4net;
 using log4net.Config;
 using System;

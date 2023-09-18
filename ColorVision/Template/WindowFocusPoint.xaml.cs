@@ -616,7 +616,7 @@ namespace ColorVision.Template
         }
         private bool Init;
 
-        private void CreateImage(int width, int height, System.Windows.Media.Color color,bool IsClear = true)
+        private void CreateImage(int width, int height, Color color,bool IsClear = true)
         {
             Thread thread = new Thread(() => 
             {
@@ -1732,7 +1732,7 @@ namespace ColorVision.Template
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 string filePath = openFileDialog.FileName;
-                bool result=CfgFile.Save<LedCheckCfg>(filePath, ledCheckCfg);
+                bool result=CfgFile.Save(filePath, ledCheckCfg);
                 if (result)
                 {
                     MessageBox.Show("保存成功");

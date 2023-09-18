@@ -22,7 +22,7 @@ namespace ColorVision.SettingUp
         /// <summary>
         /// 主题
         /// </summary>
-        public Theme.Theme Theme { get; set; } = ColorVision.Theme.Theme.Light;
+        public Themes.Theme Theme { get; set; } = ColorVision.Themes.Theme.Light;
         /// <summary>
         /// 语言
         /// </summary>

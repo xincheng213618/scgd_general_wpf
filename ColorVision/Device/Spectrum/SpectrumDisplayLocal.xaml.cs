@@ -55,7 +55,7 @@ namespace ColorVision.Device.Spectrum
         }
 
 
-        private GCSDLL.ColorParamReturn SpectrumData;
+        private ColorParamReturn SpectrumData;
 
         private bool ConnectSpectrum()
         {

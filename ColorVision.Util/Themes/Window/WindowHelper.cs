@@ -8,7 +8,7 @@ using System.Windows.Media;
 using ColorVision.NativeMethods;
 using static ColorVision.NativeMethods.User32;
 
-namespace ColorVision.Theme.Controls
+namespace ColorVision.Themes.Controls
 {
     public static class WindowHelper
     {
@@ -60,7 +60,7 @@ namespace ColorVision.Theme.Controls
         {
             var handle = new WindowInteropHelper(window).EnsureHandle();
 
-            GetWindowRect(handle, out User32.RECT nRect);
+            GetWindowRect(handle, out RECT nRect);
 
             return new Rect(new Point(nRect.Left, nRect.Top), new Point(nRect.Right, nRect.Bottom));
         }
@@ -112,7 +112,7 @@ namespace ColorVision.Theme.Controls
         }
 
         [DllImport("user32.dll")]
-        private static extern int SetWindowCompositionAttribute(IntPtr hwnd, ref WindowHelper.WindowCompositionAttributeData data);
+        private static extern int SetWindowCompositionAttribute(IntPtr hwnd, ref WindowCompositionAttributeData data);
 
         public static void EnableBlur(Window window)
         {

@@ -69,7 +69,7 @@ namespace ColorVision.MQTT
             MQTTControl = MQTTControl.GetInstance();
             MQTTSetting = MQTTControl.MQTTSetting;
             MQTTControl.ApplicationMessageReceivedAsync += Processing;
-            var timer = new System.Timers.Timer
+            var timer = new Timer
             {
                 Interval = TimeSpan.FromSeconds(1).TotalMilliseconds,
                 AutoReset = true,
@@ -131,7 +131,7 @@ namespace ColorVision.MQTT
             return Task.CompletedTask;
         }
 
-        private void Timer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
+        private void Timer_Elapsed(object? sender, ElapsedEventArgs e)
         {
             if (DateTime.Now - LastAliveTime > TimeSpan.FromMilliseconds(HeartbeatTime))
             {

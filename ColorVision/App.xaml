@@ -9,13 +9,13 @@
             <ResourceDictionary.MergedDictionaries>
                 <ui:ThemesDictionary Theme="Light" />
                 <ui:ControlsDictionary />
-                <ResourceDictionary Source="/HandyControl;component/themes/basic/colors/colors.xaml"/>
+                <ResourceDictionary Source="/HandyControl;component/Themes/basic/colors/colors.xaml"/>
                 <ResourceDictionary Source="/HandyControl;component/Themes/Theme.xaml"/>
-                <ResourceDictionary Source="/ColorVision.Util;component/Theme/White.xaml"/>
-                <ResourceDictionary Source="/ColorVision.Util;component/Theme/Base.xaml"/>
-                <ResourceDictionary Source="/ColorVision.Util;component/Theme/Menu.xaml"/>
-                <ResourceDictionary Source="/ColorVision.Util;component/Theme/GroupBox.xaml"/>
-                <ResourceDictionary Source="/ColorVision.Util;component/Theme/Icons.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Util;component/Themes/White.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Util;component/Themes/Base.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Util;component/Themes/Menu.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Util;component/Themes/GroupBox.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Util;component/Themes/Icons.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

@@ -1,4 +1,4 @@
-﻿using ColorVision.Theme.Controls;
+﻿using ColorVision.Themes.Controls;
 using ColorVision.Solution.RecentFile;
 using System;
 using System.Collections.ObjectModel;

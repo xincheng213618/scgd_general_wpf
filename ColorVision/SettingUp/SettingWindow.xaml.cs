@@ -11,10 +11,10 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using ColorVision.Extension;
-using ColorVision.Theme;
+using ColorVision.Themes;
 using ColorVision.Language;
 using System.Globalization;
-using ColorVision.Theme.Controls;
+using ColorVision.Themes.Controls;
 
 namespace ColorVision.SettingUp
 {
@@ -39,8 +39,8 @@ namespace ColorVision.SettingUp
                 cmbloglevel.Items.Add(it);
             });
 
-            cmtheme.ItemsSource = from e1 in Enum.GetValues(typeof(Theme.Theme)).Cast<Theme.Theme>()
-                                  select new KeyValuePair<Theme.Theme, string>(e1, Properties.Resource.ResourceManager.GetString(e1.ToDescription(), CultureInfo.CurrentUICulture));
+            cmtheme.ItemsSource = from e1 in Enum.GetValues(typeof(Theme)).Cast<Theme>()
+                                  select new KeyValuePair<Theme, string>(e1, Properties.Resource.ResourceManager.GetString(e1.ToDescription(), CultureInfo.CurrentUICulture));
 
             cmtheme.SelectedValuePath = "Key";
             cmtheme.DisplayMemberPath = "Value";
@@ -89,19 +89,19 @@ namespace ColorVision.SettingUp
 
         private void ButtonLoad_Click(object sender, RoutedEventArgs e)
         {
-            string json = File.ReadAllText("Hotkey");
-            List<HotKeys> HotKeysList = JsonSerializer.Deserialize<List<HotKeys>>(json) ?? new List<HotKeys>();
-            foreach (HotKeys hotKeys in HotKeysList)
-            {
-                foreach (var item in HotKeys.HotKeysList)
-                {
-                    if (hotKeys.Name == item.Name)
-                    {
-                        item.Hotkey = hotKeys.Hotkey;
-                        item.Kinds = hotKeys.Kinds;
-                    }
-                }
-            }
+            //string json = File.ReadAllText("Hotkey");
+            //List<HotKeys> HotKeysList = JsonSerializer.Deserialize<List<HotKeys>>(json) ?? new List<HotKeys>();
+            //foreach (HotKeys hotKeys in HotKeysList)
+            //{
+            //    foreach (var item in HotKeys.HotKeysList)
+            //    {
+            //        if (hotKeys.Name == item.Name)
+            //        {
+            //            item.Hotkey = hotKeys.Hotkey;
+            //            item.Kinds = hotKeys.Kinds;
+            //        }
+            //    }
+            //}
         }
 
         private void ButtonSave_Click(object sender, RoutedEventArgs e)

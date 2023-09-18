@@ -10,13 +10,6 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Template:PoiParam}"
         Title="关注点编辑"  Height="720" Width="1280" Initialized="Window_Initialized">
-    <Window.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/ColorVision;component/Theme/GroupBox.xaml"/>
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="300"/>
@@ -372,11 +365,10 @@
             <local:ZoomboxSub x:Name="Zoombox1" >
                 <local:DrawCanvas x:Name="ImageShow" Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_MouseDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
             </local:ZoomboxSub>
-
             <StackPanel Grid.Row="0" Grid.RowSpan="2" >
-                <ToolBar x:Name="ToolBar1" DataContext="{Binding ToolBarTop}"    Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" HorizontalAlignment="Center">
+                <ToolBar x:Name="ToolBar1" DataContext="{Binding ToolBarTop}"   Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" HorizontalAlignment="Center">
                     <ToolBar.Resources>
-                        <ResourceDictionary Source="/Theme/Icons.xaml"/>
+                        <ResourceDictionary Source="/ColorVision.Util;component/Themes/Icons.xaml"/>
                     </ToolBar.Resources>
                     <ToggleButton x:Name="ToggleButtonMouse"  IsChecked="{Binding Path=Move}"  Margin="4,0,1,0">
                         <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageMouse}"/>

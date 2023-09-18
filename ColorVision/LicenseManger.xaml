@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision"
-        xmlns:base ="clr-namespace:ColorVision.Theme.Controls;assembly=ColorVision.Util"
+        xmlns:base ="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
        IsBlurEnabled="True"  Background="Transparent" Height="400"  ResizeMode="NoResize"  Width="600" Initialized="BaseWindow_Initialized">
