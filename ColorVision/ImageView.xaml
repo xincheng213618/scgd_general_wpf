@@ -5,7 +5,8 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision"
              xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
-             xmlns:converter="clr-namespace:ColorVision.Converter"
+             xmlns:converter="clr-namespace:ColorVision.Draw.Converter"
+             xmlns:draw ="clr-namespace:ColorVision.Draw"
              d:DataContext="{d:DesignInstance local:ImageView}"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800" Initialized="UserControl_Initialized">
@@ -79,7 +80,7 @@
                 </Grid>
                 <Grid>
                     <Grid.Resources>
-                        <DataTemplate x:Key="DrawingVisualCircleTemplate" DataType="{x:Type local:DrawingVisualCircle}" >
+                        <DataTemplate x:Key="DrawingVisualCircleTemplate" DataType="{x:Type draw:DrawingVisualCircle}" >
                             <StackPanel  Orientation="Horizontal">
                                 <StackPanel.ContextMenu>
                                     <ContextMenu>
@@ -97,7 +98,7 @@
                                 <TextBlock  Width="{Binding ElementName=GridListHeader4,Path=ActualWidth}" Text="{Binding Path=Radius}" />
                             </StackPanel>
                         </DataTemplate>
-                        <DataTemplate x:Key="DrawingVisualRectangleTemplate"  DataType="{x:Type local:DrawingVisualRectangle}">
+                        <DataTemplate x:Key="DrawingVisualRectangleTemplate"  DataType="{x:Type draw:DrawingVisualRectangle}">
                             <StackPanel  Orientation="Horizontal">
                                 <StackPanel.ContextMenu>
                                     <ContextMenu>

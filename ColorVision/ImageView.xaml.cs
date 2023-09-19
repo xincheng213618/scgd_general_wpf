@@ -1,4 +1,5 @@
-﻿using ColorVision.Extension;
+﻿using ColorVision.Draw;
+using ColorVision.Extension;
 using ColorVision.MVVM;
 using System;
 using System.Collections.ObjectModel;
@@ -361,7 +362,7 @@ namespace ColorVision
                 {
                     if (drawCanvas.GetVisual(MouseDownP) is IDrawingVisual drawingVisual)
                     {
-                        if (PropertyGrid2.SelectedObject is DrawAttributeBase viewModelBase)
+                        if (PropertyGrid2.SelectedObject is DrawBaseAttribute viewModelBase)
                         {
                             viewModelBase.PropertyChanged -= (s, e) =>
                             {

@@ -1,7 +1,6 @@
 ﻿using System.Windows.Controls;
 using System.Windows;
-
-namespace ColorVision.Converter
+namespace ColorVision.Draw.Converter
 {
 
     public class DrawCanvasTemplateSelector : DataTemplateSelector
@@ -22,7 +21,7 @@ namespace ColorVision.Converter
         {
 
 
-            if (item is DrawingVisualCircle )
+            if (item is DrawingVisualCircle)
             {
                 return DrawingVisualCircleTemplate;
             }

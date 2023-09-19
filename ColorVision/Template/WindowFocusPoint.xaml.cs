@@ -1,4 +1,5 @@
-﻿using ColorVision.Extension;
+﻿using ColorVision.Draw;
+using ColorVision.Extension;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.SettingUp;
@@ -346,7 +347,7 @@ namespace ColorVision.Template
             {
                 foreach (var item in DrawingVisualLists)
                 {
-                    DrawAttributeBase drawAttributeBase = item.GetAttribute();
+                    DrawBaseAttribute drawAttributeBase = item.GetAttribute();
                     if (drawAttributeBase is CircleAttribute circleAttribute)
                     {
                         circleAttribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
@@ -525,7 +526,7 @@ namespace ColorVision.Template
                 PoiParam.PoiPoints.Clear();
                 foreach (var item in DrawingVisualLists)
                 {
-                    DrawAttributeBase drawAttributeBase = item.GetAttribute();
+                    DrawBaseAttribute drawAttributeBase = item.GetAttribute();
                     if (drawAttributeBase is CircleAttribute circle)
                     {
                         PoiParamData poiParamData = new PoiParamData()
@@ -1605,7 +1606,7 @@ namespace ColorVision.Template
                 PoiParam.PoiPoints.Clear();
                 foreach (var item in DrawingVisualLists)
                 {
-                    DrawAttributeBase drawAttributeBase = item.GetAttribute();
+                    DrawBaseAttribute drawAttributeBase = item.GetAttribute();
                     if (drawAttributeBase is CircleAttribute circle)
                     {
                         PoiParamData poiParamData = new PoiParamData()

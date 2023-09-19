@@ -6,8 +6,9 @@
         xmlns:local="clr-namespace:ColorVision"
         xmlns:Template="clr-namespace:ColorVision.Template"
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
-        xmlns:converter="clr-namespace:ColorVision.Converter"
+        xmlns:converter="clr-namespace:ColorVision.Draw.Converter"
         xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util"
+        xmlns:draw ="clr-namespace:ColorVision.Draw"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Template:PoiParam}"
         Title="关注点编辑"  Height="720" Width="1280" Initialized="Window_Initialized">
@@ -425,7 +426,7 @@
                     <Grid.Resources>
 
 
-                        <DataTemplate x:Key="DrawingVisualCircleTemplate" DataType="{x:Type local:DrawingVisualCircle}" >
+                        <DataTemplate x:Key="DrawingVisualCircleTemplate" DataType="{x:Type draw:DrawingVisualCircle}" >
                             <StackPanel  Orientation="Horizontal">
                                 <StackPanel.ContextMenu>
                                     <ContextMenu>
@@ -443,7 +444,7 @@
                                 <TextBlock  Width="{Binding ElementName=GridListHeader4,Path=ActualWidth}" Text="{Binding Path=Radius}" />
                             </StackPanel>
                         </DataTemplate>
-                        <DataTemplate x:Key="DrawingVisualRectangleTemplate"  DataType="{x:Type local:DrawingVisualRectangle}">
+                        <DataTemplate x:Key="DrawingVisualRectangleTemplate"  DataType="{x:Type draw:DrawingVisualRectangle}">
                             <StackPanel  Orientation="Horizontal">
                                 <StackPanel.ContextMenu>
                                     <ContextMenu>
