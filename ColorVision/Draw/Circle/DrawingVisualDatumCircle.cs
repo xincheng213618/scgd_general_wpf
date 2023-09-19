@@ -19,9 +19,11 @@ namespace ColorVision.Draw
             Attribute.Pen = new Pen(Brushes.Red, 2);
             Attribute.Center = new Point(50, 50);
             Attribute.Radius = 30;
+
+
             Attribute.PropertyChanged += (s, e) =>
             {
-                if (AutoAttributeChanged)
+                if (AutoAttributeChanged && e.PropertyName!="ID")
                     Render();
                 if (e.PropertyName == "Center")
                 {

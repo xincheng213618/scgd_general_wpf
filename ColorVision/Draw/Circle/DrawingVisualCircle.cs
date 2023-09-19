@@ -4,6 +4,7 @@ using System.Windows.Media;
 
 namespace ColorVision.Draw
 {
+    [CircleAttribute(ID =1)]
     public class DrawingVisualCircle : DrawingVisualBase, IDrawingVisual
     {
         public CircleAttribute Attribute { get; set; }
@@ -21,8 +22,9 @@ namespace ColorVision.Draw
             Attribute.Radius = 30;
             Attribute.PropertyChanged += (s, e) =>
             {
-                if (AutoAttributeChanged)
+                if (AutoAttributeChanged && e.PropertyName !="ID")
                     Render();
+
                 if (e.PropertyName == "Center")
                 {
                     NotifyPropertyChanged(nameof(CenterX));
@@ -43,8 +45,6 @@ namespace ColorVision.Draw
         public double Radius { get => Attribute.Radius; set => Attribute.Radius = value; }
 
         public int ID { get => Attribute.ID; set => Attribute.ID = value; }
-
-
 
         public virtual void Render()
         {
