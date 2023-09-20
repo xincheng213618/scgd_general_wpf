@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8604, CS8605
+using ColorVision.Extension;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -65,8 +66,9 @@ namespace ColorVision.Draw
 
         private void ComboBoxBrush_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {            
-            if (ComboBoxBrush.SelectedIndex > -1)
+            if (ComboBoxBrush.SelectedIndex > -1 && ComboBoxBrush.SelectedValue is SolidColorBrush solidColorBrush)
             {
+                ColorPicker1.SelectedBrush = solidColorBrush;
             }
         }
 
@@ -91,6 +93,11 @@ namespace ColorVision.Draw
         private void ComboBoxFontStretch_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
 
+        }
+
+        private void ColorPicker_SelectedColorChanged(object sender, HandyControl.Data.FunctionEventArgs<Color> e)
+        {
+            DefalutTextAttribute.Defalut.Brush = ColorPicker1.SelectedBrush;
         }
     }
 }
