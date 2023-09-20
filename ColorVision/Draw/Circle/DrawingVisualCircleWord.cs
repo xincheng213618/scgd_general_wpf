@@ -1,54 +1,72 @@
 ﻿#pragma warning disable CA1711,CA2211
+using System.ComponentModel;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
 
 namespace ColorVision.Draw
 {
-
-
-    public class TextAttribute : BaseAttribute
+    public class CircleTextAttribute: CircleAttribute
     {
-        public static DefalutTextAttribute DefalutTextAttribute = DefalutTextAttribute.Defalut;
+        [Category("Circle"), DisplayName("TextAttribute")]
+        public TextAttribute TextAttribute { get; set; } = new TextAttribute();
 
+        [Category("TextAttribute"), DisplayName("Text")]
+        public string Text { get => TextAttribute.Text; set { TextAttribute.Text = value; 
+                NotifyPropertyChanged(); } }
+        [Category("TextAttribute"), DisplayName("FontSize")]
+        public double FontSize { get => TextAttribute.FontSize; set { TextAttribute.FontSize = value; NotifyPropertyChanged(); } }
 
-        public string Text { get => _Text; set { _Text = value; NotifyPropertyChanged(); } }
-        private string _Text;
-        public double FontSize { get => _FontSize; set { _FontSize = value; NotifyPropertyChanged(); } }
-        private double _FontSize = DefalutTextAttribute.FontSize;
+        [Category("TextAttribute"), DisplayName("Brush")]
+        public Brush Foreground { get => TextAttribute.Brush; set { TextAttribute.Brush = value; NotifyPropertyChanged(); } }
 
-        public Brush Brush { get => _Brush; set { _Brush = value; NotifyPropertyChanged(); } }
-        private Brush _Brush = DefalutTextAttribute.Brush;
+        [Category("TextAttribute"), DisplayName("FontFamily")]
+        public FontFamily FontFamily { get => TextAttribute.FontFamily; set { TextAttribute.FontFamily = value; NotifyPropertyChanged(); } }
 
-        public FontFamily FontFamily { get => _FontFamily; set { _FontFamily = value; NotifyPropertyChanged(); } }
-        private FontFamily _FontFamily = DefalutTextAttribute.FontFamily;
+        [Category("TextAttribute"), DisplayName("FontStyle")]
+        public FontStyle FontStyle { get => TextAttribute.FontStyle; set { TextAttribute.FontStyle = value; NotifyPropertyChanged(); } }
+        [Category("TextAttribute"), DisplayName("FontWeight")]
+        public FontWeight FontWeight { get => TextAttribute.FontWeight; set { TextAttribute.FontWeight = value; NotifyPropertyChanged(); } }
+        [Category("TextAttribute"), DisplayName("FontStretch")]
+        public FontStretch FontStretch { get => TextAttribute.FontStretch; set { TextAttribute.FontStretch = value; NotifyPropertyChanged(); } }
 
-
-        public FontStyle FontStyle { get => _FontStyle; set { _FontStyle = value; NotifyPropertyChanged(); } }
-        private FontStyle _FontStyle = DefalutTextAttribute.FontStyle;
-
-        public FontWeight FontWeight { get => _FontWeight; set { _FontWeight = value; NotifyPropertyChanged(); } }
-        private FontWeight _FontWeight = DefalutTextAttribute.FontWeight;
-
-        public FontStretch FontStretch { get => _FontStretch; set { _FontStretch = value; NotifyPropertyChanged(); } }
-        private FontStretch _FontStretch = DefalutTextAttribute.FontStretch;
-
-        public FlowDirection FlowDirection { get => _FlowDirection; set { _FlowDirection = value; NotifyPropertyChanged(); } }
-        private FlowDirection _FlowDirection = DefalutTextAttribute.FlowDirection;
-
+        [Category("TextAttribute"), DisplayName("FlowDirection")]
+        public FlowDirection FlowDirection { get => TextAttribute.FlowDirection; set { TextAttribute.FlowDirection = value; NotifyPropertyChanged(); } }
     }
 
 
 
-
-
-    public class DrawingVisualCircleWord : DrawingVisualCircle
+    public class DrawingVisualCircleWord : DrawingVisualBase<CircleTextAttribute>, IDrawingVisual,ICircle
     {
-        public TextAttribute TextAttribute { get; set; } = new TextAttribute();
+        public TextAttribute TextAttribute { get => Attribute.TextAttribute; }
+        public bool AutoAttributeChanged { get; set; } = true;
+
+        public DrawBaseAttribute GetAttribute() => Attribute;
+        public Point Center { get => Attribute.Center; set => Attribute.Center = value; }
+        public double Radius { get => Attribute.Radius; set => Attribute.Radius = value; }
+
+        public DrawingVisualCircleWord()
+        {
+            Attribute = new CircleTextAttribute();
+            Attribute.ID = No++;
+            Attribute.Brush = Brushes.Transparent;
+            Attribute.Pen = new Pen(Brushes.Red, 2);
+            Attribute.Center = new Point(50, 50);
+            Attribute.Radius = 30;
+            Attribute.PropertyChanged += (s, e) =>
+            { 
+                if (AutoAttributeChanged && e.PropertyName != "ID")
+                {
+                    Render();
+                }
+            };
+        }
+
+
 
         public override void Render()
         {
-            TextAttribute.Text = "Point_" + ID.ToString();
+            TextAttribute.Text =  string.IsNullOrWhiteSpace(TextAttribute.Text)? "Point_" + Attribute.ID.ToString(): TextAttribute.Text;
             TextAttribute.FontSize = Attribute.Pen.Thickness * 10;
             using DrawingContext dc = RenderOpen();
 

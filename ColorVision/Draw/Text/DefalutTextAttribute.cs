@@ -22,7 +22,7 @@ namespace ColorVision.Draw
         public double FontSize { get => _FontSize; set { _FontSize = value; NotifyPropertyChanged(); } }
         private double _FontSize;
 
-        public Brush Brush { get => _Brush; set {  _Brush = value; NotifyPropertyChanged(); } }
+        public Brush Brush { get => _Brush; set { _Brush = value; NotifyPropertyChanged(); } }
         private Brush _Brush;
 
         public FontFamily FontFamily { get => _FontFamily; set { _FontFamily = value; NotifyPropertyChanged(); } }

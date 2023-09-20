@@ -338,9 +338,10 @@ namespace ColorVision.Template
                 }
             }
 
-            if (drawingVisualDatum != null && drawingVisualDatum is IDrawingVisualDatum dw)
+            if (drawingVisualDatum != null && drawingVisualDatum is IDrawingVisualDatum Datum)
             {
-                dw.GetAttribute().Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
+                Datum.Pen.Thickness = 1 / Zoombox1.ContentMatrix.M11;
+                Datum.Render();
             }
 
             if (IsLayoutUpdated)
@@ -882,8 +883,8 @@ namespace ColorVision.Template
 
         private bool IsMouseDown;
         private Point MouseDownP;
-        private DrawingVisualCircle? SelectDCircle;
-        private DrawingVisualRectangle? SelectDRectangle;
+
+        private DrawingVisual? SelectDrawingVisual;
 
         private DrawingVisualCircle DrawCircleCache;
         private DrawingVisualRectangle DrawingRectangleCache;
@@ -904,12 +905,8 @@ namespace ColorVision.Template
             if (sender is DrawCanvas drawCanvas && !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn))
             {
                 MouseDownP = e.GetPosition(drawCanvas);
-
-
                 IsMouseDown = true;
                 drawCanvas.CaptureMouse();
-
-
 
                 if (ToolBarTop.EraseVisual)
                 {
@@ -941,15 +938,8 @@ namespace ColorVision.Template
 
                     if (ToolBarTop.Activate == true)
                     {
-                        if (drawingVisual is DrawingVisualRectangle Rectangle)
-                        {
-                            SelectDRectangle = Rectangle;
-                        }
-                        else if (drawingVisual is DrawingVisualCircle Circl)
-                        {
-                            SelectDCircle = Circl;
-                        }
-
+                        if (drawingVisual is DrawingVisual visual)
+                            SelectDrawingVisual = visual;
                     }
                 }
             }
@@ -987,15 +977,17 @@ namespace ColorVision.Template
                     {
 
                     }
-                    else if (SelectDCircle != null)
+                    else if (SelectDrawingVisual !=null)
                     {
-                        SelectDCircle.Attribute.Center += point - LastMouseMove;
-                    }
-                    else if (SelectDRectangle != null)
-                    {
-                        var OldRect = SelectDRectangle.Attribute.Rect;
-                        SelectDRectangle.Attribute.Rect = new Rect(OldRect.X + point.X - LastMouseMove.X, OldRect.Y + point.Y - LastMouseMove.Y, OldRect.Width, OldRect.Height);
-
+                        if (SelectDrawingVisual is IRectangle rectangle)
+                        {
+                            var OldRect = rectangle.Rect;
+                            rectangle.Rect = new Rect(OldRect.X + point.X - LastMouseMove.X, OldRect.Y + point.Y - LastMouseMove.Y, OldRect.Width, OldRect.Height);
+                        }
+                        else if (SelectDrawingVisual is ICircle Circl)
+                        {
+                            Circl.Center += point - LastMouseMove;
+                        }
                     }
                 }
                 LastMouseMove = point;
@@ -1043,9 +1035,8 @@ namespace ColorVision.Template
                     ListView1.SelectedIndex = DrawingVisualLists.IndexOf(DrawingRectangleCache);
 
                 }
-
                 drawCanvas.ReleaseMouseCapture();
-                SelectDCircle = null;
+                SelectDrawingVisual = null;
             }
         }
 
@@ -1099,7 +1090,7 @@ namespace ColorVision.Template
                                 switch (PoiParam.DefaultPointType)
                                 {
                                     case RiPointTypes.Circle:
-                                        DrawingVisualCircle Circle = new DrawingVisualCircleWord();
+                                        DrawingVisualCircleWord Circle = new DrawingVisualCircleWord();
                                         Circle.Attribute.Center = new Point(x1, y1);
                                         Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
                                         Circle.Attribute.Brush = Brushes.Transparent;
@@ -1171,7 +1162,7 @@ namespace ColorVision.Template
                                     switch (PoiParam.DefaultPointType)
                                     {
                                         case RiPointTypes.Circle:
-                                            DrawingVisualCircle Circle = new DrawingVisualCircleWord();
+                                            DrawingVisualCircleWord Circle = new DrawingVisualCircleWord();
                                             Circle.Attribute.Center = new Point(startL + StepCol * j, startU + StepRow * i);
                                             Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
                                             Circle.Attribute.Brush = Brushes.Transparent;
@@ -1233,7 +1224,7 @@ namespace ColorVision.Template
                                     switch (PoiParam.DefaultPointType)
                                     {
                                         case RiPointTypes.Circle:
-                                            DrawingVisualCircle Circle = new DrawingVisualCircleWord();
+                                            DrawingVisualCircleWord Circle = new DrawingVisualCircleWord();
                                             Circle.Attribute.Center = new Point(point.X, point.Y);
                                             Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
                                             Circle.Attribute.Brush = Brushes.Transparent;
@@ -1374,7 +1365,7 @@ namespace ColorVision.Template
 
                     for (int i = 0; i < testdata; i++)
                     {
-                        DrawingVisualCircle Circle = new DrawingVisualCircleWord();
+                        DrawingVisualCircleWord Circle = new DrawingVisualCircleWord();
                         Circle.Attribute.Center = new Point(zuobiaoX[i], zuobiaoY[i]);
                         Circle.Attribute.Radius = banjin[i];
                         Circle.Attribute.Brush = Brushes.Transparent;
@@ -1507,7 +1498,7 @@ namespace ColorVision.Template
                         Circle.Attribute.Center = PoiParam.DatumArea.Center;
                         Circle.Attribute.Radius = PoiParam.DatumArea.AreaCircleRadius;
                         Circle.Attribute.Brush = Brushes.Transparent;
-                        Circle.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
+                        Circle.Attribute.Pen = new Pen(Brushes.Yellow, 1 / Zoombox1.ContentMatrix.M11);
                         Circle.Render();
                         drawingVisualDatum = Circle;
                         ImageShow.AddVisual(drawingVisualDatum);
@@ -1518,7 +1509,7 @@ namespace ColorVision.Template
                         DrawingVisualDatumRectangle Rectangle = new DrawingVisualDatumRectangle();
                         Rectangle.Attribute.Rect = new Rect(PoiParam.DatumArea.Center - new Vector((int)(Width / 2), (int)(Height / 2)), (PoiParam.DatumArea.Center + new Vector((int)(Width / 2), (int)(Height / 2))));
                         Rectangle.Attribute.Brush = Brushes.Transparent;
-                        Rectangle.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
+                        Rectangle.Attribute.Pen = new Pen(Brushes.Yellow, 1 / Zoombox1.ContentMatrix.M11);
                         Rectangle.Render();
                         drawingVisualDatum = Rectangle;
                         ImageShow.AddVisual(drawingVisualDatum);
@@ -1537,7 +1528,7 @@ namespace ColorVision.Template
 
 
                         DrawingVisualDatumPolygon Polygon = new DrawingVisualDatumPolygon() { IsDrawing = false };
-                        Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
+                        Polygon.Attribute.Pen = new Pen(Brushes.Yellow, 1 / Zoombox1.ContentMatrix.M11);
                         Polygon.Attribute.Brush = Brushes.Transparent;
                         Polygon.Attribute.Points.Add(result[0]);
                         Polygon.Attribute.Points.Add(result[1]);

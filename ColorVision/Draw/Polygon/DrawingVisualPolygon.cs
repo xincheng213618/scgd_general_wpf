@@ -30,7 +30,7 @@ namespace ColorVision.Draw
         }
         public int ID { get => Attribute.ID; set => Attribute.ID = value; }
 
-        public void Render()
+        public override void Render()
         {
             using DrawingContext dc = RenderOpen();
 

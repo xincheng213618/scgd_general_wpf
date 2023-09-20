@@ -4,6 +4,7 @@ namespace ColorVision
     public interface IDrawingVisual
     {
         public abstract DrawBaseAttribute GetAttribute();
+        public bool AutoAttributeChanged { get; set; } 
     }
 
 

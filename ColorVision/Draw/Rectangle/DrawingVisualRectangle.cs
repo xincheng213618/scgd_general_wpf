@@ -4,11 +4,13 @@ using System.Windows.Media;
 
 namespace ColorVision.Draw
 {
-    public class DrawingVisualRectangle : DrawingVisualBase, IDrawingVisual
+
+
+    public class DrawingVisualRectangle : DrawingVisualBase, IDrawingVisual, IRectangle
     {
         public RectangleAttribute Attribute { get; set; }
         public DrawBaseAttribute GetAttribute() => Attribute;
-
+        public Rect Rect { get => Attribute.Rect; set => Attribute.Rect = value; }
 
         public bool AutoAttributeChanged { get; set; } = true;
 
@@ -26,7 +28,7 @@ namespace ColorVision.Draw
         }
         public int ID { get => Attribute.ID; set => Attribute.ID = value; }
 
-        public virtual void Render()
+        public override void Render()
         {
             using DrawingContext dc = RenderOpen();
             dc.DrawRectangle(Attribute.Brush, Attribute.Pen, Attribute.Rect);

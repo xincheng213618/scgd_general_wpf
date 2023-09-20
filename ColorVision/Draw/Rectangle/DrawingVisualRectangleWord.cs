@@ -5,7 +5,7 @@ using System.Windows.Media;
 
 namespace ColorVision.Draw
 {
-    public class DrawingVisualRectangleWord : DrawingVisualRectangle
+    public class DrawingVisualRectangleWord : DrawingVisualRectangle, IRectangle
     {
         public override void Render()
         {

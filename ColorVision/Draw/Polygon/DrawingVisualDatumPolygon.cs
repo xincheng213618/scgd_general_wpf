@@ -10,6 +10,7 @@ namespace ColorVision.Draw
         public PolygonAttribute Attribute { get; set; }
 
         public DrawBaseAttribute GetAttribute() => Attribute;
+        public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
 
         public bool AutoAttributeChanged { get; set; } = true;
 
