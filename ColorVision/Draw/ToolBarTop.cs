@@ -7,6 +7,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Windows.Input;
 using ColorVision.Draw;
+using static ColorVision.ImageView;
 
 namespace ColorVision
 {

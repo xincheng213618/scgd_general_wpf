@@ -134,8 +134,13 @@
             <local:ZoomboxSub x:Name="Zoombox1"  MaxZoom="10"  MinZoom="0.01" Grid.Row="1" Grid.ColumnSpan="2">
                 <local:DrawCanvas x:Name="ImageShow"  Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  MouseDown="ImageShow_MouseDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
             </local:ZoomboxSub>
+            <Grid  x:Name="GridEx"  Grid.Row="1">
+                
+            </Grid>
             <StackPanel Grid.Row="0" Grid.RowSpan="2" >
                 <ToolBar x:Name="ToolBar1" DataContext="{Binding ToolBarTop}"   Loaded="ToolBar1_Loaded" Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" HorizontalAlignment="Center">
+                    <Button Content="打开" Click="Button_Click" Margin="4,0,1,0">
+                    </Button>
                     <ToggleButton x:Name="ToggleButtonMouse"  IsChecked="{Binding Path=Move}"  Margin="4,0,1,0">
                         <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageMouse}"/>
                     </ToggleButton>
@@ -154,7 +159,7 @@
                     <Button Command="{Binding ZoomNone}"  Margin="1,0">
                         <Image  Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageexpend}"/>
                     </Button>
-                    <TextBox  Background="Transparent"  BorderBrush="Black"  BorderThickness="1"  HorizontalContentAlignment="Center" Width="50" Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}" />
+                    <TextBox  Background="Transparent"  BorderBrush="Black"  BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}" />
                     <Button Content="属性" Command="{Binding OpenProperty}" />
 
                     <ToggleButton  Click="Button5_Click">
@@ -180,7 +185,6 @@
                     </ToggleButton>
                 </ToolBar>
             </StackPanel>
-
             <Border x:Name="BorderPropertieslayers" Background="#22000000" Visibility="Collapsed" Grid.Row="0" Grid.RowSpan="2" VerticalAlignment="Top" Margin="0,60,20,0" HorizontalAlignment="Right"  Height="50" Width="150" CornerRadius="10" >
                 <StackPanel Margin="5">
                     <TextBlock Text="{Binding ElementName=ImageShow,Path=Source.Width}" Foreground="White" HorizontalAlignment="Center" />

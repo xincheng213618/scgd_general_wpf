@@ -18,6 +18,22 @@ using System.Windows.Media.Imaging;
 namespace ColorVision
 {
     /// <summary>
+    /// 用于还原窗口
+    /// </summary>
+
+    public class WindowStatus
+    {
+        public object Root { get; set; }
+        public Grid Parent { get; set; }
+
+        public WindowStyle WindowStyle { get; set; }
+
+        public WindowState WindowState { get; set; }
+
+        public ResizeMode ResizeMode { get; set; }
+    }
+
+    /// <summary>
     /// ImageView.xaml 的交互逻辑
     /// </summary>
     public partial class ImageView : UserControl, IView
@@ -39,14 +55,17 @@ namespace ColorVision
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            TextBox TextBox1 = new TextBox() { Width = 10,Background =Brushes.Transparent, BorderThickness = new Thickness(0),Foreground = Brushes.Transparent };
-            Grid.SetColumn(TextBox1,0);
+            //这里是为了让控件可以被选中，作为做了一个底层的Textbox,这样就可以让控件被选中了，后面看看能不能优化掉，这个写法并不是好的。
+            TextBox TextBox1 = new TextBox() { Width = 10, Background = Brushes.Transparent, BorderThickness = new Thickness(0), Foreground = Brushes.Transparent };
+            Grid.SetColumn(TextBox1, 0);
             Grid.SetRow(TextBox1, 0);
-            ImageContentGrid.Children.Insert(0,TextBox1);
+            ImageContentGrid.Children.Insert(0, TextBox1);
             this.MouseDown += (s, e) =>
             {
                 TextBox1.Focus();
             };
+
+
             View = new View();
             View.ViewIndexChangedEvent += (s, e) =>
             {
@@ -88,11 +107,11 @@ namespace ColorVision
                 }
             };
 
-
-            ToolBar1.Visibility = Visibility.Collapsed;
             ToolBarTop = new ToolBarTop(Zoombox1, ImageShow);
             ToolBar1.DataContext = ToolBarTop;
             ListView1.ItemsSource = DrawingVisualLists;
+            ruler = new DrawingVisualHost();
+            GridEx.Children.Add(ruler);
 
             this.Focusable = true;
 
@@ -179,13 +198,13 @@ namespace ColorVision
                 {
                     Zoombox1.Zoom(0.9);
                 }
-                else if (e.Key ==Key.R )
+                else if (e.Key == Key.R)
                 {
-                    BorderPropertieslayers.Visibility = BorderPropertieslayers.Visibility == Visibility.Visible? Visibility.Collapsed: Visibility.Visible;
+                    BorderPropertieslayers.Visibility = BorderPropertieslayers.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
                 }
             };
         }
-        
+        private DrawingVisualHost ruler { get; set; }
 
 
         private void DrawGridImage(DrawingVisual drawingVisual, BitmapImage bitmapImage)
@@ -226,16 +245,18 @@ namespace ColorVision
                 Brush brush = Brushes.Red;
                 FontFamily fontFamily = new FontFamily("Arial");
                 double fontSize = 10;
+
                 FormattedText formattedText = new FormattedText((1 / Zoombox1.ContentMatrix.M11 * bitmapImage.PixelWidth / 100).ToString("F2") + "px", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 dc.DrawText(formattedText, new Point(100, 30));
-
 
                 double X = 1 / Zoombox1.ContentMatrix.M11 * bitmapImage.PixelWidth / 100;
                 double result = X < 10 ? 5 : X < 20 ? 10 : X < 50 ? 20 : X < 100 ? 50 : (X < 200 ? 100 : (X < 500 ? 200 : (X < 1000 ? 500 : (X < 2000 ? 1000 : 2000))));
 
                 dc.DrawLine(new Pen(Brushes.Red, 10), new Point(100, 100), new Point(100 + 100 * result / X, 100));
-                FormattedText formattedText1 = new FormattedText((result).ToString("F2") + "px", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                FormattedText formattedText1 = new FormattedText((result).ToString("F2") + "px", CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 dc.DrawText(formattedText1, new Point(100, 80));
+
+                ruler.Render(X);
 
             }
         }
@@ -613,17 +634,7 @@ namespace ColorVision
 
 
 
-        public class WindowStatus
-        {
-            public object Root { get; set; }
-            public Grid Parent { get; set; }
 
-            public WindowStyle WindowStyle { get; set; }
-
-            public WindowState WindowState { get; set; }
-
-            public ResizeMode ResizeMode { get; set; }
-        }
 
 
 
@@ -714,7 +725,7 @@ namespace ColorVision
 
         public unsafe void OpenCVImage(string? filePath)
         {
-            SetInitialFrame((nint)(delegate* unmanaged[Cdecl]<IntPtr, int, int, int,int >)(&InitialFrame));
+            SetInitialFrame((nint)(delegate* unmanaged[Cdecl]<IntPtr, int, int, int, int>)(&InitialFrame));
 
             if (filePath != null && File.Exists(filePath))
             {
@@ -767,7 +778,7 @@ namespace ColorVision
             if (filePath != null && File.Exists(filePath))
             {
                 BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
-  
+
                 ImageShow.Source = bitmapImage;
                 DrawGridImage(DrawingVisualGrid, bitmapImage);
                 Zoombox1.ZoomUniform();
@@ -816,6 +827,16 @@ namespace ColorVision
                     PropertyGrid2.Refresh();
                 };
                 ImageShow.TopVisual(visual);
+            }
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
+            openFileDialog.RestoreDirectory = true;
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                OpenImage(openFileDialog.FileName);
             }
         }
     }
