@@ -1,0 +1,27 @@
+﻿<Window x:Class="ColorVision.Draw.DrawProperties"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.Draw"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        mc:Ignorable="d"
+        Title="DrawProperties" Background="{DynamicResource GlobalBackground}" Height="450" Width="800" Initialized="Window_Initialized">
+    <Grid>
+        <StackPanel x:Name="StackPanelTextAttribute"  d:DataContext="{d:DesignInstance local:DefalutTextAttribute}">
+            <DockPanel>
+                <hc:ComboBox  Name="ComboBoxFontFamily" ItemsSource="{x:Static Fonts.SystemFontFamilies}"  SelectedValue="{Binding FontFamily}"   SelectionChanged="ComboBoxFontFamily_SelectionChanged" >
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Path=Value}" FontFamily="{Binding Path=Key}"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </hc:ComboBox>
+            </DockPanel>
+            <DockPanel>
+                <ComboBox Name="ComboBoxBrush" SelectedItem="{Binding Brush}"  SelectionChanged="ComboBoxBrush_SelectionChanged" />
+            </DockPanel>
+        </StackPanel>
+        
+    </Grid>
+</Window>

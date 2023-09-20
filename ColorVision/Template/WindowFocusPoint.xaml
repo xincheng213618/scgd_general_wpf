@@ -381,6 +381,7 @@
                     <Button Command="{Binding ZoomNone}"  Margin="1,0">
                         <Image  Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageexpend}"/>
                     </Button>
+                    <Button Content="属性" Command="{Binding OpenProperty}" />
                     <ToggleButton  IsChecked="{Binding EraseVisual}" Margin="1,0" >
                         <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageeraser}"/>
                     </ToggleButton>

@@ -6,6 +6,7 @@ using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Windows.Input;
+using ColorVision.Draw;
 
 namespace ColorVision
 {
@@ -16,6 +17,10 @@ namespace ColorVision
         public RelayCommand ZoomIncrease { get; set; }
         public RelayCommand ZoomDecrease { get; set; }
         public RelayCommand ZoomNone { get; set; }
+
+        public RelayCommand OpenProperty { get; set; }
+
+
         private ZoomboxSub ZoomboxSub { get; set; }
         private DrawCanvas DrawImageCanvas { get; set; }
         public DrawingVisual DrawVisualImage { get; set; }
@@ -34,6 +39,8 @@ namespace ColorVision
             });
 
             DrawVisualImage = new DrawingVisual();
+
+            OpenProperty = new RelayCommand(a => new DrawProperties().Show());
         }
 
         /// <summary>
