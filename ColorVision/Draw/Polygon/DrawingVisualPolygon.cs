@@ -12,6 +12,8 @@ namespace ColorVision.Draw
         public DrawBaseAttribute GetAttribute() => Attribute;
 
         public bool AutoAttributeChanged { get; set; } = true;
+        public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
+
 
         public bool IsDrawing { get; set; } = true;
 

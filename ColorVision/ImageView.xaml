@@ -165,7 +165,7 @@
                     <ToggleButton  Click="Button5_Click">
                         <Image  Style="{StaticResource ToolBarImage}" Margin="1,0" Source="{StaticResource DrawingImagegridlines}"/>
                     </ToggleButton>
-                    <ToggleButton  IsChecked="{Binding Measure}">
+                    <ToggleButton  IsChecked="{Binding Measure}" Unchecked="ToggleButton_Unchecked">
                         <Image  Style="{StaticResource ToolBarImage}" Margin="1,0" Source="{StaticResource DrawingImageruler}"/>
                     </ToggleButton>
                     <ToggleButton  IsChecked="{Binding EraseVisual}" Margin="1,0" Click="Button7_Click">

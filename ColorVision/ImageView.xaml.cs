@@ -112,6 +112,7 @@ namespace ColorVision
             GridEx.Children.Add(ruler);
 
             this.Focusable = true;
+            Zoombox1.LayoutUpdated += Zoombox1_LayoutUpdated;
 
             ImageShow.VisualsAdd += (s, e) =>
             {
@@ -200,8 +201,27 @@ namespace ColorVision
                 {
                     BorderPropertieslayers.Visibility = BorderPropertieslayers.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
                 }
+
+                if (e.Key == Key.Escape)
+                {
+                    if (DrawingVisualRulerCache != null)
+                    {
+                        ImageShow.RemoveVisual(DrawingVisualRulerCache);
+                        DrawingVisualRulerCache = null;
+                    }
+                }
             };
         }
+
+        private void Zoombox1_LayoutUpdated(object? sender, EventArgs e)
+        {
+            foreach (var item in DrawingVisualLists)
+            {
+                item.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                item.Render();
+            }
+        }
+
         private DrawingVisualHost ruler { get; set; }
 
 
@@ -315,12 +335,23 @@ namespace ColorVision
 
         private DrawingVisualRuler? DrawingVisualRulerCache;
 
+        private void ToggleButton_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if (DrawingVisualRulerCache!=null)
+                ImageShow.RemoveVisual(DrawingVisualRulerCache);
+        }
+
 
         private void ImageShow_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (DrawingVisualRulerCache!=null)
-                
+            if (DrawingVisualRulerCache != null)
+            {
+                DrawingVisualRulerCache.MovePoints = null;
+                DrawingVisualRulerCache.Render();
                 DrawingVisualRulerCache = null;
+
+            }
+
         }
 
 
@@ -342,6 +373,7 @@ namespace ColorVision
                     if (DrawingVisualRulerCache == null)
                     {
                         DrawingVisualRulerCache = new DrawingVisualRuler();
+                        DrawingVisualRulerCache.Pen.Thickness = 1 / Zoombox1.ContentMatrix.M11;
                         drawCanvas.AddVisual(DrawingVisualRulerCache);
                     }
                     //DrawingVisualRulerCache.Points.Add(MouseDownP);

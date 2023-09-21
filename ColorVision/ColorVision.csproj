@@ -22,7 +22,7 @@
     <None Remove="Image\ColorVision.png" />
     <None Remove="Image\ColorVision1.ico" />
     <None Remove="Image\connect.png" />
-  </ItemGroup>
+  </ItemGroup>  
 
   <ItemGroup>
     <PackageReference Include="Extended.Wpf.Toolkit" Version="4.5.1" />

@@ -4,8 +4,17 @@ using System.Windows.Media;
 
 namespace ColorVision.Draw
 {
-    public class RulerTextAttribute : CircleAttribute
+    public class RulerTextAttribute : DrawBaseAttribute
     {
+        [Category("DrawingVisual"), DisplayName("笔刷")]
+        public Pen Pen { get => _Pen; set { _Pen = value; NotifyPropertyChanged(); } }
+        private Pen _Pen;
+
+        [Category("Circle"), DisplayName("颜色")]
+        public Brush Brush { get => _Brush; set { _Brush = value; NotifyPropertyChanged(); } }
+        private Brush _Brush;
+
+
         [Category("Circle"), DisplayName("TextAttribute")]
         public TextAttribute TextAttribute { get; set; } = new TextAttribute();
 

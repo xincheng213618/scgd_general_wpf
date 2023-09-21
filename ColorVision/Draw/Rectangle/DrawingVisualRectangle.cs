@@ -11,6 +11,8 @@ namespace ColorVision.Draw
         public RectangleAttribute Attribute { get; set; }
         public DrawBaseAttribute GetAttribute() => Attribute;
         public Rect Rect { get => Attribute.Rect; set => Attribute.Rect = value; }
+        public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
+
 
         public bool AutoAttributeChanged { get; set; } = true;
 
