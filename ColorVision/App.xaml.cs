@@ -91,7 +91,7 @@ namespace ColorVision
         private static extern ushort GlobalAddAtom(string lpString);
 
 
-        private App()
+        public App()
         {
 
             Startup += (s, e) => Application_Startup(s, e);
