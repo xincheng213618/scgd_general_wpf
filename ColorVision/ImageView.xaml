@@ -132,7 +132,7 @@
             </Grid.RowDefinitions>
             <Grid Grid.Row="0" Height="0.5" Background="#BCBCBC"/>
             <local:ZoomboxSub x:Name="Zoombox1"  MaxZoom="10"  MinZoom="0.01" Grid.Row="1" Grid.ColumnSpan="2">
-                <local:DrawCanvas x:Name="ImageShow"  Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  MouseDown="ImageShow_MouseDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
+                <local:DrawCanvas x:Name="ImageShow"  Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_MouseDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
             </local:ZoomboxSub>
             <Grid  x:Name="GridEx"  Grid.Row="1">
                 
@@ -165,7 +165,7 @@
                     <ToggleButton  Click="Button5_Click">
                         <Image  Style="{StaticResource ToolBarImage}" Margin="1,0" Source="{StaticResource DrawingImagegridlines}"/>
                     </ToggleButton>
-                    <ToggleButton  Click="Button6_Click">
+                    <ToggleButton  IsChecked="{Binding Measure}">
                         <Image  Style="{StaticResource ToolBarImage}" Margin="1,0" Source="{StaticResource DrawingImageruler}"/>
                     </ToggleButton>
                     <ToggleButton  IsChecked="{Binding EraseVisual}" Margin="1,0" Click="Button7_Click">

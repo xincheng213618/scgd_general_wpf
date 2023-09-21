@@ -66,46 +66,44 @@ namespace ColorVision
             };
 
 
-            View = new View();
-            View.ViewIndexChangedEvent += (s, e) =>
-            {
-                if (e == -2)
-                {
-                    MenuItem menuItem3 = new MenuItem { Header = "还原到主窗口中" };
-                    menuItem3.Click += (s, e) =>
-                    {
-                        if (ViewGridManager.GetInstance().IsGridEmpty(View.PreViewIndex))
-                        {
-                            View.ViewIndex = View.PreViewIndex;
-                        }
-                        else
-                        {
-                            View.ViewIndex = -1;
-                        }
-                    };
-                    this.ContextMenu = new ContextMenu();
-                    this.ContextMenu.Items.Add(menuItem3);
+            //View = new View();
+            //View.ViewIndexChangedEvent += (s, e) =>
+            //{
+            //    if (e == -2)
+            //    {
+            //        MenuItem menuItem3 = new MenuItem { Header = "还原到主窗口中" };
+            //        menuItem3.Click += (s, e) =>
+            //        {
+            //            if (ViewGridManager.GetInstance().IsGridEmpty(View.PreViewIndex))
+            //            {
+            //                View.ViewIndex = View.PreViewIndex;
+            //            }
+            //            else
+            //            {
+            //                View.ViewIndex = -1;
+            //            }
+            //        };
+            //        this.ContextMenu = new ContextMenu();
+            //        this.ContextMenu.Items.Add(menuItem3);
 
-                }
-                else
-                {
-                    MenuItem menuItem = new MenuItem() { Header = "设为主窗口" };
-                    menuItem.Click += (s, e) => { ViewGridManager.GetInstance().SetOneView(this); };
-                    MenuItem menuItem1 = new MenuItem() { Header = "展示全部窗口" };
-                    menuItem1.Click += (s, e) => { ViewGridManager.GetInstance().SetViewNum(-1); };
-                    MenuItem menuItem2 = new MenuItem() { Header = "独立窗口中显示" };
-                    menuItem2.Click += (s, e) => { View.ViewIndex = -2; };
-                    MenuItem menuItem3 = new MenuItem() { Header = Properties.Resource.WindowHidden };
-                    menuItem3.Click += (s, e) => { View.ViewIndex = -1; };
-                    this.ContextMenu = new ContextMenu();
-                    this.ContextMenu.Items.Add(menuItem);
-                    this.ContextMenu.Items.Add(menuItem1);
-                    this.ContextMenu.Items.Add(menuItem2);
-                    this.ContextMenu.Items.Add(menuItem3);
-
-
-                }
-            };
+            //    }
+            //    else
+            //    {
+            //        MenuItem menuItem = new MenuItem() { Header = "设为主窗口" };
+            //        menuItem.Click += (s, e) => { ViewGridManager.GetInstance().SetOneView(this); };
+            //        MenuItem menuItem1 = new MenuItem() { Header = "展示全部窗口" };
+            //        menuItem1.Click += (s, e) => { ViewGridManager.GetInstance().SetViewNum(-1); };
+            //        MenuItem menuItem2 = new MenuItem() { Header = "独立窗口中显示" };
+            //        menuItem2.Click += (s, e) => { View.ViewIndex = -2; };
+            //        MenuItem menuItem3 = new MenuItem() { Header = Properties.Resource.WindowHidden };
+            //        menuItem3.Click += (s, e) => { View.ViewIndex = -1; };
+            //        this.ContextMenu = new ContextMenu();
+            //        this.ContextMenu.Items.Add(menuItem);
+            //        this.ContextMenu.Items.Add(menuItem1);
+            //        this.ContextMenu.Items.Add(menuItem2);
+            //        this.ContextMenu.Items.Add(menuItem3);
+            //    }
+            //};
 
             ToolBarTop = new ToolBarTop(Zoombox1, ImageShow);
             ToolBar1.DataContext = ToolBarTop;
@@ -235,29 +233,8 @@ namespace ColorVision
         {
             if (ImageShow.Source is BitmapImage bitmapImage)
             {
-                var actPoint = new Point();
-                using DrawingContext dc = ImageRuler.RenderOpen();
-                var transform = new MatrixTransform(1 / Zoombox1.ContentMatrix.M11, Zoombox1.ContentMatrix.M12, Zoombox1.ContentMatrix.M21, 1 / Zoombox1.ContentMatrix.M22, (1 - 1 / Zoombox1.ContentMatrix.M11) * actPoint.X, (1 - 1 / Zoombox1.ContentMatrix.M22) * actPoint.Y);
-                dc.PushTransform(transform);
-
-                dc.DrawLine(new Pen(Brushes.Red, 10), new Point(100, 50), new Point(200, 50));
-
-                Brush brush = Brushes.Red;
-                FontFamily fontFamily = new FontFamily("Arial");
-                double fontSize = 10;
-
-                FormattedText formattedText = new FormattedText((1 / Zoombox1.ContentMatrix.M11 * bitmapImage.PixelWidth / 100).ToString("F2") + "px", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
-                dc.DrawText(formattedText, new Point(100, 30));
-
                 double X = 1 / Zoombox1.ContentMatrix.M11 * bitmapImage.PixelWidth / 100;
-                double result = X < 10 ? 5 : X < 20 ? 10 : X < 50 ? 20 : X < 100 ? 50 : (X < 200 ? 100 : (X < 500 ? 200 : (X < 1000 ? 500 : (X < 2000 ? 1000 : 2000))));
-
-                dc.DrawLine(new Pen(Brushes.Red, 10), new Point(100, 100), new Point(100 + 100 * result / X, 100));
-                FormattedText formattedText1 = new FormattedText((result).ToString("F2") + "px", CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
-                dc.DrawText(formattedText1, new Point(100, 80));
-
                 ruler.Render(X);
-
             }
         }
 
@@ -336,6 +313,17 @@ namespace ColorVision
         }
 
 
+        private DrawingVisualRuler? DrawingVisualRulerCache;
+
+
+        private void ImageShow_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (DrawingVisualRulerCache!=null)
+                
+                DrawingVisualRulerCache = null;
+        }
+
+
         private void ImageShow_MouseDown(object sender, MouseButtonEventArgs e)
         {
             if (sender is DrawCanvas drawCanvas && !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn))
@@ -348,6 +336,16 @@ namespace ColorVision
                 {
                     DrawSelectRect(SelectRect, new Rect(MouseDownP, MouseDownP)); ;
                     drawCanvas.AddVisual(SelectRect);
+                }
+                else if (ToolBarTop.Measure)
+                {
+                    if (DrawingVisualRulerCache == null)
+                    {
+                        DrawingVisualRulerCache = new DrawingVisualRuler();
+                        drawCanvas.AddVisual(DrawingVisualRulerCache);
+                    }
+                    //DrawingVisualRulerCache.Points.Add(MouseDownP);
+
                 }
                 else if (ToolBarTop.DrawCircle)
                 {
@@ -446,6 +444,16 @@ namespace ColorVision
                 var controlWidth = drawCanvas.ActualWidth;
                 var controlHeight = drawCanvas.ActualHeight;
 
+
+                if (ToolBarTop.Measure)
+                {
+                    if (DrawingVisualRulerCache != null)
+                    {
+                        DrawingVisualRulerCache.MovePoints = point;
+                        DrawingVisualRulerCache.Render();
+                    }
+                }
+
                 if (IsMouseDown)
                 {
                     if (ToolBarTop.EraseVisual)
@@ -530,6 +538,14 @@ namespace ColorVision
                     }
                     drawCanvas.RemoveVisual(SelectRect);
                 }
+                else if (ToolBarTop.Measure)
+                {
+                    if (DrawingVisualRulerCache != null){
+                        DrawingVisualRulerCache.Points.Add(MouseUpP);
+                        DrawingVisualRulerCache.MovePoints = null;
+                        DrawingVisualRulerCache.Render();
+                    }
+                }
                 else if (ToolBarTop.DrawCircle)
                 {
                     if (DrawCircleCache.Attribute.Radius == 30)
@@ -609,16 +625,6 @@ namespace ColorVision
             }
 
         }
-        private void Button6_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is ToggleButton toggleButton)
-            {
-                if (!ImageShow.ContainsVisual(ImageRuler) && toggleButton.IsChecked == true)
-                    ImageShow.AddVisual(ImageRuler);
-                if (ImageShow.ContainsVisual(ImageRuler) && toggleButton.IsChecked == false)
-                    ImageShow.RemoveVisual(ImageRuler);
-            }
-        }
 
         private void Button7_Click(object sender, RoutedEventArgs e)
         {
@@ -631,10 +637,6 @@ namespace ColorVision
                 }
             }
         }
-
-
-
-
 
 
 
@@ -839,6 +841,8 @@ namespace ColorVision
                 OpenImage(openFileDialog.FileName);
             }
         }
+
+
     }
 
 

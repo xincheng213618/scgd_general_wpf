@@ -201,6 +201,27 @@ namespace ColorVision
                 NotifyPropertyChanged();
             }
         }
+
+        public bool Measure {
+            get => _Measure;
+            set 
+                {
+                if (_Measure == value) return;
+                _Measure = value;
+                if (value)
+                {
+                    DrawCircle = false;
+                    DrawRect = false;
+                    DrawPolygon = false;
+                    Activate = true;
+                }
+                NotifyPropertyChanged();
+            }
+        }
+        private bool _Measure;
+
+
+
         private bool _DrawPolygon;
 
         public bool DrawPolygon
