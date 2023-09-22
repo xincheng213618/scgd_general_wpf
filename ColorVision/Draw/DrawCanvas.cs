@@ -6,6 +6,7 @@ using System.Windows.Media;
 
 namespace ColorVision
 {
+
     public class DrawCanvas : Image
     {
 
@@ -16,6 +17,12 @@ namespace ColorVision
         protected override int VisualChildrenCount { get => visuals.Count; }
 
         public bool ContainsVisual(Visual visual) => visuals.Contains(visual);
+
+        public event EventHandler? ImageInitialized;
+        public void ImageInitialize()
+        {
+            ImageInitialized?.Invoke(this,new EventArgs());
+        }
 
 
         public event EventHandler? VisualsChanged;

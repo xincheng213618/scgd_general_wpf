@@ -374,7 +374,7 @@ namespace ColorVision.Template
             WindowState = WindowState.Maximized;
 
 
-            ToolBarTop = new ToolBarTop(Zoombox1, ImageShow);
+            ToolBarTop = new ToolBarTop(this,Zoombox1, ImageShow);
             ToolBar1.DataContext = ToolBarTop;
 
 

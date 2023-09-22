@@ -2,6 +2,7 @@
 using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Windows;
+using System.IO;
 
 namespace ColorVision.Util
 {
@@ -10,6 +11,21 @@ namespace ColorVision.Util
     /// </summary>
     public static class ImageUtil
     {
+        public static BitmapImage ByteArrayToBitmapImage(byte[] byteArray)
+        {
+            using Stream stream = new MemoryStream(byteArray);
+            BitmapImage image = new BitmapImage();
+            stream.Position = 0;
+            image.BeginInit();
+            image.CacheOption = BitmapCacheOption.OnLoad;
+            image.StreamSource = stream;
+            image.EndInit();
+            image.Freeze();
+            return image;
+        }
+
+
+
         /// <summary>
         /// 创建一个新的BitmapImage
         /// </summary>

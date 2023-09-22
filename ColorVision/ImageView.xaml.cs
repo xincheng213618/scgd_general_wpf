@@ -1,6 +1,7 @@
 ﻿using ColorVision.Draw;
 using ColorVision.Extension;
 using ColorVision.MVVM;
+using ColorVision.Util;
 using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -41,7 +42,7 @@ namespace ColorVision
         public ToolBarTop ToolBarTop { get; set; }
 
         public View View { get; set; }
-
+     
         public ImageView()
         {
             View = new View();
@@ -50,7 +51,6 @@ namespace ColorVision
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
 
-        private DrawingVisual ImageRuler = new DrawingVisual();
         private DrawingVisual DrawingVisualGrid = new DrawingVisual();
 
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -65,51 +65,23 @@ namespace ColorVision
                 TextBox1.Focus();
             };
 
-
-            //View = new View();
-            //View.ViewIndexChangedEvent += (s, e) =>
-            //{
-            //    if (e == -2)
-            //    {
-            //        MenuItem menuItem3 = new MenuItem { Header = "还原到主窗口中" };
-            //        menuItem3.Click += (s, e) =>
-            //        {
-            //            if (ViewGridManager.GetInstance().IsGridEmpty(View.PreViewIndex))
-            //            {
-            //                View.ViewIndex = View.PreViewIndex;
-            //            }
-            //            else
-            //            {
-            //                View.ViewIndex = -1;
-            //            }
-            //        };
-            //        this.ContextMenu = new ContextMenu();
-            //        this.ContextMenu.Items.Add(menuItem3);
-
-            //    }
-            //    else
-            //    {
-            //        MenuItem menuItem = new MenuItem() { Header = "设为主窗口" };
-            //        menuItem.Click += (s, e) => { ViewGridManager.GetInstance().SetOneView(this); };
-            //        MenuItem menuItem1 = new MenuItem() { Header = "展示全部窗口" };
-            //        menuItem1.Click += (s, e) => { ViewGridManager.GetInstance().SetViewNum(-1); };
-            //        MenuItem menuItem2 = new MenuItem() { Header = "独立窗口中显示" };
-            //        menuItem2.Click += (s, e) => { View.ViewIndex = -2; };
-            //        MenuItem menuItem3 = new MenuItem() { Header = Properties.Resource.WindowHidden };
-            //        menuItem3.Click += (s, e) => { View.ViewIndex = -1; };
-            //        this.ContextMenu = new ContextMenu();
-            //        this.ContextMenu.Items.Add(menuItem);
-            //        this.ContextMenu.Items.Add(menuItem1);
-            //        this.ContextMenu.Items.Add(menuItem2);
-            //        this.ContextMenu.Items.Add(menuItem3);
-            //    }
-            //};
-
-            ToolBarTop = new ToolBarTop(Zoombox1, ImageShow);
+            ToolBarTop = new ToolBarTop(this,Zoombox1, ImageShow);
             ToolBar1.DataContext = ToolBarTop;
             ListView1.ItemsSource = DrawingVisualLists;
-            ruler = new DrawingVisualHost();
-            GridEx.Children.Add(ruler);
+            ruler = new DrawingVisualScaleHost();
+
+            this.SizeChanged += (s, e) =>
+            {
+                ruler.ParentWidth = this.ActualWidth;
+                ruler.ParentHeight = this.ActualHeight;
+                ruler.ScaleLocation = ScaleLocation.lowerright;
+                ruler.Render();
+            };
+            ImageShow.ImageInitialized += (s, e) =>
+            {
+                GridEx.Children.Add(ruler);
+            };
+
 
             this.Focusable = true;
             Zoombox1.LayoutUpdated += Zoombox1_LayoutUpdated;
@@ -157,47 +129,7 @@ namespace ColorVision
 
             this.PreviewKeyDown += (s, e) =>
             {
-                if (e.Key == Key.Left)
-                {
-                    TranslateTransform translateTransform = new TranslateTransform();
-                    Vector vector = new Vector(-10, 0);
-                    translateTransform.SetCurrentValue(System.Windows.Media.TranslateTransform.XProperty, vector.X);
-                    translateTransform.SetCurrentValue(System.Windows.Media.TranslateTransform.YProperty, vector.Y);
-                    Zoombox1.SetCurrentValue(ZoomboxSub.ContentMatrixProperty, Matrix.Multiply(Zoombox1.ContentMatrix, translateTransform.Value));
-                }
-                else if (e.Key == Key.Right)
-                {
-                    TranslateTransform translateTransform = new TranslateTransform();
-                    Vector vector = new Vector(10, 0);
-                    translateTransform.SetCurrentValue(System.Windows.Media.TranslateTransform.XProperty, vector.X);
-                    translateTransform.SetCurrentValue(System.Windows.Media.TranslateTransform.YProperty, vector.Y);
-                    Zoombox1.SetCurrentValue(ZoomboxSub.ContentMatrixProperty, Matrix.Multiply(Zoombox1.ContentMatrix, translateTransform.Value));
-                }
-                else if (e.Key == Key.Up)
-                {
-                    TranslateTransform translateTransform = new TranslateTransform();
-                    Vector vector = new Vector(0, -10);
-                    translateTransform.SetCurrentValue(System.Windows.Media.TranslateTransform.XProperty, vector.X);
-                    translateTransform.SetCurrentValue(System.Windows.Media.TranslateTransform.YProperty, vector.Y);
-                    Zoombox1.SetCurrentValue(ZoomboxSub.ContentMatrixProperty, Matrix.Multiply(Zoombox1.ContentMatrix, translateTransform.Value));
-                }
-                else if (e.Key == Key.Down)
-                {
-                    TranslateTransform translateTransform = new TranslateTransform();
-                    Vector vector = new Vector(0, 10);
-                    translateTransform.SetCurrentValue(System.Windows.Media.TranslateTransform.XProperty, vector.X);
-                    translateTransform.SetCurrentValue(System.Windows.Media.TranslateTransform.YProperty, vector.Y);
-                    Zoombox1.SetCurrentValue(ZoomboxSub.ContentMatrixProperty, Matrix.Multiply(Zoombox1.ContentMatrix, translateTransform.Value));
-                }
-                else if (e.Key == Key.Add)
-                {
-                    Zoombox1.Zoom(1.1);
-                }
-                else if (e.Key == Key.Subtract)
-                {
-                    Zoombox1.Zoom(0.9);
-                }
-                else if (e.Key == Key.R)
+                if (e.Key == Key.R)
                 {
                     BorderPropertieslayers.Visibility = BorderPropertieslayers.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
                 }
@@ -213,6 +145,8 @@ namespace ColorVision
             };
         }
 
+
+
         private void Zoombox1_LayoutUpdated(object? sender, EventArgs e)
         {
             foreach (var item in DrawingVisualLists)
@@ -222,7 +156,7 @@ namespace ColorVision
             }
         }
 
-        private DrawingVisualHost ruler { get; set; }
+        private DrawingVisualScaleHost ruler { get; set; }
 
 
         private void DrawGridImage(DrawingVisual drawingVisual, BitmapImage bitmapImage)
@@ -289,7 +223,6 @@ namespace ColorVision
             if (DrawingVisual != null && DrawingVisual is IDrawingVisual drawing)
             {
                 var ContextMenu = new ContextMenu();
-
                 MenuItem menuItem = new MenuItem() { Header = "隐藏(_H)" };
                 menuItem.Click += (s, e) =>
                 {
@@ -349,7 +282,6 @@ namespace ColorVision
                 DrawingVisualRulerCache.MovePoints = null;
                 DrawingVisualRulerCache.Render();
                 DrawingVisualRulerCache = null;
-
             }
 
         }
@@ -716,17 +648,7 @@ namespace ColorVision
             }
         }
 
-        [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")]
-        private static extern void RtlMoveMemory(IntPtr Destination, IntPtr Source, uint Length);
 
-        [DllImport("OpenCVHelper.dll", CharSet = CharSet.Unicode)]
-        private static extern void ReadCVFile(string FullPath);
-
-        [DllImport("OpenCVHelper.dll")]
-        private unsafe static extern void SetInitialFrame(nint pRoutineHandler);
-
-        [DllImport("OpenCVHelper.dll", CharSet = CharSet.Unicode)]
-        private static extern void ReadVideoTest(string FullPath);
 
 
         [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvCdecl) })]
@@ -745,7 +667,7 @@ namespace ColorVision
             Application.Current.Dispatcher.Invoke(delegate
             {
                 WriteableBitmap writeableBitmap = new WriteableBitmap(cols, rows, 96.0, 96.0, format, null);
-                RtlMoveMemory(writeableBitmap.BackBuffer, buff, (uint)(cols * rows * type));
+                OpenCVHelper.RtlMoveMemory(writeableBitmap.BackBuffer, buff, (uint)(cols * rows * type));
                 writeableBitmap.Lock();
                 writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight));
                 writeableBitmap.Unlock();
@@ -759,51 +681,33 @@ namespace ColorVision
 
         public unsafe void OpenCVImage(string? filePath)
         {
-            SetInitialFrame((nint)(delegate* unmanaged[Cdecl]<IntPtr, int, int, int, int>)(&InitialFrame));
+            OpenCVHelper.SetInitialFrame((nint)(delegate* unmanaged[Cdecl]<IntPtr, int, int, int, int>)(&InitialFrame));
 
             if (filePath != null && File.Exists(filePath))
             {
 
-                //ReadCVFile(filePath);
                 Task.Run(() =>
                 {
-                    ReadVideoTest("23");
+                    OpenCVHelper.ReadVideoTest("23");
                 });
-
-                //BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
-                //ImageShow.Source = bitmapImage;
-                //DrawGridImage(DrawingVisualGrid, bitmapImage);
-                //Zoombox1.ZoomUniform();  
                 ToolBar1.Visibility = Visibility.Visible;
 
             }
         }
 
-        public static BitmapImage ByteArrayToBitmapImage(byte[] byteArray)
-        {
-            using (Stream stream = new MemoryStream(byteArray))
-            {
-                BitmapImage image = new BitmapImage();
-                stream.Position = 0;
-                image.BeginInit();
-                image.CacheOption = BitmapCacheOption.OnLoad;
-                image.StreamSource = stream;
-                image.EndInit();
-                image.Freeze();
-                return image;
-            }
-        }
+
 
         public void OpenImage(byte[] data)
         {
             if (data != null)
             {
-                BitmapImage bitmapImage = ByteArrayToBitmapImage(data);
+                BitmapImage bitmapImage = ImageUtil.ByteArrayToBitmapImage(data);
 
                 ImageShow.Source = bitmapImage;
                 DrawGridImage(DrawingVisualGrid, bitmapImage);
                 Zoombox1.ZoomUniform();
                 ToolBar1.Visibility = Visibility.Visible;
+                ImageShow.ImageInitialize();
             }
         }
 
@@ -812,23 +716,23 @@ namespace ColorVision
             if (filePath != null && File.Exists(filePath))
             {
                 BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
-
                 ImageShow.Source = bitmapImage;
                 DrawGridImage(DrawingVisualGrid, bitmapImage);
                 Zoombox1.ZoomUniform();
                 ToolBar1.Visibility = Visibility.Visible;
+                ImageShow.ImageInitialize();
             }
         }
 
         private void ToolBar1_Loaded(object sender, RoutedEventArgs e)
         {
-            if (sender is ToolBar toolBar)
-            {
-                if (toolBar.Template.FindName("OverflowGrid", toolBar) is FrameworkElement overflowGrid)
-                    overflowGrid.Visibility = Visibility.Collapsed;
-                if (toolBar.Template.FindName("MainPanelBorder", toolBar) is FrameworkElement mainPanelBorder)
-                    mainPanelBorder.Margin = new Thickness(0);
-            }
+            //if (sender is ToolBar toolBar)
+            //{
+            //    if (toolBar.Template.FindName("OverflowGrid", toolBar) is FrameworkElement overflowGrid)
+            //        overflowGrid.Visibility = Visibility.Collapsed;
+            //    if (toolBar.Template.FindName("MainPanelBorder", toolBar) is FrameworkElement mainPanelBorder)
+            //        mainPanelBorder.Margin = new Thickness(0);
+            //}
         }
 
 
@@ -872,9 +776,8 @@ namespace ColorVision
             {
                 OpenImage(openFileDialog.FileName);
             }
+            
         }
-
-
     }
 
 

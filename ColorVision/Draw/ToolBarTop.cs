@@ -8,6 +8,7 @@ using System.Windows.Media;
 using System.Windows.Input;
 using ColorVision.Draw;
 using static ColorVision.ImageView;
+using System.Windows.Controls;
 
 namespace ColorVision
 {
@@ -21,12 +22,11 @@ namespace ColorVision
 
         public RelayCommand OpenProperty { get; set; }
 
-
         private ZoomboxSub ZoomboxSub { get; set; }
         private DrawCanvas DrawImageCanvas { get; set; }
         public DrawingVisual DrawVisualImage { get; set; }
 
-        public ToolBarTop(ZoomboxSub zombox, DrawCanvas drawCanvas)
+        public ToolBarTop(Control Parent,ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
             ZoomboxSub = zombox ?? throw new ArgumentNullException(nameof(zombox));
             DrawImageCanvas = drawCanvas ?? throw new ArgumentNullException(nameof(drawCanvas));
@@ -40,9 +40,54 @@ namespace ColorVision
             });
 
             DrawVisualImage = new DrawingVisual();
-
             OpenProperty = new RelayCommand(a => new DrawProperties().Show());
+            Parent.PreviewKeyDown += PreviewKeyDown;
         }
+
+        public void PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Left)
+            {
+                TranslateTransform translateTransform = new TranslateTransform();
+                Vector vector = new Vector(-10, 0);
+                translateTransform.SetCurrentValue(System.Windows.Media.TranslateTransform.XProperty, vector.X);
+                translateTransform.SetCurrentValue(System.Windows.Media.TranslateTransform.YProperty, vector.Y);
+                ZoomboxSub.SetCurrentValue(ZoomboxSub.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
+            }
+            else if (e.Key == Key.Right)
+            {
+                TranslateTransform translateTransform = new TranslateTransform();
+                Vector vector = new Vector(10, 0);
+                translateTransform.SetCurrentValue(System.Windows.Media.TranslateTransform.XProperty, vector.X);
+                translateTransform.SetCurrentValue(System.Windows.Media.TranslateTransform.YProperty, vector.Y);
+                ZoomboxSub.SetCurrentValue(ZoomboxSub.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
+            }
+            else if (e.Key == Key.Up)
+            {
+                TranslateTransform translateTransform = new TranslateTransform();
+                Vector vector = new Vector(0, -10);
+                translateTransform.SetCurrentValue(System.Windows.Media.TranslateTransform.XProperty, vector.X);
+                translateTransform.SetCurrentValue(System.Windows.Media.TranslateTransform.YProperty, vector.Y);
+                ZoomboxSub.SetCurrentValue(ZoomboxSub.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
+            }
+            else if (e.Key == Key.Down)
+            {
+                TranslateTransform translateTransform = new TranslateTransform();
+                Vector vector = new Vector(0, 10);
+                translateTransform.SetCurrentValue(System.Windows.Media.TranslateTransform.XProperty, vector.X);
+                translateTransform.SetCurrentValue(System.Windows.Media.TranslateTransform.YProperty, vector.Y);
+                ZoomboxSub.SetCurrentValue(ZoomboxSub.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
+            }
+            else if (e.Key == Key.Add)
+            {
+                ZoomboxSub.Zoom(1.1);
+            }
+            else if (e.Key == Key.Subtract)
+            {
+                ZoomboxSub.Zoom(0.9);
+            }
+        }
+
 
         /// <summary>
         /// 当前的缩放分辨率

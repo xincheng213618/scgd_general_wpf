@@ -159,7 +159,7 @@
                     <Button Command="{Binding ZoomNone}"  Margin="1,0">
                         <Image  Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageexpend}"/>
                     </Button>
-                    <TextBox  Background="Transparent"  BorderBrush="Black"  BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}" />
+                    <TextBox  Background="Transparent" BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}" />
                     <Button Content="属性" Command="{Binding OpenProperty}" />
 
                     <ToggleButton  Click="Button5_Click">

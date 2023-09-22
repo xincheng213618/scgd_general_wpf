@@ -56,6 +56,7 @@ namespace ColorVision.Language
                 {
                     Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(lang);
                     Process.Start(Application.ResourceAssembly.Location.Replace(".dll",".exe"),"-r");
+
                     Application.Current.Shutdown();
                     return true;
                 }
