@@ -12,6 +12,7 @@ namespace ColorVision.Input
     public static class Cursors
     {
         public static Cursor Eraser { get => EnsureCursor("eraser.cur"); }
+        public static Cursor CursorPan { get => EnsureCursor("cursor_pan.cur"); }
 
 
         private static Dictionary<string, Cursor> _stockCursors = new Dictionary<string, Cursor>();
