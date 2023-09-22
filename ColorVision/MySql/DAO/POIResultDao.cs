@@ -16,7 +16,7 @@ namespace ColorVision.MySql.DAO
     }
     public class PoiResultDao : BaseDaoMaster<PoiResultModel>
     {
-        public PoiResultDao() : base(string.Empty, "t_scgd_cfg_poi_reslut_detail", "id", false)
+        public PoiResultDao() : base(string.Empty, "t_scgd_cfg_poi_result_detail", "id", false)
         {
         }
 

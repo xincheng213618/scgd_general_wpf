@@ -298,7 +298,6 @@
                                         </UniformGrid>
                                     </StackPanel>
                                     <Button Content="设置布点区域" Click="ShowDatumArea_Click"/>
-
                                 </StackPanel>
                             </GroupBox>
 

@@ -13,6 +13,7 @@ namespace ColorVision.Draw
         public bool AutoAttributeChanged { get; set; }
         public Point Center { get => Attribute.Center; set => Attribute.Center = value; }
         public double Radius { get => Attribute.Radius; set => Attribute.Radius = value; }
+        public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
 
         public DrawingVisualCircle()
         {

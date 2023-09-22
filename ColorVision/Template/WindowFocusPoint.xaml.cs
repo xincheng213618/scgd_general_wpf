@@ -348,16 +348,10 @@ namespace ColorVision.Template
             {
                 foreach (var item in DrawingVisualLists)
                 {
-                    DrawBaseAttribute drawAttributeBase = item.GetAttribute();
-                    if (drawAttributeBase is CircleAttribute circleAttribute)
-                    {
-                        circleAttribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                    }
-                    else if (drawAttributeBase is RectangleAttribute rectangleAttribute)
-                    {
-                        rectangleAttribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                    }
+                    item.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                    item.Render();
                 }
+
             }
         }
 

@@ -7,6 +7,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Windows.Input;
 using ColorVision.Draw;
+using static ColorVision.ImageView;
 
 namespace ColorVision
 {
@@ -200,6 +201,27 @@ namespace ColorVision
                 NotifyPropertyChanged();
             }
         }
+
+        public bool Measure {
+            get => _Measure;
+            set 
+                {
+                if (_Measure == value) return;
+                _Measure = value;
+                if (value)
+                {
+                    DrawCircle = false;
+                    DrawRect = false;
+                    DrawPolygon = false;
+                    Activate = true;
+                }
+                NotifyPropertyChanged();
+            }
+        }
+        private bool _Measure;
+
+
+
         private bool _DrawPolygon;
 
         public bool DrawPolygon

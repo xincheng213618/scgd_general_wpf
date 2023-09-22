@@ -12,8 +12,7 @@ namespace ColorVision.Draw
         public TextAttribute TextAttribute { get; set; } = new TextAttribute();
 
         [Category("TextAttribute"), DisplayName("Text")]
-        public string Text { get => TextAttribute.Text; set { TextAttribute.Text = value; 
-                NotifyPropertyChanged(); } }
+        public string Text { get => TextAttribute.Text; set { TextAttribute.Text = value;  NotifyPropertyChanged(); } }
         [Category("TextAttribute"), DisplayName("FontSize")]
         public double FontSize { get => TextAttribute.FontSize; set { TextAttribute.FontSize = value; NotifyPropertyChanged(); } }
 
@@ -44,6 +43,7 @@ namespace ColorVision.Draw
         public DrawBaseAttribute GetAttribute() => Attribute;
         public Point Center { get => Attribute.Center; set => Attribute.Center = value; }
         public double Radius { get => Attribute.Radius; set => Attribute.Radius = value; }
+        public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
 
         public DrawingVisualCircleWord()
         {
