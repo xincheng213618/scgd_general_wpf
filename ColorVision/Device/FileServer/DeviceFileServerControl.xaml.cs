@@ -9,16 +9,16 @@ namespace ColorVision.Device.FileServer
     /// </summary>
     public partial class DeviceImageControl : UserControl
     {
-        public DeviceFileServer DeviceImg { get; set; }
+        public DeviceFileServer DeviceFileServer { get; set; }
         public DeviceImageControl(DeviceFileServer device)
         {
-            DeviceImg = device;
+            DeviceFileServer = device;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = DeviceImg;
+            this.DataContext = DeviceFileServer;
         }
 
 

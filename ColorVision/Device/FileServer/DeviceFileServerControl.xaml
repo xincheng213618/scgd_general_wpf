@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:ColorVision.Device.FileServer"
              xmlns:resx="clr-namespace:ColorVision.Properties"
              mc:Ignorable="d" 
-             d:DataContext="{d:DesignInstance local:DeviceImage}"
+             d:DataContext="{d:DesignInstance local:DeviceFileServer}"
              d:DesignHeight="450" d:DesignWidth="800" Initialized="UserControl_Initialized">
         <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}">
@@ -35,8 +35,8 @@
                                 <GroupBox Header="基本信息" Margin="0,5">
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="0,2">
-                                            <TextBlock Text="图片目录" Width="120"/>
-                                            <TextBlock Text="{Binding Config.ImgPath}"/>
+                                            <TextBlock Text="文件目录" Width="120"/>
+                                            <TextBlock Text="{Binding Config.FileBasePath}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,2">
                                             <TextBlock Text="端口地址" Width="120"/>
@@ -77,7 +77,7 @@
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="0,5">
                                             <TextBlock  Text="图片目录"  Width="120"/>
-                                            <TextBox  x:Name="TextBox_ImgPath" Text="{Binding Config.ImgPath}"/>
+                                            <TextBox  x:Name="TextBox_ImgPath" Text="{Binding Config.FileBasePath}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,5">
                                             <TextBlock  Text="端口地址" Width="120"/>

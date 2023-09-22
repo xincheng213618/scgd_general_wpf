@@ -11,22 +11,22 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Device.FileServer
 {
-    public class ImageEventName
+    public class FileServerEventName
     {
         public const string Heartbeat = "Heartbeat";
     }
-    public class ImageDataEvent
+    public class FileServerDataEvent
     {
         public string EventName { get; set; }
         public dynamic Data { get; set; }
 
-        public ImageDataEvent(string EventName, dynamic Data)
+        public FileServerDataEvent(string EventName, dynamic Data)
         {
             this.EventName = EventName;
             this.Data = Data;
         }
     }
-    public delegate void MQTTImageDataHandler(object sender, ImageDataEvent arg);
+    public delegate void MQTTImageDataHandler(object sender, FileServerDataEvent arg);
     public class FileServerService : BaseService<FileServerConfig>
     {
         public event MQTTImageDataHandler OnImageData;
@@ -56,9 +56,9 @@ namespace ColorVision.Device.FileServer
                         return Task.CompletedTask;
                     if (json.Code == 0 && json.ServiceName.Equals(Config.Code, StringComparison.Ordinal))
                     {
-                        if (!json.EventName.Equals(ImageEventName.Heartbeat, StringComparison.Ordinal))
+                        if (!json.EventName.Equals(FileServerEventName.Heartbeat, StringComparison.Ordinal))
                         {
-                            OnImageData?.Invoke(this, new ImageDataEvent(json.EventName, json.Data));
+                            OnImageData?.Invoke(this, new FileServerDataEvent(json.EventName, json.Data));
                         }
                     }
                 }
