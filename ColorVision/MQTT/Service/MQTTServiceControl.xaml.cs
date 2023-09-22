@@ -1,6 +1,6 @@
 ﻿using ColorVision.Device;
 using ColorVision.Device.Camera;
-using ColorVision.Device.Image;
+using ColorVision.Device.FileServer;
 using ColorVision.Device.PG;
 using ColorVision.Device.Sensor;
 using ColorVision.Device.SMU;
@@ -148,13 +148,13 @@ namespace ColorVision.MQTT.Service
                 }
                 else if (mQTTService.Type == DeviceType.Image)
                 {
-                    ImageConfig config = new ImageConfig
+                    FileServerConfig config = new FileServerConfig
                     {
 
                     };
                     SysResourceModel model = saveConfigInfo(config, sysResource);
                     if (model != null)
-                        mQTTService.AddChild(new DeviceImage(model));
+                        mQTTService.AddChild(new DeviceFileServer(model));
                 }
 
                 MessageBox.Show("添加资源成功");

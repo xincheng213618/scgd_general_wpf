@@ -1,6 +1,6 @@
-﻿namespace ColorVision.Device.Image
+﻿namespace ColorVision.Device.FileServer
 {
-    public class ImageConfig : BaseDeviceConfig
+    public class FileServerConfig : BaseDeviceConfig
     {
         public string Endpoint { get => _Endpoint; set { _Endpoint = value;NotifyPropertyChanged(); } }
         private string _Endpoint;

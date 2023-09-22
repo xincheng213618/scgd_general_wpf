@@ -2,15 +2,15 @@
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Device.Image
+namespace ColorVision.Device.FileServer
 {
     /// <summary>
     /// DeviceImageControl.xaml 的交互逻辑
     /// </summary>
     public partial class DeviceImageControl : UserControl
     {
-        public DeviceImage DeviceImg { get; set; }
-        public DeviceImageControl(DeviceImage device)
+        public DeviceFileServer DeviceImg { get; set; }
+        public DeviceImageControl(DeviceFileServer device)
         {
             DeviceImg = device;
             InitializeComponent();

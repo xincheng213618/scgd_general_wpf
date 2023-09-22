@@ -1,4 +1,5 @@
 ﻿using log4net;
+using MQTTMessageLib.FileServer;
 using NetMQ;
 using NetMQ.Sockets;
 using Newtonsoft.Json;
@@ -11,7 +12,7 @@ using System.Windows;
 using System.Windows.Controls;
 
 
-namespace ColorVision.Device.Image
+namespace ColorVision.Device.FileServer
 {
     /// <summary>
     /// ImageDisplayControl.xaml 的交互逻辑
@@ -19,11 +20,11 @@ namespace ColorVision.Device.Image
     public partial class ImageDisplayControl : UserControl
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(ImageDisplayControl));
-        public DeviceImage DeviceImg { get; set; }
+        public DeviceFileServer DeviceImg { get; set; }
 
         public ImageView View { get => DeviceImg.View; }
 
-        public ImageDisplayControl(DeviceImage deviceImg)
+        public ImageDisplayControl(DeviceFileServer deviceImg)
         {
             DeviceImg = deviceImg;
             InitializeComponent();
@@ -35,14 +36,14 @@ namespace ColorVision.Device.Image
         {
             switch (arg.EventName)
             {
-                case ImageEventName.GetAllFiles:
+                case MQTTFileServerEventEnum.Event_GetAllFiles:
                     List<string> data = JsonConvert.DeserializeObject<List<string>>(JsonConvert.SerializeObject(arg.Data));
                     Application.Current.Dispatcher.Invoke(() => {
                         FilesView.ItemsSource = data;
                         FilesView.SelectedIndex = 0;
                     });
                     break;
-                case ImageEventName.UploadFile:
+                case MQTTFileServerEventEnum.Event_UploadFile:
                     handler?.Close();
                     break;
                 default:
