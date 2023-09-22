@@ -295,7 +295,18 @@ namespace ColorVision
             {
                 if (_EraseVisual == value) return;
                     _EraseVisual = value;
-                    NotifyPropertyChanged();
+                if (value)
+                {
+                    ZoomboxSub.Cursor = Input.Cursors.Eraser;
+                }
+                else
+                {
+                    ZoomboxSub.Cursor = Cursors.Hand;
+                }
+
+
+
+                NotifyPropertyChanged();
             }
         }
 

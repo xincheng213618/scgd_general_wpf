@@ -26,7 +26,6 @@
     <None Remove="Image\ColorVision.png" />
     <None Remove="Image\ColorVision1.ico" />
     <None Remove="Image\connect.png" />
-    <None Remove="Image\Cursor\Eraser.cur" />
   </ItemGroup>  
 
   <ItemGroup>
@@ -85,7 +84,6 @@
     <Resource Include="Image\ColorVision.png" />
     <Resource Include="Image\ColorVision1.ico" />
     <Resource Include="Image\connect.png" />
-    <Resource Include="Image\Cursor\Eraser.cur" />
   </ItemGroup>
 
   <ItemGroup>
