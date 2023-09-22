@@ -34,8 +34,8 @@ namespace ColorVision
         }
         public MainWindow()
         {
-
             InitializeComponent();
+
             if (SoftwareSetting.IsRestoreWindow && SoftwareSetting.Height != 0 && SoftwareSetting.Width != 0)
             {
                 this.Top = SoftwareSetting.Top;
@@ -56,8 +56,7 @@ namespace ColorVision
         }
 
         private void Window_Initialized(object sender, EventArgs e)
-        {
-            
+        {          
             GlobalSetting = GlobalSetting.GetInstance();
             FlowDisplayControl flowDisplayControl = new FlowDisplayControl();
             SPDisplay.Children.Insert(0, flowDisplayControl);
@@ -83,7 +82,6 @@ namespace ColorVision
             StatusBarGrid.DataContext = GlobalSetting.GetInstance();
             MenuStatusBar.DataContext = GlobalSetting.GetInstance().SoftwareConfig;
 
-
             DeviceAlgorithm deviceAlgorithm = new DeviceAlgorithm(new MySql.DAO.SysResourceModel());
             SPDisplay.Children.Add(deviceAlgorithm.Control);
 
@@ -91,6 +89,7 @@ namespace ColorVision
             this.Closed += (s, e) => {  Environment.Exit(-1); };
             Debug.WriteLine("启动成功");
         }
+
         private void MenuStatusBar_Click(object sender, RoutedEventArgs e)
         {
             if (sender is MenuItem menuItem)
@@ -138,16 +137,6 @@ namespace ColorVision
         private void Login_Click(object sender, RoutedEventArgs e)
         {
             new LoginWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-
-
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            LoginWindow loginWindow = new LoginWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            loginWindow.ShowDialog();
-
-
         }
     }
 }

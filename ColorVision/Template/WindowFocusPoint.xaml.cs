@@ -467,49 +467,6 @@ namespace ColorVision.Template
                 PoiParam.Width = 400;
                 PoiParam.Height = 300;
             }
-            PreviewKeyDown += (s, e) =>
-            {
-                if (e.Key == Key.Left)
-                {
-                    TranslateTransform translateTransform = new TranslateTransform();
-                    Vector vector = new Vector(-10, 0);
-                    translateTransform.SetCurrentValue(System.Windows.Media.TranslateTransform.XProperty, vector.X);
-                    translateTransform.SetCurrentValue(System.Windows.Media.TranslateTransform.YProperty, vector.Y);
-                    Zoombox1.SetCurrentValue(ZoomboxSub.ContentMatrixProperty, Matrix.Multiply(Zoombox1.ContentMatrix, translateTransform.Value));
-                }
-                else if (e.Key == Key.Right)
-                {
-                    TranslateTransform translateTransform = new TranslateTransform();
-                    Vector vector = new Vector(10, 0);
-                    translateTransform.SetCurrentValue(System.Windows.Media.TranslateTransform.XProperty, vector.X);
-                    translateTransform.SetCurrentValue(System.Windows.Media.TranslateTransform.YProperty, vector.Y);
-                    Zoombox1.SetCurrentValue(ZoomboxSub.ContentMatrixProperty, Matrix.Multiply(Zoombox1.ContentMatrix, translateTransform.Value));
-                }
-                else if (e.Key == Key.Up)
-                {
-                    TranslateTransform translateTransform = new TranslateTransform();
-                    Vector vector = new Vector(0, -10);
-                    translateTransform.SetCurrentValue(System.Windows.Media.TranslateTransform.XProperty, vector.X);
-                    translateTransform.SetCurrentValue(System.Windows.Media.TranslateTransform.YProperty, vector.Y);
-                    Zoombox1.SetCurrentValue(ZoomboxSub.ContentMatrixProperty, Matrix.Multiply(Zoombox1.ContentMatrix, translateTransform.Value));
-                }
-                else if (e.Key == Key.Down)
-                {
-                    TranslateTransform translateTransform = new TranslateTransform();
-                    Vector vector = new Vector(0, 10);
-                    translateTransform.SetCurrentValue(System.Windows.Media.TranslateTransform.XProperty, vector.X);
-                    translateTransform.SetCurrentValue(System.Windows.Media.TranslateTransform.YProperty, vector.Y);
-                    Zoombox1.SetCurrentValue(ZoomboxSub.ContentMatrixProperty, Matrix.Multiply(Zoombox1.ContentMatrix, translateTransform.Value));
-                }
-                else if (e.Key == Key.Add)
-                {
-                    Zoombox1.Zoom(1.1);
-                }
-                else if (e.Key == Key.Subtract)
-                {
-                    Zoombox1.Zoom(0.9);
-                }
-            };
 
             this.Closed += (s, e) =>
             {
