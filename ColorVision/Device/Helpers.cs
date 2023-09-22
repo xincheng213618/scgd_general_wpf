@@ -4,6 +4,7 @@ using ColorVision.MQTT;
 using ColorVision.Extension;
 using System.Threading.Tasks;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace ColorVision.Device
 {
@@ -13,9 +14,12 @@ namespace ColorVision.Device
         public static IPendingHandler SendCommand(MsgRecord msgRecord,string Msg)
         {
             handler = PendingBox.Show(Application.Current.MainWindow, Msg, true);
+            var temp = Application.Current.MainWindow.Cursor;
+            Application.Current.MainWindow.Cursor = Cursors.Wait;
             handler.Cancelling += delegate
             {
                 handler.Close();
+                Application.Current.MainWindow.Cursor = temp;
             };
             MsgRecordStateChangedHandler msgRecordStateChangedHandler = async (e) =>
             {
@@ -29,6 +33,10 @@ namespace ColorVision.Device
                     }
                 }
                 catch { }
+                finally
+                {
+                    Application.Current.MainWindow.Cursor = temp;
+                }
             };
             msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
             return handler;
