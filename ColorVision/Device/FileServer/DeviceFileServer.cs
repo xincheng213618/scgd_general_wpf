@@ -2,19 +2,19 @@
 using ColorVision.MySql.DAO;
 using System.Windows.Controls;
 
-namespace ColorVision.Device.Image
+namespace ColorVision.Device.FileServer
 {
-    public class DeviceImage : BaseDevice<ImageConfig>
+    public class DeviceFileServer : BaseDevice<FileServerConfig>
     {
-        public ImageService Service { get; set; }
+        public FileServerService Service { get; set; }
 
         public ImageDisplayControl Control { get; set; }
 
         public ImageView View { get; set; }
 
-        public DeviceImage(SysResourceModel sysResourceModel) : base(sysResourceModel)
+        public DeviceFileServer(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
-            Service = new ImageService(Config);
+            Service = new FileServerService(Config);
             View = new ImageView();
         }
 

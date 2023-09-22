@@ -1,5 +1,5 @@
 ﻿using ColorVision.Device.Camera;
-using ColorVision.Device.Image;
+using ColorVision.Device.FileServer;
 using ColorVision.Device.PG;
 using ColorVision.Device.Sensor;
 using ColorVision.Device.SMU;
@@ -212,7 +212,7 @@ namespace ColorVision.MQTT.Service
                                         MQTTDevices.Add(device1);
                                         break;
                                     case DeviceType.Image:
-                                        DeviceImage img = new DeviceImage(device);
+                                        DeviceFileServer img = new DeviceFileServer(device);
                                         mQTTService.AddChild(img);
                                         MQTTDevices.Add(img);
                                         break;

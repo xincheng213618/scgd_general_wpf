@@ -64,6 +64,9 @@
     <Reference Include="Microsoft.DwayneNeed.Win32">
       <HintPath>..\DLL\Microsoft.DwayneNeed.Win32.dll</HintPath>
     </Reference>
+    <Reference Include="MQTTMessageLib">
+      <HintPath>..\DLL\MQTTMessageLib.dll</HintPath>
+    </Reference>
     <Reference Include="OpenH264Lib">
       <HintPath>..\DLL\OpenH264Lib.dll</HintPath>
     </Reference>

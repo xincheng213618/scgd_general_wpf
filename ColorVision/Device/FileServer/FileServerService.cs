@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CA1710 // 标识符应具有正确的后缀
 
 using ColorVision.MQTT;
+using MQTTMessageLib.FileServer;
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using System;
@@ -8,13 +9,10 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ColorVision.Device.Image
+namespace ColorVision.Device.FileServer
 {
     public class ImageEventName
     {
-        public const string GetAllFiles = "GetAllFiles";
-        public const string UploadFile = "UploadFile";
-        public const string Open = "Open";
         public const string Heartbeat = "Heartbeat";
     }
     public class ImageDataEvent
@@ -29,10 +27,10 @@ namespace ColorVision.Device.Image
         }
     }
     public delegate void MQTTImageDataHandler(object sender, ImageDataEvent arg);
-    public class ImageService : BaseService<ImageConfig>
+    public class FileServerService : BaseService<FileServerConfig>
     {
         public event MQTTImageDataHandler OnImageData;
-        public ImageService(ImageConfig config) : base(config)
+        public FileServerService(FileServerConfig config) : base(config)
         {
             Config = config;
 
@@ -61,7 +59,6 @@ namespace ColorVision.Device.Image
                         if (!json.EventName.Equals(ImageEventName.Heartbeat, StringComparison.Ordinal))
                         {
                             OnImageData?.Invoke(this, new ImageDataEvent(json.EventName, json.Data));
-
                         }
                     }
                 }
@@ -77,7 +74,7 @@ namespace ColorVision.Device.Image
         {
             MsgSend msg = new MsgSend
             {
-                EventName = ImageEventName.Open,
+                EventName = MQTTFileServerEventEnum.Event_DownloadFile,
                 ServiceName = Config.Code,
                 Params = new Dictionary<string,object> { { "FileName", fileName } }
             };
@@ -88,7 +85,7 @@ namespace ColorVision.Device.Image
         {
             MsgSend msg = new MsgSend
             {
-                EventName = ImageEventName.GetAllFiles,
+                EventName = MQTTFileServerEventEnum.Event_GetAllFiles,
                 ServiceName = Config.Code
             };
             PublishAsyncClient(msg);
@@ -98,7 +95,7 @@ namespace ColorVision.Device.Image
         {
             MsgSend msg = new MsgSend
             {
-                EventName = ImageEventName.UploadFile,
+                EventName = MQTTFileServerEventEnum.Event_UploadFile,
                 ServiceName = Config.Code,
                 Params = new Dictionary<string, object> { { "FileName", fileName } }
             };
