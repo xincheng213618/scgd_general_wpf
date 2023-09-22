@@ -417,7 +417,6 @@ namespace ColorVision
                         DrawingVisualRulerCache.Render();
                     }
                 }
-
                 if (IsMouseDown)
                 {
                     if (ToolBarTop.EraseVisual)
@@ -426,19 +425,29 @@ namespace ColorVision
                     }
                     else if (ToolBarTop.DrawCircle)
                     {
-                        double Radius = Math.Sqrt((Math.Pow(point.X - MouseDownP.X, 2) + Math.Pow(point.Y - MouseDownP.Y, 2)));
-                        DrawCircleCache.Attribute.Radius = Radius;
-                        DrawCircleCache.Render();
+                        if (DrawCircleCache != null)
+                        {
+                            double Radius = Math.Sqrt((Math.Pow(point.X - MouseDownP.X, 2) + Math.Pow(point.Y - MouseDownP.Y, 2)));
+                            DrawCircleCache.Attribute.Radius = Radius;
+                            DrawCircleCache.Render();
+                        }
                     }
                     else if (ToolBarTop.DrawRect)
                     {
-                        DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, point);
-                        DrawingRectangleCache.Render();
+                        if (DrawingRectangleCache != null)
+                        {
+                            DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, point);
+                            DrawingRectangleCache.Render();
+                        }
                     }
                     else if (ToolBarTop.DrawPolygon)
                     {
-                        DrawingVisualPolygonCache.Attribute.Points[^1] = point;
-                        DrawingVisualPolygonCache.Render();
+                        if (DrawingVisualPolygonCache != null)
+                        {
+                            DrawingVisualPolygonCache.Attribute.Points[^1] = point;
+                            DrawingVisualPolygonCache.Render();
+                        }
+
                     }
                     else if (SelectDCircle != null)
                     {

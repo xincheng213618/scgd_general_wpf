@@ -28,7 +28,6 @@ namespace ColorVision.SettingUp
         {
             InitializeComponent();
         }
-
         private void Window_Initialized(object sender, EventArgs e)
         {
             SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
@@ -59,9 +58,6 @@ namespace ColorVision.SettingUp
                 if (cmlauage.SelectedValue is string str)
                     LanguageManager.Current.LanguageChange(str);
             };
-
-            //BitmapImage bitmapImage = new BitmapImage(new Uri(AppDomain.CurrentDomain.BaseDirectory + SoftwareConfig.UserConfig.UserImage));
-            //HeaderImage.Source = bitmapImage;
         }
 
         private void Cmtheme_SelectionChanged(object sender, SelectionChangedEventArgs e)

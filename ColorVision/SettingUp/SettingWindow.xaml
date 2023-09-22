@@ -120,8 +120,6 @@
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
-
-
                         </GroupBox>
                     </StackPanel>
                 </ScrollViewer>
