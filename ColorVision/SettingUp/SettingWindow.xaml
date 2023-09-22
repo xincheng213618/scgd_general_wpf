@@ -199,14 +199,14 @@
                                 <Border Style="{StaticResource BorderModuleArea}" CornerRadius="8">
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="5" >
-                                            <Button DockPanel.Dock="Right" Content="重置" Click="SetProjectDefaultCreatName_Click"  Width="80"/>
-                                            <TextBlock Text="新建工程格式:" Width="110" />
+                                            <Button DockPanel.Dock="Right" Content="{x:Static resx:Resource.Reset}" Click="SetProjectDefaultCreatName_Click"  />
+                                            <TextBlock Text="新建工程格式:" MinWidth="150" />
                                             <TextBox Text="{Binding SolutionConfig.SolutionSetting.DefaultCreatName}" HorizontalAlignment="Left" Width="200"/>
                                         </DockPanel>
 
                                         <DockPanel Margin="5" >
-                                            <Button DockPanel.Dock="Right" Content="重置" Click="SetProjectDefault__Click"  Width="80"/>
-                                            <TextBlock Text="默认文件存储格式:" Width="110" />
+                                            <Button DockPanel.Dock="Right" Content="{x:Static resx:Resource.Reset}" Click="SetProjectDefault__Click"  />
+                                            <TextBlock Text="默认文件存储格式:"  MinWidth="150"  />
                                             <TextBox Text="{Binding SolutionConfig.SolutionSetting.DefaultSaveName}" HorizontalAlignment="Left" Width="200" />
                                         </DockPanel>
                                     </StackPanel>

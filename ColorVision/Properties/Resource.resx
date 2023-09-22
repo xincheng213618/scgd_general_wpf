@@ -273,4 +273,10 @@
   <data name="Submit" xml:space="preserve">
     <value>提交</value>
   </data>
+  <data name="Reset" xml:space="preserve">
+    <value>重置</value>
+  </data>
+  <data name="Reseted" xml:space="preserve">
+    <value>已重置</value>
+  </data>
 </root>

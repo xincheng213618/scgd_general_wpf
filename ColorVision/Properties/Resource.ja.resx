@@ -273,4 +273,10 @@
   <data name="Submit" xml:space="preserve">
     <value>提出する</value>
   </data>
+  <data name="Reset" xml:space="preserve">
+    <value>リセット</value>
+  </data>
+  <data name="Reseted" xml:space="preserve">
+    <value>リセット完了</value>
+  </data>
 </root>

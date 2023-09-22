@@ -421,6 +421,24 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 重置 的本地化字符串。
+        /// </summary>
+        public static string Reset {
+            get {
+                return ResourceManager.GetString("Reset", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已重置 的本地化字符串。
+        /// </summary>
+        public static string Reseted {
+            get {
+                return ResourceManager.GetString("Reseted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 向下还原 的本地化字符串。
         /// </summary>
         public static string Restore {

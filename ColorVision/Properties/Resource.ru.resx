@@ -273,4 +273,10 @@
   <data name="Submit" xml:space="preserve">
     <value>представлять на рассмотрение</value>
   </data>
+  <data name="Reset" xml:space="preserve">
+    <value>перезагрузить</value>
+  </data>
+  <data name="Reseted" xml:space="preserve">
+    <value>Сброс завершен</value>
+  </data>
 </root>

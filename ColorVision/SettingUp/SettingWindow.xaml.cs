@@ -112,7 +112,7 @@ namespace ColorVision.SettingUp
             if (sender is Button button)
             {
                 SoftwareConfig.SolutionConfig.SolutionSetting.DefaultSaveName = "yyyy/dd/MM HH:mm:ss";
-                ButtonContentChange(button, "已重置");
+                ButtonContentChange(button, Properties.Resource.Reseted);
             }
 
         }
@@ -122,7 +122,7 @@ namespace ColorVision.SettingUp
             if (sender is Button button)
             {
                 SoftwareConfig.SolutionConfig.SolutionSetting.DefaultCreatName = "新建工程";
-                ButtonContentChange(button, "已重置");
+                ButtonContentChange(button, Properties.Resource.Reseted);
             }
         }
 

@@ -273,4 +273,10 @@
   <data name="Submit" xml:space="preserve">
     <value>제출</value>
   </data>
+  <data name="Reset" xml:space="preserve">
+    <value>초기화</value>
+  </data>
+  <data name="Reseted" xml:space="preserve">
+    <value>재설정 완료</value>
+  </data>
 </root>
