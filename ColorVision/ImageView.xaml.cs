@@ -79,10 +79,8 @@ namespace ColorVision
             };
             ImageShow.ImageInitialized += (s, e) =>
             {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
+                if (!GridEx.Children.Contains(ruler))
                     GridEx.Children.Add(ruler);
-                });
             };
 
 

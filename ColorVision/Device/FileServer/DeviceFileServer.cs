@@ -8,7 +8,7 @@ namespace ColorVision.Device.FileServer
     {
         public FileServerService Service { get; set; }
 
-        public ImageDisplayControl Control { get; set; }
+        public FileServerDisplayControl Control { get; set; }
 
         public ImageView View { get; set; }
 
@@ -18,8 +18,8 @@ namespace ColorVision.Device.FileServer
             View = new ImageView();
         }
 
-        public override UserControl GetDeviceControl() => new DeviceImageControl(this);
-        public override UserControl GetDisplayControl() => Control??new ImageDisplayControl(this);
+        public override UserControl GetDeviceControl() => new DeviceFileServerControl(this);
+        public override UserControl GetDisplayControl() => Control??new FileServerDisplayControl(this);
 
     }
 }
