@@ -17,14 +17,14 @@ namespace ColorVision.Device.FileServer
     /// <summary>
     /// ImageDisplayControl.xaml 的交互逻辑
     /// </summary>
-    public partial class ImageDisplayControl : UserControl
+    public partial class FileServerDisplayControl : UserControl
     {
-        private static readonly ILog logger = LogManager.GetLogger(typeof(ImageDisplayControl));
+        private static readonly ILog logger = LogManager.GetLogger(typeof(FileServerDisplayControl));
         public DeviceFileServer DeviceImg { get; set; }
 
         public ImageView View { get => DeviceImg.View; }
 
-        public ImageDisplayControl(DeviceFileServer deviceImg)
+        public FileServerDisplayControl(DeviceFileServer deviceImg)
         {
             DeviceImg = deviceImg;
             InitializeComponent();

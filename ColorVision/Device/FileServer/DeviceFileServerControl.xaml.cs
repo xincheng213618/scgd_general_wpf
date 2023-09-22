@@ -7,10 +7,10 @@ namespace ColorVision.Device.FileServer
     /// <summary>
     /// DeviceImageControl.xaml 的交互逻辑
     /// </summary>
-    public partial class DeviceImageControl : UserControl
+    public partial class DeviceFileServerControl : UserControl
     {
         public DeviceFileServer DeviceFileServer { get; set; }
-        public DeviceImageControl(DeviceFileServer device)
+        public DeviceFileServerControl(DeviceFileServer device)
         {
             DeviceFileServer = device;
             InitializeComponent();
