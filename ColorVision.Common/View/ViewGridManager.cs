@@ -144,11 +144,16 @@ namespace ColorVision
                 if (control.Parent is Grid grid)
                     grid.Children.Remove(control);
 
-                if (Grids[viewIndex].Children.Count>0 &&Grids[viewIndex].Children[0] is IView view1)
+                if (Grids.Count > viewIndex )
                 {
-                    view1.View.ViewIndex = -1;
+                    if (Grids[viewIndex].Children.Count == 1 && Grids[viewIndex].Children[0] is IView view1)
+                        view1.View.ViewIndex = -1;
+                    if (Grids[viewIndex].Children.Count == 2 && Grids[viewIndex].Children[1] is IView view2)
+                        view2.View.ViewIndex = -1;
                 }
-                
+
+
+
                 Grids[viewIndex].Children.Clear();
                 Grids[viewIndex].Children.Add(control);
             }
@@ -251,7 +256,7 @@ namespace ColorVision
                 if (Views[i].Parent is Grid grid)
                     grid.Children.Remove(Views[i]);
 
-                //Grids[i].Children.Clear();
+                Grids[i].Children.Clear();
                 Grids[i].Children.Add(Views[i]);
             }
         }

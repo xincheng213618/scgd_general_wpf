@@ -203,7 +203,7 @@ namespace ColorVision
         private bool IsMouseDown;
         private Point MouseDownP;
         private DrawingVisualCircle? SelectDCircle;
-        private DrawingVisualRectangle? SelectDRectangle;
+        private DrawingVisualRectangle? SelectRectangle;
 
         private DrawingVisualCircle DrawCircleCache;
         private DrawingVisualRectangle DrawingRectangleCache;
@@ -283,7 +283,6 @@ namespace ColorVision
                 DrawingVisualRulerCache.Render();
                 DrawingVisualRulerCache = null;
             }
-
         }
 
 
@@ -365,7 +364,7 @@ namespace ColorVision
                         {
                             if (drawingVisual is DrawingVisualRectangle Rectangle)
                             {
-                                SelectDRectangle = Rectangle;
+                                SelectRectangle = Rectangle;
                             }
                             else if (drawingVisual is DrawingVisualCircle Circl)
                             {
@@ -447,17 +446,15 @@ namespace ColorVision
                             DrawingVisualPolygonCache.Attribute.Points[^1] = point;
                             DrawingVisualPolygonCache.Render();
                         }
-
                     }
                     else if (SelectDCircle != null)
                     {
                         SelectDCircle.Attribute.Center += point - LastMouseMove;
                     }
-                    else if (SelectDRectangle != null)
+                    else if (SelectRectangle != null)
                     {
-                        var OldRect = SelectDRectangle.Attribute.Rect;
-                        SelectDRectangle.Attribute.Rect = new Rect(OldRect.X + point.X - LastMouseMove.X, OldRect.Y + point.Y - LastMouseMove.Y, OldRect.Width, OldRect.Height);
-
+                        var OldRect = SelectRectangle.Attribute.Rect;
+                        SelectRectangle.Attribute.Rect = new Rect(OldRect.X + point.X - LastMouseMove.X, OldRect.Y + point.Y - LastMouseMove.Y, OldRect.Width, OldRect.Height);
                     }
                 }
 

@@ -145,11 +145,14 @@ namespace ColorVision
                 else
                 {
                     ZoomboxSub.ActivateOn = ModifierKeys.None;
-                    ZoomboxSub.Cursor = Cursors.Arrow;
+                    ZoomboxSub.Cursor = Cursors.Hand;
                 }
                 NotifyPropertyChanged();
             }
         }
+
+
+
 
         public void DrawImage(Point actPoint, Point disPoint, ImageInfo imageInfo)
         {
