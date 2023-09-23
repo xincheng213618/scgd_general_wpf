@@ -27,12 +27,9 @@ namespace ColorVision.Draw
         public double ActualLength { get; set; } = 1;
         public string PhysicalUnit { get; set; } = "Px";
 
-
-        public List<Point> Points { get; set; } = new List<Point>();
+        public List<Point> Points { get => Attribute.Points;}
 
         public Point? MovePoints { get; set; }
-
-        public bool DrawOver { get; set; }
 
         public override void Render()
         {

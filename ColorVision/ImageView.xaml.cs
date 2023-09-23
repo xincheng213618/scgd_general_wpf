@@ -131,6 +131,9 @@ namespace ColorVision
                     BorderPropertieslayers.Visibility = BorderPropertieslayers.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
                 }
 
+            };
+            this.PreviewKeyDown += (s, e) =>
+            {
                 if (e.Key == Key.Escape)
                 {
                     if (DrawingVisualRulerCache != null)
@@ -140,9 +143,18 @@ namespace ColorVision
                     }
                 }
             };
+            this.PreviewKeyDown += (s,e)=>
+            {
+                if (e.Key == Key.Escape)
+                {
+                    if (DrawingVisualPolygonCache != null)
+                    {
+                        ImageShow.RemoveVisual(DrawingVisualPolygonCache);
+                        DrawingVisualPolygonCache.Render();
+                    }
+                }
+            };
         }
-
-
 
         private void Zoombox1_LayoutUpdated(object? sender, EventArgs e)
         {
@@ -182,9 +194,9 @@ namespace ColorVision
 
         private void DrawImageRuler()
         {
-            if (ImageShow.Source is BitmapImage bitmapImage)
+            if (ImageShow.Source is BitmapSource bitmapSource)
             {
-                double X = 1 / Zoombox1.ContentMatrix.M11 * bitmapImage.PixelWidth / 100;
+                double X = 1 / Zoombox1.ContentMatrix.M11 * bitmapSource.PixelWidth / 100;
                 ruler.Render(X);
             }
         }
@@ -204,7 +216,7 @@ namespace ColorVision
 
         private DrawingVisualCircle DrawCircleCache;
         private DrawingVisualRectangle DrawingRectangleCache;
-        private DrawingVisualPolygon DrawingVisualPolygonCache;
+        private DrawingVisualPolygon? DrawingVisualPolygonCache;
 
 
         private void ImageShow_Initialized(object sender, EventArgs e)
@@ -280,6 +292,12 @@ namespace ColorVision
                 DrawingVisualRulerCache.Render();
                 DrawingVisualRulerCache = null;
             }
+            if (DrawingVisualPolygonCache != null)
+            {
+                DrawingVisualPolygonCache.MovePoints = null;
+                DrawingVisualPolygonCache.Render();
+                DrawingVisualPolygonCache = null;
+            }
         }
 
 
@@ -287,9 +305,10 @@ namespace ColorVision
         {
             if (sender is DrawCanvas drawCanvas && !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn))
             {
+                drawCanvas.CaptureMouse();
+
                 MouseDownP = e.GetPosition(drawCanvas);
                 IsMouseDown = true;
-                drawCanvas.CaptureMouse();
 
                 if (ToolBarTop.EraseVisual)
                 {
@@ -304,8 +323,6 @@ namespace ColorVision
                         DrawingVisualRulerCache.Pen.Thickness = 1 / Zoombox1.ContentMatrix.M11;
                         drawCanvas.AddVisual(DrawingVisualRulerCache);
                     }
-                    //DrawingVisualRulerCache.Points.Add(MouseDownP);
-
                 }
                 else if (ToolBarTop.DrawCircle)
                 {
@@ -326,16 +343,10 @@ namespace ColorVision
                 {
                     if (DrawingVisualPolygonCache == null)
                     {
-                        DrawingVisualPolygonCache = new DrawingVisualPolygon() { AutoAttributeChanged = false };
-                        DrawingVisualPolygonCache.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                        DrawingVisualPolygonCache.Attribute.Points.Add(MouseDownP);
+                        DrawingVisualPolygonCache = new DrawingVisualPolygon();
+                        DrawingVisualPolygonCache.Attribute.Pen.Thickness = 1 / Zoombox1.ContentMatrix.M11;
                         drawCanvas.AddVisual(DrawingVisualPolygonCache);
                     }
-                    else
-                    {
-                        DrawingVisualPolygonCache.Attribute.Points.Add(MouseDownP);
-                    }
-                    this.KeyDown += DrawingVisualPolygonKeyDown;
                 }
                 else
                 {
@@ -376,22 +387,6 @@ namespace ColorVision
             }
         }
 
-
-        public void DrawingVisualPolygonKeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Enter && e.Key == Key.Escape)
-            {
-                if (DrawingVisualPolygonCache != null)
-                {
-                    DrawingVisualPolygonCache.Attribute.Points.Add(MouseDownP);
-                    DrawingVisualPolygonCache.IsDrawing = false;
-                    DrawingVisualPolygonCache.Render();
-                    DrawingVisualPolygonCache.AutoAttributeChanged = true;
-                }
-                this.KeyDown -= DrawingVisualPolygonKeyDown;
-            }
-        }
-
         Point LastMouseMove;
 
 
@@ -401,10 +396,6 @@ namespace ColorVision
             {
                 var point = e.GetPosition(drawCanvas);
 
-                var controlWidth = drawCanvas.ActualWidth;
-                var controlHeight = drawCanvas.ActualHeight;
-
-
                 if (ToolBarTop.Measure)
                 {
                     if (DrawingVisualRulerCache != null)
@@ -413,6 +404,15 @@ namespace ColorVision
                         DrawingVisualRulerCache.Render();
                     }
                 }
+                if (ToolBarTop.DrawPolygon)
+                {
+                    if (DrawingVisualPolygonCache != null)
+                    {
+                        DrawingVisualPolygonCache.MovePoints = point;
+                        DrawingVisualPolygonCache.Render();
+                    }
+                }
+
                 if (IsMouseDown)
                 {
                     if (ToolBarTop.EraseVisual)
@@ -434,14 +434,6 @@ namespace ColorVision
                         {
                             DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, point);
                             DrawingRectangleCache.Render();
-                        }
-                    }
-                    else if (ToolBarTop.DrawPolygon)
-                    {
-                        if (DrawingVisualPolygonCache != null)
-                        {
-                            DrawingVisualPolygonCache.Attribute.Points[^1] = point;
-                            DrawingVisualPolygonCache.Render();
                         }
                     }
                     else if (SelectDCircle != null)
@@ -480,6 +472,16 @@ namespace ColorVision
                         DrawingVisualRulerCache.MovePoints = null;
                         DrawingVisualRulerCache.Render();
                     }
+                }
+                else if (ToolBarTop.DrawPolygon)
+                {
+                    if (DrawingVisualPolygonCache != null)
+                    {
+                        DrawingVisualPolygonCache.Points.Add(MouseUpP);
+                        DrawingVisualPolygonCache.MovePoints = null;
+                        DrawingVisualPolygonCache.Render();
+                    }
+
                 }
                 else if (ToolBarTop.DrawCircle)
                 {

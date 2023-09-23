@@ -42,21 +42,15 @@ namespace ColorVision
             DrawVisualImage = new DrawingVisual();
             OpenProperty = new RelayCommand(a => new DrawProperties().Show());
             Parent.PreviewKeyDown += PreviewKeyDown;
-            drawCanvas.MouseMove += Image_MouseMove;
-            drawCanvas.MouseEnter += DrawCanvas_MouseEnter;
-            drawCanvas.MouseLeave += DrawCanvas_MouseLeave;
+
+
+            drawCanvas.MouseMove += ShowImageInfo_MouseMove;
+            drawCanvas.MouseEnter += (s, e) => DrawVisualImageControl(true);
+            drawCanvas.MouseLeave += (s,e) => DrawVisualImageControl(false);
+
             zombox.Cursor = Cursors.Hand;
         }
 
-        private void DrawCanvas_MouseLeave(object sender, MouseEventArgs e)
-        {
-            DrawVisualImageControl(false);
-        }
-
-        private void DrawCanvas_MouseEnter(object sender, MouseEventArgs e)
-        {
-            DrawVisualImageControl(ShowImageInfo);
-        }
 
         private void PreviewKeyDown(object sender, KeyEventArgs e)
         {
@@ -103,7 +97,7 @@ namespace ColorVision
         }
 
 
-        private void Image_MouseMove(object sender, MouseEventArgs e)
+        private void ShowImageInfo_MouseMove(object sender, MouseEventArgs e)
         {
             if (ShowImageInfo &&sender is DrawCanvas drawCanvas && drawCanvas.Source is BitmapSource bitmap)
             {

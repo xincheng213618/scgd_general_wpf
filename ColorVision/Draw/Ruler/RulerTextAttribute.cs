@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using System.Collections.Generic;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Media;
 
@@ -6,6 +7,8 @@ namespace ColorVision.Draw
 {
     public class RulerTextAttribute : DrawBaseAttribute
     {
+        public List<Point> Points { get; set; } = new List<Point>();
+
         [Category("DrawingVisual"), DisplayName("笔刷")]
         public Pen Pen { get => _Pen; set { _Pen = value; NotifyPropertyChanged(); } }
         private Pen _Pen;

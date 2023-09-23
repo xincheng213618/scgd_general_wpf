@@ -13,15 +13,12 @@ namespace ColorVision.Draw
 
         public bool AutoAttributeChanged { get; set; } = true;
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
-
-
         public bool IsDrawing { get; set; } = true;
 
         public DrawingVisualPolygon()
         {
             Attribute = new PolygonAttribute();
             Attribute.ID = No++;
-            Attribute.Brush = Brushes.Transparent;
             Attribute.Pen = new Pen(Brushes.Red, 2);
             Attribute.Points = new List<Point>();
             Attribute.PropertyChanged += (s, e) =>
@@ -30,20 +27,25 @@ namespace ColorVision.Draw
                     Render();
             };
         }
-        public int ID { get => Attribute.ID; set => Attribute.ID = value; }
+        public List<Point> Points { get => Attribute.Points; }
+
+        public Point? MovePoints { get; set; }
+
 
         public override void Render()
         {
             using DrawingContext dc = RenderOpen();
 
-            if (Attribute.Points.Count > 1)
+            if (Points.Count >= 1)
             {
-                for (int i = 0; i < Attribute.Points.Count - 1; i++)
+                for (int i = 1; i < Points.Count; i++)
                 {
-                    dc.DrawLine(Attribute.Pen, Attribute.Points[i], Attribute.Points[i + 1]);
+                    dc.DrawLine(new Pen(Attribute.Pen.Brush, Attribute.Pen.Thickness), Points[i - 1], Points[i]);
                 }
-                if (!IsDrawing)
-                    dc.DrawLine(Attribute.Pen, Attribute.Points[Attribute.Points.Count - 1], Attribute.Points[0]);
+                if (MovePoints != null)
+                {
+                    dc.DrawLine(new Pen(Brushes.Pink, Attribute.Pen.Thickness), Points[^1], (Point)MovePoints);
+                }
             }
         }
 
