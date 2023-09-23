@@ -372,9 +372,13 @@ namespace ColorVision.Template
                 }
             };
             WindowState = WindowState.Maximized;
+            ImageContentGrid.MouseDown += (s, e) =>
+            {
+                TextBox1.Focus();
+            };
 
+            ToolBarTop = new ToolBarTop(ImageContentGrid, Zoombox1, ImageShow);
 
-            ToolBarTop = new ToolBarTop(this,Zoombox1, ImageShow);
             ToolBar1.DataContext = ToolBarTop;
 
 
@@ -1685,6 +1689,11 @@ namespace ColorVision.Template
                     MessageBox.Show("保存失败");
                 }
             }
+
+        }
+
+        private void Grid_MouseDown(object sender, MouseButtonEventArgs e)
+        {
 
         }
     }

@@ -26,7 +26,7 @@ namespace ColorVision
         private DrawCanvas DrawImageCanvas { get; set; }
         public DrawingVisual DrawVisualImage { get; set; }
 
-        public ToolBarTop(Control Parent,ZoomboxSub zombox, DrawCanvas drawCanvas)
+        public ToolBarTop(FrameworkElement Parent,ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
             ZoomboxSub = zombox ?? throw new ArgumentNullException(nameof(zombox));
             DrawImageCanvas = drawCanvas ?? throw new ArgumentNullException(nameof(drawCanvas));

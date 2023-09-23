@@ -56,10 +56,6 @@ namespace ColorVision
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             //这里是为了让控件可以被选中，作为做了一个底层的Textbox,这样就可以让控件被选中了，后面看看能不能优化掉，这个写法并不是好的。
-            TextBox TextBox1 = new TextBox() { Width = 10, Background = Brushes.Transparent, BorderThickness = new Thickness(0), Foreground = Brushes.Transparent };
-            Grid.SetColumn(TextBox1, 0);
-            Grid.SetRow(TextBox1, 0);
-            ImageContentGrid.Children.Insert(0, TextBox1);
             this.MouseDown += (s, e) =>
             {
                 TextBox1.Focus();

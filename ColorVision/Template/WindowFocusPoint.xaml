@@ -349,11 +349,12 @@
             </xctk:PropertyGrid>
         </Grid>
 
-        <Grid Grid.Column="1"  Background="#c3c3c3">
+        <Grid x:Name="ImageContentGrid" Grid.Column="1"  Background="#c3c3c3">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="auto"/>
             </Grid.RowDefinitions>
+            <TextBox Grid.Column="0" x:Name="TextBox1" Background="Transparent" Width="5" BorderThickness="0" Foreground="Transparent"/>
             <local:ZoomboxSub x:Name="Zoombox1" >
                 <local:DrawCanvas x:Name="ImageShow" Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_MouseDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
             </local:ZoomboxSub>
@@ -392,8 +393,6 @@
                     </ToggleButton>
                 </ToolBar>
             </StackPanel>
-
-
             <Grid x:Name="FocusPointGrid" Visibility="Collapsed" Grid.Row="1" Height="200" >
                 <Grid DockPanel.Dock="Top">
                     <Grid.ColumnDefinitions>
@@ -512,7 +511,6 @@
 
                 </Grid>
             </Grid>
-
         </Grid>
 
         <Grid x:Name="WaitControl" Grid.Row="0" Grid.ColumnSpan="2" Panel.ZIndex="9" Visibility="Collapsed">
