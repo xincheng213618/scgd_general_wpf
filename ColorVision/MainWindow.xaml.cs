@@ -56,11 +56,7 @@ namespace ColorVision
         }
 
         private void Window_Initialized(object sender, EventArgs e)
-        {
-            Window window = new Window();
-            window.Content = new InkVisual();
-            window.Show();
-            
+        {           
             GlobalSetting = GlobalSetting.GetInstance();
             FlowDisplayControl flowDisplayControl = new FlowDisplayControl();
             SPDisplay.Children.Insert(0, flowDisplayControl);
