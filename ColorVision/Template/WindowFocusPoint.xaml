@@ -385,6 +385,9 @@
                     <ToggleButton  IsChecked="{Binding EraseVisual}" Margin="1,0" >
                         <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageeraser}"/>
                     </ToggleButton>
+                    <ToggleButton  IsChecked="{Binding Measure}" Visibility="{Binding Activate,Converter={StaticResource bool2VisibilityConverter}}">
+                        <Image  Style="{StaticResource ToolBarImage}" Margin="1,0" Source="{DynamicResource DrawingImageruler}"/>
+                    </ToggleButton>
                     <ToggleButton IsChecked="{Binding DrawCircle}" Margin="1,0">
                         <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageCircle}"/>
                     </ToggleButton>

@@ -132,17 +132,6 @@ namespace ColorVision
                 }
 
             };
-            this.PreviewKeyDown += (s, e) =>
-            {
-                if (e.Key == Key.Escape)
-                {
-                    if (DrawingVisualRulerCache != null)
-                    {
-                        ImageShow.RemoveVisual(DrawingVisualRulerCache);
-                        DrawingVisualRulerCache = null;
-                    }
-                }
-            };
             this.PreviewKeyDown += (s,e)=>
             {
                 if (e.Key == Key.Escape)
@@ -155,6 +144,8 @@ namespace ColorVision
                 }
             };
         }
+
+
 
         private void Zoombox1_LayoutUpdated(object? sender, EventArgs e)
         {
@@ -275,23 +266,10 @@ namespace ColorVision
         }
 
 
-        private DrawingVisualRuler? DrawingVisualRulerCache;
-
-        private void ToggleButton_Unchecked(object sender, RoutedEventArgs e)
-        {
-            if (DrawingVisualRulerCache!=null)
-                ImageShow.RemoveVisual(DrawingVisualRulerCache);
-        }
 
 
         private void ImageShow_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (DrawingVisualRulerCache != null)
-            {
-                DrawingVisualRulerCache.MovePoints = null;
-                DrawingVisualRulerCache.Render();
-                DrawingVisualRulerCache = null;
-            }
             if (DrawingVisualPolygonCache != null)
             {
                 DrawingVisualPolygonCache.MovePoints = null;
@@ -314,15 +292,6 @@ namespace ColorVision
                 {
                     DrawSelectRect(SelectRect, new Rect(MouseDownP, MouseDownP)); ;
                     drawCanvas.AddVisual(SelectRect);
-                }
-                else if (ToolBarTop.Measure)
-                {
-                    if (DrawingVisualRulerCache == null)
-                    {
-                        DrawingVisualRulerCache = new DrawingVisualRuler();
-                        DrawingVisualRulerCache.Pen.Thickness = 1 / Zoombox1.ContentMatrix.M11;
-                        drawCanvas.AddVisual(DrawingVisualRulerCache);
-                    }
                 }
                 else if (ToolBarTop.DrawCircle)
                 {
@@ -395,15 +364,6 @@ namespace ColorVision
             if (sender is DrawCanvas drawCanvas && (Zoombox1.ActivateOn == ModifierKeys.None || !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn)))
             {
                 var point = e.GetPosition(drawCanvas);
-
-                if (ToolBarTop.Measure)
-                {
-                    if (DrawingVisualRulerCache != null)
-                    {
-                        DrawingVisualRulerCache.MovePoints = point;
-                        DrawingVisualRulerCache.Render();
-                    }
-                }
                 if (ToolBarTop.DrawPolygon)
                 {
                     if (DrawingVisualPolygonCache != null)
@@ -464,14 +424,6 @@ namespace ColorVision
                         drawCanvas.RemoveVisual(item);
                     }
                     drawCanvas.RemoveVisual(SelectRect);
-                }
-                else if (ToolBarTop.Measure)
-                {
-                    if (DrawingVisualRulerCache != null){
-                        DrawingVisualRulerCache.Points.Add(MouseUpP);
-                        DrawingVisualRulerCache.MovePoints = null;
-                        DrawingVisualRulerCache.Render();
-                    }
                 }
                 else if (ToolBarTop.DrawPolygon)
                 {

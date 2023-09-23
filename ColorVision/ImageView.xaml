@@ -169,7 +169,7 @@
                     <ToggleButton  Click="Button5_Click">
                         <Image  Style="{StaticResource ToolBarImage}" Margin="1,0" Source="{DynamicResource DrawingImagegridlines}"/>
                     </ToggleButton>
-                    <ToggleButton  IsChecked="{Binding Measure}" Unchecked="ToggleButton_Unchecked" Visibility="{Binding Activate,Converter={StaticResource bool2VisibilityConverter}}">
+                    <ToggleButton  IsChecked="{Binding Measure}" Visibility="{Binding Activate,Converter={StaticResource bool2VisibilityConverter}}">
                         <Image  Style="{StaticResource ToolBarImage}" Margin="1,0" Source="{DynamicResource DrawingImageruler}"/>
                     </ToggleButton>
                     <ToggleButton  IsChecked="{Binding EraseVisual}" Margin="1,0" Click="Button7_Click" Visibility="{Binding Activate,Converter={StaticResource bool2VisibilityConverter}}">
