@@ -52,13 +52,9 @@ namespace ColorVision
         private bool _Measure;
 
 
-        private bool IsMouseDown;
-        private Point MouseDownP;
-
 
         private void MouseDown(object sender, MouseButtonEventArgs e)
         {
-            IsMouseDown = true;
             if (DrawingVisualRulerCache == null)
             {
                 DrawingVisualRulerCache = new DrawingVisualRuler();
@@ -83,7 +79,6 @@ namespace ColorVision
         {
             if (sender is DrawCanvas drawCanvas && !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn))
             {
-                IsMouseDown = false;
                 var MouseUpP = e.GetPosition(drawCanvas);
                 if (DrawingVisualRulerCache != null)
                 {

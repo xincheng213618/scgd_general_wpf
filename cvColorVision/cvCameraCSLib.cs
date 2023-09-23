@@ -6,9 +6,9 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Windows;
-using ColorVision.Util;
 using System.IO;
 using System.ComponentModel;
+using cvColorVision.Util;
 
 namespace cvColorVision
 {

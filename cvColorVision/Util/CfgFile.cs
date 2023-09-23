@@ -3,7 +3,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 
-namespace ColorVision.Util
+namespace cvColorVision.Util
 {
     public static class CfgFile
     {
