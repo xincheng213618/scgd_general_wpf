@@ -9,6 +9,7 @@
     <PlatformTarget>$(Platform)</PlatformTarget>
 	<TargetFrameworks>net6.0-windows</TargetFrameworks>
 	<NoWarn>CS8002</NoWarn>
+	<EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
 
   <PropertyGroup>
