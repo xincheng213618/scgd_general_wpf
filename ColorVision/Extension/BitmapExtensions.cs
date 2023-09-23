@@ -11,7 +11,7 @@ namespace ColorVision.Extension
         internal static int ToInt32(this double num) => Convert.ToInt32(num);
 
 
-        internal static Color GetPixelColor(this BitmapImage bitmapImage, int x, int y)
+        internal static Color GetPixelColor(this BitmapSource bitmapImage, int x, int y)
         {
             if (x < 0 || x >= bitmapImage.PixelWidth || y < 0 || y >= bitmapImage.PixelHeight)
             {

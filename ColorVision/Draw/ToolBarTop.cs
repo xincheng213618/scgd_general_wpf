@@ -42,9 +42,23 @@ namespace ColorVision
             DrawVisualImage = new DrawingVisual();
             OpenProperty = new RelayCommand(a => new DrawProperties().Show());
             Parent.PreviewKeyDown += PreviewKeyDown;
+            drawCanvas.MouseMove += Image_MouseMove;
+            drawCanvas.MouseEnter += DrawCanvas_MouseEnter;
+            drawCanvas.MouseLeave += DrawCanvas_MouseLeave;
+            zombox.Cursor = Cursors.Hand;
         }
 
-        public void PreviewKeyDown(object sender, KeyEventArgs e)
+        private void DrawCanvas_MouseLeave(object sender, MouseEventArgs e)
+        {
+            DrawVisualImageControl(false);
+        }
+
+        private void DrawCanvas_MouseEnter(object sender, MouseEventArgs e)
+        {
+            DrawVisualImageControl(ShowImageInfo);
+        }
+
+        private void PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Left)
             {
@@ -89,6 +103,49 @@ namespace ColorVision
         }
 
 
+        private void Image_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (ShowImageInfo &&sender is DrawCanvas drawCanvas && drawCanvas.Source is BitmapSource bitmap)
+            {
+                var point = e.GetPosition(drawCanvas);
+
+                var controlWidth = drawCanvas.ActualWidth;
+                var controlHeight = drawCanvas.ActualHeight;
+
+
+                int imageWidth = bitmap.PixelWidth;
+                int imageHeight = bitmap.PixelHeight;
+                var actPoint = new Point(point.X, point.Y);
+
+                point.X = point.X / controlWidth * imageWidth;
+                point.Y = point.Y / controlHeight * imageHeight;
+
+                var bitPoint = new Point(point.X.ToInt32(), point.Y.ToInt32());
+
+                if (point.X.ToInt32() >= 0 && point.X.ToInt32() < bitmap.PixelWidth && point.Y.ToInt32() >= 0 && point.Y.ToInt32() < bitmap.PixelHeight)
+                {
+                    var color = bitmap.GetPixelColor(point.X.ToInt32(), point.Y.ToInt32());
+                    DrawImage(actPoint, bitPoint, new ImageInfo
+                    {
+                        X = point.X.ToInt32(),
+                        Y = point.Y.ToInt32(),
+                        X1 = point.X,
+                        Y1 = point.Y,
+
+                        R = color.R,
+                        G = color.G,
+                        B = color.B,
+                        Color = new SolidColorBrush(color),
+                        Hex = color.ToHex()
+                    });
+                }
+            }
+
+
+        }
+
+
+
         /// <summary>
         /// 当前的缩放分辨率
         /// </summary>
@@ -98,25 +155,24 @@ namespace ColorVision
             set => ZoomboxSub.Zoom(value);
         }
 
-        private bool _Move;
-        public bool Move
+        private bool _ShowImageInfo;
+        public bool ShowImageInfo
         {
-            get => _Move; set
+            get => _ShowImageInfo; set
             {
-                if (_Move == value) return;
+                if (_ShowImageInfo == value) return;
                 if (value) Activate = false;
-                _Move = value;
-                DrawVisualImageControl(_Move);
+                _ShowImageInfo = value;
+                DrawVisualImageControl(_ShowImageInfo);
                 NotifyPropertyChanged();
             }
         }
 
         public void DrawVisualImageControl(bool Control)
         {
-            if (_Move && Control)
+            if (Control)
             {
                 if (!DrawImageCanvas.ContainsVisual(DrawVisualImage))
-                    //DrawVisualImage = new DrawingVisual();
                     DrawImageCanvas.AddVisual(DrawVisualImage);
             }
             else
@@ -135,7 +191,7 @@ namespace ColorVision
             set
             {
                 if (_Activate == value) return;
-                if (value) Move = false;
+                if (value) ShowImageInfo = false;
                 _Activate = value;
                 if (_Activate)
                 {
@@ -210,6 +266,8 @@ namespace ColorVision
 
             }
         }
+
+
         private bool _DrawCircle;
         /// <summary>
         /// 是否画圆形
@@ -301,7 +359,7 @@ namespace ColorVision
                 }
                 else
                 {
-                    ZoomboxSub.Cursor = Cursors.Hand;
+                    ZoomboxSub.Cursor = Cursors.Arrow;
                 }
 
 

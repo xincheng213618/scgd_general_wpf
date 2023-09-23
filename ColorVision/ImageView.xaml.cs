@@ -458,38 +458,6 @@ namespace ColorVision
                         SelectRectangle.Attribute.Rect = new Rect(OldRect.X + point.X - LastMouseMove.X, OldRect.Y + point.Y - LastMouseMove.Y, OldRect.Width, OldRect.Height);
                     }
                 }
-
-                if (ToolBarTop.Move && drawCanvas.Source is BitmapImage bitmapImage)
-                {
-                    int imageWidth = bitmapImage.PixelWidth;
-                    int imageHeight = bitmapImage.PixelHeight;
-
-                    var actPoint = new Point(point.X, point.Y);
-
-                    point.X = point.X / controlWidth * imageWidth;
-                    point.Y = point.Y / controlHeight * imageHeight;
-
-                    var bitPoint = new Point(point.X.ToInt32(), point.Y.ToInt32());
-
-                    if (point.X.ToInt32() >= 0 && point.X.ToInt32() < bitmapImage.PixelWidth && point.Y.ToInt32() >= 0 && point.Y.ToInt32() < bitmapImage.PixelHeight)
-                    {
-                        var color = bitmapImage.GetPixelColor(point.X.ToInt32(), point.Y.ToInt32());
-                        ToolBarTop.DrawImage(actPoint, bitPoint, new ImageInfo
-                        {
-                            X = point.X.ToInt32(),
-                            Y = point.Y.ToInt32(),
-                            X1 = point.X,
-                            Y1 = point.Y,
-
-                            R = color.R,
-                            G = color.G,
-                            B = color.B,
-                            Color = new SolidColorBrush(color),
-                            Hex = color.ToHex()
-                        });
-                    }
-
-                }
                 LastMouseMove = point;
             }
         }
@@ -578,11 +546,9 @@ namespace ColorVision
 
         private void ImageShow_MouseEnter(object sender, MouseEventArgs e)
         {
-            ToolBarTop.DrawVisualImageControl(true);
         }
         private void ImageShow_MouseLeave(object sender, MouseEventArgs e)
         {
-            ToolBarTop.DrawVisualImageControl(false);
         }
 
         private void Button5_Click(object sender, RoutedEventArgs e)
