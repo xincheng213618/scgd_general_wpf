@@ -1,17 +1,26 @@
-﻿using System.Windows.Controls;
+﻿using System;
+using System.IO;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace ColorVision
 {
 
-    ///这里是未带开发的部分
+    ///可以在编辑的图像控件
     public partial class InkVisual : UserControl
     {
+
+        public ToolBarTop ToolBarTop { get; set; }
+
         public InkVisual()
         {
             InitializeComponent();
+            ToolBarTop = new ToolBarTop(this,Zoombox1,drawCanvas);
+            TooBar1.DataContext = ToolBarTop;
         }
 
         private void inkCanvas_MouseDown(object sender, MouseButtonEventArgs e)
@@ -27,6 +36,26 @@ namespace ColorVision
             InkCanvas.SetTop(ellipse, e.GetPosition(inkCanvas).Y - ellipse.Height / 2);
 
             inkCanvas.Children.Add(ellipse);
+        }
+
+        private void Button_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
+            openFileDialog.RestoreDirectory = true;
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                OpenImage(openFileDialog.FileName);
+            }
+        }
+
+        public void OpenImage(string? filePath)
+        {
+            if (filePath != null && File.Exists(filePath))
+            {
+                BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
+                drawCanvas.Source = bitmapImage;
+                Zoombox1.ZoomUniform();
+            }
         }
     }
 }

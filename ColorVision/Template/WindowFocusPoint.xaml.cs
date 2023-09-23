@@ -27,8 +27,6 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.Template
 {
-
-
     /// <summary>
     /// 关注点模板
     /// </summary>
@@ -884,7 +882,7 @@ namespace ColorVision.Template
 
                     drawCanvas.AddVisual(DrawingRectangleCache);
                 }
-                else  if (drawCanvas.GetVisual(MouseDownP) is IDrawingVisual drawingVisual)
+                else if (drawCanvas.GetVisual(MouseDownP) is IDrawingVisual drawingVisual)
                 {
                     PropertyGrid2.SelectedObject = drawingVisual.GetAttribute();
 

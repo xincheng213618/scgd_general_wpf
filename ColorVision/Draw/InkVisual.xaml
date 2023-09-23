@@ -7,7 +7,27 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
-        <local:DrawCanvas x:Name="drawCanvas" />
-        <InkCanvas x:Name="inkCanvas" Background="Transparent"  MouseDown="inkCanvas_MouseDown"  EditingMode="None"/>
+        <local:ZoomboxSub x:Name="Zoombox1"  MaxZoom="10"  MinZoom="0.01">
+            <Grid Width="{Binding ElementName=drawCanvas,Path=Width}" Height="{Binding ElementName=drawCanvas,Path=Height}">
+                <local:DrawCanvas x:Name="drawCanvas" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled"/>
+                <InkCanvas x:Name="inkCanvas" Background="Transparent"  MouseDown="inkCanvas_MouseDown"  EditingMode="None"/>
+            </Grid>
+        </local:ZoomboxSub>
+
+        <ToolBar x:Name="TooBar1" VerticalAlignment="Top" HorizontalAlignment="Center">
+            <Button Content="打开图片" Click="Button_Click"/>
+            <Button Command="{Binding ZoomUniform}"  Margin="1,0">
+                <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImage1_1}"/>
+            </Button>
+            <Button Command="{Binding ZoomIncrease}"  Margin="1,0">
+                <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagezoom_in}" />
+            </Button>
+            <Button  Command="{Binding ZoomDecrease}"  Margin="1,0">
+                <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagezoom_out}"/>
+            </Button>
+            <Button Command="{Binding ZoomNone}"  Margin="1,0">
+                <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageexpend}"/>
+            </Button>
+        </ToolBar>
     </Grid>
 </UserControl>
