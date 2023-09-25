@@ -433,7 +433,7 @@ namespace cvColorVision
     };
     public struct HImage
     {
-        public uint nWidth;
+        public uint iWid;
         public uint nHeight;
         public uint nChannels;
         public uint nBpp;
@@ -1410,63 +1410,30 @@ namespace cvColorVision
         public string szComName;
         public ulong BaudRate;
     }
-    public enum CameraModeType
-    {
-        LV,
-        BV,
-        CV,
-        Other
-    }
+
+
+
 
 
 
     public class SimpleFeatures 
     {
-        private static CameraModeType GetCameraModeType(CameraType type)
-        {
-            CameraModeType ret = CameraModeType.Other;
-            switch (type)
-            {
-                case CameraType.CV_Q:
-                    ret = CameraModeType.CV;
-                    break;
-                case CameraType.LV_Q:
-                case CameraType.MIL_CXP:
-                case CameraType.LV_H:
-                case CameraType.HK_CXP:
-                case CameraType.LV_MIL_CL:
-                case CameraType.MIL_CXP_VIDEO:
-                    ret = CameraModeType.LV;
-                    break;
-                case CameraType.BV_Q:
-                case CameraType.MIL_CL:
-                case CameraType.BV_H:
-                    ret = CameraModeType.BV;
-                    break;
-                default:
-                    ret = CameraModeType.Other;
-                    break;
-            }
-
-            return ret;
-        }
-
         public class FOVParam
         {
             [Category("FOV"), Description("计算FOV时中心区亮度的百分比多少认为是暗区")]
-            public double radio { get; set; }
+            public double Radio { get; set; }
             [Category("FOV"), Description("相机镜头有效像素对应的角度")]
-            public double cameraDegrees { get; set; }
+            public double CameraDegrees { get; set; }
             [Category("FOV"), Description("FOV中计算圆心或者矩心时使用的二值化阈值")]
-            public int thresholdValus { get; set; }
+            public int ThresholdValus { get; set; }
 
             [Category("FOV"), Description("相机镜头使用的有效像素")]
-            public double dFovDist { get; set; }
+            public double DFovDist { get; set; }
 
             [Category("FOV"), Description("计算pattern(FovCircle-圆形；FovRectangle-矩形)")]
-            public FovPattern fovPattern { get; set; }
+            public FovPattern FovPattern { get; set; }
             [Category("FOV"), Description("计算路线(Horizontal-水平；Vertical-垂直；Leaning-斜向)")]
-            public FovType fovType { get; set; }
+            public FovType FovType { get; set; }
 
             [Category("SFR"), Description("SFR gamma")]
             public double SFR_gamma { get; set; }
@@ -1497,16 +1464,15 @@ namespace cvColorVision
 
 
             public static FOVParam cfg;
-            private static string fovParamCfg = "cfg\\FovParamSetup.cfg";
 
             public FOVParam()
             {
-                radio = 0.2;
-                cameraDegrees = 0.2;
-                thresholdValus = 20;
-                dFovDist = 8443;
-                fovPattern = FovPattern.FovCircle;
-                fovType = FovType.Horizontal;
+                Radio = 0.2;
+                CameraDegrees = 0.2;
+                ThresholdValus = 20;
+                DFovDist = 8443;
+                FovPattern = FovPattern.FovCircle;
+                FovType = FovType.Horizontal;
                 SFR_gamma = 1.0;
                 MTF_dRatio = 0.01;
                 Ghost_radius = 65;
@@ -1520,22 +1486,19 @@ namespace cvColorVision
                 CL_lineWidth = 60;
                 CL_LENGTH = 20;
             }
-            public static FOVParam Load()
+
+            public static FOVParam Load(string fileName)
             {
-                FOVParam pm = CfgFile.Load<FOVParam>(fovParamCfg);
+                FOVParam pm = CfgFile.Load<FOVParam>(fileName);
                 if (pm == null)
                 {
                     pm = new FOVParam();
-                    CfgFile.Save(fovParamCfg, pm);
+                    CfgFile.Save(fileName, pm);
                 }
                 cfg = pm;
                 return cfg;
             }
 
-            public static void Save(FOVParam pm)
-            {
-                CfgFile.Save(fovParamCfg, pm);
-            }
         }
 
 
@@ -1566,7 +1529,7 @@ namespace cvColorVision
             //        }
 
             //        HImage himage_Fov = new HImage();
-            //        himage_Fov.nWidth = wRGB;
+            //        himage_Fov.iWid = wRGB;
             //        himage_Fov.nHeight = hRGB;
             //        himage_Fov.nBpp = bppRGB;
             //        himage_Fov.nChannels = channalsRGB;
@@ -1582,7 +1545,7 @@ namespace cvColorVision
 
             //                    try
             //                    {
-            //                        if (!cvCameraCSLib.FovImgCentre(himage_Fov, pm.radio, pm.cameraDegrees, ref fovDegrees_ref, pm.thresholdValus, pm.dFovDist, FovPattern.FovCircle, FovType.Horizontal))
+            //                        if (!cvCameraCSLib.FovImgCentre(himage_Fov, pm.Radio, pm.CameraDegrees, ref fovDegrees_ref, pm.thresholdValus, pm.dFovDist, FovPattern.FovCircle, FovType.Horizontal))
             //                        {
             //                            ErrorData = "FOV执行失败！";
             //                            return false;
@@ -1623,7 +1586,7 @@ namespace cvColorVision
 
             if (wRGB > 0 & hRGB > 0 & bppRGB > 0 && channalsRGB > 0)
             {
-                CameraModeType cameraMode = GetCameraModeType(connectType);
+                CameraModeType cameraMode = connectType.GetCameraModeType();
                 if (cameraMode == CameraModeType.LV || cameraMode == CameraModeType.BV || cameraMode == CameraModeType.CV)
                 {
                     FOVParam pm = CfgFile.Load<FOVParam>(fovParamCfg);
@@ -1631,13 +1594,13 @@ namespace cvColorVision
                     if (pm == null)
                         return false;
                     HImage himage_Fov = new HImage();
-                    himage_Fov.nWidth = wRGB;
+                    himage_Fov.iWid = wRGB;
                     himage_Fov.nHeight = hRGB;
                     himage_Fov.nBpp = bppRGB;
                     himage_Fov.nChannels = channalsRGB;
                     fovDegrees_ref = 0;
-                    FovPattern fovPattern = pm.fovPattern;
-                    FovType fovType = pm.fovType;
+                    FovPattern fovPattern = pm.FovPattern;
+                    FovType fovType = pm.FovType;
                     bool fovResult = false;
 
                     unsafe
@@ -1656,7 +1619,7 @@ namespace cvColorVision
                                     //    {
                                     //        fovResult = cvCameraCSLib.FovImgCentreEX(himage_Fov,
                                     //            roiPointData_Temporary.Img_x, roiPointData_Temporary.Img_y, fovLeaning.X, fovLeaning.Y,
-                                    //            pm.radio, pm.cameraDegrees, ref fovDegrees_ref, pm.thresholdValus, pm.dFovDist, fovPattern, fovType);
+                                    //            pm.Radio, pm.CameraDegrees, ref fovDegrees_ref, pm.thresholdValus, pm.dFovDist, fovPattern, fovType);
                                     //        if (fovResult) saveCsv_FOV("Result", "FovCircle", "Leaning", fovDegrees_ref);
                                     //        else MessageBox.Show("FOV执行失败！");
                                     //    }
@@ -1671,10 +1634,10 @@ namespace cvColorVision
                                     //}
 
                                     fovType = FovType.Horizontal;
-                                    fovResult = cvCameraCSLib.FovImgCentre(himage_Fov, pm.radio, pm.cameraDegrees, ref fovDegrees_ref, pm.thresholdValus, pm.dFovDist, fovPattern, fovType);
+                                    fovResult = cvCameraCSLib.FovImgCentre(himage_Fov, pm.Radio, pm.CameraDegrees, ref fovDegrees_ref, pm.ThresholdValus, pm.DFovDist, fovPattern, fovType);
                                     if (fovResult)
                                     {
-                                        saveCsv_FOV("Result", GetFovPattern(pm.fovPattern), "Horizontal", fovDegrees_ref);
+                                        saveCsv_FOV("Result", GetFovPattern(pm.FovPattern), "Horizontal", fovDegrees_ref);
                                     }
                                     else 
                                     {
@@ -1685,10 +1648,10 @@ namespace cvColorVision
 
 
                                     fovType = FovType.Vertical;
-                                    fovResult = cvCameraCSLib.FovImgCentre(himage_Fov, pm.radio, pm.cameraDegrees, ref fovDegrees_ref, pm.thresholdValus, pm.dFovDist, fovPattern, fovType);
+                                    fovResult = cvCameraCSLib.FovImgCentre(himage_Fov, pm.Radio, pm.CameraDegrees, ref fovDegrees_ref, pm.ThresholdValus, pm.DFovDist, fovPattern, fovType);
                                     if (fovResult)
                                     {
-                                        saveCsv_FOV("Result", GetFovPattern(pm.fovPattern), "Vertical", fovDegrees_ref);
+                                        saveCsv_FOV("Result", GetFovPattern(pm.FovPattern), "Vertical", fovDegrees_ref);
                                         return true;
                                     }
                                     else 
@@ -1888,7 +1851,7 @@ namespace cvColorVision
                     HImage tImg = new HImage();
                     tImg.nBpp = (uint)bppRGB;
                     tImg.nChannels = (uint)channalsRGB;
-                    tImg.nWidth = (uint)wRGB;
+                    tImg.iWid = (uint)wRGB;
                     tImg.nHeight = (uint)hRGB;
 
                     if (srcrawRGB != null)
@@ -1991,7 +1954,7 @@ namespace cvColorVision
                 HImage tImg = new HImage();
                 tImg.nBpp = distoData.bppRGB;
                 tImg.nChannels = distoData.channalsRGB;
-                tImg.nWidth = distoData.wRGB;
+                tImg.iWid = distoData.wRGB;
                 tImg.nHeight = distoData.hRGB;
 
                 if (distoData.srcrawRGB != null)
@@ -2188,12 +2151,12 @@ namespace cvColorVision
             if (listGhostL != null) listGhostL.Clear();
             if (wRGB > 0 & hRGB > 0 & bppRGB > 0 && channalsRGB > 0)
             {
-                FOVParam pm = FOVParam.Load();
+                FOVParam pm = FOVParam.cfg;
                 //初始化HImage
                 HImage tImg = new HImage();
                 tImg.nBpp = bppRGB;
                 tImg.nChannels = channalsRGB;
-                tImg.nWidth = wRGB;
+                tImg.iWid = wRGB;
                 tImg.nHeight = hRGB;
 
                 if (srcrawRGB != null)
@@ -2400,131 +2363,11 @@ namespace cvColorVision
             fs.Close();
         }
 
-        public static bool MTF(List<RoiData> roiDatas, HImage tImg, byte[] srcrawRGB, ref string ErrorData)
-        {
 
-            FOVParam pm = FOVParam.Load();
 
-            bool result=DoMTF(roiDatas, tImg, srcrawRGB,pm, true,ref ErrorData);
-            return result;
 
-        }
 
-        public class MTFResult
-        {
-            public double articulation = 1.0;
-            public RoiData rpd;
 
-            public MTFResult(RoiData rpd, double articulation)
-            {
-                this.rpd = rpd;
-                this.articulation = articulation;
-            }
-        }
-
-        public class RoiData 
-        {
-            public int Img_x { set; get; }
-            public int Img_y { set; get; }
-            public int w { set; get; }
-            public int h { set; get; }
-        }
-
-        private static bool DoMTF(List<RoiData> roiDatas, HImage tImg, byte[] srcrawRGB,FOVParam pm, bool saveCsv, ref string ErrorData)
-        {
-            List<MTFResult> MTFResults = new List<MTFResult>();
-            foreach (RoiData pd in roiDatas)
-            {
-                double articulation = -1.0;
-
-                try
-                {
-                    articulation = cvCameraCSLib.cvCalArticulation(EvaFunc.CalResol, tImg, 0, 1, 5, pm.MTF_dRatio);
-                }
-                finally
-                {
-                    //Marshal.FreeHGlobal(tImg.pData);
-                }
-
-                if (articulation < 0)
-                {
-                    //MessageBox.Show("MTFCalculation执行结果失败！");
-                    ErrorData = "MTFCalculation执行结果失败！";
-                    return false;
-                }
-                else
-                {
-                    MTFResult result = new MTFResult(pd, articulation);
-                    MTFResults.Add(result);
-                }
-            }
-            if (saveCsv) 
-            {
-                saveCsv_MTF("Result", MTFResults);
-            }
-            return true;
-        }
-
-        private static  void saveCsv_MTF(string path, List<MTFResult> arts)
-        {
-            if (!Directory.Exists(path))
-            {
-                Directory.CreateDirectory(path);
-            }
-            if (path.Substring(path.Length - 1, 1) != "/")
-            {
-                path = path + "\\MTFResult_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
-            }
-            else
-            {
-                path = path + "MTFResult_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
-            }
-            if (!File.Exists(path))
-            {
-                //首先模拟建立将要导出的数据，这些数据都存于DataTable中  
-                System.Data.DataTable dt = new System.Data.DataTable();
-                dt.Columns.Add("X", typeof(string));
-                dt.Columns.Add("Y", typeof(string));
-                dt.Columns.Add("Width", typeof(string));
-                dt.Columns.Add("Height", typeof(string));
-                dt.Columns.Add("Value", typeof(string));
-                FileStream fs2 = new FileStream(path, System.IO.FileMode.Create, System.IO.FileAccess.Write);
-                StreamWriter sw2 = new StreamWriter(fs2, UnicodeEncoding.UTF8);
-                //string path = saveFileDialog.FileName.ToString();//保存路径
-                //Tabel header
-                for (int i = 0; i < dt.Columns.Count; i++)
-                {
-                    if (i != 0)
-                    {
-                        sw2.Write(",");
-                    }
-                    sw2.Write(dt.Columns[i].ColumnName);
-                }
-                sw2.WriteLine("");
-                sw2.Flush();
-                sw2.Close();
-                fs2.Close();
-            }
-            FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
-            StreamWriter sw = new StreamWriter(fs, UnicodeEncoding.UTF8);
-            for (int i = 0; i < arts.Count; i++)
-            {
-                MTFResult re = arts[i];
-                sw.Write(re.rpd.Img_x);
-                sw.Write(",");
-                sw.Write(re.rpd.Img_y);
-                sw.Write(",");
-                sw.Write(re.rpd.w);
-                sw.Write(",");
-                sw.Write(re.rpd.h);
-                sw.Write(",");
-                sw.Write(re.articulation);
-                sw.WriteLine("");
-            }
-            sw.Flush();
-            sw.Close();
-            fs.Close();
-        }
 
         public class CameraParamGroup
         {

@@ -150,6 +150,8 @@
                         <Button Content="FSR" Click="FSR_Click"/>
                         <Button Content="FOV" Click="FOV_Click"/>
                         <Button Content="鬼影" Click="GhostShadow_Click"/>
+                        <Button Content="AOI" Click="AOI_Click"/>
+
                     </UniformGrid>
 
                     <GroupBox Header="校正" Margin="0,5">

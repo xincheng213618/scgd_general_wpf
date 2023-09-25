@@ -38,5 +38,8 @@ namespace cvColorVision
 
         [DllImport(LIBRARY_CVCAMERA, CharSet = CharSet.Auto, EntryPoint = "AOIDetectorInput",CallingConvention = CallingConvention.Cdecl)]
         public static extern int AOIDetectorInput(IntPtr handle, UInt32 w, UInt32 h, UInt32 bpp, UInt32 channels, byte[] rawArray);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "GetAoiDetectorBlob",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool GetAoiDetectorBlob(IntPtr handle, int nIndex, PartiCle tParticle);
     }
 }
