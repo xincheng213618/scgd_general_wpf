@@ -104,21 +104,9 @@ namespace cvColorVision
         {
             if (!Directory.Exists(path))
                 Directory.CreateDirectory(path);
-
-            if (path.Substring(path.Length - 1, 1) != "/")
-            {
-                path = path + "\\MTFResult_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
-            }
-            else
-            {
-                path = path + "MTFResult_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
-            }
-
+            path = path + (path.Substring(path.Length - 1, 1) != "/" ? "\\" : "") + "MTFResult_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
             if (!File.Exists(path))
-            {
-                List<string> strings = new List<string>() { "X", "Y", "Width", "Height", "Value" };
-                CSVinitialized(path, strings);
-            }
+                CSVinitialized(path, new List<string>() { "X", "Y", "Width", "Height", "Value" });
 
             FileStream fs = new FileStream(path, FileMode.Append, FileAccess.Write);
             StreamWriter sw = new StreamWriter(fs, Encoding.UTF8);

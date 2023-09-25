@@ -1939,8 +1939,6 @@ namespace cvColorVision
                 threadToKill?.Abort();
 #pragma warning restore SYSLIB0006
                 throw new TimeoutException();
-                //try { throw new TimeoutException(); }
-                //catch (Exception e) { MessageBox.Show("畸变计算超时"); }
 
             }
         }
@@ -1975,7 +1973,7 @@ namespace cvColorVision
                     //初始化图像在平面的旋转角度
                     double t = 0;
                     //选取使用角点提取的方法
-                    CornerType cornerType = GetCornerType(blobThreParams);
+                    CornerType cornerType = blobThreParams.cornerType;
                     //选取点阵斜率计算方法
                     SlopeType slopeType = SlopeType.CenterPoint;
                     //选取生成理想点阵的布点方式
@@ -2055,46 +2053,14 @@ namespace cvColorVision
         private static void saveCsv_Distortion(string path, double pointx, double pointy, double maxErrorRatio, double t, string strDisType)
         {
             if (!Directory.Exists(path))
-            {
                 Directory.CreateDirectory(path);
-            }
-            if (path.Substring(path.Length - 1, 1) != "/")
-            {
-                path = path + "\\DistortionResult.csv";
-            }
-            else
-            {
-                path = path + "DistortionResult.csv";
-            }
+            path = path + (path.Substring(path.Length - 1, 1) != "/" ?  "\\" :"")  + "DistortionResult.csv";
             if (!File.Exists(path))
-            {
-                //首先模拟建立将要导出的数据，这些数据都存于DataTable中  
-                System.Data.DataTable dt = new System.Data.DataTable();
-                dt.Columns.Add("Time", typeof(string));
-                dt.Columns.Add("pointx", typeof(string));
-                dt.Columns.Add("pointy", typeof(string));
-                dt.Columns.Add("maxErrorRatio", typeof(string));
-                dt.Columns.Add("t", typeof(string));
-                dt.Columns.Add("DistortionType", typeof(string));
-                FileStream fs2 = new FileStream(path, System.IO.FileMode.Create, System.IO.FileAccess.Write);
-                StreamWriter sw2 = new StreamWriter(fs2, UnicodeEncoding.UTF8);
-                //string path = saveFileDialog.FileName.ToString();//保存路径
-                //Tabel header
-                for (int i = 0; i < dt.Columns.Count; i++)
-                {
-                    if (i != 0)
-                    {
-                        sw2.Write(",");
-                    }
-                    sw2.Write(dt.Columns[i].ColumnName);
-                }
-                sw2.WriteLine("");
-                sw2.Flush();
-                sw2.Close();
-                fs2.Close();
-            }
-            FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
-            StreamWriter sw = new StreamWriter(fs, UnicodeEncoding.UTF8);
+                cvCameraCSLib.CSVinitialized(path, new List<string>() { "Time", "pointx", "pointy", "maxErrorRatio", "t", "DistortionType" });
+
+
+            using FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
+            using StreamWriter sw = new StreamWriter(fs, UnicodeEncoding.UTF8);
             sw.Write(DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss.fff"));
             sw.Write(",");
             sw.Write(pointx);
@@ -2109,137 +2075,63 @@ namespace cvColorVision
             sw.Write(",");
             sw.WriteLine("");
             sw.Flush();
-            sw.Close();
-            fs.Close();
-        }
-
-        private static CornerType GetCornerType(BlobThreParams blobThreParams)
-        {
-            CornerType cornerType = blobThreParams.cornerType;
-            //switch (blobThreParams.cornerType.ToLower())
-            //{
-            //    case "circlepoint":
-            //        cornerType = CornerType.Circlepoint;
-            //        break;
-            //    case "checkerboard":
-            //        cornerType = CornerType.Checkerboard;
-            //        break;
-            //    default:
-            //        cornerType = CornerType.Checkerboard;
-            //        break;
-            //}
-            return cornerType;
         }
 
 
-
-
-        /// <summary>
-        /// 传进去的图只能是32位单通道的图
-        /// </summary>
-        /// <param name="listGhostH"></param>
-        /// <param name="listGhostL"></param>
-        /// <param name="wRGB"></param>
-        /// <param name="hRGB"></param>
-        /// <param name="bppRGB"></param>
-        /// <param name="channalsRGB"></param>
-        /// <param name="srcrawRGB"></param>
-        /// <returns></returns>
-        public bool Ghost(List<System.Drawing.Point> listGhostH, List<System.Drawing.Point> listGhostL, uint wRGB, uint hRGB, uint bppRGB, uint channalsRGB, byte[] srcrawRGB, ref string ErrorData) 
+        public bool Ghost(List<System.Drawing.Point> listGhostH, List<System.Drawing.Point> listGhostL, HImage tImg) 
         {
-            if (listGhostH != null) listGhostH.Clear();
-            if (listGhostL != null) listGhostL.Clear();
-            if (wRGB > 0 & hRGB > 0 & bppRGB > 0 && channalsRGB > 0)
+            listGhostH?.Clear();
+            listGhostL?.Clear();
+            FOVParam pm = FOVParam.cfg;
+
+            int NxN = pm.Ghost_cols * pm.Ghost_rows;
+            int memSizeH = 20 * 1024;//储存所有点阵坐标需要申请的内存
+            int memSizeL = 20 * 1024;//储存所有鬼影坐标需要申请的内存
+            int numArrH = NxN;//包含的点阵数量
+            int numArrL = NxN;//包含的鬼影集数量
+            int[] arrH = new int[numArrH];//每个点阵轮廓的点坐标数量
+            int[] arrL = new int[numArrL];//每个鬼影轮廓的点坐标数量
+            int[] dataH_X = new int[memSizeH];//所有点阵轮廓的X坐标集
+            int[] dataL_X = new int[memSizeL];//所有鬼影轮廓的X坐标集
+            int[] dataH_Y = new int[memSizeH];//所有点阵轮廓的Y坐标集
+            int[] dataL_Y = new int[memSizeL];//所有鬼影轮廓的Y坐标集
+            float[] centersX = new float[NxN];//检出的鬼影点阵质心X坐标
+            float[] centersY = new float[NxN];//检出的鬼影点阵质心Y坐标
+            float[] dstGray = new float[NxN];//检出鬼影区域的灰度均值集
+            float[] blobGray = new float[NxN];//检出光斑的灰度均值集
+            string path = GetPath("Result");//
+            bool ret = cvCameraCSLib.GhostGlareDectect(tImg, pm.Ghost_radius, pm.Ghost_cols, pm.Ghost_rows, pm.Ghost_ratioH, pm.Ghost_ratioL, path, centersX, centersY, blobGray, dstGray, ref memSizeH, ref numArrH, arrH, dataH_X, dataH_Y, ref memSizeL, ref numArrL, arrL, dataL_X, dataL_Y);
+            if (ret)
             {
-                FOVParam pm = FOVParam.cfg;
-                //初始化HImage
-                HImage tImg = new HImage();
-                tImg.nBpp = bppRGB;
-                tImg.nChannels = channalsRGB;
-                tImg.iWid = wRGB;
-                tImg.nHeight = hRGB;
+                save_Ghost_result("Result", NxN, centersX, centersY, blobGray, dstGray, numArrH, arrH, dataH_X, dataH_Y, numArrL, arrL, dataL_X, dataL_Y);
+            }
+            else if (memSizeH > 20 * 1024 || memSizeL > 20 * 1024)
+            {
+                dataH_X = new int[memSizeH];//所有点阵轮廓的X坐标集
+                dataL_X = new int[memSizeL];//所有鬼影轮廓的X坐标集
+                dataH_Y = new int[memSizeH];//所有点阵轮廓的Y坐标集
+                dataL_Y = new int[memSizeL];//所有鬼影轮廓的Y坐标集
 
-                if (srcrawRGB != null)
+                ret = cvCameraCSLib.GhostGlareDectect(tImg, pm.Ghost_radius, pm.Ghost_cols, pm.Ghost_rows, pm.Ghost_ratioH, pm.Ghost_ratioL, path, centersX, centersY, blobGray, dstGray,
+                ref memSizeH, ref numArrH, arrH, dataH_X, dataH_Y, ref memSizeL, ref numArrL, arrL, dataL_X, dataL_Y);
+                if (ret)
                 {
-                    GCHandle hObject;
-                    hObject = GCHandle.Alloc(srcrawRGB, GCHandleType.Pinned);
-                    //
-                    tImg.pData = hObject.AddrOfPinnedObject();
-
-                    int NxN = pm.Ghost_cols * pm.Ghost_rows;
-                    int memSizeH = 20 * 1024;//储存所有点阵坐标需要申请的内存
-                    int memSizeL = 20 * 1024;//储存所有鬼影坐标需要申请的内存
-                    int numArrH = NxN;//包含的点阵数量
-                    int numArrL = NxN;//包含的鬼影集数量
-                    int[] arrH = new int[numArrH];//每个点阵轮廓的点坐标数量
-                    int[] arrL = new int[numArrL];//每个鬼影轮廓的点坐标数量
-                    int[] dataH_X = new int[memSizeH];//所有点阵轮廓的X坐标集
-                    int[] dataL_X = new int[memSizeL];//所有鬼影轮廓的X坐标集
-                    int[] dataH_Y = new int[memSizeH];//所有点阵轮廓的Y坐标集
-                    int[] dataL_Y = new int[memSizeL];//所有鬼影轮廓的Y坐标集
-                    float[] centersX = new float[NxN];//检出的鬼影点阵质心X坐标
-                    float[] centersY = new float[NxN];//检出的鬼影点阵质心Y坐标
-                    float[] dstGray = new float[NxN];//检出鬼影区域的灰度均值集
-                    float[] blobGray = new float[NxN];//检出光斑的灰度均值集
-                    string path = GetPath("Result");//
-                    bool ret = cvCameraCSLib.GhostGlareDectect(tImg, pm.Ghost_radius, pm.Ghost_cols, pm.Ghost_rows, pm.Ghost_ratioH, pm.Ghost_ratioL, path, centersX, centersY, blobGray, dstGray,
-                        ref memSizeH, ref numArrH, arrH, dataH_X, dataH_Y, ref memSizeL, ref numArrL, arrL, dataL_X, dataL_Y);
-                    if (ret)
-                    {
-                        save_Ghost_result("Result", NxN, centersX, centersY, blobGray, dstGray, numArrH, arrH, dataH_X, dataH_Y, numArrL, arrL, dataL_X, dataL_Y);
-                    }
-                    else if (memSizeH > 20 * 1024 || memSizeL > 20 * 1024)
-                    {
-                        dataH_X = new int[memSizeH];//所有点阵轮廓的X坐标集
-                        dataL_X = new int[memSizeL];//所有鬼影轮廓的X坐标集
-                        dataH_Y = new int[memSizeH];//所有点阵轮廓的Y坐标集
-                        dataL_Y = new int[memSizeL];//所有鬼影轮廓的Y坐标集
-
-                        ret = cvCameraCSLib.GhostGlareDectect(tImg, pm.Ghost_radius, pm.Ghost_cols, pm.Ghost_rows, pm.Ghost_ratioH, pm.Ghost_ratioL, path, centersX, centersY, blobGray, dstGray,
-                        ref memSizeH, ref numArrH, arrH, dataH_X, dataH_Y, ref memSizeL, ref numArrL, arrL, dataL_X, dataL_Y);
-                        if (ret)
-                        {
-                            save_Ghost_result("Result", NxN, centersX, centersY, blobGray, dstGray, numArrH, arrH, dataH_X, dataH_Y, numArrL, arrL, dataL_X, dataL_Y);
-                        }
-                        else
-                        {
-                            ErrorData = "二次检查失败";
-                            return false;
-                        }
-                    }
-                    else
-                    {
-                        ErrorData = "首次检查失败";
-                        return false;
-                    }
-
-                    hObject.Free();
-                    return true;
+                    save_Ghost_result("Result", NxN, centersX, centersY, blobGray, dstGray, numArrH, arrH, dataH_X, dataH_Y, numArrL, arrL, dataL_X, dataL_Y);
                 }
-                else
-                {
-                    ErrorData = "请先点击测量";
-                    return false;
-                }
+
             }
             else
             {
-                ErrorData = "请先点击测量";
                 return false;
             }
+            return true;
         }
 
         private static string GetPath(string path)
         {
             if (!Directory.Exists(path))
-            {
                 Directory.CreateDirectory(path);
-            }
-            if (path.Substring(path.Length - 1, 1) != "/")
-            {
-                path = path + "\\";
-            }
-            return path;
+            return path + (path.Substring(path.Length - 1, 1) != "/"? "\\":"");
         }
 
         private List<System.Drawing.Point> listGhostH = new List<System.Drawing.Point>();
@@ -2315,9 +2207,8 @@ namespace cvColorVision
         {
             bool saveHeader = false;
             if (!Directory.Exists(path))
-            {
                 Directory.CreateDirectory(path);
-            }
+
             if (path.Substring(path.Length - 1, 1) != "/")
             {
                 path = path + "\\GhostResult_" + name + "_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
