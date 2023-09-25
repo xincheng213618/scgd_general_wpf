@@ -9,6 +9,8 @@ using System.Windows;
 using System.IO;
 using System.ComponentModel;
 using cvColorVision.Util;
+using System.Windows.Media.Media3D;
+using OpenCvSharp;
 
 namespace cvColorVision
 {
@@ -1217,7 +1219,7 @@ namespace cvColorVision
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "SFRCalculation",     CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int SFRCalculation(HImage tImg, CRECT rtROI, double gamma, float[] pdfrequency, float[] pdomainSamplingData, int nLen);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "getCirclePoint",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool getCirclePoint(HImage matsrc, int thresholdValue, ref Point tPt);
+        public unsafe static extern bool getCirclePoint(HImage matsrc, int thresholdValue, ref System.Windows.Point tPt);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "SetMachineVid", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern void SetMachineVid(int ucMachineNO);
 
@@ -2523,5 +2525,528 @@ namespace cvColorVision
             sw.Close();
             fs.Close();
         }
+
+        public class CameraParamGroup
+        {
+            public float iexp_x { set; get; }
+
+            public float iexp_y { set; get; }
+
+            public float iexp_z { set; get; }
+
+            public float iCx { set; get; }
+
+            public float iCy { set; get; }
+
+            public float iLv { set; get; }
+        }
+
+        public class FourColorRoiData
+        {
+            public int tarHeight { set; get; }
+
+            public int tarWidth { set; get; }
+
+            public int xPos { set; get; }
+
+            public int yPos { set; get; }
+
+        }
+
+        public class ImageData
+        {
+            public uint iHei { set; get; }
+
+            public uint iWid { set; get; }
+
+            public uint iBpp { set; get; }
+
+            public uint iChannels { set; get; }
+
+            public byte[] pData { set; get; }
+
+        }
+
+        public class TakeCameraCfg
+        {
+            public float gain;
+            public ushort offset;
+            public int usbTraffic;
+            public string binng;
+            public string aperture;
+        }
+
+        public class LumChromaParam
+        {
+            public TakeCameraCfg cameraCfg;
+            public float Texp_x;
+            public float Texp_y;
+            public float Texp_z;
+            public float Gain_x;
+            public float Gain_y;
+            public float Gain_z;
+            public float a;
+            public float b;
+            public float c;
+            public float d;
+
+            public override string ToString()
+            {
+                return string.Format("Texp_x:{0},Texp_y:{1},Texp_z:{2},a:{3},b:{4},c:{5},d:{6}", Texp_x, Texp_y, Texp_z, a, b, c, d);
+            }
+
+            public LumChromaParam(float texp_x, float texp_y, float texp_z, float gain_x, float gain_y, float gain_z, float a, float b, float c, float d)
+            {
+                Texp_x = texp_x;
+                Texp_y = texp_y;
+                Texp_z = texp_z;
+                Gain_x = gain_x;
+                Gain_y = gain_y;
+                Gain_z = gain_z;
+                this.a = a;
+                this.b = b;
+                this.c = c;
+                this.d = d;
+            }
+        }
+
+        public class FourLumChromaParam : LumChromaParam
+        {
+            public float e;
+            public float f;
+            public float g;
+            public float h;
+            public float i;
+
+            public FourLumChromaParam(float texp_x, float texp_y, float texp_z, float gain_x, float gain_y, float gain_z, float a, float b, float c, float d, double e, double f, double g, double h, double i) :
+                base(texp_x, texp_y, texp_z, gain_x, gain_y, gain_z, a, b, c, d)
+            {
+                this.e = (float)e;
+                this.f = (float)f;
+                this.g = (float)g;
+                this.h = (float)h;
+                this.i = (float)i;
+            }
+        }
+
+        public bool FourColorCreat(string calibrationName, IIntputData[] cameraParamGroup, FourColorRoiData fourColorRoiData, ImageData[] vImgM, ref string ErrorData) 
+        {
+            if (calibrationName.Length==0)
+            {
+                ErrorData = "请输入校正文件名";
+                return false;
+            }
+            //判断四个图片的流程是否完成
+            //if (this.dataGridView1.Rows[0].Cells[8].Value.ToString() != "测量完成" || this.dataGridView1.Rows[1].Cells[8].Value.ToString() != "测量完成" || this.dataGridView1.Rows[2].Cells[8].Value.ToString() != "测量完成" || this.dataGridView1.Rows[3].Cells[8].Value.ToString() != "测量完成")
+            //{
+            //    MessageBox.Show("测量流程未全部完成");
+            //    return;
+            //}
+
+            ////读取一下四个图片的xy等信息
+            //for (int i = 0; i < 4; i++)
+            //{
+            //    intputDatasGroup[i].iexp_x = cameraParamGroup[i].ExpTime[0];
+            //    intputDatasGroup[i].iexp_y = cameraParamGroup[i].ExpTime[1];
+            //    intputDatasGroup[i].iexp_z = cameraParamGroup[i].ExpTime[2];
+            //    if (!float.TryParse(this.dataGridView1.Rows[i].Cells[1].Value.ToString(), out intputDatasGroup[i].iCx))
+            //    {
+            //        MessageBox.Show("第" + i + "列数据Cx的值输入格式错误，请检查后重新输入");
+            //        return;
+            //    }
+            //    if (!float.TryParse(this.dataGridView1.Rows[i].Cells[2].Value.ToString(), out intputDatasGroup[i].iCy))
+            //    {
+            //        MessageBox.Show("第" + i + "列数据Cy的值输入格式错误，请检查后重新输入");
+            //        return;
+            //    }
+            //    if (i == 3)
+            //    {
+            //        if (!float.TryParse(this.dataGridView1.Rows[i].Cells[3].Value.ToString(), out intputDatasGroup[i].iLv))
+            //        {
+            //            //intputDatasGroup[i].iLv = 0;
+            //            MessageBox.Show("第" + i + "列数据Lv的值输入格式错误，请检查后重新输入");
+            //            return;
+            //        }
+            //    }
+            //    else
+            //    {
+            //        intputDatasGroup[i].iLv = 0;
+            //    }
+            //}
+
+            if (cameraParamGroup == null || cameraParamGroup.Length < 4)
+            {
+                ErrorData = "cameraParamGroup的数量小于4";
+                return false;
+            }
+
+            if (vImgM == null || vImgM.Length < 4)
+            {
+                ErrorData = "vImgM的数量小于4";
+                return false;
+            }
+
+            //int tarHeight = 0;
+            //int tarWidth = 0;
+            //int xPos = 0;
+            //int yPos = 0;
+            //if (!int.TryParse(this.textBox_height.Text, out tarHeight) || !int.TryParse(this.textBox_width.Text, out tarWidth) || !int.TryParse(this.textBox_X.Text, out xPos) || !int.TryParse(this.textBox_Y.Text, out yPos))
+            //{
+            //    MessageBox.Show("错误的测量点坐标及区域参数，请输入正整数");
+            //    return;
+            //}
+
+            IRECT iRECTGroup;//计算用的框选范围信息组
+            iRECTGroup.cx = fourColorRoiData.tarWidth;
+            iRECTGroup.cy = fourColorRoiData.tarHeight;
+            iRECTGroup.x = fourColorRoiData.xPos;
+            iRECTGroup.y = fourColorRoiData.yPos;
+
+            //for (int i = 0; i < 4; i++)
+            //{
+            //    iRECTGroup[i].cx = tarHeight;
+            //    iRECTGroup[i].cy = tarHeight;
+            //    iRECTGroup[i].x = xPos;
+            //    iRECTGroup[i].y = yPos;
+            //}
+
+            //执行四色校正的计算
+            double[] vcdRltData = null;
+
+            if (!CalColorFour(vImgM, iRECTGroup, cameraParamGroup, ref vcdRltData))
+            {
+                ErrorData="四色校正计算失败";
+                return false;
+            }
+            //保存四色校正的计算结果
+            if (vcdRltData.Length != 9)
+            {
+                ErrorData = "四色校正保存异常";
+                return false;
+            }
+            FourLumChromaParam lumChroma = new FourLumChromaParam(0, 0, 0, 1, 1, 1, (float)vcdRltData[0], (float)vcdRltData[1], (float)vcdRltData[2], (float)vcdRltData[3], vcdRltData[4], vcdRltData[5], vcdRltData[6], vcdRltData[7], vcdRltData[8]);
+            string szFileName = calibrationName + ".dat";
+            try
+            {
+                string jsonData = JsonConvert.SerializeObject(lumChroma);
+                SaveToFile(szFileName, jsonData);
+
+            }
+            catch
+            {
+                ErrorData = "四色校正文件保存失败";
+                return false;
+            }
+            return true;
+        }
+
+        public static void SaveToFile(String fileName, String content)
+        {
+            using (StreamWriter sw = new StreamWriter(fileName))
+            {
+                sw.Write(content);
+                sw.Flush();
+                sw.Close();
+                sw.Dispose();
+            }
+        }
+
+        public struct IIntputData
+        {
+            public float iexp_x;
+            public float iexp_y;
+            public float iexp_z;
+            public float iCx;
+            public float iCy;
+            public float iLv;
+
+            IIntputData(float exp_x, float exp_y, float exp_z, float Cx, float Cy, float LV)
+            {
+                iexp_x = exp_x;
+                iexp_y = exp_y;
+                iexp_z = exp_z;
+                iCx = Cx;
+                iCy = Cy;
+                iLv = LV;
+            }
+        };
+
+        /// <summary>
+        /// 通过输入的BPP和channels来判断目标图像的mat格式
+        /// </summary>
+        /// <param name="nbpp"></param>
+        /// <param name="nChanles"></param>
+        /// <returns></returns>
+        public int Gettype(int nbpp, int nChanles)
+        {
+            int ntype = MatType.CV_8UC1;
+            switch (nbpp)
+            {
+                case 8:
+                    if (nChanles == 1)
+                    {
+                        ntype = MatType.CV_8UC1;
+                    }
+                    else if (nChanles == 3)
+                    {
+                        ntype = MatType.CV_8UC3;
+                    }
+                    break;
+                case 16:
+                    if (nChanles == 1)
+                    {
+                        ntype = MatType.CV_16UC1;
+                    }
+                    else if (nChanles == 3)
+                    {
+                        ntype = MatType.CV_16UC3;
+                    }
+                    break;
+                case 32:
+                    if (nChanles == 1)
+                    {
+                        ntype = MatType.CV_32FC1;
+                    }
+                    else if (nChanles == 3)
+                    {
+                        ntype = MatType.CV_32FC3;
+                    }
+                    break;
+                case 64:
+                    if (nChanles == 1)
+                    {
+                        ntype = MatType.CV_64FC1;
+                    }
+                    else if (nChanles == 3)
+                    {
+                        ntype = MatType.CV_64FC3;
+                    }
+                    break;
+                default:
+                    return -1;
+            }
+
+            return ntype;
+        }
+
+        float GetRECTGray(byte[] imgdata, int arrY_Height, int arrY_Width, IRECT tRect)
+        {
+            int idx_w = tRect.x;
+            int idx_h = tRect.y;
+
+            int iWid = tRect.cx;
+            int iHei = tRect.cy;
+
+            ushort[] tarDataY = new ushort[iWid * iHei];
+
+            for (int i = 0; i < iHei; i++)
+            {
+                for (int j = 0; j < iWid; j++)
+                {
+                    tarDataY[i * iWid + j] = imgdata[(i + idx_h) * arrY_Width + idx_w + j];
+                }
+            }
+
+            float gray = Mean_get(tarDataY, iHei, iWid, new IObRECT(0, 0, 0, 0));
+
+            return gray;
+        }
+
+        public struct IObRECT
+        {
+            public int ob;
+            public int obR;
+            public int obB;
+            public int obT;
+
+            public IObRECT(int iob, int iobR, int iobT, int iobB)
+            {
+                ob = iob;
+                obR = iobR;
+                obT = iobT;
+                obB = iobB;
+            }
+        };
+
+        float Mean_get(ushort[] imageData, int imgHeight, int imgWidth, IObRECT obRect)
+        {
+            long sum = 0;
+            // ob area
+            int h = imgHeight;
+            int w = imgWidth;
+
+            int wMax = w - obRect.obR;
+            int hMax = h - obRect.obB;
+
+            long num = 0;
+
+            for (int i = obRect.obT; i < hMax; i++)             //此处参数？
+            {
+                for (int j = obRect.ob; j < wMax; j++)
+                {
+                    sum += imageData[i * w + j];
+                    num++;
+                }
+            }
+
+            return (float)sum / num;
+        }
+
+        double[] Gauss_Gao(double[][] a, ref double[] ans)
+        {
+            int row = 9;
+            int column = 10;
+            for (int i = 0; i < column - 1; i++)
+            {
+                for (int j = i + 1; j < row; j++)
+                {
+                    double t = -a[j][i] / a[i][i];
+                    double[] l = new double[10];
+                    for (int k = 0; k < column; k++)
+                    {
+                        l[k] = a[i][k] * t + a[j][k];
+                    }
+                    for (int k = 0; k < column; k++)
+                    {
+                        a[j][k] = l[k];
+                    }
+                }
+            }
+
+            for (int i = row - 1; i >= 0; i--)
+            {
+                //ans[i] = a[i][column-1]/a[i][column-2];
+                double t = a[i][column - 1];
+                for (int j = column - 2; j > i; j--)
+                {
+
+                    t -= (a[i][j] * ans[j]);
+                }
+                ans[i] = t / a[i][i];
+            }
+
+            return ans;
+        }
+
+        bool CalColorFour(ImageData[] vImgM, IRECT vcIRECT, IIntputData[] vcIIntputData, ref double[] vcdRlt)
+        {
+            if (vImgM.Length != 4 && vcIIntputData.Length != 4)
+            {
+                return false;
+            }
+            List<Point3f> vecImgxyz = new List<Point3f>(0);
+            int ntype = Gettype((int)vImgM[0].iBpp, (int)vImgM[0].iChannels);
+            if (ntype == -1)
+            {
+                //获取图像格式失败
+                return false;
+            }
+            for (int i = 0; i < 4; i++)
+            {
+                Mat matSrc = new Mat((int)vImgM[i].iHei, (int)vImgM[i].iWid, ntype, vImgM[i].pData);
+
+                Mat src_x;
+                Mat src_y;
+                Mat src_z;
+
+                IIntputData tInputData = vcIIntputData[i];
+
+                Mat[] channels;
+                Cv2.Split(matSrc, out channels);
+                //split(matSrc, channels);
+
+                if (channels.Length >= 3)
+                {
+                    src_x = channels[2];
+                    src_y = channels[1];
+                    src_z = channels[0];
+                }
+                else
+                {
+                    return false;
+                }
+                byte[] srcyData = new byte[src_y.Total()];
+                Marshal.Copy(src_y.Data, srcyData, 0, srcyData.Length);
+                float gray_y = GetRECTGray(srcyData, matSrc.Rows, matSrc.Cols, vcIRECT);
+                byte[] srcxData = new byte[src_x.Total()];
+                Marshal.Copy(src_x.Data, srcxData, 0, srcxData.Length);
+                float gray_x = GetRECTGray(srcxData, matSrc.Rows, matSrc.Cols, vcIRECT);
+                byte[] srczData = new byte[src_z.Total()];
+                Marshal.Copy(src_z.Data, srczData, 0, srczData.Length);
+                float gray_z = GetRECTGray(srczData, matSrc.Rows, matSrc.Cols, vcIRECT);
+                float x0 = gray_x / tInputData.iexp_x;
+                float y0 = gray_y / tInputData.iexp_y;
+                float z0 = gray_z / tInputData.iexp_z;
+
+                vecImgxyz.Add(new Point3f(x0, y0, z0));
+            }
+
+            int idx = 0;
+
+            double[][] result = new double[9][];
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = new double[10];
+            }
+
+            for (int i = 0; i < 4; i++)
+            {
+                float GX0 = vecImgxyz[i].X;
+                float GY0 = vecImgxyz[i].Y;
+                float GZ0 = vecImgxyz[i].Z;
+
+                result[idx][0] = vcIIntputData[i].iCx * GX0 - GX0;
+                result[idx][1] = vcIIntputData[i].iCx * GY0 - GY0;
+                result[idx][2] = vcIIntputData[i].iCx * GZ0 - GZ0;
+                result[idx][3] = vcIIntputData[i].iCx * GX0;
+                result[idx][4] = vcIIntputData[i].iCx * GY0;
+                result[idx][5] = vcIIntputData[i].iCx * GZ0;
+                result[idx][6] = vcIIntputData[i].iCx * GX0;
+                result[idx][7] = vcIIntputData[i].iCx * GY0;
+                result[idx][8] = vcIIntputData[i].iCx * GZ0;
+                result[idx][9] = 0;
+                idx++;
+                result[idx][0] = vcIIntputData[i].iCy * GX0;
+                result[idx][1] = vcIIntputData[i].iCy * GY0;
+                result[idx][2] = vcIIntputData[i].iCy * GZ0;
+                result[idx][3] = vcIIntputData[i].iCy * GX0 - GX0;
+                result[idx][4] = vcIIntputData[i].iCy * GY0 - GY0;
+                result[idx][5] = vcIIntputData[i].iCy * GZ0 - GZ0;
+                result[idx][6] = vcIIntputData[i].iCy * GX0;
+                result[idx][7] = vcIIntputData[i].iCy * GY0;
+                result[idx][8] = vcIIntputData[i].iCy * GZ0;
+                result[idx][9] = 0;
+                idx++;
+                if (i == 3)
+                {
+                    result[idx][0] = 0;
+                    result[idx][1] = 0;
+                    result[idx][2] = 0;
+                    result[idx][3] = GX0;
+                    result[idx][4] = GY0;
+                    result[idx][5] = GZ0;
+                    result[idx][6] = 0;
+                    result[idx][7] = 0;
+                    result[idx][8] = 0;
+                    result[idx][9] = vcIIntputData[i].iLv;
+                    idx++;
+                }
+            }
+
+            double[] gao_result = new double[9];
+
+            Gauss_Gao(result, ref gao_result);
+
+            vcdRlt = new double[9];
+
+            for (int i = 0; i < 9; i++)
+            {
+                vcdRlt[i] = gao_result[i];
+            }
+
+            return true;
+        }
+
+
     }
 }
