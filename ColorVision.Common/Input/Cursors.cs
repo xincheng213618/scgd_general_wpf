@@ -25,7 +25,7 @@ namespace ColorVision.Input
             }
             else
             {
-                StreamResourceInfo stream = Application.GetResourceStream(new Uri($"/ColorVision.Common;component/assets/cursor/{cursorType}", UriKind.Relative)) ?? throw new Exception($"Cursor {cursorType} not found");
+                StreamResourceInfo stream = Application.GetResourceStream(new Uri($"/ColorVision.Common;component/assets/cursor/{cursorType}", UriKind.Relative));
                 var cur = new Cursor(stream.Stream);
                 _stockCursors.Add(cursorType, cur);
                 return cur;

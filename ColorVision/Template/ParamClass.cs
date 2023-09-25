@@ -61,9 +61,9 @@ namespace ColorVision.Template
 
         public ModDetailModel? GetParameter(string key)
         {
-            if (parameters.ContainsKey(key))
+            if (parameters.TryGetValue(key,out ModDetailModel modDetailModel))
             {
-                return parameters[key];
+                return modDetailModel;
             }
             else
             {

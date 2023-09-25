@@ -2629,7 +2629,7 @@ namespace cvColorVision
             }
         }
 
-        public bool FourColorCreat(string calibrationName, IIntputData[] cameraParamGroup, FourColorRoiData fourColorRoiData, ImageData[] vImgM, ref string ErrorData) 
+        public static bool FourColorCreat(string calibrationName, IIntputData[] cameraParamGroup, FourColorRoiData fourColorRoiData, ImageData[] vImgM, ref string ErrorData) 
         {
             if (calibrationName.Length==0)
             {
@@ -2711,7 +2711,7 @@ namespace cvColorVision
             //}
 
             //执行四色校正的计算
-            double[] vcdRltData = null;
+            double[]? vcdRltData = new double[9];
 
             if (!CalColorFour(vImgM, iRECTGroup, cameraParamGroup, ref vcdRltData))
             {
@@ -2719,7 +2719,7 @@ namespace cvColorVision
                 return false;
             }
             //保存四色校正的计算结果
-            if (vcdRltData.Length != 9)
+            if (vcdRltData?.Length != 9)
             {
                 ErrorData = "四色校正保存异常";
                 return false;
@@ -2777,7 +2777,7 @@ namespace cvColorVision
         /// <param name="nbpp"></param>
         /// <param name="nChanles"></param>
         /// <returns></returns>
-        public int Gettype(int nbpp, int nChanles)
+        public static int Gettype(int nbpp, int nChanles)
         {
             int ntype = MatType.CV_8UC1;
             switch (nbpp)
@@ -2829,7 +2829,7 @@ namespace cvColorVision
             return ntype;
         }
 
-        float GetRECTGray(byte[] imgdata, int arrY_Height, int arrY_Width, IRECT tRect)
+         static float GetRECTGray(byte[] imgdata, int arrY_Height, int arrY_Width, IRECT tRect)
         {
             int idx_w = tRect.x;
             int idx_h = tRect.y;
@@ -2868,7 +2868,7 @@ namespace cvColorVision
             }
         };
 
-        float Mean_get(ushort[] imageData, int imgHeight, int imgWidth, IObRECT obRect)
+        static float Mean_get(ushort[] imageData, int imgHeight, int imgWidth, IObRECT obRect)
         {
             long sum = 0;
             // ob area
@@ -2892,7 +2892,7 @@ namespace cvColorVision
             return (float)sum / num;
         }
 
-        double[] Gauss_Gao(double[][] a, ref double[] ans)
+        static double[] Gauss_Gao(double[][] a, ref double[] ans)
         {
             int row = 9;
             int column = 10;
@@ -2928,7 +2928,7 @@ namespace cvColorVision
             return ans;
         }
 
-        bool CalColorFour(ImageData[] vImgM, IRECT vcIRECT, IIntputData[] vcIIntputData, ref double[] vcdRlt)
+        static bool CalColorFour(ImageData[] vImgM, IRECT vcIRECT, IIntputData[] vcIIntputData, ref double[]? vcdRlt)
         {
             if (vImgM.Length != 4 && vcIIntputData.Length != 4)
             {

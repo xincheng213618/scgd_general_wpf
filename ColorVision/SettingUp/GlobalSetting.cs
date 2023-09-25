@@ -120,10 +120,11 @@ namespace ColorVision.SettingUp
                 SoftwareConfig.MQTTConfigs[i].UserPwd = MQTTConfigsPwd[i];
         }
 
+        private static JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions() { WriteIndented = true,DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
         private static T? ReadConfig<T>(string fileName)
         {
             if (File.Exists(fileName))
-                return JsonSerializer.Deserialize<T>(File.ReadAllText(fileName), new JsonSerializerOptions());
+                return JsonSerializer.Deserialize<T>(File.ReadAllText(fileName), jsonSerializerOptions);
             else
             {
                 T t = (T)Activator.CreateInstance(typeof(T));
@@ -138,7 +139,7 @@ namespace ColorVision.SettingUp
             if (DirectoryName != null && !Directory.Exists(DirectoryName))
                 Directory.CreateDirectory(DirectoryName);
 
-            string jsonString = JsonSerializer.Serialize(t, new JsonSerializerOptions() {WriteIndented =true});
+            string jsonString = JsonSerializer.Serialize(t, jsonSerializerOptions);
             File.WriteAllText(fileName, jsonString);
         }
     }
