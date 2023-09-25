@@ -16,6 +16,7 @@ using ColorVision.MySql;
 using log4net;
 using System.Diagnostics;
 using ColorVision.Service;
+using ColorVision.Util;
 
 namespace ColorVision
 {
@@ -75,7 +76,6 @@ namespace ColorVision
                         break;
                     case "DeviceParam":
                         new WindowDevices() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-
                         break;
                     case "MeasureParm":
                         MeasureParamControl measure = new MeasureParamControl();
@@ -306,31 +306,9 @@ namespace ColorVision
 
         private void Setting_Click(object sender, RoutedEventArgs e)
         {
-            bool hasDefaultProgram = false;
-            try
-            {
-                ProcessStartInfo psi = new ProcessStartInfo(GlobalSetting.GetInstance().SoftwareConfigFileName);
-                psi.UseShellExecute = true;
-                Process.Start(psi);
-                hasDefaultProgram = true;
-            }
-            catch (FileNotFoundException)
-            {
-                hasDefaultProgram = false;
-            }
-            catch
-            {
-                
-            }
-            if (hasDefaultProgram)
-            {
-                System.Diagnostics.Process.Start("explorer.exe", $"{GlobalSetting.GetInstance().SoftwareConfigFileName}");
-            }
-            else
-            {
-                System.Diagnostics.Process.Start("notepad.exe", GlobalSetting.GetInstance().SoftwareConfigFileName);
-
-            }
+            string fileName = GlobalSetting.GetInstance().SoftwareConfigFileName;
+            if (!Tool.HasDefaultProgram(fileName))
+                Process.Start(Tool.HasDefaultProgram(fileName) ? "explorer.exe" : "notepad.exe", fileName);
         }
     }
 }
