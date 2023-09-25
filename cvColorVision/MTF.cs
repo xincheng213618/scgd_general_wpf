@@ -100,32 +100,22 @@ namespace cvColorVision
         }
 
 
-        private static void MTF_saveToCsv(string path, Dictionary<RoiData, double> MTFResults)
+        public static void MTF_saveToCsv(string path, Dictionary<RoiData, double> MTFResults)
         {
             if (!Directory.Exists(path))
                 Directory.CreateDirectory(path);
-            path = path + (path.Substring(path.Length - 1, 1) != "/" ? "\\" : "") + "MTFResult_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
+            path += $"{(path.Substring(path.Length - 1, 1) != "/" ? "\\" : "")}MTFResult_{DateTime.Now:yyyyMMddhhmmss}.csv";
             if (!File.Exists(path))
                 CSVinitialized(path, new List<string>() { "X", "Y", "Width", "Height", "Value" });
-
-            FileStream fs = new FileStream(path, FileMode.Append, FileAccess.Write);
-            StreamWriter sw = new StreamWriter(fs, Encoding.UTF8);
+            using FileStream fs = new FileStream(path, FileMode.Append, FileAccess.Write);
+            using StreamWriter sw = new StreamWriter(fs, Encoding.UTF8);
             foreach (var item in MTFResults)
             {
-                sw.Write(item.Key.Img_x);
-                sw.Write(",");
-                sw.Write(item.Key.Img_y);
-                sw.Write(",");
-                sw.Write(item.Key.w);
-                sw.Write(",");
-                sw.Write(item.Key.h);
-                sw.Write(",");
-                sw.Write(item.Value);
-                sw.WriteLine("");
+                string str = $"{item.Key.Img_x},{item.Key.Img_y},{item.Key.w},{item.Key.h},{item.Value}";
+                sw.Write(str);
+                sw.WriteLine();
             }
             sw.Flush();
-            sw.Close();
-            fs.Close();
         }
 
 

@@ -11,6 +11,7 @@ using System.ComponentModel;
 using cvColorVision.Util;
 using System.Windows.Media.Media3D;
 using OpenCvSharp;
+using System.Xml.Linq;
 
 namespace cvColorVision
 {
@@ -2155,17 +2156,9 @@ namespace cvColorVision
         {
             bool saveHeader = false;
             if (!Directory.Exists(path))
-            {
                 Directory.CreateDirectory(path);
-            }
-            if (path.Substring(path.Length - 1, 1) != "/")
-            {
-                path = path + "\\GhostXYResult_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
-            }
-            else
-            {
-                path = path + "GhostXYResult_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
-            }
+            path += $"{(path.Substring(path.Length - 1, 1) != "/" ? "\\" : "")}GhostXYResult_{DateTime.Now:yyyyMMddhhmmss}.csv";
+
             if (!File.Exists(path))
             {
                 saveHeader = true;
@@ -2208,15 +2201,7 @@ namespace cvColorVision
             bool saveHeader = false;
             if (!Directory.Exists(path))
                 Directory.CreateDirectory(path);
-
-            if (path.Substring(path.Length - 1, 1) != "/")
-            {
-                path = path + "\\GhostResult_" + name + "_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
-            }
-            else
-            {
-                path = path + "GhostResult_" + name + "_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
-            }
+            path += $"{(path.Substring(path.Length - 1, 1) != "/" ? "\\" : "")}GhostResult_{name}_{DateTime.Now:yyyyMMddhhmmss}.csv";
             if (!File.Exists(path))
             {
                 saveHeader = true;
