@@ -14,7 +14,6 @@ namespace ColorVision.MySql.DAO
         public int? Pid { get; set; }
         public string? BatchId { get; set; }
         public string? PL { get; set; }
-        public string? AbsPL { get; set; }
         public string? Ri { get; set; }
         public float x { get; set; }
         public float y { get; set; }
@@ -80,7 +79,6 @@ namespace ColorVision.MySql.DAO
                 Pid = item.Field<int?>("pid"),
                 BatchId = item.Field<string>("batch_id"),
                 PL = item.Field<string>("fPL"),
-                AbsPL = item.Field<string>("fAbsPL"),
                 Ri = item.Field<string>("fRi"),
                 x = item.Field<float>("fx"),
                 y = item.Field<float>("fy"),

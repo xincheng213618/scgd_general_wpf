@@ -2,6 +2,7 @@
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.SettingUp;
+using ColorVision.Util;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -107,7 +108,17 @@ namespace ColorVision.Template
                         System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
                         ofd.Filter = "*.stn|*.stn";
                         if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                        CreateNewTemplate(TemplateControl.FlowParams, Path.GetFileNameWithoutExtension(ofd.FileName), new FlowParam() { FileName = ofd.FileName });
+                        //CreateNewTemplate(TemplateControl.FlowParams, Path.GetFileNameWithoutExtension(ofd.FileName), new FlowParam() { FileName = ofd.FileName });
+                        string name = Path.GetFileNameWithoutExtension(ofd.FileName);
+                        FlowParam? flowParam = TemplateControl.AddFlowParam(name);
+                        if (flowParam != null)
+                        {
+                            flowParam.FileName = Path.GetFileName(ofd.FileName); ;
+                            CreateNewTemplate(TemplateControl.FlowParams, name, flowParam);
+
+                            TemplateControl.GetInstance().Save2DB(flowParam);
+                        }
+                        else MessageBox.Show("数据库创建流程模板失败");
                     };
                     FunctionGrid.Children.Insert(2, button);
 
@@ -127,7 +138,8 @@ namespace ColorVision.Template
                         ofd.Title = "导出流程";
                         ofd.FileName = TemplateControl.FlowParams[ListView1.SelectedIndex].Key;
                         if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                        CreateNewTemplate(TemplateControl.FlowParams, Path.GetFileNameWithoutExtension(ofd.FileName), new FlowParam() { FileName = ofd.FileName });
+
+                        SaveAsFile(ofd.FileName,TemplateControl.FlowParams[ListView1.SelectedIndex].Value);
                     };
                     FunctionGrid.Children.Insert(3, button1);
 
@@ -143,8 +155,10 @@ namespace ColorVision.Template
             base.ShowDialog();
 
         }
-
-
+        private static void SaveAsFile(string sFileName,  FlowParam flow)
+        {
+            Tool.Base64ToFile(flow.DataBase64, sFileName);
+        }
         public ObservableCollection<ListConfig> ListConfigs { get; set; } = new ObservableCollection<ListConfig>();
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -175,7 +189,7 @@ namespace ColorVision.Template
                         if (ListConfigs[listView.SelectedIndex].Value is FlowParam flowParam)
                         {
                             flowParam.Name ??= ListConfigs[listView.SelectedIndex].Name;
-                            new ColorVision.WindowFlowEngine(flowParam) { Owner = Application.Current.MainWindow }.Show();
+                            new WindowFlowEngine(flowParam) { Owner = Application.Current.MainWindow }.Show();
                         }
                         break;
                 }

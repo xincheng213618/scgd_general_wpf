@@ -1,20 +1,20 @@
-﻿using ColorVision.Controls;
-using ColorVision.HotKey;
+﻿using ColorVision.HotKey;
 using ColorVision.MQTT;
 using ColorVision.MySql;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.Encodings.Web;
 using System.Text.Json;
-using System.Text.Unicode;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using ColorVision.Extension;
-using ColorVision.Theme;
+using ColorVision.Themes;
+using ColorVision.Language;
+using System.Globalization;
+using ColorVision.Themes.Controls;
 
 namespace ColorVision.SettingUp
 {
@@ -28,7 +28,6 @@ namespace ColorVision.SettingUp
         {
             InitializeComponent();
         }
-
         private void Window_Initialized(object sender, EventArgs e)
         {
             SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
@@ -39,15 +38,26 @@ namespace ColorVision.SettingUp
                 cmbloglevel.Items.Add(it);
             });
 
-            cmtheme.ItemsSource = from e1 in Enum.GetValues(typeof(Theme.Theme)).Cast<Theme.Theme>()
-                                  select new KeyValuePair<Theme.Theme, string>(e1, e1.ToDescription());
+            cmtheme.ItemsSource = from e1 in Enum.GetValues(typeof(Theme)).Cast<Theme>()
+                                  select new KeyValuePair<Theme, string>(e1, Properties.Resource.ResourceManager.GetString(e1.ToDescription(), CultureInfo.CurrentUICulture)??"");
 
             cmtheme.SelectedValuePath = "Key";
             cmtheme.DisplayMemberPath = "Value";
             cmtheme.SelectionChanged += Cmtheme_SelectionChanged;
 
-            //BitmapImage bitmapImage = new BitmapImage(new Uri(AppDomain.CurrentDomain.BaseDirectory + SoftwareConfig.UserConfig.UserImage));
-            //HeaderImage.Source = bitmapImage;
+            
+            if (LanguageManager.Current.Languages.Count <= 1)
+                lauagDock.Visibility = Visibility.Collapsed;
+
+            cmlauage.ItemsSource = from e1 in LanguageManager.Current.Languages
+                                   select new KeyValuePair<string, string>(e1, LanguageManager.keyValuePairs.TryGetValue(e1, out string value) ? value : e1);
+            cmlauage.SelectedValuePath = "Key";
+            cmlauage.DisplayMemberPath = "Value";
+            cmlauage.SelectionChanged += (s, e) =>
+            {
+                if (cmlauage.SelectedValue is string str)
+                    LanguageManager.Current.LanguageChange(str);
+            };
         }
 
         private void Cmtheme_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -75,26 +85,26 @@ namespace ColorVision.SettingUp
 
         private void ButtonLoad_Click(object sender, RoutedEventArgs e)
         {
-            string json = File.ReadAllText("Hotkey");
-            List<HotKeys> HotKeysList = JsonSerializer.Deserialize<List<HotKeys>>(json) ?? new List<HotKeys>();
-            foreach (HotKeys hotKeys in HotKeysList)
-            {
-                foreach (var item in HotKeys.HotKeysList)
-                {
-                    if (hotKeys.Name == item.Name)
-                    {
-                        item.Hotkey = hotKeys.Hotkey;
-                        item.Kinds = hotKeys.Kinds;
-                    }
-                }
-            }
+            //string json = File.ReadAllText("Hotkey");
+            //List<HotKeys> HotKeysList = JsonSerializer.Deserialize<List<HotKeys>>(json) ?? new List<HotKeys>();
+            //foreach (HotKeys hotKeys in HotKeysList)
+            //{
+            //    foreach (var item in HotKeys.HotKeysList)
+            //    {
+            //        if (hotKeys.Name == item.Name)
+            //        {
+            //            item.Hotkey = hotKeys.Hotkey;
+            //            item.Kinds = hotKeys.Kinds;
+            //        }
+            //    }
+            //}
         }
 
         private void ButtonSave_Click(object sender, RoutedEventArgs e)
         {
-            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions() { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
-            string Json = JsonSerializer.Serialize(HotKeys.HotKeysList, jsonSerializerOptions);
-            File.WriteAllText("Hotkey", Json);
+            //JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions() { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
+            //string Json = JsonSerializer.Serialize(HotKeys.HotKeysList, jsonSerializerOptions);
+            //File.WriteAllText("Hotkey", Json);
         }
 
         private void SetProjectDefault__Click(object sender, RoutedEventArgs e)
@@ -102,7 +112,7 @@ namespace ColorVision.SettingUp
             if (sender is Button button)
             {
                 SoftwareConfig.SolutionConfig.SolutionSetting.DefaultSaveName = "yyyy/dd/MM HH:mm:ss";
-                ButtonContentChange(button, "已重置");
+                ButtonContentChange(button, Properties.Resource.Reseted);
             }
 
         }
@@ -112,7 +122,7 @@ namespace ColorVision.SettingUp
             if (sender is Button button)
             {
                 SoftwareConfig.SolutionConfig.SolutionSetting.DefaultCreatName = "新建工程";
-                ButtonContentChange(button, "已重置");
+                ButtonContentChange(button, Properties.Resource.Reseted);
             }
         }
 
@@ -137,10 +147,12 @@ namespace ColorVision.SettingUp
         {
             new MySqlConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
-
-        private void cmtheme_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-
+            SoftwareConfig.MQTTSetting.MsgRecords.Clear();
+            GlobalSetting.GetInstance().SaveSoftwareConfig();
+            MessageBox.Show("MQTT历史记录清理完毕", "ColorVision");
         }
+
     }
 }

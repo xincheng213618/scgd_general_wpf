@@ -4,16 +4,10 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision"
-        xmlns:effects="http://gu.se/Geometry"
-        xmlns:ScottPlot="clr-namespace:ScottPlot;assembly=ScottPlot.WPF"
-        xmlns:Template ="clr-namespace:ColorVision.Template"
-        xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
-        xmlns:mqtt ="clr-namespace:ColorVision.MQTT"
         xmlns:SettingUp ="clr-namespace:ColorVision.SettingUp"
-        xmlns:converter="clr-namespace:ColorVision.Converter"
         xmlns:hc="https://handyorg.github.io/handycontrol"
-        xmlns:co="clr-namespace:ColorVision.Controls"
         xmlns:resx="clr-namespace:ColorVision.Properties"
+        xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:MainWindow}"
         Title="ColorVision" Height="720" Width="1280"   Initialized="Window_Initialized">
@@ -28,7 +22,7 @@
             <Border   Background="#F9F9F9"  Height="250" Width="250"  CornerRadius="10">
                 <Border Background="#F3F3F3" BorderBrush="#EAEAEA" BorderThickness="1" CornerRadius="5" Margin="5">
                     <Grid>
-                        <co:ProgressRing  BorderBrush="Red" Margin="30" />
+                        <base:ProgressRing  BorderBrush="{DynamicResource GlobalTextBrush}" Margin="30" />
                         <TextBlock x:Name="WaitControlText" Text="正在计算" HorizontalAlignment="Center" FontSize="16"/>
                         <ProgressBar x:Name="WaitControlProgressBar" Visibility="Collapsed" BorderThickness="0"  Maximum="100" Minimum="0"  Height="20" Margin="5" VerticalAlignment="Bottom" />
                     </Grid>
@@ -52,12 +46,7 @@
                     <Separator/>
                     <MenuItem Header="{x:Static resx:Resource.MenuExit}" InputGestureText="Alt + F4" Click="MenuItem_Exit"/>
                 </MenuItem>
-                <MenuItem Header="配置(_S)">
-                    <MenuItem Header="管理员服务配置(_S)"  Tag="ServiceParam" Click="MenuItem_Template"/>
-                    <MenuItem Header="设备配置(_D)"  Tag="DeviceParam" Click="MenuItem_Template"/>
-                    <MenuItem Header="相机视频配置(_V)" Click="MenuItem10_Click"/>
-                </MenuItem>
-                <MenuItem Header="模板(_M)">
+                <MenuItem Header="{x:Static resx:Resource.MenuSettings}">
                     <MenuItem Header="流程模板设置(_F)" Tag="FlowParam"  Click="MenuItem_Template"/>
                     <MenuItem Header="关注点模板设置(_P)" Tag="FocusParm" Click="MenuItem_Template"/>
                     <MenuItem Header="测量模板设置(_S)" Tag="MeasureParm" Click="MenuItem_Template"/>
@@ -68,37 +57,25 @@
                     <MenuItem Header="数据判断模板设置(_J)" Tag="LedReusltParams"  Click="MenuItem_Template"/>
                     <MenuItem Header="源表模板设置(_V)"  Tag="SxParms" Click="MenuItem_Template"/>
                 </MenuItem>
-
                 <MenuItem Header="{x:Static resx:Resource.MenuTool}">
                     <MenuItem Header="流程引擎(_F)" Click="MenuItem9_Click"/>
                     <MenuItem Header="MQTT日志(_Q)" Click="MenuItem_Click"/>
                     <MenuItem Header="MQTT列表(_L)" Click="MenuItem12_Click"/>
-                    <MenuItem Header="MQTT服务(_S)" Click="MenuItem13_Click"/>
-                    <MenuItem Header="登录"  Click="Login_Click"/>
-
+                    <MenuItem Header="管理员服务配置(_S)"  Tag="ServiceParam" Click="MenuItem_Template"/>
+                    <MenuItem Header="设备配置(_D)"  Tag="DeviceParam" Click="MenuItem_Template"/>
+                    <MenuItem Header="{x:Static resx:Resource.Sign_in}"  Click="Login_Click"/>
                     <Separator/>
-                    <MenuItem Header="设置(_O)"  Click="MenuItem_Click_2"   InputGestureText="Ctrl + I"  >
+                    <MenuItem Header="{x:Static resx:Resource.MenuOptions}"  Click="MenuItem_Click_2"   InputGestureText="Ctrl + I"  >
                         <MenuItem.Icon >
                             <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
                         </MenuItem.Icon>
                     </MenuItem>
                 </MenuItem>
-                <!--<MenuItem Header="标定(_A)">
-                    <MenuItem Header="四色校正" Click="MenuItem_Click8"/>
-                </MenuItem>-->
-                <MenuItem  x:Name="MenuStatusBar"  d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  Header="窗口(_W)">
-                    <MenuItem Header="{x:Static resx:Resource.MenuViewSidebar}"  IsChecked="{Binding SoftwareSetting.IsOpenSidebar}"  Click="MenuStatusBar_Click"/>
+                <MenuItem  x:Name="MenuStatusBar"  d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  Header="{ x:Static resx:Resource.MenuView}">
                     <MenuItem Header="{x:Static resx:Resource.MenuViewStatusBar}" IsChecked="{Binding SoftwareSetting.IsOpenStatusBar}"  Click="MenuStatusBar_Click" />
                     <Separator/>
                     <MenuItem Header="保存窗口布局"  Click="MenuStatusBar_Click" />
                     <MenuItem Header="应用窗口布局"  Click="MenuStatusBar_Click" />
-                    <Separator/>
-                    <MenuItem x:Name="Button1" Header="一" Click="Button1_Click_1" Tag="1"/>
-                    <MenuItem x:Name="Button2" Header="二(左右)" Click="Button1_Click_1"  Tag="20"/>
-                    <MenuItem x:Name="Button21" Header="二(上下)" Click="Button1_Click_1"  Tag="21"/>
-                    <MenuItem x:Name="Button3" Header="四" Click="Button1_Click_1"  Tag="4"/>
-                    <MenuItem x:Name="Button4" Header="六" Click="Button1_Click_1"  Tag="6"/>
-                    <MenuItem x:Name="Button5" Header="九" Click="Button1_Click_1"  Tag="9"/>
                 </MenuItem>
 
                 <MenuItem Header="{x:Static resx:Resource.MenuHelp}">
@@ -106,57 +83,38 @@
                     <MenuItem Header="打开配置文件(_S)"  Click="Setting_Click"/>
                     <MenuItem Header="打开日志文件夹(_F)"  Click="LogF_Click"/>
                     <Separator/>
-                    <MenuItem Header="检查更新(_U)" Click="Update_Click"/>
+                    <MenuItem Header="{x:Static resx:Resource.MenuUpdate}" Click="Update_Click"/>
                     <MenuItem Header="我的许可证(_R)"  Click="License_Click"/>
-                    <MenuItem Header="关于(_A)" Click="About_Click"/>
+                    <MenuItem Header="{x:Static resx:Resource.MenuAbout}" Click="About_Click"/>
                 </MenuItem>
             </Menu>
+            <Image Source="{DynamicResource DrawingImageUser}" Width="20" HorizontalAlignment="Right" Margin="0,0,10,0"/>
+            <Button Background="Transparent" BorderThickness="0" Click="Login_Click" Width="20"   HorizontalAlignment="Right" Margin="0,0,10,0"/>
         </Grid>
         <Grid x:Name="ContentGrid" Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition x:Name="SiderCol" Width="Auto" />
-                <ColumnDefinition x:Name="ViewCol" Width="*"/>
+                <ColumnDefinition x:Name="ColumnDefinitionLeft" Width="300" MaxWidth="600"/>
+                <ColumnDefinition MinWidth="200"/>
             </Grid.ColumnDefinitions>
-            <Grid  Grid.Row="0" Background="#F9F9F9" x:Name="SiderBarGrid" d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  MinWidth="150"  Visibility="{Binding SoftwareSetting.IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" >
-                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-                    <StackPanel>
-                        <StackPanel Margin="0,5" Initialized="StackPanelFlow_Initialized">
-                            <ToggleButton  x:Name="ToggleButton_flow"  Style="{StaticResource ButtonPageControl1}" Background="Transparent"  Content="流程"  FontSize="15"  IsChecked="True" />
-                            <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton_flow,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
-                                <StackPanel Margin="5">
-                                    <StackPanel>
-                                        <DockPanel>
-                                            <Label Content="模板"/>
-                                            <ComboBox  x:Name="FlowTemplate" Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value"  DisplayMemberPath="Key"  Height="20" Margin="0,0,5,0"/>
-                                        </DockPanel>
-                                        <UniformGrid Columns="2">
-                                            <Button  Margin="0,5" Content="执行流程"  Click="Button_FlowRun_Click"/>
-                                            <Button  Margin="5" Content="停止流程"  Click="Button_FlowStop_Click"/>
-                                        </UniformGrid>
-                                    </StackPanel>
-                                    <DockPanel>
-                                        <TextBlock Text="输出视图" VerticalAlignment="Center"/>
-                                        <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"  Height="20"  Margin="5,0,5,0" />
-                                    </DockPanel>
-                                </StackPanel>
-                            </Border>
-
-                        </StackPanel>
-
-                        <StackPanel x:Name="StackPanelMQTT" Initialized="StackPanelMQTT_Initialized">
-
-                        </StackPanel>
-
-
+            <Button x:Name="ButtonShiftOut" Panel.ZIndex="100" Click="OnLeftMainContentShiftOut" hc:IconElement.Geometry="{StaticResource LeftGeometry}" Padding="8 8 0 8" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0 0 -16 0" Style="{StaticResource ButtonIconCircular}" />
+            <Grid Grid.Column="1" x:Name="MainContent">
+                <Grid x:Name="ViewGrid"  Background="LightGray"/>
+            </Grid>
+            <Grid Grid.Row="0" Panel.ZIndex="101" Background="{DynamicResource GlobalBackground}" Margin="-1,0,0,0" x:Name="LeftMainContent" d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  Visibility="{Binding SoftwareSetting.IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" >
+                <UIElement.RenderTransform>
+                    <TranslateTransform />
+                </UIElement.RenderTransform>
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" >
+                    <StackPanel x:Name="SPDisplay" >
+                        <Viewbox Width="{Binding ElementName=LeftMainContent,Path=ActualWidth}" >
+                            <StackPanel x:Name="StackPanelMQTT" Width="300" Initialized="StackPanelMQTT_Initialized"  >
+                            </StackPanel>
+                        </Viewbox>
                     </StackPanel>
                 </ScrollViewer>
             </Grid>
-            <Grid Grid.Column="1">
-                <Grid x:Name="ViewGrid"  Background="#c3c3c3">
-                </Grid>
-            </Grid>
-
-            <GridSplitter  Grid.Column="1" Background="LightGray"  Width="2" HorizontalAlignment="Left"   DragCompleted="GridSplitter_DragCompleted"  />
+            <GridSplitter Panel.ZIndex="102" x:Name="GridSplitter" Margin="0,26,0,26" Grid.Column="0" HorizontalAlignment="Right" Width="4" Background="Transparent"/>
+            <Button Grid.Column="0" x:Name="ButtonShiftIn" Visibility="Collapsed" Click="OnLeftMainContentShiftIn" hc:IconElement.Geometry="{StaticResource RightGeometry}" Padding="8 8 0 8" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-12 0 0 0" Style="{StaticResource ButtonIconCircular}" />
         </Grid>
         <Grid Grid.Row="2" x:Name="StatusBarGrid" d:DataContext="{d:DesignInstance SettingUp:GlobalSetting}" Visibility="{Binding SoftwareConfig.SoftwareSetting.IsOpenStatusBar,Converter={StaticResource bool2VisibilityConverter}}" >
             <StatusBar>
@@ -176,31 +134,34 @@
                         <TextBlock Text="{Binding  SoftwareConfig.SolutionConfig.SolutionName}"  MouseLeftButtonDown="TextBlock_MouseLeftButtonDown2"/>
                     </DockPanel>
                 </StatusBarItem>
-                
                 <StatusBarItem Grid.Column="1" >
                     <DockPanel>
-                        <DockPanel.Resources>
-                            <ResourceDictionary Source="/Theme/Icons.xaml"/>
-                        </DockPanel.Resources>
                         <StackPanel Orientation="Horizontal" Margin="0">
                             <Button  Height="15" BorderThickness="0" Background="Transparent" Click="ViewGrid_Click" Tag="1">
-                                <Image Source="{StaticResource DrawingImageSingleWindow}" Margin="-5" />
+                                <Image Source="{DynamicResource DrawingImageSingleWindow}" Margin="-5" />
                             </Button>
                             <Button  Height="15" BorderThickness="0" Background="Transparent" Click="ViewGrid_Click" Tag="20">
-                                <Image Source="{StaticResource DrawingImageTwoWindow1}" Margin="-5" />
+                                <Image Source="{DynamicResource DrawingImageTwoWindow1}" Margin="-5" />
                             </Button>
                             <Button  Height="15" BorderThickness="0" Background="Transparent" Click="ViewGrid_Click" Tag="21">
-                                <Image Source="{StaticResource DrawingImageTwoWindow0}" Margin="-5" />
+                                <Image Source="{DynamicResource DrawingImageTwoWindow0}" Margin="-5" />
+                            </Button>
+                            <Button  Height="15" BorderThickness="0"  Click="ViewGrid_Click" Background="Transparent" Tag="30">
+                                <Image Source="{DynamicResource DrawingImageLeft1Right2}" Margin="-5" />
+                            </Button>
+                            <Button  Height="15" BorderThickness="0"  Click="ViewGrid_Click" Background="Transparent" Tag="31">
+                                <Image Source="{DynamicResource DrawingImageLeft2Right1}" Margin="-5" />
                             </Button>
                             <Button  Height="15" BorderThickness="0"  Click="ViewGrid_Click" Background="Transparent" Tag="4">
-                                <Image Source="{StaticResource DrawingImageFourWindow}" Margin="-5" />
+                                <Image Source="{DynamicResource DrawingImageFourWindow}" Margin="-5" />
                             </Button>
+
                         </StackPanel>
                         <StatusBarItem  MouseLeftButtonDown="TextBlock_MouseLeftButtonDown1" Visibility="{Binding SoftwareConfig.IsUseMySql,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="MySql" >
-                            <ToggleButton x:Name="StatusBarMysql" Style="{StaticResource ButtonDrawingImageMysql}"  Height="20"  Margin="0,-10" IsChecked="{Binding SoftwareConfig.MySqlControl.IsConnect,Mode=OneWay}"  IsEnabled="False"/>
+                            <ToggleButton x:Name="StatusBarMysql" Style="{DynamicResource ButtonDrawingImageMysql}"  Height="20"  Margin="0,-10" IsChecked="{Binding SoftwareConfig.MySqlControl.IsConnect,Mode=OneWay}"  IsEnabled="False"/>
                         </StatusBarItem>
                         <StatusBarItem MouseLeftButtonDown="TextBlock_MouseLeftButtonDown" Visibility="{Binding SoftwareConfig.IsUseMQTT,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="MQTT">
-                            <ToggleButton  x:Name="StatusBarMqtt"   Style="{StaticResource ButtonDrawingImageMQTT}"  Height="20"  Margin="0,-10" IsChecked="{Binding SoftwareConfig.MQTTControl.IsConnect,Mode=OneWay}" IsEnabled="False" />
+                            <ToggleButton  x:Name="StatusBarMqtt"   Style="{DynamicResource ButtonDrawingImageMQTT}"  Height="20"  Margin="0,-10" IsChecked="{Binding SoftwareConfig.MQTTControl.IsConnect,Mode=OneWay}" IsEnabled="False" />
                         </StatusBarItem>
                         <StatusBarItem  x:Name="StatusBarItem1" Visibility="Collapsed"  Content="{Binding PerformanceControl.MemoryThis}"/>
                         <StatusBarItem  x:Name="StatusBarItem2"   Content="{Binding PerformanceControl.Time}"/>

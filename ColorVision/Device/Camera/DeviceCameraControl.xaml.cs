@@ -1,4 +1,5 @@
 ﻿using ColorVision.Extension;
+using cvColorVision;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -33,41 +34,49 @@ namespace ColorVision.Device.Camera
             ComboxCameraTakeImageMode.ItemsSource = from e1 in Enum.GetValues(typeof(TakeImageMode)).Cast<TakeImageMode>()
                                                     select new KeyValuePair<TakeImageMode, string>(e1, e1.ToDescription());
 
+            ComboxCameraImageBpp.ItemsSource = from e1 in Enum.GetValues(typeof(ImageBpp)).Cast<ImageBpp>()
+                                                select new KeyValuePair<ImageBpp, string>(e1, e1.ToDescription());
 
+            var type = MQTTDeviceCamera.Config.CameraType;
 
-            ComboxCameraChannel.Text = MQTTDeviceCamera.Config.Channel.ToString();
-            ComboxCameraImageBpp.Text = MQTTDeviceCamera.Config.ImageBpp.ToString();
-
-
-            CameraID.ItemsSource = CameraService.CameraIDs;
-
-            Service.DeviceStatusChanged += (s) =>
+            if (type == CameraType.LV_Q || type == CameraType.LV_H || type == CameraType.LV_MIL_CL || type == CameraType.MIL_CL)
             {
-                if (s == DeviceStatus.Init)
-                {
-                    ButtonInit.Content = "断开初始化";
-                }
-                if (s == DeviceStatus.UnInit)
-                {
-                    ButtonInit.Content = "初始化";
-                }
+                ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
+                                                  where e1 != ImageChannel.Three
+                                                  select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
+            }
+            else
+            {
+                ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
+                                                  select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
             };
 
-            if (Service.DeviceStatus == DeviceStatus.Init)
+
+            ComboxCameraType.SelectionChanged += (s, e) =>
             {
-                ButtonInit.Content = "断开初始化";
-            }
-            if (Service.DeviceStatus == DeviceStatus.UnInit)
-            {
-                ButtonInit.Content = "初始化";
-            }
+                if (ComboxCameraType.SelectedValue is CameraType type)
+                {
+                    if (type == CameraType.LV_Q || type == CameraType.LV_H || type == CameraType.LV_MIL_CL || type == CameraType.MIL_CL)
+                    {
+                        ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
+                                                          where e1 != ImageChannel.Three
+                                                          select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
+                        ComboxCameraChannel.SelectedValue = ImageChannel.One;
+                    }
+                    else
+                    {
+                        ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
+                                                          select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
+                    };
+                }
+
+            };
+
+            CameraID.ItemsSource = CameraService.CameraIDs;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            MQTTDeviceCamera.Config.Channel = int.Parse(ComboxCameraChannel.Text.ToString());
-            MQTTDeviceCamera.Config.ImageBpp = int.Parse(ComboxCameraImageBpp.Text.ToString());
-
             MQTTEditContent.Visibility = Visibility.Collapsed;
             MQTTShowContent.Visibility = Visibility.Visible;
         }

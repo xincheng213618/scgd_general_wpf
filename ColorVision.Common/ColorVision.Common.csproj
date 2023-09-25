@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+	  <TargetFramework>net6.0-windows</TargetFramework>
+	  <Nullable>enable</Nullable>
+	  <UseWPF>true</UseWPF>
+	  <UseWindowsForms>True</UseWindowsForms>
+	  <ImplicitUsings>disable</ImplicitUsings>
+	  <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Assets\Cursor\cross.cur" />
+    <None Remove="Assets\Cursor\cursor_pan.cur" />
+    <None Remove="Assets\Cursor\cursor_pencil.cur" />
+    <None Remove="Assets\Cursor\Eraser.cur" />
+    <None Remove="Assets\Cursor\fill.cur" />
+    <None Remove="Assets\Cursor\magicwand.cur" />
+    <None Remove="Assets\Cursor\pickup.cur" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\Cursor\cross.cur" />
+    <Resource Include="Assets\Cursor\cursor_pan.cur" />
+    <Resource Include="Assets\Cursor\cursor_pencil.cur" />
+    <Resource Include="Assets\Cursor\Eraser.cur" />
+    <Resource Include="Assets\Cursor\fill.cur" />
+    <Resource Include="Assets\Cursor\magicwand.cur" />
+    <Resource Include="Assets\Cursor\pickup.cur" />
+  </ItemGroup>
+
+</Project>

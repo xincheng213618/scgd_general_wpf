@@ -17,6 +17,19 @@ namespace ColorVision.MQTT
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; NotifyPropertyChanged(); } }
         private bool _IsSelected;
 
+        public virtual UserControl GetDeviceControl()
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual UserControl GetDisplayControl()
+        {
+            throw new NotImplementedException();
+        }
+        public virtual View GetView()
+        {
+            throw new NotImplementedException();
+        }
 
 
         public void Dispose()
@@ -31,6 +44,8 @@ namespace ColorVision.MQTT
         public T Config { get; set; }
         public SysResourceModel SysResourceModel { get; set; }
         public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
+        public string Code { get => SysResourceModel.Code ?? string.Empty; set { SysResourceModel.Code = value; NotifyPropertyChanged(); } }
+
 
         public BaseDevice(SysResourceModel sysResourceModel) : base()
         {
@@ -40,9 +55,9 @@ namespace ColorVision.MQTT
             MenuItem menuItem = new MenuItem() { Header = "删除资源" };
             menuItem.Click += (s, e) =>
             {
-                Parent.RemoveChild(this);
                 if (SysResourceModel != null)
                     ServiceControl.GetInstance().ResourceService.DeleteById(SysResourceModel.Id);
+                Parent.RemoveChild(this);
 
             };
             ContextMenu.Items.Add(menuItem);

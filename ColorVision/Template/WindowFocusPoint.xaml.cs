@@ -1,9 +1,11 @@
-﻿using ColorVision.Extension;
+﻿using ColorVision.Draw;
+using ColorVision.Extension;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.SettingUp;
 using ColorVision.Util;
 using cvColorVision;
+using cvColorVision.Util;
 using log4net;
 using Newtonsoft.Json;
 using NPOI.SS.UserModel;
@@ -26,8 +28,6 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.Template
 {
-
-
     /// <summary>
     /// 关注点模板
     /// </summary>
@@ -325,6 +325,7 @@ namespace ColorVision.Template
         {
             UpdateVisualLayout(true);
         }
+        public ToolBarTop ToolBarTop { get; set; }
 
         private void UpdateVisualLayout(bool IsLayoutUpdated)
         {
@@ -336,25 +337,20 @@ namespace ColorVision.Template
                 }
             }
 
-            if (drawingVisualDatum != null && drawingVisualDatum is IDrawingVisualDatum dw)
+            if (drawingVisualDatum != null && drawingVisualDatum is IDrawingVisualDatum Datum)
             {
-                dw.GetAttribute().Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
+                Datum.Pen.Thickness = 1 / Zoombox1.ContentMatrix.M11;
+                Datum.Render();
             }
 
             if (IsLayoutUpdated)
             {
                 foreach (var item in DrawingVisualLists)
                 {
-                    DrawAttributeBase drawAttributeBase = item.GetAttribute();
-                    if (drawAttributeBase is CircleAttribute circleAttribute)
-                    {
-                        circleAttribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                    }
-                    else if (drawAttributeBase is RectangleAttribute rectangleAttribute)
-                    {
-                        rectangleAttribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                    }
+                    item.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                    item.Render();
                 }
+
             }
         }
 
@@ -375,6 +371,14 @@ namespace ColorVision.Template
                 }
             };
             WindowState = WindowState.Maximized;
+            ImageContentGrid.MouseDown += (s, e) =>
+            {
+                TextBox1.Focus();
+            };
+
+            ToolBarTop = new ToolBarTop(ImageContentGrid, Zoombox1, ImageShow);
+
+            ToolBar1.DataContext = ToolBarTop;
 
 
             ImageShow.VisualsAdd += (s, e) =>
@@ -456,9 +460,9 @@ namespace ColorVision.Template
 
                 CreateImage(PoiParam.Width, PoiParam.Height, System.Windows.Media.Colors.White,false);
                 WaitControlProgressBar.Value = 20;
-                PoiParamToDrawingVisual(PoiParam);
                 DatumSet();
                 ShowDatumArea();
+                PoiParamToDrawingVisual(PoiParam);
                 log.Debug("Render Poi end");
             }
             else
@@ -466,6 +470,7 @@ namespace ColorVision.Template
                 PoiParam.Width = 400;
                 PoiParam.Height = 300;
             }
+
             this.Closed += (s, e) =>
             {
                 if (ImageShow.Source == null)
@@ -476,7 +481,7 @@ namespace ColorVision.Template
                 PoiParam.PoiPoints.Clear();
                 foreach (var item in DrawingVisualLists)
                 {
-                    DrawAttributeBase drawAttributeBase = item.GetAttribute();
+                    DrawBaseAttribute drawAttributeBase = item.GetAttribute();
                     if (drawAttributeBase is CircleAttribute circle)
                     {
                         PoiParamData poiParamData = new PoiParamData()
@@ -567,7 +572,7 @@ namespace ColorVision.Template
         }
         private bool Init;
 
-        private void CreateImage(int width, int height, System.Windows.Media.Color color,bool IsClear = true)
+        private void CreateImage(int width, int height, Color color,bool IsClear = true)
         {
             Thread thread = new Thread(() => 
             {
@@ -822,6 +827,23 @@ namespace ColorVision.Template
             }
 
         }
+
+        private static void DrawSelectRect(DrawingVisual drawingVisual, Rect rect)
+        {
+            using DrawingContext dc = drawingVisual.RenderOpen();
+            dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), rect);
+        }
+        private DrawingVisual SelectRect = new DrawingVisual();
+
+        private bool IsMouseDown;
+        private Point MouseDownP;
+
+        private DrawingVisual? SelectDrawingVisual;
+
+        private DrawingVisualCircle DrawCircleCache;
+        private DrawingVisualRectangle DrawingRectangleCache;
+
+
         private void ImageShow_MouseLeave(object sender, MouseEventArgs e)
         {
 
@@ -834,23 +856,142 @@ namespace ColorVision.Template
 
         private void ImageShow_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            if (sender is DrawCanvas drawCanvas)
+            if (sender is DrawCanvas drawCanvas && !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn))
             {
-                var MouseDownP = e.GetPosition(drawCanvas);
+                MouseDownP = e.GetPosition(drawCanvas);
+                IsMouseDown = true;
+                drawCanvas.CaptureMouse();
 
-                if (drawCanvas.GetVisual(MouseDownP) is IDrawingVisual drawingVisual)
+                if (ToolBarTop.EraseVisual)
+                {
+                    DrawSelectRect(SelectRect, new Rect(MouseDownP, MouseDownP)); ;
+                    drawCanvas.AddVisual(SelectRect);
+                }
+                else if (ToolBarTop.DrawCircle)
+                {
+                    DrawCircleCache = new DrawingVisualCircle() { AutoAttributeChanged = false };
+                    DrawCircleCache.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                    DrawCircleCache.Attribute.Center = MouseDownP;
+                    DrawCircleCache.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
+                    drawCanvas.AddVisual(DrawCircleCache);
+                }
+                else if (ToolBarTop.DrawRect)
+                {
+                    DrawingRectangleCache = new DrawingVisualRectangle() { AutoAttributeChanged = false };
+                    DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, new Point(MouseDownP.X + 30, MouseDownP.Y + 30));
+                    DrawingRectangleCache.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+
+                    drawCanvas.AddVisual(DrawingRectangleCache);
+                }
+                else if (drawCanvas.GetVisual(MouseDownP) is IDrawingVisual drawingVisual)
                 {
                     PropertyGrid2.SelectedObject = drawingVisual.GetAttribute();
 
                     ListView1.ScrollIntoView(drawingVisual);
                     ListView1.SelectedIndex = DrawingVisualLists.IndexOf(drawingVisual);
+
+                    if (ToolBarTop.Activate == true)
+                    {
+                        if (drawingVisual is DrawingVisual visual)
+                            SelectDrawingVisual = visual;
+                    }
                 }
             }
         }
+        Point LastMouseMove;
 
+
+        private void ImageShow_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (sender is DrawCanvas drawCanvas && (Zoombox1.ActivateOn == ModifierKeys.None || !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn)))
+            {
+                var point = e.GetPosition(drawCanvas);
+
+                var controlWidth = drawCanvas.ActualWidth;
+                var controlHeight = drawCanvas.ActualHeight;
+
+                if (IsMouseDown)
+                {
+                    if (ToolBarTop.EraseVisual)
+                    {
+                        DrawSelectRect(SelectRect, new Rect(MouseDownP, point)); ;
+                    }
+                    else if (ToolBarTop.DrawCircle)
+                    {
+                        double Radius = Math.Sqrt((Math.Pow(point.X - MouseDownP.X, 2) + Math.Pow(point.Y - MouseDownP.Y, 2)));
+                        DrawCircleCache.Attribute.Radius = Radius;
+                        DrawCircleCache.Render();
+                    }
+                    else if (ToolBarTop.DrawRect)
+                    {
+                        DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, point);
+                        DrawingRectangleCache.Render();
+                    }
+                    else if (ToolBarTop.DrawPolygon)
+                    {
+
+                    }
+                    else if (SelectDrawingVisual !=null)
+                    {
+                        if (SelectDrawingVisual is IRectangle rectangle)
+                        {
+                            var OldRect = rectangle.Rect;
+                            rectangle.Rect = new Rect(OldRect.X + point.X - LastMouseMove.X, OldRect.Y + point.Y - LastMouseMove.Y, OldRect.Width, OldRect.Height);
+                        }
+                        else if (SelectDrawingVisual is ICircle Circl)
+                        {
+                            Circl.Center += point - LastMouseMove;
+                        }
+                    }
+                }
+                LastMouseMove = point;
+            }
+        }
         private void ImageShow_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            if (sender is DrawCanvas drawCanvas && !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn))
+            {
+                IsMouseDown = false;
+                var MouseUpP = e.GetPosition(drawCanvas);
+                if (ToolBarTop.EraseVisual)
+                {
+                    drawCanvas.RemoveVisual(drawCanvas.GetVisual(MouseDownP));
+                    drawCanvas.RemoveVisual(drawCanvas.GetVisual(MouseUpP));
+                    foreach (var item in drawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP))))
+                    {
+                        drawCanvas.RemoveVisual(item);
+                    }
+                    drawCanvas.RemoveVisual(SelectRect);
+                }
+                else if (ToolBarTop.DrawCircle)
+                {
+                    if (DrawCircleCache.Attribute.Radius == 30)
+                        DrawCircleCache.Render();
+                    
+                    PropertyGrid2.SelectedObject = DrawCircleCache.GetAttribute();
 
+                    DrawCircleCache.AutoAttributeChanged = true;
+
+                    ListView1.ScrollIntoView(DrawCircleCache);
+                    ListView1.SelectedIndex = DrawingVisualLists.IndexOf(DrawCircleCache);
+
+                }
+                else if (ToolBarTop.DrawRect)
+                {
+                    if (DrawingRectangleCache.Attribute.Rect.Width == 30 && DrawingRectangleCache.Attribute.Rect.Height == 30)
+                    {
+                        DrawingRectangleCache.Render();
+                    }
+
+                    PropertyGrid2.SelectedObject = DrawingRectangleCache.GetAttribute();
+                    DrawingRectangleCache.AutoAttributeChanged = true;
+                    ListView1.ScrollIntoView(DrawingRectangleCache);
+                    ListView1.SelectedIndex = DrawingVisualLists.IndexOf(DrawingRectangleCache);
+
+                }
+                drawCanvas.ReleaseMouseCapture();
+                SelectDrawingVisual = null;
+            }
         }
 
         private void ImageShow_MouseWheel(object sender, MouseWheelEventArgs e)
@@ -858,10 +999,7 @@ namespace ColorVision.Template
 
         }
 
-        private void ImageShow_MouseMove(object sender, MouseEventArgs e)
-        {
 
-        }
 
         private async void Button2_Click(object sender, RoutedEventArgs e)
         {
@@ -906,7 +1044,7 @@ namespace ColorVision.Template
                                 switch (PoiParam.DefaultPointType)
                                 {
                                     case RiPointTypes.Circle:
-                                        DrawingVisualCircle Circle = new DrawingVisualCircleWord();
+                                        DrawingVisualCircleWord Circle = new DrawingVisualCircleWord();
                                         Circle.Attribute.Center = new Point(x1, y1);
                                         Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
                                         Circle.Attribute.Brush = Brushes.Transparent;
@@ -978,7 +1116,7 @@ namespace ColorVision.Template
                                     switch (PoiParam.DefaultPointType)
                                     {
                                         case RiPointTypes.Circle:
-                                            DrawingVisualCircle Circle = new DrawingVisualCircleWord();
+                                            DrawingVisualCircleWord Circle = new DrawingVisualCircleWord();
                                             Circle.Attribute.Center = new Point(startL + StepCol * j, startU + StepRow * i);
                                             Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
                                             Circle.Attribute.Brush = Brushes.Transparent;
@@ -1040,7 +1178,7 @@ namespace ColorVision.Template
                                     switch (PoiParam.DefaultPointType)
                                     {
                                         case RiPointTypes.Circle:
-                                            DrawingVisualCircle Circle = new DrawingVisualCircleWord();
+                                            DrawingVisualCircleWord Circle = new DrawingVisualCircleWord();
                                             Circle.Attribute.Center = new Point(point.X, point.Y);
                                             Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
                                             Circle.Attribute.Brush = Brushes.Transparent;
@@ -1181,7 +1319,7 @@ namespace ColorVision.Template
 
                     for (int i = 0; i < testdata; i++)
                     {
-                        DrawingVisualCircle Circle = new DrawingVisualCircleWord();
+                        DrawingVisualCircleWord Circle = new DrawingVisualCircleWord();
                         Circle.Attribute.Center = new Point(zuobiaoX[i], zuobiaoY[i]);
                         Circle.Attribute.Radius = banjin[i];
                         Circle.Attribute.Brush = Brushes.Transparent;
@@ -1232,9 +1370,6 @@ namespace ColorVision.Template
                     WaitControlProgressBar.Visibility = Visibility.Collapsed;
                     WaitControlProgressBar.Value = 0;
                 }
-
-
-
                 ScrollViewer1.ScrollToEnd();
             }
         }
@@ -1317,7 +1452,7 @@ namespace ColorVision.Template
                         Circle.Attribute.Center = PoiParam.DatumArea.Center;
                         Circle.Attribute.Radius = PoiParam.DatumArea.AreaCircleRadius;
                         Circle.Attribute.Brush = Brushes.Transparent;
-                        Circle.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
+                        Circle.Attribute.Pen = new Pen(Brushes.Yellow, 1 / Zoombox1.ContentMatrix.M11);
                         Circle.Render();
                         drawingVisualDatum = Circle;
                         ImageShow.AddVisual(drawingVisualDatum);
@@ -1328,7 +1463,7 @@ namespace ColorVision.Template
                         DrawingVisualDatumRectangle Rectangle = new DrawingVisualDatumRectangle();
                         Rectangle.Attribute.Rect = new Rect(PoiParam.DatumArea.Center - new Vector((int)(Width / 2), (int)(Height / 2)), (PoiParam.DatumArea.Center + new Vector((int)(Width / 2), (int)(Height / 2))));
                         Rectangle.Attribute.Brush = Brushes.Transparent;
-                        Rectangle.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
+                        Rectangle.Attribute.Pen = new Pen(Brushes.Yellow, 1 / Zoombox1.ContentMatrix.M11);
                         Rectangle.Render();
                         drawingVisualDatum = Rectangle;
                         ImageShow.AddVisual(drawingVisualDatum);
@@ -1347,7 +1482,7 @@ namespace ColorVision.Template
 
 
                         DrawingVisualDatumPolygon Polygon = new DrawingVisualDatumPolygon() { IsDrawing = false };
-                        Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
+                        Polygon.Attribute.Pen = new Pen(Brushes.Yellow, 1 / Zoombox1.ContentMatrix.M11);
                         Polygon.Attribute.Brush = Brushes.Transparent;
                         Polygon.Attribute.Points.Add(result[0]);
                         Polygon.Attribute.Points.Add(result[1]);
@@ -1416,7 +1551,7 @@ namespace ColorVision.Template
                 PoiParam.PoiPoints.Clear();
                 foreach (var item in DrawingVisualLists)
                 {
-                    DrawAttributeBase drawAttributeBase = item.GetAttribute();
+                    DrawBaseAttribute drawAttributeBase = item.GetAttribute();
                     if (drawAttributeBase is CircleAttribute circle)
                     {
                         PoiParamData poiParamData = new PoiParamData()
@@ -1452,7 +1587,7 @@ namespace ColorVision.Template
                 WaitControlText.Text = "数据正在保存";
                 Thread thread = new Thread(() =>
                 {
-                    TemplateControl.GetInstance().SavePOI2DB(PoiParam);
+                    TemplateControl.GetInstance().Save2DB(PoiParam);
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         WaitControl.Visibility = Visibility.Collapsed;
@@ -1543,7 +1678,7 @@ namespace ColorVision.Template
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 string filePath = openFileDialog.FileName;
-                bool result=CfgFile.Save<LedCheckCfg>(filePath, ledCheckCfg);
+                bool result=CfgFile.Save(filePath, ledCheckCfg);
                 if (result)
                 {
                     MessageBox.Show("保存成功");
@@ -1553,6 +1688,11 @@ namespace ColorVision.Template
                     MessageBox.Show("保存失败");
                 }
             }
+
+        }
+
+        private void Grid_MouseDown(object sender, MouseButtonEventArgs e)
+        {
 
         }
     }

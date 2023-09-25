@@ -151,7 +151,7 @@
     <value>_Tool</value>
   </data>
   <data name="MenuUpdate" xml:space="preserve">
-    <value>_Update</value>
+    <value>Check For _Updates</value>
   </data>
   <data name="MenuView" xml:space="preserve">
     <value>_View</value>
@@ -161,5 +161,122 @@
   </data>
   <data name="MenuViewStatusBar" xml:space="preserve">
     <value>StatusBar</value>
+  </data>
+  <data name="MenuAbout" xml:space="preserve">
+    <value>_About</value>
+  </data>
+  <data name="MenuSettings" xml:space="preserve">
+    <value>_Settings</value>
+  </data>
+  <data name="MenuOptions" xml:space="preserve">
+    <value>_Options</value>
+  </data>
+  <data name="Sign_in" xml:space="preserve">
+    <value>Sign in</value>
+  </data>
+  <data name="Account" xml:space="preserve">
+    <value>Account</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="AccountLogin" xml:space="preserve">
+    <value>Sign in to ColorVision</value>
+  </data>
+  <data name="Sign_out" xml:space="preserve">
+    <value>Sign out</value>
+  </data>
+  <data name="Create_an_account" xml:space="preserve">
+    <value>Create an account</value>
+  </data>
+  <data name="RecentFiles" xml:space="preserve">
+    <value>Recent _Files</value>
+  </data>
+  <data name="About" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="MenuLanguage" xml:space="preserve">
+    <value>_Language</value>
+  </data>
+  <data name="Theme" xml:space="preserve">
+    <value>Theme</value>
+  </data>
+  <data name="MenuTheme" xml:space="preserve">
+    <value>T_heme</value>
+  </data>
+  <data name="FillPassword" xml:space="preserve">
+    <value>Please enter your password</value>
+  </data>
+  <data name="FillAccount" xml:space="preserve">
+    <value>Please enter your account</value>
+  </data>
+  <data name="TbSettingsStartBoot" xml:space="preserve">
+    <value>Start on boot</value>
+  </data>
+  <data name="WindowHidden" xml:space="preserve">
+    <value>Hide</value>
+  </data>
+  <data name="WindowSingle" xml:space="preserve">
+    <value>Independent</value>
+  </data>
+  <data name="HotKeys" xml:space="preserve">
+    <value>HotKeys</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="Minimize" xml:space="preserve">
+    <value>Minimize</value>
+  </data>
+  <data name="Maximize" xml:space="preserve">
+    <value>Maximize</value>
+  </data>
+  <data name="Pin" xml:space="preserve">
+    <value>Pin</value>
+  </data>
+  <data name="Restore" xml:space="preserve">
+    <value>Restore</value>
+  </data>
+  <data name="ThemeLight" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="ThemeDark" xml:space="preserve">
+    <value>Drak</value>
+  </data>
+  <data name="ThemeUseSystem" xml:space="preserve">
+    <value>UseSystem</value>
+  </data>
+  <data name="LanguageResartSign" xml:space="preserve">
+    <value>You must restart to apply your new language settings</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Female" xml:space="preserve">
+    <value>Female</value>
+  </data>
+  <data name="Male" xml:space="preserve">
+    <value>Male</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="Submit" xml:space="preserve">
+    <value>Submit</value>
+  </data>
+  <data name="Reset" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="Reseted" xml:space="preserve">
+    <value>Reset Completed</value>
   </data>
 </root>

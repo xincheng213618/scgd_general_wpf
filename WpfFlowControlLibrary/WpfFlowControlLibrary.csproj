@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>True</UseWindowsForms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="log4net" Version="2.0.15" />
+    <PackageReference Include="MahApps.Microsoft.DwayneNeed" Version="1.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ColorVision.Common\ColorVision.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="FlowEngineLib">
+      <HintPath>..\DLL\FlowEngineLib.dll</HintPath>
+    </Reference>
+    <Reference Include="ST.Library.UI">
+      <HintPath>..\DLL\ST.Library.UI.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

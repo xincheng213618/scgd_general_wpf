@@ -1,14 +1,14 @@
-﻿using ColorVision.MQTT;
-using ColorVision.MVVM;
+﻿#pragma warning disable CS8602  
+
+using ColorVision.MQTT;
+using ColorVision.MQTT.Service;
 using ColorVision.Template;
-using Newtonsoft.Json;
+using cvColorVision;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Windows;
-using System.Windows.Media.Media3D;
 
 namespace ColorVision.Device.Camera
 {
@@ -40,7 +40,7 @@ namespace ColorVision.Device.Camera
 
             //Connected += (s, e) =>
             //{
-            //    GetAllCameraID();
+            //    CM_GetAllSnID();
             //};
         }
 
@@ -74,9 +74,10 @@ namespace ColorVision.Device.Camera
                                 MD5.Add(MD5IDs[i].ToString());
 
 
-                            if (ServicesDevices.TryGetValue(SubscribeTopic, out ObservableCollection<string> list) && !list.Contains(SnIDs[i].ToString()))
+                            if (ServicesDevices.TryGetValue(SubscribeTopic, out ObservableCollection<string> list))
                             {
-                                list.Add(SnIDs[i].ToString());
+                                if (!list.Contains(SnIDs[i].ToString()))
+                                    list.Add(SnIDs[i].ToString());
                             }
                             else
                             {
@@ -113,7 +114,7 @@ namespace ColorVision.Device.Camera
                         DeviceStatus = DeviceStatus.UnInit;
                         break;
                     case "SetParam":
-                        MessageBox.Show("SetParam");
+
                         break;
                     case "Close":
                         DeviceStatus = DeviceStatus.Closed;
@@ -122,10 +123,28 @@ namespace ColorVision.Device.Camera
                         DeviceStatus = DeviceStatus.Opened;
                         break;
                     case "GetData":
-                        string SaveFileName = msg.Data.SaveFileName;
-                        Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(this, SaveFileName));
+                        try
+                        {
+                            string SaveFileName = msg.Data.SaveFileName;
+                            Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(this, SaveFileName));
+                        }
+                        catch { }
+
                         break;
                     case "GetAutoExpTime":
+                        if (msg.Data != null && msg.Data.result[0].result != null)
+                        {
+                            if (Config.IsExpThree)
+                            {
+                                Config.ExpTimeR = msg.Data.result[0].result;
+                                Config.ExpTimeG = msg.Data.result[1].result;
+                                Config.ExpTimeB = msg.Data.result[2].result;
+                            }
+                            else
+                            {
+                                Config.ExpTime = msg.Data.result[0].result;
+                            }
+                        } 
                         break;
                     case "SaveLicense":
                         break;
@@ -139,22 +158,25 @@ namespace ColorVision.Device.Camera
                 switch (msg.EventName)
                 {
                     case "GetData":
-                        string SaveFileName = msg.Data.SaveFileName;
-                        Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(this, SaveFileName));
+                        //string SaveFileName = msg.Data.SaveFileName;
+                        //Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(this, SaveFileName));
                         break;
                     case "Close":
+                        DeviceStatus = DeviceStatus.UnInit;
                         break;
                     case "Open":
-                        //MessageBox.Show("Open失败，没有许可证");
+                        DeviceStatus = DeviceStatus.UnInit;
                         break;
                     case "Init":
-                        //MessageBox.Show("初始化失败，找不到相机" + Environment.NewLine + "请连接相机或重新初始化服务");
+                        DeviceStatus = DeviceStatus.UnInit;
                         break;
-                    case "Uninit":
-                        //MessageBox.Show("关闭相机失败" + Environment.NewLine + "请连接相机或重新初始化服务");
+                    case "UnInit":
+                        DeviceStatus = DeviceStatus.UnInit;
+                        break;
+                    case "Calibrations":
                         break;
                     default:
-                        //MessageBox.Show($"{msg.EventName}失败");
+                        //DeviceStatus = DeviceStatus.UnInit;
                         break;
                 }
             }
@@ -168,6 +190,9 @@ namespace ColorVision.Device.Camera
 
         public bool Init(CameraType CameraType, string CameraID)
         {
+            if (CameraIDs.Count == 0)
+                GetAllCameraID();
+
             CurrentCameraType = CameraType;
             SnID = CameraID;
             MsgSend msg = new MsgSend
@@ -179,19 +204,13 @@ namespace ColorVision.Device.Camera
             return true;
         }
 
-        public bool UnInit()
+        public MsgRecord UnInit()
         {
-            if (CheckIsRun())
-                return false;
-            MsgSend msg = new MsgSend
-            {
-                EventName = "UnInit",
-            };
-            PublishAsyncClient(msg);
-            return true;
+            MsgSend msg = new MsgSend  {  EventName = "UnInit", };
+            return PublishAsyncClient(msg);
         }
 
-        public void FilterWheelSetPort(int nIndex, int nPort, int eImgChlType)
+        public MsgRecord FilterWheelSetPort(int nIndex, int nPort, int eImgChlType)
         {
             MsgSend msg = new MsgSend
             {
@@ -199,27 +218,103 @@ namespace ColorVision.Device.Camera
                 Params = new Dictionary<string, object>() { { "Func",new List<ParamFunction> (){
                     new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", nIndex }, { "nPort", nPort },{ "eImgChlType" , eImgChlType } }  } } } }
             };
-            PublishAsyncClient(msg);
+            return PublishAsyncClient(msg);
         }
 
-        public bool Calibration()
+
+        private static List<ParamFunction> Calibrations(CalibrationParam item)
+        {
+            var param = new List<ParamFunction>() { };
+
+            ImageChannelType eImgChlType = ImageChannelType.Gray_Y;
+            param.Add( new ParamFunction(){  Name="CM_InitCalibration" });
+            param.Add(new ParamFunction() { Name = "CM_AddChannel",Params=new Dictionary<string, object>() { { "eImgChlType", eImgChlType } } });
+            param.Add(SetPath("DarkNoise", item.SelectedDarkNoise, item.FileNameDarkNoise));
+            param.Add(SetPath("Luminance", item.SelectedLuminance, item.FileNameLuminance));
+            param.Add(SetPath("LumOneColor", item.SelectedColorOne, item.FileNameColorOne));
+            param.Add(SetPath("LumFourColor", item.SelectedColorFour, item.FileNameColorFour));
+            param.Add(SetPath("LumMultiColor", item.SelectedColorMulti, item.FileNameColorMulti));
+            param.Add(SetPath("DSNU", item.SelectedDSNU, item.FileNameDSNU));
+            param.Add(SetPath("Distortion", item.SelectedDistortion, item.FileNameDistortion));
+            param.Add(SetPath("DefectWPoint", item.SelectedDefectWPoint, item.FileNameDefectWPoint));
+            param.Add(SetPath("DefectBPoint", item.SelectedDefectBPoint, item.FileNameDefectBPoint));
+            param.Add(SetPath("FileNameUniformityX",item.SelectedUniformityX, item.FileNameUniformityX));
+            param.Add(SetPath("FileNameUniformityY",item.SelectedUniformityY, item.FileNameUniformityY));
+            param.Add(SetPath("FileNameUniformityZ", item.SelectedUniformityZ, item.FileNameUniformityZ));
+
+            ParamFunction SetPath(string typeName, bool bEnabled, string fileName)
+            {
+                CalibrationType eCaliType =0;
+                switch (typeName)
+                {
+                    case "DarkNoise":
+                        eCaliType = CalibrationType.DarkNoise;
+                        break;
+                    case "DefectWPoint":
+                        eCaliType = CalibrationType.DefectWPoint;
+                        break;
+                    case "DefectBPoint":
+                        eCaliType = CalibrationType.DefectBPoint;
+                        break; 
+                    case "Luminance":
+                        eCaliType = CalibrationType.Luminance;
+                        break;
+                    case "LumOneColor":
+                        eCaliType = CalibrationType.LumOneColor;
+                        break;
+                    case "LumFourColor":
+                        eCaliType = CalibrationType.LumFourColor;
+                        break;
+                    case "LumMultiColor":
+                        eCaliType = CalibrationType.LumMultiColor;
+                        break;
+                    case "Distortion":
+                        eCaliType = CalibrationType.Distortion;
+                        break;
+                    case "DSNU":
+                        eCaliType = CalibrationType.DSNU;
+                        break;
+                    case "FileNameUniformityX":
+                        eCaliType = CalibrationType.Uniformity;
+                        break;
+                    case "FileNameUniformityY":
+                        eCaliType = CalibrationType.Uniformity;
+                        break;
+                    case "FileNameUniformityZ":
+                        eCaliType = CalibrationType.Uniformity;
+                        break;
+                };
+                param.Add(new ParamFunction() { Name = "CM_InsertItem", Params = new Dictionary<string, object>() { { "eImgChlType", eImgChlType }, { "eCaliType", eCaliType } } });
+                return new ParamFunction()
+                {
+                    Name = "CM_SetItemFile",
+                    Params = new Dictionary<string, object>() {
+                            { "eImgChlType",eImgChlType } ,
+                            { "eCaliType", eCaliType } ,
+                            { "bEnabled", bEnabled} ,
+                            { "filename", fileName }
+                        }
+
+                };
+            }
+
+            return param;
+        }
+        public MsgRecord Calibration(CalibrationParam item)
         {
             MsgSend msg = new MsgSend
             {
-                EventName = "SetParam",
+                EventName = "Calibration",
                 Params = new Dictionary<string, object>() {
                 {
-                    "NameFuc", new List<ParamFunction>()
-                    {
-                        new ParamFunction(){Name ="CM_InitCalibration" },
-                        new ParamFunction(){Name ="CM_UnInitCalibration" },
-                    }
-                }
-                }
+                    "Func", Calibrations(item)
+                }   }
             };
 
-            PublishAsyncClient(msg);
-            return true;
+            //new ParamFunction() { Name = "CM_AddChannel" },
+            //new ParamFunction() { Name = "CM_InitCalibration" },
+            //new ParamFunction() { Name = "CM_UnInitCalibration" },
+            return PublishAsyncClient(msg);
         }
 
         public void OpenVideo()
@@ -237,36 +332,65 @@ namespace ColorVision.Device.Camera
             MsgSend msg = new MsgSend
             {
                 EventName = "Open",
-                Params = new Dictionary<string, object>() { { "TakeImageMode", (int)TakeImageMode }, { "CameraID", CameraID }, { "Bpp", ImageBpp } }
+                Params = new Dictionary<string, object>() { { "TakeImageMode", (int)TakeImageMode }, { "CameraID", CameraID }, { "Bpp", ImageBpp },{ "remoteIp", Config.VideoConfig.Host },{ "remotePort", Config.VideoConfig.Port } }
             };
             PublishAsyncClient(msg);
             return true;
         }
 
-        public bool GetData(double expTime, double gain, string saveFileName = "1.tif")
+        public MsgRecord GetData(double expTime, double gain, string saveFileName = "1.tif")
         {
+            SerialNumber  = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            var model = ServiceControl.GetInstance().GetResultBatch(SerialNumber);
+
+
             MsgSend msg = new MsgSend
             {
                 EventName = "GetData",
-                Params = new Dictionary<string, object>() { { "expTime", expTime }, { "gain", gain }, { "savefilename", saveFileName } }
+                Params = new Dictionary<string, object>() { { "nBatchIp", model.Id }, { "expTime", expTime }, { "gain", gain }, { "savefilename", saveFileName }, {"eCaliblype", CalibrationType.LumFourColor } }
             };
-            PublishAsyncClient(msg);
-            return true;
+            return PublishAsyncClient(msg);
         }
 
-        public bool GetAllCameraID()
+        public MsgRecord GetAllCameraID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });
+
+
+        public MsgRecord AutoFocus()
         {
             MsgSend msg = new MsgSend
             {
-                EventName = "CM_GetAllSnID",
+                EventName = "AutoFocus",
+                Params = new Dictionary<string, object>() { {
+                    "Func", new List<ParamFunction>() {
+                        new ParamFunction(){ 
+                            Name ="CM_InitCOM" ,
+                            Params = new Dictionary<string,object>(){
+                                { "eFOCUS_COMMUN", Config.MotorConfig.eFOCUSCOMMUN} ,
+                                { "szComName", Config.MotorConfig.szComName},
+                                { "BaudRate", Config.MotorConfig.BaudRate}
+                            }
+                        },
+                        new ParamFunction()  {
+                            Name ="CM_CalcAutoFocus",
+                            Params = new Dictionary<string,object>(){
+                                { "forwardparam", Config.MotorConfig.AutoFocusConfig.forwardparam} ,
+                                { "curtailparam", Config.MotorConfig.AutoFocusConfig.curtailparam},
+                                { "curStep", Config.MotorConfig.AutoFocusConfig.curStep},
+                                { "stopStep", Config.MotorConfig.AutoFocusConfig.stopStep},
+                                { "minPosition", Config.MotorConfig.AutoFocusConfig.minPosition},
+                                { "maxPosition", Config.MotorConfig.AutoFocusConfig.maxPosition},
+                                { "eEvaFunc", Config.MotorConfig.AutoFocusConfig.eEvaFunc},
+                                { "dMinValue", Config.MotorConfig.AutoFocusConfig.dMinValue}
+                            }
+                        }
+                    }
+                  }
+                }
             };
-            PublishAsyncClient(msg);
-            return true;
+            return PublishAsyncClient(msg);
         }
 
-
-
-        public bool SetCfwport()
+        public MsgRecord GetAutoExpTime()
         {
             MsgSend msg = new MsgSend
             {
@@ -288,89 +412,25 @@ namespace ColorVision.Device.Camera
                     }
                 }
             };
-            PublishAsyncClient(msg);
-            return true;
+            return PublishAsyncClient(msg);
         }
 
-        public bool SetLicense(string md5, string FileData)
+        public MsgRecord SetLicense(string md5, string FileData)
         {
             MsgSend msg = new MsgSend
             {
                 EventName = "SaveLicense",
-                Params = new Dictionary<string, object>() { { "eType", 0 }, { "FileName", md5 }, { "FileData", FileData } }
+                Params = new Dictionary<string, object>() { { "FileName", md5 }, { "FileData", FileData }, { "eType", 0 }}
             };
-            PublishAsyncClient(msg);
-            return true;
+
+            return PublishAsyncClient(msg); 
         }
 
-        public bool Close()
+        public MsgRecord Close()
         {
-            MsgSend msg = new MsgSend
-            {
-                EventName = "Close"
-            };
-            PublishAsyncClient(msg);
-            return true;
+            MsgSend msg = new MsgSend {  EventName = "Close" };
+            return PublishAsyncClient(msg);
         }
-
-
-        private bool CheckIsRun()
-        {
-            if (!MQTTControl.IsConnect)
-                return true;
-
-            if (IsRun)
-            {
-                MessageBox.Show("正在运行中");
-                return true;
-            }
-            IsRun = false;
-            return IsRun;
-        }
-
-
-
-        public class CalibrationParamMQTT : ViewModelBase
-        {
-            public CalibrationParamMQTT(CalibrationParam item)
-            {
-                Luminance = SetPath(item.SelectedLuminance, item.FileNameLuminance);
-                LumOneColor = SetPath(item.SelectedColorOne, item.FileNameColorOne);
-                LumFourColor = SetPath(item.SelectedColorFour, item.FileNameColorFour);
-                LumMultiColor = SetPath(item.SelectedColorMulti, item.FileNameColorMulti);
-                DarkNoise = SetPath(item.SelectedDarkNoise, item.FileNameDarkNoise);
-                DSNU = SetPath(item.SelectedDSNU, item.FileNameDSNU);
-                Distortion = SetPath(item.SelectedDistortion, item.FileNameDistortion);
-                DefectWPoint = SetPath(item.SelectedDefectWPoint, item.FileNameDefectWPoint);
-                DefectBPoint = SetPath(item.SelectedDefectBPoint, item.FileNameDefectBPoint);
-            }
-            private static string? SetPath(bool Check, string Name)
-            {
-                return Check && Name != null ? Path.IsPathRooted(Name) ? Name : Environment.CurrentDirectory + "\\" + Name : null;
-            }
-
-            public string? Luminance { get; set; }
-            [JsonProperty("Uniformity_X")]
-            public string? UniformityX { get; set; }
-            [JsonProperty("Uniformity_Y")]
-            public string? UniformityY { get; set; }
-            [JsonProperty("Uniformity_Z")]
-            public string? UniformityZ { get; set; }
-            public string? LumOneColor { get; set; }
-            public string? LumFourColor { get; set; }
-            public string? LumMultiColor { get; set; }
-            public string? DarkNoise { get; set; }
-            public string? DSNU { get; set; }
-            public string? Distortion { get; set; }
-            public string? DefectWPoint { get; set; }
-            public string? DefectBPoint { get; set; }
-
-
-
-
-        }
-
-
 
     }
 

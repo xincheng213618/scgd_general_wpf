@@ -1,5 +1,4 @@
 ﻿using ColorVision.MQTT;
-using ColorVision.MQTT.Sensor;
 using ColorVision.MySql.DAO;
 using System.Windows.Controls;
 
@@ -11,12 +10,17 @@ namespace ColorVision.Device.SMU
 
         public SMUView View { get; set; }
 
+        public SMUDisplayControl Control { get; set; }
+
         public DeviceSMU(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             SMUService = new SMUService(Config);
             View = new SMUView();
+           
         }
-        public override UserControl GenDeviceControl() => new DeviceSMUControl(this);
+        public override UserControl GetDeviceControl() => new DeviceSMUControl(this);
+        public override UserControl GetDisplayControl() => Control ?? new SMUDisplayControl(this);
+
 
     }
 }

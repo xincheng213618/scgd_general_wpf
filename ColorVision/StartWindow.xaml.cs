@@ -8,6 +8,8 @@ using ColorVision.MySql;
 using ColorVision.MQTT;
 using ColorVision.SettingUp;
 using System.Reflection;
+using ColorVision.MQTT.Service;
+using ColorVision.Service;
 
 namespace ColorVision
 {
@@ -27,10 +29,10 @@ namespace ColorVision
         private void Window_Initialized(object sender, EventArgs e)
         {
             #if (DEBUG == true)
-            labelVersion.Content = $"{(DebugBuild(Assembly.GetExecutingAssembly()) ? " (Debug) " : "(Release)")}{(Debugger.IsAttached ? " (调试中) " : "")} ({(IntPtr.Size == 4 ? "32" : "64")}位) - {System.Reflection.Assembly.GetExecutingAssembly().GetName().Version} - Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy.MM.dd}";
-            #else
-            labelVersion.Content = $"{(DebugBuild(Assembly.GetExecutingAssembly()) ? " (Debug)" : "")}{(Debugger.IsAttached ? " (调试中) " : "")} ({(IntPtr.Size == 4 ? "32" : "64")}位) -  {System.Reflection.Assembly.GetExecutingAssembly().GetName().Version} - Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy/MM/dd})";
-            #endif
+            labelVersion.Text = $"{(DebugBuild(Assembly.GetExecutingAssembly()) ? " (Debug) " : "(Release)")}{(Debugger.IsAttached ? " (调试中) " : "")} ({(IntPtr.Size == 4 ? "32" : "64")}位) - {System.Reflection.Assembly.GetExecutingAssembly().GetName().Version} - Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy.MM.dd}";
+#else
+            labelVersion.Text = $"{(DebugBuild(Assembly.GetExecutingAssembly()) ? " (Debug)" : "")}{(Debugger.IsAttached ? " (调试中) " : "")} {(IntPtr.Size == 4 ? "32" : "64")}位) -  {System.Reflection.Assembly.GetExecutingAssembly().GetName().Version} - Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy/MM/dd}";
+#endif
             Dispatcher.BeginInvoke(new Action(async () => await InitializedOver()));
         }
         private static bool DebugBuild(Assembly assembly)
@@ -55,21 +57,34 @@ namespace ColorVision
             TextBoxMsg.Text += Environment.NewLine + "检测服务连接情况";
             await Task.Delay(100);
 
-            TextBoxMsg.Text += Environment.NewLine + "MQTT连接" + MQTTControl.GetInstance().IsConnect;
-            TextBoxMsg.Text += Environment.NewLine + "MySql连接" + MySqlControl.GetInstance().IsConnect;
-
+            TextBoxMsg.Text += $"{Environment.NewLine}Mysql服务连接: {(MySqlControl.GetInstance().IsConnect ? "成功" : "失败")}";
             if (!MySqlControl.GetInstance().IsConnect && SoftwareConfig.IsUseMySql)
             {
                 MySqlConnect mySqlConnect = new MySqlConnect() { Owner = this };
                 mySqlConnect.ShowDialog();
             }
+            TextBoxMsg.Text += $"{Environment.NewLine}MQTT服务连接: {(MQTTControl.GetInstance().IsConnect ? "成功" : "失败")}";
             if (!MQTTControl.GetInstance().IsConnect && SoftwareConfig.IsUseMQTT)
             {
                 MQTTConnect mQTTConnect = new MQTTConnect() { Owner = this };
                 mQTTConnect.ShowDialog();
+                TextBoxMsg.Text += $"{Environment.NewLine}MQTT服务连接: {(MQTTControl.GetInstance().IsConnect ? "成功" : "失败")}";
             }
             await Task.Delay(100);
-
+            TextBoxMsg.Text += Environment.NewLine + "初始化服务" + MySqlControl.GetInstance().IsConnect;
+            try
+            {
+                if (!GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting.IsDeFaultOpenService)
+                    new WindowDevices() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                else
+                    ServiceControl.GetInstance().GenContorl();
+            }
+            catch
+            {
+                MessageBox.Show("窗口创建错误");
+                Environment.Exit(-1);
+            }
+            await Task.Delay(100);
             MainWindow mainWindow = new MainWindow();
             mainWindow.Show();
             this.Close();

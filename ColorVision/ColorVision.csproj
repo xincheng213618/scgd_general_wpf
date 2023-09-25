@@ -10,28 +10,12 @@
     <ApplicationIcon>Image\ColorVision.ico</ApplicationIcon>
     <StartupObject>ColorVision.App</StartupObject>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <TargetFramework>net6.0-windows</TargetFramework>
   </PropertyGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Remove="app.manifest" />
+  </ItemGroup>
 	
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <NoWarn>1701;1702;WFAC010</NoWarn>
-    <Prefer32Bit>False</Prefer32Bit>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <NoWarn>1701;1702;WFAC010</NoWarn>
-    <Prefer32Bit>False</Prefer32Bit>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <NoWarn>1701;1702;WFAC010</NoWarn>
-    <Prefer32Bit>False</Prefer32Bit>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <NoWarn>1701;1702;WFAC010</NoWarn>
-    <Prefer32Bit>False</Prefer32Bit>
-  </PropertyGroup>
 
   <ItemGroup>
     <ApplicationDefinition Remove="App.xaml" />
@@ -42,22 +26,24 @@
     <None Remove="Image\ColorVision.png" />
     <None Remove="Image\ColorVision1.ico" />
     <None Remove="Image\connect.png" />
-  </ItemGroup>
+  </ItemGroup>  
 
   <ItemGroup>
-    <PackageReference Include="Extended.Wpf.Toolkit" Version="4.5.0" />
+    <PackageReference Include="Extended.Wpf.Toolkit" Version="4.5.1" />
     <PackageReference Include="Gu.Wpf.Geometry" Version="2.2.8" />
     <PackageReference Include="HandyControl" Version="3.4.0" />
     <PackageReference Include="log4net" Version="2.0.15" />
     <PackageReference Include="MQTTnet" Version="4.2.1.781" />
     <PackageReference Include="MySql.Data" Version="8.1.0" />
     <PackageReference Include="MySqlConnector" Version="2.2.7" />
+    <PackageReference Include="NetMQ" Version="4.0.1.13" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="NPOI" Version="2.6.1" />
     <PackageReference Include="OpenCvSharp4" Version="4.8.0.20230708" />
     <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.8.0.20230708" />
+    <PackageReference Include="Panuon.WPF.UI" Version="1.1.15.8" />
     <PackageReference Include="ScottPlot.WPF" Version="4.1.67" />
-    <PackageReference Include="WPF-UI" Version="2.0.3" />
+    <PackageReference Include="WPF-UI" Version="2.1.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -69,14 +55,21 @@
   <ItemGroup>
     <ProjectReference Include="..\ColorVision.Util\ColorVision.Util.csproj" />
     <ProjectReference Include="..\cvColorVision\cvColorVision.csproj" />
+    <ProjectReference Include="..\WpfFlowControlLibrary\WpfFlowControlLibrary.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Reference Include="FlowEngineLib">
       <HintPath>..\DLL\FlowEngineLib.dll</HintPath>
     </Reference>
-    <Reference Include="HslCommunication">
-      <HintPath>..\DLL\HslCommunication.dll</HintPath>
+    <Reference Include="Microsoft.DwayneNeed">
+      <HintPath>..\DLL\Microsoft.DwayneNeed.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.DwayneNeed.Win32">
+      <HintPath>..\DLL\Microsoft.DwayneNeed.Win32.dll</HintPath>
+    </Reference>
+    <Reference Include="MQTTMessageLib">
+      <HintPath>..\DLL\MQTTMessageLib.dll</HintPath>
     </Reference>
     <Reference Include="OpenH264Lib">
       <HintPath>..\DLL\OpenH264Lib.dll</HintPath>
@@ -112,7 +105,7 @@
 
   <ItemGroup>
     <None Update="log4net.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 

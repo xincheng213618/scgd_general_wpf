@@ -1,10 +1,13 @@
-﻿using ColorVision.Device.Camera;
+﻿using ColorVision.Device;
+using ColorVision.Device.Camera;
+using ColorVision.Device.FileServer;
 using ColorVision.Device.PG;
 using ColorVision.Device.Sensor;
 using ColorVision.Device.SMU;
 using ColorVision.Device.Spectrum;
 using ColorVision.MySql.DAO;
 using ColorVision.SettingUp;
+using cvColorVision;
 using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
@@ -63,6 +66,19 @@ namespace ColorVision.MQTT.Service
 
         }
 
+        private SysResourceModel? saveConfigInfo(BaseDeviceConfig deviceConfig, SysResourceModel sysResource)
+        {
+            deviceConfig.Name = TextBox_Name.Text;
+            deviceConfig.Code = TextBox_Code.Text;
+
+            deviceConfig.SendTopic = MQTTService.ServiceConfig.SendTopic;
+            deviceConfig.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;
+            sysResource.Value = JsonConvert.SerializeObject(deviceConfig);
+            ServiceControl.ResourceService.Save(sysResource);
+            int pkId = sysResource.GetPK();
+            if (pkId > 0 && ServiceControl.ResourceService.GetMasterById(pkId) is SysResourceModel model) return model;
+            else return null;
+        }
         private void Button_New_Click(object sender, RoutedEventArgs e)
         {
 
@@ -73,58 +89,40 @@ namespace ColorVision.MQTT.Service
             if (TextBox_Type.SelectedItem is MQTTService mQTTService)
             {
                 SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, mQTTService.SysResourceModel.Type, mQTTService.SysResourceModel.Id, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
-                
                 if (mQTTService.Type == DeviceType.Camera)
                 {
                     CameraConfig cameraConfig1 = new CameraConfig
                     {
-                        ID = "e29b14429bc375b1",
-                        CameraType = CameraType.LVQ,
-                        TakeImageMode = TakeImageMode.Normal,
-                        ImageBpp = 8
+                        ID = TextBox_Code.Text,
+                        Name = TextBox_Name.Text,
+                        CameraType = CameraType.LV_Q,
+                        TakeImageMode = TakeImageMode.Measure_Normal,
+                        ImageBpp = ImageBpp.bpp8
                     };
-                    cameraConfig1.Name = TextBox_Name.Text;
-                    cameraConfig1.Code = TextBox_Code.Text;
-
-                    cameraConfig1.SendTopic = MQTTService.ServiceConfig.SendTopic;
-                    cameraConfig1.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;
-                    sysResource.Value = JsonConvert.SerializeObject(cameraConfig1);
-                    ServiceControl.ResourceService.Save(sysResource);
-                    int pkId = sysResource.GetPK();
-                    if (pkId > 0 && ServiceControl.ResourceService.GetMasterById(pkId) is SysResourceModel model)
+                    SysResourceModel model = saveConfigInfo(cameraConfig1, sysResource);
+                    if (model != null)
                         mQTTService.AddChild(new DeviceCamera(model));
                 }
                 else if (mQTTService.Type == DeviceType.PG)
                 {
                     PGConfig pGConfig = new PGConfig
                     {
-                        ID = "e29b14429bc375b1",
+                        ID = TextBox_Code.Text,
+                        Name = TextBox_Name.Text
                     };
-                    pGConfig.Name = TextBox_Name.Text;
-                    pGConfig.Code = TextBox_Code.Text;
-
-                    pGConfig.SendTopic = MQTTService.ServiceConfig.SendTopic;
-                    pGConfig.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;
-                    sysResource.Value = JsonConvert.SerializeObject(pGConfig);
-                    ServiceControl.ResourceService.Save(sysResource);
-                    int pkId = sysResource.GetPK();
-                    if (pkId > 0 && ServiceControl.ResourceService.GetMasterById(pkId) is SysResourceModel model)
+                    SysResourceModel model = saveConfigInfo(pGConfig, sysResource);
+                    if (model != null)
                         mQTTService.AddChild(new DevicePG(model));
                 }
                 else if (mQTTService.Type == DeviceType.Spectum)
                 {
                     SpectrumConfig config = new SpectrumConfig
                     {
-                        ID = "e29b14429bc375b1",
+                        ID = TextBox_Code.Text,
+                        Name = TextBox_Name.Text
                     };
-                    config.Name = TextBox_Name.Text;
-                    config.Code = TextBox_Code.Text;
-                    config.SendTopic = MQTTService.ServiceConfig.SendTopic;
-                    config.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;
-                    sysResource.Value = JsonConvert.SerializeObject(config);
-                    ServiceControl.ResourceService.Save(sysResource);
-                    int pkId = sysResource.GetPK();
-                    if (pkId > 0 && ServiceControl.ResourceService.GetMasterById(pkId) is SysResourceModel model)
+                    SysResourceModel model = saveConfigInfo(config, sysResource);
+                    if (model != null)
                         mQTTService.AddChild(new DeviceSpectrum(model));
                 }
 
@@ -132,32 +130,31 @@ namespace ColorVision.MQTT.Service
                 {
                     SMUConfig config = new SMUConfig
                     {
-                        ID = "e29b14429bc375b1",
+                        ID = TextBox_Code.Text,
+                        Name = TextBox_Name.Text
                     };
-                    config.Name = TextBox_Name.Text;
-                    config.Code = TextBox_Code.Text;
-                    config.SendTopic = MQTTService.ServiceConfig.SendTopic;
-                    config.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;
-                    sysResource.Value = JsonConvert.SerializeObject(config);
-                    ServiceControl.ResourceService.Save(sysResource);
-                    int pkId = sysResource.GetPK();
-                    if (pkId > 0 && ServiceControl.ResourceService.GetMasterById(pkId) is SysResourceModel model)
+                    SysResourceModel model = saveConfigInfo(config, sysResource);
+                    if (model != null)
                         mQTTService.AddChild(new DeviceSMU(model));
-                }else if (mQTTService.Type == DeviceType.Sensor)
+                }
+                else if (mQTTService.Type == DeviceType.Sensor)
                 {
                     SensorConfig config = new SensorConfig
                     {
-                        ID = "e29b14429bc375b1",
                     };
-                    config.Name = TextBox_Name.Text;
-                    config.Code = TextBox_Code.Text;
-                    config.SendTopic = MQTTService.ServiceConfig.SendTopic;
-                    config.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;
-                    sysResource.Value = JsonConvert.SerializeObject(config);
-                    ServiceControl.ResourceService.Save(sysResource);
-                    int pkId = sysResource.GetPK();
-                    if (pkId > 0 && ServiceControl.ResourceService.GetMasterById(pkId) is SysResourceModel model)
+                    SysResourceModel model = saveConfigInfo(config, sysResource);
+                    if (model != null)
                         mQTTService.AddChild(new DeviceSpectrum(model));
+                }
+                else if (mQTTService.Type == DeviceType.Image)
+                {
+                    FileServerConfig config = new FileServerConfig
+                    {
+
+                    };
+                    SysResourceModel model = saveConfigInfo(config, sysResource);
+                    if (model != null)
+                        mQTTService.AddChild(new DeviceFileServer(model));
                 }
 
                 MessageBox.Show("添加资源成功");

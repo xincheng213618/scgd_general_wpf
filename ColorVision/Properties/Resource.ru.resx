@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="MenuHelp" xml:space="preserve">
+    <value>помощь</value>
+  </data>
+  <data name="MenuFile" xml:space="preserve">
+    <value>Файл(Ф)</value>
+  </data>
+  <data name="MenuCut" xml:space="preserve">
+    <value>Вырезать(Т)</value>
+  </data>
+  <data name="MenuCopy" xml:space="preserve">
+    <value>Копировать (С)</value>
+  </data>
+  <data name="MenuDelete" xml:space="preserve">
+    <value>Удалить(Д)</value>
+  </data>
+  <data name="MenuEdit" xml:space="preserve">
+    <value>Изменить (Е)</value>
+  </data>
+  <data name="MenuExit" xml:space="preserve">
+    <value>Выход(Х)</value>
+  </data>
+  <data name="MenuNew" xml:space="preserve">
+    <value>Новый(Н)</value>
+  </data>
+  <data name="MenuOpen" xml:space="preserve">
+    <value>Открыть(О)</value>
+  </data>
+  <data name="MenuUpdate" xml:space="preserve">
+    <value>Проверить наличие обновлений(U)</value>
+  </data>
+  <data name="MenuView" xml:space="preserve">
+    <value>Посмотреть(В)</value>
+  </data>
+  <data name="MenuViewSidebar" xml:space="preserve">
+    <value>Боковая панель</value>
+  </data>
+  <data name="MenuViewStatusBar" xml:space="preserve">
+    <value>Статус бар</value>
+  </data>
+  <data name="MenuUndo" xml:space="preserve">
+    <value>Отменить(U)</value>
+  </data>
+  <data name="MenuTool" xml:space="preserve">
+    <value>Инструмент(Т)</value>
+  </data>
+  <data name="Sign_in" xml:space="preserve">
+    <value>Авторизоваться</value>
+  </data>
+  <data name="MenuAbout" xml:space="preserve">
+    <value>Об</value>
+  </data>
+  <data name="MenuSettings" xml:space="preserve">
+    <value>Настройки</value>
+  </data>
+  <data name="MenuOptions" xml:space="preserve">
+    <value>Вариант(О)</value>
+  </data>
+  <data name="Account" xml:space="preserve">
+    <value>счет</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>Пароль</value>
+  </data>
+  <data name="AccountLogin" xml:space="preserve">
+    <value>Логин аккаунта</value>
+  </data>
+  <data name="Sign_out" xml:space="preserve">
+    <value>покидать</value>
+  </data>
+  <data name="Create_an_account" xml:space="preserve">
+    <value>Зарегистрируйте</value>
+  </data>
+  <data name="RecentFiles" xml:space="preserve">
+    <value>Недавно использованные файлы(F)</value>
+  </data>
+  <data name="About" xml:space="preserve">
+    <value>о</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>язык пользовательского интерфейса</value>
+  </data>
+  <data name="MenuLanguage" xml:space="preserve">
+    <value>Язык(Л)</value>
+  </data>
+  <data name="Theme" xml:space="preserve">
+    <value>тема</value>
+  </data>
+  <data name="MenuTheme" xml:space="preserve">
+    <value>Тема(H)</value>
+  </data>
+  <data name="FillPassword" xml:space="preserve">
+    <value>Пожалуйста введите пароль</value>
+  </data>
+  <data name="FillAccount" xml:space="preserve">
+    <value>Пожалуйста, введите имя пользователя</value>
+  </data>
+  <data name="TbSettingsStartBoot" xml:space="preserve">
+    <value>Запуск (может быть неудачным)</value>
+  </data>
+  <data name="WindowHidden" xml:space="preserve">
+    <value>скрывать</value>
+  </data>
+  <data name="WindowSingle" xml:space="preserve">
+    <value>независимое окно</value>
+  </data>
+  <data name="HotKeys" xml:space="preserve">
+    <value>быстрая клавиша</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>закрытие</value>
+  </data>
+  <data name="Minimize" xml:space="preserve">
+    <value>минимизировать</value>
+  </data>
+  <data name="Maximize" xml:space="preserve">
+    <value>максимизировать</value>
+  </data>
+  <data name="Pin" xml:space="preserve">
+    <value>прикрепить сверху</value>
+  </data>
+  <data name="Restore" xml:space="preserve">
+    <value>Восстановить вниз</value>
+  </data>
+  <data name="ThemeLight" xml:space="preserve">
+    <value>светлый цвет</value>
+  </data>
+  <data name="ThemeDark" xml:space="preserve">
+    <value>Темный</value>
+  </data>
+  <data name="ThemeUseSystem" xml:space="preserve">
+    <value>Следуйте системе</value>
+  </data>
+  <data name="LanguageResartSign" xml:space="preserve">
+    <value>Необходимо перезагрузить компьютер, чтобы использовать новые языковые настройки</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>сохранять</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="Female" xml:space="preserve">
+    <value>женский</value>
+  </data>
+  <data name="Male" xml:space="preserve">
+    <value>Мужчина</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>Конечно</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>Редактировать</value>
+  </data>
+  <data name="Submit" xml:space="preserve">
+    <value>представлять на рассмотрение</value>
+  </data>
+  <data name="Reset" xml:space="preserve">
+    <value>перезагрузить</value>
+  </data>
+  <data name="Reseted" xml:space="preserve">
+    <value>Сброс завершен</value>
+  </data>
+</root>

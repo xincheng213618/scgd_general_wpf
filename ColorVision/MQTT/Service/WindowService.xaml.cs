@@ -1,9 +1,4 @@
-﻿using ColorVision.Device;
-using ColorVision.Device.Camera;
-using ColorVision.Device.PG;
-using ColorVision.Device.SMU;
-using ColorVision.Device.Spectrum;
-using ColorVision.MQTT;
+﻿using ColorVision.MQTT;
 using ColorVision.MQTT.Service;
 using System;
 using System.Collections.ObjectModel;
@@ -27,15 +22,16 @@ namespace ColorVision.Service
         {
             MQTTServices = ServiceControl.GetInstance().MQTTServices;
             TreeView1.ItemsSource = MQTTServices;
-
-
         }
 
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             StackPanelShow.Children.Clear();
-            if (TreeView1.SelectedItem is BaseObject baseObject)
-                StackPanelShow.Children.Add(baseObject.GenDeviceControl());
+            if (TreeView1.SelectedItem is BaseDevice baseObject)
+                StackPanelShow.Children.Add(baseObject.GetDeviceControl());
+
+            if (TreeView1.SelectedItem is BaseMQTTService baseService)
+                StackPanelShow.Children.Add(baseService.GenDeviceControl());
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

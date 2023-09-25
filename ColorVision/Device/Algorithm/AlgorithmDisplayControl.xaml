@@ -1,0 +1,45 @@
+﻿<UserControl x:Class="ColorVision.Device.POI.AlgorithmDisplayControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ColorVision.Device.POI"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized">
+    <UserControl.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        </Style>
+    </UserControl.Resources>
+    <StackPanel Margin="0,5">
+        <DockPanel>
+            <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Content="关注点服务"  FontSize="15"  IsChecked="True" />
+        </DockPanel>
+        
+
+        <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
+            <StackPanel Margin="5" >
+                    
+                <Button Content="GETSN"  HorizontalAlignment="Right" Click="Algorithm_GET" />
+                <Button Content="初始化"  HorizontalAlignment="Right" Click="Algorithm_INI" />
+                <Button Content="GetData"  HorizontalAlignment="Right" Click="Button_Click" />
+
+                <DockPanel Margin="0,2">
+                    <TextBlock Text="关注点模板：" VerticalAlignment="Center" Width="100"/>
+                    <ComboBox  x:Name="ComboxPoiTemplate"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                </DockPanel>
+                <DockPanel Margin="0,2">
+                    <Button  Content="应用"  HorizontalAlignment="Right" Click="PoiClick" />
+                </DockPanel>
+                <DockPanel Margin="5" >
+                    <TextBlock Text="输出视图："  VerticalAlignment="Center" Width="60"/>
+                    <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"   />
+                </DockPanel>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+
+</UserControl>

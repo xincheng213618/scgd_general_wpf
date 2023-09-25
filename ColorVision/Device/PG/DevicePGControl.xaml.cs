@@ -1,7 +1,5 @@
 ﻿using ColorVision.MQTT.Service;
-using OpenCvSharp.Aruco;
 using System;
-using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 

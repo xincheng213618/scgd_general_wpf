@@ -1,5 +1,4 @@
-﻿using ColorVision.Device;
-using ColorVision.MySql.DAO;
+﻿using ColorVision.MySql.DAO;
 using ColorVision.Service;
 using System.Windows.Controls;
 
@@ -13,9 +12,12 @@ namespace ColorVision.MQTT.Service
         Spectum = 3,
         SMU = 4,
         Sensor = 5,
+        Image = 6,
     }
 
-    public class MQTTServiceKind : BaseObject
+
+
+    public class MQTTServiceKind : BaseMQTTService
     {
         public SysDictionaryModel SysDictionaryModel { get; set; }
         public MQTTServiceKind() : base()

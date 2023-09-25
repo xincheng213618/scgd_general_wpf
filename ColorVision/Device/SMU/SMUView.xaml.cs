@@ -26,35 +26,63 @@ namespace ColorVision.Device.SMU
         {
             spectumResult = new ResultService();
             InitializeComponent();
-            View = new View();
         }
 
         static int ResultNum;
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            ContextMenu ContextMenu = new ContextMenu();
-            MenuItem menuItem = new MenuItem() { Header = "设为主窗口" };
-            menuItem.Click += (s, e) =>
+            TextBox TextBox1 = new TextBox() { Width = 10, Background = System.Windows.Media.Brushes.Transparent, BorderThickness = new Thickness(0), Foreground = System.Windows.Media.Brushes.Transparent };
+            Grid.SetColumn(TextBox1, 0);
+            Grid.SetRow(TextBox1, 0);
+            MainGrid.Children.Insert(0, TextBox1);
+            this.MouseDown += (s, e) =>
             {
-                ViewGridManager.GetInstance().SetOneView(this);
+                TextBox1.Focus();
             };
-            ContextMenu.Items.Add(menuItem);
 
-            MenuItem menuItem1 = new MenuItem() { Header = "展示全部窗口" };
-            menuItem1.Click += (s, e) =>
+            View = new View();
+            View.ViewIndexChangedEvent += (s, e) =>
             {
-                ViewGridManager.GetInstance().SetViewNum(-1);
-            };
-            ContextMenu.Items.Add(menuItem1);
+                if (e == -2)
+                {
+                    MenuItem menuItem3 = new MenuItem { Header = "还原到主窗口中" };
+                    menuItem3.Click += (s, e) =>
+                    {
+                        if (ViewGridManager.GetInstance().IsGridEmpty(View.PreViewIndex))
+                        {
+                            View.ViewIndex = View.PreViewIndex;
+                        }
+                        else
+                        {
+                            View.ViewIndex = -1;
+                        }
+                    };
+                    this.ContextMenu = new ContextMenu();
+                    this.ContextMenu.Items.Add(menuItem3);
 
-            MenuItem menuItem2 = new MenuItem() { Header = "独立窗口中显示" };
-            menuItem2.Click += (s, e) =>
-            {
-                ViewGridManager.GetInstance().SetSingleWindowView(this);
-            };
-            ContextMenu.Items.Add(menuItem2);
+                }
+                else
+                {
+                    MenuItem menuItem = new MenuItem() { Header = "设为主窗口" };
+                    menuItem.Click += (s, e) => { ViewGridManager.GetInstance().SetOneView(this); };
+                    MenuItem menuItem1 = new MenuItem() { Header = "展示全部窗口" };
+                    menuItem1.Click += (s, e) => { ViewGridManager.GetInstance().SetViewNum(-1); };
+                    MenuItem menuItem2 = new MenuItem() { Header = "独立窗口中显示" };
+                    menuItem2.Click += (s, e) => { View.ViewIndex = -2; };
+                    MenuItem menuItem3 = new MenuItem() { Header = Properties.Resource.WindowHidden };
+                    menuItem3.Click += (s, e) => { View.ViewIndex = -1; };
+                    this.ContextMenu = new ContextMenu();
+                    this.ContextMenu.Items.Add(menuItem);
+                    this.ContextMenu.Items.Add(menuItem1);
+                    this.ContextMenu.Items.Add(menuItem2);
+                    this.ContextMenu.Items.Add(menuItem3);
 
-            this.ContextMenu = ContextMenu;
+
+                }
+            };
+
+
+
 
             GridView gridView = new GridView();
             List<string> headers = new List<string> { "序号","属性", "测量时间" };

@@ -2,6 +2,7 @@
 using ColorVision.MySql.Service;
 using ColorVision.SettingUp;
 using ColorVision.Util;
+using cvColorVision.Util;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -40,7 +41,6 @@ namespace ColorVision.Template
         {
             if (!Directory.Exists(AppDomain.CurrentDomain.BaseDirectory+ "cfg"))
                 Directory.CreateDirectory(AppDomain.CurrentDomain.BaseDirectory + "cfg");
-
 
             AoiParams = new ObservableCollection<KeyValuePair<string, AoiParam>>();
             CalibrationParams = new ObservableCollection<KeyValuePair<string, CalibrationParam>>();
@@ -139,7 +139,7 @@ namespace ColorVision.Template
             switch (windowTemplateType)
             {
                 case WindowTemplateType.AoiParam:
-                    if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql) SaveAoi2DB(AoiParams);
+                    if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql) Save2DB(AoiParams);
                     else SaveDefault(FileNameAoiParams, AoiParams);
                     break;
                 case WindowTemplateType.Calibration:
@@ -191,7 +191,7 @@ namespace ColorVision.Template
             modService.Save(value);
         }
 
-        public void SavePOI2DB(PoiParam poiParam)
+        public void Save2DB(PoiParam poiParam)
         {
             poiService.Save(poiParam);
         }
@@ -395,7 +395,7 @@ namespace ColorVision.Template
                     List<ModDetailModel> smuDetails = modService.GetDetailByPid(dbModel.Id);
                     foreach (var dbDetail in smuDetails)
                     {
-                        dbDetail.ValueA = dbDetail.ValueA.Replace("\\r", "\r");
+                        dbDetail.ValueA = dbDetail?.ValueA?.Replace("\\r", "\r");
                     }
                     KeyValuePair<string, PGParam> item = new KeyValuePair<string, PGParam>(dbModel.Name ?? "default", new PGParam(dbModel, smuDetails));
                     PGParams.Add(item);
@@ -445,7 +445,7 @@ namespace ColorVision.Template
                     ModDetailModel fn = item.Value.GetParameter(FlowParam.FileNameKey);
                     if (fn != null)
                     {
-                        string code = Cryptography.GetMd5Hash(fn.ValueA + fn.Id);
+                        string code = fn.GetValueMD5();
                         SysResourceModel res = resourceService.GetByCode(code);
                         if (res != null)
                         {
@@ -520,18 +520,18 @@ namespace ColorVision.Template
            return modService.MasterDeleteById(id);
         }
 
-        internal void SaveAoi2DB(ObservableCollection<KeyValuePair<string, AoiParam>> aoiParams)
+        internal void Save2DB(ObservableCollection<KeyValuePair<string, AoiParam>> aoiParams)
         {
             foreach (var item in aoiParams)
             {
-                SaveAoi2DB(item.Value);
+                Save2DB(item.Value);
             }
         }
-        internal void SaveAoi2DB(AoiParam aoiParam)
+        internal void Save2DB(AoiParam aoiParam)
         {
             modService.Save(aoiParam);
         }
-        internal void SaveFlow2DB(FlowParam flowParam)
+        internal void Save2DB(FlowParam flowParam)
         {
             string fileName = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.SolutionFullName + "\\" + flowParam.FileName;
             flowParam.DataBase64 = Tool.FileToBase64(fileName);

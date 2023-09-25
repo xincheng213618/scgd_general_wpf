@@ -12,7 +12,7 @@ namespace ColorVision.HotKey
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            return (value is bool boll) && (boll) ? "正常" : "热键冲突";
+            return (value is bool boll) && (boll) ? ColorVision.Util.Properties.Resource.HotkeyNormal : Util.Properties.Resource.HotkeyNormal;
 
         }
 
@@ -111,14 +111,14 @@ namespace ColorVision.HotKey
         private void HotkeyTextBox_GotFocus(object sender, RoutedEventArgs e)
         {
             HotkeyTextBox1.Visibility = Visibility.Visible;
-            HotkeyTextBox1.Text = "按按键设置快捷键";
+            HotkeyTextBox1.Text = Util.Properties.Resource.HotKeySet1;
         }
 
         private void HotkeyTextBox_LostFocus(object sender, RoutedEventArgs e)
         {
             if (HotkeyTextBox.Text == "<None>")
             {
-                HotkeyTextBox1.Text = "点击设置快捷键";
+                HotkeyTextBox1.Text = Util.Properties.Resource.HotKeySet2;
             }
             else
             {

@@ -30,37 +30,60 @@ namespace ColorVision.Device.Spectrum
         {
             spectumResult = new ResultService();
             InitializeComponent();
-            View = new View();
         }
 
 
         static int ResultNum;
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            ContextMenu ContextMenu = new ContextMenu();
-            MenuItem menuItem = new MenuItem() { Header = "设为主窗口" };
-            menuItem.Click += (s, e) =>
+
+            TextBox TextBox1 = new TextBox() { Width = 10, Background = System.Windows.Media.Brushes.Transparent, BorderThickness = new Thickness(0), Foreground = System.Windows.Media.Brushes.Transparent };
+            Grid.SetColumn(TextBox1, 0);
+            Grid.SetRow(TextBox1, 0);
+            MainGrid.Children.Insert(0, TextBox1);
+            this.MouseDown += (s, e) =>
             {
-                ViewGridManager.GetInstance().SetOneView(this);
+                TextBox1.Focus();
             };
-            ContextMenu.Items.Add(menuItem);
 
-            MenuItem menuItem1 = new MenuItem() { Header = "展示全部窗口" };
-            menuItem1.Click += (s, e) =>
+            View = new View();
+            View.ViewIndexChangedEvent += (s, e) =>
             {
-                ViewGridManager.GetInstance().SetViewNum(-1);
+                if (e == -2)
+                {
+                    MenuItem menuItem3 = new MenuItem { Header = "还原到主窗口中" };
+                    menuItem3.Click += (s, e) =>
+                    {
+                        if (ViewGridManager.GetInstance().IsGridEmpty(View.PreViewIndex))
+                        {
+                            View.ViewIndex = View.PreViewIndex;
+                        }
+                        else
+                        {
+                            View.ViewIndex = -1;
+                        }
+                    };
+                    this.ContextMenu = new ContextMenu();
+                    this.ContextMenu.Items.Add(menuItem3);
+
+                }
+                else
+                {
+                    MenuItem menuItem = new MenuItem() { Header = "设为主窗口" };
+                    menuItem.Click += (s, e) => { ViewGridManager.GetInstance().SetOneView(this); };
+                    MenuItem menuItem1 = new MenuItem() { Header = "展示全部窗口" };
+                    menuItem1.Click += (s, e) => { ViewGridManager.GetInstance().SetViewNum(-1); };
+                    MenuItem menuItem2 = new MenuItem() { Header = "独立窗口中显示" };
+                    menuItem2.Click += (s, e) => { View.ViewIndex = -2; };
+                    MenuItem menuItem3 = new MenuItem() { Header = Properties.Resource.WindowHidden };
+                    menuItem3.Click += (s, e) => { View.ViewIndex = -1; };
+                    this.ContextMenu = new ContextMenu();
+                    this.ContextMenu.Items.Add(menuItem);
+                    this.ContextMenu.Items.Add(menuItem1);
+                    this.ContextMenu.Items.Add(menuItem2);
+                    this.ContextMenu.Items.Add(menuItem3);
+                }
             };
-            ContextMenu.Items.Add(menuItem1);
-
-            MenuItem menuItem2 = new MenuItem() { Header = "独立窗口中显示" };
-            menuItem2.Click += (s, e) =>
-            {
-                ViewGridManager.GetInstance().SetSingleWindowView(this);
-            };
-            ContextMenu.Items.Add(menuItem2);
-
-            this.ContextMenu = ContextMenu;
-
             wpfplot1.Plot.Title("相对光谱曲线");
             wpfplot1.Plot.XLabel("波长[nm]");
             wpfplot1.Plot.YLabel("相对光谱");
@@ -143,7 +166,7 @@ namespace ColorVision.Device.Spectrum
 
                 listView2.Items.Clear();
 
-                for (int i = 0; i < 4000; i += 10)
+                for (int i = 0; i < (colorParams[listview.SelectedIndex].fSpect2 -380)*10; i += 10)
                 {
                     ListViewItem listViewItem2 = new ListViewItem();
 
@@ -157,14 +180,14 @@ namespace ColorVision.Device.Spectrum
 
                 }
 
-                ListViewItem listViewItem3= new ListViewItem();
+                //ListViewItem listViewItem3= new ListViewItem();
 
-                List<string> strings1 = new List<string>();
-                strings1.Add("780");
-                strings1.Add(colorParams[listview.SelectedIndex].fPL[3998].ToString());
-                strings1.Add((colorParams[listview.SelectedIndex].fPL[3998] * colorParams[listview.SelectedIndex].fPlambda).ToString());
-                listViewItem3.Content = strings1;
-                listView2.Items.Add(listViewItem3);
+                //List<string> strings1 = new List<string>();
+                //strings1.Add("780");
+                //strings1.Add(colorParams[listview.SelectedIndex].fPL[3998].ToString());
+                //strings1.Add((colorParams[listview.SelectedIndex].fPL[3998] * colorParams[listview.SelectedIndex].fPlambda).ToString());
+                //listViewItem3.Content = strings1;
+                //listView2.Items.Add(listViewItem3);
 
             }
         }
@@ -174,35 +197,39 @@ namespace ColorVision.Device.Spectrum
 
         private void DrawPlot()
         {
-            if (MulComparison)
+            if (ScatterPlots.Count > 0)
             {
-                if (LastMulSelectComparsion != null)
+                if (MulComparison)
                 {
-                    LastMulSelectComparsion.Color = Color.DarkGoldenrod;
-                    LastMulSelectComparsion.LineWidth = 1;
-                    LastMulSelectComparsion.MarkerSize = 1;
+                    if (LastMulSelectComparsion != null)
+                    {
+                        LastMulSelectComparsion.Color = Color.DarkGoldenrod;
+                        LastMulSelectComparsion.LineWidth = 1;
+                        LastMulSelectComparsion.MarkerSize = 1;
+                    }
+
+
+                    LastMulSelectComparsion = ScatterPlots[listView1.SelectedIndex];
+                    LastMulSelectComparsion.LineWidth = 3;
+                    LastMulSelectComparsion.MarkerSize = 3;
+                    LastMulSelectComparsion.Color = Color.Red;
+                    wpfplot1.Plot.Add(LastMulSelectComparsion);
+
                 }
+                else
+                {
+                    var temp = ScatterPlots[listView1.SelectedIndex];
+                    temp.Color = Color.DarkGoldenrod;
+                    temp.LineWidth = 1;
+                    temp.MarkerSize = 1;
 
+                    wpfplot1.Plot.Add(temp);
+                    wpfplot1.Plot.Remove(LastMulSelectComparsion);
+                    LastMulSelectComparsion = temp;
 
-                LastMulSelectComparsion = ScatterPlots[listView1.SelectedIndex];
-                LastMulSelectComparsion.LineWidth = 3;
-                LastMulSelectComparsion.MarkerSize = 3;
-                LastMulSelectComparsion.Color = Color.Red;
-                wpfplot1.Plot.Add(LastMulSelectComparsion);
-
+                }
             }
-            else
-            {
-                var temp = ScatterPlots[listView1.SelectedIndex];
-                temp.Color = Color.DarkGoldenrod;
-                temp.LineWidth = 1;
-                temp.MarkerSize = 1;
 
-                wpfplot1.Plot.Add(temp);
-                wpfplot1.Plot.Remove(LastMulSelectComparsion);
-                LastMulSelectComparsion = temp;
-
-            }
             wpfplot1.Refresh();
         }
         bool First;
@@ -296,9 +323,9 @@ namespace ColorVision.Device.Spectrum
         private void ReDrawPlot()
         {
             wpfplot1.Plot.Clear();
-            wpfplot1.Plot.SetAxisLimitsX(380, 810);
+            wpfplot1.Plot.SetAxisLimitsX(colorParams[listView1.SelectedIndex].fSpect1, colorParams[listView1.SelectedIndex].fSpect2);
             wpfplot1.Plot.SetAxisLimitsY(0, 1);
-            wpfplot1.Plot.XAxis.SetBoundary(370, 850);
+            wpfplot1.Plot.XAxis.SetBoundary(colorParams[listView1.SelectedIndex].fSpect1-10, colorParams[listView1.SelectedIndex].fSpect2+10);
             wpfplot1.Plot.YAxis.SetBoundary(0, 1);
             LastMulSelectComparsion = null;
             if (MulComparison)

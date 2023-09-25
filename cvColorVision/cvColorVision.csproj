@@ -15,8 +15,4 @@
     <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.8.0.20230708" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\ColorVision.Util\ColorVision.Util.csproj" />
-  </ItemGroup>
-
 </Project>

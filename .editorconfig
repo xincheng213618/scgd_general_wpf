@@ -4,6 +4,8 @@ dotnet_diagnostic.CA1416.severity = none
 dotnet_diagnostic.WFAC010.severity = none
 # CA1305: 指定 IFormatProvider
 dotnet_diagnostic.CA1305.severity = none
+dotnet_diagnostic.CS8002.severity = none
+
 [*.cs]
 #### 命名样式 ####
 
@@ -106,6 +108,12 @@ csharp_style_inlined_variable_declaration = true:suggestion
 csharp_style_deconstructed_variable_declaration = true:suggestion
 csharp_style_unused_value_assignment_preference = discard_variable:suggestion
 csharp_style_unused_value_expression_statement_preference = discard_variable:silent
+csharp_style_prefer_primary_constructors = true:suggestion
+csharp_style_prefer_readonly_struct = true:suggestion
+csharp_style_prefer_readonly_struct_member = true:suggestion
+csharp_style_allow_blank_line_after_token_in_conditional_expression_experimental = true:silent
+csharp_style_allow_blank_line_after_token_in_arrow_expression_clause_experimental = true:silent
+csharp_style_prefer_utf8_string_literals = true:suggestion
 
 [*.vb]
 #### 命名样式 ####

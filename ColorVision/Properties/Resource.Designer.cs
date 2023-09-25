@@ -61,6 +61,150 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 关于 的本地化字符串。
+        /// </summary>
+        public static string About {
+            get {
+                return ResourceManager.GetString("About", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 账号 的本地化字符串。
+        /// </summary>
+        public static string Account {
+            get {
+                return ResourceManager.GetString("Account", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 账号登录 的本地化字符串。
+        /// </summary>
+        public static string AccountLogin {
+            get {
+                return ResourceManager.GetString("AccountLogin", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 取消 的本地化字符串。
+        /// </summary>
+        public static string Cancel {
+            get {
+                return ResourceManager.GetString("Cancel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 关闭 的本地化字符串。
+        /// </summary>
+        public static string Close {
+            get {
+                return ResourceManager.GetString("Close", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 注册一个 的本地化字符串。
+        /// </summary>
+        public static string Create_an_account {
+            get {
+                return ResourceManager.GetString("Create_an_account", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 编辑 的本地化字符串。
+        /// </summary>
+        public static string Edit {
+            get {
+                return ResourceManager.GetString("Edit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 女 的本地化字符串。
+        /// </summary>
+        public static string Female {
+            get {
+                return ResourceManager.GetString("Female", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请输入账号 的本地化字符串。
+        /// </summary>
+        public static string FillAccount {
+            get {
+                return ResourceManager.GetString("FillAccount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请输入密码 的本地化字符串。
+        /// </summary>
+        public static string FillPassword {
+            get {
+                return ResourceManager.GetString("FillPassword", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 快捷键 的本地化字符串。
+        /// </summary>
+        public static string HotKeys {
+            get {
+                return ResourceManager.GetString("HotKeys", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 用户界面语言 的本地化字符串。
+        /// </summary>
+        public static string Language {
+            get {
+                return ResourceManager.GetString("Language", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 您必须重新启动才能使用新的语言设置 的本地化字符串。
+        /// </summary>
+        public static string LanguageResartSign {
+            get {
+                return ResourceManager.GetString("LanguageResartSign", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 男 的本地化字符串。
+        /// </summary>
+        public static string Male {
+            get {
+                return ResourceManager.GetString("Male", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 最大化 的本地化字符串。
+        /// </summary>
+        public static string Maximize {
+            get {
+                return ResourceManager.GetString("Maximize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 关于(_A) 的本地化字符串。
+        /// </summary>
+        public static string MenuAbout {
+            get {
+                return ResourceManager.GetString("MenuAbout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 复制(_C) 的本地化字符串。
         /// </summary>
         public static string MenuCopy {
@@ -124,6 +268,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 语言(_L) 的本地化字符串。
+        /// </summary>
+        public static string MenuLanguage {
+            get {
+                return ResourceManager.GetString("MenuLanguage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 新建(_N) 的本地化字符串。
         /// </summary>
         public static string MenuNew {
@@ -138,6 +291,33 @@ namespace ColorVision.Properties {
         public static string MenuOpen {
             get {
                 return ResourceManager.GetString("MenuOpen", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 选项(_O) 的本地化字符串。
+        /// </summary>
+        public static string MenuOptions {
+            get {
+                return ResourceManager.GetString("MenuOptions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 设置(_S) 的本地化字符串。
+        /// </summary>
+        public static string MenuSettings {
+            get {
+                return ResourceManager.GetString("MenuSettings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 主题(_H) 的本地化字符串。
+        /// </summary>
+        public static string MenuTheme {
+            get {
+                return ResourceManager.GetString("MenuTheme", resourceCulture);
             }
         }
         
@@ -192,6 +372,177 @@ namespace ColorVision.Properties {
         public static string MenuViewStatusBar {
             get {
                 return ResourceManager.GetString("MenuViewStatusBar", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 最小化 的本地化字符串。
+        /// </summary>
+        public static string Minimize {
+            get {
+                return ResourceManager.GetString("Minimize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 确定 的本地化字符串。
+        /// </summary>
+        public static string OK {
+            get {
+                return ResourceManager.GetString("OK", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 密码 的本地化字符串。
+        /// </summary>
+        public static string Password {
+            get {
+                return ResourceManager.GetString("Password", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 置顶 的本地化字符串。
+        /// </summary>
+        public static string Pin {
+            get {
+                return ResourceManager.GetString("Pin", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 最近使用过的文件(_F) 的本地化字符串。
+        /// </summary>
+        public static string RecentFiles {
+            get {
+                return ResourceManager.GetString("RecentFiles", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 重置 的本地化字符串。
+        /// </summary>
+        public static string Reset {
+            get {
+                return ResourceManager.GetString("Reset", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已重置 的本地化字符串。
+        /// </summary>
+        public static string Reseted {
+            get {
+                return ResourceManager.GetString("Reseted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 向下还原 的本地化字符串。
+        /// </summary>
+        public static string Restore {
+            get {
+                return ResourceManager.GetString("Restore", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 保存 的本地化字符串。
+        /// </summary>
+        public static string Save {
+            get {
+                return ResourceManager.GetString("Save", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 登录 的本地化字符串。
+        /// </summary>
+        public static string Sign_in {
+            get {
+                return ResourceManager.GetString("Sign_in", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 退出 的本地化字符串。
+        /// </summary>
+        public static string Sign_out {
+            get {
+                return ResourceManager.GetString("Sign_out", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 提交 的本地化字符串。
+        /// </summary>
+        public static string Submit {
+            get {
+                return ResourceManager.GetString("Submit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 开机启动(可能会不成功) 的本地化字符串。
+        /// </summary>
+        public static string TbSettingsStartBoot {
+            get {
+                return ResourceManager.GetString("TbSettingsStartBoot", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 主题 的本地化字符串。
+        /// </summary>
+        public static string Theme {
+            get {
+                return ResourceManager.GetString("Theme", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 深色 的本地化字符串。
+        /// </summary>
+        public static string ThemeDark {
+            get {
+                return ResourceManager.GetString("ThemeDark", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 浅色 的本地化字符串。
+        /// </summary>
+        public static string ThemeLight {
+            get {
+                return ResourceManager.GetString("ThemeLight", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 跟随系统 的本地化字符串。
+        /// </summary>
+        public static string ThemeUseSystem {
+            get {
+                return ResourceManager.GetString("ThemeUseSystem", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 隐藏 的本地化字符串。
+        /// </summary>
+        public static string WindowHidden {
+            get {
+                return ResourceManager.GetString("WindowHidden", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 独立窗口 的本地化字符串。
+        /// </summary>
+        public static string WindowSingle {
+            get {
+                return ResourceManager.GetString("WindowSingle", resourceCulture);
             }
         }
     }

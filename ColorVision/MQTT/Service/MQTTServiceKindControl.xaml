@@ -6,6 +6,14 @@
              xmlns:local="clr-namespace:ColorVision.MQTT.Service"
              mc:Ignorable="d" 
              d:DesignHeight="500" d:DesignWidth="800" Initialized="UserControl_Initialized">
+    <UserControl.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        </Style>
+    </UserControl.Resources>
     <Grid Height="500">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -15,7 +23,7 @@
             <StackPanel x:Name="MQTTCreate"   d:DataContext="{d:DesignInstance local:ServiceControl}" Margin="5">
                 <DockPanel Margin="5" >
                     <TextBlock Text="类型" Width="60"/>
-                    <ComboBox x:Name="TextBox_Type" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Name"  DisplayMemberPath="Name" />
+                    <ComboBox x:Name="TextBox_Type"  SelectedValuePath="Name"  DisplayMemberPath="Name" />
                 </DockPanel>
                 <DockPanel Margin="5" >
                     <TextBlock Text="标识" Width="60"/>
@@ -25,12 +33,11 @@
                     <TextBlock Text="名称" Width="60"/>
                     <TextBox x:Name="TextBox_Name" />
                 </DockPanel>
-                <Button   Click="Button_New_Click" Background="#E6E6E6"  Width="250" Content="添加服务" />
+                <Button   Click="Button_New_Click"   Width="250" Content="添加服务" />
             </StackPanel>
         </GroupBox>
         <Grid>
-            <Border Background="#E6E6E6" CornerRadius="5"/>
-            <ListView  x:Name="ListViewService" Background="Transparent" BorderThickness="0">
+            <ListView  x:Name="ListViewService"  BorderThickness="0">
                 <ListView.Resources >
                 </ListView.Resources>
                 <ListView.ItemContainerStyle>

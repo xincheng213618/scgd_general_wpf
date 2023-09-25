@@ -118,34 +118,34 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="MenuCut" xml:space="preserve">
-    <value>カット(_T)</value>
+    <value>切り取る (_T)</value>
   </data>
   <data name="MenuCopy" xml:space="preserve">
-    <value>コピー (_C)</value>
+    <value>コピーする (_C)</value>
   </data>
   <data name="MenuDelete" xml:space="preserve">
-    <value>削除(_D)</value>
+    <value>削除する (_D)</value>
   </data>
   <data name="MenuEdit" xml:space="preserve">
-    <value>編集(_E)</value>
+    <value>編集する (_E)</value>
   </data>
   <data name="MenuExit" xml:space="preserve">
-    <value>出口(_X)</value>
+    <value>終了する (_X)</value>
   </data>
   <data name="MenuFile" xml:space="preserve">
-    <value>ファイル(_F)</value>
+    <value>ファイル (_F)</value>
   </data>
   <data name="MenuNew" xml:space="preserve">
-    <value>新着(_N)</value>
+    <value>新規作成 (_N)</value>
   </data>
   <data name="MenuOpen" xml:space="preserve">
-    <value>開いた(_O)</value>
+    <value>開く (_O)</value>
   </data>
   <data name="MenuUpdate" xml:space="preserve">
-    <value>更新(_U)</value>
+    <value>更新を確認する (_U)</value>
   </data>
   <data name="MenuView" xml:space="preserve">
-    <value>見る(_V）</value>
+    <value>表示 (_V)</value>
   </data>
   <data name="MenuViewSidebar" xml:space="preserve">
     <value>サイドバー</value>
@@ -154,12 +154,129 @@
     <value>ステータスバー</value>
   </data>
   <data name="MenuUndo" xml:space="preserve">
-    <value>元に戻す(_U)</value>
+    <value>取り消す (_U)</value>
   </data>
   <data name="MenuTool" xml:space="preserve">
-    <value>ツール(_T)</value>
+    <value>ツール (_T)</value>
   </data>
   <data name="MenuHelp" xml:space="preserve">
-    <value>助けて(_H)</value>
+    <value>ヘルプ (_H)</value>
+  </data>
+  <data name="Sign_in" xml:space="preserve">
+    <value>ログイン</value>
+  </data>
+  <data name="MenuAbout" xml:space="preserve">
+    <value>について (_A)</value>
+  </data>
+  <data name="MenuSettings" xml:space="preserve">
+    <value>設定 (_S)</value>
+  </data>
+  <data name="MenuOptions" xml:space="preserve">
+    <value>オプション (_O)</value>
+  </data>
+  <data name="Account" xml:space="preserve">
+    <value>アカウン</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>パスワード</value>
+  </data>
+  <data name="AccountLogin" xml:space="preserve">
+    <value>アカウントログイン</value>
+  </data>
+  <data name="Sign_out" xml:space="preserve">
+    <value>サインアウト</value>
+  </data>
+  <data name="Create_an_account" xml:space="preserve">
+    <value>アカウントを作成する</value>
+  </data>
+  <data name="RecentFiles" xml:space="preserve">
+    <value>最近のファイル(_F)</value>
+  </data>
+  <data name="About" xml:space="preserve">
+    <value>について</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>言語</value>
+  </data>
+  <data name="MenuLanguage" xml:space="preserve">
+    <value>言語(_L)</value>
+  </data>
+  <data name="Theme" xml:space="preserve">
+    <value>テーマ</value>
+  </data>
+  <data name="MenuTheme" xml:space="preserve">
+    <value>テーマ（_H）</value>
+  </data>
+  <data name="FillPassword" xml:space="preserve">
+    <value>パスワードを入力してください</value>
+  </data>
+  <data name="FillAccount" xml:space="preserve">
+    <value>アカウントを入力してください</value>
+  </data>
+  <data name="TbSettingsStartBoot" xml:space="preserve">
+    <value>自動起動</value>
+  </data>
+  <data name="WindowHidden" xml:space="preserve">
+    <value>非表示</value>
+  </data>
+  <data name="WindowSingle" xml:space="preserve">
+    <value>独立したウィンドウ</value>
+  </data>
+  <data name="HotKeys" xml:space="preserve">
+    <value>ショートカットキー</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>キャンセル</value>
+  </data>
+  <data name="Minimize" xml:space="preserve">
+    <value>最小化</value>
+  </data>
+  <data name="Maximize" xml:space="preserve">
+    <value>最大化</value>
+  </data>
+  <data name="Pin" xml:space="preserve">
+    <value>ピン留めする</value>
+  </data>
+  <data name="Restore" xml:space="preserve">
+    <value>リセットする</value>
+  </data>
+  <data name="ThemeLight" xml:space="preserve">
+    <value>ライトテーマ</value>
+  </data>
+  <data name="ThemeDark" xml:space="preserve">
+    <value>ダークカラー</value>
+  </data>
+  <data name="ThemeUseSystem" xml:space="preserve">
+    <value>システムのテーマを使用する</value>
+  </data>
+  <data name="LanguageResartSign" xml:space="preserve">
+    <value>新しい言語設定を使用するためには、再起動が必要です</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>キャンセル</value>
+  </data>
+  <data name="Male" xml:space="preserve">
+    <value>男性</value>
+  </data>
+  <data name="Female" xml:space="preserve">
+    <value>女性</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>編集する</value>
+  </data>
+  <data name="Submit" xml:space="preserve">
+    <value>提出する</value>
+  </data>
+  <data name="Reset" xml:space="preserve">
+    <value>リセット</value>
+  </data>
+  <data name="Reseted" xml:space="preserve">
+    <value>リセット完了</value>
   </data>
 </root>

@@ -6,10 +6,12 @@ using MQTTnet.Client;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
+using System.Windows;
 
 namespace ColorVision.MQTT
 {
@@ -32,6 +34,7 @@ namespace ColorVision.MQTT
 
         public override string SubscribeTopic { get => Config.SubscribeTopic; set { Config.SubscribeTopic = value; } }
         public override string SendTopic { get => Config.SendTopic; set { Config.SendTopic = value; } }
+        public override int HeartbeatTime { get => Config.HeartbeatTime; set { Config.HeartbeatTime = value; NotifyPropertyChanged(); } }
 
         public override bool IsAlive { get => Config.IsAlive; set { Config.IsAlive = value; NotifyPropertyChanged(); }   }
 
@@ -44,6 +47,7 @@ namespace ColorVision.MQTT
 
             SendTopic = Config.SendTopic;
             SubscribeTopic = Config.SubscribeTopic;
+            MQTTControl = MQTTControl.GetInstance();
             MQTTControl.SubscribeCache(SubscribeTopic);
         }
     }
@@ -65,7 +69,7 @@ namespace ColorVision.MQTT
             MQTTControl = MQTTControl.GetInstance();
             MQTTSetting = MQTTControl.MQTTSetting;
             MQTTControl.ApplicationMessageReceivedAsync += Processing;
-            var timer = new System.Timers.Timer
+            var timer = new Timer
             {
                 Interval = TimeSpan.FromSeconds(1).TotalMilliseconds,
                 AutoReset = true,
@@ -98,12 +102,11 @@ namespace ColorVision.MQTT
 
                     lock (_locker)
                     {
-
-
                         if (timers.TryGetValue(json.MsgID, out var value))
                         {
                             value.Enabled = false;
                             timers.Remove(json.MsgID);
+                            MsgReturnReceived?.Invoke(json);
                         }
                         MsgRecord foundMsgRecord = MsgRecords.FirstOrDefault(record => record.MsgID == json.MsgID);
                         if (foundMsgRecord != null)
@@ -128,9 +131,9 @@ namespace ColorVision.MQTT
             return Task.CompletedTask;
         }
 
-        private void Timer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
+        private void Timer_Elapsed(object? sender, ElapsedEventArgs e)
         {
-            if (DateTime.Now - LastAliveTime > TimeSpan.FromSeconds(MQTTSetting.AliveTimeout))
+            if (DateTime.Now - LastAliveTime > TimeSpan.FromMilliseconds(HeartbeatTime))
             {
                 IsAlive = false;
             }
@@ -150,7 +153,11 @@ namespace ColorVision.MQTT
         public MQTTControl MQTTControl { get; set; }
         public ulong ServiceID { get; set; }
         public string SnID { get; set; }
+        public string SerialNumber { get; set; }
         public string ServiceName { get; set; }
+
+        public virtual int HeartbeatTime { get => _HeartbeatTime; set { _HeartbeatTime = value; NotifyPropertyChanged(); } }
+        private int _HeartbeatTime = 2000;
 
         public virtual DateTime LastAliveTime { get => _LastAliveTime; set { _LastAliveTime = value; NotifyPropertyChanged(); } } 
         private DateTime _LastAliveTime = DateTime.MinValue;
@@ -169,12 +176,13 @@ namespace ColorVision.MQTT
         /// 这里修改成可以继承的
         /// </summary>
         /// <param name="msg"></param>
-        internal virtual void PublishAsyncClient(MsgSend msg)
+        internal virtual MsgRecord PublishAsyncClient(MsgSend msg)
         {
             Guid guid = Guid.NewGuid(); 
             msg.MsgID = guid;
             msg.ServiceID = ServiceID;
             msg.SnID = SnID;
+            msg.SerialNumber = SerialNumber;
             ///这里是为了兼容只前的写法，后面会修改掉
             if (string.IsNullOrWhiteSpace(msg.ServiceName))
             {
@@ -184,14 +192,16 @@ namespace ColorVision.MQTT
 
             Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, json, false));
 
-            if (msg.EventName == "CM_GetAllSnID")
-                return;
-
             MsgRecord msgRecord = new MsgRecord {SendTopic=SendTopic,SubscribeTopic =SubscribeTopic ,MsgID = guid.ToString(), SendTime = DateTime.Now, MsgSend = msg,MsgRecordState = MsgRecordState.Send};
-            
-            MQTTSetting.MsgRecords.Insert(0,msgRecord);
 
-            MsgRecords.Add(msgRecord);
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                MQTTSetting.MsgRecords.Insert(0, msgRecord);
+                MsgRecords.Add(msgRecord);
+            }
+            );
+
+  
 
             Timer timer = new Timer(MQTTSetting.SendTimeout*1000);
             timer.Elapsed += (s, e) =>
@@ -203,9 +213,12 @@ namespace ColorVision.MQTT
             };
             timer.AutoReset = false;
             timer.Enabled = true;
+            lock (_locker)
+            {
+                timers.Add(guid.ToString(), timer);
+            }
             timer.Start();
-            timers.Add(guid.ToString(), timer);
-
+            return msgRecord;
         }
 
         public void Dispose()
@@ -215,8 +228,11 @@ namespace ColorVision.MQTT
         }
     }
 
+    public delegate void MsgRecordStateChangedHandler(MsgRecordState msgRecordState);
     public class MsgRecord:ViewModelBase, IServiceConfig
     {
+        public event MsgRecordStateChangedHandler MsgRecordStateChanged;
+
         public string SubscribeTopic { get; set; }
         public string SendTopic { get; set; }
 
@@ -232,6 +248,7 @@ namespace ColorVision.MQTT
             {
                 _MsgRecordState = value;
                 NotifyPropertyChanged();
+                Application.Current.Dispatcher.Invoke(()=> MsgRecordStateChanged?.Invoke(MsgRecordState));
                 if (value == MsgRecordState.Success ||  value == MsgRecordState.Fail)
                 {
                     NotifyPropertyChanged(nameof(IsRecive));
@@ -262,9 +279,13 @@ namespace ColorVision.MQTT
     }
     public enum MsgRecordState
     {
+        [Description("已经发送")]
         Send,
+        [Description("命令成功")]
         Success,
+        [Description("命令失败")]
         Fail,
+        [Description("命令超时")]
         Timeout
     }
 

@@ -9,17 +9,31 @@ namespace ColorVision.MySql.Service
         private SMUResultDao smuDao;
         private BatchResultMasterDao batchDao;
 
+        private PoiResultDao poiResultDao;
+
+
         public ResultService()
         {
             spectumDao = new SpectumResultDao();
             smuDao = new SMUResultDao();
             batchDao = new BatchResultMasterDao();
+            poiResultDao = new PoiResultDao();
         }
 
         internal int SpectumDeleteById(int id)
         {
             return spectumDao.DeleteById(id);
         }
+
+        internal List<PoiResultModel> PoiSelectByBatchID(int batchid) => poiResultDao.GetAllByBatchid(batchid);
+
+        internal List<PoiResultModel> PoiSelectBySN(string sn) 
+        {
+            BatchResultMasterModel batch = batchDao.GetByCode(sn);
+            if (batch == null) return poiResultDao.selectBySN(sn);
+            else return poiResultDao.GetAllByPid(batch.Id);
+        }
+
 
         internal List<SpectumResultModel> SpectumSelectBySN(string sn)
         {
@@ -43,6 +57,11 @@ namespace ColorVision.MySql.Service
         public int BatchSave(BatchResultMasterModel model)
         {
             return batchDao.Save(model);
+        }
+
+        internal int BatchUpdateEnd(string bid, int totalTime, string result)
+        {
+            return batchDao.UpdateEnd(bid, totalTime, result);
         }
     }
 }

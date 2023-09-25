@@ -5,9 +5,18 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.MQTT.Service"
         xmlns:mqtt="clr-namespace:ColorVision.MQTT"
+        xmlns:resx="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         xmlns:set="clr-namespace:ColorVision.SettingUp"
-        Title="服务配置" Height="600" Width="800" Initialized="Window_Initialized" >
+        Title="服务配置" Height="600" Width="800" Background="{DynamicResource GlobalBackground}"  Initialized="Window_Initialized" >
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        </Style>
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="50"/>
@@ -16,7 +25,13 @@
         </Grid.RowDefinitions>
         <Grid  x:Name="Grid1" d:DataContext="{d:DesignInstance set:UserConfig}">
             <Border>
-                <TextBlock Text="{Binding UserName}"  HorizontalAlignment="Center"/>
+                <Grid Margin="10">
+                    <TextBlock  HorizontalAlignment="Left" FontSize="15"  VerticalAlignment="Center">
+                        <Run Text="尊敬的："/>
+                        <Run Text="{Binding UserName}"/>
+                        <Run Text="用户您好，请选择您要加载的资源："/>
+                    </TextBlock>
+                </Grid>
             </Border>
             <StackPanel HorizontalAlignment="Right" VerticalAlignment="Bottom">
                 <Button Content="高级设置" Click="Button_Click_1" />
@@ -52,41 +67,20 @@
                 </TreeView.ItemContainerStyle>
 
             </TreeView>
+            <Border Background="{DynamicResource GlobalBorderBrush1}" CornerRadius="5" Grid.Column="1" Margin="5" >
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" >
+                    <StackPanel x:Name="StackPanelShow" Grid.Column="1"  >
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
 
-            <StackPanel x:Name="StackPanelShow" Grid.Column="1" Margin="5" >
 
-            </StackPanel>
+
         </Grid>
         
         <Border  Grid.Row="2">
             <StackPanel>
-
-                <Button  Height="40"  Width="300"  Margin="5" Background="#E6E6E6" Click="Button_Click">
-                    <Button.Template>
-                        <ControlTemplate TargetType="{x:Type Button}">
-                            <Border x:Name="Bd" Background="{TemplateBinding Background}" 	BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"	CornerRadius="3">
-                                <Grid>
-                                    <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}"  RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 	VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
-                                </Grid>
-                            </Border>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsMouseOver" Value="true">
-                                    <Setter TargetName="Bd" Property="Background" Value="#6EA646"/>
-                                    <Setter Property="Foreground" Value="White"/>
-                                </Trigger>
-                                <Trigger Property="IsEnabled" Value="false">
-                                    <Setter TargetName="Bd" Property="Opacity" Value="0.5"/>
-                                    <Setter Property="Foreground" Value="#9D9D9D"/>
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Button.Template>
-                    <Button.Content>
-                        <StackPanel Orientation="Horizontal" >
-                            <TextBlock FontSize="18"  Text="确定"/>
-                        </StackPanel>
-                    </Button.Content>
-                </Button>
+                <Button  Height="40"  Width="300"  Content="{x:Static resx:Resource.OK}" FontSize="18" Margin="5"  Click="Button_Click"/>
             </StackPanel>
         </Border>
     </Grid>

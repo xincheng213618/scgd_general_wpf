@@ -44,6 +44,7 @@ namespace ColorVision.MQTT
             }
             MQTTConfigs.Remove(MQTTConfig);
             GlobalSetting.GetInstance().SaveSoftwareConfig();
+            FlowEngineLib.MQTTHelper.SetDefaultCfg(MQTTConfig.Host, MQTTConfig.Port, MQTTConfig.UserName, MQTTConfig.UserPwd, false, null);
             Task.Run(() => MQTTControl.GetInstance().Connect(MQTTConfig));
             this.Close();
         }

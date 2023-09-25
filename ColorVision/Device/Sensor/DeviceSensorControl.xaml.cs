@@ -1,10 +1,9 @@
-﻿using ColorVision.Device.Sensor;
-using ColorVision.MQTT.Service;
+﻿using ColorVision.MQTT.Service;
 using System;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.MQTT.Sensor
+namespace ColorVision.Device.Sensor
 {
     /// <summary>
     /// DevicePGControl.xaml 的交互逻辑

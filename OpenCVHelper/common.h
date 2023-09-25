@@ -14,3 +14,6 @@ extern "C" OPENCV_API void SetInitialFrame(InitialFrame fn);
 extern "C" OPENCV_API void SetUpdateFrame(UpdateFrame fn);
 
 extern "C" OPENCV_API int ReadCVFile(char* FilePath);
+
+extern "C" OPENCV_API int ReadVideoTest(char* FilePath);
+

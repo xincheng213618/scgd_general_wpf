@@ -1,8 +1,24 @@
 # scgd_general_wpf
 
 项目开发环境，NET 6.0 , WPF, C# , VS2022 企业版, Win11 
-默认分辨率：1920x1080
+默认分辨率：1920x1080,100%
 项目在版本相同的情况下，不支持多开
+
+支持操作系统：Win10,Win11
+
+支持主题：深色，浅色，跟随系统
+
+支持语言：简体中文，繁体中文，韩语，日本语，英语（美式）
+
+支持开机自启
+
+## 翻译API：
+
+Google apikey  AIzaSyBElxN8V59CXS0ML-Q5YC7Do-Rza8FGawE
+
+Baidu  AppID：20180402000142443
+
+​            SecretKey:bTLryuKSa4vWCJLs0ECO
 
 ## 项目结构
 
@@ -350,3 +366,10 @@
 ```
 
 ### PG协议
+
+
+
+
+
+
+

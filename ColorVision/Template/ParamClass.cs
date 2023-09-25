@@ -1,4 +1,6 @@
-﻿using ColorVision.MVVM;
+﻿#pragma warning disable CS8603  
+
+using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.SettingUp;
 using System;

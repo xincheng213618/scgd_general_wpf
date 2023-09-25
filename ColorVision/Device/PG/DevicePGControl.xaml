@@ -4,13 +4,21 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Device.PG"
-             mc:Ignorable="d" 
+             xmlns:resx="clr-namespace:ColorVision.Properties"
              xmlns:hc="https://handyorg.github.io/handycontrol"
+             mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:DevicePG}"
              d:DesignHeight="400" d:DesignWidth="600" Initialized="UserControl_Initialized">
+    <UserControl.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        </Style>
+    </UserControl.Resources>
     <Grid>
         <Grid Margin="0,0,0,5">
-            <Border Background="#EEEEEE" CornerRadius="5"/>
             <StackPanel>
                 <Grid x:Name="MQTTShow" Margin="5">
                     <Grid  x:Name="MQTTShowContent">
@@ -18,58 +26,105 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="50"/>
                         </Grid.ColumnDefinitions>
-                        <StackPanel >
-                            <TextBlock Text="{Binding Name}"/>
-                            <TextBlock Text="{Binding Config.Name}"/>
-                            <TextBlock Text="{Binding Config.ID}"/>
-                            <TextBlock Text="{Binding Config.MD5}"/>
-                            <TextBlock Text="{Binding Config.SendTopic}"/>
-                            <TextBlock Text="{Binding Config.SubscribeTopic}"/>
-                            <TextBlock Text="{Binding Config.IsAlive}"/>
-                        </StackPanel>
-                        <Button  Grid.Column="1" Content="编辑"  Click="Button_Click_1"/>
+                        <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5" Margin="0,0,5,0">
+                            <StackPanel Margin="5">
+                                <DockPanel Margin="5,2">
+                                    <TextBlock Text="{Binding Config.Name}" FontWeight="Bold" FontSize="20"/>
+                                    <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  Width="20"  HorizontalAlignment="Right" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
+                                </DockPanel>
+                                <GroupBox Header="基本信息" Margin="0,5">
+                                    <StackPanel Margin="5">
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="PG ID" Width="120"/>
+                                            <TextBlock Text="{Binding Config.ID}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="发送信道" Width="120"/>
+                                            <TextBlock Text="{Binding Config.SendTopic}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="接收信道" Width="120"/>
+                                            <TextBlock Text="{Binding Config.SubscribeTopic}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2" >
+                                            <TextBlock Text="心跳时间(ms)"  Width="120"/>
+                                            <TextBlock Text="{Binding Config.HeartbeatTime}"/>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </GroupBox>
+                                <GroupBox Header="配置信息" Margin="0,5">
+                                    <StackPanel Margin="5">
+                                        <DockPanel Margin="0,2" >
+                                            <TextBlock Text="类别型号" Width="120"/>
+                                            <TextBlock Text="{Binding Config.Category}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2" >
+                                            <TextBlock Text="通讯方式" Width="120"/>
+                                            <TextBlock Text="{Binding IsNet}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2" >
+                                            <TextBlock  Text="IP地址" Width="120"/>
+                                            <TextBlock Text="{Binding Config.Addr}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2" >
+                                            <TextBlock  Text="端口" Width="120"/>
+                                            <TextBlock Text="{Binding Config.Port}"/>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </GroupBox>
+                            </StackPanel>
+                        </Border>
+
+                        <Button  Grid.Column="1" Content="{x:Static resx:Resource.Edit}" Click="Button_Click_1"/>
                     </Grid>
                     <Grid  x:Name="MQTTEditContent" Visibility="Collapsed">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="50"/>
                         </Grid.ColumnDefinitions>
-                        <StackPanel Margin="5">
-                            <DockPanel Margin="0,5" >
-                                <Label Content="设备名称"/>
-                                <TextBox Text="{Binding Name}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,5" >
-                                <Label Content="设备昵称"/>
-                                <TextBox Text="{Binding Config.Name}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,5" >
-                                <Label Content="心跳时间"/>
-                                <TextBox Text="{Binding Config.HeartbeatTime}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,5" >
-                                <Label Content="类别型号"/>
-                                <ComboBox x:Name="pgCategory" DisplayMemberPath="Key"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,5" >
-                                <Label Content="通讯方式"/>
-                                <RadioButton x:Name="IsNet" Content="TCP/IP" IsChecked="{Binding  Config.IsTCPIP}"/>
-                                <RadioButton x:Name="IsComm" Content="串口" IsChecked="{Binding  Config.IsTCPIP,Converter={StaticResource Boolean2BooleanReConverter}}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,5" >
-                                <UniformGrid Columns="2">
+                        <Border Background ="{DynamicResource GlobalBackground}"  CornerRadius="5" Margin="0,0,5,0">
+                            <StackPanel Margin="5" >
+                                <GroupBox Header="资源信息" Margin="0,5">
                                     <StackPanel Margin="5">
-                                        <TextBlock  x:Name="TextBlockPGIP"   Text="IP地址"/>
-                                        <TextBox Text="{Binding Config.Addr}"/>
+                                        <DockPanel Margin="0,2" >
+                                            <TextBlock Text="设备名称" Width="120"/>
+                                            <TextBox Text="{Binding Name}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2" >
+                                            <TextBlock Text="界面展示名称" Width="120"/>
+                                            <TextBox Text="{Binding Config.Name}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2" >
+                                            <TextBlock Text="心跳时间(ms)"  Width="120"/>
+                                            <TextBox Text="{Binding Config.HeartbeatTime}"/>
+                                        </DockPanel>
                                     </StackPanel>
+                                </GroupBox>
+
+                                <GroupBox Header="配置信息" Margin="0,5">
                                     <StackPanel Margin="5">
-                                        <TextBlock  x:Name="TextBlockPGPort"   Text="端口"/>
-                                        <TextBox Text="{Binding Config.Port}"/>
+                                        <DockPanel Margin="0,2" >
+                                            <TextBlock Text="类别型号" Width="120"/>
+                                            <ComboBox x:Name="pgCategory" DisplayMemberPath="Key"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2" >
+                                            <TextBlock Text="通讯方式" Width="120"/>
+                                            <RadioButton x:Name="IsNet" Content="TCP/IP" IsChecked="{Binding  Config.IsTCPIP}"/>
+                                            <RadioButton x:Name="IsComm" Content="串口" IsChecked="{Binding  Config.IsTCPIP,Converter={StaticResource Boolean2BooleanReConverter}}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2" >
+                                            <TextBlock  x:Name="TextBlockPGIP"   Text="IP地址" Width="120"/>
+                                            <TextBox Text="{Binding Config.Addr}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2" >
+                                            <TextBlock  x:Name="TextBlockPGPort"   Text="端口" Width="120"/>
+                                            <TextBox Text="{Binding Config.Port}"/>
+                                        </DockPanel>
                                     </StackPanel>
-                                </UniformGrid>
-                            </DockPanel>
-                        </StackPanel>
-                        <Button Grid.Column="1"  Content="提交" Click="Button_Click" Command="{Binding SaveCommand}" />
+                                </GroupBox>
+                            </StackPanel>
+                        </Border>
+                        <Button Grid.Column="1"  Content="{x:Static resx:Resource.Submit}" Click="Button_Click" Command="{Binding SaveCommand}" />
                     </Grid>
                 </Grid>
             </StackPanel>

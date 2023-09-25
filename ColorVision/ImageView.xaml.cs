@@ -1,12 +1,14 @@
-﻿using ColorVision.Extension;
+﻿using ColorVision.Draw;
+using ColorVision.Extension;
 using ColorVision.MVVM;
+using ColorVision.Util;
 using System;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -17,6 +19,22 @@ using System.Windows.Media.Imaging;
 namespace ColorVision
 {
     /// <summary>
+    /// 用于还原窗口
+    /// </summary>
+
+    public class WindowStatus
+    {
+        public object Root { get; set; }
+        public Grid Parent { get; set; }
+
+        public WindowStyle WindowStyle { get; set; }
+
+        public WindowState WindowState { get; set; }
+
+        public ResizeMode ResizeMode { get; set; }
+    }
+
+    /// <summary>
     /// ImageView.xaml 的交互逻辑
     /// </summary>
     public partial class ImageView : UserControl, IView
@@ -24,42 +42,46 @@ namespace ColorVision
         public ToolBarTop ToolBarTop { get; set; }
 
         public View View { get; set; }
-
+     
         public ImageView()
         {
-            InitializeComponent();
             View = new View();
+            InitializeComponent();
         }
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
 
-        private DrawingVisual ImageRuler = new DrawingVisual();
         private DrawingVisual DrawingVisualGrid = new DrawingVisual();
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            ContextMenu ContextMenu  = new ContextMenu();
-
-            MenuItem menuItem = new MenuItem() { Header = "设为主窗口" };
-            menuItem.Click += (s, e) =>
+            //这里是为了让控件可以被选中，作为做了一个底层的Textbox,这样就可以让控件被选中了，后面看看能不能优化掉，这个写法并不是好的。
+            this.MouseDown += (s, e) =>
             {
-                ViewGridManager.GetInstance().SetOneView(this);
+                TextBox1.Focus();
             };
-            ContextMenu.Items.Add(menuItem);
 
-            MenuItem menuItem1 = new MenuItem() { Header = "展示全部窗口" };
-            menuItem1.Click += (s, e) =>
-            {
-                ViewGridManager.GetInstance().SetViewNum(-1);
-            };
-            ContextMenu.Items.Add(menuItem1);
-            this.ContextMenu = ContextMenu;
-            ToolBar1.Visibility = Visibility.Collapsed;
-
-            ToolBarTop = new ToolBarTop(Zoombox1, ImageShow);
+            ToolBarTop = new ToolBarTop(this,Zoombox1, ImageShow);
             ToolBar1.DataContext = ToolBarTop;
             ListView1.ItemsSource = DrawingVisualLists;
+            ruler = new DrawingVisualScaleHost();
 
+            this.SizeChanged += (s, e) =>
+            {
+                ruler.ParentWidth = this.ActualWidth;
+                ruler.ParentHeight = this.ActualHeight;
+                ruler.ScaleLocation = ScaleLocation.lowerright;
+                ruler.Render();
+            };
+            ImageShow.ImageInitialized += (s, e) =>
+            {
+                if (!GridEx.Children.Contains(ruler))
+                    GridEx.Children.Add(ruler);
+            };
+
+
+            this.Focusable = true;
+            Zoombox1.LayoutUpdated += Zoombox1_LayoutUpdated;
 
             ImageShow.VisualsAdd += (s, e) =>
             {
@@ -102,7 +124,39 @@ namespace ColorVision
                 }
             };
 
+            this.PreviewKeyDown += (s, e) =>
+            {
+                if (e.Key == Key.R)
+                {
+                    BorderPropertieslayers.Visibility = BorderPropertieslayers.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
+                }
+
+            };
+            this.PreviewKeyDown += (s,e)=>
+            {
+                if (e.Key == Key.Escape)
+                {
+                    if (DrawingVisualPolygonCache != null)
+                    {
+                        ImageShow.RemoveVisual(DrawingVisualPolygonCache);
+                        DrawingVisualPolygonCache.Render();
+                    }
+                }
+            };
         }
+
+
+
+        private void Zoombox1_LayoutUpdated(object? sender, EventArgs e)
+        {
+            foreach (var item in DrawingVisualLists)
+            {
+                item.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                item.Render();
+            }
+        }
+
+        private DrawingVisualScaleHost ruler { get; set; }
 
 
         private void DrawGridImage(DrawingVisual drawingVisual, BitmapImage bitmapImage)
@@ -131,48 +185,29 @@ namespace ColorVision
 
         private void DrawImageRuler()
         {
-            if (ImageShow.Source is BitmapImage bitmapImage)
+            if (ImageShow.Source is BitmapSource bitmapSource)
             {
-                var actPoint = new Point();
-                using DrawingContext dc = ImageRuler.RenderOpen();
-                var transform = new MatrixTransform(1 / Zoombox1.ContentMatrix.M11, Zoombox1.ContentMatrix.M12, Zoombox1.ContentMatrix.M21, 1 / Zoombox1.ContentMatrix.M22, (1 - 1 / Zoombox1.ContentMatrix.M11) * actPoint.X, (1 - 1 / Zoombox1.ContentMatrix.M22) * actPoint.Y);
-                dc.PushTransform(transform);
-
-                dc.DrawLine(new Pen(Brushes.Red, 10), new Point(100, 50), new Point(200, 50));
-
-                Brush brush = Brushes.Red;
-                FontFamily fontFamily = new FontFamily("Arial");
-                double fontSize = 10;
-                FormattedText formattedText = new FormattedText((1 / Zoombox1.ContentMatrix.M11 * bitmapImage.PixelWidth / 100).ToString("F2") + "px", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
-                dc.DrawText(formattedText, new Point(100, 30));
-
-
-                double X = 1 / Zoombox1.ContentMatrix.M11 * bitmapImage.PixelWidth / 100;
-                double result = X < 10 ? 5 : X < 20 ? 10 : X < 50 ? 20 : X < 100 ? 50 : (X < 200 ? 100 : (X < 500 ? 200 : (X < 1000 ? 500 : (X < 2000 ? 1000 : 2000))));
-
-                dc.DrawLine(new Pen(Brushes.Red, 10), new Point(100, 100), new Point(100 + 100 * result / X, 100));
-                FormattedText formattedText1 = new FormattedText((result).ToString("F2") + "px", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
-                dc.DrawText(formattedText1, new Point(100, 80));
-
+                double X = 1 / Zoombox1.ContentMatrix.M11 * bitmapSource.PixelWidth / 100;
+                ruler.Render(X);
             }
         }
 
-        private DrawingVisual SelectRect = new DrawingVisual();
 
         private static void DrawSelectRect(DrawingVisual drawingVisual, Rect rect)
         {
             using DrawingContext dc = drawingVisual.RenderOpen();
             dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), rect);
         }
+        private DrawingVisual SelectRect = new DrawingVisual();
 
         private bool IsMouseDown;
         private Point MouseDownP;
         private DrawingVisualCircle? SelectDCircle;
-        private DrawingVisualRectangle? SelectDRectangle;
+        private DrawingVisualRectangle? SelectRectangle;
 
         private DrawingVisualCircle DrawCircleCache;
         private DrawingVisualRectangle DrawingRectangleCache;
-        private DrawingVisualPolygon DrawingVisualPolygonCache;
+        private DrawingVisualPolygon? DrawingVisualPolygonCache;
 
 
         private void ImageShow_Initialized(object sender, EventArgs e)
@@ -188,7 +223,6 @@ namespace ColorVision
             if (DrawingVisual != null && DrawingVisual is IDrawingVisual drawing)
             {
                 var ContextMenu = new ContextMenu();
-
                 MenuItem menuItem = new MenuItem() { Header = "隐藏(_H)" };
                 menuItem.Click += (s, e) =>
                 {
@@ -232,13 +266,27 @@ namespace ColorVision
         }
 
 
+
+
+        private void ImageShow_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (DrawingVisualPolygonCache != null)
+            {
+                DrawingVisualPolygonCache.MovePoints = null;
+                DrawingVisualPolygonCache.Render();
+                DrawingVisualPolygonCache = null;
+            }
+        }
+
+
         private void ImageShow_MouseDown(object sender, MouseButtonEventArgs e)
         {
             if (sender is DrawCanvas drawCanvas && !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn))
             {
+                drawCanvas.CaptureMouse();
+
                 MouseDownP = e.GetPosition(drawCanvas);
                 IsMouseDown = true;
-                drawCanvas.CaptureMouse();
 
                 if (ToolBarTop.EraseVisual)
                 {
@@ -264,22 +312,16 @@ namespace ColorVision
                 {
                     if (DrawingVisualPolygonCache == null)
                     {
-                        DrawingVisualPolygonCache = new DrawingVisualPolygon() { AutoAttributeChanged = false };
-                        DrawingVisualPolygonCache.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                        DrawingVisualPolygonCache.Attribute.Points.Add(MouseDownP);
+                        DrawingVisualPolygonCache = new DrawingVisualPolygon();
+                        DrawingVisualPolygonCache.Attribute.Pen.Thickness = 1 / Zoombox1.ContentMatrix.M11;
                         drawCanvas.AddVisual(DrawingVisualPolygonCache);
                     }
-                    else
-                    {
-                        DrawingVisualPolygonCache.Attribute.Points.Add(MouseDownP);
-                    }
-                    this.KeyDown += DrawingVisualPolygonKeyDown;
                 }
                 else
                 {
                     if (drawCanvas.GetVisual(MouseDownP) is IDrawingVisual drawingVisual)
                     {
-                        if (PropertyGrid2.SelectedObject is DrawAttributeBase viewModelBase)
+                        if (PropertyGrid2.SelectedObject is DrawBaseAttribute viewModelBase)
                         {
                             viewModelBase.PropertyChanged -= (s, e) =>
                             {
@@ -299,7 +341,7 @@ namespace ColorVision
                         {
                             if (drawingVisual is DrawingVisualRectangle Rectangle)
                             {
-                                SelectDRectangle = Rectangle;
+                                SelectRectangle = Rectangle;
                             }
                             else if (drawingVisual is DrawingVisualCircle Circl)
                             {
@@ -314,22 +356,6 @@ namespace ColorVision
             }
         }
 
-
-        public void DrawingVisualPolygonKeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Enter && e.Key == Key.Escape)
-            {
-                if (DrawingVisualPolygonCache != null)
-                {
-                    DrawingVisualPolygonCache.Attribute.Points.Add(MouseDownP);
-                    DrawingVisualPolygonCache.IsDrawing = false;
-                    DrawingVisualPolygonCache.Render();
-                    DrawingVisualPolygonCache.AutoAttributeChanged = true;
-                }
-                this.KeyDown -= DrawingVisualPolygonKeyDown;
-            }
-        }
-
         Point LastMouseMove;
 
 
@@ -338,9 +364,14 @@ namespace ColorVision
             if (sender is DrawCanvas drawCanvas && (Zoombox1.ActivateOn == ModifierKeys.None || !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn)))
             {
                 var point = e.GetPosition(drawCanvas);
-
-                var controlWidth = drawCanvas.ActualWidth;
-                var controlHeight = drawCanvas.ActualHeight;
+                if (ToolBarTop.DrawPolygon)
+                {
+                    if (DrawingVisualPolygonCache != null)
+                    {
+                        DrawingVisualPolygonCache.MovePoints = point;
+                        DrawingVisualPolygonCache.Render();
+                    }
+                }
 
                 if (IsMouseDown)
                 {
@@ -350,62 +381,30 @@ namespace ColorVision
                     }
                     else if (ToolBarTop.DrawCircle)
                     {
-                        double Radius = Math.Sqrt((Math.Pow(point.X - MouseDownP.X, 2) + Math.Pow(point.Y - MouseDownP.Y, 2)));
-                        DrawCircleCache.Attribute.Radius = Radius;
-                        DrawCircleCache.Render();
+                        if (DrawCircleCache != null)
+                        {
+                            double Radius = Math.Sqrt((Math.Pow(point.X - MouseDownP.X, 2) + Math.Pow(point.Y - MouseDownP.Y, 2)));
+                            DrawCircleCache.Attribute.Radius = Radius;
+                            DrawCircleCache.Render();
+                        }
                     }
                     else if (ToolBarTop.DrawRect)
                     {
-                        DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, point);
-                        DrawingRectangleCache.Render();
-                    }
-                    else if (ToolBarTop.DrawPolygon)
-                    {
-                        DrawingVisualPolygonCache.Attribute.Points[^1] = point;
-                        DrawingVisualPolygonCache.Render();
+                        if (DrawingRectangleCache != null)
+                        {
+                            DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, point);
+                            DrawingRectangleCache.Render();
+                        }
                     }
                     else if (SelectDCircle != null)
                     {
                         SelectDCircle.Attribute.Center += point - LastMouseMove;
                     }
-                    else if (SelectDRectangle != null)
+                    else if (SelectRectangle != null)
                     {
-                        var OldRect = SelectDRectangle.Attribute.Rect;
-                        SelectDRectangle.Attribute.Rect = new Rect(OldRect.X + point.X - LastMouseMove.X, OldRect.Y + point.Y - LastMouseMove.Y, OldRect.Width, OldRect.Height);
-
+                        var OldRect = SelectRectangle.Attribute.Rect;
+                        SelectRectangle.Attribute.Rect = new Rect(OldRect.X + point.X - LastMouseMove.X, OldRect.Y + point.Y - LastMouseMove.Y, OldRect.Width, OldRect.Height);
                     }
-                }
-
-                if (ToolBarTop.Move && drawCanvas.Source is BitmapImage bitmapImage)
-                {
-                    int imageWidth = bitmapImage.PixelWidth;
-                    int imageHeight = bitmapImage.PixelHeight;
-
-                    var actPoint = new Point(point.X, point.Y);
-
-                    point.X = point.X / controlWidth * imageWidth;
-                    point.Y = point.Y / controlHeight * imageHeight;
-
-                    var bitPoint = new Point(point.X.ToInt32(), point.Y.ToInt32());
-
-                    if (point.X.ToInt32() >= 0 && point.X.ToInt32() < bitmapImage.PixelWidth && point.Y.ToInt32() >= 0 && point.Y.ToInt32() < bitmapImage.PixelHeight)
-                    {
-                        var color = bitmapImage.GetPixelColor(point.X.ToInt32(), point.Y.ToInt32());
-                        ToolBarTop.DrawImage(actPoint, bitPoint, new ImageInfo
-                        {
-                            X = point.X.ToInt32(),
-                            Y = point.Y.ToInt32(),
-                            X1 = point.X,
-                            Y1 = point.Y,
-
-                            R = color.R,
-                            G = color.G,
-                            B = color.B,
-                            Color = new SolidColorBrush(color),
-                            Hex = color.ToHex()
-                        });
-                    }
-
                 }
                 LastMouseMove = point;
             }
@@ -425,6 +424,16 @@ namespace ColorVision
                         drawCanvas.RemoveVisual(item);
                     }
                     drawCanvas.RemoveVisual(SelectRect);
+                }
+                else if (ToolBarTop.DrawPolygon)
+                {
+                    if (DrawingVisualPolygonCache != null)
+                    {
+                        DrawingVisualPolygonCache.Points.Add(MouseUpP);
+                        DrawingVisualPolygonCache.MovePoints = null;
+                        DrawingVisualPolygonCache.Render();
+                    }
+
                 }
                 else if (ToolBarTop.DrawCircle)
                 {
@@ -487,11 +496,9 @@ namespace ColorVision
 
         private void ImageShow_MouseEnter(object sender, MouseEventArgs e)
         {
-            ToolBarTop.DrawVisualImageControl(true);
         }
         private void ImageShow_MouseLeave(object sender, MouseEventArgs e)
         {
-            ToolBarTop.DrawVisualImageControl(false);
         }
 
         private void Button5_Click(object sender, RoutedEventArgs e)
@@ -504,16 +511,6 @@ namespace ColorVision
                     ImageShow.RemoveVisual(DrawingVisualGrid);
             }
 
-        }
-        private void Button6_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is ToggleButton toggleButton)
-            {
-                if (!ImageShow.ContainsVisual(ImageRuler) && toggleButton.IsChecked == true)
-                    ImageShow.AddVisual(ImageRuler);
-                if (ImageShow.ContainsVisual(ImageRuler) && toggleButton.IsChecked == false)
-                    ImageShow.RemoveVisual(ImageRuler);
-            }
         }
 
         private void Button7_Click(object sender, RoutedEventArgs e)
@@ -530,21 +527,7 @@ namespace ColorVision
 
 
 
-        public class WindowStatus
-        {
-            public object Root { get; set; }
-            public Grid Parent { get; set; }
-
-            public WindowStyle WindowStyle { get; set; }
-
-            public WindowState WindowState { get; set; }
-
-            public ResizeMode ResizeMode { get; set; }
-
-
-        }
         private WindowStatus OldWindowStatus { get; set; }
-
 
         private void Button8_Click(object sender, RoutedEventArgs e)
         {
@@ -588,18 +571,10 @@ namespace ColorVision
             }
         }
 
-        [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")]
-        private static extern void RtlMoveMemory(IntPtr Destination, IntPtr Source, uint Length);
-
-        [DllImport("OpenCVHelper.dll")]
-        private static extern void ReadCVFile(string FullPath);
-
-        [DllImport("OpenCVHelper.dll")]
-        public unsafe static extern void SetInitialFrame(nint pRoutineHandler);
 
 
 
-        [UnmanagedCallersOnly(CallConvs = new System.Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         [SuppressGCTransition]
         private static int InitialFrame(IntPtr buff, int rows, int cols, int type)
         {
@@ -615,11 +590,11 @@ namespace ColorVision
             Application.Current.Dispatcher.Invoke(delegate
             {
                 WriteableBitmap writeableBitmap = new WriteableBitmap(cols, rows, 96.0, 96.0, format, null);
-                RtlMoveMemory(writeableBitmap.BackBuffer, buff, (uint)(cols * rows * type));
+                OpenCVHelper.RtlMoveMemory(writeableBitmap.BackBuffer, buff, (uint)(cols * rows * type));
                 writeableBitmap.Lock();
                 writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight));
                 writeableBitmap.Unlock();
-                if (ViewGridManager.GetInstance().Views[1] is ImageView view)
+                if (ViewGridManager.GetInstance().Views[3] is ImageView view)
                 {
                     view.ImageShow.Source = writeableBitmap;
                 }
@@ -629,45 +604,58 @@ namespace ColorVision
 
         public unsafe void OpenCVImage(string? filePath)
         {
-            SetInitialFrame((nint)(delegate* unmanaged[Cdecl]<IntPtr, int, int, int,int >)(&InitialFrame));
+            OpenCVHelper.SetInitialFrame((nint)(delegate* unmanaged[Cdecl]<IntPtr, int, int, int, int>)(&InitialFrame));
 
             if (filePath != null && File.Exists(filePath))
             {
 
-                ReadCVFile(filePath);
-
-                //BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
-                //ImageShow.Source = bitmapImage;
-                //DrawGridImage(DrawingVisualGrid, bitmapImage);
-                Zoombox1.ZoomUniform();
+                Task.Run(() =>
+                {
+                    OpenCVHelper.ReadVideoTest("23");
+                });
                 ToolBar1.Visibility = Visibility.Visible;
 
             }
         }
 
+
+
+        public void OpenImage(byte[] data)
+        {
+            if (data != null)
+            {
+                BitmapImage bitmapImage = ImageUtil.ByteArrayToBitmapImage(data);
+
+                ImageShow.Source = bitmapImage;
+                DrawGridImage(DrawingVisualGrid, bitmapImage);
+                Zoombox1.ZoomUniform();
+                ToolBar1.Visibility = Visibility.Visible;
+                ImageShow.ImageInitialize();
+            }
+        }
 
         public void OpenImage(string? filePath)
         {
             if (filePath != null && File.Exists(filePath))
             {
                 BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
-  
                 ImageShow.Source = bitmapImage;
                 DrawGridImage(DrawingVisualGrid, bitmapImage);
                 Zoombox1.ZoomUniform();
                 ToolBar1.Visibility = Visibility.Visible;
+                ImageShow.ImageInitialize();
             }
         }
 
         private void ToolBar1_Loaded(object sender, RoutedEventArgs e)
         {
-            if (sender is ToolBar toolBar)
-            {
-                if (toolBar.Template.FindName("OverflowGrid", toolBar) is FrameworkElement overflowGrid)
-                    overflowGrid.Visibility = Visibility.Collapsed;
-                if (toolBar.Template.FindName("MainPanelBorder", toolBar) is FrameworkElement mainPanelBorder)
-                    mainPanelBorder.Margin = new Thickness(0);
-            }
+            //if (sender is ToolBar toolBar)
+            //{
+            //    if (toolBar.Template.FindName("OverflowGrid", toolBar) is FrameworkElement overflowGrid)
+            //        overflowGrid.Visibility = Visibility.Collapsed;
+            //    if (toolBar.Template.FindName("MainPanelBorder", toolBar) is FrameworkElement mainPanelBorder)
+            //        mainPanelBorder.Margin = new Thickness(0);
+            //}
         }
 
 
@@ -703,9 +691,16 @@ namespace ColorVision
             }
         }
 
-
-
-
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
+            openFileDialog.RestoreDirectory = true;
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                OpenImage(openFileDialog.FileName);
+            }
+            
+        }
     }
 
 

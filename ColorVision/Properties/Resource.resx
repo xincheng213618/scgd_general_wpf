@@ -162,4 +162,121 @@
   <data name="MenuTool" xml:space="preserve">
     <value>工具(_T)</value>
   </data>
+  <data name="Sign_in" xml:space="preserve">
+    <value>登录</value>
+  </data>
+  <data name="MenuAbout" xml:space="preserve">
+    <value>关于(_A)</value>
+  </data>
+  <data name="MenuSettings" xml:space="preserve">
+    <value>设置(_S)</value>
+  </data>
+  <data name="MenuOptions" xml:space="preserve">
+    <value>选项(_O)</value>
+  </data>
+  <data name="Account" xml:space="preserve">
+    <value>账号</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>密码</value>
+  </data>
+  <data name="AccountLogin" xml:space="preserve">
+    <value>账号登录</value>
+  </data>
+  <data name="Sign_out" xml:space="preserve">
+    <value>退出</value>
+  </data>
+  <data name="Create_an_account" xml:space="preserve">
+    <value>注册一个</value>
+  </data>
+  <data name="RecentFiles" xml:space="preserve">
+    <value>最近使用过的文件(_F)</value>
+  </data>
+  <data name="About" xml:space="preserve">
+    <value>关于</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>用户界面语言</value>
+  </data>
+  <data name="MenuLanguage" xml:space="preserve">
+    <value>语言(_L)</value>
+  </data>
+  <data name="Theme" xml:space="preserve">
+    <value>主题</value>
+  </data>
+  <data name="MenuTheme" xml:space="preserve">
+    <value>主题(_H)</value>
+  </data>
+  <data name="FillPassword" xml:space="preserve">
+    <value>请输入密码</value>
+  </data>
+  <data name="FillAccount" xml:space="preserve">
+    <value>请输入账号</value>
+  </data>
+  <data name="TbSettingsStartBoot" xml:space="preserve">
+    <value>开机启动(可能会不成功)</value>
+  </data>
+  <data name="WindowHidden" xml:space="preserve">
+    <value>隐藏</value>
+  </data>
+  <data name="WindowSingle" xml:space="preserve">
+    <value>独立窗口</value>
+  </data>
+  <data name="HotKeys" xml:space="preserve">
+    <value>快捷键</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>关闭</value>
+  </data>
+  <data name="Minimize" xml:space="preserve">
+    <value>最小化</value>
+  </data>
+  <data name="Maximize" xml:space="preserve">
+    <value>最大化</value>
+  </data>
+  <data name="Pin" xml:space="preserve">
+    <value>置顶</value>
+  </data>
+  <data name="Restore" xml:space="preserve">
+    <value>向下还原</value>
+  </data>
+  <data name="ThemeLight" xml:space="preserve">
+    <value>浅色</value>
+  </data>
+  <data name="ThemeDark" xml:space="preserve">
+    <value>深色</value>
+  </data>
+  <data name="ThemeUseSystem" xml:space="preserve">
+    <value>跟随系统</value>
+  </data>
+  <data name="LanguageResartSign" xml:space="preserve">
+    <value>您必须重新启动才能使用新的语言设置</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="Female" xml:space="preserve">
+    <value>女</value>
+  </data>
+  <data name="Male" xml:space="preserve">
+    <value>男</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>确定</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>编辑</value>
+  </data>
+  <data name="Submit" xml:space="preserve">
+    <value>提交</value>
+  </data>
+  <data name="Reset" xml:space="preserve">
+    <value>重置</value>
+  </data>
+  <data name="Reseted" xml:space="preserve">
+    <value>已重置</value>
+  </data>
 </root>

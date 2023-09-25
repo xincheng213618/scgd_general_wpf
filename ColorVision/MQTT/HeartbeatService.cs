@@ -12,7 +12,6 @@ namespace ColorVision.MQTT
         public HeartbeatService(ServiceConfig serviceConfig) : base(serviceConfig)
         {
             ServiceConfig = serviceConfig;
-
             MsgReturnReceived +=(msg)=>
             {
                 switch (msg.EventName)
@@ -28,9 +27,11 @@ namespace ColorVision.MQTT
                             }
                             for (int i = 0; i < SnIDs.Count; i++)
                             {
-                                if (ServicesDevices.TryGetValue(SubscribeTopic, out ObservableCollection<string> list) && !list.Contains(SnIDs[i].ToString()))
+                                if (ServicesDevices.TryGetValue(SubscribeTopic, out ObservableCollection<string> list))
                                 {
-                                    list.Add(SnIDs[i].ToString());
+                                    if (!list.Contains(SnIDs[i].ToString()))
+                                         list.Add(SnIDs[i].ToString());
+
                                 }
                                 else
                                 {
@@ -49,7 +50,10 @@ namespace ColorVision.MQTT
             };
             this.Connected += (s, e) =>
             {
-                GetAllSnID();
+                if (SendTopic.Contains("camera"))
+                {
+                    GetAllSnID();
+                }
             };
         }
         public static Dictionary<string, ObservableCollection<string>> ServicesDevices { get; set; } = new Dictionary<string, ObservableCollection<string>>();

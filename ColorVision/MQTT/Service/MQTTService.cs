@@ -5,7 +5,15 @@ using System.Windows.Controls;
 
 namespace ColorVision.MQTT.Service
 {
-    public class MQTTService : BaseObject
+    public class BaseMQTTService : BaseObject
+    {
+        public virtual UserControl GenDeviceControl()
+        {
+            throw new System.NotImplementedException();
+        }
+    }
+
+    public class MQTTService : BaseMQTTService
     {
         public SysResourceModel SysResourceModel { get; set; }
         public ServiceConfig ServiceConfig { get; set; }
@@ -54,7 +62,7 @@ namespace ColorVision.MQTT.Service
         public DeviceType Type { get => (DeviceType)SysResourceModel.Type; }
 
 
-        public override UserControl GenDeviceControl() => new MQTTServiceControl(this);
+        public override  UserControl GenDeviceControl() => new MQTTServiceControl(this);
 
         public override void Save()
         {

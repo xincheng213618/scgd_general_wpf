@@ -7,6 +7,6 @@
         mc:Ignorable="d"
         Title="WindowLog" Height="450" Width="800">
     <Grid>
-        <TextBox x:Name="logTextBox" BorderThickness="0" IsReadOnly="True" />
+        <TextBox x:Name="logTextBox" BorderThickness="0"  VerticalAlignment="Top" IsReadOnly="True" />
     </Grid>
 </Window>

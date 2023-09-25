@@ -1,4 +1,5 @@
-﻿using System.Data;
+﻿using ColorVision.Util;
+using System.Data;
 
 namespace ColorVision.MySql.DAO
 {
@@ -17,6 +18,13 @@ namespace ColorVision.MySql.DAO
         public string? Symbol { get; set; }
         public bool? IsEnable { get; set; } = true;
         public bool? IsDelete { get; set; } = false;
+
+        public string GetValueMD5()
+        {
+            string txt = this.ValueA + this.Id;
+            string code = Cryptography.GetMd5Hash(txt);
+            return code;
+        }
     }
 
     public class ModDetailDao : BaseDaoMaster<ModDetailModel>

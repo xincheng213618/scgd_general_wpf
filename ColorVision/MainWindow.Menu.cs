@@ -15,7 +15,6 @@ using ColorVision.MQTT;
 using ColorVision.MySql;
 using log4net;
 using System.Diagnostics;
-using ColorVision.Video;
 using ColorVision.Service;
 
 namespace ColorVision
@@ -118,7 +117,7 @@ namespace ColorVision
 
         private void MenuItem9_Click(object sender, RoutedEventArgs e)
         {
-            new ColorVision.WindowFlowEngine() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            new WindowFlowEngine() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
 
 
@@ -209,15 +208,12 @@ namespace ColorVision
             Application.Current.MainWindow.AddHotKeys(new HotKeys("打开工程", new Hotkey(Key.O, ModifierKeys.Control), OpenSolution));
             Application.Current.MainWindow.AddHotKeys(new HotKeys("新建工程", new Hotkey(Key.N, ModifierKeys.Control), NewCreatSolution));
             Application.Current.MainWindow.AddHotKeys(new HotKeys("设置", new Hotkey(Key.I, ModifierKeys.Control), OpenSetting));
-            Application.Current.MainWindow.AddHotKeys(new HotKeys("关于", new Hotkey(Key.F1, ModifierKeys.Control), AboutMsg));
+            Application.Current.MainWindow.AddHotKeys(new HotKeys(Properties.Resource.About, new Hotkey(Key.F1, ModifierKeys.Control), AboutMsg));
 
             MenuItem RecentListMenuItem = null;
 
-
-
-
             RecentListMenuItem ??= new MenuItem();
-            RecentListMenuItem.Header = "最近使用过的文件(_F)";
+            RecentListMenuItem.Header = Properties.Resource.RecentFiles;
             RecentListMenuItem.SubmenuOpened += (s, e) =>
             {
                 var firstMenuItem = RecentListMenuItem.Items[0];
@@ -279,14 +275,13 @@ namespace ColorVision
         }
         private void MenuItem10_Click(object sender, RoutedEventArgs e)
         {
-            new CameraVideoConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
         private void LogF_Click(object sender, RoutedEventArgs e)
         {
             var fileAppender = (log4net.Appender.FileAppender)LogManager.GetRepository().GetAppenders().FirstOrDefault(a => a is log4net.Appender.FileAppender);
             if (fileAppender != null)
             {
-                System.Diagnostics.Process.Start("explorer.exe", $"{Path.GetDirectoryName(fileAppender.File)}");
+                Process.Start("explorer.exe", $"{Path.GetDirectoryName(fileAppender.File)}");
             }
         }
         private void Log_Click(object sender, RoutedEventArgs e)

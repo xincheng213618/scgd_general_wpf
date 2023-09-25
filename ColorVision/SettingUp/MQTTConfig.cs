@@ -9,35 +9,39 @@ namespace ColorVision.SettingUp
 {
     public class MQTTSetting : ViewModelBase
     {
+        private static readonly object _locker = new();
         public MQTTSetting()
         {
             if (File.Exists(GlobalConst.MQTTMsgRecordsFileName))
             {
-                try
-                {
-                    MsgRecords = Newtonsoft.Json.JsonConvert.DeserializeObject<ObservableCollection<MsgRecord>>(File.ReadAllText(GlobalConst.MQTTMsgRecordsFileName)) ?? new ObservableCollection<MsgRecord>();
-
+                try {
+                    MsgRecords = JsonConvert.DeserializeObject<ObservableCollection<MsgRecord>>(File.ReadAllText(GlobalConst.MQTTMsgRecordsFileName)) ?? new ObservableCollection<MsgRecord>();
                 }
-                catch
-                {
+                catch {
                     MsgRecords = new ObservableCollection<MsgRecord>();
                 }
             }
             else
                 MsgRecords = new ObservableCollection<MsgRecord>();
-            MsgRecords.CollectionChanged += (s, e) =>
+
+
+            var timer = new System.Timers.Timer
             {
-                if (MsgRecords.Count > CacheLength)
+                Interval = TimeSpan.FromSeconds(1).TotalMilliseconds,
+                AutoReset = true,
+            };
+            timer.Elapsed +=(s,e)=>
+            {
+                lock (_locker)
                 {
                     int itemsToRemoveCount = MsgRecords.Count - CacheLength;
-
-                    // 移除旧的对象
-                    for (int i = 0; i < itemsToRemoveCount; i++)
-                    {
-                        MsgRecords.RemoveAt(MsgRecords.Count-1); // 移除第一个元素
-                    }
-                }  
+                    if (itemsToRemoveCount > 0)
+                        for (int i = 0; i < itemsToRemoveCount; i++)
+                            if (MsgRecords.Count > 1)
+                                MsgRecords.RemoveAt(MsgRecords.Count - 1);
+                }
             };
+            timer.Start();
             AppDomain.CurrentDomain.ProcessExit += (s, e) =>
             {
                 JsonSerializerSettings settings = new JsonSerializerSettings

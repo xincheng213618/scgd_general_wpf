@@ -2,7 +2,6 @@
 using ColorVision.Template;
 using MQTTnet.Client;
 using Newtonsoft.Json;
-using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text;
@@ -31,7 +30,7 @@ namespace ColorVision.Device.PG
 
     public class PGService : BaseService<PGConfig>
     {
-        public event HeartbeatEventHandler HeartbeatEvent;
+        public event HeartbeatHandler HeartbeatEvent;
         public Dictionary<string, Dictionary<string, string>> PGCategoryLib { get; }
 
         public PGService(PGConfig pGConfig) : base(pGConfig)
@@ -174,6 +173,7 @@ namespace ColorVision.Device.PG
             }
             MsgSend msg = new MsgSend()
             {
+                Version = "1.0",
                 EventName = "Open",
                 ServiceName = Config.Code,
                 Params = communicateType == CommunicateType.Serial ?

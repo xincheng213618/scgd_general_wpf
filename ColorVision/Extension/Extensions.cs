@@ -1,5 +1,6 @@
-﻿using System;
-using System.Drawing;
+﻿#pragma warning disable CS8602 // 取消引用可能出现的空引用。
+
+using System;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using System.Windows.Media;
@@ -18,12 +19,52 @@ namespace ColorVision.Extension
         internal static bool IsNullOrEmpty(this string str) => string.IsNullOrEmpty(str);
 
 
+        internal static SolidColorBrush ToBrush(this Color color)
+        {
+            var brush = new SolidColorBrush(color);
+            brush.Freeze();
+            return brush;
+        }
+
+        internal static SolidColorBrush ToBrush(this Color? color)
+        {
+            if (color == null)
+                return new SolidColorBrush(Colors.Transparent);
+            return new SolidColorBrush((Color)color);
+        }
+
+        internal static Color ToColor(this string color)
+        {
+            return (Color)ColorConverter.ConvertFromString(color);
+        }
+
+        internal static Color ToColor(this SolidColorBrush brush)
+        {
+            if (brush == null)
+                return Colors.Transparent;
+            return brush.Color;
+        }
+
+        internal static Color ToColor(this Brush brush)
+        {
+            if (brush == null)
+                return Colors.Transparent;
+            if (brush is SolidColorBrush)
+                return (brush as SolidColorBrush).Color;
+            else if (brush is LinearGradientBrush)
+                return (brush as LinearGradientBrush).GradientStops[0].Color;
+            else if (brush is RadialGradientBrush)
+                return (brush as RadialGradientBrush).GradientStops[0].Color;
+            else
+                return Colors.Transparent;
+        }
+
         /// <summary>
         /// 对图标的扩展
         /// </summary>
         /// <param name="icon"></param>
         /// <returns></returns>
-        internal static ImageSource ToImageSource(this Icon icon)
+        internal static ImageSource ToImageSource(this System.Drawing.Icon icon)
         {
             ImageSource imageSource = Imaging.CreateBitmapSourceFromHIcon(
                 icon.Handle,

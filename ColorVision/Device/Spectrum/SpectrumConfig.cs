@@ -55,6 +55,8 @@ namespace ColorVision.Device.Spectrum
         public bool BUseAutoIntTime { get; set; }
         [JsonProperty("bUseAutoDark")]
         public bool BUseAutoDark { get; set; }
+        [JsonProperty("bUseAutoShutterDark")]
+        public bool BUseAutoShutterDark { get; set; }
     }
 
     public class SpectrumConfig : BaseDeviceConfig, IServiceConfig

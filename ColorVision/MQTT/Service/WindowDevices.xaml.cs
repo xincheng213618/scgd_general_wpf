@@ -1,9 +1,4 @@
-﻿using ColorVision.Device;
-using ColorVision.Device.Camera;
-using ColorVision.Device.PG;
-using ColorVision.Device.SMU;
-using ColorVision.Device.Spectrum;
-using ColorVision.MQTT;
+﻿using ColorVision.MQTT;
 using ColorVision.MQTT.Service;
 using ColorVision.SettingUp;
 using System;
@@ -28,7 +23,7 @@ namespace ColorVision.Service
         public ObservableCollection<BaseDevice> MQTTDevices { get; set; }
         private void Window_Initialized(object sender, EventArgs e)
         {
-            MQTTDevices = ServiceControl.GetInstance().MQTTDevices;
+            MQTTDevices = ServiceControl.GetInstance().LastGenControl ?? ServiceControl.GetInstance().MQTTDevices;
             TreeView1.ItemsSource = MQTTDevices;
             Grid1.DataContext = GlobalSetting.GetInstance().SoftwareConfig.UserConfig;
 
@@ -37,8 +32,11 @@ namespace ColorVision.Service
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             StackPanelShow.Children.Clear();
-            if (TreeView1.SelectedItem is BaseObject baseObject)
-                StackPanelShow.Children.Add(baseObject.GenDeviceControl());
+            if (TreeView1.SelectedItem is BaseDevice baseObject)
+                StackPanelShow.Children.Add(baseObject.GetDeviceControl());
+
+            if (TreeView1.SelectedItem is BaseMQTTService baseService)
+                StackPanelShow.Children.Add(baseService.GenDeviceControl());
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

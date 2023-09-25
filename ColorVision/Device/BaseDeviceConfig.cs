@@ -25,8 +25,11 @@ namespace ColorVision.Device
         public string Code { get => _Code; set { _Code = value; NotifyPropertyChanged(); } }
         private string _Code;
 
+        /// <summary>
+        /// 心跳时间
+        /// </summary>
         public int HeartbeatTime { get => _HeartbeatTime; set { _HeartbeatTime = value; NotifyPropertyChanged(); } }
-        private int _HeartbeatTime;
+        private int _HeartbeatTime = 2000;
         /// <summary>
         /// 是否存活
         /// </summary>
@@ -45,13 +48,8 @@ namespace ColorVision.Device
         private string _MD5;
     }
 
-    public delegate void HeartbeatEventHandler(HeartbeatParam heartbeat);
-    //public delegate void HeartbeatEventHandler(object sender, HeartbeatEventArgs e);
+    public delegate void HeartbeatHandler(HeartbeatParam heartbeat);
 
-    //public class HeartbeatEventArgs
-    //{
-    //    public string ID { get; set; }
-    //}
     public class HeartbeatParam
     {
         public DeviceStatus DeviceStatus { get; set; }
