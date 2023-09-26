@@ -9,5 +9,9 @@
 	  <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Resource Include="Assets\Cursor\eraser.cur" />
+  </ItemGroup>
+
 
 </Project>
