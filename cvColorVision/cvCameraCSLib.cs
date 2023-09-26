@@ -12,6 +12,7 @@ using cvColorVision.Util;
 using System.Windows.Media.Media3D;
 using OpenCvSharp;
 using System.Xml.Linq;
+using System.Reflection.Metadata;
 
 namespace cvColorVision
 {
@@ -434,7 +435,7 @@ namespace cvColorVision
     };
     public struct HImage
     {
-        public uint iWid;
+        public uint nWidth;
         public uint nHeight;
         public uint nChannels;
         public uint nBpp;
@@ -1499,23 +1500,9 @@ namespace cvColorVision
                 cfg = pm;
                 return cfg;
             }
-
         }
 
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="connectType">相机的连接类型，如LV,BV,CV</param>
-        /// <param name="wRGB">传入图像的W</param>
-        /// <param name="hRGB">传入图像的H</param>
-        /// <param name="bppRGB">传入图像的bpp位深</param>
-        /// <param name="channalsRGB">传入图像的channels通道数</param>
-        /// <param name="srcrawRGB">传入图像的raw数据</param>
-        /// <param name="fovParamCfg">fov的本地配置文件路径</param>
-        /// <param name="fovDegrees_ref">如果返回true则附带的FOV结果</param>
-        /// <param name="ErrorData">如果返回false则附带的错误信息</param>
-        /// <returns></returns>
         public bool FOV(CameraType connectType, uint wRGB,uint hRGB,uint bppRGB,uint channalsRGB, byte[] srcrawRGB, string fovParamCfg,ref double fovDegrees_ref, ref string ErrorData) 
         {
             //if (wRGB > 0& hRGB>0& bppRGB>0&& channalsRGB>0)
@@ -1530,7 +1517,7 @@ namespace cvColorVision
             //        }
 
             //        HImage himage_Fov = new HImage();
-            //        himage_Fov.iWid = wRGB;
+            //        himage_Fov.nWidth = wRGB;
             //        himage_Fov.nHeight = hRGB;
             //        himage_Fov.nBpp = bppRGB;
             //        himage_Fov.nChannels = channalsRGB;
@@ -1595,7 +1582,7 @@ namespace cvColorVision
                     if (pm == null)
                         return false;
                     HImage himage_Fov = new HImage();
-                    himage_Fov.iWid = wRGB;
+                    himage_Fov.nWidth = wRGB;
                     himage_Fov.nHeight = hRGB;
                     himage_Fov.nBpp = bppRGB;
                     himage_Fov.nChannels = channalsRGB;
@@ -1709,62 +1696,14 @@ namespace cvColorVision
 
         private static void saveCsv_FOV(string path, string fovPattern, string fovType, double fovDegrees)
         {
-            bool saveHeader = false;
             if (!Directory.Exists(path))
-            {
                 Directory.CreateDirectory(path);
-            }
-            if (path.Substring(path.Length - 1, 1) != "/")
-            {
-                path = path + "\\FOVResult_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
-            }
-            else
-            {
-                path = path + "FOVResult_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
-            }
+            path += $"{(path.Substring(path.Length - 1, 1) != "/" ? "\\" : "")}FOVResult_{DateTime.Now:yyyyMMddhhmmss}.csv";
             if (!File.Exists(path))
-            {
-                saveHeader = true;
-            }
-
-            FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
-            StreamWriter sw = new StreamWriter(fs, UnicodeEncoding.UTF8);
-
-            if (saveHeader)
-            {
-                sw.Write("FovPattern");
-                sw.Write(",");
-                sw.Write("FovType");
-                sw.Write(",");
-                sw.Write("Value");
-                sw.WriteLine("");
-            }
-
-
-            sw.Write(fovPattern);
-            sw.Write(",");
-            sw.Write(fovType);
-            sw.Write(",");
-            sw.Write(fovDegrees.ToString());
-            sw.WriteLine("");
-
-
-            sw.Flush();
-            sw.Close();
-            fs.Close();
-        }
-
-        public class FindRoi
-        {
-            public int x { set; get; }
-            public int y { set; get; }
-            public int width { set; get; }
-
-            public int height { set; get; }
-            public override string ToString()
-            {
-                return string.Format("{0},{1},{2},{3}", x, y, width, height);
-            }
+                cvCameraCSLib.CSVinitialized(path, new List<string>() { "FovPattern", "FovType", "Value" });
+            using FileStream fs = new FileStream(path, FileMode.Append, FileAccess.Write);
+            using StreamWriter sw = new StreamWriter(fs, Encoding.UTF8);
+            sw.WriteLine($"{fovPattern},{fovType},{fovDegrees}");
         }
 
         public class DistoData 
@@ -1780,130 +1719,7 @@ namespace cvColorVision
             public bool checkResult { set; get; }
         }
 
-        private static void saveCsv_SFR(string path, float[] pdfrequency, float[] pdomainSamplingData)
-        {
-            if (!Directory.Exists(path))
-            {
-                Directory.CreateDirectory(path);
-            }
-            if (path.Substring(path.Length - 1, 1) != "/")
-            {
-                path = path + "\\SFRResult_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
-            }
-            else
-            {
-                path = path + "SFRResult_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
-            }
-            if (!File.Exists(path))
-            {
-                //首先模拟建立将要导出的数据，这些数据都存于DataTable中  
-                System.Data.DataTable dt = new System.Data.DataTable();
-                dt.Columns.Add("pdfrequency", typeof(string));
-                dt.Columns.Add("pdomainSamplingData", typeof(string));
-                FileStream fs2 = new FileStream(path, System.IO.FileMode.Create, System.IO.FileAccess.Write);
-                StreamWriter sw2 = new StreamWriter(fs2, UnicodeEncoding.UTF8);
-                //string path = saveFileDialog.FileName.ToString();//保存路径
-                //Tabel header
-                for (int i = 0; i < dt.Columns.Count; i++)
-                {
-                    if (i != 0)
-                    {
-                        sw2.Write(",");
-                    }
-                    sw2.Write(dt.Columns[i].ColumnName);
-                }
-                sw2.WriteLine("");
-                sw2.Flush();
-                sw2.Close();
-                fs2.Close();
-            }
-            FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
-            StreamWriter sw = new StreamWriter(fs, UnicodeEncoding.UTF8);
-            for (int i = 0; i < pdfrequency.Length; i++)
-            {
-                sw.Write(pdfrequency[i]);
-                sw.Write(",");
-                sw.Write(pdomainSamplingData[i]);
-                sw.Write(",");
-                sw.WriteLine("");
-            }
-            sw.Flush();
-            sw.Close();
-            fs.Close();
-        }
 
-        public static bool SFR(uint wRGB, uint hRGB, uint bppRGB, uint channalsRGB, byte[] srcrawRGB, string fovParamCfg, FindRoi fRoi, ref string ErrorData) 
-        {
-            if (wRGB > 0 & hRGB > 0 & bppRGB > 0 && channalsRGB > 0)
-            {
-                FOVParam pm = CfgFile.Load<FOVParam>(fovParamCfg);
-                if (pm==null)
-                {
-                    ErrorData = "读取本地的SFR文件失败";
-                    return false;
-                }
-                if (fRoi != null)
-                {
-                    //int imgx = 0, imgy = 0;
-                    //m_cDib.GetImgPoint(fRoi.x, fRoi.y, ref imgx, ref imgy);
-                    //int imgw = 0, imgh = 0;
-                    //imgw = (int)(fRoi.width / m_cDib.GetScale());
-                    //imgh = (int)(fRoi.height / m_cDib.GetScale());
-                    HImage tImg = new HImage();
-                    tImg.nBpp = (uint)bppRGB;
-                    tImg.nChannels = (uint)channalsRGB;
-                    tImg.iWid = (uint)wRGB;
-                    tImg.nHeight = (uint)hRGB;
-
-                    if (srcrawRGB != null)
-                    {
-                        //方法2
-                        GCHandle hObject = GCHandle.Alloc(srcrawRGB, GCHandleType.Pinned);
-                        tImg.pData = hObject.AddrOfPinnedObject();
-
-                        CRECT rtROI = new CRECT();
-                        rtROI.x = fRoi.x;
-                        rtROI.y = fRoi.y;
-                        rtROI.cx = fRoi.width;
-                        rtROI.cy = fRoi.height;
-                        double gamma = pm.SFR_gamma;
-
-                        float[] pdfrequency = new float[(int)Math.Max(fRoi.width, fRoi.height)];
-                        float[] pdomainSamplingData = new float[(int)Math.Max(fRoi.width, fRoi.height)];
-                        int nLen = (int)Math.Max(wRGB, hRGB);
-
-                        if (cvCameraCSLib.SFRCalculation(tImg, rtROI, gamma, pdfrequency, pdomainSamplingData, nLen) < 1)
-                        {
-                            ErrorData = "SFRCalculation执行结果失败!";
-                            return false;
-                        }
-                        else
-                        {
-                            //保存结果
-                            saveCsv_SFR("Result", pdfrequency, pdomainSamplingData);
-                            //MessageBox.Show("执行结束");
-                            return true;
-                        }
-                    }
-                    else
-                    {
-                        ErrorData = "图像数据为空!";
-                        return false;
-                    }
-
-                }
-                else
-                {
-                    ErrorData = "请先框选SFR";
-                    return false;
-                }
-            }
-            else
-            {
-                ErrorData = "请先点击测量";
-                return false;
-            }
-        }
 
         public static bool Disto(DistoData distoData) 
         {
@@ -2060,8 +1876,8 @@ namespace cvColorVision
                 cvCameraCSLib.CSVinitialized(path, new List<string>() { "Time", "pointx", "pointy", "maxErrorRatio", "t", "DistortionType" });
 
 
-            using FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
-            using StreamWriter sw = new StreamWriter(fs, UnicodeEncoding.UTF8);
+            using FileStream fs = new FileStream(path, FileMode.Append, FileAccess.Write);
+            using StreamWriter sw = new StreamWriter(fs, Encoding.UTF8);
             sw.Write(DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss.fff"));
             sw.Write(",");
             sw.Write(pointx);
@@ -2139,14 +1955,8 @@ namespace cvColorVision
         private List<System.Drawing.Point> listGhostL = new List<System.Drawing.Point>();
         private  void save_Ghost_result(string path, int nxN, float[] centersX, float[] centersY, float[] blobGray, float[] dstGray, int numArrH, int[] arrH, int[] dataH_X, int[] dataH_Y, int numArrL, int[] arrL, int[] dataL_X, int[] dataL_Y)
         {
-            if (listGhostH == null)
-            {
-                listGhostH = new List<System.Drawing.Point>();
-            }
-            if (listGhostL == null)
-            {
-                listGhostL = new List<System.Drawing.Point>();
-            }
+            listGhostH ??= new List<System.Drawing.Point>();
+            listGhostL ??= new List<System.Drawing.Point>();
             saveCsv_Ghost_xy(path, nxN, centersX, centersY, blobGray, dstGray);
             saveCsv_Ghost_point(path, "点阵", numArrH, arrH, dataH_X, dataH_Y, listGhostH);
             saveCsv_Ghost_point(path, "鬼影", numArrL, arrL, dataL_X, dataL_Y, listGhostL);
@@ -2154,89 +1964,34 @@ namespace cvColorVision
 
         private static void saveCsv_Ghost_xy(string path, int nxN, float[] centersX, float[] centersY, float[] blobGray, float[] dstGray)
         {
-            bool saveHeader = false;
             if (!Directory.Exists(path))
                 Directory.CreateDirectory(path);
             path += $"{(path.Substring(path.Length - 1, 1) != "/" ? "\\" : "")}GhostXYResult_{DateTime.Now:yyyyMMddhhmmss}.csv";
-
             if (!File.Exists(path))
-            {
-                saveHeader = true;
-            }
-
-            FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
-            StreamWriter sw = new StreamWriter(fs, UnicodeEncoding.UTF8);
-
-            if (saveHeader)
-            {
-                sw.Write("centersX");
-                sw.Write(",");
-                sw.Write("centersY");
-                sw.Write(",");
-                sw.Write("blobGray");
-                sw.Write(",");
-                sw.Write("dstGray");
-                sw.WriteLine("");
-            }
-
+                cvCameraCSLib.CSVinitialized(path, new List<string>() { "centersX", "centersY", "blobGray", "dstGray" });
+            using FileStream fs = new FileStream(path, FileMode.Append, FileAccess.Write);
+            using StreamWriter sw = new StreamWriter(fs, Encoding.UTF8);
             for (int i = 0; i < nxN; i++)
-            {
-                sw.Write(centersX[i]);
-                sw.Write(",");
-                sw.Write(centersY[i]);
-                sw.Write(",");
-                sw.Write(blobGray[i]);
-                sw.Write(",");
-                sw.Write(dstGray[i]);
-                sw.WriteLine("");
-            }
-
-            sw.Flush();
-            sw.Close();
-            fs.Close();
+                sw.WriteLine($"{centersX[i]},{centersY[i]},{blobGray[i]},{dstGray[i]}");
         }
 
         private static void saveCsv_Ghost_point(string path, string name, int numArr, int[] arr, int[] data_X, int[] data_Y, List<System.Drawing.Point> list)
         {
-            bool saveHeader = false;
             if (!Directory.Exists(path))
                 Directory.CreateDirectory(path);
             path += $"{(path.Substring(path.Length - 1, 1) != "/" ? "\\" : "")}GhostResult_{name}_{DateTime.Now:yyyyMMddhhmmss}.csv";
             if (!File.Exists(path))
-            {
-                saveHeader = true;
-            }
+                cvCameraCSLib.CSVinitialized(path, new List<string>() { "X", "Y" });
 
-            FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
-            StreamWriter sw = new StreamWriter(fs, UnicodeEncoding.UTF8);
-
-            if (saveHeader)
-            {
-                sw.Write("X");
-                sw.Write(",");
-                sw.Write("Y");
-                sw.WriteLine("");
-            }
+            using FileStream fs = new FileStream(path, FileMode.Append, FileAccess.Write);
+            using StreamWriter sw = new StreamWriter(fs, Encoding.UTF8);
             int idx = 0;
             for (int x = 0; x < numArr; x++)
-            {
                 for (int y = 0; y < arr[x]; y++)
                 {
-                    System.Drawing.Point point = new System.Drawing.Point();
-                    list.Add(point);
-                    point.X = data_X[idx];
-                    point.Y = data_Y[idx];
-                    sw.Write(point.X);
-                    sw.Write(",");
-                    sw.Write(point.Y);
-                    sw.WriteLine("");
+                    sw.WriteLine($"{data_X[idx]},{data_Y[idx]}");
                     idx++;
                 }
-            }
-
-            sw.Flush();
-            sw.Close();
-            fs.Close();
         }
 
 
@@ -2308,11 +2063,6 @@ namespace cvColorVision
             public float b;
             public float c;
             public float d;
-
-            public override string ToString()
-            {
-                return string.Format("Texp_x:{0},Texp_y:{1},Texp_z:{2},a:{3},b:{4},c:{5},d:{6}", Texp_x, Texp_y, Texp_z, a, b, c, d);
-            }
 
             public LumChromaParam(float texp_x, float texp_y, float texp_z, float gain_x, float gain_y, float gain_z, float a, float b, float c, float d)
             {
@@ -2445,30 +2195,12 @@ namespace cvColorVision
             }
             FourLumChromaParam lumChroma = new FourLumChromaParam(0, 0, 0, 1, 1, 1, (float)vcdRltData[0], (float)vcdRltData[1], (float)vcdRltData[2], (float)vcdRltData[3], vcdRltData[4], vcdRltData[5], vcdRltData[6], vcdRltData[7], vcdRltData[8]);
             string szFileName = calibrationName + ".dat";
-            try
-            {
-                string jsonData = JsonConvert.SerializeObject(lumChroma);
-                SaveToFile(szFileName, jsonData);
-
-            }
-            catch
-            {
-                ErrorData = "四色校正文件保存失败";
-                return false;
-            }
+            string jsonData = JsonConvert.SerializeObject(lumChroma);
+            using StreamWriter sw = new StreamWriter(szFileName);
+            sw.Write(jsonData);
             return true;
         }
 
-        public static void SaveToFile(String fileName, String content)
-        {
-            using (StreamWriter sw = new StreamWriter(fileName))
-            {
-                sw.Write(content);
-                sw.Flush();
-                sw.Close();
-                sw.Dispose();
-            }
-        }
 
         public struct IIntputData
         {
@@ -2478,74 +2210,48 @@ namespace cvColorVision
             public float iCx;
             public float iCy;
             public float iLv;
-
-            IIntputData(float exp_x, float exp_y, float exp_z, float Cx, float Cy, float LV)
-            {
-                iexp_x = exp_x;
-                iexp_y = exp_y;
-                iexp_z = exp_z;
-                iCx = Cx;
-                iCy = Cy;
-                iLv = LV;
-            }
         };
 
         /// <summary>
         /// 通过输入的BPP和channels来判断目标图像的mat格式
-        /// </summary>
-        /// <param name="nbpp"></param>
-        /// <param name="nChanles"></param>
-        /// <returns></returns>
         public static int Gettype(int nbpp, int nChanles)
         {
-            int ntype = MatType.CV_8UC1;
-            switch (nbpp)
+            return nbpp switch
             {
-                case 8:
-                    if (nChanles == 1)
-                    {
-                        ntype = MatType.CV_8UC1;
-                    }
-                    else if (nChanles == 3)
-                    {
-                        ntype = MatType.CV_8UC3;
-                    }
-                    break;
-                case 16:
-                    if (nChanles == 1)
-                    {
-                        ntype = MatType.CV_16UC1;
-                    }
-                    else if (nChanles == 3)
-                    {
-                        ntype = MatType.CV_16UC3;
-                    }
-                    break;
-                case 32:
-                    if (nChanles == 1)
-                    {
-                        ntype = MatType.CV_32FC1;
-                    }
-                    else if (nChanles == 3)
-                    {
-                        ntype = MatType.CV_32FC3;
-                    }
-                    break;
-                case 64:
-                    if (nChanles == 1)
-                    {
-                        ntype = MatType.CV_64FC1;
-                    }
-                    else if (nChanles == 3)
-                    {
-                        ntype = MatType.CV_64FC3;
-                    }
-                    break;
-                default:
-                    return -1;
-            }
-
-            return ntype;
+                8 => nChanles switch
+                {
+                    1 => MatType.CV_8UC1,
+                    2 => MatType.CV_8UC2,
+                    3 => MatType.CV_8UC3,
+                    4 => MatType.CV_8UC4,
+                    _ => -1,
+                },
+                16 => nChanles switch
+                {
+                    1 => MatType.CV_16UC1,
+                    2 => MatType.CV_16UC2,
+                    3 => MatType.CV_16UC3,
+                    4 => MatType.CV_16UC4,
+                    _ => -1,
+                },
+                32 => nChanles switch
+                {
+                    1 => MatType.CV_32FC1,
+                    2 => MatType.CV_32FC2,
+                    3 => MatType.CV_32FC3,
+                    4 => MatType.CV_32FC4,
+                    _ => -1,
+                },
+                64 => nChanles switch
+                {
+                    1 => MatType.CV_64FC1,
+                    2 => MatType.CV_64FC2,
+                    3 => MatType.CV_64FC3,
+                    4 => MatType.CV_64FC4,
+                    _ => -1,
+                },
+                _ => -1,
+            };
         }
 
          static float GetRECTGray(byte[] imgdata, int arrY_Height, int arrY_Width, IRECT tRect)
@@ -2567,7 +2273,6 @@ namespace cvColorVision
             }
 
             float gray = Mean_get(tarDataY, iHei, iWid, new IObRECT(0, 0, 0, 0));
-
             return gray;
         }
 

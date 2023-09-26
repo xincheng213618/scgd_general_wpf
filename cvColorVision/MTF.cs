@@ -56,7 +56,7 @@ namespace cvColorVision
             Dictionary<RoiData, double> MTFResults = new Dictionary<RoiData, double>();
             foreach (RoiData pd in roiDatas)
             {
-                var articulation = cvCameraCSLib.cvCalArticulation(EvaFunc.CalResol, tImg, 0, 1, 5, dRatio);
+                var articulation = cvCalArticulation(EvaFunc.CalResol, tImg, 0, 1, 5, dRatio);
 
                 if (articulation < 0)
                 {
@@ -71,11 +71,6 @@ namespace cvColorVision
             return true;
         }
 
-        public class MTFResult
-        {
-            public double articulation = 1.0;
-            public RoiData rpd;
-        }
 
         public static bool CSVinitialized(string fileName,List<string> strings)
         {
