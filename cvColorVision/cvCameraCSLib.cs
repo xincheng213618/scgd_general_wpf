@@ -902,7 +902,7 @@ namespace cvColorVision
 
         public static bool CM_GetSrcFrame(IntPtr handle, ref uint w, ref uint h, ref uint bpp, ref uint channels, ref byte[] rawArray)
         {
-            CM_GetSrcFrameInfo(handle, ref w, ref h, ref bpp, ref channels);
+            _=CM_GetSrcFrameInfo(handle, ref w, ref h, ref bpp, ref channels);
             uint nbbpMen = bpp / 8;
             rawArray = new byte[w * h * nbbpMen * channels];
             return CM_GetSrcFrame_Gen(handle, ref w, ref h, ref bpp, ref channels, rawArray);
@@ -912,7 +912,7 @@ namespace cvColorVision
         private unsafe static extern bool CM_GetSrcFrameEx_Gen(IntPtr handle, ref uint w, ref uint h, ref uint bpp, ref uint channels, byte[] rawArray);
         public static bool CM_GetSrcFrameEx(IntPtr handle, ref uint w, ref uint h,  ref uint bpp, ref uint channels, ref byte[] rawArray)
         {
-            CM_GetSrcFrameInfo(handle, ref w, ref h, ref bpp, ref channels);
+            _=CM_GetSrcFrameInfo(handle, ref w, ref h, ref bpp, ref channels);
             uint nbbpMen = bpp / 8;
             rawArray = new byte[w * h * nbbpMen * channels];
             return CM_GetSrcFrameEx_Gen(handle, ref w, ref h, ref bpp, ref channels, rawArray);
@@ -1578,7 +1578,7 @@ namespace cvColorVision
                 HImage tImg = new HImage();
                 tImg.nBpp = distoData.bppRGB;
                 tImg.nChannels = distoData.channalsRGB;
-                tImg.iWid = distoData.wRGB;
+                tImg.nWidth = distoData.wRGB;
                 tImg.nHeight = distoData.hRGB;
 
                 if (distoData.srcrawRGB != null)
