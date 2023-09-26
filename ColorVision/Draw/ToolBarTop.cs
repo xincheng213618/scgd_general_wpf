@@ -5,6 +5,8 @@ using System.Windows.Media;
 using System.Windows.Input;
 using ColorVision.Draw;
 using Gu.Wpf.Geometry;
+using NPOI.HSSF.EventUserModel.DummyRecord;
+using System.Reflection;
 
 namespace ColorVision
 {
@@ -137,6 +139,8 @@ namespace ColorVision
                 {
                     ZoomboxSub.ActivateOn = ModifierKeys.None;
                     ZoomboxSub.Cursor = Cursors.Hand;
+
+                    LastChoice = string.Empty;
                 }
                 NotifyPropertyChanged();
             }
@@ -153,9 +157,8 @@ namespace ColorVision
                 _DrawCircle = value;
                 if (value)
                 {
-                    DrawRect = false;
-                    DrawPolygon = false;
                     Activate = true;
+                    LastChoice = nameof(DrawCircle);
                 }
                 NotifyPropertyChanged(); 
             }
@@ -174,9 +177,8 @@ namespace ColorVision
                 _DrawRect = value;
                 if (value)
                 {
-                    DrawCircle = false;
-                    DrawPolygon = false;
                     Activate = true;
+                    LastChoice = nameof(DrawRect);
                 }
                 NotifyPropertyChanged();
             }
@@ -190,11 +192,10 @@ namespace ColorVision
                 _Measure = value;
                 if (value)
                 {
-                    DrawCircle = false;
-                    DrawRect = false;
-                    DrawPolygon = false;
                     Activate = true;
+                    LastChoice = nameof(Measure);
                 }
+
                 ToolBarMeasure.Measure = value;
                 NotifyPropertyChanged();
             }
@@ -214,13 +215,29 @@ namespace ColorVision
                 _DrawPolygon = value;
                 if (value)
                 {
-                    DrawCircle = false;
-                    DrawRect = false;
                     Activate = true;
+                    LastChoice = nameof(DrawPolygon);
                 }
+
                 NotifyPropertyChanged();
             }
         }
+
+        public string LastChoice { get => _LastChoice; set 
+            {
+                if (value == _LastChoice)
+                    return;
+                if (!string.IsNullOrWhiteSpace(_LastChoice))
+                {
+                    Type type = this.GetType();
+                    PropertyInfo property = type.GetProperty(_LastChoice);
+                    property?.SetValue(this, false);
+                }
+                _LastChoice = value;
+
+            }
+        }
+        private string _LastChoice { get; set; }
 
         private bool _EraseVisual;
         public bool EraseVisual {  get => _EraseVisual;
@@ -236,6 +253,12 @@ namespace ColorVision
                 {
                     ZoomboxSub.Cursor = Cursors.Arrow;
                 }
+                if (value)
+                {
+                    Activate = true;
+                    LastChoice = nameof(EraseVisual);
+                }
+
 
                 NotifyPropertyChanged();
             }
