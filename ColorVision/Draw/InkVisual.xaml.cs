@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ColorVision.Draw;
+using System;
 using System.IO;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -34,8 +35,8 @@ namespace ColorVision
 
             InkCanvas.SetLeft(ellipse, e.GetPosition(inkCanvas).X - ellipse.Width / 2);
             InkCanvas.SetTop(ellipse, e.GetPosition(inkCanvas).Y - ellipse.Height / 2);
-
             inkCanvas.Children.Add(ellipse);
+
         }
 
         private void Button_Click(object sender, System.Windows.RoutedEventArgs e)
@@ -47,6 +48,10 @@ namespace ColorVision
                 OpenImage(openFileDialog.FileName);
             }
         }
+
+
+
+
 
         public void OpenImage(string? filePath)
         {

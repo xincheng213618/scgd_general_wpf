@@ -28,6 +28,9 @@
             <Button Command="{Binding ZoomNone}"  Margin="1,0">
                 <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageexpend}"/>
             </Button>
+            <TextBox  Background="Transparent" BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}" />
+            
+            
         </ToolBar>
     </Grid>
 </UserControl>

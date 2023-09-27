@@ -56,7 +56,7 @@ namespace ColorVision
         }
 
         private void Window_Initialized(object sender, EventArgs e)
-        {           
+        {
             GlobalSetting = GlobalSetting.GetInstance();
             FlowDisplayControl flowDisplayControl = new FlowDisplayControl();
             SPDisplay.Children.Insert(0, flowDisplayControl);
@@ -88,6 +88,8 @@ namespace ColorVision
             ViewGridManager.GetInstance().SetViewNum(1);
             this.Closed += (s, e) => {  Environment.Exit(-1); };
             Debug.WriteLine("启动成功");
+            Window window = new Window() { Content = new InkVisual() };
+            window.Show();
         }
 
         private void MenuStatusBar_Click(object sender, RoutedEventArgs e)
