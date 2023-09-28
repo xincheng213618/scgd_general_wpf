@@ -56,7 +56,7 @@ namespace ColorVision
             };
         }
 
-        private async void Window_Initialized(object sender, EventArgs e)
+        private  void Window_Initialized(object sender, EventArgs e)
         {
             GlobalSetting = GlobalSetting.GetInstance();
             FlowDisplayControl flowDisplayControl = new FlowDisplayControl();
@@ -138,9 +138,6 @@ namespace ColorVision
         private void Login_Click(object sender, RoutedEventArgs e)
         {
             new LoginWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-
-            ChatGPTWindow chatGPTWindow = new ChatGPTWindow();
-            chatGPTWindow.Show();
         }
     }
 }
