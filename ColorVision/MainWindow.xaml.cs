@@ -56,8 +56,8 @@ namespace ColorVision
             };
         }
 
-        private void Window_Initialized(object sender, EventArgs e)
-        {           
+        private async void Window_Initialized(object sender, EventArgs e)
+        {
             GlobalSetting = GlobalSetting.GetInstance();
             FlowDisplayControl flowDisplayControl = new FlowDisplayControl();
             SPDisplay.Children.Insert(0, flowDisplayControl);
@@ -138,16 +138,9 @@ namespace ColorVision
         private void Login_Click(object sender, RoutedEventArgs e)
         {
             new LoginWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-        RCService rcSvr = new RCService(new RCConfig());
-        private void Reg_Click(object sender, RoutedEventArgs e)
-        {
-            rcSvr.Reg();
-        }
 
-        private void Qurey_Click(object sender, RoutedEventArgs e)
-        {
-            rcSvr.QueryServices();
+            ChatGPTWindow chatGPTWindow = new ChatGPTWindow();
+            chatGPTWindow.Show();
         }
     }
 }

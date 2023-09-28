@@ -701,6 +701,11 @@ namespace ColorVision
             }
             
         }
+
+        private void ToggleButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 
 
