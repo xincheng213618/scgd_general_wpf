@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Windows;
 
 namespace ColorVision.SettingUp
 {
@@ -38,7 +39,10 @@ namespace ColorVision.SettingUp
                     if (itemsToRemoveCount > 0)
                         for (int i = 0; i < itemsToRemoveCount; i++)
                             if (MsgRecords.Count > 1)
-                                MsgRecords.RemoveAt(MsgRecords.Count - 1);
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    MsgRecords.RemoveAt(MsgRecords.Count - 1);
+                                });
                 }
             };
             timer.Start();

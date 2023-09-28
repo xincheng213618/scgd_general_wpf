@@ -24,7 +24,7 @@ namespace ColorVision
     {
         public static ChatGPTConfig Current { get; set; }   = new ChatGPTConfig();
         public string BaseUrl { get; set; } = "https://nb.nextweb.fun/api/proxy";
-        public string APiKey { get; set; } = "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";
+        public string APiKey { get; set; } = "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";
     }
 
     public class ChatMsg:ViewModelBase
@@ -94,13 +94,25 @@ namespace ColorVision
             ChatMsgReturn = new ChatMsgReturn();
             ChatMsgs.Add(ChatMsgReturn);
             Task.Run(() => { ASK(content); });
+            //Task.Run(() => Test());
             TextInput.Text = string.Empty;
         }
 
-
-        public void Show1(string response)
+        int i = 0;
+        string msg = string.Empty;
+        public async void Test()
         {
-            ChatMsgReturn.Content += response;
+            i = 0;
+            while (i<5000)
+            {
+                if (msg != string.Empty)
+                {
+                    msg = string.Empty;
+                    i = 0;
+                }
+                i++;
+                await Task.Delay(10);
+            }
         }
 
         public async void ASK(string content)
