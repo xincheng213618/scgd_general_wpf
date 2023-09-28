@@ -10,8 +10,7 @@ using ColorVision.MQTT.Service;
 using ColorVision.Flow;
 using ColorVision.Device.Algorithm;
 using System.Diagnostics;
-using ChatGPT.Net;
-using System.Threading.Tasks;
+using ColorVision.RC;
 
 namespace ColorVision
 {
@@ -140,7 +139,5 @@ namespace ColorVision
         {
             new LoginWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
-
-
     }
 }
