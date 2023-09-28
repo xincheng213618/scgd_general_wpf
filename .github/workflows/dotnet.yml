@@ -21,7 +21,7 @@ jobs:
       with:
         dotnet-version: 6.0.x
     - name: Restore dependencies
-      run: dotnet restore scgd_general_wpf1.sln
+      run: dotnet restore build.sln
     - name: Build
-      run: dotnet build /p:Platform=x64 scgd_general_wpf1.sln
+      run: dotnet build /p:Platform=x64 build.sln
  
