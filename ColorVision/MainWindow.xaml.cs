@@ -10,6 +10,8 @@ using ColorVision.MQTT.Service;
 using ColorVision.Flow;
 using ColorVision.Device.Algorithm;
 using System.Diagnostics;
+using ChatGPT.Net;
+using System.Threading.Tasks;
 
 namespace ColorVision
 {
@@ -55,7 +57,7 @@ namespace ColorVision
             };
         }
 
-        private void Window_Initialized(object sender, EventArgs e)
+        private async void Window_Initialized(object sender, EventArgs e)
         {
             GlobalSetting = GlobalSetting.GetInstance();
             FlowDisplayControl flowDisplayControl = new FlowDisplayControl();
@@ -88,8 +90,6 @@ namespace ColorVision
             ViewGridManager.GetInstance().SetViewNum(1);
             this.Closed += (s, e) => {  Environment.Exit(-1); };
             Debug.WriteLine("启动成功");
-            Window window = new Window() { Content = new InkVisual() };
-            window.Show();
         }
 
         private void MenuStatusBar_Click(object sender, RoutedEventArgs e)
@@ -139,6 +139,11 @@ namespace ColorVision
         private void Login_Click(object sender, RoutedEventArgs e)
         {
             new LoginWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+
+            ChatGPTWindow chatGPTWindow = new ChatGPTWindow();
+            chatGPTWindow.Show();
         }
+
+
     }
 }
