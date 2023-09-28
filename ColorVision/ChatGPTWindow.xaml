@@ -18,18 +18,20 @@
         <Grid Grid.Row="1">
             <Grid.Resources>
                 <DataTemplate x:Key="ChatMsgSendTemplate" DataType="{x:Type local:ChatMsgSend}" >
-                    <StackPanel  Orientation="Horizontal" Background="Red" >
-                        <TextBlock Text="{Binding Content}"  TextAlignment="Right"/>
+                    <StackPanel  Orientation="Horizontal" >
+                        <TextBlock Text="{Binding Content}"  TextAlignment="Right" TextWrapping="Wrap" Width="{Binding ElementName=ListViewWidth,Path=ActualWidth}" />
                     </StackPanel>
                 </DataTemplate>
                 <DataTemplate x:Key="ChatMsgReturnTemplate"  DataType="{x:Type local:ChatMsgReturn}">
-                    <StackPanel  Orientation="Horizontal">
-                        <TextBlock Text="{Binding Content}" />
+                    <StackPanel  Orientation="Horizontal" >
+                        <TextBlock Text="{Binding Content}" TextAlignment="Left" TextWrapping="Wrap" Width="{Binding ElementName=ListViewWidth,Path=ActualWidth}" />
                     </StackPanel>
                 </DataTemplate> 
                 <local:MsgTemplateSelector x:Key="MsgTemplateSelector" ChatMsgSend="{StaticResource ChatMsgSendTemplate}" ChatMsgReturn="{StaticResource ChatMsgReturnTemplate}" />
             </Grid.Resources>
             <ListView x:Name="ListViewContent"  ItemTemplateSelector ="{StaticResource MsgTemplateSelector}"  />
+            <Grid x:Name="ListViewWidth"  Margin="20" />
+
 
         </Grid>
 

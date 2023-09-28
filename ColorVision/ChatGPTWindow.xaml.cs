@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -23,7 +24,7 @@ namespace ColorVision
     {
         public static ChatGPTConfig Current { get; set; }   = new ChatGPTConfig();
         public string BaseUrl { get; set; } = "https://nb.nextweb.fun/api/proxy";
-        public string APiKey { get; set; } = "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";
+        public string APiKey { get; set; } = "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";
     }
 
     public class ChatMsg:ViewModelBase
@@ -96,6 +97,12 @@ namespace ColorVision
             TextInput.Text = string.Empty;
         }
 
+
+        public void Show1(string response)
+        {
+            ChatMsgReturn.Content += response;
+        }
+
         public async void ASK(string content)
         {
             string response =  await bot.AskStream(Show,content);
@@ -103,11 +110,10 @@ namespace ColorVision
 
         public void Show(string response)
         {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                ChatMsgReturn.Content += response;
-            });
+            ChatMsgReturn.Content += response;
         }
+
+
 
 
         private void TextInput_PreviewKeyDown(object sender, KeyEventArgs e)

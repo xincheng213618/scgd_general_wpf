@@ -347,7 +347,7 @@ namespace ColorVision.Device.Camera
             MsgSend msg = new MsgSend
             {
                 EventName = "GetData",
-                Params = new Dictionary<string, object>() { { "nBatchIp", model.Id }, { "expTime", expTime }, { "gain", gain }, { "savefilename", saveFileName }, {"eCaliblype", CalibrationType.LumFourColor } }
+                Params = new Dictionary<string, object>() { { "nBatchID", model.Id }, { "expTime", expTime }, { "gain", gain }, { "savefilename", saveFileName }, { "eCalibType", CalibrationType.LumFourColor } }
             };
             return PublishAsyncClient(msg);
         }
