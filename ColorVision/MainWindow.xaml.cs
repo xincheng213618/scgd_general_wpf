@@ -10,6 +10,7 @@ using ColorVision.MQTT.Service;
 using ColorVision.Flow;
 using ColorVision.Device.Algorithm;
 using System.Diagnostics;
+using ColorVision.RC;
 
 namespace ColorVision
 {
@@ -137,6 +138,16 @@ namespace ColorVision
         private void Login_Click(object sender, RoutedEventArgs e)
         {
             new LoginWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+        RCService rcSvr = new RCService(new RCConfig());
+        private void Reg_Click(object sender, RoutedEventArgs e)
+        {
+            rcSvr.Reg();
+        }
+
+        private void Qurey_Click(object sender, RoutedEventArgs e)
+        {
+            rcSvr.QueryServices();
         }
     }
 }
