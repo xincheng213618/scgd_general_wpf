@@ -32,6 +32,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WpfFlowControlLibrary", "Wp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Common", "ColorVision.Common\ColorVision.Common.csproj", "{C8071225-73B5-4559-A22E-CD057B424A3C}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Demo", "Demo", "{613135F1-83D4-409D-80F2-B68D50999308}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChatDemo", "ChatDemo\ChatDemo.csproj", "{EEDAAF5D-F3E0-4D2A-801A-B2C19BFCB902}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -172,6 +176,22 @@ Global
 		{C8071225-73B5-4559-A22E-CD057B424A3C}.Release|x64.Build.0 = Release|x64
 		{C8071225-73B5-4559-A22E-CD057B424A3C}.Release|x86.ActiveCfg = Release|x64
 		{C8071225-73B5-4559-A22E-CD057B424A3C}.Release|x86.Build.0 = Release|x64
+		{EEDAAF5D-F3E0-4D2A-801A-B2C19BFCB902}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{EEDAAF5D-F3E0-4D2A-801A-B2C19BFCB902}.Debug|Any CPU.Build.0 = Debug|x64
+		{EEDAAF5D-F3E0-4D2A-801A-B2C19BFCB902}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{EEDAAF5D-F3E0-4D2A-801A-B2C19BFCB902}.Debug|ARM64.Build.0 = Debug|ARM64
+		{EEDAAF5D-F3E0-4D2A-801A-B2C19BFCB902}.Debug|x64.ActiveCfg = Debug|x64
+		{EEDAAF5D-F3E0-4D2A-801A-B2C19BFCB902}.Debug|x64.Build.0 = Debug|x64
+		{EEDAAF5D-F3E0-4D2A-801A-B2C19BFCB902}.Debug|x86.ActiveCfg = Debug|x64
+		{EEDAAF5D-F3E0-4D2A-801A-B2C19BFCB902}.Debug|x86.Build.0 = Debug|x64
+		{EEDAAF5D-F3E0-4D2A-801A-B2C19BFCB902}.Release|Any CPU.ActiveCfg = Release|x64
+		{EEDAAF5D-F3E0-4D2A-801A-B2C19BFCB902}.Release|Any CPU.Build.0 = Release|x64
+		{EEDAAF5D-F3E0-4D2A-801A-B2C19BFCB902}.Release|ARM64.ActiveCfg = Release|ARM64
+		{EEDAAF5D-F3E0-4D2A-801A-B2C19BFCB902}.Release|ARM64.Build.0 = Release|ARM64
+		{EEDAAF5D-F3E0-4D2A-801A-B2C19BFCB902}.Release|x64.ActiveCfg = Release|x64
+		{EEDAAF5D-F3E0-4D2A-801A-B2C19BFCB902}.Release|x64.Build.0 = Release|x64
+		{EEDAAF5D-F3E0-4D2A-801A-B2C19BFCB902}.Release|x86.ActiveCfg = Release|x64
+		{EEDAAF5D-F3E0-4D2A-801A-B2C19BFCB902}.Release|x86.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -181,10 +201,11 @@ Global
 		{D19D50AD-3762-4AA4-8883-9660EC833B9B} = {55F5939D-C4F5-498D-97B0-8117E84F0FB1}
 		{45568694-A158-4A03-ACF8-3848AB1CA1A7} = {8C2994F6-EF3C-40D2-A3C2-187B234805A0}
 		{8C2994F6-EF3C-40D2-A3C2-187B234805A0} = {55F5939D-C4F5-498D-97B0-8117E84F0FB1}
+		{EEDAAF5D-F3E0-4D2A-801A-B2C19BFCB902} = {613135F1-83D4-409D-80F2-B68D50999308}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		RESX_PrefixTranslations = False
-		RESX_NeutralResourcesLanguage = zh-Hans
 		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
+		RESX_NeutralResourcesLanguage = zh-Hans
+		RESX_PrefixTranslations = False
 	EndGlobalSection
 EndGlobal

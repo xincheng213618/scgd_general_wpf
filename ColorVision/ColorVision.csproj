@@ -29,7 +29,6 @@
   </ItemGroup>  
 
   <ItemGroup>
-    <PackageReference Include="ChatGPT.Net" Version="2.0.0" />
     <PackageReference Include="Extended.Wpf.Toolkit" Version="4.5.1" />
     <PackageReference Include="Gu.Wpf.Geometry" Version="2.2.8" />
     <PackageReference Include="log4net" Version="2.0.15" />

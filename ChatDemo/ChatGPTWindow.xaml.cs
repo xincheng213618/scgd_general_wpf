@@ -1,25 +1,13 @@
 ﻿using ChatGPT.Net;
 using ChatGPT.Net.DTO.ChatGPTUnofficial;
-using ColorVision.Draw;
 using ColorVision.MVVM;
 using ColorVision.Util.Helper;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Reflection.Metadata;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
-namespace ColorVision
+namespace ChatDemo
 {
     public static partial class GlobalConst
     {
@@ -95,7 +83,15 @@ namespace ColorVision
             bot = new ChatGpt(ChatGPTConfig.Current.APiKey, new ChatGPT.Net.DTO.ChatGPT.ChatGptOptions() { BaseUrl = ChatGPTConfig.Current.BaseUrl });
             ChatMsgReturn = new ChatMsgReturn();
             ChatMsgs.Add(ChatMsgReturn);
-            await bot.AskStream(Show, "你现在是ColorVision的专属定制机器人，可以帮助用户解决一些专业问题，请使用专业的口吻回答问题,理解的话请回答 有什么可以帮你的吗");
+            try
+            {
+                await bot.AskStream(Show, "你现在是ColorVision的专属定制机器人，可以帮助用户解决一些专业问题，请使用专业的口吻回答问题,理解的话请回答 有什么可以帮你的吗");
+            }
+            catch (Exception ex)
+            {
+                ChatMsgs.Add(new ChatMsgSend() { Content = ex.Message });
+
+            }
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -105,7 +101,6 @@ namespace ColorVision
             ChatMsgReturn = new ChatMsgReturn();
             ChatMsgs.Add(ChatMsgReturn);
             Task.Run(() => { ASK(content); });
-            //Task.Run(() => Test());
             TextInput.Text = string.Empty;
         }
 
