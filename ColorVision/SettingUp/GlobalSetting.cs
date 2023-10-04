@@ -8,7 +8,7 @@ using System.Text.Json.Serialization;
 
 namespace ColorVision.SettingUp
 {
-    public static class GlobalConst
+    public static partial class GlobalConst
     {
         public const string SoftwareConfigFileName = "Config\\SoftwareConfig.json";
         public const string MQTTMsgRecordsFileName = "Config\\MsgRecords.json";
@@ -136,7 +136,7 @@ namespace ColorVision.SettingUp
         private static void WriteConfig<T>(string fileName, T? t)
         {
             string DirectoryName = Path.GetDirectoryName(fileName);
-            if (DirectoryName != null && !Directory.Exists(DirectoryName))
+            if (!string.IsNullOrWhiteSpace(DirectoryName) && !Directory.Exists(DirectoryName))
                 Directory.CreateDirectory(DirectoryName);
 
             string jsonString = JsonSerializer.Serialize(t, jsonSerializerOptions);

@@ -2,6 +2,7 @@
 using ChatGPT.Net.DTO.ChatGPTUnofficial;
 using ColorVision.Draw;
 using ColorVision.MVVM;
+using ColorVision.Util.Helper;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -20,12 +21,22 @@ using System.Windows.Shapes;
 
 namespace ColorVision
 {
+    public static partial class GlobalConst
+    {
+        public const string ChatGPTConfig = "ChatGPT";
+    }
+
+
+
     public class ChatGPTConfig
     {
-        public static ChatGPTConfig Current { get; set; }   = new ChatGPTConfig();
+        public static ChatGPTConfig Current { get; set; } = JsonHelper.ReadConfig<ChatGPTConfig>(GlobalConst.ChatGPTConfig)?? new ChatGPTConfig();
         public string BaseUrl { get; set; } = "https://nb.nextweb.fun/api/proxy";
-        public string APiKey { get; set; } = "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";
+        public string APiKey { get; set; } = "";
     }
+
+
+
 
     public class ChatMsg:ViewModelBase
     {
