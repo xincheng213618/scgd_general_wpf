@@ -20,6 +20,8 @@ namespace ColorVision.Themes
     public static class ThemeManagerExtensions
     {
         public static void ApplyTheme(this Application app, Theme theme) => ThemeManager.Current.ApplyTheme(app, theme);
+        public static void ForceApplyTheme(this Application app, Theme theme) => ThemeManager.Current.ApplyThemeChanged(app, theme);
+
     }
 
     public delegate void ThemeChangedHandler(Theme newtheme);
@@ -86,13 +88,17 @@ namespace ColorVision.Themes
             "/ColorVision.Util;component/Themes/Window/BaseWindow.xaml"
         };
 
-
         private void ApplyActTheme(Application app, Theme theme)
         {
-            if (CurrentUITheme == theme)
-                return;
+            if (CurrentUITheme == theme) return;
             CurrentUITheme = theme;
 
+            ApplyThemeChanged(app, theme);
+        }
+
+        public void ApplyThemeChanged(Application app, Theme theme)
+        {
+            CurrentUITheme = theme;
             switch (theme)
             {
                 case Theme.Light:
@@ -131,8 +137,11 @@ namespace ColorVision.Themes
         /// <summary>
         /// 选择的主题，存在三种情况：
         /// </summary>
-        public  Theme CurrentTheme { get => _CurrentTheme;  private set { if (value == _CurrentTheme) return; _CurrentTheme = value; CurrentThemeChanged?.Invoke(value); } }
-        private Theme _CurrentTheme;
+        public  Theme? CurrentTheme { get => _CurrentTheme;  private set { if (value == _CurrentTheme) return; _CurrentTheme = value; 
+                if (_CurrentTheme != null)
+                    CurrentThemeChanged?.Invoke((Theme)_CurrentTheme); 
+            } }
+        private Theme? _CurrentTheme;
 
         public Theme CurrentUITheme { get => _CurrentUITheme; private set { if (value == _CurrentUITheme) return; _CurrentUITheme = value; CurrentUIThemeChanged?.Invoke(value);  } }
         private Theme _CurrentUITheme;
