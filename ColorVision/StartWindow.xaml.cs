@@ -6,10 +6,8 @@ using System.Windows;
 using System.Windows.Controls;
 using ColorVision.MySql;
 using ColorVision.MQTT;
-using ColorVision.SettingUp;
 using System.Reflection;
-using ColorVision.MQTT.Services;
-using ColorVision.Service;
+using ColorVision.Services;
 
 namespace ColorVision
 {

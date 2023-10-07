@@ -1,5 +1,4 @@
-﻿using ColorVision.Service;
-using ColorVision.SettingUp;
+﻿using ColorVision.Services;
 using System;
 using System.Windows;
 

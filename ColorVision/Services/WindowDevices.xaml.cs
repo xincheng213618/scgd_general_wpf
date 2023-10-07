@@ -1,13 +1,11 @@
 ﻿using ColorVision.MQTT;
-using ColorVision.MQTT.Services;
-using ColorVision.SettingUp;
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Service
+namespace ColorVision.Services
 {
 
     /// <summary>

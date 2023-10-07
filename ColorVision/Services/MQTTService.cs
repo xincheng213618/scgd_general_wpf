@@ -1,9 +1,10 @@
 ﻿using ColorVision.Device;
+using ColorVision.MQTT;
 using ColorVision.MySql.DAO;
 using Newtonsoft.Json;
 using System.Windows.Controls;
 
-namespace ColorVision.MQTT.Services
+namespace ColorVision.Services
 {
     public class BaseMQTTService : BaseObject
     {
@@ -62,7 +63,7 @@ namespace ColorVision.MQTT.Services
         public DeviceType Type { get => (DeviceType)SysResourceModel.Type; }
 
 
-        public override  UserControl GenDeviceControl() => new MQTTServiceControl(this);
+        public override UserControl GenDeviceControl() => new MQTTServiceControl(this);
 
         public override void Save()
         {

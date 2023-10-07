@@ -15,8 +15,8 @@ using ColorVision.MQTT;
 using ColorVision.MySql;
 using log4net;
 using System.Diagnostics;
-using ColorVision.Service;
 using ColorVision.Util;
+using ColorVision.Services;
 
 namespace ColorVision
 {

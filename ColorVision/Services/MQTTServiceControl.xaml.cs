@@ -5,8 +5,8 @@ using ColorVision.Device.PG;
 using ColorVision.Device.Sensor;
 using ColorVision.Device.SMU;
 using ColorVision.Device.Spectrum;
+using ColorVision.MQTT;
 using ColorVision.MySql.DAO;
-using ColorVision.SettingUp;
 using cvColorVision;
 using Newtonsoft.Json;
 using System;
@@ -14,7 +14,7 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.MQTT.Services
+namespace ColorVision.Services
 {
     /// <summary>
     /// MQTTServiceControl.xaml 的交互逻辑

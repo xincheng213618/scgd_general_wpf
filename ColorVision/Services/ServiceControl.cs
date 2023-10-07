@@ -4,6 +4,7 @@ using ColorVision.Device.PG;
 using ColorVision.Device.Sensor;
 using ColorVision.Device.SMU;
 using ColorVision.Device.Spectrum;
+using ColorVision.MQTT;
 using ColorVision.MySql;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
@@ -14,7 +15,7 @@ using System.Collections.ObjectModel;
 using System.Windows.Controls;
 using static cvColorVision.GCSDLL;
 
-namespace ColorVision.MQTT.Services
+namespace ColorVision.Services
 {
     public class ServiceControl
     {

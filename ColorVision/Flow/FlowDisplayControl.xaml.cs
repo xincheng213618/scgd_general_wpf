@@ -1,5 +1,4 @@
-﻿using ColorVision.MQTT.Services;
-using ColorVision.MQTT;
+﻿using ColorVision.MQTT;
 using ColorVision.Template;
 using System;
 using System.Collections.Generic;
@@ -9,6 +8,7 @@ using ColorVision.SettingUp;
 using System.IO;
 using Panuon.WPF.UI;
 using WpfFlowControlLibrary;
+using ColorVision.Services;
 
 namespace ColorVision.Flow
 {

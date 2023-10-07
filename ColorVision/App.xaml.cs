@@ -1,5 +1,5 @@
-﻿using ColorVision.MQTT.Services;
-using ColorVision.NativeMethods;
+﻿using ColorVision.NativeMethods;
+using ColorVision.Services;
 using ColorVision.SettingUp;
 using ColorVision.Themes;
 using log4net;

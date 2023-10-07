@@ -1,8 +1,7 @@
 ﻿using ColorVision.MySql.DAO;
-using ColorVision.Service;
 using System.Windows.Controls;
 
-namespace ColorVision.MQTT.Services
+namespace ColorVision.Services
 {
 
     public enum DeviceType
@@ -14,7 +13,7 @@ namespace ColorVision.MQTT.Services
         Sensor = 5,
         Image = 6,
     }
-    
+
 
 
 

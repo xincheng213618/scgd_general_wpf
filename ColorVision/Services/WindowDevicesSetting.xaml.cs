@@ -5,8 +5,10 @@ using System;
 using System.Windows.Documents;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
+using ColorVision.Services;
+using ColorVision.MQTT;
 
-namespace ColorVision.MQTT.Services
+namespace ColorVision.Services
 {
     /// <summary>
     /// Window1.xaml 的交互逻辑

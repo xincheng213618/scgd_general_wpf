@@ -1,12 +1,12 @@
-﻿using ColorVision.MQTT.Services;
-using ColorVision.MySql.DAO;
+﻿using ColorVision.MySql.DAO;
+using ColorVision.Services;
 using ColorVision.SettingUp;
 using Newtonsoft.Json;
 using System;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Service
+namespace ColorVision.Services
 {
     /// <summary>
     /// ServiceKindControl.xaml 的交互逻辑

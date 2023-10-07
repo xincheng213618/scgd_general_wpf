@@ -1,4 +1,4 @@
-﻿using ColorVision.MQTT.Services;
+﻿using ColorVision.Services;
 using System;
 using System.Windows;
 using System.Windows.Controls;
