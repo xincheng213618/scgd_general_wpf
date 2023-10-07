@@ -14,7 +14,7 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.MQTT.Service
+namespace ColorVision.MQTT.Services
 {
     /// <summary>
     /// MQTTServiceControl.xaml 的交互逻辑

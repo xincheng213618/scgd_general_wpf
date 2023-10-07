@@ -1,4 +1,4 @@
-﻿using ColorVision.MQTT.Service;
+﻿using ColorVision.MQTT.Services;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;

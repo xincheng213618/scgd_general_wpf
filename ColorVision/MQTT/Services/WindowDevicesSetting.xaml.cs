@@ -6,7 +6,7 @@ using System.Windows.Documents;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 
-namespace ColorVision.MQTT.Service
+namespace ColorVision.MQTT.Services
 {
     /// <summary>
     /// Window1.xaml 的交互逻辑

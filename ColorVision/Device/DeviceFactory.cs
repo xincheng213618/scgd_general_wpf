@@ -6,7 +6,7 @@ using ColorVision.Device.Sensor;
 using ColorVision.Device.SMU;
 using ColorVision.Device.Spectrum;
 using ColorVision.MQTT;
-using ColorVision.MQTT.Service;
+using ColorVision.MQTT.Services;
 using ColorVision.MySql.DAO;
 
 namespace ColorVision.Device

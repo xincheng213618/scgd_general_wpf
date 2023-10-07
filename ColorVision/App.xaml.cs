@@ -1,4 +1,4 @@
-﻿using ColorVision.MQTT.Service;
+﻿using ColorVision.MQTT.Services;
 using ColorVision.NativeMethods;
 using ColorVision.SettingUp;
 using ColorVision.Themes;

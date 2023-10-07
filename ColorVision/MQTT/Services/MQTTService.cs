@@ -3,7 +3,7 @@ using ColorVision.MySql.DAO;
 using Newtonsoft.Json;
 using System.Windows.Controls;
 
-namespace ColorVision.MQTT.Service
+namespace ColorVision.MQTT.Services
 {
     public class BaseMQTTService : BaseObject
     {

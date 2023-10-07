@@ -2,7 +2,7 @@
 using ColorVision.Service;
 using System.Windows.Controls;
 
-namespace ColorVision.MQTT.Service
+namespace ColorVision.MQTT.Services
 {
 
     public enum DeviceType

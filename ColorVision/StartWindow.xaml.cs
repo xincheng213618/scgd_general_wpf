@@ -8,7 +8,7 @@ using ColorVision.MySql;
 using ColorVision.MQTT;
 using ColorVision.SettingUp;
 using System.Reflection;
-using ColorVision.MQTT.Service;
+using ColorVision.MQTT.Services;
 using ColorVision.Service;
 
 namespace ColorVision

@@ -1,6 +1,6 @@
 ﻿#pragma warning disable CS8625
 using ColorVision.Extension;
-using ColorVision.MQTT.Service;
+using ColorVision.MQTT.Services;
 using ColorVision.MVVM;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;

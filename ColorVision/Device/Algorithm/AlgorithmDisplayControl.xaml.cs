@@ -1,5 +1,5 @@
 ﻿using ColorVision.Device.Algorithm;
-using ColorVision.MQTT.Service;
+using ColorVision.MQTT.Services;
 using ColorVision.MySql.Service;
 using ColorVision.Template;
 using System;

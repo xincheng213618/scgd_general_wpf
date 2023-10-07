@@ -14,7 +14,7 @@ using System.Collections.ObjectModel;
 using System.Windows.Controls;
 using static cvColorVision.GCSDLL;
 
-namespace ColorVision.MQTT.Service
+namespace ColorVision.MQTT.Services
 {
     public class ServiceControl
     {

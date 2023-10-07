@@ -1,5 +1,5 @@
 ﻿using ColorVision.Device;
-using ColorVision.MQTT.Service;
+using ColorVision.MQTT.Services;
 using ColorVision.MySql.DAO;
 using Newtonsoft.Json;
 using System;

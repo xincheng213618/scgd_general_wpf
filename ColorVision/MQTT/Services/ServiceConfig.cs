@@ -1,6 +1,6 @@
 ﻿using ColorVision.Device;
 
-namespace ColorVision.MQTT.Service
+namespace ColorVision.MQTT.Services
 {
     public class ServiceConfig : BaseDeviceConfig, IServiceConfig, IHeartbeat
     {
