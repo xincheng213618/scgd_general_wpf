@@ -181,6 +181,7 @@ namespace ColorVision.MQTT
             msg.ServiceID = ServiceID;
             msg.SnID = SnID;
             msg.SerialNumber = SerialNumber;
+            msg.Version = "1.0";
             ///这里是为了兼容只前的写法，后面会修改掉
             if (string.IsNullOrWhiteSpace(msg.ServiceName))
             {
