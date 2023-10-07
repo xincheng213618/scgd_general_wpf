@@ -211,7 +211,6 @@ namespace ColorVision
                     Activate = true;
                     LastChoice = nameof(Measure);
                 }
-
                 ToolBarMeasure.Measure = value;
                 NotifyPropertyChanged();
             }

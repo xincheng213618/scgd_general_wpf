@@ -34,8 +34,8 @@ namespace ColorVision.Draw.Ruler
 
         private void GridEx_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            ScalRuler.ParentWidth = ScalRuler.ActualWidth;
-            ScalRuler.ParentHeight = ScalRuler.ActualHeight;
+            ScalRuler.ParentWidth = GridEx.ActualWidth;
+            ScalRuler.ParentHeight = GridEx.ActualHeight;
             ScalRuler.Render();
         }
 
