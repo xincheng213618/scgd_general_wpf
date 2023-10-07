@@ -107,7 +107,7 @@
                 <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" >
                     <StackPanel x:Name="SPDisplay" >
                         <Viewbox Width="{Binding ElementName=LeftMainContent,Path=ActualWidth}" >
-                            <StackPanel x:Name="StackPanelMQTT" Width="300" Initialized="StackPanelMQTT_Initialized"  >
+                            <StackPanel x:Name="StackPanelMQTT" Width="300" Initialized="StackPanelMQTT_Initialized" >
                             </StackPanel>
                         </Viewbox>
 

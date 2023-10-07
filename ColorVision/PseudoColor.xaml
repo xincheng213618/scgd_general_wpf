@@ -6,22 +6,28 @@
              xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:local="clr-namespace:ColorVision"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             d:DesignHeight="400" d:DesignWidth="20" Width="30">
     <Grid>
-        <StackPanel Margin="32,0,0,0" Orientation="Horizontal">
-            <hc:RangeSlider Height="400" hc:TipElement.Visibility="Visible"  BorderBrush="Transparent" hc:TipElement.Placement="Right" hc:TipElement.StringFormat="#0.00" ValueEnd="5" TickPlacement="Both" Margin="32,0" Orientation="Vertical">
-                <hc:RangeSlider.Background>
-                    <LinearGradientBrush  StartPoint="0,0" EndPoint="0,1">
-                        <LinearGradientBrush.GradientStops>
-                            <GradientStop Offset="0" Color="#BBBBBB"></GradientStop>
-                            <GradientStop Offset="1" Color="#000000"></GradientStop>
-                        </LinearGradientBrush.GradientStops>
-                    </LinearGradientBrush>
-                </hc:RangeSlider.Background>
-            </hc:RangeSlider>
+
+        <StackPanel Orientation="Vertical">
+            <TextBox Text="{Binding  ElementName=RangeSlider1,Path=ValueEnd,StringFormat=#0}"  Style="{StaticResource BaseStyle}" BorderThickness="0"  HorizontalContentAlignment="Center"/>
+            <Grid>
+                <Border  CornerRadius="9" Width="18" Margin="-2,0,0,0" >
+                    <Border.Background>
+                        <LinearGradientBrush  StartPoint="0,0" EndPoint="0,1">
+                            <LinearGradientBrush.GradientStops>
+                                <GradientStop Offset="0" Color="#BBBBBB"></GradientStop>
+                                <GradientStop Offset="1" Color="#000000"></GradientStop>
+                            </LinearGradientBrush.GradientStops>
+                        </LinearGradientBrush>
+                    </Border.Background>
+                </Border>
+                <hc:RangeSlider x:Name="RangeSlider1" FocusVisualStyle="{x:Null}" Height="400" Width="20" Style="{StaticResource RangeSliderBaseStyle}" Background="Transparent" hc:TipElement.Visibility="Visible" BorderBrush="Transparent" hc:TipElement.Placement="Right" hc:TipElement.StringFormat="#0" ValueEnd="255"  Maximum="255" ValueStart="0"  Minimum="0" Orientation="Vertical">
+                </hc:RangeSlider>
+            </Grid>
+
+            <TextBox  Text="{Binding  ElementName=RangeSlider1,Path=ValueStart,StringFormat=#0}" Style="{StaticResource BaseStyle}"  BorderThickness="0" HorizontalContentAlignment="Center"/>
         </StackPanel>
-
-
 
     </Grid>
 </UserControl>
