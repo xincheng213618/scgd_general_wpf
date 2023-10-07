@@ -5,24 +5,9 @@ using log4net.Repository.Hierarchy;
 
 namespace ColorVision
 {
-    public class SoftwareSetting :ViewModelBase
+
+    public partial class SoftwareSetting
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(SoftwareSetting));
-
-        public SoftwareSetting()
-        {
-        }
-
-        /// <summary>
-        /// 主题
-        /// </summary>
-        public Themes.Theme Theme { get; set; } = ColorVision.Themes.Theme.Light;
-        /// <summary>
-        /// 语言
-        /// </summary>
-        public string UICulture { get; set; } = "zh-Hans";
-
-
         public bool IsRestoreWindow { get; set; }
 
         public double Width { get; set; }
@@ -30,16 +15,11 @@ namespace ColorVision
         public double Left { get; set; }
         public double Top { get; set; }
         public int WindowState { get; set; }
+    }
 
-        public bool IsDeFaultOpenService { get=> _IsDeFaultOpenService; set { _IsDeFaultOpenService = value;NotifyPropertyChanged(); } }
-        private bool _IsDeFaultOpenService = true;
-
-        public bool IsOpenStatusBar { get => _IsOpenStatusBar; set { _IsOpenStatusBar = value; NotifyPropertyChanged(); } }
-        private bool _IsOpenStatusBar = true;
-        public bool IsOpenSidebar { get => _IsOpenSidebar; set { _IsOpenSidebar = value; NotifyPropertyChanged(); } }
-        private bool _IsOpenSidebar = true;
-
-
+    public partial class SoftwareSetting
+    {
+        private string _LogLevel = GlobalConst.LogLevel[0];
         public string LogLevel
         {
             get => _LogLevel; set
@@ -72,6 +52,28 @@ namespace ColorVision
                 log.Info("更新log4Net" + value);
             }
         }
-        private string _LogLevel = GlobalConst.LogLevel[0];
+        }
+
+
+    public partial class SoftwareSetting :ViewModelBase
+    {
+        private static readonly ILog log = LogManager.GetLogger(typeof(SoftwareSetting));
+        /// <summary>
+        /// 主题
+        /// </summary>
+        public Themes.Theme Theme { get; set; } = Themes.Theme.Light;
+        /// <summary>
+        /// 语言
+        /// </summary>
+        public string UICulture { get; set; } = "zh-Hans";
+
+        public bool IsDeFaultOpenService { get=> _IsDeFaultOpenService; set { _IsDeFaultOpenService = value;NotifyPropertyChanged(); } }
+        private bool _IsDeFaultOpenService = true;
+
+        public bool IsOpenStatusBar { get => _IsOpenStatusBar; set { _IsOpenStatusBar = value; NotifyPropertyChanged(); } }
+        private bool _IsOpenStatusBar = true;
+        public bool IsOpenSidebar { get => _IsOpenSidebar; set { _IsOpenSidebar = value; NotifyPropertyChanged(); } }
+        private bool _IsOpenSidebar = true;
+
     }
 }

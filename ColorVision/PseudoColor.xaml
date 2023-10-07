@@ -8,7 +8,6 @@
              mc:Ignorable="d" 
              d:DesignHeight="400" d:DesignWidth="20" Width="30">
     <Grid>
-
         <StackPanel Orientation="Vertical">
             <TextBox Text="{Binding  ElementName=RangeSlider1,Path=ValueEnd,StringFormat=#0}"  Style="{StaticResource BaseStyle}" BorderThickness="0"  HorizontalContentAlignment="Center"/>
             <Grid>

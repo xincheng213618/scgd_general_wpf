@@ -21,7 +21,6 @@ namespace ColorVision
         public const string AutoRunRegPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
         public const string AutoRunName = "ColorVisionAutoRun";
 
-
         public static readonly List<string> LogLevel = new() { "all","debug", "info", "warning", "error", "none" };
     }
 
