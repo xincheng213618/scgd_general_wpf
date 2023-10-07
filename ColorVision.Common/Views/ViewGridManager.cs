@@ -247,6 +247,7 @@ namespace ColorVision
                 return;
             }
 
+            if (Views.Count == 0) return;
 
             if (GetViewNums() < num)
                 GenViewGrid(num);

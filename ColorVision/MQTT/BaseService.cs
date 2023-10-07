@@ -146,8 +146,6 @@ namespace ColorVision.MQTT
         public MsgHandler MsgReceived { get; set; }
 
         
-
-
         public virtual string SubscribeTopic { get; set; }
         public virtual string SendTopic { get; set; }
         public MQTTControl MQTTControl { get; set; }

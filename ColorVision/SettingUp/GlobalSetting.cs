@@ -1,4 +1,5 @@
 ﻿using ColorVision.MVVM;
+using ColorVision.SettingUp;
 using ColorVision.Util;
 using System;
 using System.Collections.Generic;
@@ -6,7 +7,7 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace ColorVision.SettingUp
+namespace ColorVision
 {
     public static partial class GlobalConst
     {

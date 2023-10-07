@@ -13,9 +13,26 @@ using System.Threading.Tasks;
 
 namespace ColorVision.MQTT
 {
+    public interface IMQTTControl
+    {
+        public event MQTTMsgHandler MQTTMsgChanged;
+        public event EventHandler MQTTConnectChanged;
+        public event Func<MqttApplicationMessageReceivedEventArgs, Task> ApplicationMessageReceivedAsync;
+        public bool IsConnect { get; }
+        public Task<bool> Connect(MQTTConfig MQTTConfig);
+        public Task DisconnectAsyncClient();
+        public ObservableCollection<string> SubscribeTopic { get; }
+        public void SubscribeCache(string SubscribeTopic);
+        public Task UnsubscribeAsyncClientAsync(string topic);
+        public Task PublishAsyncClient(string topic, string msg, bool retained);
+    }
+
+
+
+
     public delegate void MQTTMsgHandler(MQMsg resultDataMQTT);
 
-    public class MQTTControl : ViewModelBase
+    public class MQTTControl : ViewModelBase, IMQTTControl
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MQTTControl));
 

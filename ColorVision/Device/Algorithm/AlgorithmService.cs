@@ -11,10 +11,9 @@ namespace ColorVision.Device.Algorithm
 {
     public class AlgorithmService : BaseService<AlgorithmConfig>
     {
-
         public event DeviceStatusChangedHandler DeviceStatusChanged;
 
-        public DeviceStatus DeviceStatus { get => _DeviceStatus; set { _DeviceStatus = value; Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value)); NotifyPropertyChanged(); } }
+        public DeviceStatus DeviceStatus { get => _DeviceStatus; set { if (value == _DeviceStatus) return;  _DeviceStatus = value; Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value)); NotifyPropertyChanged(); } }
         private DeviceStatus _DeviceStatus;
 
         public static Dictionary<string, ObservableCollection<string>> ServicesDevices { get; set; } = new Dictionary<string, ObservableCollection<string>>();
@@ -84,6 +83,7 @@ namespace ColorVision.Device.Algorithm
             }
             else
             {
+                MessageBox.Show("返回失败" + Environment.NewLine + msg);
                 switch (msg.EventName)
                 {
                     case "GetData":
@@ -109,8 +109,6 @@ namespace ColorVision.Device.Algorithm
         }
 
         public bool IsRun { get; set; }
-        public CameraType CurrentCameraType { get; set; }
-
         public MsgRecord Init()
         {
             MsgSend msg = new MsgSend
@@ -133,8 +131,9 @@ namespace ColorVision.Device.Algorithm
             MsgSend msg = new MsgSend
             {
                 EventName = "GetData",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid },{ "szFileNameX", "X.tif " }, { "szFileNameY", "Y.tif " }, { "szFileNameZ", "Z.tif " } }
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid } }
             };
+            //Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid }, { "szFileNameX", "X.tif " }, { "szFileNameY", "Y.tif " }, { "szFileNameZ", "Z.tif " } }
             return PublishAsyncClient(msg);
         }
 
@@ -148,7 +147,6 @@ namespace ColorVision.Device.Algorithm
                 EventName = "SaveLicense",
                 Params = new Dictionary<string, object>() { { "FileName", md5 }, { "FileData", FileData }, { "eType", 0 }}
             };
-
             return PublishAsyncClient(msg); 
         }
 

@@ -1,7 +1,7 @@
 ﻿namespace ColorVision.MQTT
 {
     /// <summary>
-    /// MQTT服务接口
+    /// 服务接口
     /// </summary>
     public interface IServiceConfig
     {

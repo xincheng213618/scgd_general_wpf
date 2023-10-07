@@ -19,7 +19,6 @@ namespace ColorVision.Device.Camera.Video
         private static readonly ILog log = LogManager.GetLogger(typeof(CameraVideoControl));
 
         public SoftwareConfig SoftwareConfig { get; set; }
-        public CameraVideoConfig Config { get => SoftwareConfig.CameraVideoConfig; }
 
         private const string H264DllName = "openh264-2.3.1-win64.dll";
         public OpenH264Lib.Decoder Decoder { get; set; }
