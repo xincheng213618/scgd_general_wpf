@@ -568,6 +568,7 @@ namespace ColorVision.Template
                 }
                 PoiParam.Width = bitmapImage.PixelWidth;
                 PoiParam.Height = bitmapImage.PixelHeight;
+                ImageShow.ImageInitialize();
             }
         }
         private bool Init;
@@ -613,6 +614,7 @@ namespace ColorVision.Template
                         WaitControlProgressBar.Visibility = Visibility.Hidden;
                     }
                     Init = true;
+                    ImageShow.ImageInitialize();
 
                 });
             });

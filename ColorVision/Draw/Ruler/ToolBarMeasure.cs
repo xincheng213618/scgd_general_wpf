@@ -1,8 +1,9 @@
 ﻿using System.Windows;
 using System.Windows.Input;
 using ColorVision.Draw;
+using NPOI.POIFS.Properties;
 
-namespace ColorVision
+namespace ColorVision.Draw.Ruler
 {
     public class ToolBarMeasure
     {
@@ -17,7 +18,7 @@ namespace ColorVision
             Zoombox1 = zombox;
             this.drawCanvas = drawCanvas;
         }
-        private DrawingVisualRuler? DrawingVisualRulerCache;
+        private DrawingVisualRuler? RulerCache;
 
 
         public bool Measure
@@ -55,11 +56,11 @@ namespace ColorVision
 
         private void MouseDown(object sender, MouseButtonEventArgs e)
         {
-            if (DrawingVisualRulerCache == null)
+            if (RulerCache == null)
             {
-                DrawingVisualRulerCache = new DrawingVisualRuler();
-                DrawingVisualRulerCache.Pen.Thickness = 1 / Zoombox1.ContentMatrix.M11;
-                drawCanvas.AddVisual(DrawingVisualRulerCache);
+                RulerCache = new DrawingVisualRuler();
+                RulerCache.Pen.Thickness = 1 / Zoombox1.ContentMatrix.M11;
+                drawCanvas.AddVisual(RulerCache);
             }
         }
         private void MouseMove(object sender, MouseEventArgs e)
@@ -68,10 +69,10 @@ namespace ColorVision
             {
                 var point = e.GetPosition(drawCanvas);
 
-                if (DrawingVisualRulerCache != null)
+                if (RulerCache != null)
                 {
-                    DrawingVisualRulerCache.MovePoints = point;
-                    DrawingVisualRulerCache.Render();
+                    RulerCache.MovePoints = point;
+                    RulerCache.Render();
                 }
             }
         }
@@ -80,21 +81,21 @@ namespace ColorVision
             if (sender is DrawCanvas drawCanvas && !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn))
             {
                 var MouseUpP = e.GetPosition(drawCanvas);
-                if (DrawingVisualRulerCache != null)
+                if (RulerCache != null)
                 {
-                    DrawingVisualRulerCache.Points.Add(MouseUpP);
-                    DrawingVisualRulerCache.MovePoints = null;
-                    DrawingVisualRulerCache.Render();
+                    RulerCache.Points.Add(MouseUpP);
+                    RulerCache.MovePoints = null;
+                    RulerCache.Render();
                 }
             }
         }
         private void PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (DrawingVisualRulerCache != null)
+            if (RulerCache != null)
             {
-                DrawingVisualRulerCache.MovePoints = null;
-                DrawingVisualRulerCache.Render();
-                DrawingVisualRulerCache = null;
+                RulerCache.MovePoints = null;
+                RulerCache.Render();
+                RulerCache = null;
             }
         }
 
@@ -102,19 +103,19 @@ namespace ColorVision
         {
             if (e.Key == Key.Escape)
             {
-                if (DrawingVisualRulerCache != null)
+                if (RulerCache != null)
                 {
-                    drawCanvas.RemoveVisual(DrawingVisualRulerCache);
-                    DrawingVisualRulerCache = null;
+                    drawCanvas.RemoveVisual(RulerCache);
+                    RulerCache = null;
                 }
             }
             if (e.Key == Key.Enter)
             {
-                if (DrawingVisualRulerCache != null)
+                if (RulerCache != null)
                 {
-                    DrawingVisualRulerCache.MovePoints = null;
-                    DrawingVisualRulerCache.Render();
-                    DrawingVisualRulerCache = null;
+                    RulerCache.MovePoints = null;
+                    RulerCache.Render();
+                    RulerCache = null;
                 }
             }
         }

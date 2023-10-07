@@ -4,6 +4,7 @@ using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Windows.Input;
+using ColorVision.MVVM;
 
 namespace ColorVision
 {
@@ -45,6 +46,18 @@ namespace ColorVision
         }
         private bool _ShowImageInfo;
 
+        public class ImageInfo
+        {
+            public int X { get; set; }
+            public int Y { get; set; }
+            public double X1 { get; set; }
+            public double Y1 { get; set; }
+            public int R { get; set; }
+            public int G { get; set; }
+            public int B { get; set; }
+            public string Hex { get; set; }
+            public SolidColorBrush Color { get; set; }
+        }
 
         public void DrawImage(Point actPoint, Point disPoint, ImageInfo imageInfo)
         {

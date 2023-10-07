@@ -5,8 +5,8 @@ using System.Windows.Media;
 using System.Windows.Input;
 using ColorVision.Draw;
 using Gu.Wpf.Geometry;
-using NPOI.HSSF.EventUserModel.DummyRecord;
 using System.Reflection;
+using ColorVision.Draw.Ruler;
 
 namespace ColorVision
 {
@@ -30,6 +30,8 @@ namespace ColorVision
 
         private FrameworkElement Parent { get; set; }
 
+        public ToolBarScaleRuler ToolBarScaleRuler { get; set; }
+
 
         public ToolBarTop(FrameworkElement Parent,ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
@@ -40,6 +42,7 @@ namespace ColorVision
 
             ShowImage = new ToolBarTopShowImage(zombox, drawCanvas);
             ToolBarMeasure = new ToolBarMeasure(Parent, zombox, drawCanvas);
+            ToolBarScaleRuler = new ToolBarScaleRuler(Parent, zombox, drawCanvas);
 
             ZoomUniformToFill = new RelayCommand(a => ZoomboxSub.ZoomUniformToFill());
             ZoomUniform = new RelayCommand(a => ZoomboxSub.ZoomUniform());
@@ -94,6 +97,19 @@ namespace ColorVision
                 ZoomboxSub.Zoom(0.9);
             }
         }
+
+        public bool ScaleRulerShow
+        { 
+            get => ToolBarScaleRuler.IsShow;
+            set
+            {
+                if (ToolBarScaleRuler.IsShow == value) return;
+                ToolBarScaleRuler.IsShow = value;
+                NotifyPropertyChanged();
+            }
+        }
+
+
 
 
         /// <summary>

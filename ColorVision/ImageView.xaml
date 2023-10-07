@@ -134,9 +134,6 @@
             <local:ZoomboxSub x:Name="Zoombox1"  MaxZoom="10"  MinZoom="0.01" Grid.Row="1" Grid.ColumnSpan="2">
                 <local:DrawCanvas x:Name="ImageShow"  Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_MouseDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
             </local:ZoomboxSub>
-            <Grid  x:Name="GridEx"  Grid.Row="1">
-                
-            </Grid>
             <StackPanel Grid.Row="0" Grid.RowSpan="2" >
                 <ToolBar x:Name="ToolBar1" DataContext="{Binding ToolBarTop}"   Loaded="ToolBar1_Loaded" Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" HorizontalAlignment="Center">
                     <Button Content="打开" Click="Button_Click" Margin="4,0,1,0">
