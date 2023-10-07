@@ -9,13 +9,13 @@ using System.Windows.Controls;
 namespace ColorVision.Service
 {
     /// <summary>
-    /// MQTTServiceKindControl.xaml 的交互逻辑
+    /// ServiceKindControl.xaml 的交互逻辑
     /// </summary>
-    public partial class MQTTServiceKindControl : UserControl
+    public partial class ServiceKindControl : UserControl
     {
         public MQTTServiceKind MQTTServiceKind { get; set; }
         public ServiceControl ServiceControl { get; set; }
-        public MQTTServiceKindControl(MQTTServiceKind mQTTServiceKind)
+        public ServiceKindControl(MQTTServiceKind mQTTServiceKind)
         {
             this.MQTTServiceKind = mQTTServiceKind;
             InitializeComponent();

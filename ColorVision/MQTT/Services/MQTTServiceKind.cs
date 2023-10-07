@@ -14,6 +14,7 @@ namespace ColorVision.MQTT.Services
         Sensor = 5,
         Image = 6,
     }
+    
 
 
 
@@ -24,6 +25,6 @@ namespace ColorVision.MQTT.Services
         {
         }
 
-        public override UserControl GenDeviceControl() => new MQTTServiceKindControl(this);
+        public override UserControl GenDeviceControl() => new ServiceKindControl(this);
     }
 }
