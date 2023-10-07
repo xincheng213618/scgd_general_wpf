@@ -7,11 +7,11 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
-using ColorVision.MQTT;
 using cvColorVision;
 using ColorVision.Template;
 using System.Security.Cryptography.X509Certificates;
 using MySqlX.XDevAPI.Common;
+using ColorVision.MQTT;
 
 namespace ColorVision.Device.Camera
 {

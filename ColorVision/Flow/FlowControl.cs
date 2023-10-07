@@ -1,4 +1,5 @@
-﻿using ColorVision.MVVM;
+﻿using ColorVision.MQTT;
+using ColorVision.MVVM;
 using log4net;
 using Newtonsoft.Json;
 using System;
@@ -6,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace ColorVision.MQTT
+namespace ColorVision.Flow
 {
     public class FlowControlData : ViewModelBase
     {
@@ -48,9 +49,9 @@ namespace ColorVision.MQTT
 
         public FlowControl(MQTTControl mQTTControl, string topic)
         {
-            this.MQTTControl = mQTTControl;
-            this.SendTopic = "FLOW/CMD/" + topic;
-            this.SubscribeTopic = "FLOW/STATUS/" + topic;
+            MQTTControl = mQTTControl;
+            SendTopic = "FLOW/CMD/" + topic;
+            SubscribeTopic = "FLOW/STATUS/" + topic;
             MQTTControl.SubscribeCache(SubscribeTopic);
             MQTTControl.ApplicationMessageReceivedAsync += MQTTControl_ApplicationMessageReceivedAsync;
         }
@@ -101,7 +102,7 @@ namespace ColorVision.MQTT
 
         private Task MQTTControl_ApplicationMessageReceivedAsync(MQTTnet.Client.MqttApplicationMessageReceivedEventArgs arg)
         {
-            if(logger.IsDebugEnabled)
+            if (logger.IsDebugEnabled)
                 logger.Debug(JsonConvert.SerializeObject(arg));
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {
