@@ -62,7 +62,7 @@ namespace cvColorVision
                 {
                     return false;
                 }
-                else
+                else 
                 {
                     MTFResults.Add(pd, articulation);
                 }
