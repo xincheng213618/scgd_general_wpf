@@ -1,8 +1,12 @@
-﻿using ColorVision.MySql.DAO;
+﻿using ColorVision.Extension;
+using ColorVision.MySql;
+using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.SettingUp;
 using ColorVision.Util;
 using cvColorVision.Util;
+using NPOI.SS.Formula.Functions;
+using NPOI.XWPF.UserModel;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -52,14 +56,16 @@ namespace ColorVision.Template
             MeasureParams = new ObservableCollection<KeyValuePair<string, MeasureParam>>();
 
             MTFParams = new ObservableCollection<KeyValuePair<string, MTFParam>>();
-
+            SFRParams = new ObservableCollection<KeyValuePair<string, SFRParam>>();
             
 
             GlobalSetting.GetInstance().SoftwareConfig.UseMySqlChanged += (s) =>
             {
                 Init();
             };
+
             Init();
+
             Application.Current.MainWindow.Closed += (s, e) =>
             {
                 Save();
@@ -69,16 +75,13 @@ namespace ColorVision.Template
         {
             CalibrationParams = IDefault(FileNameCalibrationParams, new CalibrationParam());
             LedReusltParams = IDefault(FileNameLedJudgeParams, new LedReusltParam());
-            // PGParams = IDefault(FileNamePGParams, new PGParam());
-            //SxParams = IDefault(FileNameSxParms, new SxParam());
-            //FlowParams = IDefault(FileNameFlowParms, new FlowParam());
-
             LoadPoiParam();
             LoadAoiParam();
             LoadFlowParam();
             LoadSxParam();
             LoadPGParam();
-            LoadMTFParam();
+            LoadModParam(SFRParams, ModMasterType.SFR);
+            LoadModParam(MTFParams, ModMasterType.MTF);
         }
 
         /// 这里是初始化模板的封装，因为模板的代码高度统一，所以使用泛型T来设置具体的模板参数。
@@ -161,6 +164,10 @@ namespace ColorVision.Template
                     if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql) Save2DB(SxParams);
                     else SaveDefault(FileNameSxParms, SxParams);
                     break;
+                case WindowTemplateType.MTFParam:
+                    if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql) Save2DB(MTFParams);
+                    else SaveDefault($"cfg\\{ModMasterType.MTF}.cfg", MTFParams);
+                    break;
                 case WindowTemplateType.PoiParam:
                     SaveDefault(FileNamePoiParms, PoiParams);
                     break;
@@ -172,41 +179,24 @@ namespace ColorVision.Template
             }
         }
 
-        private void Save2DB(ObservableCollection<KeyValuePair<string, PGParam>> pGParams)
+
+        public void Save2DB<T>(ObservableCollection<KeyValuePair<string, T>>  keyValuePairs) where T : ParamBase
         {
-            foreach (var item in pGParams)
-            {
+            foreach (var item in keyValuePairs)
                 Save2DB(item.Value);
-            }
         }
-        private void Save2DB(PGParam value)
+
+        public void Save2DB<T>(T value) where T : ParamBase
         {
             modService.Save(value);
         }
-        private void Save2DB(ObservableCollection<KeyValuePair<string, SxParam>> sxParams)
-        {
-            foreach (var item in sxParams)
-            {
-                Save2DB(item.Value);
-            }
-        }
-
-        private void Save2DB(SxParam value)
-        {
-            modService.Save(value);
-        }
-
-        public void Save2DB(PoiParam poiParam)
-        {
-            poiService.Save(poiParam);
-        }
-
 
 
         private static void SaveDefault<T>(string FileNameParams, ObservableCollection<KeyValuePair<string, T>> t)
         {
             CfgFile.Save(FileNameParams, t);
         }
+
 
 
         public ObservableCollection<KeyValuePair<string, PoiParam>> LoadPoiParam()
@@ -253,6 +243,23 @@ namespace ColorVision.Template
             }
             return null;
         }
+
+        public T? AddParamMode<T>(string code,string Name) where T:ParamMod,new ()
+        {
+            ModMasterModel flowMaster = new ModMasterModel(code, Name, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            modService.Save(flowMaster);
+            int pkId = flowMaster.GetPK();
+            if (pkId > 0)
+            {
+                ModMasterModel modMasterModel = modService.GetMasterById(pkId);
+                List<ModDetailModel>  modDetailModels = modService.GetDetailByPid(pkId);
+                if (modMasterModel != null) return (T)Activator.CreateInstance(typeof(T), new object[] { modMasterModel, modDetailModels });
+                else return null;
+            }
+            return null;
+
+        }
+
         public MTFParam? AddMTFParam(string text)
         {
             ModMasterModel flowMaster = new ModMasterModel(ModMasterType.MTF, text, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
@@ -412,10 +419,11 @@ namespace ColorVision.Template
         private ObservableCollection<KeyValuePair<string, MTFParam>> LoadMTFParam()
         {
             MTFParams.Clear();
-
             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
             {
-                List<ModMasterModel> smus = modService.GetMTFAll(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                ModMasterDao masterFlowDao = new ModMasterDao(ModMasterType.MTF);
+
+                List<ModMasterModel> smus = masterFlowDao.GetAll(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
                 foreach (var dbModel in smus)
                 {
                     List<ModDetailModel> smuDetails = modService.GetDetailByPid(dbModel.Id);
@@ -434,9 +442,36 @@ namespace ColorVision.Template
                     MTFParams.Add(item);
             }
             return MTFParams;
-
-
         }
+
+
+        private void LoadModParam<T>(ObservableCollection<KeyValuePair<string, T>> ParamModes, string ModeType) where T : ParamMod, new()
+        {
+            ParamModes.Clear();
+            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+            {
+                ModMasterDao masterFlowDao = new ModMasterDao(ModeType);
+
+                List<ModMasterModel> smus = masterFlowDao.GetAll(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                foreach (var dbModel in smus)
+                {
+                    List<ModDetailModel> smuDetails = modService.GetDetailByPid(dbModel.Id);
+                    foreach (var dbDetail in smuDetails)
+                    {
+                        dbDetail.ValueA = dbDetail?.ValueA?.Replace("\\r", "\r");
+                    }
+                    KeyValuePair<string, T> item = new KeyValuePair<string, T>(dbModel.Name ?? "default", (T)Activator.CreateInstance(typeof(T), new object[] { dbModel, smuDetails }));
+                    ParamModes.Add(item);
+                }
+            }
+            else
+            {
+                var keyValuePairs = IDefault($"cfg\\{ModeType}.cfg", new T());
+                foreach (var item in keyValuePairs)
+                    ParamModes.Add(item);
+            }
+        }
+
 
 
         private ObservableCollection<KeyValuePair<string, PGParam>> LoadPGParam()
@@ -575,17 +610,7 @@ namespace ColorVision.Template
            return modService.MasterDeleteById(id);
         }
 
-        internal void Save2DB(ObservableCollection<KeyValuePair<string, AoiParam>> aoiParams)
-        {
-            foreach (var item in aoiParams)
-            {
-                Save2DB(item.Value);
-            }
-        }
-        internal void Save2DB(AoiParam aoiParam)
-        {
-            modService.Save(aoiParam);
-        }
+
         internal void Save2DB(FlowParam flowParam)
         {
             string fileName = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.SolutionFullName + "\\" + flowParam.FileName;
@@ -643,6 +668,9 @@ namespace ColorVision.Template
         public ObservableCollection<KeyValuePair<string, FlowParam>> FlowParams { get; set; }
 
         public ObservableCollection<KeyValuePair<string, MTFParam>> MTFParams { get; set; }
+
+        public ObservableCollection<KeyValuePair<string, SFRParam>> SFRParams { get; set; }
+
 
 
 

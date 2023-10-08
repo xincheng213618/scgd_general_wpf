@@ -143,19 +143,42 @@ namespace ColorVision.Template
 
     }
     
+
+    public class ParamMod : ParamBase
+    {
+        public ParamMod() { }
+
+        public ParamMod(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modDetails)
+        {
+        }
+    }
+
     #pragma warning disable CA1707
-    public class MTFParam : ParamBase
+    public class MTFParam : ParamMod
     {
         public MTFParam() { }
-        public MTFParam(ModMasterModel aoiMaster, List<ModDetailModel> aoiDetail) : base(aoiMaster.Id, aoiDetail)
+        public MTFParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
         {
-
         }
 
         [Category("MTF"), Description("MTF dRatio")]
         public double MTF_dRatio { get => GetValue(_MTF_dRatio); set { SetProperty(ref _MTF_dRatio, value); } }
         private double _MTF_dRatio =0.01;
     }
+
+    public class SFRParam : ParamMod
+    {
+        public SFRParam() { }
+        public SFRParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
+        {
+        }
+
+        [Category("SFR"), Description("SFR gamma")]
+        public double SFR_gamma { get => GetValue(_SFR_gamma); set { SetProperty(ref _SFR_gamma, value); } }
+        private double _SFR_gamma = 0.01;
+    }
+
+    
 
 
     /// <summary>

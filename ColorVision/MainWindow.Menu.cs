@@ -87,6 +87,10 @@ namespace ColorVision
                         windowTemplate = new WindowTemplate(WindowTemplateType.MTFParam) { Title = "MTF算法设置" };
                         TemplateAbb(windowTemplate, TemplateControl.MTFParams);
                         break;
+                    case "SFRParam":
+                        windowTemplate = new WindowTemplate(WindowTemplateType.SFRParam) { Title = "SFR算法设置" };
+                        TemplateAbb(windowTemplate, TemplateControl.SFRParams);
+                        break;
                     default:
                         HandyControl.Controls.Growl.Info("开发中");
                         break;
