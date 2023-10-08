@@ -501,7 +501,6 @@ namespace ColorVision.Template
         public ObservableCollection<KeyValuePair<string, FlowParam>> FlowParams { get; set; }
 
         public ObservableCollection<KeyValuePair<string, MTFParam>> MTFParams { get; set; }
-
         public ObservableCollection<KeyValuePair<string, SFRParam>> SFRParams { get; set; }
 
 
