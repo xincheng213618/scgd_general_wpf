@@ -2,6 +2,7 @@
 using ColorVision.MVVM;
 using ColorVision.SettingUp;
 using log4net;
+using MQTTMessageLib;
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using System;
@@ -153,6 +154,7 @@ namespace ColorVision.MQTT
         public string SnID { get; set; }
         public string SerialNumber { get; set; }
         public string ServiceName { get; set; }
+        public string ServiceToken { get; set; }
 
         public virtual int HeartbeatTime { get => _HeartbeatTime; set { _HeartbeatTime = value; NotifyPropertyChanged(); } }
         private int _HeartbeatTime = 2000;
@@ -181,7 +183,8 @@ namespace ColorVision.MQTT
             msg.ServiceID = ServiceID;
             msg.SnID = SnID;
             msg.SerialNumber = SerialNumber;
-            msg.Version = "1.0";
+            msg.Version = "1.1";
+            msg.Token = ServiceToken;
             ///这里是为了兼容只前的写法，后面会修改掉
             if (string.IsNullOrWhiteSpace(msg.ServiceName))
             {
@@ -224,6 +227,11 @@ namespace ColorVision.MQTT
         {
             MQTTControl.ApplicationMessageReceivedAsync -= Processing;
             GC.SuppressFinalize(this);
+        }
+
+        public virtual void UpdateStatus(MQTTNodeService nodeService)
+        {
+            ServiceToken = nodeService.ServiceToken;
         }
     }
 

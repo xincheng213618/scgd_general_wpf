@@ -4,6 +4,7 @@
 
     public enum DeviceStatus
     {
+        Unknown = -1,
         Closed = 0,
         Closing = 1,
         Opened = 2,
