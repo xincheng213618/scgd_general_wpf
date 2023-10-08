@@ -9,7 +9,9 @@ namespace ColorVision.MySql.Service
         public const string Flow = "flow"; 
         public const string Aoi = "AOI"; 
         public const string SMU = "SMU"; 
-        public const string PG = "pg"; 
+        public const string PG = "pg";
+        public const string MTF = "MTF";
+
     }
     public class ModService
     {
@@ -18,7 +20,10 @@ namespace ColorVision.MySql.Service
         private ModMasterDao masterModDao;
         private ModMasterDao masterSMUDao;
         private ModMasterDao masterPGDao;
+        private ModMasterDao masterMTFDao;
+
         private ModDetailDao detailDao;
+
         private SysDictionaryModDetailDao sysDao;
         private SysDictionaryModDao sysDicDao;
         private SysResourceDao resourceDao;
@@ -28,6 +33,7 @@ namespace ColorVision.MySql.Service
             this.masterAoiDao = new ModMasterDao(ModMasterType.Aoi);
             this.masterSMUDao = new ModMasterDao(ModMasterType.SMU);
             this.masterPGDao = new ModMasterDao(ModMasterType.PG);
+            this.masterMTFDao = new ModMasterDao(ModMasterType.MTF);
             this.masterModDao = new ModMasterDao();
             this.detailDao = new ModDetailDao();
             this.sysDao = new SysDictionaryModDetailDao();
@@ -39,6 +45,12 @@ namespace ColorVision.MySql.Service
         {
             return detailDao.GetAllByPid(pkId);
         }
+
+        internal List<ModMasterModel> GetMTFAll(int tenantId)
+        {
+            return masterMTFDao.GetAll(tenantId);
+        }
+
         internal List<ModMasterModel> GetPGAll(int tenantId)
         {
             return masterPGDao.GetAll(tenantId);

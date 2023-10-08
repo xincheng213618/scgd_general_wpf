@@ -142,6 +142,20 @@ namespace ColorVision.Template
         }
 
     }
+    
+    #pragma warning disable CA1707
+    public class MTFParam : ParamBase
+    {
+        public MTFParam() { }
+        public MTFParam(ModMasterModel aoiMaster, List<ModDetailModel> aoiDetail) : base(aoiMaster.Id, aoiDetail)
+        {
+
+        }
+
+        [Category("MTF"), Description("MTF dRatio")]
+        public double MTF_dRatio { get => GetValue(_MTF_dRatio); set { SetProperty(ref _MTF_dRatio, value); } }
+        private double _MTF_dRatio =0.01;
+    }
 
 
     /// <summary>

@@ -51,6 +51,10 @@ namespace ColorVision.Template
             PoiParams = new ObservableCollection<KeyValuePair<string, PoiParam>>();
             MeasureParams = new ObservableCollection<KeyValuePair<string, MeasureParam>>();
 
+            MTFParams = new ObservableCollection<KeyValuePair<string, MTFParam>>();
+
+            
+
             GlobalSetting.GetInstance().SoftwareConfig.UseMySqlChanged += (s) =>
             {
                 Init();
@@ -64,8 +68,8 @@ namespace ColorVision.Template
         private void Init()
         {
             CalibrationParams = IDefault(FileNameCalibrationParams, new CalibrationParam());
-           // PGParams = IDefault(FileNamePGParams, new PGParam());
             LedReusltParams = IDefault(FileNameLedJudgeParams, new LedReusltParam());
+            // PGParams = IDefault(FileNamePGParams, new PGParam());
             //SxParams = IDefault(FileNameSxParms, new SxParam());
             //FlowParams = IDefault(FileNameFlowParms, new FlowParam());
 
@@ -74,6 +78,7 @@ namespace ColorVision.Template
             LoadFlowParam();
             LoadSxParam();
             LoadPGParam();
+            LoadMTFParam();
         }
 
         /// 这里是初始化模板的封装，因为模板的代码高度统一，所以使用泛型T来设置具体的模板参数。
@@ -248,6 +253,21 @@ namespace ColorVision.Template
             }
             return null;
         }
+        public MTFParam? AddMTFParam(string text)
+        {
+            ModMasterModel flowMaster = new ModMasterModel(ModMasterType.MTF, text, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            modService.Save(flowMaster);
+            int pkId = flowMaster.GetPK();
+            if (pkId > 0)
+            {
+                ModMasterModel pgMaster = modService.GetMasterById(pkId);
+                List<ModDetailModel> pgDetail = modService.GetDetailByPid(pkId);
+                if (pgMaster != null) return new MTFParam(pgMaster, pgDetail);
+                else return null;
+            }
+            return null;
+        }
+
 
         internal SxParam? AddSxParam(string text)
         {
@@ -260,6 +280,10 @@ namespace ColorVision.Template
             }
             return null;
         }
+
+        
+
+        
 
         internal AoiParam? AddAoiParam(string text)
         {
@@ -383,6 +407,37 @@ namespace ColorVision.Template
             if (sxMaster != null) return new SxParam(sxMaster, sxDetail);
             else return null;
         }
+
+
+        private ObservableCollection<KeyValuePair<string, MTFParam>> LoadMTFParam()
+        {
+            MTFParams.Clear();
+
+            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+            {
+                List<ModMasterModel> smus = modService.GetMTFAll(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                foreach (var dbModel in smus)
+                {
+                    List<ModDetailModel> smuDetails = modService.GetDetailByPid(dbModel.Id);
+                    foreach (var dbDetail in smuDetails)
+                    {
+                        dbDetail.ValueA = dbDetail?.ValueA?.Replace("\\r", "\r");
+                    }
+                    KeyValuePair<string, MTFParam> item = new KeyValuePair<string, MTFParam>(dbModel.Name ?? "default", new MTFParam(dbModel, smuDetails));
+                    MTFParams.Add(item);
+                }
+            }
+            else
+            {
+                var keyValuePairs = IDefault("cfg\\MTFParamSetup.cfg", new MTFParam());
+                foreach (var item in keyValuePairs)
+                    MTFParams.Add(item);
+            }
+            return MTFParams;
+
+
+        }
+
 
         private ObservableCollection<KeyValuePair<string, PGParam>> LoadPGParam()
         {
@@ -586,5 +641,10 @@ namespace ColorVision.Template
         public ObservableCollection<KeyValuePair<string, LedReusltParam>> LedReusltParams { get; set; }
         public ObservableCollection<KeyValuePair<string, PoiParam>> PoiParams { get; set; }
         public ObservableCollection<KeyValuePair<string, FlowParam>> FlowParams { get; set; }
+
+        public ObservableCollection<KeyValuePair<string, MTFParam>> MTFParams { get; set; }
+
+
+
     }
 }

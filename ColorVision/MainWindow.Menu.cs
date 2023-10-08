@@ -83,6 +83,10 @@ namespace ColorVision
                         TemplateControl.LoadMeasureParams();
                         TemplateAbb(windowTemplate, TemplateControl.MeasureParams);
                         break;
+                    case "MTFParam":
+                        windowTemplate = new WindowTemplate(WindowTemplateType.MTFParam) { Title = "MTF算法设置" };
+                        TemplateAbb(windowTemplate, TemplateControl.MTFParams);
+                        break;
                     default:
                         HandyControl.Controls.Growl.Info("开发中");
                         break;

@@ -669,6 +669,10 @@ namespace ColorVision
 
         private void ToggleButton_Click(object sender, RoutedEventArgs e)
         {
+            PseudoColor pseudoColor = new PseudoColor();
+            Window window = new Window();
+            window.Content = pseudoColor;
+            window.Show();
 
         }
     }

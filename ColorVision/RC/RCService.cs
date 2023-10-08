@@ -18,7 +18,6 @@ namespace ColorVision.RC
         public RCService(RCConfig config) : base(config)
         {
             Config = config;
-
             NodeName = "client.node.1";
             NodeAppId = "app1";
             NodeKey = "123456";

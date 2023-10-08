@@ -38,6 +38,7 @@ namespace ColorVision.Template
         PoiParam,
         FlowParam,
         MeasureParm,
+        MTFParam,
     }
 
 
@@ -208,6 +209,7 @@ namespace ColorVision.Template
                     case WindowTemplateType.LedReuslt:
                     case WindowTemplateType.SxParm:
                     case WindowTemplateType.PGParam:
+                    case WindowTemplateType.MTFParam:
                         PropertyGrid1.SelectedObject = ListConfigs[listView.SelectedIndex].Value;
                         break;
                     case WindowTemplateType.Calibration:
@@ -273,7 +275,12 @@ namespace ColorVision.Template
                 case WindowTemplateType.SxParm:
                     SxParam? sxParam = TemplateControl.AddSxParam(TextBox1.Text);
                     if (sxParam != null) CreateNewTemplate(TemplateControl.SxParams, TextBox1.Text, sxParam);
-                    else MessageBox.Show("数据库创建POI模板失败");
+                    else MessageBox.Show("数据库创建SX模板失败");
+                    break;
+                case WindowTemplateType.MTFParam:
+                    MTFParam? mTFParam = TemplateControl.AddMTFParam(TextBox1.Text);
+                    if (mTFParam != null) CreateNewTemplate(TemplateControl.MTFParams, TextBox1.Text, mTFParam);
+                    else MessageBox.Show("数据库创建MTF模板失败");
                     break;
                 case WindowTemplateType.PoiParam:
                     PoiParam? poiParam = TemplateControl.AddPoiParam(TextBox1.Text);
@@ -311,6 +318,9 @@ namespace ColorVision.Template
                     break;
                 case WindowTemplateType.SxParm:
                     CreateNewTemplate(TemplateControl.SxParams, TextBox1.Text, new SxParam());
+                    break;
+                case WindowTemplateType.MTFParam:
+                    CreateNewTemplate(TemplateControl.MTFParams, TextBox1.Text, new MTFParam() { });
                     break;
                 case WindowTemplateType.PoiParam:
                     CreateNewTemplate(TemplateControl.PoiParams, TextBox1.Text , new PoiParam() { });
