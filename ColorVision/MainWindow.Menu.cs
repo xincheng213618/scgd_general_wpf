@@ -42,7 +42,6 @@ namespace ColorVision
                 {
                     case "AoiParam":
                         windowTemplate = new WindowTemplate(WindowTemplateType.AoiParam) { Title = "AOI参数设置" };
-                        TemplateControl.LoadAoiParam();
                         TemplateAbb(windowTemplate, TemplateControl.AoiParams);
                         break;
                     case "Calibration":
@@ -59,9 +58,9 @@ namespace ColorVision
                         windowTemplate = new WindowTemplate(WindowTemplateType.LedReuslt) { Title = "数据判断模板设置" };
                         TemplateAbb(windowTemplate, TemplateControl.LedReusltParams);
                         break;
-                    case "SxParms":
-                        windowTemplate = new WindowTemplate(WindowTemplateType.SxParm) { Title = "源表模板设置" };
-                        TemplateAbb(windowTemplate, TemplateControl.SxParams);
+                    case "SMUParam":
+                        windowTemplate = new WindowTemplate(WindowTemplateType.SMUParam) { Title = "源表模板设置" };
+                        TemplateAbb(windowTemplate, TemplateControl.SMUParams);
                         break;
                     case "FocusParm":
                         windowTemplate = new WindowTemplate(WindowTemplateType.PoiParam) { Title = "关注点设置" };

@@ -35,7 +35,7 @@ namespace ColorVision.Template
         Calibration,
         PGParam,
         LedReuslt,
-        SxParm,
+        SMUParam,
         PoiParam,
         FlowParam,
         MeasureParm,
@@ -254,26 +254,28 @@ namespace ColorVision.Template
         {
             switch (TemplateType)
             {
-                case WindowTemplateType.AoiParam:
-                    AoiParam? aoiParam = TemplateControl.AddAoiParam(TextBox1.Text);
-                    if (aoiParam != null) CreateNewTemplate(TemplateControl.AoiParams, TextBox1.Text, aoiParam);
-                    else MessageBox.Show("数据库创建AOI模板失败");
-                    break;
+
                 case WindowTemplateType.Calibration:
                     CreateNewTemplate(TemplateControl.CalibrationParams, TextBox1.Text, new CalibrationParam());
-                    break;
-                case WindowTemplateType.PGParam:
-                    PGParam? pgParam = TemplateControl.AddPGParam(TextBox1.Text);
-                    if (pgParam != null) CreateNewTemplate(TemplateControl.PGParams, TextBox1.Text, pgParam);
-                    else MessageBox.Show("数据库创建PG模板失败");
                     break;
                 case WindowTemplateType.LedReuslt:
                     CreateNewTemplate(TemplateControl.LedReusltParams, TextBox1.Text, new LedReusltParam());
                     break;
-                case WindowTemplateType.SxParm:
-                    SxParam? sxParam = TemplateControl.AddSxParam(TextBox1.Text);
-                    if (sxParam != null) CreateNewTemplate(TemplateControl.SxParams, TextBox1.Text, sxParam);
-                    else MessageBox.Show("数据库创建SX模板失败");
+                case WindowTemplateType.AoiParam:
+                    AoiParam? aoiParam = TemplateControl.AddParamMode<AoiParam>(ModMasterType.Aoi, TextBox1.Text);
+                    if (aoiParam != null) CreateNewTemplate(TemplateControl.AoiParams, TextBox1.Text, aoiParam);
+                    else MessageBox.Show("数据库创建AOI模板失败");
+                    break;
+                case WindowTemplateType.PGParam:
+                    PGParam? pgParam = TemplateControl.AddParamMode<PGParam>(ModMasterType.PG, TextBox1.Text);
+                    if (pgParam != null) CreateNewTemplate(TemplateControl.PGParams, TextBox1.Text, pgParam);
+                    else MessageBox.Show("数据库创建PG模板失败");
+                    break;
+
+                case WindowTemplateType.SMUParam:
+                    SMUParam?  sMUParam = TemplateControl.AddParamMode<SMUParam>(ModMasterType.SMU, TextBox1.Text);
+                    if (sMUParam != null) CreateNewTemplate(TemplateControl.SMUParams, TextBox1.Text, sMUParam);
+                    else MessageBox.Show("数据库创建源表模板失败");
                     break;
                 case WindowTemplateType.MTFParam:
                     MTFParam? mTFParam = TemplateControl.AddParamMode<MTFParam>(ModMasterType.MTF, TextBox1.Text);
@@ -318,8 +320,8 @@ namespace ColorVision.Template
                 case WindowTemplateType.LedReuslt:
                     CreateNewTemplate(TemplateControl.LedReusltParams, TextBox1.Text, new LedReusltParam());
                     break;
-                case WindowTemplateType.SxParm:
-                    CreateNewTemplate(TemplateControl.SxParams, TextBox1.Text, new SxParam());
+                case WindowTemplateType.SMUParam:
+                    CreateNewTemplate(TemplateControl.SMUParams, TextBox1.Text, new SMUParam());
                     break;
                 case WindowTemplateType.MTFParam:
                     CreateNewTemplate(TemplateControl.MTFParams, TextBox1.Text, new MTFParam() { });
@@ -389,10 +391,10 @@ namespace ColorVision.Template
                         case WindowTemplateType.LedReuslt:
                             TemplateControl.LedReusltParams.RemoveAt(ListView1.SelectedIndex);
                             break;
-                        case WindowTemplateType.SxParm:
+                        case WindowTemplateType.SMUParam:
                             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
-                                TemplateControl.ModMasterDeleteById(TemplateControl.SxParams[ListView1.SelectedIndex].Value.ID);
-                            TemplateControl.SxParams.RemoveAt(ListView1.SelectedIndex);
+                                TemplateControl.ModMasterDeleteById(TemplateControl.SMUParams[ListView1.SelectedIndex].Value.ID);
+                            TemplateControl.SMUParams.RemoveAt(ListView1.SelectedIndex);
                             break;
                         case WindowTemplateType.PoiParam:
                             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)

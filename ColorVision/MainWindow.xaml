@@ -55,7 +55,7 @@
                     <MenuItem Header="校正模板设置(_C)" Tag="Calibration"  Click="MenuItem_Template"/>
                     <MenuItem Header="PG模板设置(_G)" Tag="PGParam"  Click="MenuItem_Template"/>
                     <MenuItem Header="数据判断模板设置(_J)" Tag="LedReusltParams"  Click="MenuItem_Template"/>
-                    <MenuItem Header="源表模板设置(_V)"  Tag="SxParms" Click="MenuItem_Template"/>
+                    <MenuItem Header="源表模板设置(_V)"  Tag="SMUParam" Click="MenuItem_Template"/>
                     <MenuItem Header="MTF模板设置(_M)"  Tag="MTFParam" Click="MenuItem_Template"/>
                     <MenuItem Header="SFR模板设置(_S)"  Tag="SFRParam" Click="MenuItem_Template"/>
 

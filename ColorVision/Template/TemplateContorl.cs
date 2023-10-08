@@ -50,7 +50,7 @@ namespace ColorVision.Template
             CalibrationParams = new ObservableCollection<KeyValuePair<string, CalibrationParam>>();
             PGParams = new ObservableCollection<KeyValuePair<string, PGParam>>();
             LedReusltParams = new ObservableCollection<KeyValuePair<string, LedReusltParam>>();
-            SxParams = new ObservableCollection<KeyValuePair<string, SxParam>>();
+            SMUParams = new ObservableCollection<KeyValuePair<string, SMUParam>>();
             FlowParams = new ObservableCollection<KeyValuePair<string, FlowParam>>();
             PoiParams = new ObservableCollection<KeyValuePair<string, PoiParam>>();
             MeasureParams = new ObservableCollection<KeyValuePair<string, MeasureParam>>();
@@ -68,7 +68,9 @@ namespace ColorVision.Template
 
             Application.Current.MainWindow.Closed += (s, e) =>
             {
-                Save();
+                if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+                    return;
+                CSVSave();
             };
         }
         private void Init()
@@ -76,10 +78,11 @@ namespace ColorVision.Template
             CalibrationParams = IDefault(FileNameCalibrationParams, new CalibrationParam());
             LedReusltParams = IDefault(FileNameLedJudgeParams, new LedReusltParam());
             LoadPoiParam();
-            LoadAoiParam();
             LoadFlowParam();
-            LoadSxParam();
-            LoadPGParam();
+
+            LoadModParam(AoiParams, ModMasterType.Aoi);
+            LoadModParam(SMUParams, ModMasterType.SMU);
+            LoadModParam(PGParams, ModMasterType.PG);
             LoadModParam(SFRParams, ModMasterType.SFR);
             LoadModParam(MTFParams, ModMasterType.MTF);
         }
@@ -128,15 +131,13 @@ namespace ColorVision.Template
 
 
 
-        public void Save()
+        public void CSVSave()
         {
-            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
-                return;
             SaveDefault(FileNameAoiParams, AoiParams);
             SaveDefault(FileNameCalibrationParams, CalibrationParams);
             SaveDefault(FileNamePGParams, PGParams);
             SaveDefault(FileNameLedJudgeParams, LedReusltParams);
-            SaveDefault(FileNameSxParms, SxParams);
+            SaveDefault(FileNameSxParms, SMUParams);
             SaveDefault(FileNamePoiParms, PoiParams);
             SaveDefault(FileNameFlowParms, FlowParams);
         }
@@ -146,27 +147,26 @@ namespace ColorVision.Template
         {
             switch (windowTemplateType)
             {
-                case WindowTemplateType.AoiParam:
-                    if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql) Save2DB(AoiParams);
-                    else SaveDefault(FileNameAoiParams, AoiParams);
-                    break;
                 case WindowTemplateType.Calibration:
                     SaveDefault(FileNameCalibrationParams, CalibrationParams);
-                    break;
-                case WindowTemplateType.PGParam:
-                    if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql) Save2DB(PGParams);
-                    else SaveDefault(FileNamePGParams, PGParams);
                     break;
                 case WindowTemplateType.LedReuslt:
                     SaveDefault(FileNameLedJudgeParams, LedReusltParams);
                     break;
-                case WindowTemplateType.SxParm:
-                    if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql) Save2DB(SxParams);
-                    else SaveDefault(FileNameSxParms, SxParams);
+                case WindowTemplateType.AoiParam:
+                    Save(AoiParams, ModMasterType.Aoi);
+                    break;
+                case WindowTemplateType.PGParam:
+                    Save(PGParams, ModMasterType.PG);
+                    break;
+                case WindowTemplateType.SMUParam:
+                    Save(SMUParams, ModMasterType.SMU);
                     break;
                 case WindowTemplateType.MTFParam:
-                    if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql) Save2DB(MTFParams);
-                    else SaveDefault($"cfg\\{ModMasterType.MTF}.cfg", MTFParams);
+                    Save(MTFParams, ModMasterType.MTF);
+                    break;
+                case WindowTemplateType.SFRParam:
+                    Save(SFRParams, ModMasterType.SFR);
                     break;
                 case WindowTemplateType.PoiParam:
                     SaveDefault(FileNamePoiParms, PoiParams);
@@ -177,6 +177,14 @@ namespace ColorVision.Template
                 default:
                     break;
             }
+        }
+
+        private void Save<T>(ObservableCollection<KeyValuePair<string, T>> t ,string code) where T: ParamBase
+        {
+            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+                Save2DB(t);
+            else 
+                SaveDefault($"cfg\\{code}.cfg", t);
         }
 
 
@@ -221,6 +229,18 @@ namespace ColorVision.Template
             return PoiParams;
         }
 
+        internal PoiParam? AddPoiParam(string text)
+        {
+            PoiMasterModel poiMaster = new PoiMasterModel(text, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            poiService.Save(poiMaster);
+            int pkId = poiMaster.GetPK();
+            if (pkId > 0)
+            {
+                return LoadPoiParamById(pkId);
+            }
+            return null;
+        }
+
         internal void LoadPoiDetailFromDB(PoiParam poiParam)
         {
             poiParam.PoiPoints.Clear();
@@ -232,19 +252,9 @@ namespace ColorVision.Template
                 poiParam.PoiPoints.Add(new PoiParamData(dbModel));
             }
         }
-        internal PGParam? AddPGParam(string text)
-        {
-            ModMasterModel flowMaster = new ModMasterModel(ModMasterType.PG, text, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            modService.Save(flowMaster);
-            int pkId = flowMaster.GetPK();
-            if (pkId > 0)
-            {
-                return LoadPGParamById(pkId);
-            }
-            return null;
-        }
 
-        public T? AddParamMode<T>(string code,string Name) where T:ParamMod,new ()
+
+        public T? AddParamMode<T>(string code,string Name) where T: ParamBase,new ()
         {
             ModMasterModel flowMaster = new ModMasterModel(code, Name, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
             modService.Save(flowMaster);
@@ -260,61 +270,7 @@ namespace ColorVision.Template
 
         }
 
-        public MTFParam? AddMTFParam(string text)
-        {
-            ModMasterModel flowMaster = new ModMasterModel(ModMasterType.MTF, text, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            modService.Save(flowMaster);
-            int pkId = flowMaster.GetPK();
-            if (pkId > 0)
-            {
-                ModMasterModel pgMaster = modService.GetMasterById(pkId);
-                List<ModDetailModel> pgDetail = modService.GetDetailByPid(pkId);
-                if (pgMaster != null) return new MTFParam(pgMaster, pgDetail);
-                else return null;
-            }
-            return null;
-        }
 
-
-        internal SxParam? AddSxParam(string text)
-        {
-            ModMasterModel flowMaster = new ModMasterModel(ModMasterType.SMU, text, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            modService.Save(flowMaster);
-            int pkId = flowMaster.GetPK();
-            if (pkId > 0)
-            {
-                return LoadSxParamById(pkId);
-            }
-            return null;
-        }
-
-        
-
-        
-
-        internal AoiParam? AddAoiParam(string text)
-        {
-            ModMasterModel flowMaster = new ModMasterModel(ModMasterType.Aoi, text, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            modService.Save(flowMaster);
-            int pkId = flowMaster.GetPK();
-            if (pkId > 0)
-            {
-                return LoadAoiParamById(pkId);
-            }
-            return null;
-        }
-    
-        internal PoiParam? AddPoiParam(string text)
-        {
-            PoiMasterModel poiMaster = new PoiMasterModel(text, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            poiService.Save(poiMaster);
-            int pkId = poiMaster.GetPK();
-            if (pkId > 0 )
-            {
-               return LoadPoiParamById(pkId);
-            }
-            return null;
-        }
 
         internal FlowParam? AddFlowParam(string text)
         {
@@ -391,61 +347,8 @@ namespace ColorVision.Template
             else return null;
         }
 
-        private AoiParam? LoadAoiParamById(int pkId)
-        {
-            ModMasterModel aoiMaster = modService.GetMasterById(pkId);
-            List<ModDetailModel> aoiDetail = modService.GetDetailByPid(pkId);
-            if (aoiMaster != null) return new AoiParam(aoiMaster, aoiDetail);
-            else return null;
-        }
 
-        private PGParam? LoadPGParamById(int pkId)
-        {
-            ModMasterModel pgMaster = modService.GetMasterById(pkId);
-            List<ModDetailModel> pgDetail = modService.GetDetailByPid(pkId);
-            if (pgMaster != null) return new PGParam(pgMaster, pgDetail);
-            else return null;
-        }
-
-        private SxParam? LoadSxParamById(int pkId)
-        {
-            ModMasterModel sxMaster = modService.GetMasterById(pkId);
-            List<ModDetailModel> sxDetail = modService.GetDetailByPid(pkId);
-            if (sxMaster != null) return new SxParam(sxMaster, sxDetail);
-            else return null;
-        }
-
-
-        private ObservableCollection<KeyValuePair<string, MTFParam>> LoadMTFParam()
-        {
-            MTFParams.Clear();
-            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
-            {
-                ModMasterDao masterFlowDao = new ModMasterDao(ModMasterType.MTF);
-
-                List<ModMasterModel> smus = masterFlowDao.GetAll(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
-                foreach (var dbModel in smus)
-                {
-                    List<ModDetailModel> smuDetails = modService.GetDetailByPid(dbModel.Id);
-                    foreach (var dbDetail in smuDetails)
-                    {
-                        dbDetail.ValueA = dbDetail?.ValueA?.Replace("\\r", "\r");
-                    }
-                    KeyValuePair<string, MTFParam> item = new KeyValuePair<string, MTFParam>(dbModel.Name ?? "default", new MTFParam(dbModel, smuDetails));
-                    MTFParams.Add(item);
-                }
-            }
-            else
-            {
-                var keyValuePairs = IDefault("cfg\\MTFParamSetup.cfg", new MTFParam());
-                foreach (var item in keyValuePairs)
-                    MTFParams.Add(item);
-            }
-            return MTFParams;
-        }
-
-
-        private void LoadModParam<T>(ObservableCollection<KeyValuePair<string, T>> ParamModes, string ModeType) where T : ParamMod, new()
+        private void LoadModParam<T>(ObservableCollection<KeyValuePair<string, T>> ParamModes, string ModeType) where T : ParamBase,new ()
         {
             ParamModes.Clear();
             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
@@ -472,55 +375,6 @@ namespace ColorVision.Template
             }
         }
 
-
-
-        private ObservableCollection<KeyValuePair<string, PGParam>> LoadPGParam()
-        {
-            PGParams.Clear();
-            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
-            {
-                List<ModMasterModel> smus = modService.GetPGAll(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
-                foreach (var dbModel in smus)
-                {
-                    List<ModDetailModel> smuDetails = modService.GetDetailByPid(dbModel.Id);
-                    foreach (var dbDetail in smuDetails)
-                    {
-                        dbDetail.ValueA = dbDetail?.ValueA?.Replace("\\r", "\r");
-                    }
-                    KeyValuePair<string, PGParam> item = new KeyValuePair<string, PGParam>(dbModel.Name ?? "default", new PGParam(dbModel, smuDetails));
-                    PGParams.Add(item);
-                }
-            }
-            else
-            {
-                var keyValuePairs = IDefault(FileNameSxParms, new PGParam());
-                foreach (var item in keyValuePairs)
-                    PGParams.Add(item);
-            }
-            return PGParams;
-        }
-
-        internal ObservableCollection<KeyValuePair<string, SxParam>> LoadSxParam()
-        {
-            SxParams.Clear();
-            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
-            {
-                List<ModMasterModel> smus = modService.GetSMUAll(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
-                foreach (var dbModel in smus)
-                {
-                    List<ModDetailModel> smuDetails = modService.GetDetailByPid(dbModel.Id);
-                    KeyValuePair<string, SxParam> item = new KeyValuePair<string, SxParam>(dbModel.Name ?? "default", new SxParam(dbModel, smuDetails));
-                    SxParams.Add(item);
-                }
-            }
-            else
-            {
-                var keyValuePairs = IDefault(FileNameSxParms, new SxParam());
-                foreach (var item in keyValuePairs)
-                    SxParams.Add(item);
-            }
-            return SxParams;
-        }
 
         internal ObservableCollection<KeyValuePair<string, FlowParam>> LoadFlowParam()
         {
@@ -556,27 +410,6 @@ namespace ColorVision.Template
             return FlowParams;
         }
 
-        internal ObservableCollection<KeyValuePair<string, AoiParam>> LoadAoiParam()
-        {
-            AoiParams.Clear();
-            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
-            {
-                List<ModMasterModel> flows = modService.GetAoiAll(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
-                foreach (var dbModel in flows)
-                {
-                    List<ModDetailModel> flowDetails = modService.GetDetailByPid(dbModel.Id);
-                    KeyValuePair<string, AoiParam> item = new KeyValuePair<string, AoiParam>(dbModel.Name ?? "default", new AoiParam(dbModel, flowDetails));
-                    AoiParams.Add(item);
-                }
-            }
-            else
-            {
-                var keyValuePairs = IDefault(FileNameAoiParams, new AoiParam());
-                foreach (var item in keyValuePairs)
-                    AoiParams.Add(item);
-            }
-            return AoiParams;
-        }
 
 
         internal List<SysResourceModel> LoadAllServices()
@@ -662,7 +495,7 @@ namespace ColorVision.Template
         public ObservableCollection<KeyValuePair<string, AoiParam>> AoiParams { get; set; }
         public ObservableCollection<KeyValuePair<string, CalibrationParam>> CalibrationParams { get; set; } 
         public ObservableCollection<KeyValuePair<string, PGParam>> PGParams { get; set; }
-        public ObservableCollection<KeyValuePair<string, SxParam>> SxParams { get; set; }
+        public ObservableCollection<KeyValuePair<string, SMUParam>> SMUParams { get; set; }
         public ObservableCollection<KeyValuePair<string, LedReusltParam>> LedReusltParams { get; set; }
         public ObservableCollection<KeyValuePair<string, PoiParam>> PoiParams { get; set; }
         public ObservableCollection<KeyValuePair<string, FlowParam>> FlowParams { get; set; }

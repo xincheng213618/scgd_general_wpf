@@ -43,10 +43,10 @@ namespace ColorVision.Device.SMU
 
             StackPanelVITemplate.DataContext = passSxSource;
 
-            ComboxVITemplate.ItemsSource = TemplateControl.GetInstance().SxParams;
+            ComboxVITemplate.ItemsSource = TemplateControl.GetInstance().SMUParams;
             ComboxVITemplate.SelectionChanged += (s, e) =>
             {
-                if (ComboxVITemplate.SelectedItem is KeyValuePair<string, SxParam> KeyValue && KeyValue.Value is SxParam SxParm)
+                if (ComboxVITemplate.SelectedItem is KeyValuePair<string, SMUParam> KeyValue && KeyValue.Value is SMUParam SxParm)
                 {
                     passSxSource.StartMeasureVal = SxParm.StartMeasureVal;
                     passSxSource.StopMeasureVal = SxParm.StopMeasureVal;

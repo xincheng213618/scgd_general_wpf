@@ -144,20 +144,12 @@ namespace ColorVision.Template
     }
     
 
-    public class ParamMod : ParamBase
-    {
-        public ParamMod() { }
-
-        public ParamMod(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modDetails)
-        {
-        }
-    }
 
     #pragma warning disable CA1707
-    public class MTFParam : ParamMod
+    public class MTFParam : ParamBase
     {
         public MTFParam() { }
-        public MTFParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
+        public MTFParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modDetails)
         {
         }
 
@@ -166,10 +158,10 @@ namespace ColorVision.Template
         private double _MTF_dRatio =0.01;
     }
 
-    public class SFRParam : ParamMod
+    public class SFRParam : ParamBase
     {
         public SFRParam() { }
-        public SFRParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
+        public SFRParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modDetails)
         {
         }
 
