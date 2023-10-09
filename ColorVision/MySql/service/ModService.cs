@@ -12,8 +12,10 @@ namespace ColorVision.MySql.Service
         public const string PG = "pg";
         public const string MTF = "MTF";
         public const string SFR = "SFR";
-        public const string FOV = "SFR";
+        public const string FOV = "FOV";
 
+        public const string Ghost = "ghost";
+        public const string Distortion = "distortion";
     }
     public class ModService
     {

@@ -6,6 +6,7 @@ using ColorVision.SettingUp;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
@@ -135,7 +136,11 @@ namespace ColorVision.Template
                         if (string.IsNullOrEmpty(val)) val = "0.0";
                         return (T)(object)double.Parse(val);
                     }
-                    return (T)(object)val;
+                    else if (typeof(T).IsEnum)
+                    {
+                        Enum.TryParse(typeof(T), val, out object obj);
+                        return (T)obj;
+                    }
                 }
                 return default(T);
 
@@ -503,6 +508,7 @@ namespace ColorVision.Template
 
     public class MeasureParam : ParamBase
     {
+        public MeasureParam() { }
         public MeasureParam(MeasureMasterModel dbModel)
         {
             this.ID = dbModel.Id;

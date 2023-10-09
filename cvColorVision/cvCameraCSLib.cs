@@ -2267,6 +2267,105 @@ namespace cvColorVision
             return true;
         }
 
+        /// <summary>
+        /// 获取伪彩色的图像数据（按理说只接受LV的图或者非彩色的BVCV图 如XYXxyuv之类的
+        /// </summary>
+        /// <returns></returns>
+        public bool GetPseudoColorData()
+        {
+            bool result = false;
+
+
+            return result;
+        }
+
+        /// <summary>
+        /// 将输入图像转成8bits单通道图像并获取图像的最小像素与最大像素值
+        /// </summary>
+        /// <param name="imageData">图像信息</param>
+        /// <param name="mindata">获取的图像最小像素</param>
+        /// <param name="maxdata">获取的图像最大像素</param>
+        /// <param name="channelNum">如果输入的图是三通道图，则转成单通道时使用的通道号，默认为1</param>
+        public void GetCalBitmapMinData(ImageData imageData,out double mindata, out double maxdata, int channelNum = 1)
+        {
+            if (imageData != null && imageData.pData != null && imageData.pData.Length != 0 )
+            {
+                //伪彩色只支持8bits1通道或者3通道，根据我们的需求只做单通道的部分
+                Mat showChannel = new Mat((int)imageData.iHei, (int)imageData.iWid, MatType.CV_8UC1);
+                //原始图像为8bits的时候
+                if (imageData.iBpp == 8)
+                {
+                    if (imageData.iChannels == 1)
+                    {
+                        showChannel = new Mat((int)imageData.iHei, (int)imageData.iWid, MatType.CV_8UC1, imageData.pData);
+                    }
+                    else if (imageData.iChannels == 3)
+                    {
+                        Mat srcChannel = new Mat((int)imageData.iHei, (int)imageData.iWid, MatType.CV_8UC1, imageData.pData);
+                        Mat[] dstChannel = new Mat[3];
+                        Cv2.Split(srcChannel, out dstChannel);
+                        showChannel = dstChannel[channelNum];
+                    }
+                }
+                //原始图像为16bits的时候
+                else if (imageData.iBpp == 16)
+                {
+                    if (imageData.iChannels == 1)
+                    {
+                        Mat srcChannel = new Mat((int)imageData.iHei, (int)imageData.iWid, MatType.CV_16UC1, imageData.pData);
+                        Mat mat = srcChannel.Clone();
+                        showChannel = mat;
+                    }
+                    else if (imageData.iChannels == 3)
+                    {
+                        Mat srcChannel = new Mat((int)imageData.iHei, (int)imageData.iWid, MatType.CV_16UC3, imageData.pData);
+                        Mat[] dstChannel = new Mat[3];
+                        Cv2.Split(srcChannel, out dstChannel);
+                        Mat mat = dstChannel[channelNum].Clone();
+                        showChannel = mat;
+                    }
+                }
+                //原始图像为32bits的时候
+                else if (imageData.iBpp == 32)
+                {
+                    if (imageData.iChannels == 1)
+                    {
+                        Mat srcChannel = new Mat((int)imageData.iHei, (int)imageData.iWid, MatType.CV_32FC1, imageData.pData);
+                        Mat mat = srcChannel.Clone();
+                        Cv2.Normalize(srcChannel, mat, 255, 0);
+                        srcChannel.ConvertTo(mat, MatType.CV_8UC1);
+                        showChannel = mat;
+                    }
+                    else if (imageData.iChannels == 3)
+                    {
+                        Mat srcChannel = new Mat((int)imageData.iHei, (int)imageData.iWid, MatType.CV_32FC3, imageData.pData);
+                        Mat[] dstChannel = new Mat[3];
+                        Cv2.Split(srcChannel, out dstChannel);
+                        Mat mat = dstChannel[channelNum].Clone();
+                        showChannel = mat;
+                    }
+                }
+                //其他的bits格式不进行计算，后面有需要再说
+                else
+                {
+                    mindata = 0;
+                    maxdata = 255;
+                    return;
+                }
+                //计算图像最小值
+                Cv2.MinMaxLoc(showChannel, out mindata, out maxdata);
+
+
+                return;
+            }
+            else
+            {
+                mindata = 0;
+                maxdata = 255;
+                return;
+            }
+        }
+
 
     }
 }
