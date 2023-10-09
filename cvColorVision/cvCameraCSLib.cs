@@ -9,10 +9,7 @@ using System.Windows;
 using System.IO;
 using System.ComponentModel;
 using cvColorVision.Util;
-using System.Windows.Media.Media3D;
 using OpenCvSharp;
-using System.Xml.Linq;
-using System.Reflection.Metadata;
 
 namespace cvColorVision
 {

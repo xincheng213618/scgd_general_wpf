@@ -11,7 +11,7 @@ namespace cvColorVision
     public partial class cvCameraCSLib
     {
         public class FindRoi
-        {
+        {   
             public int x { set; get; }
             public int y { set; get; }
             public int width { set; get; }
