@@ -1,4 +1,5 @@
 ﻿using ColorVision.MQTT;
+using ColorVision.Services;
 using MQTTMessageLib;
 using MQTTMessageLib.RC;
 using MQTTnet.Client;
@@ -52,12 +53,14 @@ namespace ColorVision.RC
                         case MQTTNodeServiceEventEnum.Event_Startup:
                             MQTTNodeServiceStartupRequest req = JsonConvert.DeserializeObject<MQTTNodeServiceStartupRequest>(Msg);
                             Token = req.Data;
+                            QueryServices();
                             break;
                         case MQTTNodeServiceEventEnum.Event_ServicesQuery:
                             MQTTRCServicesQueryResponse respQurey = JsonConvert.DeserializeObject<MQTTRCServicesQueryResponse>(Msg);
+                            ServiceControl.GetInstance().UpdateStatus(respQurey.Data);
                             break;
                         case MQTTNodeServiceEventEnum.Event_NotRegist:
-                            Reg();
+                            Regist();
                             break;
                     }
 
@@ -70,7 +73,7 @@ namespace ColorVision.RC
             return Task.CompletedTask;
         }
 
-        public bool Reg()
+        public bool Regist()
         {
             MQTTNodeServiceRegist reg = new MQTTNodeServiceRegist(NodeName, NodeAppId, NodeKey, SubscribeTopic, NodeType);
             PublishAsyncClient(MQTTRCServiceTypeConst.RCRegTopic, JsonConvert.SerializeObject(reg));

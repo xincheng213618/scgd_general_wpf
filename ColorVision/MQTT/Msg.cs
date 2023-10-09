@@ -16,6 +16,7 @@ namespace ColorVision.MQTT
         public string Version { get; set; }
         public string EventName { get; set; }
         public string ServiceName { get; set; }
+        public string Token { get; set; }
         //服务ID,这里用的指针转换后的常量，所以是用ulong,本地不保存，会直接发送过去，
         public ulong ServiceID { get; set; }
         public string SerialNumber { get; set; }

@@ -1,5 +1,6 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.Template;
+using MQTTMessageLib;
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using System.Collections.Generic;
@@ -207,7 +208,7 @@ namespace ColorVision.Device.PG
             return true;
         }
 
-        internal void ReLoadCategoryLib()
+        public void ReLoadCategoryLib()
         {
             PGCategoryLib.Clear();
             foreach (var item in TemplateControl.GetInstance().PGParams)
@@ -216,11 +217,52 @@ namespace ColorVision.Device.PG
             }
         }
 
-        internal void CustomPG(string text)
+        public void CustomPG(string text)
         {
             text = text.Replace("\\r","\r");
             text = text.Replace("\\n","\n");
             SetParam(new List<ParamFunction>() { new ParamFunction() { Name = PGParam.CustomKey, Params = new Dictionary<string, object>() { { "cmdTxt", text } } } });
+        }
+
+        public override void UpdateStatus(MQTTNodeService nodeService)
+        {
+            base.UpdateStatus(nodeService);
+            HeartbeatParam heartbeat = new HeartbeatParam();
+            foreach (var item in nodeService.Devices)
+            {
+                if (Config.Code.Equals(item.Key))
+                {
+                    switch (item.Value)
+                    {
+                        case DeviceStatusType.Unknown:
+                            heartbeat.DeviceStatus = DeviceStatus.Unknown;
+                            break;
+                        case DeviceStatusType.Closed:
+                            heartbeat.DeviceStatus = DeviceStatus.Closed;
+                            break;
+                        case DeviceStatusType.Closing:
+                            heartbeat.DeviceStatus = DeviceStatus.Closing;
+                            break;
+                        case DeviceStatusType.Opened:
+                            heartbeat.DeviceStatus = DeviceStatus.Opened;
+                            break;
+                        case DeviceStatusType.Opening:
+                            heartbeat.DeviceStatus = DeviceStatus.Opening;
+                            break;
+                        case DeviceStatusType.Busy:
+                            heartbeat.DeviceStatus = DeviceStatus.Busy;
+                            break;
+                        case DeviceStatusType.Free:
+                            heartbeat.DeviceStatus = DeviceStatus.Free;
+                            break;
+                        default:
+                            heartbeat.DeviceStatus = DeviceStatus.Unknown;
+                            break;
+                    }
+                }
+            }
+
+            Application.Current.Dispatcher.Invoke(() => HeartbeatEvent?.Invoke(heartbeat));
         }
     }
 }

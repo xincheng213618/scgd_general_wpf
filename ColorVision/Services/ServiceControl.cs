@@ -9,8 +9,11 @@ using ColorVision.MQTT;
 using ColorVision.MySql;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
+using ColorVision.RC;
 using ColorVision.SettingUp;
+using MQTTMessageLib;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
@@ -38,14 +41,18 @@ namespace ColorVision.Services
 
         public StackPanel StackPanel { get; set; }
 
+        private Dictionary<string, List<BaseService>> svrDevices;
+        private RCService rcService;
 
         public ServiceControl()
         {
             ResourceService = new SysResourceService();
             DictionaryService = new SysDictionaryService();
             resultService = new ResultService();
+            rcService = new RCService(new RCConfig());
             MQTTServices = new ObservableCollection<MQTTServiceKind>();
             MQTTDevices = new ObservableCollection<BaseDevice>();
+            svrDevices = new Dictionary<string, List<BaseService>>();
             UserConfig = GlobalSetting.GetInstance().SoftwareConfig.UserConfig;
             StackPanel = new StackPanel();
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => Reload();
@@ -181,46 +188,61 @@ namespace ColorVision.Services
                     if (service.Type == item.Value)
                     {
                         MQTTService mQTTService = new MQTTService(service);
+                        svrDevices.Add(service.Code, new List<BaseService>());
 
                         foreach (var device in devices)
                         {
+                            BaseService svrObj = null;
                             if (device.Pid == service.Id)
                             {
                                 switch ((DeviceType)device.Type)
                                 {
                                     case DeviceType.Camera:
                                         DeviceCamera deviceCamera = new DeviceCamera(device);
+                                        svrObj = deviceCamera.Service;
                                         mQTTService.AddChild(deviceCamera);
                                         MQTTDevices.Add(deviceCamera);
                                         break;
                                     case DeviceType.PG:
                                         DevicePG devicePG = new DevicePG(device);
+                                        svrObj = devicePG.PGService;
                                         mQTTService.AddChild(devicePG);
                                         MQTTDevices.Add(devicePG);
                                         break;
                                     case DeviceType.Spectum:
                                         DeviceSpectrum deviceSpectrum = new DeviceSpectrum(device);
+                                        svrObj = deviceSpectrum.SpectrumService;
                                         mQTTService.AddChild(deviceSpectrum);
                                         MQTTDevices.Add(deviceSpectrum);
                                         break;
                                     case DeviceType.SMU:
                                         DeviceSMU deviceSMU = new DeviceSMU(device);
+                                        svrObj = deviceSMU.SMUService;
                                         mQTTService.AddChild(deviceSMU);
                                         MQTTDevices.Add(deviceSMU);
                                         break;
                                     case DeviceType.Sensor:
                                         DeviceSensor device1 = new DeviceSensor(device);
+                                        svrObj = device1.SensorService;
                                         mQTTService.AddChild(device1);
                                         MQTTDevices.Add(device1);
                                         break;
                                     case DeviceType.Image:
                                         DeviceFileServer img = new DeviceFileServer(device);
+                                        svrObj = img.Service;
                                         mQTTService.AddChild(img);
                                         MQTTDevices.Add(img);
                                         break;
                                     default:
                                         break;
                                 }
+                            }
+
+                            if (svrObj != null)
+                            {
+                                //mQTTService.AddChild(devObj);
+                                //MQTTDevices.Add(devObj);
+                                svrDevices[service.Code].Add(svrObj);
                             }
                         }
                         mQTTServicetype.AddChild(mQTTService);
@@ -237,6 +259,25 @@ namespace ColorVision.Services
             resultService.BatchUpdateEnd(flowControlData.SerialNumber, totalTime, flowControlData.EventName);
 
             SpectrumDrawPlotFromDB(flowControlData.SerialNumber);
+        }
+
+        public void UpdateStatus(List<MQTTNodeService> data)
+        {
+            foreach (MQTTNodeService nodeService in data)
+            {
+                if (svrDevices.ContainsKey(nodeService.ServiceName))
+                {
+                    foreach (BaseService svr in svrDevices[nodeService.ServiceName])
+                    {
+                        svr.UpdateStatus(nodeService);
+                    }
+                }
+            }
+        }
+
+        public void RCRegist()
+        {
+            rcService.Regist();
         }
     }
 }
