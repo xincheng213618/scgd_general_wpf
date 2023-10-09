@@ -1,14 +1,9 @@
 ﻿#pragma warning disable CS8604
-using ColorVision.Extension;
-using ColorVision.MySql;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
-using ColorVision.SettingUp;
 using ColorVision.Template.Algorithm;
 using ColorVision.Util;
 using cvColorVision.Util;
-using NPOI.SS.Formula.Functions;
-using NPOI.XWPF.UserModel;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
