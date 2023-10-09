@@ -134,13 +134,12 @@
             <local:ZoomboxSub x:Name="Zoombox1"  MaxZoom="10"  MinZoom="0.01" Grid.Row="1" Grid.ColumnSpan="2">
                 <local:DrawCanvas x:Name="ImageShow"  Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_MouseDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
             </local:ZoomboxSub>
-            <Grid  x:Name="GridEx"  Grid.Row="1">
-                
-            </Grid>
             <StackPanel Grid.Row="0" Grid.RowSpan="2" >
                 <ToolBar x:Name="ToolBar1" DataContext="{Binding ToolBarTop}"   Loaded="ToolBar1_Loaded" Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" HorizontalAlignment="Center">
                     <Button Content="打开" Click="Button_Click" Margin="4,0,1,0">
                     </Button>
+                    <ToggleButton  Click="ToggleButton_Click" Content="伪彩色" Margin="1,0"   >
+                    </ToggleButton>
                     <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding Activate}"  Margin="1,0" ToolTip="可以按下Ctrl缩放和移动图像">
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}"/>
                     </ToggleButton>
@@ -185,6 +184,7 @@
                     <ToggleButton IsChecked="{Binding DrawPolygon}" Margin="1,0" Visibility="{Binding Activate,Converter={StaticResource bool2VisibilityConverter}}"  >
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagePolygon}"/>
                     </ToggleButton>
+
                 </ToolBar>
             </StackPanel>
             <Border x:Name="BorderPropertieslayers" Background="#22000000" Visibility="Collapsed" Grid.Row="0" Grid.RowSpan="2" VerticalAlignment="Top" Margin="0,60,20,0" HorizontalAlignment="Right"  Height="50" Width="150" CornerRadius="10" >

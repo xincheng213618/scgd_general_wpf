@@ -7,9 +7,11 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
-using ColorVision.MQTT;
 using cvColorVision;
 using ColorVision.Template;
+using System.Security.Cryptography.X509Certificates;
+using MySqlX.XDevAPI.Common;
+using ColorVision.MQTT;
 
 namespace ColorVision.Device.Camera
 {
@@ -369,6 +371,36 @@ namespace ColorVision.Device.Camera
             {
                 Service.Calibration(param);
             }
+        }
+
+        private void AOI_Click(object sender, RoutedEventArgs e)
+        {
+            //var aoiParam = new cvColorVision.AoiParam();
+            //var aoiHandle = cvCameraCSLib.CreateAOIDetector();//创建AOI检测的句柄
+            //bool result= cvCameraCSLib.AOIDetectorSetParam(aoiHandle, aoiParam);
+            //if (!result)
+            //{
+            //    MessageBox.Show("设置参数异常");
+            //    return;
+            //}
+            //int AoiNum = cvCameraCSLib.AOIDetectorInput(aoiHandle, (int)w, (int)h, (int)bpp, (int)channels, srcrawArray);
+
+            //for (int i = 0; i < AoiNum; i++)
+            //{
+            //    PartiCle partiCle = new PartiCle();
+
+            //    cvCameraCSLib.GetAoiDetectorBlob(aoiHandle, i, partiCle);
+            //    if (partiCle.area > 10)
+            //    {
+            //        RoiPointData newdata = new RoiPointData();
+            //        newdata.Img_x = partiCle.x;
+            //        newdata.Img_y = partiCle.y;
+            //        newdata.w = Convert.ToInt32(Math.Sqrt(((double)partiCle.area / 3.1415926)));
+            //        midRiPoint.Add(newdata);
+
+            //    }
+            //}
+
         }
     }
 }

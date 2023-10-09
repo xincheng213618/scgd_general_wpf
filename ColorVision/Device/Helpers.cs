@@ -1,10 +1,10 @@
 ﻿using System.Windows;
 using Panuon.WPF.UI;
-using ColorVision.MQTT;
 using ColorVision.Extension;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Input;
+using ColorVision.MQTT;
 
 namespace ColorVision.Device
 {

@@ -2,6 +2,8 @@
 {
     public static class FileExtension
     {
+        public static bool HasDefaultProgram(this System.IO.FileInfo file) => Tool.HasDefaultProgram(file.FullName);
+
         public static void Empty(this System.IO.DirectoryInfo directory)
         {
             foreach (System.IO.FileInfo file in directory.GetFiles())

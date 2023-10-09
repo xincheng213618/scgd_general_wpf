@@ -9,7 +9,6 @@ using System.Windows;
 using System.IO;
 using System.ComponentModel;
 using cvColorVision.Util;
-using System.Windows.Media.Media3D;
 using OpenCvSharp;
 
 namespace cvColorVision
@@ -554,22 +553,9 @@ namespace cvColorVision
         public static int connectedCameraType = 1;
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "InitResource",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern void InitResource_Gen(IntPtr CallBackFunc, IntPtr hOperate_data);
-
-
-        public static void InitResource(IntPtr CallBackFunc, IntPtr hOperate_data)
-        {
-            InitResource_Gen(CallBackFunc, hOperate_data);
-        }
-
+        public unsafe static extern void InitResource(IntPtr CallBackFunc, IntPtr hOperate_data);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "ReleaseResource", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern void ReleaseResource_Gen();
-
-        public static void ReleaseResource()
-        {
-            ReleaseResource_Gen();
-        }
-
+        public unsafe static extern void ReleaseResource();
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetCameraID",
          CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private unsafe static extern bool GetCameraID(CameraType eType, StringBuilder sn, int len);
@@ -600,43 +586,25 @@ namespace cvColorVision
         }
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_CreatCameraManager",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern IntPtr CreatCameraManager_Gen(CameraType eType, string CameraID, string cfgFilename);
-
-        public static IntPtr CreatCameraManager(CameraType eType, string CameraID, string cfgFilename)  => CreatCameraManager_Gen(eType, CameraID, cfgFilename);
-
+        public unsafe static extern IntPtr CM_CreatCameraManager(CameraType eType, string CameraID, string cfgFilename);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_ReleaseCameraManager", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool ReleaseCameraManager_Gen(IntPtr handle);
-
-        public static bool ReleaseCameraManager(IntPtr handle)=> ReleaseCameraManager_Gen(handle);
+        public unsafe static extern bool CM_ReleaseCameraManager(IntPtr handle);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetCameraID",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern void SetCameraID_Gen(IntPtr handle, string szCameraId);
-        public static void SetCameraID(IntPtr handle, string szCameraId)
-        {
-            SetCameraID_Gen(handle, szCameraId);
-        }
+        public unsafe static extern void CM_SetCameraID(IntPtr handle, string szCameraId);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetImageBpp", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_SetImageBpp_Gen(IntPtr handle, int nBpp);
-
-        public static bool CM_SetImageBpp(IntPtr handle, int nBpp) => CM_SetImageBpp_Gen(handle, nBpp);
-
+        public unsafe static extern bool CM_SetImageBpp(IntPtr handle, int nBpp);
         //新建一个校正用的句柄
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CreatCalibrationManage", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern IntPtr CreatCalibrationManage_Gen();
-
-        public static IntPtr CreatCalibrationManage() => CreatCalibrationManage_Gen();
-
+        public unsafe static extern IntPtr CreatCalibrationManage();
         //释放校正用的句柄
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "ReleaseCalibrationManage", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool ReleaseCalibrationManage_Gen(IntPtr intPtr);
+        public unsafe static extern bool ReleaseCalibrationManage(IntPtr intPtr);
 
-        public static bool ReleaseCalibrationManage(IntPtr intPtr)
-        => ReleaseCalibrationManage_Gen(intPtr);
         [DllImport(LIBRARY_CVCAMERA, CharSet = CharSet.Auto, EntryPoint = "CM_SetIndent", CallingConvention = CallingConvention.Cdecl)]
         public static extern void CM_SetIndent(IntPtr handle, int nL, int nT, int nR, int nB);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetCalibParam", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_SetCalibParam_Gen(IntPtr handle, CalibrationType cType, bool bEnabled, string filename);
-        public static bool CM_SetCalibParam(IntPtr handle, CalibrationType cType, bool bEnabled, string filename)
-        => CM_SetCalibParam_Gen(handle, cType, bEnabled, filename);
+        public unsafe static extern bool CM_SetCalibParam(IntPtr handle, CalibrationType cType, bool bEnabled, string filename);
+
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetParamDarkNoise", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern bool CM_SetParamDarkNoise(IntPtr handle, bool bEnabled, float darkNoiseRatio);
 
@@ -665,190 +633,93 @@ namespace cvColorVision
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetParamColorShift", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern bool CM_SetParamColorShift(IntPtr handle, bool bEnabled, int OffX, int OffY, bool FillOffset);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_DarkNoise", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_SCGD_SDP_DarkNoise_Gen(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);        public static bool CM_SCGD_SDP_DarkNoise(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata)=> CM_SCGD_SDP_DarkNoise_Gen(handle, w, h, bpp, channels, imgdata);
+        public unsafe static extern bool CM_SCGD_SDP_DarkNoise(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);       
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_DefectWPoint",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_SCGD_SDP_DefectWPoint_Gen(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
-
-        public static bool CM_SCGD_SDP_DefectWPoint(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata)
-        => CM_SCGD_SDP_DefectWPoint_Gen(handle, w, h, bpp, channels, imgdata);
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_DefectBPoint",
-             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_SCGD_SDP_DefectBPoint_Gen(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
-
-        public static bool CM_SCGD_SDP_DefectBPoint(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata)
-        => CM_SCGD_SDP_DefectBPoint_Gen(handle, w, h, bpp, channels, imgdata);
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_DefectPoint",
-             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_SCGD_SDP_DefectPoint_Gen(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
-
-        public static bool CM_SCGD_SDP_DefectPoint(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata)
-        => CM_SCGD_SDP_DefectPoint_Gen(handle, w, h, bpp, channels, imgdata);
+        public unsafe static extern bool CM_SCGD_SDP_DefectWPoint(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_DefectBPoint", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_DefectBPoint(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_DefectPoint",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_DefectPoint(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_Uniformity",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_SCGD_SDP_Uniformity_Gen(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
-        public static bool CM_SCGD_SDP_Uniformity(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata) => CM_SCGD_SDP_Uniformity_Gen(handle, w, h, bpp, channels, imgdata);
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_DSNU",
-             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_SCGD_SDP_DSNU_Gen(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
-        public static bool CM_SCGD_SDP_DSNU(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata) => CM_SCGD_SDP_DSNU_Gen(handle, w, h, bpp, channels, imgdata);
+        public unsafe static extern bool CM_SCGD_SDP_Uniformity(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_DSNU",   CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_DSNU(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_ColorShift",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_SCGD_SDP_ColorShift_Gen(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
-        public static bool CM_SCGD_SDP_ColorShift(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata)
-        => CM_SCGD_SDP_ColorShift_Gen(handle, w, h, bpp, channels, imgdata);
+        public unsafe static extern bool CM_SCGD_SDP_ColorShift(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_Distortion",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_SCGD_SDP_Distortion_Gen(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
-        public static bool CM_SCGD_SDP_Distortion(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata)
-        => CM_SCGD_SDP_Distortion_Gen(handle, w, h, bpp, channels, imgdata);
+        public unsafe static extern bool CM_SCGD_SDP_Distortion(IntPtr handle, int w, int h, int bpp, uint channels, byte[] imgdata);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_Luminance", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_SCGD_SDP_Luminance_Gen(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcimgdata  , byte[] dstimgdata, float[] dexp);
-
-        public static bool CM_SCGD_SDP_Luminance(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcimgdata , byte[] dstimgdata, float[] dexp)
-        => CM_SCGD_SDP_Luminance_Gen(handle, w, h, bpp, channels, srcimgdata, dstimgdata, dexp);
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_ColorOne",
-             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_SCGD_SDP_ColorOne_Gen(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcimgdata , byte[] dstimgdata, float[] dexp);
-
-        public static bool CM_SCGD_SDP_ColorOne(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcimgdata , byte[] dstimgdata, float[] dexp)
-        => CM_SCGD_SDP_ColorOne_Gen(handle, w, h, bpp, channels, srcimgdata, dstimgdata, dexp);
+        public unsafe static extern bool CM_SCGD_SDP_Luminance(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcimgdata  , byte[] dstimgdata, float[] dexp);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_ColorOne", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_ColorOne(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcimgdata , byte[] dstimgdata, float[] dexp);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_ColorOneEx", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_SCGD_SDP_ColorOneEx_Gen(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcx, byte[] srcy , byte[] srcz, byte[] dstimgdata, float[] dexp);
-        public static bool CM_SCGD_SDP_ColorOneEx(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcx, byte[] srcy , byte[] srcz, byte[] dstimgdata, float[] dexp)
-        => CM_SCGD_SDP_ColorOneEx_Gen(handle, w, h, bpp, channels, srcx, srcy, srcz, dstimgdata, dexp);
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_ColorFour",
-             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_SCGD_SDP_ColorFour_Gen(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcimgdata
-            , byte[] dstimgdata, float[] dexp);
-
-        public static bool CM_SCGD_SDP_ColorFour(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcimgdata, byte[] dstimgdata, float[] dexp)
-        => CM_SCGD_SDP_ColorFour_Gen(handle, w, h, bpp, channels, srcimgdata, dstimgdata, dexp);
+        public unsafe static extern bool CM_SCGD_SDP_ColorOneEx(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcx, byte[] srcy , byte[] srcz, byte[] dstimgdata, float[] dexp);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_ColorFour", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_ColorFour(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcimgdata , byte[] dstimgdata, float[] dexp);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_ColorFourEx", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_SCGD_SDP_ColorFourEx_Gen(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcx, byte[] srcy
-            , byte[] srcz, byte[] dstimgdata, float[] dexp);
-
-        public static bool CM_SCGD_SDP_ColorFourEx(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcx, byte[] srcy
-            , byte[] srcz, byte[] dstimgdata, float[] dexp)
-        => CM_SCGD_SDP_ColorFourEx_Gen(handle, w, h, bpp, channels, srcx, srcy, srcz, dstimgdata, dexp);
+        public unsafe static extern bool CM_SCGD_SDP_ColorFourEx(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcx, byte[] srcy , byte[] srcz, byte[] dstimgdata, float[] dexp);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_ColorMulti",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_SCGD_SDP_ColorMulti_Gen(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcimgdata , byte[] dstimgdata, float[] dexp);
-        public static bool CM_SCGD_SDP_ColorMulti(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcimgdata , byte[] dstimgdata, float[] dexp)
-        => CM_SCGD_SDP_ColorMulti_Gen(handle, w, h, bpp, channels, srcimgdata, dstimgdata, dexp);
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_ColorMultiEx",
-             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_SCGD_SDP_ColorMultiEx_Gen(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcx, byte[] srcy  , byte[] srcz, byte[] dstimgdata, float[] dexp);
-
-        public static bool CM_SCGD_SDP_ColorMultiEx(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcx, byte[] srcy , byte[] srcz, byte[] dstimgdata, float[] dexp)
-        => CM_SCGD_SDP_ColorMultiEx_Gen(handle, w, h, bpp, channels, srcx, srcy, srcz, dstimgdata, dexp);
+        public unsafe static extern bool CM_SCGD_SDP_ColorMulti(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcimgdata , byte[] dstimgdata, float[] dexp);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SCGD_SDP_ColorMultiEx", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SCGD_SDP_ColorMultiEx(IntPtr handle, uint w, uint h, int bpp, uint channels, byte[] srcx, byte[] srcy  , byte[] srcz, byte[] dstimgdata, float[] dexp);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_IsOpen",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_IsOpen_Gen(IntPtr handle);
-        public static bool CM_IsOpen(IntPtr handle)  => CM_IsOpen_Gen(handle);
-
-
+        public unsafe static extern bool CM_IsOpen(IntPtr handle);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetDeviceOnline", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_GetDeviceOnline_Gen(IntPtr handle);
-
-        public static bool CM_GetDeviceOnline(IntPtr handle) => CM_GetDeviceOnline_Gen(handle);
+        public unsafe static extern bool CM_GetDeviceOnline(IntPtr handle);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetTakeImageMode", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_SetTakeImageMode_Gen(IntPtr handle, TakeImageMode eTakeImageMode);
-
-        public static bool CM_SetTakeImageMode(IntPtr handle, TakeImageMode eTakeImageMode) => CM_SetTakeImageMode_Gen(handle, eTakeImageMode);
+        public unsafe static extern bool CM_SetTakeImageMode(IntPtr handle, TakeImageMode eTakeImageMode);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Open",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_Open_Gen(IntPtr handle);
-
-        public static bool CM_Open(IntPtr handle)  => CM_Open_Gen(handle);
-
-
+        public unsafe static extern bool CM_Open(IntPtr handle);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_LiveOpen",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_LiveOpen_Gen(IntPtr handle);
-
-        public static bool CM_LiveOpen(IntPtr handle) => CM_LiveOpen_Gen(handle);
+        public unsafe static extern bool CM_LiveOpen(IntPtr handle);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetGain", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_SetGain_Gen(IntPtr handle, float fGain);
-
-        public static bool CM_SetGain(IntPtr handle, float fGain)
-        => CM_SetGain_Gen(handle, fGain);
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetExpTime",
-            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_SetExpTime_Gen(IntPtr handle, float expTime);
-
-        public static bool CM_SetExpTime(IntPtr handle, float expTime)
-        => CM_SetExpTime_Gen(handle, expTime);
+        public unsafe static extern bool CM_SetGain(IntPtr handle, float fGain);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetExpTime",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_SetExpTime(IntPtr handle, float expTime);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetExpTimeEx",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_SetExpTimeEx_Gen(IntPtr handle, int index, float expTime);
-
-        public static bool CM_SetExpTimeEx(IntPtr handle, int index, float expTime)
-        => CM_SetExpTimeEx_Gen(handle, index, expTime);
-
+        public unsafe static extern bool CM_SetExpTimeEx(IntPtr handle, int index, float expTime);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetParam", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        private unsafe static extern bool CM_SetParam_Gen(IntPtr handle, int pid, double val);
-
-        public static bool CM_SetParam(IntPtr handle, CONTROL_ID pid, double val)=> CM_SetParam_Gen(handle, (int)pid, val);
-
+        public unsafe static extern bool CM_SetParam(IntPtr handle, int pid, double val);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_IsFeatureAvailable",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern bool CM_IsFeatureAvailable_Gen(IntPtr handle, int pid);
         public static bool CM_IsFeatureAvailable(IntPtr handle, int pid) => CM_IsFeatureAvailable_Gen(handle, pid);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Sleep", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern void CM_Sleep(float ms);
-
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetPort",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_SetPort_Gen(IntPtr handle, int port);
-
-        public static bool CM_SetPort(IntPtr handle, int port) => CM_SetPort_Gen(handle, port);
-
+        public unsafe static extern bool CM_SetPort(IntPtr handle, int port);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_IsBurstmodeAvailable",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_IsBurstmodeAvailable_Gen(IntPtr handle);
-        public static bool CM_IsBurstmodeAvailable(IntPtr handle)  => CM_IsBurstmodeAvailable_Gen(handle);
-
+        public unsafe static extern bool CM_IsBurstmodeAvailable(IntPtr handle);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetFrame_TIFF",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        private unsafe static extern bool C_CM_GetFrame_TIFF_Gen(IntPtr handle, StringBuilder jsonPm);
-
-        public static bool C_CM_GetFrame_TIFF(IntPtr handle, StringBuilder jsonPm) => C_CM_GetFrame_TIFF_Gen(handle, jsonPm);
-
-
+        public unsafe static extern bool CM_GetFrame_TIFF(IntPtr handle, StringBuilder jsonPm);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetFrameEx_TIFF", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        private unsafe static extern bool C_CM_GetFrameEx_TIFF_Gen(IntPtr handle, StringBuilder jsonPm);
+        public unsafe static extern bool CM_GetFrameEx_TIFF(IntPtr handle, StringBuilder jsonPm);
 
-        public static bool C_CM_GetFrameEx_TIFF(IntPtr handle, StringBuilder jsonPm)
-        => C_CM_GetFrameEx_TIFF_Gen(handle, jsonPm);
-
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetLiveFrame",
-            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetLiveFrame",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern bool CM_GetLiveFrame(IntPtr handle, ref uint w, ref uint h, byte[] rawArray);
 
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetFrame",
-            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_GetFrame_Gen(IntPtr handle, string jsonPm, ref uint w, ref uint h,
-           ref uint srcbpp, ref uint bpp, ref uint channels, byte[] srcrawArray, byte[] rawArray);
-
-        public static bool CM_GetFrame(IntPtr handle, string jsonPm, ref uint w, ref uint h, ref uint srcbpp, ref uint bpp, ref uint channels, byte[] srcrawArray, byte[] rawArray)
-        => CM_GetFrame_Gen(handle, jsonPm, ref w, ref h, ref srcbpp, ref bpp, ref channels, srcrawArray, rawArray);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetFrame", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool CM_GetFrame(IntPtr handle, string jsonPm, ref uint w, ref uint h, ref uint srcbpp, ref uint bpp, ref uint channels, byte[] srcrawArray, byte[] rawArray);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_ExportToTIFF", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern bool CM_ExportToTIFF(string fileName, uint w, uint h, uint bpp, uint channels, byte[] rawArray);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_ExportToTIFFEx",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern bool CM_ExportToTIFFEx(string fileName, uint w, uint h, uint bpp, uint channels, byte[] rawArray, double dRate);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetDeviceMode", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        private unsafe static extern void C_CM_GetDeviceMode_Gen(IntPtr handle, StringBuilder mode, int len);
+        public unsafe static extern void CM_GetDeviceMode(IntPtr handle, StringBuilder mode, int len);
 
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "LedCheckYaQi",
-            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "LedCheckYaQi", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern double LedCheckYaQi(bool isdebug, int checkChannel, UInt32 w, UInt32 h, UInt32 bpp, UInt32 channels, byte[] imgdata
             , int isguding, int gudingrid, int lunkuomianji, int pointNum, double hegexishu, int erzhihuapiancha, double[] databanjin
             , int[] datazuobiaoX, int[] datazuobiaoY, int picwid
             , int pichig, int[] 关注范围, int 发光区二值化补正, int boundry, double[] LengthCheck, double[] LengthRange, double[] LengthResult, bool isuseLocalRdPoint, float[] localRdMark, double[] PointX, double[] PointY);
 
 
-        public static string CM_GetDeviceMode(IntPtr handle)
-        {
-            StringBuilder builder = new StringBuilder(1024);
-            C_CM_GetDeviceMode_Gen(handle, builder, 1024);
-            return builder.ToString();
-        }
-
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetSN",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        private unsafe static extern void C_CM_GetSN_Gen(IntPtr handle, StringBuilder sn, int len);
+        private unsafe static extern void CM_GetSN(IntPtr handle, StringBuilder sn, int len);
 
         public static string CM_GetSN(IntPtr handle)
         {
             StringBuilder builder = new StringBuilder(50);
-            C_CM_GetSN_Gen(handle, builder, 50);
+            CM_GetSN(handle, builder, 50);
             return builder.ToString();
         }
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SplitData", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
@@ -900,30 +771,22 @@ namespace cvColorVision
             string tifjson = json.ToString();
             if (isburst)
             {
-                C_CM_GetFrameEx_TIFF(handle, json);
+                CM_GetFrameEx_TIFF(handle, json);
             }
             else
             {
-                C_CM_GetFrame_TIFF(handle, json);
+                CM_GetFrame_TIFF(handle, json);
             }
 
             event_ShowTiff?.Invoke(json.ToString(),true);
         }
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetFrameMemLength",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern uint CM_GetFrameMemLength_Gen(IntPtr handle);
-
-        public static uint CM_GetFrameMemLength(IntPtr handle) => CM_GetFrameMemLength_Gen(handle);
-
+        public unsafe static extern uint CM_GetFrameMemLength(IntPtr handle);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetFrameMaxMemLength",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern ulong CM_GetFrameMaxMemLength_Gen(IntPtr handle);
-        public static ulong CM_GetFrameMaxMemLength(IntPtr handle) => CM_GetFrameMaxMemLength_Gen(handle);
-
-
+        public unsafe static extern ulong CM_GetFrameMaxMemLength(IntPtr handle);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetCfgToJson",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        private unsafe static extern void CM_GetCfgToJson(IntPtr handle, ConfigType eType, StringBuilder jsonCfg, int len, bool bDefault);
-
-
+        public unsafe static extern void CM_GetCfgToJson(IntPtr handle, ConfigType eType, StringBuilder jsonCfg, int len, bool bDefault);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "GetSysCfgJson",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private unsafe static extern void GetSysCfgJson_Gen(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault);
 
@@ -937,8 +800,6 @@ namespace cvColorVision
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "GetDefaultSysCfgJson",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private unsafe static extern void GetDefaultSysCfgJson_Gen(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault);
-
-
         public static string GetDefaultSysCfgJson(IntPtr handle, bool bDefault)
         {
             StringBuilder builder = new StringBuilder(10240);
@@ -947,37 +808,28 @@ namespace cvColorVision
             return UnicodeToGB(json1);
         }
 
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "GetDefaultCameraCfgToJson",
-            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "GetDefaultCameraCfgToJson", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private unsafe static extern void GetDefaultCameraCfgToJson_Gen(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault);
-
-
         public static string GetDefaultCameraCfgToJson(IntPtr handle, bool bDefault)
         {
             StringBuilder builder = new StringBuilder(10240);
             CM_GetCfgToJson(handle, ConfigType.Cfg_Camera, builder, 10240, bDefault);
-
             string json1 = builder.ToString();
             return UnicodeToGB(json1);
         }
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "GetDefaultExpTimeCfgToJson", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private unsafe static extern void GetDefaultExpTimeCfgToJson_Gen(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault);
-
-
         public static string GetDefaultExpTimeCfgToJson(IntPtr handle, bool bDefault)
         {
             StringBuilder builder = new StringBuilder(10240);
             CM_GetCfgToJson(handle, ConfigType.Cfg_ExpTime, builder, 10240, bDefault);
-
             string json1 = builder.ToString();
             return UnicodeToGB(json1);
         }
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "GetDefaultCaliLibCfgToJson", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private unsafe static extern void GetDefaultCaliLibCfgToJson_Gen(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault);
-
-
         public static string GetDefaultCaliLibCfgToJson(IntPtr handle, bool bDefault)
         {
             StringBuilder builder = new StringBuilder(10240);
@@ -989,31 +841,22 @@ namespace cvColorVision
             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private unsafe static extern void GetDefaultChannelsCfgToJson_Gen(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault);
 
-
         public static string GetDefaultChannelsCfgToJson(IntPtr handle, bool bDefault)
         {
             StringBuilder builder = new StringBuilder(10240);
             GetDefaultChannelsCfgToJson_Gen(handle, builder, 10240, bDefault);
-
             string json1 = builder.ToString();
             return UnicodeToGB(json1);
         }
 
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "UpdateCaliLibCfgJson",
-            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool UpdateCaliLibCfgJson_Gen(IntPtr handle, string jsonCfg);
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "UpdateCaliLibCfgJson", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool UpdateCaliLibCfgJson(IntPtr handle, string jsonCfg);
 
-
-        public static bool UpdateCaliLibCfgJson(IntPtr handle, string jsonCfg) => UpdateCaliLibCfgJson_Gen(handle, jsonCfg);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "UpdateCameraCfgJson", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool UpdateCameraCfgJson_Gen(IntPtr handle, string jsonCfg);
-
-        public static bool UpdateCameraCfgJson(IntPtr handle, string jsonCfg) => UpdateCameraCfgJson_Gen(handle, jsonCfg);
+        public unsafe static extern bool UpdateCameraCfgJson(IntPtr handle, string jsonCfg);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "UpdateChannelCfgJson", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool UpdateChannelCfgJson_Gen(IntPtr handle, string jsonCfg);
-
-        public static bool UpdateChannelCfgJson(IntPtr handle, string jsonCfg) => UpdateChannelCfgJson_Gen(handle, jsonCfg);
+        public unsafe static extern bool UpdateChannelCfgJson(IntPtr handle, string jsonCfg);
 
         //新的修改参数
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_UpdateCfgJson", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
@@ -1028,12 +871,8 @@ namespace cvColorVision
             Cfg_SYSTEM = 4,
         };
 
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "UpdateExpTimeCfgJson",
-            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool UpdateExpTimeCfgJson_Gen(IntPtr handle, string jsonCfg);
-
-        public static bool UpdateExpTimeCfgJson(IntPtr handle, string jsonCfg) => UpdateExpTimeCfgJson_Gen(handle, jsonCfg);
-
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "UpdateExpTimeCfgJson", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern bool UpdateExpTimeCfgJson(IntPtr handle, string jsonCfg);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetAutoExpTime",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern bool CM_GetAutoExpTime(IntPtr handle, float[] exp, float[] Saturat);
@@ -1041,43 +880,26 @@ namespace cvColorVision
         public unsafe static extern bool CM_GetSrcAutoExpTime(IntPtr handle, float[] exp, float[] Saturat);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Close", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern void CM_Close_Gen(IntPtr handle);
-
-        public static void CM_Close(IntPtr handle)
-        {
-            CM_Close_Gen(handle);
-
-        }
+        public unsafe static extern void CM_Close(IntPtr handle);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_LiveClose", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern void CM_LiveClose_Gen(IntPtr handle);
-
-        public static void CM_LiveClose(IntPtr handle)
-        {
-            CM_LiveClose_Gen(handle);
-
-        }
+        public unsafe static extern void CM_LiveClose(IntPtr handle);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "UpdateSysCfgJson",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool UpdateSysCfgJson_Gen(IntPtr handle, string jsonPm);
-
-        public static bool UpdateSysCfgJson(IntPtr handle, string jsonPm)  => UpdateSysCfgJson_Gen(handle, jsonPm);
+        public unsafe static extern bool UpdateSysCfgJson(IntPtr handle, string jsonPm);
        
 
         [DllImport(LIBRARY_CVCAMERA, CharSet = CharSet.Auto, EntryPoint = "CM_SetCallBack",  CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool SetCallBack_Gen(IntPtr handle, QHYCCDProcCallBack callback, IntPtr obj);
-
-        public static bool SetCallBack(IntPtr handle, QHYCCDProcCallBack callback, IntPtr obj) => SetCallBack_Gen(handle, callback, obj);
+        public static extern bool CM_SetCallBack(IntPtr handle, QHYCCDProcCallBack callback, IntPtr obj);
 
         [DllImport(LIBRARY_CVCAMERA, CharSet = CharSet.Auto, EntryPoint = "CM_UnregisterCallBack", CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool UnregisterCallBack_Gen(IntPtr handle);
+        public static extern bool CM_UnregisterCallBack(IntPtr handle);
 
-        public static bool UnregisterCallBack(IntPtr handle) => UnregisterCallBack_Gen(handle);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetSrcFrame", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private unsafe static extern bool CM_GetSrcFrame_Gen(IntPtr handle, ref uint w, ref uint h,ref uint bpp, ref uint channels, byte[] rawArray);
 
         public static bool CM_GetSrcFrame(IntPtr handle, ref uint w, ref uint h, ref uint bpp, ref uint channels, ref byte[] rawArray)
         {
-            CM_GetSrcFrameInfo(handle, ref w, ref h, ref bpp, ref channels);
+            _=CM_GetSrcFrameInfo(handle, ref w, ref h, ref bpp, ref channels);
             uint nbbpMen = bpp / 8;
             rawArray = new byte[w * h * nbbpMen * channels];
             return CM_GetSrcFrame_Gen(handle, ref w, ref h, ref bpp, ref channels, rawArray);
@@ -1087,7 +909,7 @@ namespace cvColorVision
         private unsafe static extern bool CM_GetSrcFrameEx_Gen(IntPtr handle, ref uint w, ref uint h, ref uint bpp, ref uint channels, byte[] rawArray);
         public static bool CM_GetSrcFrameEx(IntPtr handle, ref uint w, ref uint h,  ref uint bpp, ref uint channels, ref byte[] rawArray)
         {
-            CM_GetSrcFrameInfo(handle, ref w, ref h, ref bpp, ref channels);
+            _=CM_GetSrcFrameInfo(handle, ref w, ref h, ref bpp, ref channels);
             uint nbbpMen = bpp / 8;
             rawArray = new byte[w * h * nbbpMen * channels];
             return CM_GetSrcFrameEx_Gen(handle, ref w, ref h, ref bpp, ref channels, rawArray);
@@ -1095,15 +917,11 @@ namespace cvColorVision
 
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetSrcFrameInfo", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern uint CM_GetSrcFrameInfo_Gen(IntPtr handle, ref uint w, ref uint h, ref uint bpp, ref uint channels);
-
-        public static uint CM_GetSrcFrameInfo(IntPtr handle, ref uint w, ref uint h, ref uint bpp, ref uint channels) => CM_GetSrcFrameInfo_Gen(handle, ref w, ref h, ref bpp, ref channels);
-
+        public unsafe static extern uint CM_GetSrcFrameInfo(IntPtr handle, ref uint w, ref uint h, ref uint bpp, ref uint channels);
 
         [DllImport(LIBRARY_CVCAMERA, CharSet = CharSet.Auto, EntryPoint = "CM_SetCfwport",CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool CM_SetCfwport_Gen(IntPtr handle, int nIndex, int nPort, ImageChannelType eImgChlType);
+        public static extern bool CM_SetCfwport(IntPtr handle, int nIndex, int nPort, ImageChannelType eImgChlType);
 
-        public static bool CM_SetCfwport(IntPtr handle, int nIndex, int nPort, ImageChannelType eImgChlType)  => CM_SetCfwport_Gen(handle, nIndex, nPort, eImgChlType);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetXYZxyuvRect", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern bool CM_GetXYZxyuvRect(IntPtr handle, int pX, int pY, ref float X, ref float Y, ref float Z , ref float x, ref float y, ref float u, ref float v, int nRw, int nRh);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetXYZCircle", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
@@ -1123,22 +941,15 @@ namespace cvColorVision
         public unsafe static extern bool CM_GetYRectEx(IntPtr handle, int[] pX, int[] pY, float[] pdY, int nLen, string szFileName,
             int nRw, int nRh);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetBufferXYZ",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public static extern bool CM_SetBufferXYZ_Gen(IntPtr handle, uint w, uint h, uint bpp, uint channels, byte[] imgdata);
-        public static bool CM_SetBufferXYZ(IntPtr handle, uint w, uint h, uint bpp, uint channels, byte[] imgdata) => CM_SetBufferXYZ_Gen(handle, w, h, bpp, channels, imgdata);
-
+        public static extern bool CM_SetBufferXYZ(IntPtr handle, uint w, uint h, uint bpp, uint channels, byte[] imgdata);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_InitXYZ",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]//初始化XYZ用于执行校正
         public static extern bool CM_InitXYZ(IntPtr handle);
 
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "ImageRect",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern void ImageRect_Gen(int w, int h, int bpp, int channels, byte[] imgdata, IRECT tIRECT, byte[] imgDstdata);
-        public static void ImageRect(int w, int h, int bpp, int channels, byte[] imgdata, IRECT tIRECT, byte[] imgDstdata)
-        {
-            ImageRect_Gen(w, h, bpp, channels, imgdata, tIRECT, imgDstdata);
+        public unsafe static extern void ImageRect(int w, int h, int bpp, int channels, byte[] imgdata, IRECT tIRECT, byte[] imgDstdata);
 
-        }
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "SkipTake",
-            CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "SkipTake",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private unsafe static extern void SkipTake(byte[] psrcdata, byte[] pdstdata, int nPos, int nCount);
 
         public static void SkipTake(byte[] psrcdata, ref byte[] pdstdata, int nPos, int nCount)
@@ -1243,18 +1054,15 @@ namespace cvColorVision
         //[DllImport(LIBRARY_CVCAMERA, EntryPoint = "DistortionCheck",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         //public unsafe static extern int DistortionCheck(HImage tImg, SIZE iSize, BlobThreParams tBlobThreParams, float[] finalPointsX, float[] finalPointsY, ref double pointx, ref double pointy, ref double maxErrorRatio, ref double t, CornerType type /*= Circlepoint*/, SlopeType sType /*= CenterPoint*/, LayoutType lType /*= SlopeIN*/);
 
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "DistortionCheck",
-    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "DistortionCheck", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int DistortionCheck(HImage tImg, SIZE iSize, ST_BlobThreParams tBlobThreParams, float[] finalPointsX, float[] finalPointsY, ref double pointx, ref double pointy, ref double maxErrorRatio, ref double t, CornerType type /*= Circlepoint*/, SlopeType sType /*= CenterPoint*/, LayoutType lType /*= SlopeIN*/, DistortionType dType);
 
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "FovImgCentreEX",
- CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "FovImgCentreEX",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern bool FovImgCentreEX(HImage tImg, float x_c, float y_c, float x_p, float y_p, double Radio, double cameraDegrees, ref double fovDegrees, int thresholdValus, double dFovDist, FovPattern pattern, FovType type);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "GhostGlareDectect",
         CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool GhostGlareDectect(HImage tImg, int radius, int cols, int rows, float ratioH, float ratioL, string path, float[] centersX, float[] centersY,
-       float[] blobGray, float[] dstGray, ref int memSizeH, ref int numArrH, int[] arrH, int[] dataH_X, int[] dataH_Y, ref int memSizeL, ref int numArrL, int[] arrL, int[] dataL_X, int[] dataL_Y);
+        public unsafe static extern bool GhostGlareDectect(HImage tImg, int radius, int cols, int rows, float ratioH, float ratioL, string path, float[] centersX, float[] centersY, float[] blobGray, float[] dstGray, ref int memSizeH, ref int numArrH, int[] arrH, int[] dataH_X, int[] dataH_Y, ref int memSizeL, ref int numArrL, int[] arrL, int[] dataL_X, int[] dataL_Y);
     }
     public struct C_AoiParam
     {
@@ -1294,17 +1102,7 @@ namespace cvColorVision
         public int cy;
     };
 
-    public enum FovPattern
-    {
-        FovCircle = 0,
-        FovRectangle,
-    };
-    public enum FovType
-    {
-        Horizontal = 0,
-        Vertical,
-        Leaning,
-    };
+
 
 
     public enum CVOLED_ERROR
@@ -1410,63 +1208,30 @@ namespace cvColorVision
         public string szComName;
         public ulong BaudRate;
     }
-    public enum CameraModeType
-    {
-        LV,
-        BV,
-        CV,
-        Other
-    }
+
+
+
 
 
 
     public class SimpleFeatures 
     {
-        private static CameraModeType GetCameraModeType(CameraType type)
-        {
-            CameraModeType ret = CameraModeType.Other;
-            switch (type)
-            {
-                case CameraType.CV_Q:
-                    ret = CameraModeType.CV;
-                    break;
-                case CameraType.LV_Q:
-                case CameraType.MIL_CXP:
-                case CameraType.LV_H:
-                case CameraType.HK_CXP:
-                case CameraType.LV_MIL_CL:
-                case CameraType.MIL_CXP_VIDEO:
-                    ret = CameraModeType.LV;
-                    break;
-                case CameraType.BV_Q:
-                case CameraType.MIL_CL:
-                case CameraType.BV_H:
-                    ret = CameraModeType.BV;
-                    break;
-                default:
-                    ret = CameraModeType.Other;
-                    break;
-            }
-
-            return ret;
-        }
-
         public class FOVParam
         {
             [Category("FOV"), Description("计算FOV时中心区亮度的百分比多少认为是暗区")]
-            public double radio { get; set; }
+            public double Radio { get; set; }
             [Category("FOV"), Description("相机镜头有效像素对应的角度")]
-            public double cameraDegrees { get; set; }
+            public double CameraDegrees { get; set; }
             [Category("FOV"), Description("FOV中计算圆心或者矩心时使用的二值化阈值")]
-            public int thresholdValus { get; set; }
+            public int ThresholdValus { get; set; }
 
             [Category("FOV"), Description("相机镜头使用的有效像素")]
-            public double dFovDist { get; set; }
+            public double DFovDist { get; set; }
 
             [Category("FOV"), Description("计算pattern(FovCircle-圆形；FovRectangle-矩形)")]
-            public FovPattern fovPattern { get; set; }
+            public FovPattern FovPattern { get; set; }
             [Category("FOV"), Description("计算路线(Horizontal-水平；Vertical-垂直；Leaning-斜向)")]
-            public FovType fovType { get; set; }
+            public FovType FovType { get; set; }
 
             [Category("SFR"), Description("SFR gamma")]
             public double SFR_gamma { get; set; }
@@ -1497,16 +1262,15 @@ namespace cvColorVision
 
 
             public static FOVParam cfg;
-            private static string fovParamCfg = "cfg\\FovParamSetup.cfg";
 
             public FOVParam()
             {
-                radio = 0.2;
-                cameraDegrees = 0.2;
-                thresholdValus = 20;
-                dFovDist = 8443;
-                fovPattern = FovPattern.FovCircle;
-                fovType = FovType.Horizontal;
+                Radio = 0.2;
+                CameraDegrees = 0.2;
+                ThresholdValus = 20;
+                DFovDist = 8443;
+                FovPattern = FovPattern.FovCircle;
+                FovType = FovType.Horizontal;
                 SFR_gamma = 1.0;
                 MTF_dRatio = 0.01;
                 Ghost_radius = 65;
@@ -1520,38 +1284,21 @@ namespace cvColorVision
                 CL_lineWidth = 60;
                 CL_LENGTH = 20;
             }
-            public static FOVParam Load()
+
+            public static FOVParam Load(string fileName)
             {
-                FOVParam pm = CfgFile.Load<FOVParam>(fovParamCfg);
+                FOVParam pm = CfgFile.Load<FOVParam>(fileName);
                 if (pm == null)
                 {
                     pm = new FOVParam();
-                    CfgFile.Save(fovParamCfg, pm);
+                    CfgFile.Save(fileName, pm);
                 }
                 cfg = pm;
                 return cfg;
             }
-
-            public static void Save(FOVParam pm)
-            {
-                CfgFile.Save(fovParamCfg, pm);
-            }
         }
 
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="connectType">相机的连接类型，如LV,BV,CV</param>
-        /// <param name="wRGB">传入图像的W</param>
-        /// <param name="hRGB">传入图像的H</param>
-        /// <param name="bppRGB">传入图像的bpp位深</param>
-        /// <param name="channalsRGB">传入图像的channels通道数</param>
-        /// <param name="srcrawRGB">传入图像的raw数据</param>
-        /// <param name="fovParamCfg">fov的本地配置文件路径</param>
-        /// <param name="fovDegrees_ref">如果返回true则附带的FOV结果</param>
-        /// <param name="ErrorData">如果返回false则附带的错误信息</param>
-        /// <returns></returns>
         public bool FOV(CameraType connectType, uint wRGB,uint hRGB,uint bppRGB,uint channalsRGB, byte[] srcrawRGB, string fovParamCfg,ref double fovDegrees_ref, ref string ErrorData) 
         {
             //if (wRGB > 0& hRGB>0& bppRGB>0&& channalsRGB>0)
@@ -1582,7 +1329,7 @@ namespace cvColorVision
 
             //                    try
             //                    {
-            //                        if (!cvCameraCSLib.FovImgCentre(himage_Fov, pm.radio, pm.cameraDegrees, ref fovDegrees_ref, pm.thresholdValus, pm.dFovDist, FovPattern.FovCircle, FovType.Horizontal))
+            //                        if (!cvCameraCSLib.FovImgCentre(himage_Fov, pm.Radio, pm.CameraDegrees, ref fovDegrees_ref, pm.thresholdValus, pm.dFovDist, FovPattern.FovCircle, FovType.Horizontal))
             //                        {
             //                            ErrorData = "FOV执行失败！";
             //                            return false;
@@ -1623,7 +1370,7 @@ namespace cvColorVision
 
             if (wRGB > 0 & hRGB > 0 & bppRGB > 0 && channalsRGB > 0)
             {
-                CameraModeType cameraMode = GetCameraModeType(connectType);
+                CameraModeType cameraMode = connectType.GetCameraModeType();
                 if (cameraMode == CameraModeType.LV || cameraMode == CameraModeType.BV || cameraMode == CameraModeType.CV)
                 {
                     FOVParam pm = CfgFile.Load<FOVParam>(fovParamCfg);
@@ -1636,8 +1383,8 @@ namespace cvColorVision
                     himage_Fov.nBpp = bppRGB;
                     himage_Fov.nChannels = channalsRGB;
                     fovDegrees_ref = 0;
-                    FovPattern fovPattern = pm.fovPattern;
-                    FovType fovType = pm.fovType;
+                    FovPattern fovPattern = pm.FovPattern;
+                    FovType fovType = pm.FovType;
                     bool fovResult = false;
 
                     unsafe
@@ -1656,7 +1403,7 @@ namespace cvColorVision
                                     //    {
                                     //        fovResult = cvCameraCSLib.FovImgCentreEX(himage_Fov,
                                     //            roiPointData_Temporary.Img_x, roiPointData_Temporary.Img_y, fovLeaning.X, fovLeaning.Y,
-                                    //            pm.radio, pm.cameraDegrees, ref fovDegrees_ref, pm.thresholdValus, pm.dFovDist, fovPattern, fovType);
+                                    //            pm.Radio, pm.CameraDegrees, ref fovDegrees_ref, pm.thresholdValus, pm.dFovDist, fovPattern, fovType);
                                     //        if (fovResult) saveCsv_FOV("Result", "FovCircle", "Leaning", fovDegrees_ref);
                                     //        else MessageBox.Show("FOV执行失败！");
                                     //    }
@@ -1671,10 +1418,10 @@ namespace cvColorVision
                                     //}
 
                                     fovType = FovType.Horizontal;
-                                    fovResult = cvCameraCSLib.FovImgCentre(himage_Fov, pm.radio, pm.cameraDegrees, ref fovDegrees_ref, pm.thresholdValus, pm.dFovDist, fovPattern, fovType);
+                                    fovResult = cvCameraCSLib.FovImgCentre(himage_Fov, pm.Radio, pm.CameraDegrees, ref fovDegrees_ref, pm.ThresholdValus, pm.DFovDist, fovPattern, fovType);
                                     if (fovResult)
                                     {
-                                        saveCsv_FOV("Result", GetFovPattern(pm.fovPattern), "Horizontal", fovDegrees_ref);
+                                        saveCsv_FOV("Result", GetFovPattern(pm.FovPattern), "Horizontal", fovDegrees_ref);
                                     }
                                     else 
                                     {
@@ -1685,10 +1432,10 @@ namespace cvColorVision
 
 
                                     fovType = FovType.Vertical;
-                                    fovResult = cvCameraCSLib.FovImgCentre(himage_Fov, pm.radio, pm.cameraDegrees, ref fovDegrees_ref, pm.thresholdValus, pm.dFovDist, fovPattern, fovType);
+                                    fovResult = cvCameraCSLib.FovImgCentre(himage_Fov, pm.Radio, pm.CameraDegrees, ref fovDegrees_ref, pm.ThresholdValus, pm.DFovDist, fovPattern, fovType);
                                     if (fovResult)
                                     {
-                                        saveCsv_FOV("Result", GetFovPattern(pm.fovPattern), "Vertical", fovDegrees_ref);
+                                        saveCsv_FOV("Result", GetFovPattern(pm.FovPattern), "Vertical", fovDegrees_ref);
                                         return true;
                                     }
                                     else 
@@ -1745,62 +1492,14 @@ namespace cvColorVision
 
         private static void saveCsv_FOV(string path, string fovPattern, string fovType, double fovDegrees)
         {
-            bool saveHeader = false;
             if (!Directory.Exists(path))
-            {
                 Directory.CreateDirectory(path);
-            }
-            if (path.Substring(path.Length - 1, 1) != "/")
-            {
-                path = path + "\\FOVResult_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
-            }
-            else
-            {
-                path = path + "FOVResult_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
-            }
+            path += $"{(path.Substring(path.Length - 1, 1) != "/" ? "\\" : "")}FOVResult_{DateTime.Now:yyyyMMddhhmmss}.csv";
             if (!File.Exists(path))
-            {
-                saveHeader = true;
-            }
-
-            FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
-            StreamWriter sw = new StreamWriter(fs, UnicodeEncoding.UTF8);
-
-            if (saveHeader)
-            {
-                sw.Write("FovPattern");
-                sw.Write(",");
-                sw.Write("FovType");
-                sw.Write(",");
-                sw.Write("Value");
-                sw.WriteLine("");
-            }
-
-
-            sw.Write(fovPattern);
-            sw.Write(",");
-            sw.Write(fovType);
-            sw.Write(",");
-            sw.Write(fovDegrees.ToString());
-            sw.WriteLine("");
-
-
-            sw.Flush();
-            sw.Close();
-            fs.Close();
-        }
-
-        public class FindRoi
-        {
-            public int x { set; get; }
-            public int y { set; get; }
-            public int width { set; get; }
-
-            public int height { set; get; }
-            public override string ToString()
-            {
-                return string.Format("{0},{1},{2},{3}", x, y, width, height);
-            }
+                cvCameraCSLib.CSVinitialized(path, new List<string>() { "FovPattern", "FovType", "Value" });
+            using FileStream fs = new FileStream(path, FileMode.Append, FileAccess.Write);
+            using StreamWriter sw = new StreamWriter(fs, Encoding.UTF8);
+            sw.WriteLine($"{fovPattern},{fovType},{fovDegrees}");
         }
 
         public class DistoData 
@@ -1816,130 +1515,7 @@ namespace cvColorVision
             public bool checkResult { set; get; }
         }
 
-        private static void saveCsv_SFR(string path, float[] pdfrequency, float[] pdomainSamplingData)
-        {
-            if (!Directory.Exists(path))
-            {
-                Directory.CreateDirectory(path);
-            }
-            if (path.Substring(path.Length - 1, 1) != "/")
-            {
-                path = path + "\\SFRResult_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
-            }
-            else
-            {
-                path = path + "SFRResult_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
-            }
-            if (!File.Exists(path))
-            {
-                //首先模拟建立将要导出的数据，这些数据都存于DataTable中  
-                System.Data.DataTable dt = new System.Data.DataTable();
-                dt.Columns.Add("pdfrequency", typeof(string));
-                dt.Columns.Add("pdomainSamplingData", typeof(string));
-                FileStream fs2 = new FileStream(path, System.IO.FileMode.Create, System.IO.FileAccess.Write);
-                StreamWriter sw2 = new StreamWriter(fs2, UnicodeEncoding.UTF8);
-                //string path = saveFileDialog.FileName.ToString();//保存路径
-                //Tabel header
-                for (int i = 0; i < dt.Columns.Count; i++)
-                {
-                    if (i != 0)
-                    {
-                        sw2.Write(",");
-                    }
-                    sw2.Write(dt.Columns[i].ColumnName);
-                }
-                sw2.WriteLine("");
-                sw2.Flush();
-                sw2.Close();
-                fs2.Close();
-            }
-            FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
-            StreamWriter sw = new StreamWriter(fs, UnicodeEncoding.UTF8);
-            for (int i = 0; i < pdfrequency.Length; i++)
-            {
-                sw.Write(pdfrequency[i]);
-                sw.Write(",");
-                sw.Write(pdomainSamplingData[i]);
-                sw.Write(",");
-                sw.WriteLine("");
-            }
-            sw.Flush();
-            sw.Close();
-            fs.Close();
-        }
 
-        public static bool SFR(uint wRGB, uint hRGB, uint bppRGB, uint channalsRGB, byte[] srcrawRGB, string fovParamCfg, FindRoi fRoi, ref string ErrorData) 
-        {
-            if (wRGB > 0 & hRGB > 0 & bppRGB > 0 && channalsRGB > 0)
-            {
-                FOVParam pm = CfgFile.Load<FOVParam>(fovParamCfg);
-                if (pm==null)
-                {
-                    ErrorData = "读取本地的SFR文件失败";
-                    return false;
-                }
-                if (fRoi != null)
-                {
-                    //int imgx = 0, imgy = 0;
-                    //m_cDib.GetImgPoint(fRoi.x, fRoi.y, ref imgx, ref imgy);
-                    //int imgw = 0, imgh = 0;
-                    //imgw = (int)(fRoi.width / m_cDib.GetScale());
-                    //imgh = (int)(fRoi.height / m_cDib.GetScale());
-                    HImage tImg = new HImage();
-                    tImg.nBpp = (uint)bppRGB;
-                    tImg.nChannels = (uint)channalsRGB;
-                    tImg.nWidth = (uint)wRGB;
-                    tImg.nHeight = (uint)hRGB;
-
-                    if (srcrawRGB != null)
-                    {
-                        //方法2
-                        GCHandle hObject = GCHandle.Alloc(srcrawRGB, GCHandleType.Pinned);
-                        tImg.pData = hObject.AddrOfPinnedObject();
-
-                        CRECT rtROI = new CRECT();
-                        rtROI.x = fRoi.x;
-                        rtROI.y = fRoi.y;
-                        rtROI.cx = fRoi.width;
-                        rtROI.cy = fRoi.height;
-                        double gamma = pm.SFR_gamma;
-
-                        float[] pdfrequency = new float[(int)Math.Max(fRoi.width, fRoi.height)];
-                        float[] pdomainSamplingData = new float[(int)Math.Max(fRoi.width, fRoi.height)];
-                        int nLen = (int)Math.Max(wRGB, hRGB);
-
-                        if (cvCameraCSLib.SFRCalculation(tImg, rtROI, gamma, pdfrequency, pdomainSamplingData, nLen) < 1)
-                        {
-                            ErrorData = "SFRCalculation执行结果失败!";
-                            return false;
-                        }
-                        else
-                        {
-                            //保存结果
-                            saveCsv_SFR("Result", pdfrequency, pdomainSamplingData);
-                            //MessageBox.Show("执行结束");
-                            return true;
-                        }
-                    }
-                    else
-                    {
-                        ErrorData = "图像数据为空!";
-                        return false;
-                    }
-
-                }
-                else
-                {
-                    ErrorData = "请先框选SFR";
-                    return false;
-                }
-            }
-            else
-            {
-                ErrorData = "请先点击测量";
-                return false;
-            }
-        }
 
         public static bool Disto(DistoData distoData) 
         {
@@ -1976,8 +1552,6 @@ namespace cvColorVision
                 threadToKill?.Abort();
 #pragma warning restore SYSLIB0006
                 throw new TimeoutException();
-                //try { throw new TimeoutException(); }
-                //catch (Exception e) { MessageBox.Show("畸变计算超时"); }
 
             }
         }
@@ -2012,7 +1586,7 @@ namespace cvColorVision
                     //初始化图像在平面的旋转角度
                     double t = 0;
                     //选取使用角点提取的方法
-                    CornerType cornerType = GetCornerType(blobThreParams);
+                    CornerType cornerType = blobThreParams.cornerType;
                     //选取点阵斜率计算方法
                     SlopeType slopeType = SlopeType.CenterPoint;
                     //选取生成理想点阵的布点方式
@@ -2092,46 +1666,14 @@ namespace cvColorVision
         private static void saveCsv_Distortion(string path, double pointx, double pointy, double maxErrorRatio, double t, string strDisType)
         {
             if (!Directory.Exists(path))
-            {
                 Directory.CreateDirectory(path);
-            }
-            if (path.Substring(path.Length - 1, 1) != "/")
-            {
-                path = path + "\\DistortionResult.csv";
-            }
-            else
-            {
-                path = path + "DistortionResult.csv";
-            }
+            path = path + (path.Substring(path.Length - 1, 1) != "/" ?  "\\" :"")  + "DistortionResult.csv";
             if (!File.Exists(path))
-            {
-                //首先模拟建立将要导出的数据，这些数据都存于DataTable中  
-                System.Data.DataTable dt = new System.Data.DataTable();
-                dt.Columns.Add("Time", typeof(string));
-                dt.Columns.Add("pointx", typeof(string));
-                dt.Columns.Add("pointy", typeof(string));
-                dt.Columns.Add("maxErrorRatio", typeof(string));
-                dt.Columns.Add("t", typeof(string));
-                dt.Columns.Add("DistortionType", typeof(string));
-                FileStream fs2 = new FileStream(path, System.IO.FileMode.Create, System.IO.FileAccess.Write);
-                StreamWriter sw2 = new StreamWriter(fs2, UnicodeEncoding.UTF8);
-                //string path = saveFileDialog.FileName.ToString();//保存路径
-                //Tabel header
-                for (int i = 0; i < dt.Columns.Count; i++)
-                {
-                    if (i != 0)
-                    {
-                        sw2.Write(",");
-                    }
-                    sw2.Write(dt.Columns[i].ColumnName);
-                }
-                sw2.WriteLine("");
-                sw2.Flush();
-                sw2.Close();
-                fs2.Close();
-            }
-            FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
-            StreamWriter sw = new StreamWriter(fs, UnicodeEncoding.UTF8);
+                cvCameraCSLib.CSVinitialized(path, new List<string>() { "Time", "pointx", "pointy", "maxErrorRatio", "t", "DistortionType" });
+
+
+            using FileStream fs = new FileStream(path, FileMode.Append, FileAccess.Write);
+            using StreamWriter sw = new StreamWriter(fs, Encoding.UTF8);
             sw.Write(DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss.fff"));
             sw.Write(",");
             sw.Write(pointx);
@@ -2146,151 +1688,71 @@ namespace cvColorVision
             sw.Write(",");
             sw.WriteLine("");
             sw.Flush();
-            sw.Close();
-            fs.Close();
-        }
-
-        private static CornerType GetCornerType(BlobThreParams blobThreParams)
-        {
-            CornerType cornerType = blobThreParams.cornerType;
-            //switch (blobThreParams.cornerType.ToLower())
-            //{
-            //    case "circlepoint":
-            //        cornerType = CornerType.Circlepoint;
-            //        break;
-            //    case "checkerboard":
-            //        cornerType = CornerType.Checkerboard;
-            //        break;
-            //    default:
-            //        cornerType = CornerType.Checkerboard;
-            //        break;
-            //}
-            return cornerType;
         }
 
 
-
-
-        /// <summary>
-        /// 传进去的图只能是32位单通道的图
-        /// </summary>
-        /// <param name="listGhostH"></param>
-        /// <param name="listGhostL"></param>
-        /// <param name="wRGB"></param>
-        /// <param name="hRGB"></param>
-        /// <param name="bppRGB"></param>
-        /// <param name="channalsRGB"></param>
-        /// <param name="srcrawRGB"></param>
-        /// <returns></returns>
-        public bool Ghost(List<System.Drawing.Point> listGhostH, List<System.Drawing.Point> listGhostL, uint wRGB, uint hRGB, uint bppRGB, uint channalsRGB, byte[] srcrawRGB, ref string ErrorData) 
+        public bool Ghost(List<System.Drawing.Point> listGhostH, List<System.Drawing.Point> listGhostL, HImage tImg) 
         {
-            if (listGhostH != null) listGhostH.Clear();
-            if (listGhostL != null) listGhostL.Clear();
-            if (wRGB > 0 & hRGB > 0 & bppRGB > 0 && channalsRGB > 0)
+            listGhostH?.Clear();
+            listGhostL?.Clear();
+            FOVParam pm = FOVParam.cfg;
+
+            int NxN = pm.Ghost_cols * pm.Ghost_rows;
+            int memSizeH = 20 * 1024;//储存所有点阵坐标需要申请的内存
+            int memSizeL = 20 * 1024;//储存所有鬼影坐标需要申请的内存
+            int numArrH = NxN;//包含的点阵数量
+            int numArrL = NxN;//包含的鬼影集数量
+            int[] arrH = new int[numArrH];//每个点阵轮廓的点坐标数量
+            int[] arrL = new int[numArrL];//每个鬼影轮廓的点坐标数量
+            int[] dataH_X = new int[memSizeH];//所有点阵轮廓的X坐标集
+            int[] dataL_X = new int[memSizeL];//所有鬼影轮廓的X坐标集
+            int[] dataH_Y = new int[memSizeH];//所有点阵轮廓的Y坐标集
+            int[] dataL_Y = new int[memSizeL];//所有鬼影轮廓的Y坐标集
+            float[] centersX = new float[NxN];//检出的鬼影点阵质心X坐标
+            float[] centersY = new float[NxN];//检出的鬼影点阵质心Y坐标
+            float[] dstGray = new float[NxN];//检出鬼影区域的灰度均值集
+            float[] blobGray = new float[NxN];//检出光斑的灰度均值集
+            string path = GetPath("Result");//
+            bool ret = cvCameraCSLib.GhostGlareDectect(tImg, pm.Ghost_radius, pm.Ghost_cols, pm.Ghost_rows, pm.Ghost_ratioH, pm.Ghost_ratioL, path, centersX, centersY, blobGray, dstGray, ref memSizeH, ref numArrH, arrH, dataH_X, dataH_Y, ref memSizeL, ref numArrL, arrL, dataL_X, dataL_Y);
+            if (ret)
             {
-                FOVParam pm = FOVParam.Load();
-                //初始化HImage
-                HImage tImg = new HImage();
-                tImg.nBpp = bppRGB;
-                tImg.nChannels = channalsRGB;
-                tImg.nWidth = wRGB;
-                tImg.nHeight = hRGB;
+                save_Ghost_result("Result", NxN, centersX, centersY, blobGray, dstGray, numArrH, arrH, dataH_X, dataH_Y, numArrL, arrL, dataL_X, dataL_Y);
+            }
+            else if (memSizeH > 20 * 1024 || memSizeL > 20 * 1024)
+            {
+                dataH_X = new int[memSizeH];//所有点阵轮廓的X坐标集
+                dataL_X = new int[memSizeL];//所有鬼影轮廓的X坐标集
+                dataH_Y = new int[memSizeH];//所有点阵轮廓的Y坐标集
+                dataL_Y = new int[memSizeL];//所有鬼影轮廓的Y坐标集
 
-                if (srcrawRGB != null)
+                ret = cvCameraCSLib.GhostGlareDectect(tImg, pm.Ghost_radius, pm.Ghost_cols, pm.Ghost_rows, pm.Ghost_ratioH, pm.Ghost_ratioL, path, centersX, centersY, blobGray, dstGray,
+                ref memSizeH, ref numArrH, arrH, dataH_X, dataH_Y, ref memSizeL, ref numArrL, arrL, dataL_X, dataL_Y);
+                if (ret)
                 {
-                    GCHandle hObject;
-                    hObject = GCHandle.Alloc(srcrawRGB, GCHandleType.Pinned);
-                    //
-                    tImg.pData = hObject.AddrOfPinnedObject();
-
-                    int NxN = pm.Ghost_cols * pm.Ghost_rows;
-                    int memSizeH = 20 * 1024;//储存所有点阵坐标需要申请的内存
-                    int memSizeL = 20 * 1024;//储存所有鬼影坐标需要申请的内存
-                    int numArrH = NxN;//包含的点阵数量
-                    int numArrL = NxN;//包含的鬼影集数量
-                    int[] arrH = new int[numArrH];//每个点阵轮廓的点坐标数量
-                    int[] arrL = new int[numArrL];//每个鬼影轮廓的点坐标数量
-                    int[] dataH_X = new int[memSizeH];//所有点阵轮廓的X坐标集
-                    int[] dataL_X = new int[memSizeL];//所有鬼影轮廓的X坐标集
-                    int[] dataH_Y = new int[memSizeH];//所有点阵轮廓的Y坐标集
-                    int[] dataL_Y = new int[memSizeL];//所有鬼影轮廓的Y坐标集
-                    float[] centersX = new float[NxN];//检出的鬼影点阵质心X坐标
-                    float[] centersY = new float[NxN];//检出的鬼影点阵质心Y坐标
-                    float[] dstGray = new float[NxN];//检出鬼影区域的灰度均值集
-                    float[] blobGray = new float[NxN];//检出光斑的灰度均值集
-                    string path = GetPath("Result");//
-                    bool ret = cvCameraCSLib.GhostGlareDectect(tImg, pm.Ghost_radius, pm.Ghost_cols, pm.Ghost_rows, pm.Ghost_ratioH, pm.Ghost_ratioL, path, centersX, centersY, blobGray, dstGray,
-                        ref memSizeH, ref numArrH, arrH, dataH_X, dataH_Y, ref memSizeL, ref numArrL, arrL, dataL_X, dataL_Y);
-                    if (ret)
-                    {
-                        save_Ghost_result("Result", NxN, centersX, centersY, blobGray, dstGray, numArrH, arrH, dataH_X, dataH_Y, numArrL, arrL, dataL_X, dataL_Y);
-                    }
-                    else if (memSizeH > 20 * 1024 || memSizeL > 20 * 1024)
-                    {
-                        dataH_X = new int[memSizeH];//所有点阵轮廓的X坐标集
-                        dataL_X = new int[memSizeL];//所有鬼影轮廓的X坐标集
-                        dataH_Y = new int[memSizeH];//所有点阵轮廓的Y坐标集
-                        dataL_Y = new int[memSizeL];//所有鬼影轮廓的Y坐标集
-
-                        ret = cvCameraCSLib.GhostGlareDectect(tImg, pm.Ghost_radius, pm.Ghost_cols, pm.Ghost_rows, pm.Ghost_ratioH, pm.Ghost_ratioL, path, centersX, centersY, blobGray, dstGray,
-                        ref memSizeH, ref numArrH, arrH, dataH_X, dataH_Y, ref memSizeL, ref numArrL, arrL, dataL_X, dataL_Y);
-                        if (ret)
-                        {
-                            save_Ghost_result("Result", NxN, centersX, centersY, blobGray, dstGray, numArrH, arrH, dataH_X, dataH_Y, numArrL, arrL, dataL_X, dataL_Y);
-                        }
-                        else
-                        {
-                            ErrorData = "二次检查失败";
-                            return false;
-                        }
-                    }
-                    else
-                    {
-                        ErrorData = "首次检查失败";
-                        return false;
-                    }
-
-                    hObject.Free();
-                    return true;
+                    save_Ghost_result("Result", NxN, centersX, centersY, blobGray, dstGray, numArrH, arrH, dataH_X, dataH_Y, numArrL, arrL, dataL_X, dataL_Y);
                 }
-                else
-                {
-                    ErrorData = "请先点击测量";
-                    return false;
-                }
+
             }
             else
             {
-                ErrorData = "请先点击测量";
                 return false;
             }
+            return true;
         }
 
         private static string GetPath(string path)
         {
             if (!Directory.Exists(path))
-            {
                 Directory.CreateDirectory(path);
-            }
-            if (path.Substring(path.Length - 1, 1) != "/")
-            {
-                path = path + "\\";
-            }
-            return path;
+            return path + (path.Substring(path.Length - 1, 1) != "/"? "\\":"");
         }
 
         private List<System.Drawing.Point> listGhostH = new List<System.Drawing.Point>();
         private List<System.Drawing.Point> listGhostL = new List<System.Drawing.Point>();
         private  void save_Ghost_result(string path, int nxN, float[] centersX, float[] centersY, float[] blobGray, float[] dstGray, int numArrH, int[] arrH, int[] dataH_X, int[] dataH_Y, int numArrL, int[] arrL, int[] dataL_X, int[] dataL_Y)
         {
-            if (listGhostH == null)
-            {
-                listGhostH = new List<System.Drawing.Point>();
-            }
-            if (listGhostL == null)
-            {
-                listGhostL = new List<System.Drawing.Point>();
-            }
+            listGhostH ??= new List<System.Drawing.Point>();
+            listGhostL ??= new List<System.Drawing.Point>();
             saveCsv_Ghost_xy(path, nxN, centersX, centersY, blobGray, dstGray);
             saveCsv_Ghost_point(path, "点阵", numArrH, arrH, dataH_X, dataH_Y, listGhostH);
             saveCsv_Ghost_point(path, "鬼影", numArrL, arrL, dataL_X, dataL_Y, listGhostL);
@@ -2298,233 +1760,41 @@ namespace cvColorVision
 
         private static void saveCsv_Ghost_xy(string path, int nxN, float[] centersX, float[] centersY, float[] blobGray, float[] dstGray)
         {
-            bool saveHeader = false;
             if (!Directory.Exists(path))
-            {
                 Directory.CreateDirectory(path);
-            }
-            if (path.Substring(path.Length - 1, 1) != "/")
-            {
-                path = path + "\\GhostXYResult_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
-            }
-            else
-            {
-                path = path + "GhostXYResult_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
-            }
+            path += $"{(path.Substring(path.Length - 1, 1) != "/" ? "\\" : "")}GhostXYResult_{DateTime.Now:yyyyMMddhhmmss}.csv";
             if (!File.Exists(path))
-            {
-                saveHeader = true;
-            }
-
-            FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
-            StreamWriter sw = new StreamWriter(fs, UnicodeEncoding.UTF8);
-
-            if (saveHeader)
-            {
-                sw.Write("centersX");
-                sw.Write(",");
-                sw.Write("centersY");
-                sw.Write(",");
-                sw.Write("blobGray");
-                sw.Write(",");
-                sw.Write("dstGray");
-                sw.WriteLine("");
-            }
-
+                cvCameraCSLib.CSVinitialized(path, new List<string>() { "centersX", "centersY", "blobGray", "dstGray" });
+            using FileStream fs = new FileStream(path, FileMode.Append, FileAccess.Write);
+            using StreamWriter sw = new StreamWriter(fs, Encoding.UTF8);
             for (int i = 0; i < nxN; i++)
-            {
-                sw.Write(centersX[i]);
-                sw.Write(",");
-                sw.Write(centersY[i]);
-                sw.Write(",");
-                sw.Write(blobGray[i]);
-                sw.Write(",");
-                sw.Write(dstGray[i]);
-                sw.WriteLine("");
-            }
-
-            sw.Flush();
-            sw.Close();
-            fs.Close();
+                sw.WriteLine($"{centersX[i]},{centersY[i]},{blobGray[i]},{dstGray[i]}");
         }
 
         private static void saveCsv_Ghost_point(string path, string name, int numArr, int[] arr, int[] data_X, int[] data_Y, List<System.Drawing.Point> list)
         {
-            bool saveHeader = false;
             if (!Directory.Exists(path))
-            {
                 Directory.CreateDirectory(path);
-            }
-            if (path.Substring(path.Length - 1, 1) != "/")
-            {
-                path = path + "\\GhostResult_" + name + "_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
-            }
-            else
-            {
-                path = path + "GhostResult_" + name + "_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
-            }
+            path += $"{(path.Substring(path.Length - 1, 1) != "/" ? "\\" : "")}GhostResult_{name}_{DateTime.Now:yyyyMMddhhmmss}.csv";
             if (!File.Exists(path))
-            {
-                saveHeader = true;
-            }
+                cvCameraCSLib.CSVinitialized(path, new List<string>() { "X", "Y" });
 
-            FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
-            StreamWriter sw = new StreamWriter(fs, UnicodeEncoding.UTF8);
-
-            if (saveHeader)
-            {
-                sw.Write("X");
-                sw.Write(",");
-                sw.Write("Y");
-                sw.WriteLine("");
-            }
+            using FileStream fs = new FileStream(path, FileMode.Append, FileAccess.Write);
+            using StreamWriter sw = new StreamWriter(fs, Encoding.UTF8);
             int idx = 0;
             for (int x = 0; x < numArr; x++)
-            {
                 for (int y = 0; y < arr[x]; y++)
                 {
-                    System.Drawing.Point point = new System.Drawing.Point();
-                    list.Add(point);
-                    point.X = data_X[idx];
-                    point.Y = data_Y[idx];
-                    sw.Write(point.X);
-                    sw.Write(",");
-                    sw.Write(point.Y);
-                    sw.WriteLine("");
+                    sw.WriteLine($"{data_X[idx]},{data_Y[idx]}");
                     idx++;
                 }
-            }
-
-            sw.Flush();
-            sw.Close();
-            fs.Close();
         }
 
-        public static bool MTF(List<RoiData> roiDatas, HImage tImg, byte[] srcrawRGB, ref string ErrorData)
-        {
 
-            FOVParam pm = FOVParam.Load();
 
-            bool result=DoMTF(roiDatas, tImg, srcrawRGB,pm, true,ref ErrorData);
-            return result;
 
-        }
 
-        public class MTFResult
-        {
-            public double articulation = 1.0;
-            public RoiData rpd;
 
-            public MTFResult(RoiData rpd, double articulation)
-            {
-                this.rpd = rpd;
-                this.articulation = articulation;
-            }
-        }
-
-        public class RoiData 
-        {
-            public int Img_x { set; get; }
-            public int Img_y { set; get; }
-            public int w { set; get; }
-            public int h { set; get; }
-        }
-
-        private static bool DoMTF(List<RoiData> roiDatas, HImage tImg, byte[] srcrawRGB,FOVParam pm, bool saveCsv, ref string ErrorData)
-        {
-            List<MTFResult> MTFResults = new List<MTFResult>();
-            foreach (RoiData pd in roiDatas)
-            {
-                double articulation = -1.0;
-
-                try
-                {
-                    articulation = cvCameraCSLib.cvCalArticulation(EvaFunc.CalResol, tImg, 0, 1, 5, pm.MTF_dRatio);
-                }
-                finally
-                {
-                    //Marshal.FreeHGlobal(tImg.pData);
-                }
-
-                if (articulation < 0)
-                {
-                    //MessageBox.Show("MTFCalculation执行结果失败！");
-                    ErrorData = "MTFCalculation执行结果失败！";
-                    return false;
-                }
-                else
-                {
-                    MTFResult result = new MTFResult(pd, articulation);
-                    MTFResults.Add(result);
-                }
-            }
-            if (saveCsv) 
-            {
-                saveCsv_MTF("Result", MTFResults);
-            }
-            return true;
-        }
-
-        private static  void saveCsv_MTF(string path, List<MTFResult> arts)
-        {
-            if (!Directory.Exists(path))
-            {
-                Directory.CreateDirectory(path);
-            }
-            if (path.Substring(path.Length - 1, 1) != "/")
-            {
-                path = path + "\\MTFResult_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
-            }
-            else
-            {
-                path = path + "MTFResult_" + DateTime.Now.ToString("yyyyMMddhhmmss") + ".csv";
-            }
-            if (!File.Exists(path))
-            {
-                //首先模拟建立将要导出的数据，这些数据都存于DataTable中  
-                System.Data.DataTable dt = new System.Data.DataTable();
-                dt.Columns.Add("X", typeof(string));
-                dt.Columns.Add("Y", typeof(string));
-                dt.Columns.Add("Width", typeof(string));
-                dt.Columns.Add("Height", typeof(string));
-                dt.Columns.Add("Value", typeof(string));
-                FileStream fs2 = new FileStream(path, System.IO.FileMode.Create, System.IO.FileAccess.Write);
-                StreamWriter sw2 = new StreamWriter(fs2, UnicodeEncoding.UTF8);
-                //string path = saveFileDialog.FileName.ToString();//保存路径
-                //Tabel header
-                for (int i = 0; i < dt.Columns.Count; i++)
-                {
-                    if (i != 0)
-                    {
-                        sw2.Write(",");
-                    }
-                    sw2.Write(dt.Columns[i].ColumnName);
-                }
-                sw2.WriteLine("");
-                sw2.Flush();
-                sw2.Close();
-                fs2.Close();
-            }
-            FileStream fs = new FileStream(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
-            StreamWriter sw = new StreamWriter(fs, UnicodeEncoding.UTF8);
-            for (int i = 0; i < arts.Count; i++)
-            {
-                MTFResult re = arts[i];
-                sw.Write(re.rpd.Img_x);
-                sw.Write(",");
-                sw.Write(re.rpd.Img_y);
-                sw.Write(",");
-                sw.Write(re.rpd.w);
-                sw.Write(",");
-                sw.Write(re.rpd.h);
-                sw.Write(",");
-                sw.Write(re.articulation);
-                sw.WriteLine("");
-            }
-            sw.Flush();
-            sw.Close();
-            fs.Close();
-        }
 
         public class CameraParamGroup
         {
@@ -2590,11 +1860,6 @@ namespace cvColorVision
             public float c;
             public float d;
 
-            public override string ToString()
-            {
-                return string.Format("Texp_x:{0},Texp_y:{1},Texp_z:{2},a:{3},b:{4},c:{5},d:{6}", Texp_x, Texp_y, Texp_z, a, b, c, d);
-            }
-
             public LumChromaParam(float texp_x, float texp_y, float texp_z, float gain_x, float gain_y, float gain_z, float a, float b, float c, float d)
             {
                 Texp_x = texp_x;
@@ -2629,7 +1894,7 @@ namespace cvColorVision
             }
         }
 
-        public bool FourColorCreat(string calibrationName, IIntputData[] cameraParamGroup, FourColorRoiData fourColorRoiData, ImageData[] vImgM, ref string ErrorData) 
+        public static bool FourColorCreat(string calibrationName, IIntputData[] cameraParamGroup, FourColorRoiData fourColorRoiData, ImageData[] vImgM, ref string ErrorData) 
         {
             if (calibrationName.Length==0)
             {
@@ -2711,7 +1976,7 @@ namespace cvColorVision
             //}
 
             //执行四色校正的计算
-            double[] vcdRltData = null;
+            double[]? vcdRltData = new double[9];
 
             if (!CalColorFour(vImgM, iRECTGroup, cameraParamGroup, ref vcdRltData))
             {
@@ -2719,37 +1984,19 @@ namespace cvColorVision
                 return false;
             }
             //保存四色校正的计算结果
-            if (vcdRltData.Length != 9)
+            if (vcdRltData?.Length != 9)
             {
                 ErrorData = "四色校正保存异常";
                 return false;
             }
             FourLumChromaParam lumChroma = new FourLumChromaParam(0, 0, 0, 1, 1, 1, (float)vcdRltData[0], (float)vcdRltData[1], (float)vcdRltData[2], (float)vcdRltData[3], vcdRltData[4], vcdRltData[5], vcdRltData[6], vcdRltData[7], vcdRltData[8]);
             string szFileName = calibrationName + ".dat";
-            try
-            {
-                string jsonData = JsonConvert.SerializeObject(lumChroma);
-                SaveToFile(szFileName, jsonData);
-
-            }
-            catch
-            {
-                ErrorData = "四色校正文件保存失败";
-                return false;
-            }
+            string jsonData = JsonConvert.SerializeObject(lumChroma);
+            using StreamWriter sw = new StreamWriter(szFileName);
+            sw.Write(jsonData);
             return true;
         }
 
-        public static void SaveToFile(String fileName, String content)
-        {
-            using (StreamWriter sw = new StreamWriter(fileName))
-            {
-                sw.Write(content);
-                sw.Flush();
-                sw.Close();
-                sw.Dispose();
-            }
-        }
 
         public struct IIntputData
         {
@@ -2759,77 +2006,51 @@ namespace cvColorVision
             public float iCx;
             public float iCy;
             public float iLv;
-
-            IIntputData(float exp_x, float exp_y, float exp_z, float Cx, float Cy, float LV)
-            {
-                iexp_x = exp_x;
-                iexp_y = exp_y;
-                iexp_z = exp_z;
-                iCx = Cx;
-                iCy = Cy;
-                iLv = LV;
-            }
         };
 
         /// <summary>
         /// 通过输入的BPP和channels来判断目标图像的mat格式
-        /// </summary>
-        /// <param name="nbpp"></param>
-        /// <param name="nChanles"></param>
-        /// <returns></returns>
-        public int Gettype(int nbpp, int nChanles)
+        public static int Gettype(int nbpp, int nChanles)
         {
-            int ntype = MatType.CV_8UC1;
-            switch (nbpp)
+            return nbpp switch
             {
-                case 8:
-                    if (nChanles == 1)
-                    {
-                        ntype = MatType.CV_8UC1;
-                    }
-                    else if (nChanles == 3)
-                    {
-                        ntype = MatType.CV_8UC3;
-                    }
-                    break;
-                case 16:
-                    if (nChanles == 1)
-                    {
-                        ntype = MatType.CV_16UC1;
-                    }
-                    else if (nChanles == 3)
-                    {
-                        ntype = MatType.CV_16UC3;
-                    }
-                    break;
-                case 32:
-                    if (nChanles == 1)
-                    {
-                        ntype = MatType.CV_32FC1;
-                    }
-                    else if (nChanles == 3)
-                    {
-                        ntype = MatType.CV_32FC3;
-                    }
-                    break;
-                case 64:
-                    if (nChanles == 1)
-                    {
-                        ntype = MatType.CV_64FC1;
-                    }
-                    else if (nChanles == 3)
-                    {
-                        ntype = MatType.CV_64FC3;
-                    }
-                    break;
-                default:
-                    return -1;
-            }
-
-            return ntype;
+                8 => nChanles switch
+                {
+                    1 => MatType.CV_8UC1,
+                    2 => MatType.CV_8UC2,
+                    3 => MatType.CV_8UC3,
+                    4 => MatType.CV_8UC4,
+                    _ => -1,
+                },
+                16 => nChanles switch
+                {
+                    1 => MatType.CV_16UC1,
+                    2 => MatType.CV_16UC2,
+                    3 => MatType.CV_16UC3,
+                    4 => MatType.CV_16UC4,
+                    _ => -1,
+                },
+                32 => nChanles switch
+                {
+                    1 => MatType.CV_32FC1,
+                    2 => MatType.CV_32FC2,
+                    3 => MatType.CV_32FC3,
+                    4 => MatType.CV_32FC4,
+                    _ => -1,
+                },
+                64 => nChanles switch
+                {
+                    1 => MatType.CV_64FC1,
+                    2 => MatType.CV_64FC2,
+                    3 => MatType.CV_64FC3,
+                    4 => MatType.CV_64FC4,
+                    _ => -1,
+                },
+                _ => -1,
+            };
         }
 
-        float GetRECTGray(byte[] imgdata, int arrY_Height, int arrY_Width, IRECT tRect)
+         static float GetRECTGray(byte[] imgdata, int arrY_Height, int arrY_Width, IRECT tRect)
         {
             int idx_w = tRect.x;
             int idx_h = tRect.y;
@@ -2848,7 +2069,6 @@ namespace cvColorVision
             }
 
             float gray = Mean_get(tarDataY, iHei, iWid, new IObRECT(0, 0, 0, 0));
-
             return gray;
         }
 
@@ -2868,7 +2088,7 @@ namespace cvColorVision
             }
         };
 
-        float Mean_get(ushort[] imageData, int imgHeight, int imgWidth, IObRECT obRect)
+        static float Mean_get(ushort[] imageData, int imgHeight, int imgWidth, IObRECT obRect)
         {
             long sum = 0;
             // ob area
@@ -2892,7 +2112,7 @@ namespace cvColorVision
             return (float)sum / num;
         }
 
-        double[] Gauss_Gao(double[][] a, ref double[] ans)
+        static double[] Gauss_Gao(double[][] a, ref double[] ans)
         {
             int row = 9;
             int column = 10;
@@ -2928,7 +2148,7 @@ namespace cvColorVision
             return ans;
         }
 
-        bool CalColorFour(ImageData[] vImgM, IRECT vcIRECT, IIntputData[] vcIIntputData, ref double[] vcdRlt)
+        static bool CalColorFour(ImageData[] vImgM, IRECT vcIRECT, IIntputData[] vcIIntputData, ref double[]? vcdRlt)
         {
             if (vImgM.Length != 4 && vcIIntputData.Length != 4)
             {

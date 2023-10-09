@@ -1,4 +1,5 @@
 ﻿using ColorVision.MVVM;
+using ColorVision.SettingUp;
 using ColorVision.Util;
 using System;
 using System.Collections.Generic;
@@ -6,9 +7,9 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace ColorVision.SettingUp
+namespace ColorVision
 {
-    public static class GlobalConst
+    public static partial class GlobalConst
     {
         public const string SoftwareConfigFileName = "Config\\SoftwareConfig.json";
         public const string MQTTMsgRecordsFileName = "Config\\MsgRecords.json";
@@ -19,7 +20,6 @@ namespace ColorVision.SettingUp
 
         public const string AutoRunRegPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
         public const string AutoRunName = "ColorVisionAutoRun";
-
 
         public static readonly List<string> LogLevel = new() { "all","debug", "info", "warning", "error", "none" };
     }
@@ -120,10 +120,11 @@ namespace ColorVision.SettingUp
                 SoftwareConfig.MQTTConfigs[i].UserPwd = MQTTConfigsPwd[i];
         }
 
+        private static JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions() { WriteIndented = true,DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
         private static T? ReadConfig<T>(string fileName)
         {
             if (File.Exists(fileName))
-                return JsonSerializer.Deserialize<T>(File.ReadAllText(fileName), new JsonSerializerOptions());
+                return JsonSerializer.Deserialize<T>(File.ReadAllText(fileName), jsonSerializerOptions);
             else
             {
                 T t = (T)Activator.CreateInstance(typeof(T));
@@ -135,10 +136,10 @@ namespace ColorVision.SettingUp
         private static void WriteConfig<T>(string fileName, T? t)
         {
             string DirectoryName = Path.GetDirectoryName(fileName);
-            if (DirectoryName != null && !Directory.Exists(DirectoryName))
+            if (!string.IsNullOrWhiteSpace(DirectoryName) && !Directory.Exists(DirectoryName))
                 Directory.CreateDirectory(DirectoryName);
 
-            string jsonString = JsonSerializer.Serialize(t, new JsonSerializerOptions() {WriteIndented =true});
+            string jsonString = JsonSerializer.Serialize(t, jsonSerializerOptions);
             File.WriteAllText(fileName, jsonString);
         }
     }

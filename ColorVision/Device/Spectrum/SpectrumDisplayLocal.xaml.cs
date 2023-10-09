@@ -13,19 +13,15 @@ namespace ColorVision.Device.Spectrum
     /// </summary>
     public partial class SpectrumDisplayLocal : UserControl
     {
-        public DeviceSpectrum DeviceSpectrum { get; set; }
-        public SpectrumService SpectrumService { get => DeviceSpectrum.SpectrumService; }
-
-        public SpectrumView View { get => DeviceSpectrum.ChartView;}
+        public SpectrumView View { get; set; }
         public SpectrumDisplayLocal(DeviceSpectrum DeviceSpectrum)
         {
-            this.DeviceSpectrum = DeviceSpectrum;
+            View = new SpectrumView();
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = SpectrumService;
             ViewGridManager.GetInstance().AddView(View);
 
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>

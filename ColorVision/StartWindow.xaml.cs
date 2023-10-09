@@ -6,10 +6,8 @@ using System.Windows;
 using System.Windows.Controls;
 using ColorVision.MySql;
 using ColorVision.MQTT;
-using ColorVision.SettingUp;
 using System.Reflection;
-using ColorVision.MQTT.Service;
-using ColorVision.Service;
+using ColorVision.Services;
 
 namespace ColorVision
 {
@@ -70,6 +68,7 @@ namespace ColorVision
                 mQTTConnect.ShowDialog();
                 TextBoxMsg.Text += $"{Environment.NewLine}MQTT服务连接: {(MQTTControl.GetInstance().IsConnect ? "成功" : "失败")}";
             }
+            ServiceControl.GetInstance().RCRegist();
             await Task.Delay(100);
             TextBoxMsg.Text += Environment.NewLine + "初始化服务" + MySqlControl.GetInstance().IsConnect;
             try

@@ -48,31 +48,7 @@ namespace cvColorVision
         Empty_Num = 13,
     };
 
-    public enum CameraType
-    {
-        [Description("CV_Q")]
-        CV_Q,
-        [Description("LV_Q")]
-        LV_Q,
-        [Description("BV_Q")]
-        BV_Q,
-        [Description("MIL_CL")]
-        MIL_CL,
-        [Description("MIL_CXP")]
-        MIL_CXP,
-        [Description("BV_H")]
-        BV_H,
-        [Description("LV_H")]
-        LV_H,
-        [Description("HK_CXP")]
-        HK_CXP,
-        [Description("LV_MIL_CL")]
-        LV_MIL_CL,
-        [Description("MIL_CXP_VIDEO")]
-        MIL_CXP_VIDEO,
-        [Description("CameraType_Total")]
-        CameraType_Total,
-    };
+
 
 
     public enum TakeImageMode
@@ -104,5 +80,15 @@ namespace cvColorVision
         bpp16 = 16,
     }
 
-
+    public enum FovPattern
+    {
+        FovCircle = 0,
+        FovRectangle,
+    };
+    public enum FovType
+    {
+        Horizontal = 0,
+        Vertical,
+        Leaning,
+    };
 }

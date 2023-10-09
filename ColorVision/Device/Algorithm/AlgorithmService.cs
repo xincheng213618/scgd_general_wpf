@@ -5,16 +5,16 @@ using cvColorVision;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Security.Cryptography;
 using System.Windows;
 
 namespace ColorVision.Device.Algorithm
 {
     public class AlgorithmService : BaseService<AlgorithmConfig>
     {
-
         public event DeviceStatusChangedHandler DeviceStatusChanged;
 
-        public DeviceStatus DeviceStatus { get => _DeviceStatus; set { _DeviceStatus = value; Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value)); NotifyPropertyChanged(); } }
+        public DeviceStatus DeviceStatus { get => _DeviceStatus; set { if (value == _DeviceStatus) return;  _DeviceStatus = value; Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value)); NotifyPropertyChanged(); } }
         private DeviceStatus _DeviceStatus;
 
         public static Dictionary<string, ObservableCollection<string>> ServicesDevices { get; set; } = new Dictionary<string, ObservableCollection<string>>();
@@ -84,6 +84,7 @@ namespace ColorVision.Device.Algorithm
             }
             else
             {
+                MessageBox.Show("返回失败" + Environment.NewLine + msg);
                 switch (msg.EventName)
                 {
                     case "GetData":
@@ -109,8 +110,6 @@ namespace ColorVision.Device.Algorithm
         }
 
         public bool IsRun { get; set; }
-        public CameraType CurrentCameraType { get; set; }
-
         public MsgRecord Init()
         {
             MsgSend msg = new MsgSend
@@ -133,8 +132,9 @@ namespace ColorVision.Device.Algorithm
             MsgSend msg = new MsgSend
             {
                 EventName = "GetData",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid },{ "szFileNameX", "X.tif " }, { "szFileNameY", "Y.tif " }, { "szFileNameZ", "Z.tif " } }
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid } }
             };
+            //Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid },{ "eCalibType", (int)eCalibType }, { "szFileNameX", "X.tif " }, { "szFileNameY", "Y.tif " }, { "szFileNameZ", "Z.tif " } }
             return PublishAsyncClient(msg);
         }
 
@@ -148,9 +148,92 @@ namespace ColorVision.Device.Algorithm
                 EventName = "SaveLicense",
                 Params = new Dictionary<string, object>() { { "FileName", md5 }, { "FileData", FileData }, { "eType", 0 }}
             };
-
             return PublishAsyncClient(msg); 
         }
+
+        public MsgRecord FOV(int pid, int Batchid)
+        {
+            MsgSend msg = new MsgSend 
+            { 
+                EventName = "FOV",
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid } }
+            };
+            return PublishAsyncClient(msg);
+        }
+        public MsgRecord MTF(int pid, int Batchid, CalibrationType eCalibType)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "MTF",
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid }  }
+            };
+            return PublishAsyncClient(msg);
+        }
+
+        public MsgRecord SFR(int pid, int Batchid)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "SFR",
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid } }
+            };
+            return PublishAsyncClient(msg);
+        }
+
+        public MsgRecord SFR(int pid, int Batchid,IRECT ROI )
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "SFR",
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid } ,{"x",ROI.x }, { "x", ROI.x }, { "y", ROI.y },{ "cx", ROI.cx }, { "cy", ROI.cy } }
+            };
+            return PublishAsyncClient(msg);
+        }
+
+
+
+        public MsgRecord Ghost(int pid, int Batchid)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "Ghost",
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid } }
+            };
+            return PublishAsyncClient(msg);
+        }
+
+
+
+        public MsgRecord Distortion(int pid, int Batchid)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "Distortion",
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid } }
+            };
+            return PublishAsyncClient(msg);
+        }
+
+        public MsgRecord FocusPoints(int pid, int Batchid)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "FocusPoints",
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid } }
+            };
+            return PublishAsyncClient(msg);
+        }
+
+        public MsgRecord LedCheck(int pid, int Batchid)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "LedCheck",
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid } }
+            };
+            return PublishAsyncClient(msg);
+        }
+
 
         public MsgRecord Close()
         {

@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ColorVision"
         mc:Ignorable="d"
         xmlns:SettingUp ="clr-namespace:ColorVision.SettingUp"
-        d:DataContext="{d:DesignInstance SettingUp:GlobalSetting}"
+        d:DataContext="{d:DesignInstance local:GlobalSetting}"
         Title="MQTT日志" Height="550" Width="800">
     <Window.Resources>
     </Window.Resources>

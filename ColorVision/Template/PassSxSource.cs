@@ -6,11 +6,11 @@ using System.Text;
 
 namespace ColorVision.Template
 {
-    public class SxParam : ParamBase
+    public class SMUParam : ParamBase
     {
-        public SxParam() { }
+        public SMUParam() { }
 
-        public SxParam(ModMasterModel sxMaster, List<ModDetailModel> sxDetail) : base(sxMaster.Id,sxDetail) {
+        public SMUParam(ModMasterModel sxMaster, List<ModDetailModel> sxDetail) : base(sxMaster.Id,sxDetail) {
         }
 
         public double StartMeasureVal

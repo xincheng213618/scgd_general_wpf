@@ -15,7 +15,8 @@ using ColorVision.MQTT;
 using ColorVision.MySql;
 using log4net;
 using System.Diagnostics;
-using ColorVision.Service;
+using ColorVision.Util;
+using ColorVision.Services;
 
 namespace ColorVision
 {
@@ -40,34 +41,33 @@ namespace ColorVision
                 switch (menuItem.Tag?.ToString()??string.Empty)
                 {
                     case "AoiParam":
-                        windowTemplate = new WindowTemplate(WindowTemplateType.AoiParam) { Title = "AOI参数设置" };
-                        TemplateControl.LoadAoiParam();
+                        windowTemplate = new WindowTemplate(TemplateType.AoiParam) { Title = "AOI参数设置" };
                         TemplateAbb(windowTemplate, TemplateControl.AoiParams);
                         break;
                     case "Calibration":
                         Calibration calibration = new Calibration(TemplateControl.CalibrationParams[0].Value);
-                        windowTemplate = new WindowTemplate(WindowTemplateType.Calibration, calibration) { Title = "校正参数设置" };
+                        windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration) { Title = "校正参数设置" };
                         TemplateAbb(windowTemplate, TemplateControl.CalibrationParams);
                         break;
                     case "PGParam":
                         //PG pg = new PG(TemplateControl.PGParams[0].Value);
-                        windowTemplate = new WindowTemplate(WindowTemplateType.PGParam) { Title = "PG设置" };
+                        windowTemplate = new WindowTemplate(TemplateType.PGParam) { Title = "PG设置" };
                         TemplateAbb(windowTemplate, TemplateControl.PGParams);
                         break;
                     case "LedReusltParams":
-                        windowTemplate = new WindowTemplate(WindowTemplateType.LedReuslt) { Title = "数据判断模板设置" };
+                        windowTemplate = new WindowTemplate(TemplateType.LedReuslt) { Title = "数据判断模板设置" };
                         TemplateAbb(windowTemplate, TemplateControl.LedReusltParams);
                         break;
-                    case "SxParms":
-                        windowTemplate = new WindowTemplate(WindowTemplateType.SxParm) { Title = "源表模板设置" };
-                        TemplateAbb(windowTemplate, TemplateControl.SxParams);
+                    case "SMUParam":
+                        windowTemplate = new WindowTemplate(TemplateType.SMUParam) { Title = "源表模板设置" };
+                        TemplateAbb(windowTemplate, TemplateControl.SMUParams);
                         break;
                     case "FocusParm":
-                        windowTemplate = new WindowTemplate(WindowTemplateType.PoiParam) { Title = "关注点设置" };
+                        windowTemplate = new WindowTemplate(TemplateType.PoiParam) { Title = "关注点设置" };
                         TemplateAbb(windowTemplate, TemplateControl.PoiParams);
                         break;
                     case "FlowParam":
-                        windowTemplate = new WindowTemplate(WindowTemplateType.FlowParam) { Title = "流程引擎" };
+                        windowTemplate = new WindowTemplate(TemplateType.FlowParam) { Title = "流程引擎" };
                         TemplateAbb(windowTemplate, TemplateControl.FlowParams);
                         break;
                     case "ServiceParam":
@@ -75,13 +75,32 @@ namespace ColorVision
                         break;
                     case "DeviceParam":
                         new WindowDevices() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-
                         break;
                     case "MeasureParm":
                         MeasureParamControl measure = new MeasureParamControl();
-                        windowTemplate = new WindowTemplate(WindowTemplateType.MeasureParm, measure) { Title = "测量设置" };
+                        windowTemplate = new WindowTemplate(TemplateType.MeasureParm, measure) { Title = "测量设置" };
                         TemplateControl.LoadMeasureParams();
                         TemplateAbb(windowTemplate, TemplateControl.MeasureParams);
+                        break;
+                    case "MTFParam":
+                        windowTemplate = new WindowTemplate(TemplateType.MTFParam) { Title = "MTF算法设置" };
+                        TemplateAbb(windowTemplate, TemplateControl.MTFParams);
+                        break;
+                    case "SFRParam":
+                        windowTemplate = new WindowTemplate(TemplateType.SFRParam) { Title = "SFR算法设置" };
+                        TemplateAbb(windowTemplate, TemplateControl.SFRParams);
+                        break;
+                    case "FOVParam":
+                        windowTemplate = new WindowTemplate(TemplateType.FOVParam) { Title = "FOV算法设置" };
+                        TemplateAbb(windowTemplate, TemplateControl.FOVParams);
+                        break;
+                    case "GhostParam":
+                        windowTemplate = new WindowTemplate(TemplateType.GhostParam) { Title = "Ghost算法设置" };
+                        TemplateAbb(windowTemplate, TemplateControl.GhostParams);
+                        break;
+                    case "DistortionParam":
+                        windowTemplate = new WindowTemplate(TemplateType.DistortionParam) { Title = "Distortion算法设置" };
+                        TemplateAbb(windowTemplate, TemplateControl.DistortionParams);
                         break;
                     default:
                         HandyControl.Controls.Growl.Info("开发中");
@@ -306,31 +325,9 @@ namespace ColorVision
 
         private void Setting_Click(object sender, RoutedEventArgs e)
         {
-            bool hasDefaultProgram = false;
-            try
-            {
-                ProcessStartInfo psi = new ProcessStartInfo(GlobalSetting.GetInstance().SoftwareConfigFileName);
-                psi.UseShellExecute = true;
-                Process.Start(psi);
-                hasDefaultProgram = true;
-            }
-            catch (FileNotFoundException)
-            {
-                hasDefaultProgram = false;
-            }
-            catch
-            {
-                
-            }
-            if (hasDefaultProgram)
-            {
-                System.Diagnostics.Process.Start("explorer.exe", $"{GlobalSetting.GetInstance().SoftwareConfigFileName}");
-            }
-            else
-            {
-                System.Diagnostics.Process.Start("notepad.exe", GlobalSetting.GetInstance().SoftwareConfigFileName);
-
-            }
+            string fileName = GlobalSetting.GetInstance().SoftwareConfigFileName;
+            if (!Tool.HasDefaultProgram(fileName))
+                Process.Start(Tool.HasDefaultProgram(fileName) ? "explorer.exe" : "notepad.exe", fileName);
         }
     }
 }

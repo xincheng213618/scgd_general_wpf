@@ -6,10 +6,14 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using ColorVision.Themes;
-using ColorVision.MQTT.Service;
 using ColorVision.Flow;
 using ColorVision.Device.Algorithm;
 using System.Diagnostics;
+using ColorVision.RC;
+using ColorVision.Services;
+using ColorVision.MySql.DAO;
+using NPOI.SS.Formula.Functions;
+using System.Collections.Generic;
 
 namespace ColorVision
 {
@@ -55,17 +59,15 @@ namespace ColorVision
             };
         }
 
-        private void Window_Initialized(object sender, EventArgs e)
-        {           
+        private  void Window_Initialized(object sender, EventArgs e)
+        {
             GlobalSetting = GlobalSetting.GetInstance();
-            FlowDisplayControl flowDisplayControl = new FlowDisplayControl();
-            SPDisplay.Children.Insert(0, flowDisplayControl);
 
             if (!WindowConfig.IsExist||(WindowConfig.IsExist&& WindowConfig.Icon == null)) {
                 ThemeManager.Current.SystemThemeChanged += (e) => {
-                    this.Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision;component/Image/{(e == Themes.Theme.Light ? "ColorVision.ico" : "ColorVision1.ico")}"));
+                    this.Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision;component/Image/{(e == Theme.Light ? "ColorVision.ico" : "ColorVision1.ico")}"));
                 };
-                if (ThemeManager.Current.SystemTheme == Themes.Theme.Dark)
+                if (ThemeManager.Current.SystemTheme == Theme.Dark)
                     this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
             }
 
@@ -85,8 +87,11 @@ namespace ColorVision
             DeviceAlgorithm deviceAlgorithm = new DeviceAlgorithm(new MySql.DAO.SysResourceModel());
             SPDisplay.Children.Add(deviceAlgorithm.Control);
 
+            FlowDisplayControl flowDisplayControl = new FlowDisplayControl();
+            SPDisplay.Children.Insert(0, flowDisplayControl);
+
             ViewGridManager.GetInstance().SetViewNum(1);
-            this.Closed += (s, e) => {  Environment.Exit(-1); };
+            this.Closed += (s, e) => { Environment.Exit(-1); };
             Debug.WriteLine("启动成功");
         }
 

@@ -20,10 +20,7 @@ namespace ColorVision
 
         protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
         {
-            if (e is null)
-            {
-                throw new ArgumentNullException(nameof(e));
-            }
+            ArgumentNullException.ThrowIfNull(e);
             if (ActivateOn == ModifierKeys.None || Keyboard.Modifiers.HasFlag(ActivateOn))
             {
                 base.OnMouseLeftButtonDown(e);
@@ -32,10 +29,8 @@ namespace ColorVision
 
         protected override void OnMouseWheel(MouseWheelEventArgs e)
         {
-            if (e is null)
-            {
-                throw new ArgumentNullException(nameof(e));
-            }
+            ArgumentNullException.ThrowIfNull(e);
+
             if (ActivateOn == ModifierKeys.None || Keyboard.Modifiers.HasFlag(ActivateOn))
             {
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("OnMouseWheel"));

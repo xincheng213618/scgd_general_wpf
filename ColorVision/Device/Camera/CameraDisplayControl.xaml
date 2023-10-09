@@ -8,10 +8,8 @@
              xmlns:Template ="clr-namespace:ColorVision.Template"
              xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
              xmlns:SettingUp ="clr-namespace:ColorVision.SettingUp"
-             xmlns:converter="clr-namespace:ColorVision.Converter"
              xmlns:cv="clr-namespace:ColorVision"
              xmlns:hc="https://handyorg.github.io/handycontrol"
-
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:CameraService}"
              d:DesignHeight="800" d:DesignWidth="300" Initialized="UserControl_Initialized">
@@ -150,6 +148,8 @@
                         <Button Content="FSR" Click="FSR_Click"/>
                         <Button Content="FOV" Click="FOV_Click"/>
                         <Button Content="鬼影" Click="GhostShadow_Click"/>
+                        <Button Content="AOI" Click="AOI_Click"/>
+
                     </UniformGrid>
 
                     <GroupBox Header="校正" Margin="0,5">

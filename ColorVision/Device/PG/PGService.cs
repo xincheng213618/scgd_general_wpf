@@ -1,5 +1,6 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.Template;
+using MQTTMessageLib;
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using System.Collections.Generic;
@@ -163,14 +164,9 @@ namespace ColorVision.Device.PG
             //Dictionary<string, string> cmd = new Dictionary<string, string>() { { "CM_StartPG", "start\r" }, { "CM_StopPG", "stop\r" }, { "CM_SwitchUpPG", "Switch_UP\r" }, { "CM_SwitchDownPG", "Switch_DOWN\r" }, { "CM_SwitchFramePG", "frame {0}" } };
             //Dictionary<string, string> cmd = new Dictionary<string, string>() { { "CM_StartPG", "open\r" }, { "CM_StopPG", "close\r" }, { "CM_ReSetPG", "reset\r" } , { "CM_SwitchUpPG", "key UP\r" }, { "CM_SwitchDownPG", "key DN\r" }, { "CM_SwitchFramePG", "pat {0}\r" } };
             Dictionary<string, string> cmd;
-            if (PGCategoryLib.ContainsKey(Config.Category))
-            {
-                cmd = PGCategoryLib[Config.Category];
-            }
-            else
-            {
+            if (!PGCategoryLib.TryGetValue(Config.Category,out cmd))
                 cmd = new Dictionary<string, string>();
-            }
+
             MsgSend msg = new MsgSend()
             {
                 Version = "1.0",
@@ -212,7 +208,7 @@ namespace ColorVision.Device.PG
             return true;
         }
 
-        internal void ReLoadCategoryLib()
+        public void ReLoadCategoryLib()
         {
             PGCategoryLib.Clear();
             foreach (var item in TemplateControl.GetInstance().PGParams)
@@ -221,11 +217,52 @@ namespace ColorVision.Device.PG
             }
         }
 
-        internal void CustomPG(string text)
+        public void CustomPG(string text)
         {
             text = text.Replace("\\r","\r");
             text = text.Replace("\\n","\n");
             SetParam(new List<ParamFunction>() { new ParamFunction() { Name = PGParam.CustomKey, Params = new Dictionary<string, object>() { { "cmdTxt", text } } } });
+        }
+
+        public override void UpdateStatus(MQTTNodeService nodeService)
+        {
+            base.UpdateStatus(nodeService);
+            HeartbeatParam heartbeat = new HeartbeatParam();
+            foreach (var item in nodeService.Devices)
+            {
+                if (Config.Code.Equals(item.Key, System.StringComparison.Ordinal))
+                {
+                    switch (item.Value)
+                    {
+                        case DeviceStatusType.Unknown:
+                            heartbeat.DeviceStatus = DeviceStatus.Unknown;
+                            break;
+                        case DeviceStatusType.Closed:
+                            heartbeat.DeviceStatus = DeviceStatus.Closed;
+                            break;
+                        case DeviceStatusType.Closing:
+                            heartbeat.DeviceStatus = DeviceStatus.Closing;
+                            break;
+                        case DeviceStatusType.Opened:
+                            heartbeat.DeviceStatus = DeviceStatus.Opened;
+                            break;
+                        case DeviceStatusType.Opening:
+                            heartbeat.DeviceStatus = DeviceStatus.Opening;
+                            break;
+                        case DeviceStatusType.Busy:
+                            heartbeat.DeviceStatus = DeviceStatus.Busy;
+                            break;
+                        case DeviceStatusType.Free:
+                            heartbeat.DeviceStatus = DeviceStatus.Free;
+                            break;
+                        default:
+                            heartbeat.DeviceStatus = DeviceStatus.Unknown;
+                            break;
+                    }
+                }
+            }
+
+            Application.Current.Dispatcher.Invoke(() => HeartbeatEvent?.Invoke(heartbeat));
         }
     }
 }

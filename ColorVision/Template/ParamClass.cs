@@ -6,6 +6,7 @@ using ColorVision.SettingUp;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
@@ -61,9 +62,9 @@ namespace ColorVision.Template
 
         public ModDetailModel? GetParameter(string key)
         {
-            if (parameters.ContainsKey(key))
+            if (parameters.TryGetValue(key,out ModDetailModel modDetailModel))
             {
-                return parameters[key];
+                return modDetailModel;
             }
             else
             {
@@ -111,37 +112,45 @@ namespace ColorVision.Template
                 if (parameters.TryGetValue(propertyName, out ModDetailModel modDetailModel))
                 {
                     val = modDetailModel.ValueA;
+                    if (typeof(T) == typeof(int))
+                    {
+                        if (string.IsNullOrEmpty(val)) val = "0";
+                        return (T)(object)int.Parse(val);
+                    }
+                    else if (typeof(T) == typeof(string))
+                    {
+                        return (T)(object)val;
+                    }
+                    else if (typeof(T) == typeof(bool))
+                    {
+                        if (string.IsNullOrEmpty(val)) val = "False";
+                        return (T)(object)bool.Parse(val);
+                    }
+                    else if (typeof(T) == typeof(float))
+                    {
+                        if (string.IsNullOrEmpty(val)) val = "0.0";
+                        return (T)(object)float.Parse(val);
+                    }
+                    else if (typeof(T) == typeof(double))
+                    {
+                        if (string.IsNullOrEmpty(val)) val = "0.0";
+                        return (T)(object)double.Parse(val);
+                    }
+                    else if (typeof(T).IsEnum)
+                    {
+                        Enum.TryParse(typeof(T), val, out object obj);
+                        return (T)obj;
+                    }
                 }
-                if (typeof(T) == typeof(int))
-                {
-                    if (string.IsNullOrEmpty(val)) val = "0";
-                    return (T)(object)int.Parse(val);
-                }
-                else if (typeof(T) == typeof(string))
-                {
-                    return (T)(object)val;
-                }
-                else if (typeof(T) == typeof(bool))
-                {
-                    if (string.IsNullOrEmpty(val)) val = "False";
-                    return (T)(object)bool.Parse(val);
-                }
-                else if (typeof(T) == typeof(float))
-                {
-                    if (string.IsNullOrEmpty(val)) val = "0.0";
-                    return (T)(object)float.Parse(val);
-                }
-                else if (typeof(T) == typeof(double))
-                {
-                    if (string.IsNullOrEmpty(val)) val = "0.0";
-                    return (T)(object)double.Parse(val);
-                }
-                return (T)(object)val;
+                return default(T);
+
             }
             return storage;
         }
 
     }
+
+    
 
 
     /// <summary>
@@ -499,6 +508,7 @@ namespace ColorVision.Template
 
     public class MeasureParam : ParamBase
     {
+        public MeasureParam() { }
         public MeasureParam(MeasureMasterModel dbModel)
         {
             this.ID = dbModel.Id;

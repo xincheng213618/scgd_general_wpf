@@ -11,6 +11,29 @@ namespace ColorVision.Util
 {
     public static partial class Tool
     {
+
+        public static bool HasDefaultProgram(string fileName)
+        {
+            bool hasDefaultProgram = false;
+            try
+            {
+                ProcessStartInfo psi = new ProcessStartInfo(fileName);
+                psi.UseShellExecute = true;
+                Process.Start(psi);
+                hasDefaultProgram = true;
+            }
+            catch (FileNotFoundException)
+            {
+                hasDefaultProgram = false;
+            }
+            catch
+            {
+
+            }
+            return hasDefaultProgram;
+        }
+
+
         public static string GetNoRepeatFileName(string DirectoryPath, string FileName,string Ex)
         {
             if (!File.Exists($"{DirectoryPath}\\{FileName}.{Ex}"))

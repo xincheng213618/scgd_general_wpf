@@ -1,4 +1,5 @@
 ﻿using ColorVision.Draw;
+using ColorVision.Draw.Ruler;
 using ColorVision.Extension;
 using ColorVision.MVVM;
 using ColorVision.Util;
@@ -63,21 +64,8 @@ namespace ColorVision
 
             ToolBarTop = new ToolBarTop(this,Zoombox1, ImageShow);
             ToolBar1.DataContext = ToolBarTop;
+            ToolBarTop.ToolBarScaleRuler.ScalRuler.ScaleLocation = ScaleLocation.lowerright;
             ListView1.ItemsSource = DrawingVisualLists;
-            ruler = new DrawingVisualScaleHost();
-
-            this.SizeChanged += (s, e) =>
-            {
-                ruler.ParentWidth = this.ActualWidth;
-                ruler.ParentHeight = this.ActualHeight;
-                ruler.ScaleLocation = ScaleLocation.lowerright;
-                ruler.Render();
-            };
-            ImageShow.ImageInitialized += (s, e) =>
-            {
-                if (!GridEx.Children.Contains(ruler))
-                    GridEx.Children.Add(ruler);
-            };
 
 
             this.Focusable = true;
@@ -156,7 +144,6 @@ namespace ColorVision
             }
         }
 
-        private DrawingVisualScaleHost ruler { get; set; }
 
 
         private void DrawGridImage(DrawingVisual drawingVisual, BitmapImage bitmapImage)
@@ -183,14 +170,6 @@ namespace ColorVision
             }
         }
 
-        private void DrawImageRuler()
-        {
-            if (ImageShow.Source is BitmapSource bitmapSource)
-            {
-                double X = 1 / Zoombox1.ContentMatrix.M11 * bitmapSource.PixelWidth / 100;
-                ruler.Render(X);
-            }
-        }
 
 
         private static void DrawSelectRect(DrawingVisual drawingVisual, Rect rect)
@@ -204,7 +183,6 @@ namespace ColorVision
         private Point MouseDownP;
         private DrawingVisualCircle? SelectDCircle;
         private DrawingVisualRectangle? SelectRectangle;
-
         private DrawingVisualCircle DrawCircleCache;
         private DrawingVisualRectangle DrawingRectangleCache;
         private DrawingVisualPolygon? DrawingVisualPolygonCache;
@@ -491,7 +469,6 @@ namespace ColorVision
 
         private void ImageShow_MouseWheel(object sender, MouseWheelEventArgs e)
         {
-            DrawImageRuler();
         }
 
         private void ImageShow_MouseEnter(object sender, MouseEventArgs e)
@@ -545,7 +522,6 @@ namespace ColorVision
                         OldWindowStatus.WindowStyle = mainWindow.WindowStyle;
                         OldWindowStatus.ResizeMode = mainWindow.ResizeMode;
                         OldWindowStatus.Root = mainWindow.Content;
-
                         mainWindow.WindowStyle = WindowStyle.None;
                         mainWindow.WindowState = WindowState.Maximized;
 
@@ -608,11 +584,6 @@ namespace ColorVision
 
             if (filePath != null && File.Exists(filePath))
             {
-
-                Task.Run(() =>
-                {
-                    OpenCVHelper.ReadVideoTest("23");
-                });
                 ToolBar1.Visibility = Visibility.Visible;
 
             }
@@ -649,13 +620,7 @@ namespace ColorVision
 
         private void ToolBar1_Loaded(object sender, RoutedEventArgs e)
         {
-            //if (sender is ToolBar toolBar)
-            //{
-            //    if (toolBar.Template.FindName("OverflowGrid", toolBar) is FrameworkElement overflowGrid)
-            //        overflowGrid.Visibility = Visibility.Collapsed;
-            //    if (toolBar.Template.FindName("MainPanelBorder", toolBar) is FrameworkElement mainPanelBorder)
-            //        mainPanelBorder.Margin = new Thickness(0);
-            //}
+
         }
 
 
@@ -701,19 +666,14 @@ namespace ColorVision
             }
             
         }
-    }
 
+        private void ToggleButton_Click(object sender, RoutedEventArgs e)
+        {
+            PseudoColor pseudoColor = new PseudoColor();
+            Window window = new Window();
+            window.Content = pseudoColor;
+            window.Show();
 
-    public class ImageInfo : ViewModelBase
-    {
-        public int X { get; set; }
-        public int Y { get; set; }
-        public double X1 { get; set; }
-        public double Y1 { get; set; }
-        public int R { get; set; }
-        public int G { get; set; }
-        public int B { get; set; }
-        public string Hex { get; set; }
-        public SolidColorBrush Color { get; set; }
+        }
     }
 }

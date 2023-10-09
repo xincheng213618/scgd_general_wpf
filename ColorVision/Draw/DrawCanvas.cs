@@ -21,7 +21,7 @@ namespace ColorVision
         public event EventHandler? ImageInitialized;
         public void ImageInitialize()
         {
-            ImageInitialized?.Invoke(this,new EventArgs());
+            ImageInitialized?.Invoke(this, new EventArgs());
         }
 
 

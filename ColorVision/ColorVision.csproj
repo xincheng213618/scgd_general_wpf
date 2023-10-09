@@ -31,19 +31,14 @@
   <ItemGroup>
     <PackageReference Include="Extended.Wpf.Toolkit" Version="4.5.1" />
     <PackageReference Include="Gu.Wpf.Geometry" Version="2.2.8" />
-    <PackageReference Include="HandyControl" Version="3.4.0" />
     <PackageReference Include="log4net" Version="2.0.15" />
-    <PackageReference Include="MQTTnet" Version="4.2.1.781" />
+    <PackageReference Include="MQTTnet" Version="4.3.1.873" />
     <PackageReference Include="MySql.Data" Version="8.1.0" />
     <PackageReference Include="MySqlConnector" Version="2.2.7" />
     <PackageReference Include="NetMQ" Version="4.0.1.13" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="NPOI" Version="2.6.1" />
-    <PackageReference Include="OpenCvSharp4" Version="4.8.0.20230708" />
-    <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.8.0.20230708" />
-    <PackageReference Include="Panuon.WPF.UI" Version="1.1.15.8" />
+    <PackageReference Include="NPOI" Version="2.6.2" />
     <PackageReference Include="ScottPlot.WPF" Version="4.1.67" />
-    <PackageReference Include="WPF-UI" Version="2.1.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -61,12 +56,6 @@
   <ItemGroup>
     <Reference Include="FlowEngineLib">
       <HintPath>..\DLL\FlowEngineLib.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.DwayneNeed">
-      <HintPath>..\DLL\Microsoft.DwayneNeed.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.DwayneNeed.Win32">
-      <HintPath>..\DLL\Microsoft.DwayneNeed.Win32.dll</HintPath>
     </Reference>
     <Reference Include="MQTTMessageLib">
       <HintPath>..\DLL\MQTTMessageLib.dll</HintPath>

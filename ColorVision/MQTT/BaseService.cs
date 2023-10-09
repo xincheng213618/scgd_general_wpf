@@ -2,6 +2,7 @@
 using ColorVision.MVVM;
 using ColorVision.SettingUp;
 using log4net;
+using MQTTMessageLib;
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using System;
@@ -28,7 +29,7 @@ namespace ColorVision.MQTT
 
 
 
-    public class BaseService<T> : BaseService where T :BaseDeviceConfig
+    public class BaseService<T> : BaseService where T : BaseDeviceConfig
     {
         public T Config { get; set; }
 
@@ -36,7 +37,7 @@ namespace ColorVision.MQTT
         public override string SendTopic { get => Config.SendTopic; set { Config.SendTopic = value; } }
         public override int HeartbeatTime { get => Config.HeartbeatTime; set { Config.HeartbeatTime = value; NotifyPropertyChanged(); } }
 
-        public override bool IsAlive { get => Config.IsAlive; set { Config.IsAlive = value; NotifyPropertyChanged(); }   }
+        public override bool IsAlive { get => Config.IsAlive; set { Config.IsAlive = value; NotifyPropertyChanged(); } }
 
         public override DateTime LastAliveTime { get => Config.LastAliveTime; set => Config.LastAliveTime = value; }
 
@@ -53,7 +54,7 @@ namespace ColorVision.MQTT
     }
 
 
-    public class BaseService:ViewModelBase, IHeartbeat, IServiceConfig, IDisposable 
+    public class BaseService : ViewModelBase, IHeartbeat, IServiceConfig, IDisposable
     {
         internal static readonly ILog log = LogManager.GetLogger(typeof(BaseService));
 
@@ -145,8 +146,6 @@ namespace ColorVision.MQTT
         public MsgReturnHandler MsgReturnReceived { get; set; }
         public MsgHandler MsgReceived { get; set; }
 
-        
-
 
         public virtual string SubscribeTopic { get; set; }
         public virtual string SendTopic { get; set; }
@@ -155,14 +154,15 @@ namespace ColorVision.MQTT
         public string SnID { get; set; }
         public string SerialNumber { get; set; }
         public string ServiceName { get; set; }
+        public string ServiceToken { get; set; }
 
         public virtual int HeartbeatTime { get => _HeartbeatTime; set { _HeartbeatTime = value; NotifyPropertyChanged(); } }
         private int _HeartbeatTime = 2000;
 
-        public virtual DateTime LastAliveTime { get => _LastAliveTime; set { _LastAliveTime = value; NotifyPropertyChanged(); } } 
+        public virtual DateTime LastAliveTime { get => _LastAliveTime; set { _LastAliveTime = value; NotifyPropertyChanged(); } }
         private DateTime _LastAliveTime = DateTime.MinValue;
 
-        public virtual bool IsAlive { get => _IsAlive; set {  _IsAlive = value; NotifyPropertyChanged(); } }
+        public virtual bool IsAlive { get => _IsAlive; set { _IsAlive = value; NotifyPropertyChanged(); } }
         private bool _IsAlive;
 
 
@@ -178,11 +178,13 @@ namespace ColorVision.MQTT
         /// <param name="msg"></param>
         internal virtual MsgRecord PublishAsyncClient(MsgSend msg)
         {
-            Guid guid = Guid.NewGuid(); 
+            Guid guid = Guid.NewGuid();
             msg.MsgID = guid;
             msg.ServiceID = ServiceID;
             msg.SnID = SnID;
             msg.SerialNumber = SerialNumber;
+            msg.Version = "1.1";
+            msg.Token = ServiceToken;
             ///这里是为了兼容只前的写法，后面会修改掉
             if (string.IsNullOrWhiteSpace(msg.ServiceName))
             {
@@ -192,7 +194,7 @@ namespace ColorVision.MQTT
 
             Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, json, false));
 
-            MsgRecord msgRecord = new MsgRecord {SendTopic=SendTopic,SubscribeTopic =SubscribeTopic ,MsgID = guid.ToString(), SendTime = DateTime.Now, MsgSend = msg,MsgRecordState = MsgRecordState.Send};
+            MsgRecord msgRecord = new MsgRecord { SendTopic = SendTopic, SubscribeTopic = SubscribeTopic, MsgID = guid.ToString(), SendTime = DateTime.Now, MsgSend = msg, MsgRecordState = MsgRecordState.Send };
 
             Application.Current.Dispatcher.Invoke(() =>
             {
@@ -201,9 +203,9 @@ namespace ColorVision.MQTT
             }
             );
 
-  
 
-            Timer timer = new Timer(MQTTSetting.SendTimeout*1000);
+
+            Timer timer = new Timer(MQTTSetting.SendTimeout * 1000);
             timer.Elapsed += (s, e) =>
             {
                 timer.Enabled = false;
@@ -226,10 +228,15 @@ namespace ColorVision.MQTT
             MQTTControl.ApplicationMessageReceivedAsync -= Processing;
             GC.SuppressFinalize(this);
         }
+
+        public virtual void UpdateStatus(MQTTNodeService nodeService)
+        {
+            ServiceToken = nodeService.ServiceToken;
+        }
     }
 
     public delegate void MsgRecordStateChangedHandler(MsgRecordState msgRecordState);
-    public class MsgRecord:ViewModelBase, IServiceConfig
+    public class MsgRecord : ViewModelBase, IServiceConfig
     {
         public event MsgRecordStateChangedHandler MsgRecordStateChanged;
 
@@ -244,12 +251,14 @@ namespace ColorVision.MQTT
         public MsgSend MsgSend { get; set; }
         public MsgReturn MsgReturn { get; set; }
 
-        public MsgRecordState MsgRecordState { get => _MsgRecordState; set 
+        public MsgRecordState MsgRecordState
+        {
+            get => _MsgRecordState; set
             {
                 _MsgRecordState = value;
                 NotifyPropertyChanged();
-                Application.Current.Dispatcher.Invoke(()=> MsgRecordStateChanged?.Invoke(MsgRecordState));
-                if (value == MsgRecordState.Success ||  value == MsgRecordState.Fail)
+                Application.Current.Dispatcher.Invoke(() => MsgRecordStateChanged?.Invoke(MsgRecordState));
+                if (value == MsgRecordState.Success || value == MsgRecordState.Fail)
                 {
                     NotifyPropertyChanged(nameof(IsRecive));
                     NotifyPropertyChanged(nameof(MsgReturn));

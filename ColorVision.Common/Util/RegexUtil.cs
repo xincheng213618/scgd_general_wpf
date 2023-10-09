@@ -51,7 +51,7 @@ namespace ColorVision.Util
                 }
                 int y = -1;
                 Math.DivRem(sum, 11, out y);
-                if (arrVarifyCode[y] != IDcardNo.Substring(17, 1).ToLower(CultureInfo.CurrentCulture))
+                if (string.Equals(arrVarifyCode[y] ,IDcardNo.Substring(17, 1).ToLower(CultureInfo.CurrentCulture),StringComparison.Ordinal))
                 {
                     return false;//校验码验证  
                 }

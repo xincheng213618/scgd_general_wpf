@@ -315,8 +315,8 @@
     <DrawingImage x:Key="DrawingImageSingleWindow">
         <DrawingImage.Drawing>
             <DrawingGroup ClipGeometry="M0,0 V200 H200 V0 H0 Z">
-                <GeometryDrawing Brush="{StaticResource IconSolidColorBrush}" Geometry="F1 M200,200z M0,0z M40,13.1L160,13.1C177.8,13.1,186.7,22,186.7,39.8L186.7,159.8C186.7,177.6,177.8,186.5,160,186.5L40,186.5C22.2,186.5,13.3,177.6,13.3,159.8L13.3,39.8C13.4,22,22.2,13.1,40,13.1z" />
-                <GeometryDrawing Brush="{StaticResource IconSolidColorBackgroundBrush}" Geometry="F1 M200,200z M0,0z M43.9,28.2L156.1,28.2C164.2,28.2 170.8,34.8 170.8,42.9 170.8,42.9 170.8,42.9 170.8,42.9L170.8,156.8C170.8,164.9,164.2,171.5,156.1,171.5L156.1,171.5 43.9,171.5C35.8,171.5,29.2,164.9,29.2,156.8L29.2,156.8 29.2,42.8C29.3,34.7,35.8,28.2,43.9,28.2L43.9,28.2z" />
+                <GeometryDrawing Brush="{StaticResource IconSolidColorBrush}" Geometry="F1 M200,200z M0,0z M37.7,10.6L162.3,10.6C180.8,10.6,190,19.8,190,38.3L190,163.1C190,181.6,180.8,190.8,162.3,190.8L37.7,190.8C19.2,190.8,10,181.6,10,163.1L10,38.3C10,19.8,19.2,10.5,37.7,10.6z" />
+                <GeometryDrawing Brush="{StaticResource IconSolidColorBackgroundBrush}" Geometry="F1 M200,200z M0,0z M38.3,21.7L163,21.7C172,21.7 179.3,28.9 179.3,37.9 179.3,37.9 179.3,37.9 179.3,37.9L179.3,163.4C179.3,172.3,172,179.6,163,179.6L163,179.6 38.3,179.6C29.3,179.6,22,172.4,22,163.4L22,163.4 22,37.9C22,28.9,29.3,21.7,38.3,21.7L38.3,21.7z" />
             </DrawingGroup>
         </DrawingImage.Drawing>
     </DrawingImage>

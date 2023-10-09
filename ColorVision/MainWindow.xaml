@@ -51,11 +51,18 @@
                     <MenuItem Header="关注点模板设置(_P)" Tag="FocusParm" Click="MenuItem_Template"/>
                     <MenuItem Header="测量模板设置(_S)" Tag="MeasureParm" Click="MenuItem_Template"/>
                     <Separator/>
-                    <MenuItem Header="_AOI参数模板设置" Tag="AoiParam" Click="MenuItem_Template"/>
                     <MenuItem Header="校正模板设置(_C)" Tag="Calibration"  Click="MenuItem_Template"/>
-                    <MenuItem Header="PG模板设置(_C)" Tag="PGParam"  Click="MenuItem_Template"/>
                     <MenuItem Header="数据判断模板设置(_J)" Tag="LedReusltParams"  Click="MenuItem_Template"/>
-                    <MenuItem Header="源表模板设置(_V)"  Tag="SxParms" Click="MenuItem_Template"/>
+                    <Separator/>
+                    <MenuItem Header="PG模板设置(_G)" Tag="PGParam"  Click="MenuItem_Template"/>
+                    <MenuItem Header="源表模板设置(_V)"  Tag="SMUParam" Click="MenuItem_Template"/>
+                    <Separator/>
+                    <MenuItem Header="_AOI参数模板设置" Tag="AoiParam" Click="MenuItem_Template"/>
+                    <MenuItem Header="MTF模板设置(_M)"  Tag="MTFParam" Click="MenuItem_Template"/>
+                    <MenuItem Header="SFR模板设置(_S)"  Tag="SFRParam" Click="MenuItem_Template"/>
+                    <MenuItem Header="FOV模板设置(_F)"  Tag="FOVParam" Click="MenuItem_Template"/>
+                    <MenuItem Header="鬼影模板设置(_H)"  Tag="GhostParam" Click="MenuItem_Template"/>
+                    <MenuItem Header="畸变模板设置(_D)"  Tag="DistortionParam" Click="MenuItem_Template"/>
                 </MenuItem>
                 <MenuItem Header="{x:Static resx:Resource.MenuTool}">
                     <MenuItem Header="流程引擎(_F)" Click="MenuItem9_Click"/>
@@ -71,7 +78,7 @@
                         </MenuItem.Icon>
                     </MenuItem>
                 </MenuItem>
-                <MenuItem  x:Name="MenuStatusBar"  d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  Header="{ x:Static resx:Resource.MenuView}">
+                <MenuItem  x:Name="MenuStatusBar"  d:DataContext="{d:DesignInstance local:SoftwareConfig}"  Header="{ x:Static resx:Resource.MenuView}">
                     <MenuItem Header="{x:Static resx:Resource.MenuViewStatusBar}" IsChecked="{Binding SoftwareSetting.IsOpenStatusBar}"  Click="MenuStatusBar_Click" />
                     <Separator/>
                     <MenuItem Header="保存窗口布局"  Click="MenuStatusBar_Click" />
@@ -100,23 +107,24 @@
             <Grid Grid.Column="1" x:Name="MainContent">
                 <Grid x:Name="ViewGrid"  Background="LightGray"/>
             </Grid>
-            <Grid Grid.Row="0" Panel.ZIndex="101" Background="{DynamicResource GlobalBackground}" Margin="-1,0,0,0" x:Name="LeftMainContent" d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  Visibility="{Binding SoftwareSetting.IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" >
+            <Grid Grid.Row="0" Panel.ZIndex="101" Background="{DynamicResource GlobalBackground}" Margin="-1,0,0,0" x:Name="LeftMainContent" d:DataContext="{d:DesignInstance local:SoftwareConfig}"  Visibility="{Binding SoftwareSetting.IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" >
                 <UIElement.RenderTransform>
                     <TranslateTransform />
                 </UIElement.RenderTransform>
                 <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" >
                     <StackPanel x:Name="SPDisplay" >
                         <Viewbox Width="{Binding ElementName=LeftMainContent,Path=ActualWidth}" >
-                            <StackPanel x:Name="StackPanelMQTT" Width="300" Initialized="StackPanelMQTT_Initialized"  >
+                            <StackPanel x:Name="StackPanelMQTT" Width="300" Initialized="StackPanelMQTT_Initialized" >
                             </StackPanel>
                         </Viewbox>
+
                     </StackPanel>
                 </ScrollViewer>
             </Grid>
             <GridSplitter Panel.ZIndex="102" x:Name="GridSplitter" Margin="0,26,0,26" Grid.Column="0" HorizontalAlignment="Right" Width="4" Background="Transparent"/>
             <Button Grid.Column="0" x:Name="ButtonShiftIn" Visibility="Collapsed" Click="OnLeftMainContentShiftIn" hc:IconElement.Geometry="{StaticResource RightGeometry}" Padding="8 8 0 8" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-12 0 0 0" Style="{StaticResource ButtonIconCircular}" />
         </Grid>
-        <Grid Grid.Row="2" x:Name="StatusBarGrid" d:DataContext="{d:DesignInstance SettingUp:GlobalSetting}" Visibility="{Binding SoftwareConfig.SoftwareSetting.IsOpenStatusBar,Converter={StaticResource bool2VisibilityConverter}}" >
+        <Grid Grid.Row="2" x:Name="StatusBarGrid" d:DataContext="{d:DesignInstance local:GlobalSetting}" Visibility="{Binding SoftwareConfig.SoftwareSetting.IsOpenStatusBar,Converter={StaticResource bool2VisibilityConverter}}" >
             <StatusBar>
                 <StatusBar.ItemsPanel>
                     <ItemsPanelTemplate>

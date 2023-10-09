@@ -32,8 +32,6 @@ namespace ColorVision.Draw
             };
         }
 
-
-
         public override void Render()
         {
             using DrawingContext dc = RenderOpen();

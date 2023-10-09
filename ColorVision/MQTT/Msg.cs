@@ -16,6 +16,7 @@ namespace ColorVision.MQTT
         public string Version { get; set; }
         public string EventName { get; set; }
         public string ServiceName { get; set; }
+        public string Token { get; set; }
         //服务ID,这里用的指针转换后的常量，所以是用ulong,本地不保存，会直接发送过去，
         public ulong ServiceID { get; set; }
         public string SerialNumber { get; set; }
@@ -25,6 +26,8 @@ namespace ColorVision.MQTT
         public Guid MsgID { get; set; }
         [JsonProperty("params")]
         public dynamic Params { get; set; }
+
+        public override string ToString() =>JsonConvert.ToString(this);
     }
 
     public delegate void MsgReturnHandler(MsgReturn msg);
@@ -42,6 +45,7 @@ namespace ColorVision.MQTT
         public string MsgID { get; set; }
         [JsonProperty("data")]
         public dynamic Data { get; set; }
+        public override string ToString() => JsonConvert.ToString(this);
     }
 
     public class ParamFunction
@@ -49,5 +53,6 @@ namespace ColorVision.MQTT
         public string Name { get; set; }
         [JsonProperty("params")]
         public dynamic Params { get; set; }
+        public override string ToString() => JsonConvert.ToString(this);
     }
 }
