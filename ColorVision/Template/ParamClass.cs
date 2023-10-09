@@ -135,7 +135,11 @@ namespace ColorVision.Template
                         if (string.IsNullOrEmpty(val)) val = "0.0";
                         return (T)(object)double.Parse(val);
                     }
-                    return (T)(object)val;
+                    else if (typeof(T).IsEnum)
+                    {
+                        Enum.TryParse(typeof(T), val, out object obj);
+                        return (T)obj;
+                    }
                 }
                 return default(T);
 
