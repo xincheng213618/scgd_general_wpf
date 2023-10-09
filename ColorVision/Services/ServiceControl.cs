@@ -57,6 +57,18 @@ namespace ColorVision.Services
             StackPanel = new StackPanel();
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => Reload();
             Reload();
+
+            System.Timers.Timer hbTimer = new System.Timers.Timer(5000);
+            hbTimer.Elapsed += new System.Timers.ElapsedEventHandler(timer_KeepLive);
+            //hbTimer.Interval = heartbeatTime;
+            hbTimer.Enabled = true;
+
+            GC.KeepAlive(hbTimer);
+        }
+
+        private void timer_KeepLive(object? sender, System.Timers.ElapsedEventArgs e)
+        {
+            rcService.KeepLive(5000);
         }
 
         public ObservableCollection<BaseDevice> LastGenControl { get; set; }
@@ -170,6 +182,11 @@ namespace ColorVision.Services
             return resultService.BatchSave(model);
         }
 
+        private string GetServiceKey(string svrType,string svrCode)
+        {
+            return svrType +":"+ svrCode;
+        }
+
         public void Reload()
         {
             MQTTServices.Clear();
@@ -188,7 +205,8 @@ namespace ColorVision.Services
                     if (service.Type == item.Value)
                     {
                         MQTTService mQTTService = new MQTTService(service);
-                        svrDevices.Add(service.Code, new List<BaseService>());
+                        string svrKey = GetServiceKey(service.TypeCode, service.Code);
+                        svrDevices.Add(svrKey, new List<BaseService>());
 
                         foreach (var device in devices)
                         {
@@ -242,7 +260,7 @@ namespace ColorVision.Services
                             {
                                 //mQTTService.AddChild(devObj);
                                 //MQTTDevices.Add(devObj);
-                                svrDevices[service.Code].Add(svrObj);
+                                svrDevices[svrKey].Add(svrObj);
                             }
                         }
                         mQTTServicetype.AddChild(mQTTService);
@@ -265,9 +283,10 @@ namespace ColorVision.Services
         {
             foreach (MQTTNodeService nodeService in data)
             {
-                if (svrDevices.ContainsKey(nodeService.ServiceName))
+                string svrKey = GetServiceKey(nodeService.ServiceType, nodeService.ServiceName);
+                if (svrDevices.ContainsKey(svrKey))
                 {
-                    foreach (BaseService svr in svrDevices[nodeService.ServiceName])
+                    foreach (BaseService svr in svrDevices[svrKey])
                     {
                         svr.UpdateStatus(nodeService);
                     }

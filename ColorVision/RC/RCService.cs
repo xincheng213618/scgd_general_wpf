@@ -4,6 +4,8 @@ using MQTTMessageLib;
 using MQTTMessageLib.RC;
 using MQTTnet.Client;
 using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -23,6 +25,7 @@ namespace ColorVision.RC
             NodeAppId = "app1";
             NodeKey = "123456";
             NodeType = "client";
+            ServiceName = Guid.NewGuid().ToString();
             SubscribeTopic = MQTTRCServiceTypeConst.RCServiceType + "/Node/" + NodeName;
 
             MQTTControl = MQTTControl.GetInstance();
@@ -92,6 +95,14 @@ namespace ColorVision.RC
         public void PublishAsyncClient(string topic, string json)
         {
             Task.Run(() => MQTTControl.PublishAsyncClient(topic, json, false));
+        }
+
+        public void KeepLive(int heartbeatTime)
+        {
+            List<DeviceHeartbeat> deviceStatues = new List<DeviceHeartbeat>();
+            string serviceHeartbeat = JsonConvert.SerializeObject(new MQTTServiceHeartbeat(NodeName, SubscribeTopic, "", NodeType, ServiceName, deviceStatues, Token.AccessToken, (int)(heartbeatTime * 1.5f)));
+
+            PublishAsyncClient(MQTTRCServiceTypeConst.RCHeartbeatTopic, serviceHeartbeat);
         }
     }
 }
