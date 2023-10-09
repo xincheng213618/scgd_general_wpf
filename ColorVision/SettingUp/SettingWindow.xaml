@@ -124,46 +124,6 @@
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
-            <TabItem  Header="用户设置">
-                <TabItem.Style>
-                    <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">
-                        <Style.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Opacity" Value="0.8" />
-                                <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
-                            </Trigger>
-                        </Style.Triggers>
-                        <Setter Property="Background" Value="Transparent"/>
-                    </Style>
-                </TabItem.Style>
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled" Background="{DynamicResource GlobalBorderBrush}" VerticalScrollBarVisibility="Auto" >
-                    <StackPanel>
-                        <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
-                            <GroupBox.Header>
-                                <TextBlock Text="用户" FontSize="20"/>
-                            </GroupBox.Header>
-                            <Border  Style="{StaticResource BorderModuleArea}" Height="150" >
-                                <Grid Margin="5">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    
-                                    <hc:Gravatar Style="{StaticResource  GravatarCircle}"  Margin="20,0">
-                                        <Image x:Name="HeaderImage" Source="/ColorVision;component/Image/ColorVision.png"  Stretch="UniformToFill" />
-                                    </hc:Gravatar>
-
-                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0">
-                                        <TextBlock Text="{Binding UserConfig.UserName}"/>
-                                        <TextBlock Text="{Binding UserConfig.UserPwd}"/>
-                                    </StackPanel>
-                                </Grid>
-
-                            </Border>
-                        </GroupBox>
-                    </StackPanel>
-                </ScrollViewer>
-            </TabItem>
             <TabItem  Header="工程设置" >
                 <TabItem.Style>
                     <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">

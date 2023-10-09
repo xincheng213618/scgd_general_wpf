@@ -14,14 +14,14 @@ namespace ColorVision.Template
 {
     public enum TemplateType
     {
-        AoiParam,
-        Calibration,
-        PGParam,
-        LedReuslt,
-        SMUParam,
-        PoiParam,
         FlowParam,
         MeasureParm,
+        Calibration,
+        LedReuslt,
+        AoiParam,
+        PGParam,
+        SMUParam,
+        PoiParam,
         MTFParam,
         SFRParam,
         FOVParam,
