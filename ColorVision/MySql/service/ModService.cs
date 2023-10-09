@@ -4,7 +4,7 @@ using ColorVision.Template;
 
 namespace ColorVision.MySql.Service
 {
-    public class ModMasterType
+    public partial class ModMasterType
     {
         public const string Flow = "flow"; 
         public const string Aoi = "AOI"; 
@@ -12,6 +12,7 @@ namespace ColorVision.MySql.Service
         public const string PG = "pg";
         public const string MTF = "MTF";
         public const string SFR = "SFR";
+        public const string FOV = "SFR";
 
     }
     public class ModService

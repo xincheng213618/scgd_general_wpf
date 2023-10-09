@@ -230,7 +230,7 @@ namespace ColorVision.Device.PG
             HeartbeatParam heartbeat = new HeartbeatParam();
             foreach (var item in nodeService.Devices)
             {
-                if (Config.Code.Equals(item.Key))
+                if (Config.Code.Equals(item.Key, System.StringComparison.Ordinal))
                 {
                     switch (item.Value)
                     {

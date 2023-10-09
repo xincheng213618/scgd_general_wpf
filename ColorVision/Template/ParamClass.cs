@@ -111,63 +111,38 @@ namespace ColorVision.Template
                 if (parameters.TryGetValue(propertyName, out ModDetailModel modDetailModel))
                 {
                     val = modDetailModel.ValueA;
-                }
-                if (typeof(T) == typeof(int))
-                {
-                    if (string.IsNullOrEmpty(val)) val = "0";
-                    return (T)(object)int.Parse(val);
-                }
-                else if (typeof(T) == typeof(string))
-                {
+                    if (typeof(T) == typeof(int))
+                    {
+                        if (string.IsNullOrEmpty(val)) val = "0";
+                        return (T)(object)int.Parse(val);
+                    }
+                    else if (typeof(T) == typeof(string))
+                    {
+                        return (T)(object)val;
+                    }
+                    else if (typeof(T) == typeof(bool))
+                    {
+                        if (string.IsNullOrEmpty(val)) val = "False";
+                        return (T)(object)bool.Parse(val);
+                    }
+                    else if (typeof(T) == typeof(float))
+                    {
+                        if (string.IsNullOrEmpty(val)) val = "0.0";
+                        return (T)(object)float.Parse(val);
+                    }
+                    else if (typeof(T) == typeof(double))
+                    {
+                        if (string.IsNullOrEmpty(val)) val = "0.0";
+                        return (T)(object)double.Parse(val);
+                    }
                     return (T)(object)val;
                 }
-                else if (typeof(T) == typeof(bool))
-                {
-                    if (string.IsNullOrEmpty(val)) val = "False";
-                    return (T)(object)bool.Parse(val);
-                }
-                else if (typeof(T) == typeof(float))
-                {
-                    if (string.IsNullOrEmpty(val)) val = "0.0";
-                    return (T)(object)float.Parse(val);
-                }
-                else if (typeof(T) == typeof(double))
-                {
-                    if (string.IsNullOrEmpty(val)) val = "0.0";
-                    return (T)(object)double.Parse(val);
-                }
-                return (T)(object)val;
+                return default(T);
+
             }
             return storage;
         }
 
-    }
-    
-
-
-    #pragma warning disable CA1707
-    public class MTFParam : ParamBase
-    {
-        public MTFParam() { }
-        public MTFParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modDetails)
-        {
-        }
-
-        [Category("MTF"), Description("MTF dRatio")]
-        public double MTF_dRatio { get => GetValue(_MTF_dRatio); set { SetProperty(ref _MTF_dRatio, value); } }
-        private double _MTF_dRatio =0.01;
-    }
-
-    public class SFRParam : ParamBase
-    {
-        public SFRParam() { }
-        public SFRParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modDetails)
-        {
-        }
-
-        [Category("SFR"), Description("SFR gamma")]
-        public double SFR_gamma { get => GetValue(_SFR_gamma); set { SetProperty(ref _SFR_gamma, value); } }
-        private double _SFR_gamma = 0.01;
     }
 
     

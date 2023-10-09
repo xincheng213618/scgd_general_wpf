@@ -89,10 +89,9 @@ namespace ColorVision.RC
             }
         }
 
-        public MsgRecord PublishAsyncClient(string topic, string json)
+        public void PublishAsyncClient(string topic, string json)
         {
             Task.Run(() => MQTTControl.PublishAsyncClient(topic, json, false));
-            return null;
         }
     }
 }

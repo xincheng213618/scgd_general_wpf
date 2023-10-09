@@ -1,8 +1,10 @@
-﻿using ColorVision.Extension;
+﻿#pragma warning disable CS8604
+using ColorVision.Extension;
 using ColorVision.MySql;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.SettingUp;
+using ColorVision.Template.Algorithm;
 using ColorVision.Util;
 using cvColorVision.Util;
 using NPOI.SS.Formula.Functions;
@@ -15,6 +17,21 @@ using System.Windows;
 
 namespace ColorVision.Template
 {
+    public enum WindowTemplateType
+    {
+        AoiParam,
+        Calibration,
+        PGParam,
+        LedReuslt,
+        SMUParam,
+        PoiParam,
+        FlowParam,
+        MeasureParm,
+        MTFParam,
+        SFRParam,
+        FOVParam,
+    }
+
     /// <summary>
     /// 模板管理
     /// </summary>
@@ -57,7 +74,7 @@ namespace ColorVision.Template
 
             MTFParams = new ObservableCollection<KeyValuePair<string, MTFParam>>();
             SFRParams = new ObservableCollection<KeyValuePair<string, SFRParam>>();
-            
+            FOVParams = new ObservableCollection<KeyValuePair<string, FOVParam>>();
 
             GlobalSetting.GetInstance().SoftwareConfig.UseMySqlChanged += (s) =>
             {
@@ -85,6 +102,7 @@ namespace ColorVision.Template
             LoadModParam(PGParams, ModMasterType.PG);
             LoadModParam(SFRParams, ModMasterType.SFR);
             LoadModParam(MTFParams, ModMasterType.MTF);
+            LoadModParam(FOVParams, ModMasterType.FOV);
         }
 
         /// 这里是初始化模板的封装，因为模板的代码高度统一，所以使用泛型T来设置具体的模板参数。
@@ -167,6 +185,9 @@ namespace ColorVision.Template
                     break;
                 case WindowTemplateType.SFRParam:
                     Save(SFRParams, ModMasterType.SFR);
+                    break;
+                case WindowTemplateType.FOVParam:
+                    Save(FOVParams, ModMasterType.FOV);
                     break;
                 case WindowTemplateType.PoiParam:
                     SaveDefault(FileNamePoiParms, PoiParams);
@@ -502,6 +523,8 @@ namespace ColorVision.Template
 
         public ObservableCollection<KeyValuePair<string, MTFParam>> MTFParams { get; set; }
         public ObservableCollection<KeyValuePair<string, SFRParam>> SFRParams { get; set; }
+
+        public ObservableCollection<KeyValuePair<string, FOVParam>> FOVParams { get; set; }
 
 
 

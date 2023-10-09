@@ -1102,17 +1102,7 @@ namespace cvColorVision
         public int cy;
     };
 
-    public enum FovPattern
-    {
-        FovCircle = 0,
-        FovRectangle,
-    };
-    public enum FovType
-    {
-        Horizontal = 0,
-        Vertical,
-        Leaning,
-    };
+
 
 
     public enum CVOLED_ERROR

@@ -80,5 +80,15 @@ namespace cvColorVision
         bpp16 = 16,
     }
 
-
+    public enum FovPattern
+    {
+        FovCircle = 0,
+        FovRectangle,
+    };
+    public enum FovType
+    {
+        Horizontal = 0,
+        Vertical,
+        Leaning,
+    };
 }

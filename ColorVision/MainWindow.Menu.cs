@@ -90,6 +90,10 @@ namespace ColorVision
                         windowTemplate = new WindowTemplate(WindowTemplateType.SFRParam) { Title = "SFR算法设置" };
                         TemplateAbb(windowTemplate, TemplateControl.SFRParams);
                         break;
+                    case "FOVParam":
+                        windowTemplate = new WindowTemplate(WindowTemplateType.FOVParam) { Title = "FOV算法设置" };
+                        TemplateAbb(windowTemplate, TemplateControl.FOVParams);
+                        break;
                     default:
                         HandyControl.Controls.Growl.Info("开发中");
                         break;

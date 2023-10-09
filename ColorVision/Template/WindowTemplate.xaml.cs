@@ -3,6 +3,7 @@ using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.SettingUp;
+using ColorVision.Template.Algorithm;
 using ColorVision.Util;
 using System;
 using System.Collections.Generic;
@@ -29,19 +30,7 @@ namespace ColorVision.Template
         public object? Value { set; get; }
     }
 
-    public enum WindowTemplateType
-    {
-        AoiParam,
-        Calibration,
-        PGParam,
-        LedReuslt,
-        SMUParam,
-        PoiParam,
-        FlowParam,
-        MeasureParm,
-        MTFParam,
-        SFRParam,
-    }
+
 
 
     /// <summary>
@@ -286,6 +275,10 @@ namespace ColorVision.Template
                     SFRParam? sFRParam = TemplateControl.AddParamMode<SFRParam>(ModMasterType.SFR, TextBox1.Text);
                     if (sFRParam != null) CreateNewTemplate(TemplateControl.SFRParams, TextBox1.Text, sFRParam);
                     else MessageBox.Show("数据库创建MTF模板失败"); break;
+                case WindowTemplateType.FOVParam:
+                    FOVParam? fOVParam = TemplateControl.AddParamMode<FOVParam>(ModMasterType.FOV, TextBox1.Text);
+                    if (fOVParam != null) CreateNewTemplate(TemplateControl.FOVParams, TextBox1.Text, fOVParam);
+                    else MessageBox.Show("数据库创建MTF模板失败"); break;
                 case WindowTemplateType.PoiParam:
                     PoiParam? poiParam = TemplateControl.AddPoiParam(TextBox1.Text);
                     if (poiParam != null) CreateNewTemplate(TemplateControl.PoiParams, TextBox1.Text, poiParam);
@@ -328,6 +321,9 @@ namespace ColorVision.Template
                     break;
                 case WindowTemplateType.SFRParam:
                     CreateNewTemplate(TemplateControl.SFRParams, TextBox1.Text, new SFRParam() { });
+                    break;
+                case WindowTemplateType.FOVParam:
+                    CreateNewTemplate(TemplateControl.FOVParams, TextBox1.Text, new FOVParam() { });
                     break;
                 case WindowTemplateType.PoiParam:
                     CreateNewTemplate(TemplateControl.PoiParams, TextBox1.Text , new PoiParam() { });
@@ -410,6 +406,11 @@ namespace ColorVision.Template
                             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
                                 TemplateControl.ModMasterDeleteById(TemplateControl.SFRParams[ListView1.SelectedIndex].Value.ID);
                             TemplateControl.SFRParams.RemoveAt(ListView1.SelectedIndex);
+                            break;
+                        case WindowTemplateType.FOVParam:
+                            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+                                TemplateControl.ModMasterDeleteById(TemplateControl.FOVParams[ListView1.SelectedIndex].Value.ID);
+                            TemplateControl.FOVParams.RemoveAt(ListView1.SelectedIndex);
                             break;
                         case WindowTemplateType.FlowParam:
                             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
