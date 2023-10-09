@@ -279,16 +279,19 @@ namespace ColorVision.Services
             SpectrumDrawPlotFromDB(flowControlData.SerialNumber);
         }
 
-        public void UpdateStatus(List<MQTTNodeService> data)
+        public void UpdateStatus(Dictionary<string, List<MQTTNodeService>> data)
         {
-            foreach (MQTTNodeService nodeService in data)
+            foreach (var item in data)
             {
-                string svrKey = GetServiceKey(nodeService.ServiceType, nodeService.ServiceName);
-                if (svrDevices.ContainsKey(svrKey))
+                foreach(var nodeService in item.Value)
                 {
-                    foreach (BaseService svr in svrDevices[svrKey])
+                    string svrKey = GetServiceKey(nodeService.ServiceType, nodeService.ServiceName);
+                    if (svrDevices.ContainsKey(svrKey))
                     {
-                        svr.UpdateStatus(nodeService);
+                        foreach (BaseService svr in svrDevices[svrKey])
+                        {
+                            svr.UpdateStatus(nodeService);
+                        }
                     }
                 }
             }

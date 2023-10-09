@@ -17,11 +17,13 @@ namespace ColorVision.RC
         private string NodeType;
         private string NodeAppId;
         private string NodeKey;
+        private string DevcieName;
         private NodeToken Token;
         public RCService(RCConfig config) : base(config)
         {
             Config = config;
             NodeName = "client.node.1";
+            DevcieName = "dev.192.168.1.7";
             NodeAppId = "app1";
             NodeKey = "123456";
             NodeType = "client";
@@ -100,9 +102,12 @@ namespace ColorVision.RC
         public void KeepLive(int heartbeatTime)
         {
             List<DeviceHeartbeat> deviceStatues = new List<DeviceHeartbeat>();
-            string serviceHeartbeat = JsonConvert.SerializeObject(new MQTTServiceHeartbeat(NodeName, SubscribeTopic, "", NodeType, ServiceName, deviceStatues, Token.AccessToken, (int)(heartbeatTime * 1.5f)));
+            deviceStatues.Add(new DeviceHeartbeat(DevcieName, DeviceStatusType.Opened));
+            string serviceHeartbeat = JsonConvert.SerializeObject(new MQTTServiceHeartbeat(NodeName, "", "", NodeType, ServiceName, deviceStatues, Token.AccessToken, (int)(heartbeatTime * 1.5f)));
 
             PublishAsyncClient(MQTTRCServiceTypeConst.RCHeartbeatTopic, serviceHeartbeat);
+
+            QueryServices();
         }
     }
 }
