@@ -94,6 +94,14 @@ namespace ColorVision
                         windowTemplate = new WindowTemplate(TemplateType.FOVParam) { Title = "FOV算法设置" };
                         TemplateAbb(windowTemplate, TemplateControl.FOVParams);
                         break;
+                    case "GhostParam":
+                        windowTemplate = new WindowTemplate(TemplateType.GhostParam) { Title = "Ghost算法设置" };
+                        TemplateAbb(windowTemplate, TemplateControl.GhostParams);
+                        break;
+                    case "DistortionParam":
+                        windowTemplate = new WindowTemplate(TemplateType.DistortionParam) { Title = "Distortion算法设置" };
+                        TemplateAbb(windowTemplate, TemplateControl.DistortionParams);
+                        break;
                     default:
                         HandyControl.Controls.Growl.Info("开发中");
                         break;
