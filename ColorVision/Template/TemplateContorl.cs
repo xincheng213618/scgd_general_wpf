@@ -17,7 +17,7 @@ using System.Windows;
 
 namespace ColorVision.Template
 {
-    public enum WindowTemplateType
+    public enum TemplateType
     {
         AoiParam,
         Calibration,
@@ -30,7 +30,85 @@ namespace ColorVision.Template
         MTFParam,
         SFRParam,
         FOVParam,
+        GhostParam,
+        DistortionParam
     }
+
+    public class TemplateTypeFactory 
+    { 
+        public static TemplateType GetWindowTemplateType(string code)
+        {
+            return code switch
+            {
+                ModMasterType.Aoi => TemplateType.AoiParam,
+                ModMasterType.PG => TemplateType.PGParam,
+                ModMasterType.SMU => TemplateType.SMUParam,
+                ModMasterType.MTF => TemplateType.MTFParam,
+                ModMasterType.SFR => TemplateType.SFRParam,
+                ModMasterType.FOV => TemplateType.FOVParam,
+                ModMasterType.Ghost => TemplateType.GhostParam,
+                ModMasterType.Distortion => TemplateType.DistortionParam,
+                _ => TemplateType.AoiParam,
+            };
+        }
+
+        public static string GetModeTemplateType(TemplateType windowTemplateType)
+        {
+            return windowTemplateType switch
+            {
+                TemplateType.AoiParam => ModMasterType.Aoi,
+                TemplateType.PGParam => ModMasterType.PG,
+                TemplateType.SMUParam => ModMasterType.SMU,
+                TemplateType.MTFParam => ModMasterType.MTF,
+                TemplateType.SFRParam => ModMasterType.SFR,
+                TemplateType.FOVParam => ModMasterType.FOV,
+                TemplateType.GhostParam => ModMasterType.Ghost,
+                TemplateType.DistortionParam => ModMasterType.Distortion,
+                _ => string.Empty,
+            };
+        }
+
+        public static ParamBase CreateParam(TemplateType windowTemplateType)
+        {
+            return windowTemplateType switch
+            {
+                TemplateType.AoiParam => new AoiParam(),
+                TemplateType.Calibration => new CalibrationParam(),
+                TemplateType.PGParam => new PGParam(),
+                TemplateType.LedReuslt => new LedReusltParam(),
+                TemplateType.SMUParam => new SMUParam(),
+                TemplateType.PoiParam => new PoiParam(),
+                TemplateType.FlowParam => new FlowParam(),
+                TemplateType.MeasureParm => new MeasureParam(),
+                TemplateType.MTFParam => new MTFParam(),
+                TemplateType.SFRParam => new SFRParam(),
+                TemplateType.FOVParam => new FOVParam(),
+                TemplateType.GhostParam => new GhostParam(),
+                TemplateType.DistortionParam => new DistortionParam(),
+                _ => new ParamBase(),
+            };
+        }
+        public static ParamBase CreateModeParam(TemplateType windowTemplateType, ModMasterModel  modMasterModel, List<ModDetailModel>  modDetailModels)
+        {
+            return windowTemplateType switch
+            {
+                TemplateType.AoiParam => new AoiParam(modMasterModel, modDetailModels),
+                TemplateType.Calibration => new CalibrationParam(modMasterModel, modDetailModels),
+                TemplateType.PGParam => new PGParam(modMasterModel, modDetailModels),
+                TemplateType.LedReuslt => new LedReusltParam(modMasterModel, modDetailModels),
+                TemplateType.SMUParam => new SMUParam(modMasterModel, modDetailModels),
+                TemplateType.FlowParam => new FlowParam(modMasterModel, modDetailModels),
+                TemplateType.MTFParam => new MTFParam(modMasterModel, modDetailModels),
+                TemplateType.SFRParam => new SFRParam(modMasterModel, modDetailModels),
+                TemplateType.FOVParam => new FOVParam(modMasterModel, modDetailModels),
+                TemplateType.GhostParam => new GhostParam(modMasterModel, modDetailModels),
+                TemplateType.DistortionParam => new DistortionParam(modMasterModel, modDetailModels),
+                _ => new ParamBase(),
+            };
+        }
+    }
+
+
 
     /// <summary>
     /// 模板管理
@@ -42,12 +120,9 @@ namespace ColorVision.Template
         private static readonly object _locker = new();
         public static TemplateControl GetInstance() { lock (_locker) { return _instance ??= new TemplateControl(); } }
 
-        private static string FileNameAoiParams = "cfg\\AOIParamSetup.cfg";
         private static string FileNameCalibrationParams = "cfg\\CalibrationSetup.cfg";
-        private static string FileNamePGParams = "cfg\\PGParamSetup.cfg";
-
         private static string FileNameLedJudgeParams = "cfg\\LedJudgeSetup.cfg";
-        private static string FileNameSxParms = "cfg\\SxParamSetup.cfg";
+
         private static string FileNamePoiParms = "cfg\\PoiParmSetup.cfg";
         private static string FileNameFlowParms = "cfg\\FlowParmSetup.cfg";
 
@@ -75,6 +150,9 @@ namespace ColorVision.Template
             MTFParams = new ObservableCollection<KeyValuePair<string, MTFParam>>();
             SFRParams = new ObservableCollection<KeyValuePair<string, SFRParam>>();
             FOVParams = new ObservableCollection<KeyValuePair<string, FOVParam>>();
+            GhostParams = new ObservableCollection<KeyValuePair<string, GhostParam>>();
+            DistortionParams = new ObservableCollection<KeyValuePair<string, DistortionParam>>();
+            
 
             GlobalSetting.GetInstance().SoftwareConfig.UseMySqlChanged += (s) =>
             {
@@ -97,12 +175,18 @@ namespace ColorVision.Template
             LoadPoiParam();
             LoadFlowParam();
 
+            DicTemplate.TryAdd("Poi", PoiParams);
+            DicTemplate.TryAdd("Flow", FlowParams);
+            DicTemplate.TryAdd("Calibration", CalibrationParams);
+            DicTemplate.TryAdd("LedReuslt", LedReusltParams);
             LoadModParam(AoiParams, ModMasterType.Aoi);
             LoadModParam(SMUParams, ModMasterType.SMU);
             LoadModParam(PGParams, ModMasterType.PG);
             LoadModParam(SFRParams, ModMasterType.SFR);
             LoadModParam(MTFParams, ModMasterType.MTF);
             LoadModParam(FOVParams, ModMasterType.FOV);
+            LoadModParam(GhostParams, ModMasterType.Ghost);
+            LoadModParam(DistortionParams, ModMasterType.Distortion);
         }
 
         /// 这里是初始化模板的封装，因为模板的代码高度统一，所以使用泛型T来设置具体的模板参数。
@@ -147,52 +231,53 @@ namespace ColorVision.Template
             return Params;
         }
 
-
+        private Dictionary<string, object> DicTemplate = new Dictionary<string, object>();
 
         public void CSVSave()
         {
-            SaveDefault(FileNameAoiParams, AoiParams);
-            SaveDefault(FileNameCalibrationParams, CalibrationParams);
-            SaveDefault(FileNamePGParams, PGParams);
-            SaveDefault(FileNameLedJudgeParams, LedReusltParams);
-            SaveDefault(FileNameSxParms, SMUParams);
-            SaveDefault(FileNamePoiParms, PoiParams);
-            SaveDefault(FileNameFlowParms, FlowParams);
+            foreach (var item in DicTemplate)
+                CfgFile.Save(item.Key, item.Value);
         }
 
 
-        public void Save(WindowTemplateType windowTemplateType)
+        public void Save(TemplateType windowTemplateType)
         {
             switch (windowTemplateType)
             {
-                case WindowTemplateType.Calibration:
+                case TemplateType.Calibration:
                     SaveDefault(FileNameCalibrationParams, CalibrationParams);
                     break;
-                case WindowTemplateType.LedReuslt:
+                case TemplateType.LedReuslt:
                     SaveDefault(FileNameLedJudgeParams, LedReusltParams);
                     break;
-                case WindowTemplateType.AoiParam:
+                case TemplateType.AoiParam:
                     Save(AoiParams, ModMasterType.Aoi);
                     break;
-                case WindowTemplateType.PGParam:
+                case TemplateType.PGParam:
                     Save(PGParams, ModMasterType.PG);
                     break;
-                case WindowTemplateType.SMUParam:
+                case TemplateType.SMUParam:
                     Save(SMUParams, ModMasterType.SMU);
                     break;
-                case WindowTemplateType.MTFParam:
+                case TemplateType.MTFParam:
                     Save(MTFParams, ModMasterType.MTF);
                     break;
-                case WindowTemplateType.SFRParam:
+                case TemplateType.SFRParam:
                     Save(SFRParams, ModMasterType.SFR);
                     break;
-                case WindowTemplateType.FOVParam:
+                case TemplateType.FOVParam:
                     Save(FOVParams, ModMasterType.FOV);
                     break;
-                case WindowTemplateType.PoiParam:
+                case TemplateType.GhostParam:
+                    Save(GhostParams, ModMasterType.Ghost);
+                    break;
+                case TemplateType.DistortionParam:
+                    Save(DistortionParams, ModMasterType.Distortion);
+                    break;
+                case TemplateType.PoiParam:
                     SaveDefault(FileNamePoiParms, PoiParams);
                     break;
-                case WindowTemplateType.FlowParam:
+                case TemplateType.FlowParam:
                     SaveDefault(FileNameFlowParms, FlowParams);
                     break;
                 default:
@@ -371,6 +456,7 @@ namespace ColorVision.Template
 
         private void LoadModParam<T>(ObservableCollection<KeyValuePair<string, T>> ParamModes, string ModeType) where T : ParamBase,new ()
         {
+            DicTemplate.TryAdd(ModeType, AoiParams);
             ParamModes.Clear();
             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
             {
@@ -525,6 +611,9 @@ namespace ColorVision.Template
         public ObservableCollection<KeyValuePair<string, SFRParam>> SFRParams { get; set; }
 
         public ObservableCollection<KeyValuePair<string, FOVParam>> FOVParams { get; set; }
+
+        public ObservableCollection<KeyValuePair<string,GhostParam>> GhostParams { get; set; }
+        public ObservableCollection<KeyValuePair<string, DistortionParam>> DistortionParams { get; set; }
 
 
 

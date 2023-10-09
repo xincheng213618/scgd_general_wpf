@@ -507,6 +507,7 @@ namespace ColorVision.Template
 
     public class MeasureParam : ParamBase
     {
+        public MeasureParam() { }
         public MeasureParam(MeasureMasterModel dbModel)
         {
             this.ID = dbModel.Id;

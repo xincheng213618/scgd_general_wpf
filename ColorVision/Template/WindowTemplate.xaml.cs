@@ -38,9 +38,9 @@ namespace ColorVision.Template
     /// </summary>
     public partial class WindowTemplate : Window
     {
-        WindowTemplateType TemplateType { get; set; }
+        TemplateType TemplateType { get; set; }
         TemplateControl TemplateControl { get;set; }
-        public WindowTemplate(WindowTemplateType windowTemplateType)
+        public WindowTemplate(TemplateType windowTemplateType)
         {
             TemplateType = windowTemplateType;
             TemplateControl = TemplateControl.GetInstance();
@@ -49,8 +49,8 @@ namespace ColorVision.Template
 
             switch (TemplateType)
             {
-                case WindowTemplateType.FlowParam:
-                case WindowTemplateType.PoiParam:
+                case TemplateType.FlowParam:
+                case TemplateType.PoiParam:
 
                     GridProperty.Visibility = Visibility.Collapsed;
                     Grid.SetColumnSpan(TemplateGrid, 2);
@@ -66,7 +66,7 @@ namespace ColorVision.Template
 
         }
         public UserControl  UserControl { get; set; }
-        public WindowTemplate(WindowTemplateType windowTemplateType,UserControl userControl)
+        public WindowTemplate(TemplateType windowTemplateType,UserControl userControl)
         {
             TemplateType = windowTemplateType;
             TemplateControl = TemplateControl.GetInstance();
@@ -83,7 +83,7 @@ namespace ColorVision.Template
         {
             switch (TemplateType)
             {
-                case WindowTemplateType.PoiParam:
+                case TemplateType.PoiParam:
                     TemplateGrid.Header = "点集";
                     this.MinWidth = 390;
                     this.Width = 390;
@@ -92,7 +92,7 @@ namespace ColorVision.Template
                         TemplateControl.Save(TemplateType);
                     };
                     break;
-                case WindowTemplateType.FlowParam:
+                case TemplateType.FlowParam:
                     TemplateGrid.Header = "流程";
                     Button button = new Button() { Content = "导入流程", Width =80};
                     button.Click += (s, e) =>
@@ -165,7 +165,7 @@ namespace ColorVision.Template
             {
                 switch (TemplateType)
                 {
-                    case WindowTemplateType.PoiParam:
+                    case TemplateType.PoiParam:
                         if (ListConfigs[listView.SelectedIndex].Value is PoiParam poiParam)
                         {
                             var WindowFocusPoint = new WindowFocusPoint(poiParam) { Owner = this };
@@ -177,7 +177,7 @@ namespace ColorVision.Template
                             WindowFocusPoint.Show();
                         }
                         break;
-                    case WindowTemplateType.FlowParam:
+                    case TemplateType.FlowParam:
                         if (ListConfigs[listView.SelectedIndex].Value is FlowParam flowParam)
                         {
                             flowParam.Name ??= ListConfigs[listView.SelectedIndex].Name;
@@ -196,14 +196,14 @@ namespace ColorVision.Template
             {
                 switch (TemplateType)
                 {
-                    case WindowTemplateType.Calibration:
+                    case TemplateType.Calibration:
                         if (UserControl is Calibration calibration && ListConfigs[listView.SelectedIndex].Value is CalibrationParam calibrationParam)
                         {
                             calibration.DataContext = calibrationParam;
                             calibration.CalibrationParam = calibrationParam;
                         }
                         break;
-                    case WindowTemplateType.MeasureParm:
+                    case TemplateType.MeasureParm:
                         if (UserControl is MeasureParamControl mpc && ListConfigs[listView.SelectedIndex].Value is MeasureParam mp)
                         {
                             mpc.MasterID = mp.ID;
@@ -244,52 +244,60 @@ namespace ColorVision.Template
             switch (TemplateType)
             {
 
-                case WindowTemplateType.Calibration:
+                case TemplateType.Calibration:
                     CreateNewTemplate(TemplateControl.CalibrationParams, TextBox1.Text, new CalibrationParam());
                     break;
-                case WindowTemplateType.LedReuslt:
+                case TemplateType.LedReuslt:
                     CreateNewTemplate(TemplateControl.LedReusltParams, TextBox1.Text, new LedReusltParam());
                     break;
-                case WindowTemplateType.AoiParam:
-                    AoiParam? aoiParam = TemplateControl.AddParamMode<AoiParam>(ModMasterType.Aoi, TextBox1.Text);
+                case TemplateType.AoiParam:
+                    AoiParam? aoiParam = TemplateControl.AddParamMode<AoiParam>(TemplateTypeFactory.GetModeTemplateType(TemplateType), TextBox1.Text);
                     if (aoiParam != null) CreateNewTemplate(TemplateControl.AoiParams, TextBox1.Text, aoiParam);
                     else MessageBox.Show("数据库创建AOI模板失败");
                     break;
-                case WindowTemplateType.PGParam:
-                    PGParam? pgParam = TemplateControl.AddParamMode<PGParam>(ModMasterType.PG, TextBox1.Text);
+                case TemplateType.PGParam:
+                    PGParam? pgParam = TemplateControl.AddParamMode<PGParam>(TemplateTypeFactory.GetModeTemplateType(TemplateType), TextBox1.Text);
                     if (pgParam != null) CreateNewTemplate(TemplateControl.PGParams, TextBox1.Text, pgParam);
                     else MessageBox.Show("数据库创建PG模板失败");
                     break;
 
-                case WindowTemplateType.SMUParam:
-                    SMUParam?  sMUParam = TemplateControl.AddParamMode<SMUParam>(ModMasterType.SMU, TextBox1.Text);
+                case TemplateType.SMUParam:
+                    SMUParam?  sMUParam = TemplateControl.AddParamMode<SMUParam>(TemplateTypeFactory.GetModeTemplateType(TemplateType), TextBox1.Text);
                     if (sMUParam != null) CreateNewTemplate(TemplateControl.SMUParams, TextBox1.Text, sMUParam);
                     else MessageBox.Show("数据库创建源表模板失败");
                     break;
-                case WindowTemplateType.MTFParam:
-                    MTFParam? mTFParam = TemplateControl.AddParamMode<MTFParam>(ModMasterType.MTF, TextBox1.Text);
+                case TemplateType.MTFParam:
+                    MTFParam? mTFParam = TemplateControl.AddParamMode<MTFParam>(TemplateTypeFactory.GetModeTemplateType(TemplateType), TextBox1.Text);
                     if (mTFParam != null) CreateNewTemplate(TemplateControl.MTFParams, TextBox1.Text, mTFParam);
                     else MessageBox.Show("数据库创建MTF模板失败");
                     break;
-                case WindowTemplateType.SFRParam:
-                    SFRParam? sFRParam = TemplateControl.AddParamMode<SFRParam>(ModMasterType.SFR, TextBox1.Text);
+                case TemplateType.SFRParam:
+                    SFRParam? sFRParam = TemplateControl.AddParamMode<SFRParam>(TemplateTypeFactory.GetModeTemplateType(TemplateType), TextBox1.Text);
                     if (sFRParam != null) CreateNewTemplate(TemplateControl.SFRParams, TextBox1.Text, sFRParam);
                     else MessageBox.Show("数据库创建MTF模板失败"); break;
-                case WindowTemplateType.FOVParam:
-                    FOVParam? fOVParam = TemplateControl.AddParamMode<FOVParam>(ModMasterType.FOV, TextBox1.Text);
+                case TemplateType.FOVParam:
+                    FOVParam? fOVParam = TemplateControl.AddParamMode<FOVParam>(TemplateTypeFactory.GetModeTemplateType(TemplateType), TextBox1.Text);
                     if (fOVParam != null) CreateNewTemplate(TemplateControl.FOVParams, TextBox1.Text, fOVParam);
-                    else MessageBox.Show("数据库创建MTF模板失败"); break;
-                case WindowTemplateType.PoiParam:
+                    else MessageBox.Show("数据库创建FOV模板失败"); break;
+                case TemplateType.GhostParam:
+                    GhostParam? ghostParam = TemplateControl.AddParamMode<GhostParam>(TemplateTypeFactory.GetModeTemplateType(TemplateType), TextBox1.Text);
+                    if (ghostParam != null) CreateNewTemplate(TemplateControl.GhostParams, TextBox1.Text, ghostParam);
+                    else MessageBox.Show("数据库创建Ghost模板失败"); break;
+                case TemplateType.DistortionParam:
+                    DistortionParam? distortionParam = TemplateControl.AddParamMode<DistortionParam>(TemplateTypeFactory.GetModeTemplateType(TemplateType), TextBox1.Text);
+                    if (distortionParam != null) CreateNewTemplate(TemplateControl.DistortionParams, TextBox1.Text, distortionParam);
+                    else MessageBox.Show("数据库创建Distortion模板失败"); break;
+                case TemplateType.PoiParam:
                     PoiParam? poiParam = TemplateControl.AddPoiParam(TextBox1.Text);
                     if (poiParam != null) CreateNewTemplate(TemplateControl.PoiParams, TextBox1.Text, poiParam);
                     else MessageBox.Show("数据库创建POI模板失败");
                     break;
-                case WindowTemplateType.FlowParam:
+                case TemplateType.FlowParam:
                     FlowParam? flowParam = TemplateControl.AddFlowParam(TextBox1.Text);
                     if (flowParam != null) CreateNewTemplate(TemplateControl.FlowParams, TextBox1.Text, flowParam);
                     else MessageBox.Show("数据库创建流程模板失败");
                     break;
-                case WindowTemplateType.MeasureParm:
+                case TemplateType.MeasureParm:
                     MeasureParam? measureParam = TemplateControl.AddMeasureParam(TextBox1.Text);
                     if (measureParam != null) CreateNewTemplate(TemplateControl.MeasureParams, TextBox1.Text, measureParam);
                     else MessageBox.Show("数据库创建流程模板失败");
@@ -301,34 +309,40 @@ namespace ColorVision.Template
         {
             switch (TemplateType)
             {
-                case WindowTemplateType.AoiParam:
+                case TemplateType.AoiParam:
                     CreateNewTemplate(TemplateControl.AoiParams, TextBox1.Text, new AoiParam());
                     break;
-                case WindowTemplateType.Calibration:
+                case TemplateType.Calibration:
                     CreateNewTemplate(TemplateControl.CalibrationParams, TextBox1.Text, new CalibrationParam());
                     break;
-                case WindowTemplateType.PGParam:
+                case TemplateType.PGParam:
                     CreateNewTemplate(TemplateControl.PGParams, TextBox1.Text, new PGParam());
                     break;
-                case WindowTemplateType.LedReuslt:
+                case TemplateType.LedReuslt:
                     CreateNewTemplate(TemplateControl.LedReusltParams, TextBox1.Text, new LedReusltParam());
                     break;
-                case WindowTemplateType.SMUParam:
+                case TemplateType.SMUParam:
                     CreateNewTemplate(TemplateControl.SMUParams, TextBox1.Text, new SMUParam());
                     break;
-                case WindowTemplateType.MTFParam:
+                case TemplateType.MTFParam:
                     CreateNewTemplate(TemplateControl.MTFParams, TextBox1.Text, new MTFParam() { });
                     break;
-                case WindowTemplateType.SFRParam:
+                case TemplateType.SFRParam:
                     CreateNewTemplate(TemplateControl.SFRParams, TextBox1.Text, new SFRParam() { });
                     break;
-                case WindowTemplateType.FOVParam:
+                case TemplateType.FOVParam:
                     CreateNewTemplate(TemplateControl.FOVParams, TextBox1.Text, new FOVParam() { });
                     break;
-                case WindowTemplateType.PoiParam:
+                case TemplateType.GhostParam:
+                    CreateNewTemplate(TemplateControl.GhostParams, TextBox1.Text, new GhostParam() { });
+                    break;
+                case TemplateType.DistortionParam:
+                    CreateNewTemplate(TemplateControl.DistortionParams, TextBox1.Text, new DistortionParam() { });
+                    break;
+                case TemplateType.PoiParam:
                     CreateNewTemplate(TemplateControl.PoiParams, TextBox1.Text , new PoiParam() { });
                     break;
-                case WindowTemplateType.FlowParam:
+                case TemplateType.FlowParam:
                     CreateNewTemplate(TemplateControl.FlowParams, TextBox1.Text, new FlowParam() { Name = TextBox1.Text });
                     break;
             }
@@ -365,66 +379,60 @@ namespace ColorVision.Template
 
         private void Button_Del_Click(object sender, RoutedEventArgs e)
         {
+            void TemplateDel<T>(ObservableCollection<KeyValuePair<string, T>> keyValuePairs) where T : ParamBase
+            {
+                if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+                    TemplateControl.ModMasterDeleteById(keyValuePairs[ListView1.SelectedIndex].Value.ID);
+                keyValuePairs.RemoveAt(ListView1.SelectedIndex);
+            }
+
             if (ListView1.SelectedIndex > -1)
             {
                 if (MessageBox.Show($"是否删除模板{ListView1.SelectedIndex+1},删除后无法恢复!", Application.Current.MainWindow.Title, MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK)
                 {
                     switch (TemplateType)
                     {
-                        case WindowTemplateType.AoiParam:
-                            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
-                                TemplateControl.ModMasterDeleteById(TemplateControl.AoiParams[ListView1.SelectedIndex].Value.ID);
-                            TemplateControl.AoiParams.RemoveAt(ListView1.SelectedIndex);
+                        case TemplateType.AoiParam:
+                            TemplateDel(TemplateControl.AoiParams);
                             break;
-                        case WindowTemplateType.Calibration:
+                        case TemplateType.Calibration:
                             TemplateControl.CalibrationParams.RemoveAt(ListView1.SelectedIndex);
                             break;
-                        case WindowTemplateType.PGParam:
-                            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
-                                TemplateControl.ModMasterDeleteById(TemplateControl.PGParams[ListView1.SelectedIndex].Value.ID);
-                            TemplateControl.PGParams.RemoveAt(ListView1.SelectedIndex);
+                        case TemplateType.PGParam:
+                            TemplateDel(TemplateControl.PGParams);
                             break;
-                        case WindowTemplateType.LedReuslt:
+                        case TemplateType.LedReuslt:
                             TemplateControl.LedReusltParams.RemoveAt(ListView1.SelectedIndex);
                             break;
-                        case WindowTemplateType.SMUParam:
-                            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
-                                TemplateControl.ModMasterDeleteById(TemplateControl.SMUParams[ListView1.SelectedIndex].Value.ID);
-                            TemplateControl.SMUParams.RemoveAt(ListView1.SelectedIndex);
+                        case TemplateType.SMUParam:
+                            TemplateDel(TemplateControl.SMUParams);
                             break;
-                        case WindowTemplateType.PoiParam:
-                            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
-                                TemplateControl.PoiMasterDeleteById(TemplateControl.PoiParams[ListView1.SelectedIndex].Value.ID);
-                            TemplateControl.PoiParams.RemoveAt(ListView1.SelectedIndex);
+                        case TemplateType.PoiParam:
+                            TemplateDel(TemplateControl.PoiParams);
                             break;
-                        case WindowTemplateType.MTFParam:
-                            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
-                                TemplateControl.ModMasterDeleteById(TemplateControl.MTFParams[ListView1.SelectedIndex].Value.ID);
-                            TemplateControl.MTFParams.RemoveAt(ListView1.SelectedIndex);
+                        case TemplateType.MTFParam:
+                            TemplateDel(TemplateControl.MTFParams);
                             break;
-                        case WindowTemplateType.SFRParam:
-                            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
-                                TemplateControl.ModMasterDeleteById(TemplateControl.SFRParams[ListView1.SelectedIndex].Value.ID);
-                            TemplateControl.SFRParams.RemoveAt(ListView1.SelectedIndex);
+                        case TemplateType.SFRParam:
+                            TemplateDel(TemplateControl.SFRParams);
                             break;
-                        case WindowTemplateType.FOVParam:
-                            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
-                                TemplateControl.ModMasterDeleteById(TemplateControl.FOVParams[ListView1.SelectedIndex].Value.ID);
-                            TemplateControl.FOVParams.RemoveAt(ListView1.SelectedIndex);
+                        case TemplateType.FOVParam:
+                            TemplateDel(TemplateControl.FOVParams);
                             break;
-                        case WindowTemplateType.FlowParam:
-                            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
-                                TemplateControl.ModMasterDeleteById(TemplateControl.FlowParams[ListView1.SelectedIndex].Value.ID);
-                            TemplateControl.FlowParams.RemoveAt(ListView1.SelectedIndex);
+                        case TemplateType.GhostParam:
+                            TemplateDel(TemplateControl.GhostParams);
                             break;
-                        case WindowTemplateType.MeasureParm:
-                            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
-                            {
-                                TemplateControl.MeasureMasterDeleteById(TemplateControl.MeasureParams[ListView1.SelectedIndex].Value.ID);
-                            }
-                            TemplateControl.MeasureParams.RemoveAt(ListView1.SelectedIndex);
+                        case TemplateType.DistortionParam:
+                            TemplateDel(TemplateControl.DistortionParams);
+                            break;
+                        case TemplateType.FlowParam:
+                            TemplateDel(TemplateControl.FlowParams);
+                            break;
+                        case TemplateType.MeasureParm:
+                            TemplateDel(TemplateControl.MeasureParams);
                             break;
                     }
+
                     ListConfigs.RemoveAt(ListView1.SelectedIndex);
                     ListView1.SelectedIndex = ListConfigs.Count - 1;
                     if (ListView1.SelectedIndex < 0)
