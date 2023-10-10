@@ -4,6 +4,8 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -45,6 +47,48 @@ namespace ColorVision
 
                 }
             };
+
+            DoubleAnimationUsingKeyFrames doubleAnimationUsingKeyFramesX = new DoubleAnimationUsingKeyFrames();
+            doubleAnimationUsingKeyFramesX.Duration = TimeSpan.FromSeconds(0.8);
+            doubleAnimationUsingKeyFramesX.RepeatBehavior = RepeatBehavior.Forever;
+            doubleAnimationUsingKeyFramesX.KeyFrames.Add(new LinearDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0))));
+            doubleAnimationUsingKeyFramesX.KeyFrames.Add(new LinearDoubleKeyFrame(1, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0.025))));
+            doubleAnimationUsingKeyFramesX.KeyFrames.Add(new LinearDoubleKeyFrame(1, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0.05))));
+            doubleAnimationUsingKeyFramesX.KeyFrames.Add(new LinearDoubleKeyFrame(1, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0.075))));
+            doubleAnimationUsingKeyFramesX.KeyFrames.Add(new LinearDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0.1))));
+            doubleAnimationUsingKeyFramesX.KeyFrames.Add(new LinearDoubleKeyFrame(-1, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0.125))));
+            doubleAnimationUsingKeyFramesX.KeyFrames.Add(new LinearDoubleKeyFrame(-1, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0.15))));
+            doubleAnimationUsingKeyFramesX.KeyFrames.Add(new LinearDoubleKeyFrame(-1, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0.175))));
+            doubleAnimationUsingKeyFramesX.KeyFrames.Add(new LinearDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0.2))));
+            AnimationClock myClockX = doubleAnimationUsingKeyFramesX.CreateClock();
+
+            DoubleAnimationUsingKeyFrames doubleAnimationUsingKeyFramesY = new DoubleAnimationUsingKeyFrames();
+            doubleAnimationUsingKeyFramesY.Duration = TimeSpan.FromSeconds(0.2);
+            doubleAnimationUsingKeyFramesY.RepeatBehavior = RepeatBehavior.Forever;
+            doubleAnimationUsingKeyFramesY.KeyFrames.Add(new LinearDoubleKeyFrame(1, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0))));
+            doubleAnimationUsingKeyFramesY.KeyFrames.Add(new LinearDoubleKeyFrame(1, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0.025))));
+            doubleAnimationUsingKeyFramesY.KeyFrames.Add(new LinearDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0.05))));
+            doubleAnimationUsingKeyFramesY.KeyFrames.Add(new LinearDoubleKeyFrame(-1, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0.075))));
+            doubleAnimationUsingKeyFramesY.KeyFrames.Add(new LinearDoubleKeyFrame(-1, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0.1))));
+            doubleAnimationUsingKeyFramesY.KeyFrames.Add(new LinearDoubleKeyFrame(-1, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0.125))));
+            doubleAnimationUsingKeyFramesY.KeyFrames.Add(new LinearDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0.15))));
+            doubleAnimationUsingKeyFramesY.KeyFrames.Add(new LinearDoubleKeyFrame(1, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0.175))));
+            doubleAnimationUsingKeyFramesY.KeyFrames.Add(new LinearDoubleKeyFrame(1, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0.2))));
+            AnimationClock myClockY = doubleAnimationUsingKeyFramesY.CreateClock();
+
+
+
+            TranslateTransform translateTransform = new TranslateTransform();
+            translateTransform.ApplyAnimationClock(TranslateTransform.XProperty, myClockX);
+            translateTransform.ApplyAnimationClock(TranslateTransform.YProperty, myClockY);
+            ImageLogo.RenderTransform = translateTransform;
+
+       }
+
+        private static double GetRandomNumber(double minimum, double maximum)
+        {
+            Random random = new Random();
+            return random.NextDouble() * (maximum - minimum) + minimum;
         }
 
         private static SolidColorBrush RainbowAnimation()
@@ -99,6 +143,11 @@ namespace ColorVision
                 this.Close();
                 e.Handled = true;
             }
+        }
+
+        private void ImageLogo_Initialized(object sender, EventArgs e)
+        {
+
         }
     }
 }
