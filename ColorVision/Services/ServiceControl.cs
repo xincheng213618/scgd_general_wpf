@@ -43,6 +43,7 @@ namespace ColorVision.Services
 
         private Dictionary<string, List<BaseService>> svrDevices;
         private RCService rcService;
+        private int heartbeatTime;
 
         public ServiceControl()
         {
@@ -58,9 +59,9 @@ namespace ColorVision.Services
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => Reload();
             Reload();
 
-            System.Timers.Timer hbTimer = new System.Timers.Timer(5000);
+            this.heartbeatTime = 10 * 1000;
+            System.Timers.Timer hbTimer = new System.Timers.Timer(heartbeatTime);
             hbTimer.Elapsed += new System.Timers.ElapsedEventHandler(timer_KeepLive);
-            //hbTimer.Interval = heartbeatTime;
             hbTimer.Enabled = true;
 
             GC.KeepAlive(hbTimer);
@@ -68,7 +69,7 @@ namespace ColorVision.Services
 
         private void timer_KeepLive(object? sender, System.Timers.ElapsedEventArgs e)
         {
-            rcService.KeepLive(5000);
+            rcService.KeepLive(heartbeatTime);
         }
 
         public ObservableCollection<BaseDevice> LastGenControl { get; set; }
@@ -261,6 +262,7 @@ namespace ColorVision.Services
                             {
                                 //mQTTService.AddChild(devObj);
                                 //MQTTDevices.Add(devObj);
+                                svrObj.ServiceName = service.Code;
                                 svrDevices[svrKey].Add(svrObj);
                             }
                         }

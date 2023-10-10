@@ -39,6 +39,7 @@ namespace ColorVision.MQTT
         public string Version { get; set; }
         public string EventName { get; set; }
         public string ServiceName { get; set; }
+        public string DeviceName { get; set; }
         public ulong ServiceID { get; set; }
         public string? SnID { get; set; }
         public int Code { get; set; }
