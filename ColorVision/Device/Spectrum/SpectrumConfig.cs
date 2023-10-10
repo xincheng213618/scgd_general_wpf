@@ -27,6 +27,11 @@ namespace ColorVision.Device.Spectrum
         }
     }
 
+    public class SpectumDeviceHeartbeatParam : DeviceHeartbeatParam
+    {
+        public bool IsAutoGetData { get; set; }
+    }
+
     public class SpectumHeartbeatParam : HeartbeatParam
     {
         public bool IsAutoGetData { get; set; }

@@ -60,42 +60,55 @@ namespace ColorVision.Device.Spectrum
                     SpectrumDrawPlot(e);
             };
 
+            SpectrumService.HeartbeatEvent += e =>
+            {
+                doHeartbeat(e);
+            };
+
             SpectrumService.HeartbeatHandlerEvent += (e) =>
             {
-                if (e.DeviceStatus == DeviceStatus.Opened)
-                {
-                    btn_connect.Content = "关闭";
-                }
-                else if(e.DeviceStatus == DeviceStatus.Closed)
-                {
-                    btn_connect.Content = "打开";
-                }
-                else if (e.DeviceStatus == DeviceStatus.Opening)
-                {
-                    btn_connect.Content = "打开中";
-                }
-                else if (e.DeviceStatus == DeviceStatus.Closing)
-                {
-                    btn_connect.Content = "关闭中";
-                }
-                else if (e.DeviceStatus == DeviceStatus.Busy)
-                {
-                    enableBtn(false);
-                }
-                else if (e.DeviceStatus == DeviceStatus.Free)
-                {
-                    enableBtn(true);
-                }
-
-                if (e.IsAutoGetData)
-                {
-                    btn_autoTest.Content = "取消自动测试";
-                }
-                else
-                {
-                    btn_autoTest.Content = "自动测试";
-                }
+                doSpectrumHeartbeat(e);
             };
+        }
+        private void doHeartbeat(HeartbeatParam e)
+        {
+            if (e.DeviceStatus == DeviceStatus.Opened)
+            {
+                btn_connect.Content = "关闭";
+            }
+            else if (e.DeviceStatus == DeviceStatus.Closed)
+            {
+                btn_connect.Content = "打开";
+            }
+            else if (e.DeviceStatus == DeviceStatus.Opening)
+            {
+                btn_connect.Content = "打开中";
+            }
+            else if (e.DeviceStatus == DeviceStatus.Closing)
+            {
+                btn_connect.Content = "关闭中";
+            }
+            else if (e.DeviceStatus == DeviceStatus.Busy)
+            {
+                enableBtn(false);
+            }
+            else if (e.DeviceStatus == DeviceStatus.Free)
+            {
+                enableBtn(true);
+            }
+        }
+        private void doSpectrumHeartbeat(SpectumHeartbeatParam e)
+        {
+            doHeartbeat(e);
+
+            if (e.IsAutoGetData)
+            {
+                btn_autoTest.Content = "取消自动测试";
+            }
+            else
+            {
+                btn_autoTest.Content = "自动测试";
+            }
         }
 
         private void enableBtn(bool enable)

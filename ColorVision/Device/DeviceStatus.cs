@@ -1,7 +1,11 @@
-﻿namespace ColorVision.Device
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+
+namespace ColorVision.Device
 {
     public delegate void DeviceStatusChangedHandler(DeviceStatus deviceStatus);
 
+    [JsonConverter(typeof(StringEnumConverter))]
     public enum DeviceStatus
     {
         Unknown = -1,

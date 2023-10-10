@@ -1,8 +1,10 @@
 ﻿using ColorVision.MQTT;
+using MQTTMessageLib;
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -76,10 +78,10 @@ namespace ColorVision.Device.Spectrum
                                 //cmdMap.Remove(json.MsgID);
                             }
                         }
-                        else if (json.EventName == "Heartbeat")
+                        else if (json.EventName == "Heartbeat" && json.ServiceName.Equals(this.ServiceName, System.StringComparison.Ordinal))
                         {
-                            SpectumHeartbeatParam heartbeat = JsonConvert.DeserializeObject<SpectumHeartbeatParam>(JsonConvert.SerializeObject(json.Data));
-                            Application.Current.Dispatcher.Invoke(() => HeartbeatHandlerEvent?.Invoke(heartbeat));
+                            List<SpectumDeviceHeartbeatParam> devs_heartbeat = JsonConvert.DeserializeObject<List<SpectumDeviceHeartbeatParam>>(JsonConvert.SerializeObject(json.Data));
+                            if (devs_heartbeat != null && devs_heartbeat.Count > 0) DoSpectumHeartbeat(devs_heartbeat);
                         }
                         else if (json.EventName == "Close")
                         {
@@ -102,6 +104,25 @@ namespace ColorVision.Device.Spectrum
                 }
             }
             return Task.CompletedTask;
+        }
+
+        public void DoSpectumHeartbeat(List<SpectumDeviceHeartbeatParam> devs_heartbeat)
+        {
+            foreach (SpectumDeviceHeartbeatParam dev_heartbeat in devs_heartbeat)
+            {
+                if (dev_heartbeat.DeviceName.Equals(Config.Code, System.StringComparison.Ordinal))
+                {
+                    SpectumHeartbeatParam heartbeat = new SpectumHeartbeatParam();
+                    heartbeat.DeviceStatus = dev_heartbeat.DeviceStatus;
+                    heartbeat.IsAutoGetData = dev_heartbeat.IsAutoGetData;
+                    DoSpectumHeartbeat(heartbeat);
+                }
+            }
+        }
+
+        public void DoSpectumHeartbeat(SpectumHeartbeatParam heartbeat)
+        {
+            Application.Current.Dispatcher.Invoke(() => HeartbeatHandlerEvent?.Invoke(heartbeat));
         }
 
         public bool Init()
@@ -245,6 +266,45 @@ namespace ColorVision.Device.Spectrum
             cmdMap.Clear();
         }
 
+        public override void UpdateStatus(MQTTNodeService nodeService)
+        {
+            base.UpdateStatus(nodeService);
+            HeartbeatParam heartbeat = new HeartbeatParam();
+            foreach (var item in nodeService.Devices)
+            {
+                if (Config.Code.Equals(item.Key, System.StringComparison.Ordinal))
+                {
+                    switch (item.Value)
+                    {
+                        case DeviceStatusType.Unknown:
+                            heartbeat.DeviceStatus = DeviceStatus.Closed;
+                            break;
+                        case DeviceStatusType.Closed:
+                            heartbeat.DeviceStatus = DeviceStatus.Closed;
+                            break;
+                        case DeviceStatusType.Closing:
+                            heartbeat.DeviceStatus = DeviceStatus.Closing;
+                            break;
+                        case DeviceStatusType.Opened:
+                            heartbeat.DeviceStatus = DeviceStatus.Opened;
+                            break;
+                        case DeviceStatusType.Opening:
+                            heartbeat.DeviceStatus = DeviceStatus.Opening;
+                            break;
+                        case DeviceStatusType.Busy:
+                            heartbeat.DeviceStatus = DeviceStatus.Busy;
+                            break;
+                        case DeviceStatusType.Free:
+                            heartbeat.DeviceStatus = DeviceStatus.Free;
+                            break;
+                        default:
+                            heartbeat.DeviceStatus = DeviceStatus.Closed;
+                            break;
+                    }
+                }
+            }
 
+            DoHeartbeat(heartbeat);
+        }
     }
 }
