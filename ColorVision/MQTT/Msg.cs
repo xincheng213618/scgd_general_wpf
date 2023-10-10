@@ -27,7 +27,7 @@ namespace ColorVision.MQTT
         [JsonProperty("params")]
         public dynamic Params { get; set; }
 
-        public override string ToString() =>JsonConvert.ToString(this);
+        public override string ToString() => JsonConvert.SerializeObject(this);
     }
 
     public delegate void MsgReturnHandler(MsgReturn msg);

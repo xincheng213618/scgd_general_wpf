@@ -201,7 +201,7 @@ namespace ColorVision.Device.Algorithm
             msg.Params.Add("ksize", (int)mTFParam.ksize);
             msg.Params.Add("dRatio", (int)mTFParam.MTF_dRatio);
 
-            msg.Params.add("file_data", ToJsonFileList(ImageChannelType.Gray_Y, FileName));  
+            msg.Params.Add("file_data", ToJsonFileList(ImageChannelType.Gray_Y, FileName));  
             return PublishAsyncClient(msg);
         }
 
@@ -243,7 +243,7 @@ namespace ColorVision.Device.Algorithm
             msg.Params.Add("cy", sFRParam.ROI.cy);
             msg.Params.Add("gamma", sFRParam.SFR_gamma);
 
-            msg.Params.add("file_data", ToJsonFileList(ImageChannelType.Gray_Y, FileName));
+            msg.Params.Add("file_data", ToJsonFileList(ImageChannelType.Gray_Y, FileName));
             return PublishAsyncClient(msg);
         }
 
@@ -272,7 +272,7 @@ namespace ColorVision.Device.Algorithm
             msg.Params.Add("ratioH", ghostParam.Ghost_ratioH);
             msg.Params.Add("ratioL", ghostParam.Ghost_ratioL);
 
-            msg.Params.add("file_data", ToJsonFileList(ImageChannelType.CIE_Y, FileName));
+            msg.Params.Add("file_data", ToJsonFileList(ImageChannelType.CIE_Y, FileName));
             return PublishAsyncClient(msg);
         }
 
