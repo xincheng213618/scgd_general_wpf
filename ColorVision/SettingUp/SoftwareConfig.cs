@@ -90,4 +90,12 @@ namespace ColorVision
 
         public SolutionConfig SolutionConfig { get; set; }
     }
+
+    public class UserManager
+    {
+        public static UserManager Current { get; set; } = new UserManager();
+
+
+        public UserConfig UserConfig { get; set; }
+    }
 }

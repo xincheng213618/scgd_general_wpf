@@ -141,7 +141,17 @@ namespace ColorVision
 
         private void Login_Click(object sender, RoutedEventArgs e)
         {
-            new LoginWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            if (UserManager.Current.UserConfig != null)
+            {
+                var user = UserManager.Current.UserConfig;
+                MessageBox.Show(user.PerMissionMode.ToString() + ":"+  user.UserName +" 已经登录");
+
+            }
+            else
+            {
+                new LoginWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            }
+
         }
     }
 }

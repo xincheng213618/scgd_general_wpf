@@ -1,7 +1,10 @@
 ﻿#pragma warning disable CS8602  
 
 using ColorVision.MQTT;
+using ColorVision.Template;
+using ColorVision.Template.Algorithm;
 using cvColorVision;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -127,7 +130,7 @@ namespace ColorVision.Device.Algorithm
         }
 
 
-        public MsgRecord GetData(int pid,int Batchid)
+        public MsgRecord FOV(int pid,int Batchid)
         {
             MsgSend msg = new MsgSend
             {
@@ -135,6 +138,17 @@ namespace ColorVision.Device.Algorithm
                 Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid } }
             };
             //Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid },{ "eCalibType", (int)eCalibType }, { "szFileNameX", "X.tif " }, { "szFileNameY", "Y.tif " }, { "szFileNameZ", "Z.tif " } }
+            return PublishAsyncClient(msg);
+        }
+
+        public MsgRecord FOV(int pid, int Batchid,string fileName,string fileName1,string fileName2)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "GetData",
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid } }
+            };
+            msg.Params.Add.Add("file_data", ToJsonFileList(ImageChannelType.Gray_Y,fileName, fileName1, fileName2));
             return PublishAsyncClient(msg);
         }
 
@@ -151,54 +165,114 @@ namespace ColorVision.Device.Algorithm
             return PublishAsyncClient(msg); 
         }
 
-        public MsgRecord FOV(int pid, int Batchid)
-        {
-            MsgSend msg = new MsgSend 
-            { 
-                EventName = "FOV",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid } }
-            };
-            return PublishAsyncClient(msg);
-        }
-        public MsgRecord MTF(int pid, int Batchid, CalibrationType eCalibType)
+        //public MsgRecord FOV(int pid, int Batchid)
+        //{
+        //    MsgSend msg = new MsgSend 
+        //    { 
+        //        EventName = "FOV",
+        //        Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid } }
+        //    };
+        //    return PublishAsyncClient(msg);
+        //}
+
+
+
+        public MsgRecord MTF(int pid, int Batchid,int modid)
         {
             MsgSend msg = new MsgSend
             {
                 EventName = "MTF",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid }  }
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid }, { "nMod", modid } }
             };
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord SFR(int pid, int Batchid)
+        public MsgRecord MTF(int pid, string FileName,MTFParam mTFParam)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "MTF",
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", 0 }, }
+            };
+
+            msg.Params.Add("eEvaFunc", (int)mTFParam.eEvaFunc);
+            msg.Params.Add("dx", (int)mTFParam.dx);
+            msg.Params.Add("dy", (int)mTFParam.dy);
+            msg.Params.Add("ksize", (int)mTFParam.ksize);
+            msg.Params.Add("dRatio", (int)mTFParam.MTF_dRatio);
+
+            msg.Params.add("file_data", ToJsonFileList(ImageChannelType.Gray_Y, FileName));  
+            return PublishAsyncClient(msg);
+        }
+
+        private static string ToJsonFileList(ImageChannelType imageChannelType, params string[] FileNames)
+        {
+            List<Dictionary<string, object>> keyValuePairs = new List<Dictionary<string, object>>();
+            foreach (var item in FileNames)
+            {
+                Dictionary<string, object> keyValuePairs1 = new Dictionary<string, object>();
+                keyValuePairs1.Add("Type", imageChannelType);
+                keyValuePairs1.Add("filename", item);
+                keyValuePairs.Add(keyValuePairs1);
+            }
+            return JsonConvert.SerializeObject(keyValuePairs);
+        }
+
+
+
+        public MsgRecord SFR(int pid, int Batchid, int modid)
         {
             MsgSend msg = new MsgSend
             {
                 EventName = "SFR",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid } }
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid }, { "nMod", modid } }
             };
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord SFR(int pid, int Batchid,IRECT ROI )
+        public MsgRecord SFR(int pid,  string FileName,SFRParam sFRParam )
         {
             MsgSend msg = new MsgSend
             {
                 EventName = "SFR",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid } ,{"x",ROI.x }, { "x", ROI.x }, { "y", ROI.y },{ "cx", ROI.cx }, { "cy", ROI.cy } }
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", 0 } }
             };
+            msg.Params.Add("x", sFRParam.ROI.x);
+            msg.Params.Add("y", sFRParam.ROI.y);
+            msg.Params.Add("cx", sFRParam.ROI.cx);
+            msg.Params.Add("cy", sFRParam.ROI.cy);
+            msg.Params.Add("gamma", sFRParam.SFR_gamma);
+
+            msg.Params.add("file_data", ToJsonFileList(ImageChannelType.Gray_Y, FileName));
             return PublishAsyncClient(msg);
         }
 
-
-
-        public MsgRecord Ghost(int pid, int Batchid)
+        public MsgRecord Ghost(int pid, int Batchid, int modid)
         {
             MsgSend msg = new MsgSend
             {
                 EventName = "Ghost",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid } }
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid }, { "nMod", modid } }
             };
+            return PublishAsyncClient(msg);
+        }
+
+
+        public MsgRecord Ghost(int pid,string FileName, GhostParam ghostParam)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "Ghost",
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", 0 } }
+            };
+            msg.Params.Add("cols", ghostParam.Ghost_cols);
+            msg.Params.Add("rows", ghostParam.Ghost_rows);
+
+            msg.Params.Add("radius", ghostParam.Ghost_radius);
+            msg.Params.Add("ratioH", ghostParam.Ghost_ratioH);
+            msg.Params.Add("ratioL", ghostParam.Ghost_ratioL);
+
+            msg.Params.add("file_data", ToJsonFileList(ImageChannelType.CIE_Y, FileName));
             return PublishAsyncClient(msg);
         }
 

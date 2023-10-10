@@ -31,6 +31,20 @@ namespace ColorVision.Device.POI
         {
             ComboxPoiTemplate.ItemsSource = TemplateControl.GetInstance().PoiParams;
             ComboxPoiTemplate.SelectedIndex = 0;
+
+            ComboxMTFTemplate.ItemsSource = TemplateControl.GetInstance().MTFParams;
+            ComboxMTFTemplate.SelectedIndex = 0;
+
+            ComboxSFRTemplate.ItemsSource = TemplateControl.GetInstance().SFRParams;
+            ComboxSFRTemplate.SelectedIndex = 0;
+
+            ComboxGhostTemplate.ItemsSource = TemplateControl.GetInstance().GhostParams;
+            ComboxGhostTemplate.SelectedIndex = 0;
+
+            ComboxDistortionTemplate.ItemsSource = TemplateControl.GetInstance().DistortionParams;
+            ComboxDistortionTemplate.SelectedIndex = 0;
+
+
             ViewGridManager.GetInstance().AddView(Device.View);
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
             {
@@ -63,12 +77,14 @@ namespace ColorVision.Device.POI
 
         private void PoiClick(object sender, RoutedEventArgs e)
         {
-            if (ComboxPoiTemplate.SelectedValue is PoiParam poiParam)
+            if (ComboxPoiTemplate.SelectedIndex ==-1)
             {
-                string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-                var model = ServiceControl.GetInstance().GetResultBatch(sn);
-                Service.GetData(poiParam.ID,10);
+                MessageBox.Show("请先选择关注点");
+                return;
             }
+            string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            var Batch = ServiceControl.GetInstance().GetResultBatch(sn);
+            Service.FOV(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, Batch.Id);
         }
 
         private void Algorithm_INI(object sender, RoutedEventArgs e)
@@ -87,5 +103,36 @@ namespace ColorVision.Device.POI
             Device.View.PoiDataDraw(a);
         }
 
+        private void MTF_Click(object sender, RoutedEventArgs e)
+        {
+            if (ComboxMTFTemplate.SelectedIndex==-1)
+            {
+                MessageBox.Show("请先选择MTF模板");
+                return;
+            }
+            if (ComboxPoiTemplate.SelectedIndex == -1)
+            {
+                MessageBox.Show("请先选择关注点模板");
+                return;
+            }
+
+            Service.MTF(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, ImageFile.Text, TemplateControl.GetInstance().MTFParams[ComboxMTFTemplate.SelectedIndex].Value);
+        }
+
+        private void Open_File(object sender, RoutedEventArgs e)
+        {
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
+            openFileDialog.InitialDirectory = Environment.CurrentDirectory;
+            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png,*.tif) | *.jpg; *.jpeg; *.png;*.tif";
+            openFileDialog.RestoreDirectory = true;
+            openFileDialog.FilterIndex = 1;
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                ImageFile.Text = openFileDialog.FileName;
+            }
+
+
+             
+        }
     }
 }
