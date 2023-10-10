@@ -192,6 +192,7 @@ namespace ColorVision.Services
             MQTTServices.Clear();
             MQTTDevices.Clear();
             LastGenControl?.Clear();
+            svrDevices?.Clear();
             List<SysResourceModel> Services = ResourceService.GetAllServices(UserConfig.TenantId);
             List<SysResourceModel> devices = ResourceService.GetAllDevices(UserConfig.TenantId);
 

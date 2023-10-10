@@ -101,6 +101,9 @@ namespace ColorVision.RC
 
         public void KeepLive(int heartbeatTime)
         {
+            if (Token == null)
+                return;
+
             List<DeviceHeartbeat> deviceStatues = new List<DeviceHeartbeat>();
             deviceStatues.Add(new DeviceHeartbeat(DevcieName, DeviceStatusType.Opened));
             string serviceHeartbeat = JsonConvert.SerializeObject(new MQTTServiceHeartbeat(NodeName, "", "", NodeType, ServiceName, deviceStatues, Token.AccessToken, (int)(heartbeatTime * 1.5f)));
