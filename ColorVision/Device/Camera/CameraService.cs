@@ -185,7 +185,6 @@ namespace ColorVision.Device.Camera
         public bool IsRun { get; set; }
         public CameraType CurrentCameraType { get; set; }
 
-
         public bool Init() => Init(Config.CameraType, Config.ID);
 
         public bool Init(CameraType CameraType, string CameraID)
