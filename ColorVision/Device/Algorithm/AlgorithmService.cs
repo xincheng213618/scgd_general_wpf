@@ -207,6 +207,10 @@ namespace ColorVision.Device.Algorithm
 
         private static string ToJsonFileList(ImageChannelType imageChannelType, params string[] FileNames)
         {
+            Dictionary<string, object> file_data  =new Dictionary<string, object>();
+
+            file_data.Add("eCalibType", CalibrationType.DarkNoise);
+
             List<Dictionary<string, object>> keyValuePairs = new List<Dictionary<string, object>>();
             foreach (var item in FileNames)
             {
@@ -215,7 +219,8 @@ namespace ColorVision.Device.Algorithm
                 keyValuePairs1.Add("filename", item);
                 keyValuePairs.Add(keyValuePairs1);
             }
-            return JsonConvert.SerializeObject(keyValuePairs);
+            file_data.Add("list", keyValuePairs);
+            return JsonConvert.SerializeObject(file_data);
         }
 
 
@@ -287,6 +292,51 @@ namespace ColorVision.Device.Algorithm
             };
             return PublishAsyncClient(msg);
         }
+
+        public MsgRecord Distortion(int pid, string FileName, DistortionParam distortionParam)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "Distortion",
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", 0 } }
+            };
+
+            var Blob_Threshold_Params = new Dictionary<string, object>() { };
+            Blob_Threshold_Params.Add("filterByColor", distortionParam.filterByColor);
+            Blob_Threshold_Params.Add("blobColor", distortionParam.blobColor);
+            Blob_Threshold_Params.Add("minThreshold", distortionParam.minThreshold);
+            Blob_Threshold_Params.Add("thresholdStep", distortionParam.thresholdStep);
+            Blob_Threshold_Params.Add("ifDEBUG", distortionParam.ifDEBUG);
+            Blob_Threshold_Params.Add("darkRatio", distortionParam.darkRatio);
+            Blob_Threshold_Params.Add("contrastRatio", distortionParam.contrastRatio);
+            Blob_Threshold_Params.Add("bgRadius", distortionParam.bgRadius);
+            Blob_Threshold_Params.Add("filterByArea", distortionParam.filterByArea);
+            Blob_Threshold_Params.Add("minArea", distortionParam.minArea);
+            Blob_Threshold_Params.Add("maxArea", distortionParam.maxArea);
+            Blob_Threshold_Params.Add("minRepeatability", distortionParam.minRepeatability);
+            Blob_Threshold_Params.Add("filterByCircularity", distortionParam.filterByCircularity);
+            Blob_Threshold_Params.Add("minCircularity", distortionParam.minCircularity);
+            Blob_Threshold_Params.Add("maxCircularity", distortionParam.maxCircularity);
+            Blob_Threshold_Params.Add("filterByConvexity", distortionParam.filterByConvexity);
+            Blob_Threshold_Params.Add("minConvexity", distortionParam.minConvexity);
+            Blob_Threshold_Params.Add("maxConvexity", distortionParam.maxConvexity);
+            Blob_Threshold_Params.Add("filterByInertia", distortionParam.filterByInertia);
+            Blob_Threshold_Params.Add("minInertiaRatio", distortionParam.minInertiaRatio);
+            Blob_Threshold_Params.Add("maxInertiaRatio", distortionParam.maxInertiaRatio);
+            msg.Params.Add("Blob_Threshold_Params", Blob_Threshold_Params);
+
+            var ISIZE = new Dictionary<string, object>() { };
+            ISIZE.Add("x", distortionParam.ROI.x);
+            ISIZE.Add("y", distortionParam.ROI.y);
+            ISIZE.Add("cx", distortionParam.ROI.cx);
+            ISIZE.Add("cy", distortionParam.ROI.cy);
+            msg.Params.Add("ISIZE", ISIZE);
+            msg.Params.Add("file_data", ToJsonFileList(ImageChannelType.Gray_Y, FileName));
+
+            return PublishAsyncClient(msg);
+        }
+
+
 
         public MsgRecord FocusPoints(int pid, int Batchid)
         {

@@ -119,6 +119,56 @@ namespace ColorVision.Device.POI
             Service.MTF(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, ImageFile.Text, TemplateControl.GetInstance().MTFParams[ComboxMTFTemplate.SelectedIndex].Value);
         }
 
+        private void SFR_Clik(object sender, RoutedEventArgs e)
+        {
+            if (ComboxSFRTemplate.SelectedIndex == -1)
+            {
+                MessageBox.Show("请先选择MTF模板");
+                return;
+            }
+            if (ComboxPoiTemplate.SelectedIndex == -1)
+            {
+                MessageBox.Show("请先选择关注点模板");
+                return;
+            }
+
+            Service.SFR(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, ImageFile.Text, TemplateControl.GetInstance().SFRParams[ComboxSFRTemplate.SelectedIndex].Value);
+        }
+
+        private void Ghost_Click(object sender, RoutedEventArgs e)
+        {
+            if (ComboxGhostTemplate.SelectedIndex == -1)
+            {
+                MessageBox.Show("请先选择MTF模板");
+                return;
+            }
+            if (ComboxPoiTemplate.SelectedIndex == -1)
+            {
+                MessageBox.Show("请先选择关注点模板");
+                return;
+            }
+
+            Service.Ghost(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, ImageFile.Text, TemplateControl.GetInstance().GhostParams[ComboxGhostTemplate.SelectedIndex].Value);
+        }
+
+        private void Distortion_Click(object sender, RoutedEventArgs e)
+        {
+            if (ComboxDistortionTemplate.SelectedIndex == -1)
+            {
+                MessageBox.Show("请先选择MTF模板");
+                return;
+            }
+            if (ComboxPoiTemplate.SelectedIndex == -1)
+            {
+                MessageBox.Show("请先选择关注点模板");
+                return;
+            }
+
+            Service.Distortion(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, ImageFile.Text, TemplateControl.GetInstance().DistortionParams[ComboxDistortionTemplate.SelectedIndex].Value);
+        }
+
+
+
         private void Open_File(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
@@ -134,5 +184,7 @@ namespace ColorVision.Device.POI
 
              
         }
+
+
     }
 }

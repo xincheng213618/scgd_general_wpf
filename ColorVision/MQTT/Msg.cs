@@ -46,7 +46,7 @@ namespace ColorVision.MQTT
         public string MsgID { get; set; }
         [JsonProperty("data")]
         public dynamic Data { get; set; }
-        public override string ToString() => JsonConvert.ToString(this);
+        public override string ToString() => JsonConvert.SerializeObject(this);
     }
 
     public class ParamFunction
@@ -54,6 +54,6 @@ namespace ColorVision.MQTT
         public string Name { get; set; }
         [JsonProperty("params")]
         public dynamic Params { get; set; }
-        public override string ToString() => JsonConvert.ToString(this);
+        public override string ToString() => JsonConvert.SerializeObject(this);
     }
 }
