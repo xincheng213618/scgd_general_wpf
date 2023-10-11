@@ -19,7 +19,10 @@ namespace ColorVision.Device
             handler.Cancelling += delegate
             {
                 handler.Close();
-                Application.Current.MainWindow.Cursor = temp;
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    Application.Current.MainWindow.Cursor = temp;
+                });
             };
             MsgRecordStateChangedHandler msgRecordStateChangedHandler = async (e) =>
             {
@@ -32,10 +35,15 @@ namespace ColorVision.Device
                         handler?.Close();
                     }
                 }
-                catch { }
+                catch
+                {
+                }
                 finally
                 {
-                    Application.Current.MainWindow.Cursor = temp;
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        Application.Current.MainWindow.Cursor = temp;
+                    });
                 }
             };
             msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;

@@ -4,6 +4,7 @@ using ColorVision.Services;
 using ColorVision.Template;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -82,7 +83,7 @@ namespace ColorVision.Device.POI
         {
             if (ComboxPoiTemplate.SelectedIndex ==-1)
             {
-                MessageBox.Show("请先选择关注点");
+                MessageBox.Show("请先选择关注点模板");
                 return;
             }
             string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
@@ -119,14 +120,15 @@ namespace ColorVision.Device.POI
                 return;
             }
 
-            Service.MTF(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, ImageFile.Text, TemplateControl.GetInstance().MTFParams[ComboxMTFTemplate.SelectedIndex].Value);
+            var ss = Service.MTF(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, ImageFile.Text, TemplateControl.GetInstance().MTFParams[ComboxMTFTemplate.SelectedIndex].Value);
+            Helpers.SendCommand(ss,"MTF");
         }
 
         private void SFR_Clik(object sender, RoutedEventArgs e)
         {
             if (ComboxSFRTemplate.SelectedIndex == -1)
             {
-                MessageBox.Show("请先选择MTF模板");
+                MessageBox.Show("请先选择SFR模板");
                 return;
             }
             if (ComboxPoiTemplate.SelectedIndex == -1)
@@ -135,14 +137,16 @@ namespace ColorVision.Device.POI
                 return;
             }
 
-            Service.SFR(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, ImageFile.Text, TemplateControl.GetInstance().SFRParams[ComboxSFRTemplate.SelectedIndex].Value);
+            var msg = Service.SFR(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, ImageFile.Text, TemplateControl.GetInstance().SFRParams[ComboxSFRTemplate.SelectedIndex].Value);
+            Helpers.SendCommand(msg, "SFR");
+
         }
 
         private void Ghost_Click(object sender, RoutedEventArgs e)
         {
             if (ComboxGhostTemplate.SelectedIndex == -1)
             {
-                MessageBox.Show("请先选择MTF模板");
+                MessageBox.Show("请先选择Ghost模板");
                 return;
             }
             if (ComboxPoiTemplate.SelectedIndex == -1)
@@ -151,14 +155,17 @@ namespace ColorVision.Device.POI
                 return;
             }
 
-            Service.Ghost(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, ImageFile.Text, TemplateControl.GetInstance().GhostParams[ComboxGhostTemplate.SelectedIndex].Value);
+
+
+            var msg = Service.Ghost(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, ImageFile.Text, TemplateControl.GetInstance().GhostParams[ComboxGhostTemplate.SelectedIndex].Value);
+            Helpers.SendCommand(msg, "Ghost");
         }
 
         private void Distortion_Click(object sender, RoutedEventArgs e)
         {
             if (ComboxDistortionTemplate.SelectedIndex == -1)
             {
-                MessageBox.Show("请先选择MTF模板");
+                MessageBox.Show("请先选择Distortion模板");
                 return;
             }
             if (ComboxPoiTemplate.SelectedIndex == -1)
@@ -166,8 +173,8 @@ namespace ColorVision.Device.POI
                 MessageBox.Show("请先选择关注点模板");
                 return;
             }
-
-            Service.Distortion(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, ImageFile.Text, TemplateControl.GetInstance().DistortionParams[ComboxDistortionTemplate.SelectedIndex].Value);
+            var msg = Service.Distortion(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, ImageFile.Text, TemplateControl.GetInstance().DistortionParams[ComboxDistortionTemplate.SelectedIndex].Value);
+            Helpers.SendCommand(msg, "Distortion");
         }
 
 
@@ -175,7 +182,7 @@ namespace ColorVision.Device.POI
         {
             if (ComboxFOVTemplate.SelectedIndex == -1)
             {
-                MessageBox.Show("请先选择MTF模板");
+                MessageBox.Show("请先选择FOV模板");
                 return;
             }
             if (ComboxPoiTemplate.SelectedIndex == -1)
@@ -184,7 +191,8 @@ namespace ColorVision.Device.POI
                 return;
             }
 
-            Service.FOV(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, ImageFile.Text, TemplateControl.GetInstance().FOVParams[ComboxFOVTemplate.SelectedIndex].Value);
+            var msg = Service.FOV(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, ImageFile.Text, TemplateControl.GetInstance().FOVParams[ComboxFOVTemplate.SelectedIndex].Value);
+            Helpers.SendCommand(msg, "FOV");
         }
 
 

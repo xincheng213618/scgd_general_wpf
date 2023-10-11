@@ -196,6 +196,9 @@ namespace ColorVision.MQTT
         /// <param name="msg"></param>
         internal virtual MsgRecord PublishAsyncClient(MsgSend msg)
         {
+            if (!MQTTControl.IsConnect)
+                MessageBox.Show("请先连接中转MQTT服务器在发送命令");
+
             Guid guid = Guid.NewGuid();
             msg.MsgID = guid;
             msg.ServiceID = ServiceID;
@@ -218,10 +221,7 @@ namespace ColorVision.MQTT
             {
                 MQTTSetting.MsgRecords.Insert(0, msgRecord);
                 MsgRecords.Add(msgRecord);
-            }
-            );
-
-
+            });
 
             Timer timer = new Timer(MQTTSetting.SendTimeout * 1000);
             timer.Elapsed += (s, e) =>
