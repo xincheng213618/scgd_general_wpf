@@ -7,7 +7,6 @@ using System.Windows.Controls;
 using ColorVision.SettingUp;
 using System.IO;
 using Panuon.WPF.UI;
-using WpfFlowControlLibrary;
 using ColorVision.Services;
 
 namespace ColorVision.Flow
@@ -31,6 +30,8 @@ namespace ColorVision.Flow
             GlobalSetting = GlobalSetting.GetInstance();
             MQTTConfig mQTTConfig = GlobalSetting.SoftwareConfig.MQTTConfig;
             FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
+
+
             flowView = new CVFlowControl();
             ViewGridManager.GetInstance().AddView(0,flowView);
 

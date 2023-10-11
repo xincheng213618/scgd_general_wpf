@@ -106,15 +106,15 @@ namespace ColorVision.Device.Spectrum
             return Task.CompletedTask;
         }
 
-        public void DoSpectumHeartbeat(List<SpectumDeviceHeartbeatParam> devs_heartbeat)
+        public void DoSpectumHeartbeat(List<SpectumDeviceHeartbeatParam> devsheartbeat)
         {
-            foreach (SpectumDeviceHeartbeatParam dev_heartbeat in devs_heartbeat)
+            foreach (SpectumDeviceHeartbeatParam devheartbeat in devsheartbeat)
             {
-                if (dev_heartbeat.DeviceName.Equals(Config.Code, System.StringComparison.Ordinal))
+                if (devheartbeat.DeviceName.Equals(Config.Code, System.StringComparison.Ordinal))
                 {
                     SpectumHeartbeatParam heartbeat = new SpectumHeartbeatParam();
-                    heartbeat.DeviceStatus = dev_heartbeat.DeviceStatus;
-                    heartbeat.IsAutoGetData = dev_heartbeat.IsAutoGetData;
+                    heartbeat.DeviceStatus = devheartbeat.DeviceStatus;
+                    heartbeat.IsAutoGetData = devheartbeat.IsAutoGetData;
                     DoSpectumHeartbeat(heartbeat);
                 }
             }

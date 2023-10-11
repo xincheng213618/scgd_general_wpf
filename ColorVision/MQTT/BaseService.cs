@@ -53,9 +53,9 @@ namespace ColorVision.MQTT
             MQTTControl.SubscribeCache(SubscribeTopic);
         }
 
-        public void DoHeartbeat(List<DeviceHeartbeatParam> devs_heartbeat)
+        public void DoHeartbeat(List<DeviceHeartbeatParam> devsheartbeat)
         {
-            foreach (DeviceHeartbeatParam dev_heartbeat in devs_heartbeat)
+            foreach (DeviceHeartbeatParam dev_heartbeat in devsheartbeat)
             {
                 if (dev_heartbeat.DeviceName.Equals(Config.Code, System.StringComparison.Ordinal))
                 {

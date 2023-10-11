@@ -20,10 +20,10 @@ namespace ColorVision.Template.Algorithm
         [Category("SFR"), Description("ROI x")]
 
         public int X { get => GetValue(_X); set { SetProperty(ref _X, value); } }
-        private int _X = 0;
+        private int _X;
         [Category("SFR"), Description("ROI y")]
         public int Y { get => GetValue(_Y); set { SetProperty(ref _Y, value); } }
-        private int _Y = 0;
+        private int _Y;
         [Category("SFR"), Description("ROI Width")]
         public int Width { get => GetValue(_Width); set { SetProperty(ref _Width, value); } }
         private int _Width = 1000;

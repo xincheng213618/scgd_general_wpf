@@ -183,7 +183,7 @@ namespace ColorVision.Services
             return resultService.BatchSave(model);
         }
 
-        private string GetServiceKey(string svrType,string svrCode)
+        private  static string GetServiceKey(string svrType,string svrCode)
         {
             return svrType +":"+ svrCode;
         }
@@ -208,8 +208,7 @@ namespace ColorVision.Services
                     {
                         MQTTService mQTTService = new MQTTService(service);
                         string svrKey = GetServiceKey(service.TypeCode, service.Code);
-                        svrDevices.Add(svrKey, new List<BaseService>());
-
+                        svrDevices?.Add(svrKey, new List<BaseService>());
                         foreach (var device in devices)
                         {
                             BaseService svrObj = null;
