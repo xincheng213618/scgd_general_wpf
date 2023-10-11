@@ -18,6 +18,10 @@ namespace ColorVision.RC
         private string NodeAppId;
         private string NodeKey;
         private string DevcieName;
+        private string RCNodeName;
+        private string RCRegTopic;
+        private string RCHeartbeatTopic;
+        private string RCPublicTopic;
         private NodeToken Token;
         public RCService(RCConfig config) : base(config)
         {
@@ -27,6 +31,12 @@ namespace ColorVision.RC
             NodeAppId = "app1";
             NodeKey = "123456";
             NodeType = "client";
+            //
+            this.RCNodeName = "RC_TEST_01";
+            this.RCRegTopic = MQTTRCServiceTypeConst.RCRegTopic + "/" + RCNodeName;
+            this.RCHeartbeatTopic = MQTTRCServiceTypeConst.RCHeartbeatTopic + "/" + RCNodeName;
+            this.RCPublicTopic = MQTTRCServiceTypeConst.RCPublicTopic + "/" + RCNodeName;
+            //
             ServiceName = Guid.NewGuid().ToString();
             SubscribeTopic = MQTTRCServiceTypeConst.RCServiceType + "/Node/" + NodeName;
 
@@ -81,7 +91,7 @@ namespace ColorVision.RC
         public bool Regist()
         {
             MQTTNodeServiceRegist reg = new MQTTNodeServiceRegist(NodeName, NodeAppId, NodeKey, SubscribeTopic, NodeType);
-            PublishAsyncClient(MQTTRCServiceTypeConst.RCRegTopic, JsonConvert.SerializeObject(reg));
+            PublishAsyncClient(RCRegTopic, JsonConvert.SerializeObject(reg));
             return true;
         }
 
@@ -90,7 +100,7 @@ namespace ColorVision.RC
             if (Token != null)
             {
                 MQTTRCServicesQueryRequest reg = new MQTTRCServicesQueryRequest(NodeName, Token.AccessToken);
-                PublishAsyncClient(MQTTRCServiceTypeConst.RCPublicTopic, JsonConvert.SerializeObject(reg));
+                PublishAsyncClient(RCPublicTopic, JsonConvert.SerializeObject(reg));
             }
         }
 
@@ -108,7 +118,7 @@ namespace ColorVision.RC
             deviceStatues.Add(new DeviceHeartbeat(DevcieName, DeviceStatusType.Opened));
             string serviceHeartbeat = JsonConvert.SerializeObject(new MQTTServiceHeartbeat(NodeName, "", "", NodeType, ServiceName, deviceStatues, Token.AccessToken, (int)(heartbeatTime * 1.5f)));
 
-            PublishAsyncClient(MQTTRCServiceTypeConst.RCHeartbeatTopic, serviceHeartbeat);
+            PublishAsyncClient(RCHeartbeatTopic, serviceHeartbeat);
 
             QueryServices();
         }
