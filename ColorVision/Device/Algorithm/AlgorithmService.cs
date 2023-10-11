@@ -5,6 +5,7 @@ using ColorVision.Template;
 using ColorVision.Template.Algorithm;
 using cvColorVision;
 using Newtonsoft.Json;
+using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -130,7 +131,7 @@ namespace ColorVision.Device.Algorithm
         }
 
 
-        public MsgRecord FOV(int pid,int Batchid)
+        public MsgRecord GetData(int pid,int Batchid)
         {
             MsgSend msg = new MsgSend
             {
@@ -141,7 +142,7 @@ namespace ColorVision.Device.Algorithm
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord FOV(int pid, int Batchid,string fileName,string fileName1,string fileName2)
+        public MsgRecord GetData(int pid, int Batchid,string fileName,string fileName1,string fileName2)
         {
             MsgSend msg = new MsgSend
             {
@@ -151,6 +152,37 @@ namespace ColorVision.Device.Algorithm
             msg.Params.Add.Add("file_data", ToJsonFileList(ImageChannelType.Gray_Y,fileName, fileName1, fileName2));
             return PublishAsyncClient(msg);
         }
+
+        public MsgRecord FOV(int pid, int Batchid)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "FOV",
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid } }
+            };
+            //Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid },{ "eCalibType", (int)eCalibType }, { "szFileNameX", "X.tif " }, { "szFileNameY", "Y.tif " }, { "szFileNameZ", "Z.tif " } }
+            return PublishAsyncClient(msg);
+        }
+
+        public MsgRecord FOV(int pid, string fileName, FOVParam fOVParam)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "FOV",
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", 0 } }
+            };
+
+            msg.Params.Add("radio", fOVParam.Radio);
+            msg.Params.Add("cameraDegrees", fOVParam.CameraDegrees);
+            msg.Params.Add("DFovDist", fOVParam.DFovDist);
+            msg.Params.Add("FovPattern", (int)fOVParam.FovPattern);
+            msg.Params.Add("FovType", (int)fOVParam.FovType);
+            msg.Params.Add("file_data", ToJsonFileList(ImageChannelType.Gray_Y, fileName));
+            return PublishAsyncClient(msg);
+        }
+
+
+
 
         public MsgRecord GetAllSnID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });
 
@@ -165,11 +197,11 @@ namespace ColorVision.Device.Algorithm
             return PublishAsyncClient(msg); 
         }
 
-        //public MsgRecord FOV(int pid, int Batchid)
+        //public MsgRecord GetData(int pid, int Batchid)
         //{
         //    MsgSend msg = new MsgSend 
         //    { 
-        //        EventName = "FOV",
+        //        EventName = "GetData",
         //        Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid } }
         //    };
         //    return PublishAsyncClient(msg);

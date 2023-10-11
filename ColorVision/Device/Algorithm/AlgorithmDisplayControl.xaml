@@ -40,6 +40,13 @@
                     </DockPanel>
                 </GroupBox>
 
+                <GroupBox  Header="FOV">
+                    <DockPanel Margin="0,2">
+                        <Button  Content="FOV" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="FOV_Click" />
+                        <ComboBox  x:Name="ComboxFOVTemplate"  Width="150" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                    </DockPanel>
+                </GroupBox>
+
                 <GroupBox  Header="MTF">
                     <DockPanel Margin="0,2">
                         <Button  Content="MTF" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="MTF_Click" />

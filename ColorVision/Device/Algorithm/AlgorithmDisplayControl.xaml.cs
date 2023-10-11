@@ -41,6 +41,9 @@ namespace ColorVision.Device.POI
             ComboxGhostTemplate.ItemsSource = TemplateControl.GetInstance().GhostParams;
             ComboxGhostTemplate.SelectedIndex = 0;
 
+            ComboxFOVTemplate.ItemsSource = TemplateControl.GetInstance().FOVParams;
+            ComboxFOVTemplate.SelectedIndex = 0;
+
             ComboxDistortionTemplate.ItemsSource = TemplateControl.GetInstance().DistortionParams;
             ComboxDistortionTemplate.SelectedIndex = 0;
 
@@ -84,7 +87,7 @@ namespace ColorVision.Device.POI
             }
             string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             var Batch = ServiceControl.GetInstance().GetResultBatch(sn);
-            Service.FOV(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, Batch.Id);
+            Service.GetData(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, Batch.Id);
         }
 
         private void Algorithm_INI(object sender, RoutedEventArgs e)
@@ -167,6 +170,22 @@ namespace ColorVision.Device.POI
             Service.Distortion(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, ImageFile.Text, TemplateControl.GetInstance().DistortionParams[ComboxDistortionTemplate.SelectedIndex].Value);
         }
 
+
+        private void FOV_Click(object sender, RoutedEventArgs e)
+        {
+            if (ComboxFOVTemplate.SelectedIndex == -1)
+            {
+                MessageBox.Show("请先选择MTF模板");
+                return;
+            }
+            if (ComboxPoiTemplate.SelectedIndex == -1)
+            {
+                MessageBox.Show("请先选择关注点模板");
+                return;
+            }
+
+            Service.FOV(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, ImageFile.Text, TemplateControl.GetInstance().FOVParams[ComboxFOVTemplate.SelectedIndex].Value);
+        }
 
 
         private void Open_File(object sender, RoutedEventArgs e)
