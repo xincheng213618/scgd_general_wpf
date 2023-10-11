@@ -65,10 +65,10 @@ namespace ColorVision
 
             if (!WindowConfig.IsExist||(WindowConfig.IsExist&& WindowConfig.Icon == null)) {
                 ThemeManager.Current.SystemThemeChanged += (e) => {
-                    this.Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision;component/Image/{(e == Theme.Light ? "ColorVision.ico" : "ColorVision1.ico")}"));
+                    this.Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision;component/Assets/Image/{(e == Theme.Light ? "ColorVision.ico" : "ColorVision1.ico")}"));
                 };
                 if (ThemeManager.Current.SystemTheme == Theme.Dark)
-                    this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Image/ColorVision1.ico"));
+                    this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Assets/Image/ColorVision1.ico"));
             }
 
             if (WindowConfig.IsExist)

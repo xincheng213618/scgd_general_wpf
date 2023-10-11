@@ -14,7 +14,7 @@
             <RowDefinition Height="36*"/>
         </Grid.RowDefinitions>
         <StackPanel Margin="10,10,10,10" Grid.RowSpan="2">
-            <Image Source="Image\ColorVision.png"  Stretch="Uniform" Height="80" Margin="10"/>
+            <Image Source="Assets\Image\ColorVision.png"  Stretch="Uniform" Height="80" Margin="10"/>
             <Border Background="{DynamicResource GlobalBackground}" Margin="20,10" Height="250" CornerRadius="10">
                 <Grid>
                     <Grid.RowDefinitions>

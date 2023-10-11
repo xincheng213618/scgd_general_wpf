@@ -7,7 +7,7 @@
     <Platforms>AnyCPU;x64</Platforms>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <UseWindowsForms>True</UseWindowsForms>
-    <ApplicationIcon>Image\ColorVision.ico</ApplicationIcon>
+    <ApplicationIcon>Assets\Image\ColorVision.ico</ApplicationIcon>
     <StartupObject>ColorVision.App</StartupObject>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
@@ -22,10 +22,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="Assets\Image\ColorVision.ico" />
+    <None Remove="Assets\Image\ColorVision.png" />
+    <None Remove="Assets\Image\ColorVision1.ico" />
+    <None Remove="Assets\Image\connect.png" />
     <None Remove="ColorVision.png" />
-    <None Remove="Image\ColorVision.png" />
-    <None Remove="Image\ColorVision1.ico" />
-    <None Remove="Image\connect.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\Image\ColorVision.ico" />
   </ItemGroup>  
 
   <ItemGroup>
@@ -69,10 +74,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Image\ColorVision.ico" />
-    <Resource Include="Image\ColorVision.png" />
-    <Resource Include="Image\ColorVision1.ico" />
-    <Resource Include="Image\connect.png" />
+    <Resource Include="Assets\Image\ColorVision.ico" />
+    <Resource Include="Assets\Image\ColorVision.png" />
+    <Resource Include="Assets\Image\ColorVision1.ico" />
+    <Resource Include="Assets\Image\connect.png" />
   </ItemGroup>
 
   <ItemGroup>
