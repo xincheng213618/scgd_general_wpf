@@ -55,6 +55,12 @@
                             <DockPanel Margin="5,2">
                                 <TextBlock Text=""  Width="120"/>
                             </DockPanel>
+
+                            <DockPanel Margin="5,2">
+                                <TextBlock Text="注册中心:" VerticalAlignment="Center" Width="120"/>
+                                <TextBox ToolTip="注册中心名称"  VerticalAlignment="Center"  Text="{Binding RCName}" BorderThickness="0,0,0,1" />
+                            </DockPanel>
+                            
                             <DockPanel Margin="5,2">
                                 <TextBlock Text="AppId:" VerticalAlignment="Center" Width="120"/>
                                 <TextBox  ToolTip="App Id"  VerticalAlignment="Center" Text="{Binding AppId}" BorderThickness="0,0,0,1" />
@@ -62,12 +68,7 @@
 
                             <DockPanel Margin="5,2">
                                 <TextBlock Text="AppSecret:" VerticalAlignment="Center" Width="120"/>
-                                <PasswordBox x:Name="PasswordBox1" ToolTip="App密钥"  VerticalAlignment="Center"  HorizontalAlignment="Left" Password=""  Width="180"  BorderThickness="0,0,0,1" />
-                            </DockPanel>
-
-                            <DockPanel Margin="5,2">
-                                <TextBlock Text="注册中心:" VerticalAlignment="Center" Width="120"/>
-                                <TextBox ToolTip="注册中心名称"  VerticalAlignment="Center"  HorizontalAlignment="Left" Text="{Binding RCName}" Width="180" BorderThickness="0,0,0,1" />
+                                <PasswordBox x:Name="PasswordBox1" ToolTip="App密钥"  VerticalAlignment="Center" Password="" BorderThickness="0,0,0,1" />
                             </DockPanel>
 
                         </StackPanel>

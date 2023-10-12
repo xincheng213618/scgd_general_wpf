@@ -49,7 +49,7 @@ namespace ColorVision.RC
         {
             if (string.IsNullOrEmpty(rcServiceConfig.Name))
             {
-                rcServiceConfig.Name = rcServiceConfig.AppId + "_" + rcServiceConfig.AppSecret.GetHashCode();
+                rcServiceConfig.Name = rcServiceConfig.AppId + "_" + rcServiceConfig.RCName;
             }
             rcServiceConfig.AppSecret = PasswordBox1.Password;
             rcServiceConfigs.Remove(rcServiceConfig);
