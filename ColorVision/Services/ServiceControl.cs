@@ -43,6 +43,8 @@ namespace ColorVision.Services
 
         private Dictionary<string, List<BaseService>> svrDevices;
 
+        public RCService rcService { get;}
+        private int heartbeatTime;
         public ServiceControl()
         {
             ResourceService = new SysResourceService();
@@ -51,12 +53,23 @@ namespace ColorVision.Services
             MQTTServices = new ObservableCollection<MQTTServiceKind>();
             MQTTDevices = new ObservableCollection<BaseDevice>();
             svrDevices = new Dictionary<string, List<BaseService>>();
+            rcService = new RCService(new RCConfig());
+            this.heartbeatTime = 10 * 1000;
+            System.Timers.Timer hbTimer = new System.Timers.Timer(heartbeatTime);
+            hbTimer.Elapsed += new System.Timers.ElapsedEventHandler(timer_KeepLive);
+            hbTimer.Enabled = true;
+
+            GC.KeepAlive(hbTimer);
+
             UserConfig = GlobalSetting.GetInstance().SoftwareConfig.UserConfig;
             StackPanel = new StackPanel();
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => Reload();
             Reload();
         }
-
+        private void timer_KeepLive(object? sender, System.Timers.ElapsedEventArgs e)
+        {
+            rcService.KeepLive(heartbeatTime);
+        }
         public ObservableCollection<BaseDevice> LastGenControl { get; set; }
 
         public void GenControl(ObservableCollection<BaseDevice> MQTTDevices)
