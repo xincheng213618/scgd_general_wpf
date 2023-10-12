@@ -22,18 +22,60 @@
 
         <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel Margin="5" >
-                    
-                <Button Content="GETSN"  HorizontalAlignment="Right" Click="Algorithm_GET" />
-                <Button Content="初始化"  HorizontalAlignment="Right" Click="Algorithm_INI" />
-                <Button Content="GetData"  HorizontalAlignment="Right" Click="Button_Click" />
+                <Button Content="获取服务注册信息"  HorizontalAlignment="Left" Click="Algorithm_GET" />
+                <Button Content="服务初始化"  HorizontalAlignment="Left" Click="Algorithm_INI" />
 
-                <DockPanel Margin="0,2">
-                    <TextBlock Text="关注点模板：" VerticalAlignment="Center" Width="100"/>
-                    <ComboBox  x:Name="ComboxPoiTemplate"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                </DockPanel>
-                <DockPanel Margin="0,2">
-                    <Button  Content="应用"  HorizontalAlignment="Right" Click="PoiClick" />
-                </DockPanel>
+
+                <GroupBox  Header="图片文件">
+                    <DockPanel Margin="0,2">
+                        <Button  Content="..." DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Open_File" />
+                        <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" HorizontalAlignment="Left" Width="150" />
+                    </DockPanel>
+                </GroupBox>
+
+                <GroupBox  Header="关注点相关的图像数据">
+                    <DockPanel Margin="0,2">
+                        <Button  Content="关注点" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="PoiClick" />
+                        <ComboBox  x:Name="ComboxPoiTemplate"  Width="150" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                    </DockPanel>
+                </GroupBox>
+
+                <GroupBox  Header="FOV">
+                    <DockPanel Margin="0,2">
+                        <Button  Content="FOV" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="FOV_Click" />
+                        <ComboBox  x:Name="ComboxFOVTemplate"  Width="150" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                    </DockPanel>
+                </GroupBox>
+
+                <GroupBox  Header="MTF">
+                    <DockPanel Margin="0,2">
+                        <Button  Content="MTF" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="MTF_Click" />
+                        <ComboBox  x:Name="ComboxMTFTemplate"  Width="150" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                    </DockPanel>
+                </GroupBox>
+
+                <GroupBox  Header="SFR">
+                    <DockPanel Margin="0,2">
+                        <Button  Content="SFR" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="SFR_Clik" />
+                        <ComboBox  x:Name="ComboxSFRTemplate"  Width="150" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                    </DockPanel>
+                </GroupBox>
+
+                <GroupBox  Header="Ghost">
+                    <DockPanel Margin="0,2">
+                        <Button  Content="Ghost" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Ghost_Click" />
+                        <ComboBox  x:Name="ComboxGhostTemplate"  Width="150" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                    </DockPanel>
+                </GroupBox>
+
+                <GroupBox  Header="Distortion">
+                    <DockPanel Margin="0,2">
+                        <Button  Content="Distortion" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Distortion_Click" />
+                        <ComboBox  x:Name="ComboxDistortionTemplate"  Width="150" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                    </DockPanel>
+                </GroupBox>
+
+
                 <DockPanel Margin="5" >
                     <TextBlock Text="输出视图："  VerticalAlignment="Center" Width="60"/>
                     <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"   />

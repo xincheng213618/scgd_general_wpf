@@ -342,7 +342,7 @@ namespace ColorVision.Device.Camera
         }
 
         /// <summary>
-        /// FOV
+        /// GetData
         /// </summary>
         private void FOV_Click(object sender, RoutedEventArgs e)
         {
@@ -367,10 +367,17 @@ namespace ColorVision.Device.Camera
 
         private void Calibration_Click(object sender, RoutedEventArgs e)
         {
-            if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
+            if (sender is Button button)
             {
-                Service.Calibration(param);
+                if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
+                {
+                    MsgRecord msgRecord = Service.Calibration(param);
+                    Helpers.SendCommand(button, msgRecord);
+
+                }
             }
+
+
         }
 
         private void AOI_Click(object sender, RoutedEventArgs e)
@@ -404,3 +411,4 @@ namespace ColorVision.Device.Camera
         }
     }
 }
+

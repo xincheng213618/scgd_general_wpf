@@ -50,7 +50,7 @@ namespace ColorVision.MySql
             try
             {
                 IsConnect = false;
-                log.Info($"数据库连接信息:{connStr}");
+                log.Info($"正在连接数据库:{connStr}");
                 MySqlConnection = new MySqlConnection() { ConnectionString = connStr  };
                 MySqlConnection.Open();
                 Application.Current.Dispatcher.Invoke(() => {

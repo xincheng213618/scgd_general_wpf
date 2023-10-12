@@ -42,14 +42,12 @@ namespace ColorVision.Services
         public StackPanel StackPanel { get; set; }
 
         private Dictionary<string, List<BaseService>> svrDevices;
-        private RCService rcService;
 
         public ServiceControl()
         {
             ResourceService = new SysResourceService();
             DictionaryService = new SysDictionaryService();
             resultService = new ResultService();
-            rcService = new RCService(new RCConfig());
             MQTTServices = new ObservableCollection<MQTTServiceKind>();
             MQTTDevices = new ObservableCollection<BaseDevice>();
             svrDevices = new Dictionary<string, List<BaseService>>();
@@ -57,18 +55,6 @@ namespace ColorVision.Services
             StackPanel = new StackPanel();
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => Reload();
             Reload();
-
-            System.Timers.Timer hbTimer = new System.Timers.Timer(5000);
-            hbTimer.Elapsed += new System.Timers.ElapsedEventHandler(timer_KeepLive);
-            //hbTimer.Interval = heartbeatTime;
-            hbTimer.Enabled = true;
-
-            GC.KeepAlive(hbTimer);
-        }
-
-        private void timer_KeepLive(object? sender, System.Timers.ElapsedEventArgs e)
-        {
-            rcService.KeepLive(5000);
         }
 
         public ObservableCollection<BaseDevice> LastGenControl { get; set; }
@@ -182,7 +168,7 @@ namespace ColorVision.Services
             return resultService.BatchSave(model);
         }
 
-        private string GetServiceKey(string svrType,string svrCode)
+        private  static string GetServiceKey(string svrType,string svrCode)
         {
             return svrType +":"+ svrCode;
         }
@@ -192,6 +178,7 @@ namespace ColorVision.Services
             MQTTServices.Clear();
             MQTTDevices.Clear();
             LastGenControl?.Clear();
+            svrDevices?.Clear();
             List<SysResourceModel> Services = ResourceService.GetAllServices(UserConfig.TenantId);
             List<SysResourceModel> devices = ResourceService.GetAllDevices(UserConfig.TenantId);
 
@@ -206,8 +193,7 @@ namespace ColorVision.Services
                     {
                         MQTTService mQTTService = new MQTTService(service);
                         string svrKey = GetServiceKey(service.TypeCode, service.Code);
-                        svrDevices.Add(svrKey, new List<BaseService>());
-
+                        svrDevices?.Add(svrKey, new List<BaseService>());
                         foreach (var device in devices)
                         {
                             BaseService svrObj = null;
@@ -260,6 +246,7 @@ namespace ColorVision.Services
                             {
                                 //mQTTService.AddChild(devObj);
                                 //MQTTDevices.Add(devObj);
+                                svrObj.ServiceName = service.Code;
                                 svrDevices[svrKey].Add(svrObj);
                             }
                         }
@@ -295,11 +282,6 @@ namespace ColorVision.Services
                     }
                 }
             }
-        }
-
-        public void RCRegist()
-        {
-            rcService.Regist();
         }
     }
 }

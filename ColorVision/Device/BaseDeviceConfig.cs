@@ -57,4 +57,10 @@ namespace ColorVision.Device
         [JsonProperty("time")]
         public string Time { get; set; }
     }
+
+    public class DeviceHeartbeatParam
+    {
+        public string DeviceName { get; set; }
+        public DeviceStatus DeviceStatus { get; set; }
+    }
 }

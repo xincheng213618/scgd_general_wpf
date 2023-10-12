@@ -20,13 +20,28 @@ namespace ColorVision
         {
             if (account == daccount && password == dpassword)
             {
+                UserManager.Current.UserConfig = new SettingUp.UserConfig()
+                {
+                    Account = account,
+                    UserPwd = password,
+                    UserName =account,
+                    PerMissionMode = SettingUp.PerMissionMode.Administrator,
+                };
+
                 new WindowService() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show(); ;
                 return true;
             }
             else if (account != "admin")
             {
-                GlobalSetting.GetInstance().SoftwareConfig.UserConfig.UserName = account;
-                GlobalSetting.GetInstance().SoftwareConfig.UserConfig.UserPwd = password;
+                UserManager.Current.UserConfig = new SettingUp.UserConfig()
+                {
+                    Account = account,
+                    UserPwd = password,
+                    UserName = account,
+                    PerMissionMode = SettingUp.PerMissionMode.User,
+                };
+
+
 
                 new WindowDevices() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show(); ;
                 return true;
@@ -59,7 +74,6 @@ namespace ColorVision
         {
             if (PermissionsControl.Current.Login(Account1.Text, PasswordBox1.Password))
             {
-
                 this.Close();
             }
             else

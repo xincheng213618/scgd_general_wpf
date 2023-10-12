@@ -2271,7 +2271,7 @@ namespace cvColorVision
         /// 获取伪彩色的图像数据（按理说只接受LV的图或者非彩色的BVCV图 如XYXxyuv之类的
         /// </summary>
         /// <returns></returns>
-        public bool GetPseudoColorData()
+        public static bool GetPseudoColorData()
         {
             bool result = false;
 
@@ -2286,7 +2286,7 @@ namespace cvColorVision
         /// <param name="mindata">获取的图像最小像素</param>
         /// <param name="maxdata">获取的图像最大像素</param>
         /// <param name="channelNum">如果输入的图是三通道图，则转成单通道时使用的通道号，默认为1</param>
-        public void GetCalBitmapMinData(ImageData imageData,out double mindata, out double maxdata, int channelNum = 1)
+        public static void GetCalBitmapMinData(ImageData imageData,out double mindata, out double maxdata, int channelNum = 1)
         {
             if (imageData != null && imageData.pData != null && imageData.pData.Length != 0 )
             {

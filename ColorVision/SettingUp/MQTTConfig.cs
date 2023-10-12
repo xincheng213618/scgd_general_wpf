@@ -121,5 +121,11 @@ namespace ColorVision.SettingUp
         public string UserPwd { get => _UserPwd; set { _UserPwd = value; NotifyPropertyChanged(); } }
         private string _UserPwd = string.Empty;
 
+
+        public override string ToString()
+        {
+            return $"Host={Host};Port={Port};UserName={UserName};UserPwd={UserPwd}";
+        }
+
     }
 }

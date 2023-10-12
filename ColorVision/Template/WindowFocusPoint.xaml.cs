@@ -1277,7 +1277,16 @@ namespace ColorVision.Template
                     {
                         if (windowFocusPointAd.SelectPoiParam != null)
                         {
-                            MessageBox.Show("导入已经存在的点阵");
+                            var SelectPoiParam = windowFocusPointAd.SelectPoiParam;
+
+                            if (SoftwareConfig.IsUseMySql)
+                                TemplateControl.GetInstance().LoadPoiDetailFromDB(SelectPoiParam);
+
+                            foreach (var item in SelectPoiParam.PoiPoints)
+                            {
+                                PoiParam.PoiPoints.Add(item);
+                            }
+                            MessageBox.Show("导入成功");
                         }   
                     };
                     windowFocusPointAd.ShowDialog();

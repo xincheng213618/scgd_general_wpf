@@ -2,6 +2,7 @@
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -13,7 +14,6 @@ namespace ColorVision.Device.SMU
 
     public class SMUService : BaseService<SMUConfig>
     {
-        public event HeartbeatHandler HeartbeatEvent;
         public event MQTTSMUScanResultHandler ScanResultEvent;
         public event MQTTSMUResultHandler ResultEvent;
         public SMUService(SMUConfig sMUConfig) : base(sMUConfig)
@@ -71,10 +71,10 @@ namespace ColorVision.Device.SMU
                         {
                             //MessageBox.Show("Uninit");
                         }
-                        else if (json.EventName == "Heartbeat")
+                        else if (json.EventName == "Heartbeat" && json.ServiceName.Equals(this.ServiceName, System.StringComparison.Ordinal))
                         {
-                            HeartbeatParam heartbeat = JsonConvert.DeserializeObject<HeartbeatParam>(JsonConvert.SerializeObject(json.Data));
-                            Application.Current.Dispatcher.Invoke(() => HeartbeatEvent?.Invoke(heartbeat));
+                            List<DeviceHeartbeatParam> devs_heartbeat = JsonConvert.DeserializeObject<List<DeviceHeartbeatParam>>(JsonConvert.SerializeObject(json.Data));
+                            if (devs_heartbeat != null && devs_heartbeat.Count > 0) DoHeartbeat(devs_heartbeat);
                         }
                     }
                 }

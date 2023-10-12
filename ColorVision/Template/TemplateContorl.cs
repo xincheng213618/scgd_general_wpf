@@ -1,14 +1,9 @@
 ﻿#pragma warning disable CS8604
-using ColorVision.Extension;
-using ColorVision.MySql;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
-using ColorVision.SettingUp;
 using ColorVision.Template.Algorithm;
 using ColorVision.Util;
 using cvColorVision.Util;
-using NPOI.SS.Formula.Functions;
-using NPOI.XWPF.UserModel;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -19,14 +14,14 @@ namespace ColorVision.Template
 {
     public enum TemplateType
     {
-        AoiParam,
-        Calibration,
-        PGParam,
-        LedReuslt,
-        SMUParam,
-        PoiParam,
         FlowParam,
         MeasureParm,
+        Calibration,
+        LedReuslt,
+        AoiParam,
+        PGParam,
+        SMUParam,
+        PoiParam,
         MTFParam,
         SFRParam,
         FOVParam,
@@ -385,7 +380,9 @@ namespace ColorVision.Template
             int pkId = flowMaster.GetPK();
             if (pkId > 0)
             {
-                return LoadFlowParamById(pkId);
+                List<ModDetailModel> flowDetail = modService.GetDetailByPid(pkId);
+                if (flowMaster != null) return new FlowParam(flowMaster, flowDetail);
+                else return null;
             }
             return null;
         }
@@ -444,15 +441,6 @@ namespace ColorVision.Template
             if (poiMaster != null) return new PoiParam(poiMaster);
             else return null;
         }
-
-        private FlowParam? LoadFlowParamById(int pkId)
-        {
-            ModMasterModel flowMaster = modService.GetMasterById(pkId);
-            List<ModDetailModel> flowDetail = modService.GetDetailByPid(pkId);
-            if (flowMaster != null) return new FlowParam(flowMaster, flowDetail);
-            else return null;
-        }
-
 
         private void LoadModParam<T>(ObservableCollection<KeyValuePair<string, T>> ParamModes, string ModeType) where T : ParamBase,new ()
         {

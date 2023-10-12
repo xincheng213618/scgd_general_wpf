@@ -16,6 +16,27 @@ namespace ColorVision.Template.Algorithm
         public DistortionParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modDetails)
         {
         }
+
+        [Category("SFR"), Description("ROI x")]
+
+        public int X { get => GetValue(_X); set { SetProperty(ref _X, value); } }
+        private int _X;
+        [Category("SFR"), Description("ROI y")]
+        public int Y { get => GetValue(_Y); set { SetProperty(ref _Y, value); } }
+        private int _Y;
+        [Category("SFR"), Description("ROI Width")]
+        public int Width { get => GetValue(_Width); set { SetProperty(ref _Width, value); } }
+        private int _Width = 1000;
+        [Category("SFR"), Description("ROI Height")]
+        public int Height { get => GetValue(_Height); set { SetProperty(ref _Height, value); } }
+        private int _Height = 1000;
+
+        [Category("SFR"), Description("ROI")]
+        public CRECT ROI { get => new CRECT() { x = X, y = Y, cx = Width, cy = Height }; }
+
+
+
+
         [Category("Distortion"), Description("是否使用颜色过滤")]
         public bool filterByColor { get => GetValue(_filterByColor); set { SetProperty(ref _filterByColor, value); } }
         private bool _filterByColor = true;

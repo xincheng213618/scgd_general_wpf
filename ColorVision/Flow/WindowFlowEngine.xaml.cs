@@ -48,7 +48,7 @@ namespace ColorVision
             }
         }
         FlowParam FlowParam { get; set; }
-        public WindowFlowEngine(FlowParam flowParam) : this(flowParam.FileName??string.Empty)
+        public WindowFlowEngine(FlowParam flowParam) : this(flowParam.FileName?? flowParam.Name)
         {
             FlowParam = flowParam;
         }
@@ -169,7 +169,7 @@ namespace ColorVision
             else if (!IsSave)
             {
                 FlowParam.FileName = FlowParam.Name + ".stn";
-                FileName = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.SolutionFullName + "\\" + FlowParam.FileName;
+                FileName = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.SolutionFullName + "\\" + FlowParam.Name + ".stn";
                 SaveFlow(FileName, true);
                 IsSave = true;
             }

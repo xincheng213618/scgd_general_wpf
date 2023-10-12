@@ -17,6 +17,7 @@ using log4net;
 using System.Diagnostics;
 using ColorVision.Util;
 using ColorVision.Services;
+using ColorVision.RC;
 
 namespace ColorVision
 {
@@ -291,6 +292,10 @@ namespace ColorVision
         private void TextBlock_MouseLeftButtonDown1(object sender, MouseButtonEventArgs e)
         {
             new MySqlConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+        private void TextBlock_MouseLeftButtonDown_RC(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            new RCServiceConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
         private void MenuItem10_Click(object sender, RoutedEventArgs e)
         {

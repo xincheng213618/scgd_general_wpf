@@ -5,24 +5,21 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace WpfFlowControlLibrary
+namespace ColorVision.Flow
 {
     /// <summary>
     /// CVFlowControl.xaml 的交互逻辑
     /// </summary>
-    public partial class CVFlowControl : UserControl,IView
+    public partial class CVFlowControl1 : UserControl,IView
     {
         private FlowEngineLib.FlowEngineControl flowEngine;
         public FlowEngineLib.FlowEngineControl FlowEngineControl { get { return flowEngine; } }
         public View View { get; set; }
 
-        public CVFlowControl()
+        public CVFlowControl1()
         {
             flowEngine = new FlowEngineLib.FlowEngineControl(false);
-
             InitializeComponent();
-
-
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -39,23 +36,8 @@ namespace WpfFlowControlLibrary
 
             View.ViewIndexChangedEvent += (s, e) =>
             {
-
                 if (e == -2)
                 {
-                    if (!Grid1.Children.Contains(winf1))
-                    {
-                        Grid1.Children.Remove(airspace1);
-                        airspace1.Content = null;
-                        Grid1.Children.Add(winf1);
-                    }
-
-                    if (!Grid2.Children.Contains(winf2))
-                    {
-                        Grid2.Children.Remove(airspace2);
-                        airspace2.Content = null;
-                        Grid2.Children.Add(winf2);
-                    }
-
                     STNodeEditorMain.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
                     STNodeEditorMain.ContextMenuStrip.Items.Add("还原到主窗口中", null, (s, e1) =>
                     {
@@ -74,20 +56,6 @@ namespace WpfFlowControlLibrary
                 }
                 else
                 {
-                    if (!Grid1.Children.Contains(airspace1))
-                    {
-                        Grid1.Children.Remove(winf1);
-                        airspace1.Content = winf1;
-                        Grid1.Children.Add(airspace1);
-                    }
-
-                    if (!Grid2.Children.Contains(airspace2))
-                    {
-                        Grid2.Children.Remove(winf2);
-                        airspace2.Content = winf2;
-                        Grid2.Children.Add(airspace2);
-                    }
-
                     STNodeEditorMain.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
                     STNodeEditorMain.ContextMenuStrip.Items.Add("设为主窗口", null, (s, e1) => ViewGridManager.GetInstance().SetOneView(this));
                     STNodeEditorMain.ContextMenuStrip.Items.Add("显示全部窗口", null, (s, e1) => ViewGridManager.GetInstance().SetViewNum(-1));

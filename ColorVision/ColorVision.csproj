@@ -7,7 +7,7 @@
     <Platforms>AnyCPU;x64</Platforms>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <UseWindowsForms>True</UseWindowsForms>
-    <ApplicationIcon>Image\ColorVision.ico</ApplicationIcon>
+    <ApplicationIcon>Assets\Image\ColorVision.ico</ApplicationIcon>
     <StartupObject>ColorVision.App</StartupObject>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
@@ -22,6 +22,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="Assets\Image\ColorVision.ico" />
+    <None Remove="Assets\Image\ColorVision.png" />
+    <None Remove="Assets\Image\ColorVision1.ico" />
+    <None Remove="Assets\Image\connect.png" />
     <None Remove="ColorVision.png" />
     <None Remove="Image\ColorVision.png" />
     <None Remove="Image\ColorVision1.ico" />
@@ -30,9 +34,14 @@
   </ItemGroup>  
 
   <ItemGroup>
+    <Content Include="Assets\Image\ColorVision.ico" />
+  </ItemGroup>  
+
+  <ItemGroup>
     <PackageReference Include="Extended.Wpf.Toolkit" Version="4.5.1" />
     <PackageReference Include="Gu.Wpf.Geometry" Version="2.2.8" />
     <PackageReference Include="log4net" Version="2.0.15" />
+    <PackageReference Include="MahApps.Microsoft.DwayneNeed" Version="1.0.1" />
     <PackageReference Include="MQTTnet" Version="4.3.1.873" />
     <PackageReference Include="MySql.Data" Version="8.1.0" />
     <PackageReference Include="MySqlConnector" Version="2.2.7" />
@@ -51,7 +60,6 @@
   <ItemGroup>
     <ProjectReference Include="..\ColorVision.Util\ColorVision.Util.csproj" />
     <ProjectReference Include="..\cvColorVision\cvColorVision.csproj" />
-    <ProjectReference Include="..\WpfFlowControlLibrary\WpfFlowControlLibrary.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -91,6 +99,9 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>Resource.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Template\WindowTemplate - 复制.xaml.cs">
+      <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
 

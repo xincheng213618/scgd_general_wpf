@@ -32,6 +32,7 @@ namespace ColorVision.MQTT
     public class BaseService<T> : BaseService where T : BaseDeviceConfig
     {
         public T Config { get; set; }
+        public event HeartbeatHandler HeartbeatEvent;
 
         public override string SubscribeTopic { get => Config.SubscribeTopic; set { Config.SubscribeTopic = value; } }
         public override string SendTopic { get => Config.SendTopic; set { Config.SendTopic = value; } }
@@ -44,12 +45,30 @@ namespace ColorVision.MQTT
         public BaseService(T config)
         {
             Config = config;
-            ServiceName = Config.Name;
+            //ServiceName = Config.Name;
 
             SendTopic = Config.SendTopic;
             SubscribeTopic = Config.SubscribeTopic;
             MQTTControl = MQTTControl.GetInstance();
             MQTTControl.SubscribeCache(SubscribeTopic);
+        }
+
+        public void DoHeartbeat(List<DeviceHeartbeatParam> devsheartbeat)
+        {
+            foreach (DeviceHeartbeatParam dev_heartbeat in devsheartbeat)
+            {
+                if (dev_heartbeat.DeviceName.Equals(Config.Code, System.StringComparison.Ordinal))
+                {
+                    HeartbeatParam heartbeat = new HeartbeatParam();
+                    heartbeat.DeviceStatus = dev_heartbeat.DeviceStatus;
+                    DoHeartbeat(heartbeat);
+                }
+            }
+        }
+
+        public void DoHeartbeat(HeartbeatParam heartbeat)
+        {
+            Application.Current.Dispatcher.Invoke(() => HeartbeatEvent?.Invoke(heartbeat));
         }
     }
 
@@ -61,7 +80,6 @@ namespace ColorVision.MQTT
         public MQTTSetting MQTTSetting { get; set; }
 
         public event EventHandler Connected;
-
         public Dictionary<string, MsgSend> cmdMap { get; set; }
 
         public BaseService()
@@ -178,6 +196,9 @@ namespace ColorVision.MQTT
         /// <param name="msg"></param>
         internal virtual MsgRecord PublishAsyncClient(MsgSend msg)
         {
+            if (!MQTTControl.IsConnect)
+                MessageBox.Show("请先连接中转MQTT服务器在发送命令");
+
             Guid guid = Guid.NewGuid();
             msg.MsgID = guid;
             msg.ServiceID = ServiceID;
@@ -200,10 +221,7 @@ namespace ColorVision.MQTT
             {
                 MQTTSetting.MsgRecords.Insert(0, msgRecord);
                 MsgRecords.Add(msgRecord);
-            }
-            );
-
-
+            });
 
             Timer timer = new Timer(MQTTSetting.SendTimeout * 1000);
             timer.Elapsed += (s, e) =>

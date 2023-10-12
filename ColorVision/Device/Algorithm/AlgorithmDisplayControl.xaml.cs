@@ -4,6 +4,7 @@ using ColorVision.Services;
 using ColorVision.Template;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -31,6 +32,23 @@ namespace ColorVision.Device.POI
         {
             ComboxPoiTemplate.ItemsSource = TemplateControl.GetInstance().PoiParams;
             ComboxPoiTemplate.SelectedIndex = 0;
+
+            ComboxMTFTemplate.ItemsSource = TemplateControl.GetInstance().MTFParams;
+            ComboxMTFTemplate.SelectedIndex = 0;
+
+            ComboxSFRTemplate.ItemsSource = TemplateControl.GetInstance().SFRParams;
+            ComboxSFRTemplate.SelectedIndex = 0;
+
+            ComboxGhostTemplate.ItemsSource = TemplateControl.GetInstance().GhostParams;
+            ComboxGhostTemplate.SelectedIndex = 0;
+
+            ComboxFOVTemplate.ItemsSource = TemplateControl.GetInstance().FOVParams;
+            ComboxFOVTemplate.SelectedIndex = 0;
+
+            ComboxDistortionTemplate.ItemsSource = TemplateControl.GetInstance().DistortionParams;
+            ComboxDistortionTemplate.SelectedIndex = 0;
+
+
             ViewGridManager.GetInstance().AddView(Device.View);
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
             {
@@ -63,12 +81,14 @@ namespace ColorVision.Device.POI
 
         private void PoiClick(object sender, RoutedEventArgs e)
         {
-            if (ComboxPoiTemplate.SelectedValue is PoiParam poiParam)
+            if (ComboxPoiTemplate.SelectedIndex ==-1)
             {
-                string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-                var model = ServiceControl.GetInstance().GetResultBatch(sn);
-                Service.GetData(poiParam.ID,10);
+                MessageBox.Show("请先选择关注点模板");
+                return;
             }
+            string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            var Batch = ServiceControl.GetInstance().GetResultBatch(sn);
+            Service.GetData(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, Batch.Id);
         }
 
         private void Algorithm_INI(object sender, RoutedEventArgs e)
@@ -86,6 +106,112 @@ namespace ColorVision.Device.POI
             var a = new ResultService().PoiSelectByBatchID(10);
             Device.View.PoiDataDraw(a);
         }
+
+        private void MTF_Click(object sender, RoutedEventArgs e)
+        {
+            if (ComboxMTFTemplate.SelectedIndex==-1)
+            {
+                MessageBox.Show("请先选择MTF模板");
+                return;
+            }
+            if (ComboxPoiTemplate.SelectedIndex == -1)
+            {
+                MessageBox.Show("请先选择关注点模板");
+                return;
+            }
+
+            var ss = Service.MTF(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, ImageFile.Text, TemplateControl.GetInstance().MTFParams[ComboxMTFTemplate.SelectedIndex].Value);
+            Helpers.SendCommand(ss,"MTF");
+        }
+
+        private void SFR_Clik(object sender, RoutedEventArgs e)
+        {
+            if (ComboxSFRTemplate.SelectedIndex == -1)
+            {
+                MessageBox.Show("请先选择SFR模板");
+                return;
+            }
+            if (ComboxPoiTemplate.SelectedIndex == -1)
+            {
+                MessageBox.Show("请先选择关注点模板");
+                return;
+            }
+
+            var msg = Service.SFR(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, ImageFile.Text, TemplateControl.GetInstance().SFRParams[ComboxSFRTemplate.SelectedIndex].Value);
+            Helpers.SendCommand(msg, "SFR");
+
+        }
+
+        private void Ghost_Click(object sender, RoutedEventArgs e)
+        {
+            if (ComboxGhostTemplate.SelectedIndex == -1)
+            {
+                MessageBox.Show("请先选择Ghost模板");
+                return;
+            }
+            if (ComboxPoiTemplate.SelectedIndex == -1)
+            {
+                MessageBox.Show("请先选择关注点模板");
+                return;
+            }
+
+
+
+            var msg = Service.Ghost(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, ImageFile.Text, TemplateControl.GetInstance().GhostParams[ComboxGhostTemplate.SelectedIndex].Value);
+            Helpers.SendCommand(msg, "Ghost");
+        }
+
+        private void Distortion_Click(object sender, RoutedEventArgs e)
+        {
+            if (ComboxDistortionTemplate.SelectedIndex == -1)
+            {
+                MessageBox.Show("请先选择Distortion模板");
+                return;
+            }
+            if (ComboxPoiTemplate.SelectedIndex == -1)
+            {
+                MessageBox.Show("请先选择关注点模板");
+                return;
+            }
+            var msg = Service.Distortion(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, ImageFile.Text, TemplateControl.GetInstance().DistortionParams[ComboxDistortionTemplate.SelectedIndex].Value);
+            Helpers.SendCommand(msg, "Distortion");
+        }
+
+
+        private void FOV_Click(object sender, RoutedEventArgs e)
+        {
+            if (ComboxFOVTemplate.SelectedIndex == -1)
+            {
+                MessageBox.Show("请先选择FOV模板");
+                return;
+            }
+            if (ComboxPoiTemplate.SelectedIndex == -1)
+            {
+                MessageBox.Show("请先选择关注点模板");
+                return;
+            }
+
+            var msg = Service.FOV(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, ImageFile.Text, TemplateControl.GetInstance().FOVParams[ComboxFOVTemplate.SelectedIndex].Value);
+            Helpers.SendCommand(msg, "FOV");
+        }
+
+
+        private void Open_File(object sender, RoutedEventArgs e)
+        {
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
+            openFileDialog.InitialDirectory = Environment.CurrentDirectory;
+            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png,*.tif) | *.jpg; *.jpeg; *.png;*.tif";
+            openFileDialog.RestoreDirectory = true;
+            openFileDialog.FilterIndex = 1;
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                ImageFile.Text = openFileDialog.FileName;
+            }
+
+
+             
+        }
+
 
     }
 }

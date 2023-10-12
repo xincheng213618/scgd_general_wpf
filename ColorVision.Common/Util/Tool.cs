@@ -1,16 +1,41 @@
 ﻿using Microsoft.VisualBasic.Logging;
 using System;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
+using System.Windows.Forms;
 
 namespace ColorVision.Util
 {
     public static partial class Tool
     {
+
+        public static float GetScreenScalingFactor()
+        {
+            // 获取主屏幕
+            Screen screen = Screen.PrimaryScreen;
+
+            // 获取缩放比例
+            float dpiX, dpiY;
+            using (Graphics graphics = Graphics.FromHwnd(IntPtr.Zero))
+            {
+                dpiX = graphics.DpiX;
+                dpiY = graphics.DpiY;
+            }
+
+            // 计算缩放比例
+            float dpiScaleX = dpiX / 96f;
+            float dpiScaleY = dpiY / 96f;
+
+            // 返回较大的缩放比例
+            return Math.Max(dpiScaleX, dpiScaleY);
+        }
+
+
 
         public static bool HasDefaultProgram(string fileName)
         {

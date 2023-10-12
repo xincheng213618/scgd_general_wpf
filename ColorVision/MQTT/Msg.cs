@@ -27,7 +27,7 @@ namespace ColorVision.MQTT
         [JsonProperty("params")]
         public dynamic Params { get; set; }
 
-        public override string ToString() =>JsonConvert.ToString(this);
+        public override string ToString() => JsonConvert.SerializeObject(this);
     }
 
     public delegate void MsgReturnHandler(MsgReturn msg);
@@ -39,13 +39,14 @@ namespace ColorVision.MQTT
         public string Version { get; set; }
         public string EventName { get; set; }
         public string ServiceName { get; set; }
+        public string DeviceName { get; set; }
         public ulong ServiceID { get; set; }
         public string? SnID { get; set; }
         public int Code { get; set; }
         public string MsgID { get; set; }
         [JsonProperty("data")]
         public dynamic Data { get; set; }
-        public override string ToString() => JsonConvert.ToString(this);
+        public override string ToString() => JsonConvert.SerializeObject(this);
     }
 
     public class ParamFunction
@@ -53,6 +54,6 @@ namespace ColorVision.MQTT
         public string Name { get; set; }
         [JsonProperty("params")]
         public dynamic Params { get; set; }
-        public override string ToString() => JsonConvert.ToString(this);
+        public override string ToString() => JsonConvert.SerializeObject(this);
     }
 }

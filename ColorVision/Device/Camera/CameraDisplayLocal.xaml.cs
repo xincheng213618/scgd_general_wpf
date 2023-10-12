@@ -309,7 +309,7 @@ namespace ColorVision.Device.Camera
 
         }
         /// <summary>
-        /// FOV
+        /// GetData
         /// </summary>
         private void FOV_Click(object sender, RoutedEventArgs e)
         {

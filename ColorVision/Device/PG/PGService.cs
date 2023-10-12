@@ -31,7 +31,6 @@ namespace ColorVision.Device.PG
 
     public class PGService : BaseService<PGConfig>
     {
-        public event HeartbeatHandler HeartbeatEvent;
         public Dictionary<string, Dictionary<string, string>> PGCategoryLib { get; }
 
         public PGService(PGConfig pGConfig) : base(pGConfig)
@@ -90,13 +89,10 @@ namespace ColorVision.Device.PG
                         {
                             //MessageBox.Show("UnInit");
                         }
-                        else if (json.EventName == "Heartbeat")
+                        else if (json.EventName == "Heartbeat" && json.ServiceName.Equals(this.ServiceName, System.StringComparison.Ordinal))
                         {
-                            HeartbeatParam heartbeat = JsonConvert.DeserializeObject<HeartbeatParam>(JsonConvert.SerializeObject(json.Data));
-                            if (heartbeat != null && json.ServiceName.Equals(Config.Code, System.StringComparison.Ordinal))
-                            {
-                                Application.Current.Dispatcher.Invoke(() => HeartbeatEvent?.Invoke(heartbeat));
-                            }
+                            List<DeviceHeartbeatParam> devs_heartbeat = JsonConvert.DeserializeObject<List<DeviceHeartbeatParam>>(JsonConvert.SerializeObject(json.Data));
+                            if (devs_heartbeat != null && devs_heartbeat.Count > 0) DoHeartbeat(devs_heartbeat);
                         }
                     }
                 }
@@ -235,7 +231,7 @@ namespace ColorVision.Device.PG
                     switch (item.Value)
                     {
                         case DeviceStatusType.Unknown:
-                            heartbeat.DeviceStatus = DeviceStatus.Unknown;
+                            heartbeat.DeviceStatus = DeviceStatus.Closed;
                             break;
                         case DeviceStatusType.Closed:
                             heartbeat.DeviceStatus = DeviceStatus.Closed;
@@ -256,13 +252,13 @@ namespace ColorVision.Device.PG
                             heartbeat.DeviceStatus = DeviceStatus.Free;
                             break;
                         default:
-                            heartbeat.DeviceStatus = DeviceStatus.Unknown;
+                            heartbeat.DeviceStatus = DeviceStatus.Closed;
                             break;
                     }
                 }
             }
 
-            Application.Current.Dispatcher.Invoke(() => HeartbeatEvent?.Invoke(heartbeat));
+            DoHeartbeat(heartbeat);
         }
     }
 }
