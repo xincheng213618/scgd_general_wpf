@@ -13,26 +13,8 @@ using System.Threading.Tasks;
 
 namespace ColorVision.MQTT
 {
-    public interface IMQTTControl
-    {
-        public event MQTTMsgHandler MQTTMsgChanged;
-        public event EventHandler MQTTConnectChanged;
-        public event Func<MqttApplicationMessageReceivedEventArgs, Task> ApplicationMessageReceivedAsync;
-        public bool IsConnect { get; }
-        public Task<bool> Connect(MQTTConfig MQTTConfig);
-        public Task DisconnectAsyncClient();
-        public ObservableCollection<string> SubscribeTopic { get; }
-        public void SubscribeCache(string SubscribeTopic);
-        public Task UnsubscribeAsyncClientAsync(string topic);
-        public Task PublishAsyncClient(string topic, string msg, bool retained);
-    }
-
-
-
-
     public delegate void MQTTMsgHandler(MQMsg resultDataMQTT);
-
-    public class MQTTControl : ViewModelBase, IMQTTControl
+    public class MQTTControl : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MQTTControl));
 
@@ -64,6 +46,10 @@ namespace ColorVision.MQTT
 
         public async Task<bool> Connect(MQTTConfig MQTTConfig)
         {
+
+            log.Info($"正在连接MQTT:{MQTTConfig}");
+
+
             IsConnect = false;
             MQTTClient?.Dispose();
 
@@ -139,6 +125,8 @@ namespace ColorVision.MQTT
         List<string> SubscribeTopicCache = new List<string>();
         public void SubscribeCache(string SubscribeTopic)
         {
+            if (string.IsNullOrEmpty(SubscribeTopic))
+                return;
             if (IsConnect)
             {
                 SubscribeAsyncClientAsync(SubscribeTopic);

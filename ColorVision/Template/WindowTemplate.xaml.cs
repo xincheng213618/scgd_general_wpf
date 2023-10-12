@@ -182,6 +182,7 @@ namespace ColorVision.Template
                         {
                             flowParam.Name ??= ListConfigs[listView.SelectedIndex].Name;
                             new WindowFlowEngine(flowParam) { Owner = Application.Current.MainWindow }.Show();
+                            this.Close();
                         }
                         break;
                 }

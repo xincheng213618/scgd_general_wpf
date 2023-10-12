@@ -16,11 +16,9 @@ namespace ColorVision.Device.Camera
     public delegate void MQTTCameraFileHandler(object sender, string? FilePath);
     public delegate void MQTTCameraMsgHandler(object sender, MsgReturn msg);
 
-
     public class CameraService : BaseService<CameraConfig>
     {
         public event MQTTCameraFileHandler FileHandler;
-
         public event DeviceStatusChangedHandler DeviceStatusChanged;
 
         public DeviceStatus DeviceStatus { get => _DeviceStatus; set { _DeviceStatus = value; Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value)); NotifyPropertyChanged(); } }
@@ -125,7 +123,7 @@ namespace ColorVision.Device.Camera
                     case "GetData":
                         try
                         {
-                            string SaveFileName = msg.Data.SaveFileName;
+                            string SaveFileName = msg.Data.list[0].filename;
                             Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(this, SaveFileName));
                         }
                         catch { }
@@ -147,6 +145,10 @@ namespace ColorVision.Device.Camera
                         } 
                         break;
                     case "SaveLicense":
+                        log.Debug($"SaveLicense:{msg.Data}");
+                        break;
+                    case "Calibration":
+                        log.Debug($"Calibration:{msg.Data}");
                         break;
                     default:
                         MessageBox.Show($"未定义{msg.EventName}");

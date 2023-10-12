@@ -380,7 +380,9 @@ namespace ColorVision.Template
             int pkId = flowMaster.GetPK();
             if (pkId > 0)
             {
-                return LoadFlowParamById(pkId);
+                List<ModDetailModel> flowDetail = modService.GetDetailByPid(pkId);
+                if (flowMaster != null) return new FlowParam(flowMaster, flowDetail);
+                else return null;
             }
             return null;
         }
@@ -439,15 +441,6 @@ namespace ColorVision.Template
             if (poiMaster != null) return new PoiParam(poiMaster);
             else return null;
         }
-
-        private FlowParam? LoadFlowParamById(int pkId)
-        {
-            ModMasterModel flowMaster = modService.GetMasterById(pkId);
-            List<ModDetailModel> flowDetail = modService.GetDetailByPid(pkId);
-            if (flowMaster != null) return new FlowParam(flowMaster, flowDetail);
-            else return null;
-        }
-
 
         private void LoadModParam<T>(ObservableCollection<KeyValuePair<string, T>> ParamModes, string ModeType) where T : ParamBase,new ()
         {
