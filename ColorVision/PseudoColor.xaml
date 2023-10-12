@@ -48,7 +48,7 @@
                             <GradientStop Offset="0" Color="#BBBBBB"/>
                             <GradientStop Offset="1" Color="#000000"/>
                         </LinearGradientBrush>-->
-                        <ImageBrush ImageSource="/pictureBox1.Image.png" TileMode="Tile" Stretch="Uniform" ViewportUnits="Absolute"/>
+                        <ImageBrush ImageSource="/Assets/Image/pictureBox1.Image.png" TileMode="Tile" Stretch="Uniform" ViewportUnits="Absolute"/>
                     </Border.Background>
                 </Border>
 
