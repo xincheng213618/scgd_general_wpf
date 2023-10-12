@@ -1,6 +1,7 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.MVVM;
 using ColorVision.MySql;
+using ColorVision.RC;
 using ColorVision.SettingUp;
 using ColorVision.Template;
 using System;
@@ -36,6 +37,9 @@ namespace ColorVision
             MySqlConfig = new MySqlConfig();
             MySqlConfigs = new ObservableCollection<MySqlConfig>();
             MySqlControlLazy = new Lazy<MySqlControl>(() => MySqlControl.GetInstance());
+
+            RcServiceConfig = new RCServiceConfig();
+            RcServiceControlLazy = new Lazy<RCServiceControl>(() => RCServiceControl.GetInstance());
         }
 
 
@@ -45,9 +49,16 @@ namespace ColorVision
 
         public event UseMySqlHandler UseMySqlChanged;
 
-
-        public bool IsUseMQTT { get => _IsUseMQTT; set { _IsUseMQTT = value; NotifyPropertyChanged(); } } 
+        /// <summary>
+        /// MQTT
+        /// </summary>
+        public bool IsUseMQTT { get => _IsUseMQTT; set { _IsUseMQTT = value; NotifyPropertyChanged(); } }
         private bool _IsUseMQTT = true;
+        /// <summary>
+        /// 注册中心
+        /// </summary>
+        public bool IsUseRCService { get => _IsUseRCService; set { _IsUseRCService = value; NotifyPropertyChanged(); } }
+        private bool _IsUseRCService = true;
 
 
         public SoftwareSetting SoftwareSetting { get; set; }
@@ -89,6 +100,13 @@ namespace ColorVision
         public UserConfig UserConfig { get; set; }
 
         public SolutionConfig SolutionConfig { get; set; }
+
+        public RCServiceConfig RcServiceConfig { get; set; }
+
+        [JsonIgnore]
+        readonly Lazy<RCServiceControl> RcServiceControlLazy;
+        [JsonIgnore]
+        public RCServiceControl RcServiceControl { get => RcServiceControlLazy.Value; }
     }
 
     public class UserManager
