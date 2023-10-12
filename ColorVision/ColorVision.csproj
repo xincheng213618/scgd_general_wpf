@@ -13,6 +13,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Image\**" />
+    <EmbeddedResource Remove="Image\**" />
+    <None Remove="Image\**" />
+    <Page Remove="Image\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <AdditionalFiles Remove="app.manifest" />
   </ItemGroup>
 	
@@ -26,8 +33,10 @@
     <None Remove="Assets\Image\ColorVision.png" />
     <None Remove="Assets\Image\ColorVision1.ico" />
     <None Remove="Assets\Image\connect.png" />
+    <None Remove="Assets\Image\pictureBox1.Image.png" />
     <None Remove="ColorVision.png" />
-  </ItemGroup>
+    <None Remove="pictureBox1.Image.png" />
+  </ItemGroup>  
 
   <ItemGroup>
     <Content Include="Assets\Image\ColorVision.ico" />
@@ -74,10 +83,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Assets\Image\ColorVision.ico" />
-    <Resource Include="Assets\Image\ColorVision.png" />
-    <Resource Include="Assets\Image\ColorVision1.ico" />
-    <Resource Include="Assets\Image\connect.png" />
+    <Resource Include="Assets\Image\pictureBox1.Image.png" />
   </ItemGroup>
 
   <ItemGroup>
