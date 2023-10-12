@@ -49,7 +49,7 @@ namespace ColorVision
                 var hierarchy = (Hierarchy)LogManager.GetRepository();
                 hierarchy.Root.Level = level;
                 log4net.Config.BasicConfigurator.Configure(hierarchy);
-                log.Info("更新log4Net" + value);
+                log.Info("更新Log4Net 日志级别：" + value);
             }
         }
         }

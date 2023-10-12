@@ -175,6 +175,7 @@ namespace ColorVision.Template
                                 ListConfigs[listView.SelectedIndex].Tag = $"{poiParam.Width}*{poiParam.Height}{(GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql ? "" : $"_{poiParam.PoiPoints.Count}")}";
                             };
                             WindowFocusPoint.Show();
+                            this.Close();
                         }
                         break;
                     case TemplateType.FlowParam:
@@ -182,6 +183,7 @@ namespace ColorVision.Template
                         {
                             flowParam.Name ??= ListConfigs[listView.SelectedIndex].Name;
                             new WindowFlowEngine(flowParam) { Owner = Application.Current.MainWindow }.Show();
+                            this.Close();
                         }
                         break;
                 }
