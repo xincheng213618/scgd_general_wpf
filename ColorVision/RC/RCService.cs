@@ -1,6 +1,7 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.Services;
 using ColorVision.SettingUp;
+using Microsoft.Win32;
 using MQTTMessageLib;
 using MQTTMessageLib.RC;
 using MQTTnet.Client;
@@ -8,6 +9,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ColorVision.RC
@@ -34,7 +36,9 @@ namespace ColorVision.RC
         private string RCRegTopic;
         private string RCHeartbeatTopic;
         private string RCPublicTopic;
-        private NodeToken Token;
+        private NodeToken? Token;
+        private bool TryTestRegist;
+        private bool RegistOk;
 
         public event RCServiceStatusChangedEventHandler StatusChangedEventHandler;
         public RCService(RCConfig config) : base(config)
@@ -42,15 +46,10 @@ namespace ColorVision.RC
             Config = config;
             this.NodeType = "client";
             this.NodeName = MQTTRCServiceTypeConst.BuildNodeName(NodeType, null);
-            RCServiceConfig RcServiceConfig = GlobalSetting.GetInstance().SoftwareConfig.RcServiceConfig;
             this.DevcieName = "dev." + NodeType + ".127.0.0.1";
             //
-            this.AppId = RcServiceConfig.AppId;
-            this.AppSecret = RcServiceConfig.AppSecret;
-            this.RCNodeName = RcServiceConfig.RCName;
-            this.RCRegTopic = MQTTRCServiceTypeConst.BuildRegTopic(RCNodeName);
-            this.RCHeartbeatTopic = MQTTRCServiceTypeConst.BuildHeartbeatTopic(RCNodeName);
-            this.RCPublicTopic = MQTTRCServiceTypeConst.BuildPublicTopic(RCNodeName);
+            LoadCfg();
+            //
             //
             ServiceName = Guid.NewGuid().ToString();
             SubscribeTopic = MQTTRCServiceTypeConst.BuildNodeTopic(NodeName);
@@ -58,6 +57,18 @@ namespace ColorVision.RC
             MQTTControl = MQTTControl.GetInstance();
             MQTTControl.SubscribeCache(SubscribeTopic);
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
+        }
+
+        public void LoadCfg()
+        {
+            RCServiceConfig RcServiceConfig = GlobalSetting.GetInstance().SoftwareConfig.RcServiceConfig;
+            this.AppId = RcServiceConfig.AppId;
+            this.AppSecret = RcServiceConfig.AppSecret;
+            this.RCNodeName = RcServiceConfig.RCName;
+
+            this.RCRegTopic = MQTTRCServiceTypeConst.BuildRegTopic(RCNodeName);
+            this.RCHeartbeatTopic = MQTTRCServiceTypeConst.BuildHeartbeatTopic(RCNodeName);
+            this.RCPublicTopic = MQTTRCServiceTypeConst.BuildPublicTopic(RCNodeName);
         }
 
         private Task MqttClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
@@ -82,15 +93,20 @@ namespace ColorVision.RC
                             break;
                         case MQTTNodeServiceEventEnum.Event_Startup:
                             MQTTNodeServiceStartupRequest req = JsonConvert.DeserializeObject<MQTTNodeServiceStartupRequest>(Msg);
-                            Token = req.Data;
-                            StatusChangedEventHandler?.Invoke(this, new RCServiceStatusChangedEventArgs(ServiceNodeStatus.Registered));
-                            QueryServices();
+                            RegistOk = true;
+                            if (!TryTestRegist)
+                            {
+                                Token = req.Data;
+                                StatusChangedEventHandler?.Invoke(this, new RCServiceStatusChangedEventArgs(ServiceNodeStatus.Registered));
+                                QueryServices();
+                            }
                             break;
                         case MQTTNodeServiceEventEnum.Event_ServicesQuery:
                             MQTTRCServicesQueryResponse respQurey = JsonConvert.DeserializeObject<MQTTRCServicesQueryResponse>(Msg);
                             ServiceControl.GetInstance().UpdateStatus(respQurey.Data);
                             break;
                         case MQTTNodeServiceEventEnum.Event_NotRegist:
+                            StatusChangedEventHandler?.Invoke(this, new RCServiceStatusChangedEventArgs(ServiceNodeStatus.Unregistered));
                             Regist();
                             break;
                     }
@@ -106,6 +122,8 @@ namespace ColorVision.RC
 
         public bool Regist()
         {
+            this.Token = null;
+            this.RegistOk = false;
             MQTTNodeServiceRegist reg = new MQTTNodeServiceRegist(NodeName, AppId, AppSecret, SubscribeTopic, NodeType);
             PublishAsyncClient(RCRegTopic, JsonConvert.SerializeObject(reg));
             return true;
@@ -137,6 +155,35 @@ namespace ColorVision.RC
             PublishAsyncClient(RCHeartbeatTopic, serviceHeartbeat);
 
             QueryServices();
+        }
+
+        private bool DoRegist(RCServiceConfig cfg)
+        {
+            string RegTopic = MQTTRCServiceTypeConst.BuildRegTopic(cfg.RCName);
+            string appId = cfg.AppId;
+            string appSecret = cfg.AppSecret;
+            this.RegistOk = false;
+            MQTTNodeServiceRegist reg = new MQTTNodeServiceRegist(NodeName, appId, appSecret, SubscribeTopic, NodeType);
+            PublishAsyncClient(RegTopic, JsonConvert.SerializeObject(reg));
+            for (int i = 0; i < 3; i++)
+            {
+                Thread.Sleep(200);
+                if (RegistOk) return true;
+            }
+
+            return false;
+        }
+
+        public bool TryRegist(RCServiceConfig cfg)
+        {
+            TryTestRegist = true;
+            for (int i = 0; i < 3; i++)
+            {
+                if(DoRegist(cfg)) return true;
+                Thread.Sleep(200);
+            }
+
+            return false;
         }
     }
 }

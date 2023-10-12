@@ -10,6 +10,11 @@ namespace ColorVision.SettingUp
     public class RCServiceConfig : ViewModelBase
     {
         /// <summary>
+        /// 连接名称
+        /// </summary>
+        public string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
+        private string _Name;
+        /// <summary>
         /// AppId App ID
         /// </summary>
         public string AppId { get => _AppId; set { _AppId = value; NotifyPropertyChanged(); } }
