@@ -38,7 +38,7 @@ namespace ColorVision.RC
         private string RCPublicTopic;
         private NodeToken? Token;
         private bool TryTestRegist;
-        private bool RegistOk;
+        private ServiceNodeStatus regStatus;
 
         public event RCServiceStatusChangedEventHandler StatusChangedEventHandler;
         public RCService(RCConfig config) : base(config)
@@ -50,6 +50,7 @@ namespace ColorVision.RC
             //
             LoadCfg();
             //
+            this.regStatus = ServiceNodeStatus.Unregistered;
             //
             ServiceName = Guid.NewGuid().ToString();
             SubscribeTopic = MQTTRCServiceTypeConst.BuildNodeTopic(NodeName);
@@ -93,7 +94,7 @@ namespace ColorVision.RC
                             break;
                         case MQTTNodeServiceEventEnum.Event_Startup:
                             MQTTNodeServiceStartupRequest req = JsonConvert.DeserializeObject<MQTTNodeServiceStartupRequest>(Msg);
-                            RegistOk = true;
+                            this.regStatus = ServiceNodeStatus.Registered;
                             if (!TryTestRegist)
                             {
                                 Token = req.Data;
@@ -120,10 +121,18 @@ namespace ColorVision.RC
             return Task.CompletedTask;
         }
 
+        public bool ReRegist()
+        {
+            LoadCfg();
+
+            return Regist();
+        }
+
         public bool Regist()
         {
+            StatusChangedEventHandler?.Invoke(this, new RCServiceStatusChangedEventArgs(ServiceNodeStatus.Unregistered));
             this.Token = null;
-            this.RegistOk = false;
+            this.regStatus = ServiceNodeStatus.Unregistered;
             MQTTNodeServiceRegist reg = new MQTTNodeServiceRegist(NodeName, AppId, AppSecret, SubscribeTopic, NodeType);
             PublishAsyncClient(RCRegTopic, JsonConvert.SerializeObject(reg));
             return true;
@@ -162,13 +171,13 @@ namespace ColorVision.RC
             string RegTopic = MQTTRCServiceTypeConst.BuildRegTopic(cfg.RCName);
             string appId = cfg.AppId;
             string appSecret = cfg.AppSecret;
-            this.RegistOk = false;
+            this.regStatus = ServiceNodeStatus.Unregistered;
             MQTTNodeServiceRegist reg = new MQTTNodeServiceRegist(NodeName, appId, appSecret, SubscribeTopic, NodeType);
             PublishAsyncClient(RegTopic, JsonConvert.SerializeObject(reg));
             for (int i = 0; i < 3; i++)
             {
                 Thread.Sleep(200);
-                if (RegistOk) return true;
+                if (IsRegisted()) return true;
             }
 
             return false;
@@ -176,14 +185,21 @@ namespace ColorVision.RC
 
         public bool TryRegist(RCServiceConfig cfg)
         {
+            ServiceNodeStatus curStatus = regStatus;
             TryTestRegist = true;
             for (int i = 0; i < 3; i++)
             {
                 if(DoRegist(cfg)) return true;
                 Thread.Sleep(200);
             }
-
+            TryTestRegist = false;
+            regStatus = curStatus;
             return false;
+        }
+
+        public bool IsRegisted()
+        {
+            return regStatus == ServiceNodeStatus.Registered;
         }
     }
 }

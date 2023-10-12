@@ -69,7 +69,7 @@ namespace ColorVision
                 mQTTConnect.ShowDialog();
                 TextBoxMsg.Text += $"{Environment.NewLine}MQTT服务连接: {(MQTTControl.GetInstance().IsConnect ? "成功" : "失败")}";
             }
-            RCServiceControl.GetInstance().RCRegist();
+            ServiceControl.GetInstance().rcService.Regist();
             await Task.Delay(100);
             TextBoxMsg.Text += Environment.NewLine + "初始化服务" + MySqlControl.GetInstance().IsConnect;
             try
