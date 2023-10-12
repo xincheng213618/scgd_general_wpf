@@ -24,5 +24,10 @@ namespace ColorVision
         {
             InitializeComponent();
         }
+
+        private void button_Create_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }
