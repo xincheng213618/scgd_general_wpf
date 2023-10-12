@@ -175,7 +175,6 @@ namespace ColorVision.Template
                                 ListConfigs[listView.SelectedIndex].Tag = $"{poiParam.Width}*{poiParam.Height}{(GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql ? "" : $"_{poiParam.PoiPoints.Count}")}";
                             };
                             WindowFocusPoint.Show();
-                            this.Close();
                         }
                         break;
                     case TemplateType.FlowParam:
