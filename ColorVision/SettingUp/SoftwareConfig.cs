@@ -39,6 +39,7 @@ namespace ColorVision
             MySqlControlLazy = new Lazy<MySqlControl>(() => MySqlControl.GetInstance());
 
             RcServiceConfig = new RCServiceConfig();
+            RcServiceConfigs = new ObservableCollection<RCServiceConfig>();
             RcServiceControlLazy = new Lazy<RCServiceControl>(() => RCServiceControl.GetInstance());
         }
 
@@ -102,6 +103,7 @@ namespace ColorVision
         public SolutionConfig SolutionConfig { get; set; }
 
         public RCServiceConfig RcServiceConfig { get; set; }
+        public ObservableCollection<RCServiceConfig> RcServiceConfigs { get; set; }
 
         [JsonIgnore]
         readonly Lazy<RCServiceControl> RcServiceControlLazy;

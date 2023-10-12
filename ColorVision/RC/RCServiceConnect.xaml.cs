@@ -1,16 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using ColorVision.MVVM;
+using ColorVision.MySql;
+using ColorVision.SettingUp;
+using System;
+using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
+
 
 namespace ColorVision.RC
 {
@@ -19,9 +16,109 @@ namespace ColorVision.RC
     /// </summary>
     public partial class RCServiceConnect : Window
     {
+        public RCServiceConfig rcServiceConfig { get; set; }
+        private RCServiceConfig rcServiceConfigBackUp { get; set; }
+
+        public ObservableCollection<RCServiceConfig> rcServiceConfigs { get; set; }
         public RCServiceConnect()
         {
             InitializeComponent();
+        }
+
+        private void Window_Initialized(object sender, EventArgs e)
+        {
+            rcServiceConfig = GlobalSetting.GetInstance().SoftwareConfig.RcServiceConfig;
+            GridRCService.DataContext = rcServiceConfig;
+            rcServiceConfigBackUp = new RCServiceConfig();
+            rcServiceConfig.CopyTo(rcServiceConfigBackUp);
+            PasswordBox1.Password = rcServiceConfig.AppSecret;
+
+            rcServiceConfigs = GlobalSetting.GetInstance().SoftwareConfig.RcServiceConfigs;
+            ListViewMySql.ItemsSource = rcServiceConfigs;
+
+            rcServiceConfigs.Insert(0, rcServiceConfig);
+            ListViewMySql.SelectedIndex = 0;
+
+            this.Closed += (s, e) =>
+            {
+                rcServiceConfigs.Remove(rcServiceConfig);
+            };
+        }
+
+        private void Button_Click_Ok(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(rcServiceConfig.Name))
+            {
+                rcServiceConfig.Name = rcServiceConfig.AppId + "_" + rcServiceConfig.AppSecret.GetHashCode();
+            }
+            rcServiceConfig.AppSecret = PasswordBox1.Password;
+            rcServiceConfigs.Remove(rcServiceConfig);
+
+            GlobalSetting.GetInstance().SaveSoftwareConfig();
+            Task.Run(() => RCServiceControl.GetInstance().Regist());
+            this.Close();
+        }
+
+        private void Button_Click_Cancel(object sender, RoutedEventArgs e)
+        {
+            rcServiceConfigBackUp.CopyTo(rcServiceConfig);
+            this.Close();
+        }
+
+        private void Button_Click_Test(object sender, RoutedEventArgs e)
+        {
+            rcServiceConfig.AppSecret = PasswordBox1.Password;
+            Task.Run(() =>
+            {
+                bool IsConnect = RCServiceControl.GetInstance().TryRegist(rcServiceConfig);
+                MessageBox.Show($"连接{(IsConnect ? "成功" : "失败")}");
+            });
+        }
+
+        private void Button_Click_ListShow(object sender, RoutedEventArgs e)
+        {
+            if (ListViewMySqlBorder.Visibility == Visibility.Visible)
+            {
+                ListViewMySqlBorder.Visibility = Visibility.Collapsed;
+                this.Width -= 170;
+            }
+            else
+            {
+                ListViewMySqlBorder.Visibility = Visibility.Visible;
+                this.Width += 170;
+            }
+        }
+
+        private void Button_Click_Copy(object sender, RoutedEventArgs e)
+        {
+            RCServiceConfig newCfg = new RCServiceConfig();
+            rcServiceConfig.CopyTo(newCfg);
+            newCfg.Name = newCfg.Name + "_1";
+            rcServiceConfigs.Add(newCfg);
+        }
+
+        private void MenuItem_Click_Delete(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Tag is RCServiceConfig rcConfig)
+            {
+                rcServiceConfigs.Remove(rcConfig);
+            }
+        }
+
+        private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ListView listView && listView.SelectedIndex > -1)
+            {
+                rcServiceConfig = rcServiceConfigs[listView.SelectedIndex];
+                GridRCService.DataContext = rcServiceConfig;
+                PasswordBox1.Password = rcServiceConfig.AppSecret;
+                GlobalSetting.GetInstance().SoftwareConfig.RcServiceConfig = rcServiceConfig;
+            }
+        }
+
+        private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)
+        {
+
         }
     }
 }

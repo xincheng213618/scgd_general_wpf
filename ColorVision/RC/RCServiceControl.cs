@@ -1,4 +1,6 @@
-﻿using ColorVision.MVVM;
+﻿using ColorVision.Device.PG;
+using ColorVision.MVVM;
+using ColorVision.SettingUp;
 using System;
 
 namespace ColorVision.RC
@@ -28,8 +30,8 @@ namespace ColorVision.RC
 
         private void RcService_StatusChangedEventHandler(object sender, RCServiceStatusChangedEventArgs args)
         {
-            if (args.NodeStatus == MQTTMessageLib.ServiceNodeStatus.Registered) _IsConnect = true;
-            else _IsConnect = false;
+            if (args.NodeStatus == MQTTMessageLib.ServiceNodeStatus.Registered) IsConnect = true;
+            else IsConnect = false;
         }
 
         private void timer_KeepLive(object? sender, System.Timers.ElapsedEventArgs e)
@@ -47,6 +49,18 @@ namespace ColorVision.RC
             {
                 return _instance ??= new RCServiceControl();
             }
+        }
+
+        public void Regist()
+        {
+            IsConnect = false;
+            rcService.LoadCfg();
+            rcService.Regist();
+        }
+
+        public bool TryRegist(RCServiceConfig cfg)
+        {
+            return rcService.TryRegist(cfg);
         }
     }
 }
