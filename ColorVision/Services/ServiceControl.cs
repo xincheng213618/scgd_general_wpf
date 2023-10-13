@@ -13,6 +13,7 @@ using ColorVision.RC;
 using ColorVision.SettingUp;
 using MQTTMessageLib;
 using Newtonsoft.Json;
+using NPOI.HSSF.Record.Chart;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -279,6 +280,7 @@ namespace ColorVision.Services
             SpectrumDrawPlotFromDB(flowControlData.SerialNumber);
         }
 
+
         public void UpdateStatus(Dictionary<string, List<MQTTNodeService>> data)
         {
             foreach (var item in data)
@@ -295,6 +297,51 @@ namespace ColorVision.Services
                     }
                 }
             }
+        }
+
+        public void UpdateServiceStatus(Dictionary<string, List<MQTTNodeService>> data)
+        {
+            foreach (var item in data.Values)
+            {
+                foreach (var svr in item)
+                {
+                    UpdateServiceStatus(svr);
+                }
+            }
+        }
+
+        private void UpdateServiceStatus(MQTTNodeService svr)
+        {
+            UpdateServiceStatus(svr.ServiceName, svr.LiveTime, svr.OverTime);
+        }
+
+        public void UpdateServiceStatus(string serviceName, DateTime liveTime, int overTime)
+        {
+            foreach (var item in MQTTServices)
+            {
+                foreach (var svr in item.VisualChildren)
+                {
+                    MQTTService service = svr as MQTTService;
+                    if (serviceName.Equals(service.ServiceConfig.Code, StringComparison.Ordinal))
+                    {
+                        if(overTime > 0) service.ServiceConfig.HeartbeatTime =(int)(overTime*1.5);
+                        service.ServiceConfig.LastAliveTime = liveTime;
+                        service.ServiceConfig.IsAlive = true;
+                    }
+                }
+            }
+        }
+        public void UpdateServiceStatus(string serviceName, string liveTime, int overTime)
+        {
+            DateTime lvTime = DateTime.Now;
+            if (!string.IsNullOrWhiteSpace(liveTime))
+            {
+                if (!DateTime.TryParse(liveTime, out lvTime))
+                {
+
+                }
+            }
+            UpdateServiceStatus(serviceName, lvTime, overTime);
         }
     }
 }

@@ -52,6 +52,8 @@ namespace ColorVision
             MQTTControl.GetInstance();
             MySqlControl.GetInstance();
 
+            ServiceControl.GetInstance().rcService.Regist();
+
             SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
             TextBoxMsg.Text += Environment.NewLine + "检测服务连接情况";
             await Task.Delay(100);
@@ -69,7 +71,14 @@ namespace ColorVision
                 mQTTConnect.ShowDialog();
                 TextBoxMsg.Text += $"{Environment.NewLine}MQTT服务连接: {(MQTTControl.GetInstance().IsConnect ? "成功" : "失败")}";
             }
-            ServiceControl.GetInstance().rcService.Regist();
+            TextBoxMsg.Text += $"{Environment.NewLine}注册: {(ServiceControl.GetInstance().rcService.IsRegisted() ? "成功" : "失败")}";
+            if (!ServiceControl.GetInstance().rcService.IsRegisted() && SoftwareConfig.IsUseRCService)
+            {
+                RCServiceConnect rcServiceConnect = new RCServiceConnect() { Owner = this }; 
+                rcServiceConnect.ShowDialog();
+                await Task.Delay(200);
+                TextBoxMsg.Text += $"{Environment.NewLine}注册: {(ServiceControl.GetInstance().rcService.IsRegisted() ? "成功" : "失败")}";
+            }
             await Task.Delay(100);
             TextBoxMsg.Text += Environment.NewLine + "初始化服务" + MySqlControl.GetInstance().IsConnect;
             try

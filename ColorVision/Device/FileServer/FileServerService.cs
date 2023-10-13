@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CA1710 // 标识符应具有正确的后缀
 
 using ColorVision.MQTT;
+using ColorVision.Services;
 using MQTTMessageLib.FileServer;
 using MQTTnet.Client;
 using Newtonsoft.Json;
@@ -56,7 +57,11 @@ namespace ColorVision.Device.FileServer
                         return Task.CompletedTask;
                     if (json.Code == 0 && json.ServiceName.Equals(Config.Code, StringComparison.Ordinal))
                     {
-                        if (!json.EventName.Equals(FileServerEventName.Heartbeat, StringComparison.Ordinal))
+                        if (json.EventName.Equals(FileServerEventName.Heartbeat, StringComparison.Ordinal))
+                        {
+                            ServiceControl.GetInstance().UpdateServiceStatus(this.ServiceName, DateTime.Now, -1);
+                        }
+                        else
                         {
                             OnImageData?.Invoke(this, new FileServerDataEvent(json.EventName, json.Data));
                         }
