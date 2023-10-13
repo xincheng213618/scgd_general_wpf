@@ -324,9 +324,10 @@ namespace ColorVision.Services
                     MQTTService service = svr as MQTTService;
                     if (serviceName.Equals(service.ServiceConfig.Code, StringComparison.Ordinal))
                     {
-                        if(overTime > 0) service.ServiceConfig.HeartbeatTime =(int)(overTime*1.5);
-                        service.ServiceConfig.LastAliveTime = liveTime;
-                        service.ServiceConfig.IsAlive = true;
+                        service.ServiceConfig.SetLiveTime(liveTime, overTime, true);
+                        //if (overTime > 0) service.ServiceConfig.HeartbeatTime = overTime;
+                        //service.ServiceConfig.LastAliveTime = liveTime;
+                        //service.ServiceConfig.IsAlive = true;
                     }
                 }
             }
