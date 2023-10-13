@@ -341,10 +341,8 @@ namespace ColorVision.Device.Camera
 
         public MsgRecord GetData(double expTime, double gain, string saveFileName = "1.tif")
         {
-            SerialNumber  = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            string SerialNumber  = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             var model = ServiceControl.GetInstance().GetResultBatch(SerialNumber);
-
-
             MsgSend msg = new MsgSend
             {
                 EventName = "GetData",
