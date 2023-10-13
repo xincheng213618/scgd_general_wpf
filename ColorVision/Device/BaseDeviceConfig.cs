@@ -38,6 +38,14 @@ namespace ColorVision.Device
         public DateTime LastAliveTime { get => _LastAliveTime; set { _LastAliveTime = value; NotifyPropertyChanged(); } }
         private DateTime _LastAliveTime = DateTime.MinValue;
 
+
+        public void SetLiveTime(DateTime liveTime, int overTime, bool isLive)
+        {
+            this.LastAliveTime = liveTime;
+            this.IsAlive = isLive;
+            if (overTime > 0) this.HeartbeatTime = overTime;
+        }
+
         /// <summary>
         /// 设备序号
         /// </summary>

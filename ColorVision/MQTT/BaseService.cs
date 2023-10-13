@@ -152,7 +152,7 @@ namespace ColorVision.MQTT
 
         private void Timer_Elapsed(object? sender, ElapsedEventArgs e)
         {
-            if (DateTime.Now - LastAliveTime > TimeSpan.FromMilliseconds(HeartbeatTime))
+            if (DateTime.Now - LastAliveTime > TimeSpan.FromMilliseconds(HeartbeatTime * 2))
             {
                 IsAlive = false;
             }
