@@ -40,6 +40,7 @@ namespace ColorVision.Services
                     ServiceConfig = new ServiceConfig();
                 }
             }
+            ServiceConfig.Code = SysResourceModel.Code ?? string.Empty;
             ServiceConfig.Name = Name;
             ServiceConfig.SubscribeTopic = SysResourceModel.TypeCode + "/STATUS/" + SysResourceModel.Code;
             ServiceConfig.SendTopic = SysResourceModel.TypeCode + "/CMD/" + SysResourceModel.Code;

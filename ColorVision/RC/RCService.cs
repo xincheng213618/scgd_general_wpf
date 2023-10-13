@@ -104,6 +104,7 @@ namespace ColorVision.RC
                             break;
                         case MQTTNodeServiceEventEnum.Event_ServicesQuery:
                             MQTTRCServicesQueryResponse respQurey = JsonConvert.DeserializeObject<MQTTRCServicesQueryResponse>(Msg);
+                            ServiceControl.GetInstance().UpdateServiceStatus(respQurey.Data);
                             ServiceControl.GetInstance().UpdateStatus(respQurey.Data);
                             break;
                         case MQTTNodeServiceEventEnum.Event_NotRegist:

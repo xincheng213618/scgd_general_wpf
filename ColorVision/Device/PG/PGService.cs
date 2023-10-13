@@ -1,4 +1,5 @@
 ﻿using ColorVision.MQTT;
+using ColorVision.Services;
 using ColorVision.Template;
 using MQTTMessageLib;
 using MQTTnet.Client;
@@ -91,6 +92,7 @@ namespace ColorVision.Device.PG
                         }
                         else if (json.EventName == "Heartbeat" && json.ServiceName.Equals(this.ServiceName, System.StringComparison.Ordinal))
                         {
+                            ServiceControl.GetInstance().UpdateServiceStatus(this.ServiceName, System.DateTime.Now, -1);
                             List<DeviceHeartbeatParam> devs_heartbeat = JsonConvert.DeserializeObject<List<DeviceHeartbeatParam>>(JsonConvert.SerializeObject(json.Data));
                             if (devs_heartbeat != null && devs_heartbeat.Count > 0) DoHeartbeat(devs_heartbeat);
                         }
