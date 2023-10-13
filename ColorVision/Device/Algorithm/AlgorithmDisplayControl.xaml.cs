@@ -93,7 +93,13 @@ namespace ColorVision.Device.POI
 
         private void Algorithm_INI(object sender, RoutedEventArgs e)
         {
-            Service.Init();
+            if (sender is Button button)
+            {
+                 var msg = Service.Init();
+
+                Helpers.SendCommand(button, msg);
+
+            }
         }
 
         private void Algorithm_GET(object sender, RoutedEventArgs e)

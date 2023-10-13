@@ -339,14 +339,14 @@ namespace ColorVision.Device.Camera
             return true;
         }
 
-        public MsgRecord GetData(double expTime, double gain, string saveFileName = "1.tif")
+        public MsgRecord GetData(double expTime, double gain, CalibrationType eCalibType = CalibrationType.Empty_Num)
         {
             string SerialNumber  = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             var model = ServiceControl.GetInstance().GetResultBatch(SerialNumber);
             MsgSend msg = new MsgSend
             {
                 EventName = "GetData",
-                Params = new Dictionary<string, object>() { { "nBatchID", model.Id }, { "expTime", expTime }, { "gain", gain }, { "savefilename", saveFileName }, { "eCalibType", CalibrationType.LumFourColor } }
+                Params = new Dictionary<string, object>() { { "nBatchID", model.Id }, { "expTime", expTime }, { "gain", gain }, { "eCalibType", eCalibType } }
             };
             return PublishAsyncClient(msg);
         }

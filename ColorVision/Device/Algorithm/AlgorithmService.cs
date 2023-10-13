@@ -165,7 +165,7 @@ namespace ColorVision.Device.Algorithm
         }
 
         public MsgRecord FOV(int pid, string fileName, FOVParam fOVParam)
-        {
+        {  
             MsgSend msg = new MsgSend
             {
                 EventName = "FOV",

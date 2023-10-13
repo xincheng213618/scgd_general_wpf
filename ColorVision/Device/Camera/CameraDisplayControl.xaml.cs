@@ -57,6 +57,10 @@ namespace ColorVision.Device.Camera
             };
 
 
+            ComCalibration.ItemsSource = from e1 in Enum.GetValues(typeof(CalibrationType)).Cast<CalibrationType>()
+                                         select new KeyValuePair<CalibrationType, string>(e1, e1.ToString());
+            ComCalibration.SelectedIndex = 13;
+
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
             {
                 List<KeyValuePair<string, int>> KeyValues = new List<KeyValuePair<string, int>>();
@@ -189,9 +193,23 @@ namespace ColorVision.Device.Camera
         {
             if (sender is Button button)
             {
-                string filename = DateTime.Now.ToString("yyyyMMddHHmmss") + ".tif";
-                MsgRecord msgRecord = Service.GetData(SliderexpTime.Value, SliderGain.Value, filename);
-                Helpers.SendCommand(msgRecord,msgRecord.MsgRecordState.ToDescription());
+                if (SliderexpTime.Value <= 0)
+                {
+                    MessageBox.Show("曝光时间小于0");
+                    return;
+                }
+
+                if (ComCalibration.SelectedIndex > -1 && ComCalibration.SelectedValue is CalibrationType calibrationType)
+                {
+                    string filename = DateTime.Now.ToString("yyyyMMddHHmmss") + ".tif";
+                    MsgRecord msgRecord = Service.GetData(SliderexpTime.Value, SliderGain.Value, calibrationType);
+                    Helpers.SendCommand(msgRecord, msgRecord.MsgRecordState.ToDescription());
+                }
+                else
+                {
+                    MessageBox.Show("请选择校正模板");
+                }
+
             }
         }
 
@@ -359,10 +377,6 @@ namespace ColorVision.Device.Camera
 
         private void ComboxCalibrationTemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
-            {
-                Calibration1.SetCalibrationParam(param);
-            }
         }
 
         private void Calibration_Click(object sender, RoutedEventArgs e)
@@ -376,38 +390,6 @@ namespace ColorVision.Device.Camera
 
                 }
             }
-
-
-        }
-
-        private void AOI_Click(object sender, RoutedEventArgs e)
-        {
-            //var aoiParam = new cvColorVision.AoiParam();
-            //var aoiHandle = cvCameraCSLib.CreateAOIDetector();//创建AOI检测的句柄
-            //bool result= cvCameraCSLib.AOIDetectorSetParam(aoiHandle, aoiParam);
-            //if (!result)
-            //{
-            //    MessageBox.Show("设置参数异常");
-            //    return;
-            //}
-            //int AoiNum = cvCameraCSLib.AOIDetectorInput(aoiHandle, (int)w, (int)h, (int)bpp, (int)channels, srcrawArray);
-
-            //for (int i = 0; i < AoiNum; i++)
-            //{
-            //    PartiCle partiCle = new PartiCle();
-
-            //    cvCameraCSLib.GetAoiDetectorBlob(aoiHandle, i, partiCle);
-            //    if (partiCle.area > 10)
-            //    {
-            //        RoiPointData newdata = new RoiPointData();
-            //        newdata.Img_x = partiCle.x;
-            //        newdata.Img_y = partiCle.y;
-            //        newdata.w = Convert.ToInt32(Math.Sqrt(((double)partiCle.area / 3.1415926)));
-            //        midRiPoint.Add(newdata);
-
-            //    }
-            //}
-
         }
     }
 }
