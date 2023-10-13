@@ -26,41 +26,8 @@
                 <RowDefinition  Height="auto"/>
             </Grid.RowDefinitions>
             <ScrollViewer x:Name="ScrollViewer1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="5" Grid.Row="0" >
-                    <Border Margin="5" Style="{StaticResource BorderModuleArea}">
-                        <StackPanel>
-                            <StackPanel  Margin="5">
-                                <UniformGrid Columns="3">
-                                    <Button x:Name="button2" Margin="2" Content="绘制" Click="Button2_Click"/>
-                                    <Button x:Name="button3"  Margin="2"  Click="Button3_Click">
-                                        <Image Source="{StaticResource DrawingImageClear}" Height="20"/>
-                                    </Button>
-                                    <Button Margin="2" Click="Button_save_Click">
-                                        <Image Source="{StaticResource DrawingImageSave}" Height="20"/>
-                                    </Button>
-                                </UniformGrid>
-                            </StackPanel>
-                            <GroupBox Header="设置" Margin="5">
-                                <StackPanel Margin="5">
-                                    <DockPanel x:Name="SettingGroup"  d:DataContext="{d:DesignInstance Template:WindowFocusPoint}">
-                                        <Button Content="重渲染"  ToolTip="一次"  Click="Button_Click_UpdateVisualLayout"  DockPanel.Dock="Right" Visibility="{Binding IsLayoutUpdated,Converter={StaticResource bool2VisibilityConverter1}}" IsEnabled="{Binding IsLayoutUpdated,Converter={StaticResource Boolean2BooleanReConverter}}" />
-                                        <ToggleButton  HorizontalAlignment="Left"  Height="16" Width="40" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsLayoutUpdated}"/>
-                                        <TextBlock HorizontalAlignment="Left" Text="缩放自动重渲染"/>
-                                    </DockPanel>
-                                    <DockPanel>
-                                        <ToggleButton  HorizontalAlignment="Left"  Height="16" Margin="2" Style="{StaticResource ToggleButtonSwitch}"  Click="SetDefault_Click" IsChecked="{Binding DatumArea.IsShowDatum}"/>
-                                        <TextBlock   HorizontalAlignment="Left" Text="基准点显示"/>
-                                    </DockPanel>
-                                    <DockPanel >
-                                        <ToggleButton HorizontalAlignment="Left" Height="16" Margin="2" Style="{StaticResource ToggleButtonSwitch}"  Click="ShowDatumArea_Click" IsChecked="{Binding DatumArea.IsShowDatumArea}"/>
-                                        <TextBlock   HorizontalAlignment="Left" Text="布点区域显示"/>
-                                    </DockPanel>
-                                </StackPanel>
-                            </GroupBox>
-                        </StackPanel>
-                    </Border>
-
-                    <Border Margin="5" Style="{StaticResource BorderModuleArea}">
+                <StackPanel Margin="5,0" Grid.Row="0" >
+                    <Border Margin="0,5" Style="{StaticResource BorderModuleArea}">
                         <StackPanel>
                             <GroupBox Header="图像尺寸设定" Margin="5">
                                 <StackPanel Margin="5">
@@ -83,8 +50,24 @@
                             </GroupBox>
                         </StackPanel>
                     </Border>
+                    <Border Margin="0,5" Style="{StaticResource BorderModuleArea}">
+                        <StackPanel>
+                            <StackPanel  Margin="5">
+                                <UniformGrid Columns="3">
+                                    <Button x:Name="button2" Margin="2" Content="绘制" Click="Button2_Click"/>
+                                    <Button x:Name="button3"  Margin="2"  ToolTip="清空关注点" Click="Button3_Click">
+                                        <Image Source="{StaticResource DrawingImageClear}" Height="20"/>
+                                    </Button>
+                                    <Button Margin="2" ToolTip="保存关注点" Click="Button_save_Click">
+                                        <Image Source="{StaticResource DrawingImageSave}" Height="20"/>
+                                    </Button>
+                                </UniformGrid>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
 
-                    <Border Margin="5" Style="{StaticResource BorderModuleArea}">
+
+                    <Border Margin="0,5" Style="{StaticResource BorderModuleArea}">
                         <StackPanel>
                             <GroupBox Header="模式" Margin="5">
                                 <StackPanel  Margin="5">
@@ -125,9 +108,7 @@
                                 </GroupBox>
                             </StackPanel>
 
-
-
-                            <GroupBox x:Name="GridBenckMark" Header="布点基准" Margin="5" >
+                            <GroupBox x:Name="GridBenckMark" Header="设置基准定位点" Margin="5" >
                                 <StackPanel>
                                     <StackPanel  x:Name="StackPanelDatumAreaPoints"   d:DataContext="{d:DesignInstance Template:DatumArea}" Margin="5">
                                         <UniformGrid Columns="2">
@@ -347,8 +328,25 @@
 
                         </StackPanel>
                     </Border>
-                </StackPanel>
 
+                    <GroupBox Header="设置" Margin="0,5">
+                        <StackPanel Margin="0,5">
+                            <DockPanel x:Name="SettingGroup"  d:DataContext="{d:DesignInstance Template:WindowFocusPoint}">
+                                <Button Content="重渲染"  ToolTip="一次"  Click="Button_Click_UpdateVisualLayout"  DockPanel.Dock="Right" Visibility="{Binding IsLayoutUpdated,Converter={StaticResource bool2VisibilityConverter1}}" IsEnabled="{Binding IsLayoutUpdated,Converter={StaticResource Boolean2BooleanReConverter}}" />
+                                <ToggleButton  HorizontalAlignment="Left"  Height="16" Width="40" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsLayoutUpdated}"/>
+                                <TextBlock HorizontalAlignment="Left" Text="缩放自动重渲染"/>
+                            </DockPanel>
+                            <DockPanel>
+                                <ToggleButton  HorizontalAlignment="Left"  Height="16" Margin="2" Style="{StaticResource ToggleButtonSwitch}"  Click="SetDefault_Click" IsChecked="{Binding DatumArea.IsShowDatum}"/>
+                                <TextBlock   HorizontalAlignment="Left" Text="基准点显示"/>
+                            </DockPanel>
+                            <DockPanel >
+                                <ToggleButton HorizontalAlignment="Left" Height="16" Margin="2" Style="{StaticResource ToggleButtonSwitch}"  Click="ShowDatumArea_Click" IsChecked="{Binding DatumArea.IsShowDatumArea}"/>
+                                <TextBlock   HorizontalAlignment="Left" Text="布点区域显示"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </GroupBox>
+                </StackPanel>
             </ScrollViewer>
 
             <xctk:PropertyGrid  Grid.Row="1"  Height="300"  x:Name="PropertyGrid2"  Visibility="Collapsed">
