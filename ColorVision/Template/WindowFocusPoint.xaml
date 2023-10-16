@@ -9,6 +9,7 @@
         xmlns:converter="clr-namespace:ColorVision.Draw.Converter"
         xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util"
         xmlns:draw ="clr-namespace:ColorVision.Draw"
+        xmlns:resx="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Template:PoiParam}"
         Title="关注点编辑"  Height="720" Width="1280" Initialized="Window_Initialized">
@@ -434,7 +435,7 @@
                             <StackPanel  Orientation="Horizontal">
                                 <StackPanel.ContextMenu>
                                     <ContextMenu>
-                                        <MenuItem Header="删除" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
+                                        <MenuItem Header="{x:Static resx:Resource.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
                                     </ContextMenu>
                                 </StackPanel.ContextMenu>
                                 <TextBlock Width="{Binding ElementName=GridListHeader0,Path=ActualWidth}" Text="圆形" HorizontalAlignment="Center"/>
@@ -453,7 +454,7 @@
                             <StackPanel  Orientation="Horizontal">
                                 <StackPanel.ContextMenu>
                                     <ContextMenu>
-                                        <MenuItem Header="删除" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
+                                        <MenuItem Header="{x:Static resx:Resource.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
                                     </ContextMenu>
                                 </StackPanel.ContextMenu>
                                 <TextBlock Width="{Binding ElementName=GridListHeader0,Path=ActualWidth}" Text="圆形" HorizontalAlignment="Center"/>
@@ -474,7 +475,7 @@
                             <StackPanel  Orientation="Horizontal">
                                 <StackPanel.ContextMenu>
                                     <ContextMenu>
-                                        <MenuItem Header="删除" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
+                                        <MenuItem Header="{x:Static resx:Resource.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
                                     </ContextMenu>
                                 </StackPanel.ContextMenu>
                                 <TextBlock Width="{Binding ElementName=GridListHeader0,Path=ActualWidth}" Text="矩形" HorizontalAlignment="Center"/>
@@ -493,7 +494,7 @@
                             <StackPanel  Orientation="Horizontal">
                                 <StackPanel.ContextMenu>
                                     <ContextMenu>
-                                        <MenuItem Header="删除" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
+                                        <MenuItem Header="{x:Static resx:Resource.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
                                     </ContextMenu>
                                 </StackPanel.ContextMenu>
                                 <TextBlock Width="{Binding ElementName=GridListHeader0,Path=ActualWidth}" Text="矩形" HorizontalAlignment="Center"/>

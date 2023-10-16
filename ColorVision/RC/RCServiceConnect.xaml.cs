@@ -35,14 +35,23 @@ namespace ColorVision.RC
             PasswordBox1.Password = rcServiceConfig.AppSecret;
 
             rcServiceConfigs = GlobalSetting.GetInstance().SoftwareConfig.RcServiceConfigs;
-            ListViewMySql.ItemsSource = rcServiceConfigs;
+            ListViewRC.ItemsSource = rcServiceConfigs;
 
             rcServiceConfigs.Insert(0, rcServiceConfig);
-            ListViewMySql.SelectedIndex = 0;
+            ListViewRC.SelectedIndex = 0;
 
             this.Closed += (s, e) =>
             {
                 rcServiceConfigs.Remove(rcServiceConfig);
+            };
+
+            ListViewRCBorder.PreviewKeyUp += (s, e) =>
+            {
+                if (ListViewRC.SelectedIndex > -1)
+                {
+                    rcServiceConfigs.RemoveAt(ListViewRC.SelectedIndex);
+                    ListViewRC.SelectedIndex = 0;
+                }
             };
         }
 
@@ -78,25 +87,19 @@ namespace ColorVision.RC
 
         private void Button_Click_ListShow(object sender, RoutedEventArgs e)
         {
-            if (ListViewMySqlBorder.Visibility == Visibility.Visible)
+            if (ListViewRCBorder.Visibility == Visibility.Visible)
             {
-                ListViewMySqlBorder.Visibility = Visibility.Collapsed;
+                ListViewRCBorder.Visibility = Visibility.Collapsed;
                 this.Width -= 170;
             }
             else
             {
-                ListViewMySqlBorder.Visibility = Visibility.Visible;
+                ListViewRCBorder.Visibility = Visibility.Visible;
                 this.Width += 170;
             }
         }
 
-        private void Button_Click_Copy(object sender, RoutedEventArgs e)
-        {
-            RCServiceConfig newCfg = new RCServiceConfig();
-            rcServiceConfig.CopyTo(newCfg);
-            newCfg.Name = newCfg.Name + "_1";
-            rcServiceConfigs.Add(newCfg);
-        }
+
 
         private void MenuItem_Click_Delete(object sender, RoutedEventArgs e)
         {
@@ -119,7 +122,24 @@ namespace ColorVision.RC
 
         private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)
         {
+            RCServiceConfig rCServiceConfig = new RCServiceConfig();
+            rcServiceConfigs.Add(rCServiceConfig);
+            ListViewRC.SelectedValue = rCServiceConfig;
+        }
+        private void Button_Click_Copy(object sender, RoutedEventArgs e)
+        {
+            RCServiceConfig newCfg = new RCServiceConfig();
+            rcServiceConfig.CopyTo(newCfg);
 
+            newCfg.Name = newCfg.Name + "_1";
+            rcServiceConfigs.Add(newCfg);
+        }
+
+        private void Button_Click_New(object sender, RoutedEventArgs e)
+        {
+            RCServiceConfig newCfg = new RCServiceConfig();
+            newCfg.Name = "New Profile";
+            rcServiceConfigs.Add(newCfg);
         }
     }
 }

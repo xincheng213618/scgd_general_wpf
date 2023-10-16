@@ -124,13 +124,6 @@ namespace ColorVision.MySql
             }
         }
 
-        private void Button_Click_Test2(object sender, RoutedEventArgs e)
-        {
-            MySqlConfig mySqlConfig = new MySqlConfig() {};
-            MySqlConfig.CopyTo(mySqlConfig);
-            MySqlConfigs.Add(mySqlConfig);
-
-        }
 
         private void MenuItem_Click_Delete(object sender, RoutedEventArgs e)
         {
@@ -138,6 +131,22 @@ namespace ColorVision.MySql
             {
                 MySqlConfigs.Remove(mySqlConfig);
             }
+        }
+
+        private void Button_Click_Copy(object sender, RoutedEventArgs e)
+        {
+            MySqlConfig mySqlConfig = new MySqlConfig() { };
+            mySqlConfig.Name = mySqlConfig.Name + "_1";
+
+            MySqlConfig.CopyTo(mySqlConfig);
+            MySqlConfigs.Add(mySqlConfig);
+        }
+
+        private void Button_Click_New(object sender, RoutedEventArgs e)
+        {
+            MySqlConfig newCfg = new MySqlConfig();
+            newCfg.Name = "New Profile";
+            MySqlConfigs.Add(newCfg);
         }
     }
 }

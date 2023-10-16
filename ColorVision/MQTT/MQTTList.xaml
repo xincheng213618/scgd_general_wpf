@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.MQTT"
+        xmlns:resx="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         Title="MQTT记录测试窗口(仅供测试)" Height="450" Width="1280" Initialized="Window_Initialized">
     <Grid>
@@ -14,7 +15,7 @@
                     <MenuItem Header="模拟接受"  Click="MenuItem_Click1" Tag="{Binding .}"  />
                     <MenuItem Header="查看发送数据"  Click="MenuItem_Click2" Tag="{Binding .}"  />
                     <MenuItem Header="查看接受数据"  Click="MenuItem_Click3" Tag="{Binding .}"  />
-                    <MenuItem Header="删除"  Click="MenuItem_Click4" Tag="{Binding .}"  />
+                    <MenuItem Header="{x:Static resx:Resource.Delete}"  Click="MenuItem_Click4" Tag="{Binding .}"  />
                 </ContextMenu>
             </ListView.Resources>
             <ListView.ItemContainerStyle>

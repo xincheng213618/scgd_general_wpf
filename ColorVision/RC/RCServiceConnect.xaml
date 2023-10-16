@@ -7,7 +7,7 @@
         xmlns:setting="clr-namespace:ColorVision.SettingUp"
         xmlns:resx="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
-        Title="注册中心连接配置" Background="#F0F0F0" Height="400" Width="400" Initialized="Window_Initialized">
+        Title="注册中心连接配置" Background="#F0F0F0" Height="500" Width="400" Initialized="Window_Initialized">
     <Grid>
         <Grid Margin="5">
             <Grid.RowDefinitions>
@@ -20,12 +20,12 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <Border x:Name="ListViewMySqlBorder" Background="#F9F9F9"  BorderBrush="#EAEAEA" BorderThickness="1" Visibility="Collapsed" Width="170"  Margin="5" CornerRadius="10,10,5,5">
+                <Border x:Name="ListViewRCBorder" Background="#F9F9F9"  BorderBrush="#EAEAEA" BorderThickness="1" Visibility="Collapsed" Width="170"  Margin="5" CornerRadius="10,10,5,5">
                     <Grid>
-                        <ListView x:Name="ListViewMySql"  Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" SelectionChanged="ListView1_SelectionChanged">
+                        <ListView x:Name="ListViewRC" FocusVisualStyle="{x:Null}"  Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" SelectionChanged="ListView1_SelectionChanged">
                             <ListView.Resources >
                                 <ContextMenu x:Key="ContextMenuItem">
-                                    <MenuItem Header="删除"  Click="MenuItem_Click_Delete" Tag="{Binding .}" />
+                                    <MenuItem Header="{x:Static resx:Resource.Delete}"  Click="MenuItem_Click_Delete" Tag="{Binding .}" />
                                 </ContextMenu>
                             </ListView.Resources>
                             <ListView.ItemContainerStyle>
@@ -41,7 +41,10 @@
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </ListView>
-                        <Button Content="复制当前配置" Click="Button_Click_Copy" BorderThickness="1,0.5,1,1" Margin="0,0,0,-1"  VerticalAlignment="Bottom"/>
+                        <StackPanel Margin="0,0,0,-1"  VerticalAlignment="Bottom">
+                            <Button Content="新建配置文件" Click="Button_Click_New"   />
+                            <Button Content="复制配置文件" Click="Button_Click_Copy" />
+                        </StackPanel>
                     </Grid>
                 </Border>
                 <Border Grid.Column="1"  Background="#F9F9F9"  BorderBrush="#EAEAEA" BorderThickness="1"  Margin="5" CornerRadius="10,10,3,3">
@@ -82,7 +85,7 @@
                 <Button  Width="30" Height="22" Click="Button_Click_ListShow" Margin="0,0,5,0">
                     <Image Source="/Assets/Image/connect.png" Stretch="Uniform" Margin="-5"/>
                 </Button>
-                <Button Content="测试连接" Width="80" Click="Button_Click_Test"/>
+                <Button Content="{x:Static resx:Resource.TesConnection}" MinWidth="80" Click="Button_Click_Test"/>
             </StackPanel>
             <StackPanel Grid.Row="1" Margin="0,5"   HorizontalAlignment="Right" VerticalAlignment="Bottom">
                 <UniformGrid x:Name="FunctionGrid" Columns="2" Width="180"   HorizontalAlignment="Center">

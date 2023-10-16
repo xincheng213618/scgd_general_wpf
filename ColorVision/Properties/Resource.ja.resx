@@ -279,4 +279,28 @@
   <data name="Reseted" xml:space="preserve">
     <value>リセット完了</value>
   </data>
+  <data name="Delete" xml:space="preserve">
+    <value>消去</value>
+  </data>
+  <data name="Add" xml:space="preserve">
+    <value>追加</value>
+  </data>
+  <data name="TesConnection" xml:space="preserve">
+    <value>テスト接続</value>
+  </data>
+  <data name="Host" xml:space="preserve">
+    <value>ホスト</value>
+  </data>
+  <data name="Port" xml:space="preserve">
+    <value>ポート</value>
+  </data>
+  <data name="Database" xml:space="preserve">
+    <value>名前データベース</value>
+  </data>
+  <data name="UserName" xml:space="preserve">
+    <value>ユーザー</value>
+  </data>
+  <data name="UserPwd" xml:space="preserve">
+    <value>パスワード</value>
+  </data>
 </root>

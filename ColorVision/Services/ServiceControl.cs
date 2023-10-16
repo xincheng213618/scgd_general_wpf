@@ -17,6 +17,7 @@ using NPOI.HSSF.Record.Chart;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 using System.Windows.Controls;
 using static cvColorVision.GCSDLL;
 
@@ -65,6 +66,13 @@ namespace ColorVision.Services
             UserConfig = GlobalSetting.GetInstance().SoftwareConfig.UserConfig;
             StackPanel = new StackPanel();
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => Reload();
+
+            Task.Run(() => rcService.Regist());
+            MQTTControl.GetInstance().MQTTConnectChanged += (s, e) =>
+            {
+                Task.Run(() => rcService.Regist());
+            };
+
             Reload();
         }
         private void timer_KeepLive(object? sender, System.Timers.ElapsedEventArgs e)

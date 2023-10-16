@@ -279,4 +279,28 @@
   <data name="Reseted" xml:space="preserve">
     <value>재설정 완료</value>
   </data>
+  <data name="Delete" xml:space="preserve">
+    <value>삭제</value>
+  </data>
+  <data name="Add" xml:space="preserve">
+    <value>추가하다</value>
+  </data>
+  <data name="TesConnection" xml:space="preserve">
+    <value>연결 테스트</value>
+  </data>
+  <data name="Host" xml:space="preserve">
+    <value>주인</value>
+  </data>
+  <data name="Port" xml:space="preserve">
+    <value>포트</value>
+  </data>
+  <data name="Database" xml:space="preserve">
+    <value>데이터베이스 이름 지정</value>
+  </data>
+  <data name="UserName" xml:space="preserve">
+    <value>사용자</value>
+  </data>
+  <data name="UserPwd" xml:space="preserve">
+    <value>비밀번호</value>
+  </data>
 </root>
