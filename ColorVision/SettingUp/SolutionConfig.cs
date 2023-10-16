@@ -19,7 +19,7 @@ namespace ColorVision.SettingUp
         public string SolutionName { get => _SolutionName; set { _SolutionName = value; NotifyPropertyChanged(); } }
         private string _SolutionName;
 
-        public string SolutionFullName { get => _SolutionFullName; set { _SolutionFullName = value; NotifyPropertyChanged(); } }
+        public string SolutionFullName { get =>  _SolutionFullName; set { _SolutionFullName = value; NotifyPropertyChanged(); } }
         private string _SolutionFullName;
 
         public string CachePath { get => _CachePath; set { _CachePath = value; NotifyPropertyChanged(); } }

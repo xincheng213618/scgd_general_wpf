@@ -7,7 +7,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.MQTT
 {
-    public class BaseDevice : BaseObject, IDisposable
+    public class BaseChannel : BaseObject, IDisposable
     {
         public virtual string SendTopic { get; set; }
         public virtual string SubscribeTopic { get; set; }
@@ -26,6 +26,7 @@ namespace ColorVision.MQTT
         {
             throw new NotImplementedException();
         }
+
         public virtual View GetView()
         {
             throw new NotImplementedException();
@@ -39,7 +40,7 @@ namespace ColorVision.MQTT
     }
 
 
-    public class BaseDevice<T> : BaseDevice where T :BaseDeviceConfig,new()
+    public class BaseDevice<T> : BaseChannel where T :BaseDeviceConfig,new()
     {
         public T Config { get; set; }
         public SysResourceModel SysResourceModel { get; set; }
@@ -80,8 +81,6 @@ namespace ColorVision.MQTT
             }
             Config.Code = SysResourceModel.Code ?? string.Empty;
         }
-
-
 
         public override string SendTopic { get => Config.SendTopic; set { Config.SendTopic = value; NotifyPropertyChanged(); } }
         public override string SubscribeTopic { get => Config.SubscribeTopic; set { Config.SubscribeTopic = value; NotifyPropertyChanged(); } }

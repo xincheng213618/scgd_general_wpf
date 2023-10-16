@@ -12,6 +12,7 @@ namespace ColorVision.Services
         SMU = 4,
         Sensor = 5,
         Image = 6,
+        Algorithm =7,
     }
 
 

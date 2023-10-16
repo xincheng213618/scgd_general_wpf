@@ -170,7 +170,7 @@ namespace ColorVision.Services
 
             foreach (var item in MQTTService.VisualChildren)
             {
-                if(item is BaseDevice mQTTDevice)
+                if(item is BaseChannel mQTTDevice)
                 {
                     mQTTDevice.SendTopic = MQTTService.ServiceConfig.SendTopic;
                     mQTTDevice.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;

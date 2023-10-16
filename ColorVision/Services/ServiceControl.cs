@@ -31,7 +31,7 @@ namespace ColorVision.Services
 
         public ObservableCollection<MQTTServiceKind> MQTTServices { get; set; }
 
-        public ObservableCollection<BaseDevice> MQTTDevices { get; set; }
+        public ObservableCollection<BaseChannel> MQTTDevices { get; set; }
 
 
         public SysResourceService ResourceService { get; set; }
@@ -53,7 +53,7 @@ namespace ColorVision.Services
             DictionaryService = new SysDictionaryService();
             resultService = new ResultService();
             MQTTServices = new ObservableCollection<MQTTServiceKind>();
-            MQTTDevices = new ObservableCollection<BaseDevice>();
+            MQTTDevices = new ObservableCollection<BaseChannel>();
             svrDevices = new Dictionary<string, List<BaseService>>();
             rcService = new RCService(new RCConfig());
             this.heartbeatTime = 10 * 1000;
@@ -79,15 +79,15 @@ namespace ColorVision.Services
         {
             rcService.KeepLive(heartbeatTime);
         }
-        public ObservableCollection<BaseDevice> LastGenControl { get; set; }
+        public ObservableCollection<BaseChannel> LastGenControl { get; set; }
 
-        public void GenControl(ObservableCollection<BaseDevice> MQTTDevices)
+        public void GenControl(ObservableCollection<BaseChannel> MQTTDevices)
         {
             LastGenControl = MQTTDevices;
             StackPanel.Children.Clear();
             foreach (var item in MQTTDevices)
             {
-                if (item is BaseDevice device)
+                if (item is BaseChannel device)
                 {
                     StackPanel.Children.Add(device.GetDisplayControl());
                 }
@@ -96,7 +96,7 @@ namespace ColorVision.Services
 
         public void GenContorl()
         {
-            LastGenControl = new ObservableCollection<BaseDevice>();
+            LastGenControl = new ObservableCollection<BaseChannel>();
             StackPanel.Children.Clear();
             foreach (var mQTTServiceKind in MQTTServices)
             {
@@ -104,7 +104,7 @@ namespace ColorVision.Services
                 {
                     foreach (var item in mQTTService.VisualChildren)
                     {
-                        if (item is BaseDevice device)
+                        if (item is BaseChannel device)
                         {
                             LastGenControl.Add(device);
                             StackPanel.Children.Add(device.GetDisplayControl());

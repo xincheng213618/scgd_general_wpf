@@ -27,7 +27,7 @@ namespace ColorVision.Services
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             StackPanelShow.Children.Clear();
-            if (TreeView1.SelectedItem is BaseDevice baseObject)
+            if (TreeView1.SelectedItem is BaseChannel baseObject)
                 StackPanelShow.Children.Add(baseObject.GetDeviceControl());
 
             if (TreeView1.SelectedItem is BaseMQTTService baseService)

@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ColorVision.SettingUp"
+        xmlns:local="clr-namespace:ColorVision"
         xmlns:base ="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
@@ -199,22 +199,15 @@
                             <StackPanel>
                                 <Border Style="{StaticResource BorderModuleArea}" >
                                     <StackPanel Margin="5">
-                                        <DockPanel Margin="5,2">
-                                            <TextBox DockPanel.Dock="Right"  Text="{Binding MQTTSetting.AliveTimeout}" Width="80"/>
-                                            <TextBlock Text="心跳检测失败时间"/>
-                                        </DockPanel>
-                                        <DockPanel Margin="5,2">
-                                            <TextBox DockPanel.Dock="Right" Text="{Binding MQTTSetting.SendTimeout}" Width="80"/>
-                                            <TextBlock Text="指令超时时间"/>
-                                        </DockPanel>
-                                        <DockPanel Margin="5,2">
-                                            <TextBox DockPanel.Dock="Right" Text="{Binding MQTTSetting.CacheLength}" Width="80"/>
-                                            <TextBlock Text="指令缓存数据长度"/>
-                                        </DockPanel>
                                         <DockPanel Margin="5">
                                             <Button  DockPanel.Dock="Right" Content="清除" Click="Button_Click_1" Width="80"/>
                                             <TextBlock Text="历史缓存"/>
                                         </DockPanel>
+                                        <DockPanel Margin="5,2">
+                                            <TextBox DockPanel.Dock="Right" Text="{Binding MQTTSetting.CacheLength}" HorizontalContentAlignment="Right" Style="{StaticResource  TextBox.Small}" Width="80"/>
+                                            <TextBlock Text="指令缓存数据长度"  />
+                                        </DockPanel>
+             
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
@@ -249,11 +242,11 @@
                                     <Border Style="{StaticResource BorderModuleArea}" >
                                         <StackPanel Margin="5">
                                             <DockPanel Margin="5,2">
-                                                <TextBox DockPanel.Dock="Right"   Text="{Binding PerformanceControl.UpdateSpeed}" HorizontalAlignment="Left" Width="200"/>
+                                                <TextBox DockPanel.Dock="Right"   Text="{Binding PerformanceControl.UpdateSpeed}" HorizontalContentAlignment="Right" HorizontalAlignment="Left" Width="200"/>
                                                 <TextBlock Text="更新速度" />
                                             </DockPanel>
                                             <DockPanel Margin="5,2">
-                                                <TextBox  DockPanel.Dock="Right"  Text="{Binding PerformancSetting.DefaultTimeFormat}"  Width="200"/>
+                                                <TextBox  DockPanel.Dock="Right"  Text="{Binding PerformancSetting.DefaultTimeFormat}"  HorizontalContentAlignment="Right" Width="200"/>
                                                 <TextBlock Text="日期格式" />
                                             </DockPanel>
                                         </StackPanel>

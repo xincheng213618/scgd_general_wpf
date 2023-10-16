@@ -18,7 +18,7 @@ namespace ColorVision.Services
             InitializeComponent();
         }
 
-        public ObservableCollection<BaseDevice> MQTTDevices { get; set; }
+        public ObservableCollection<BaseChannel> MQTTDevices { get; set; }
         private void Window_Initialized(object sender, EventArgs e)
         {
             MQTTDevices = ServiceControl.GetInstance().LastGenControl ?? ServiceControl.GetInstance().MQTTDevices;
@@ -30,7 +30,7 @@ namespace ColorVision.Services
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             StackPanelShow.Children.Clear();
-            if (TreeView1.SelectedItem is BaseDevice baseObject)
+            if (TreeView1.SelectedItem is BaseChannel baseObject)
                 StackPanelShow.Children.Add(baseObject.GetDeviceControl());
 
             if (TreeView1.SelectedItem is BaseMQTTService baseService)

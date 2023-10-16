@@ -14,6 +14,7 @@ namespace ColorVision.Services
     public partial class ServiceKindControl : UserControl
     {
         public MQTTServiceKind MQTTServiceKind { get; set; }
+
         public ServiceControl ServiceControl { get; set; }
         public ServiceKindControl(MQTTServiceKind mQTTServiceKind)
         {

@@ -14,9 +14,9 @@ namespace ColorVision.Device
     public class DeviceFactory
     {
 
-        public static BaseDevice CreateDevice(SysResourceModel device)
+        public static BaseChannel CreateDevice(SysResourceModel device)
         {
-            BaseDevice result = null;
+            BaseChannel result = null;
             DeviceType deviceType = (DeviceType)device.Type;
 
             switch (deviceType)
@@ -37,6 +37,9 @@ namespace ColorVision.Device
                     result = new DeviceSensor(device);
                     break;
                 case DeviceType.Image:
+                    result = new DeviceSpectrum(device);
+                    break;
+                case DeviceType.Algorithm:
                     result = new DeviceSpectrum(device);
                     break;
                 default:
