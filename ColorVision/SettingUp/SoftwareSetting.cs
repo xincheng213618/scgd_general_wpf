@@ -1,7 +1,9 @@
-﻿using ColorVision.MVVM;
+﻿using ColorVision.Language;
+using ColorVision.MVVM;
 using log4net;
 using log4net.Core;
 using log4net.Repository.Hierarchy;
+using System.Globalization;
 
 namespace ColorVision
 {
@@ -61,11 +63,17 @@ namespace ColorVision
         /// <summary>
         /// 主题
         /// </summary>
-        public Themes.Theme Theme { get; set; } = Themes.Theme.Light;
+        public Themes.Theme Theme { get; set; } = Themes.Theme.UseSystem;
         /// <summary>
         /// 语言
         /// </summary>
-        public string UICulture { get; set; } = "zh-Hans";
+        public string UICulture {
+            get => LanguageManager.GetDefaultLanguages().Contains(_UICulture) ? _UICulture:CultureInfo.InstalledUICulture.Name;
+            set { _UICulture = value; }
+        } 
+        private string _UICulture = CultureInfo.InstalledUICulture.Name;
+
+
 
         public bool IsDeFaultOpenService { get=> _IsDeFaultOpenService; set { _IsDeFaultOpenService = value;NotifyPropertyChanged(); } }
         private bool _IsDeFaultOpenService = true;

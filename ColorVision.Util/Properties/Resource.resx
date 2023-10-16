@@ -168,4 +168,16 @@
   <data name="ru" xml:space="preserve">
     <value>俄语</value>
   </data>
+  <data name="ThemeLight" xml:space="preserve">
+    <value>浅色</value>
+  </data>
+  <data name="ThemeDark" xml:space="preserve">
+    <value>深色</value>
+  </data>
+  <data name="Theme" xml:space="preserve">
+    <value>主题</value>
+  </data>
+  <data name="UseSystem" xml:space="preserve">
+    <value>跟随系统</value>
+  </data>
 </root>
