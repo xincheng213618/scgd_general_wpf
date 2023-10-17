@@ -172,7 +172,7 @@
                             <ToggleButton  x:Name="StatusBarMqtt"   Style="{DynamicResource ButtonDrawingImageMQTT}"  Height="20"  Margin="0,-10" IsChecked="{Binding SoftwareConfig.MQTTControl.IsConnect,Mode=OneWay}" IsEnabled="False" />
                         </StatusBarItem>
                         <StatusBarItem MouseLeftButtonDown="TextBlock_MouseLeftButtonDown_RC" Visibility="{Binding SoftwareConfig.IsUseRCService,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="注册中心">
-                            <ToggleButton  x:Name="StatusBarRCService"   Style="{DynamicResource ButtonDrawingImageRCService}"  Height="20"  Margin="0,-10" IsChecked="{Binding SoftwareConfig.RcServiceControl.IsConnect,Mode=OneWay}" IsEnabled="False" />
+                            <ToggleButton  x:Name="StatusBarRCService"   Style="{DynamicResource ButtonDrawingImageRCService}"  Height="15"  Margin="0,-10" IsChecked="{Binding SoftwareConfig.RcServiceControl.IsConnect,Mode=OneWay}" IsEnabled="False" />
                         </StatusBarItem>
                         <StatusBarItem  x:Name="StatusBarItem1" Visibility="Collapsed"  Content="{Binding PerformanceControl.MemoryThis}"/>
                         <StatusBarItem  x:Name="StatusBarItem2"   Content="{Binding PerformanceControl.Time}"/>

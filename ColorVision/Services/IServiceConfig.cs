@@ -1,4 +1,4 @@
-﻿namespace ColorVision.MQTT
+﻿namespace ColorVision.Services
 {
     /// <summary>
     /// 服务接口

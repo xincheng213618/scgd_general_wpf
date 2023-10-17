@@ -1,5 +1,6 @@
 ﻿using ColorVision.Device;
 using ColorVision.MVVM;
+using ColorVision.Services;
 using ColorVision.Services.Msg;
 using ColorVision.SettingUp;
 using log4net;
@@ -16,9 +17,6 @@ using System.Windows;
 
 namespace ColorVision.MQTT
 {
-
-
-
     public class BaseService<T> : BaseService where T : BaseDeviceConfig
     {
         public T Config { get; set; }
@@ -61,7 +59,6 @@ namespace ColorVision.MQTT
             Application.Current.Dispatcher.Invoke(() => HeartbeatEvent?.Invoke(heartbeat));
         }
     }
-
 
     public class BaseService : ViewModelBase, IHeartbeat, IServiceConfig, IDisposable
     {

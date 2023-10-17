@@ -1,5 +1,5 @@
-﻿using ColorVision.MQTT;
-using ColorVision.MVVM;
+﻿using ColorVision.MVVM;
+using ColorVision.Services;
 using Newtonsoft.Json;
 using System;
 

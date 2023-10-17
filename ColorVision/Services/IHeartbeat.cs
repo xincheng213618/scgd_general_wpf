@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ColorVision.MQTT
+namespace ColorVision.Services
 {
     /// <summary>
     /// 心跳接口
