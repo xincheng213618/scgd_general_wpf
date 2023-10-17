@@ -65,7 +65,7 @@
                 </Border>
                 <StackPanel  Grid.Column="1"  Margin="2">
                     <Button  Click="Button_Click_1">
-                        <TextBlock Text="编辑服务" TextWrapping="Wrap" />
+                        <Image Source="{StaticResource DrawingImageDelete}"/>
                     </Button>
                     <Button  Grid.Column="2" Click="Button_Click_2"  VerticalAlignment="Stretch" Margin="2">
                         <TextBlock Text="添加资源" TextWrapping="Wrap" />

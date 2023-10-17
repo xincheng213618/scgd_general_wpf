@@ -18,8 +18,6 @@ namespace ColorVision.Services
     {
         public SysResourceModel SysResourceModel { get; set; }
         public ServiceConfig ServiceConfig { get; set; }
-        public HeartbeatService HeartbeatService { get; set; }
-
         public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
 
         public MQTTService(SysResourceModel sysResourceModel) : base()
@@ -57,8 +55,6 @@ namespace ColorVision.Services
                 }
             };
             ContextMenu.Items.Add(menuItem);
-
-            HeartbeatService = new HeartbeatService(ServiceConfig);
         }
 
         public DeviceType Type { get => (DeviceType)SysResourceModel.Type; }

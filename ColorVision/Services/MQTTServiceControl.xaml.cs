@@ -52,18 +52,6 @@ namespace ColorVision.Services
                     ListViewService.Visibility = Visibility.Visible;
                 }
             };
-
-            if (MQTTService.Type == DeviceType.Camera)
-            {
-                if (HeartbeatService.ServicesDevices.TryGetValue(MQTTService.ServiceConfig.SubscribeTopic, out ObservableCollection<string> list))
-                {
-                    foreach (var item in list)
-                    {
-                        MQTTCreateStackPanel.Children.Add(new TextBox() { Text =item ,IsReadOnly =true});
-                    }
-                }
-            }
-
         }
 
         private SysResourceModel? saveConfigInfo(BaseDeviceConfig deviceConfig, SysResourceModel sysResource)
