@@ -37,19 +37,19 @@
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="0,2">
                                             <TextBlock Text="源表地址" Width="120"/>
-                                            <TextBlock Text="{Binding Config.ID}"/>
+                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.ID}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,2">
                                             <TextBlock Text="发送信道" Width="120"/>
-                                            <TextBlock Text="{Binding Config.SendTopic}"/>
+                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.SendTopic}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,2">
                                             <TextBlock Text="接收信道" Width="120"/>
-                                            <TextBlock Text="{Binding Config.SubscribeTopic}"/>
+                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.SubscribeTopic}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,2" >
                                             <TextBlock Text="心跳时间(ms)"  Width="120"/>
-                                            <TextBlock Text="{Binding Config.HeartbeatTime}"/>
+                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.HeartbeatTime}"/>
                                         </DockPanel>
                                     </StackPanel>
                                 </GroupBox>

@@ -8,5 +8,7 @@ namespace ColorVision.Device.PG
         public bool IsNet { get; set; }
         public string Addr { get; set; }
         public int Port { get; set; }
+
+
     }
 }

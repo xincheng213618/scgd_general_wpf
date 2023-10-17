@@ -32,10 +32,12 @@ namespace ColorVision.MQTT
     public class BaseService<T> : BaseService where T : BaseDeviceConfig
     {
         public T Config { get; set; }
+
         public event HeartbeatHandler HeartbeatEvent;
 
         public override string SubscribeTopic { get => Config.SubscribeTopic; set { Config.SubscribeTopic = value; } }
         public override string SendTopic { get => Config.SendTopic; set { Config.SendTopic = value; } }
+
         public override int HeartbeatTime { get => Config.HeartbeatTime; set { Config.HeartbeatTime = value; NotifyPropertyChanged(); } }
 
         public override bool IsAlive { get => Config.IsAlive; set { Config.IsAlive = value; NotifyPropertyChanged(); } }
@@ -45,8 +47,6 @@ namespace ColorVision.MQTT
         public BaseService(T config)
         {
             Config = config;
-            //ServiceName = Config.Name;
-
             SendTopic = Config.SendTopic;
             SubscribeTopic = Config.SubscribeTopic;
             MQTTControl = MQTTControl.GetInstance();
@@ -80,11 +80,8 @@ namespace ColorVision.MQTT
         public MQTTSetting MQTTSetting { get; set; }
 
         public event EventHandler Connected;
-        public Dictionary<string, MsgSend> cmdMap { get; set; }
-
         public BaseService()
         {
-            cmdMap = new Dictionary<string, MsgSend>();
             MQTTControl = MQTTControl.GetInstance();
             MQTTSetting = MQTTControl.MQTTSetting;
             MQTTControl.ApplicationMessageReceivedAsync += Processing;

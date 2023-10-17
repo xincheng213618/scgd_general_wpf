@@ -36,19 +36,19 @@
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="0,2">
                                             <TextBlock Text="PG ID" Width="120"/>
-                                            <TextBlock Text="{Binding Config.ID}"/>
+                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.ID}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,2">
                                             <TextBlock Text="发送信道" Width="120"/>
-                                            <TextBlock Text="{Binding Config.SendTopic}"/>
+                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.SendTopic}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,2">
                                             <TextBlock Text="接收信道" Width="120"/>
-                                            <TextBlock Text="{Binding Config.SubscribeTopic}"/>
+                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.SubscribeTopic}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,2" >
                                             <TextBlock Text="心跳时间(ms)"  Width="120"/>
-                                            <TextBlock Text="{Binding Config.HeartbeatTime}"/>
+                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.HeartbeatTime}"/>
                                         </DockPanel>
                                     </StackPanel>
                                 </GroupBox>
@@ -56,19 +56,19 @@
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="0,2" >
                                             <TextBlock Text="类别型号" Width="120"/>
-                                            <TextBlock Text="{Binding Config.Category}"/>
+                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.Category}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,2" >
                                             <TextBlock Text="通讯方式" Width="120"/>
-                                            <TextBlock Text="{Binding IsNet}"/>
+                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding IsNet}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,2" >
                                             <TextBlock  Text="IP地址" Width="120"/>
-                                            <TextBlock Text="{Binding Config.Addr}"/>
+                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.Addr}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,2" >
                                             <TextBlock  Text="端口" Width="120"/>
-                                            <TextBlock Text="{Binding Config.Port}"/>
+                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.Port}"/>
                                         </DockPanel>
                                     </StackPanel>
                                 </GroupBox>
@@ -109,8 +109,8 @@
                                         </DockPanel>
                                         <DockPanel Margin="0,2" >
                                             <TextBlock Text="通讯方式" Width="120"/>
-                                            <RadioButton x:Name="IsNet" Content="TCP/IP" IsChecked="{Binding  Config.IsTCPIP}"/>
-                                            <RadioButton x:Name="IsComm" Content="串口" IsChecked="{Binding  Config.IsTCPIP,Converter={StaticResource Boolean2BooleanReConverter}}"/>
+                                            <RadioButton x:Name="IsNet" Content="TCP/IP" IsChecked="{Binding  Config.IsNet}"/>
+                                            <RadioButton x:Name="IsComm" Content="串口" IsChecked="{Binding  Config.IsNet,Converter={StaticResource Boolean2BooleanReConverter}}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,2" >
                                             <TextBlock  x:Name="TextBlockPGIP"   Text="IP地址" Width="120"/>

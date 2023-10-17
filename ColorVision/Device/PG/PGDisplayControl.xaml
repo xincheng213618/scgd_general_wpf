@@ -7,7 +7,6 @@
              xmlns:mqtt ="clr-namespace:ColorVision.MQTT"
              xmlns:Template ="clr-namespace:ColorVision.Template"
              xmlns:SettingUp ="clr-namespace:ColorVision.SettingUp"
-             xmlns:converter="clr-namespace:ColorVision.Converter"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:PGService}"

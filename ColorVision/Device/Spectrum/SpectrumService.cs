@@ -21,6 +21,10 @@ namespace ColorVision.Device.Spectrum
         public event MQTTAutoParamHandler AutoParamHandlerEvent;
         public event MQTTSpectrumHeartbeatHandler HeartbeatHandlerEvent;
 
+
+
+        public Dictionary<string, MsgSend> cmdMap { get; set; }
+
         public SpectrumService(SpectrumConfig spectrumConfig) : base(spectrumConfig)
         {
             Config = spectrumConfig;
@@ -110,7 +114,7 @@ namespace ColorVision.Device.Spectrum
         {
             foreach (SpectumDeviceHeartbeatParam devheartbeat in devsheartbeat)
             {
-                if (devheartbeat.DeviceName.Equals(Config.Code, System.StringComparison.Ordinal))
+                if (devheartbeat.DeviceName.Equals(Config.Code, StringComparison.Ordinal))
                 {
                     SpectumHeartbeatParam heartbeat = new SpectumHeartbeatParam();
                     heartbeat.DeviceStatus = devheartbeat.DeviceStatus;

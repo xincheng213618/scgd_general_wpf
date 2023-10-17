@@ -26,6 +26,7 @@ namespace ColorVision.Device.PG
                 if (Config.IsNet) { return "网络"; }
                 else { return "串口"; }
             }
+            set { }
         }
     }
 }
