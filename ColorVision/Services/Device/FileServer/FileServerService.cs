@@ -2,6 +2,7 @@
 
 using ColorVision.MQTT;
 using ColorVision.Services;
+using ColorVision.Services.Msg;
 using MQTTMessageLib.FileServer;
 using MQTTnet.Client;
 using Newtonsoft.Json;

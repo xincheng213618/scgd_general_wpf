@@ -2,6 +2,7 @@
 
 using ColorVision.MQTT;
 using ColorVision.Services;
+using ColorVision.Services.Msg;
 using ColorVision.Template;
 using cvColorVision;
 using Newtonsoft.Json.Linq;
@@ -28,8 +29,6 @@ namespace ColorVision.Device.Camera
         public static List<string> CameraIDs { get; set; } = new List<string>();
 
         public static Dictionary<string, ObservableCollection<string>> ServicesDevices { get; set; } = new Dictionary<string, ObservableCollection<string>>();
-
-        public string DeviceID { get => Config.ID; }
 
         public CameraService(CameraConfig CameraConfig) : base(CameraConfig)
         {

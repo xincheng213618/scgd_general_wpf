@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8602  
 
 using ColorVision.MQTT;
+using ColorVision.Services.Msg;
 using ColorVision.Template;
 using ColorVision.Template.Algorithm;
 using cvColorVision;

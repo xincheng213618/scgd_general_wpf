@@ -47,11 +47,8 @@ namespace ColorVision.RC
             this.NodeType = "client";
             this.NodeName = MQTTRCServiceTypeConst.BuildNodeName(NodeType, null);
             this.DevcieName = "dev." + NodeType + ".127.0.0.1";
-            //
             LoadCfg();
-            //
             this.regStatus = ServiceNodeStatus.Unregistered;
-            //
             ServiceName = Guid.NewGuid().ToString();
             SubscribeTopic = MQTTRCServiceTypeConst.BuildNodeTopic(NodeName);
 

@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using ColorVision.MQTT;
+using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
@@ -6,19 +7,18 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.MQTT
+namespace ColorVision.Services.Msg
 {
     /// <summary>
-    /// MQTTList.xaml 的交互逻辑
+    /// MsgList.xaml 的交互逻辑
     /// </summary>
-    public partial class MQTTList : Window
+    public partial class MsgList : Window
     {
-
         public ObservableCollection<MsgRecord> MsgRecords { get; set; }
         public MQTTControl MQTTControl { get; set; }
 
 
-        public MQTTList()
+        public MsgList()
         {
             InitializeComponent();
         }

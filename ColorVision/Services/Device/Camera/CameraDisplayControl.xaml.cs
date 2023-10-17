@@ -11,7 +11,7 @@ using cvColorVision;
 using ColorVision.Template;
 using System.Security.Cryptography.X509Certificates;
 using MySqlX.XDevAPI.Common;
-using ColorVision.MQTT;
+using ColorVision.Services.Msg;
 
 namespace ColorVision.Device.Camera
 {

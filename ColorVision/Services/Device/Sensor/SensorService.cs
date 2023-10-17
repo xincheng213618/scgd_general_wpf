@@ -1,4 +1,5 @@
 ﻿using ColorVision.MQTT;
+using ColorVision.Services.Msg;
 
 namespace ColorVision.Device.Sensor
 {

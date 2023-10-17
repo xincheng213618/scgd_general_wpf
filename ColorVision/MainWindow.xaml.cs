@@ -14,6 +14,7 @@ using ColorVision.Services;
 using ColorVision.MySql.DAO;
 using NPOI.SS.Formula.Functions;
 using System.Collections.Generic;
+using ColorVision.Services.Msg;
 
 namespace ColorVision
 {
@@ -105,7 +106,7 @@ namespace ColorVision
 
         private void MenuItem12_Click(object sender, RoutedEventArgs e)
         {
-            new MQTTList() { Owner = this }.Show();
+            new MsgList() { Owner = this }.Show();
         }
 
         private void StackPanelMQTT_Initialized(object sender, EventArgs e)

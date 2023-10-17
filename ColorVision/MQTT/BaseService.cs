@@ -1,5 +1,6 @@
 ﻿using ColorVision.Device;
 using ColorVision.MVVM;
+using ColorVision.Services.Msg;
 using ColorVision.SettingUp;
 using log4net;
 using MQTTMessageLib;
@@ -7,7 +8,6 @@ using MQTTnet.Client;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,16 +16,6 @@ using System.Windows;
 
 namespace ColorVision.MQTT
 {
-
-    /// <summary>
-    /// 心跳接口
-    /// </summary>
-    public interface IHeartbeat
-    {
-        public DateTime LastAliveTime { get; set; }
-
-        public bool IsAlive { get; set; }
-    }
 
 
 
@@ -131,7 +121,6 @@ namespace ColorVision.MQTT
                             foundMsgRecord.MsgReturn = json;
                             foundMsgRecord.MsgRecordState = json.Code == 0 ? MsgRecordState.Success : MsgRecordState.Fail;
                             MsgRecords.Remove(foundMsgRecord);
-                            MsgReceived?.Invoke(foundMsgRecord.MsgSend, json);
                         }
                     }
                     ///这里是因为这里先加载相机上，所以加在这里
@@ -159,8 +148,6 @@ namespace ColorVision.MQTT
             }
         }
         public MsgReturnHandler MsgReturnReceived { get; set; }
-        public MsgHandler MsgReceived { get; set; }
-
 
         public virtual string SubscribeTopic { get; set; }
         public virtual string SendTopic { get; set; }
@@ -194,11 +181,10 @@ namespace ColorVision.MQTT
         internal virtual MsgRecord PublishAsyncClient(MsgSend msg)
         {
             if (!MQTTControl.IsConnect)
-                MessageBox.Show("请先连接中转MQTT服务器在发送命令");
+                return new MsgRecord();
 
             Guid guid = Guid.NewGuid();
-            msg.MsgID = guid;
-            msg.ServiceID = ServiceID;
+            msg.MsgID = guid.ToString();
             msg.SnID = SnID;
             msg.SerialNumber = SerialNumber;
             msg.Version = "1.1";
@@ -249,70 +235,4 @@ namespace ColorVision.MQTT
             ServiceToken = nodeService.ServiceToken;
         }
     }
-
-    public delegate void MsgRecordStateChangedHandler(MsgRecordState msgRecordState);
-    public class MsgRecord : ViewModelBase, IServiceConfig
-    {
-        public event MsgRecordStateChangedHandler MsgRecordStateChanged;
-
-        public string SubscribeTopic { get; set; }
-        public string SendTopic { get; set; }
-
-        public string MsgID { get; set; }
-        public DateTime SendTime { get => _SendTime; set { _SendTime = value; NotifyPropertyChanged(); } }
-        private DateTime _SendTime;
-        public DateTime ReciveTime { get => _ReciveTime; set { _ReciveTime = value; NotifyPropertyChanged(); } }
-        private DateTime _ReciveTime;
-        public MsgSend MsgSend { get; set; }
-        public MsgReturn MsgReturn { get; set; }
-
-        public MsgRecordState MsgRecordState
-        {
-            get => _MsgRecordState; set
-            {
-                _MsgRecordState = value;
-                NotifyPropertyChanged();
-                Application.Current.Dispatcher.Invoke(() => MsgRecordStateChanged?.Invoke(MsgRecordState));
-                if (value == MsgRecordState.Success || value == MsgRecordState.Fail)
-                {
-                    NotifyPropertyChanged(nameof(IsRecive));
-                    NotifyPropertyChanged(nameof(MsgReturn));
-                }
-                else if (value == MsgRecordState.Timeout)
-                {
-                    NotifyPropertyChanged(nameof(IsTimeout));
-                }
-                else
-                {
-                    NotifyPropertyChanged(nameof(MsgReturn));
-                }
-
-                NotifyPropertyChanged(nameof(IsSend));
-
-            }
-        }
-        private MsgRecordState _MsgRecordState { get; set; }
-
-        [JsonIgnore]
-        public bool IsSend { get => MsgRecordState == MsgRecordState.Send; }
-        [JsonIgnore]
-        public bool IsRecive { get => MsgRecordState == MsgRecordState.Success || MsgRecordState == MsgRecordState.Fail; }
-        [JsonIgnore]
-        public bool IsTimeout { get => MsgRecordState == MsgRecordState.Timeout; }
-
-    }
-    public enum MsgRecordState
-    {
-        [Description("已经发送")]
-        Send,
-        [Description("命令成功")]
-        Success,
-        [Description("命令失败")]
-        Fail,
-        [Description("命令超时")]
-        Timeout
-    }
-
-
-
 }

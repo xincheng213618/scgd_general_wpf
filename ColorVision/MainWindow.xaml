@@ -67,7 +67,7 @@
                 <MenuItem Header="{x:Static resx:Resource.MenuTool}">
                     <MenuItem Header="流程引擎(_F)" Click="MenuItem9_Click"/>
                     <MenuItem Header="MQTT日志(_Q)" Click="MenuItem_Click"/>
-                    <MenuItem Header="MQTT列表(_L)" Click="MenuItem12_Click"/>
+                    <MenuItem Header="Msg列表(_L)" Click="MenuItem12_Click"/>
                     <MenuItem Header="管理员服务配置(_S)"  Tag="ServiceParam" Click="MenuItem_Template"/>
                     <MenuItem Header="设备配置(_D)"  Tag="DeviceParam" Click="MenuItem_Template"/>
                     <MenuItem Header="{x:Static resx:Resource.Sign_in}"  Click="Login_Click"/>
