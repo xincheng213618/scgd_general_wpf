@@ -6,7 +6,7 @@ namespace ColorVision.Device.SMU
 {
     public class DeviceSMU : BaseDevice<SMUConfig>
     {
-        public SMUService SMUService { get; set; }
+        public SMUService Service { get; set; }
 
         public SMUView View { get; set; }
 
@@ -14,7 +14,7 @@ namespace ColorVision.Device.SMU
 
         public DeviceSMU(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
-            SMUService = new SMUService(Config);
+            Service = new SMUService(Config);
             View = new SMUView();
            
         }

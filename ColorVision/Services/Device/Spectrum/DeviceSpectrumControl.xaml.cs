@@ -19,7 +19,7 @@ namespace ColorVision.Device.Spectrum
         {
             this.disposedObj = false;
             this.MQTTDeviceSp = mqttDeviceSp;
-            SpectrumService = mqttDeviceSp.SpectrumService;
+            SpectrumService = mqttDeviceSp.Service;
             SpectrumService.AutoParamHandlerEvent += Spectrum_AutoParamHandlerEvent;
             InitializeComponent();
         }

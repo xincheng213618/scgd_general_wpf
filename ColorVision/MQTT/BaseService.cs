@@ -37,7 +37,6 @@ namespace ColorVision.MQTT
             Config = config;
             SendTopic = Config.SendTopic;
             SubscribeTopic = Config.SubscribeTopic;
-            MQTTControl = MQTTControl.GetInstance();
             MQTTControl.SubscribeCache(SubscribeTopic);
         }
 
@@ -65,6 +64,7 @@ namespace ColorVision.MQTT
         internal static readonly ILog log = LogManager.GetLogger(typeof(BaseService));
 
         public MQTTSetting MQTTSetting { get; set; }
+        public MQTTControl MQTTControl { get; set; }
 
         public event EventHandler Connected;
         public BaseService()
@@ -148,7 +148,6 @@ namespace ColorVision.MQTT
 
         public virtual string SubscribeTopic { get; set; }
         public virtual string SendTopic { get; set; }
-        public MQTTControl MQTTControl { get; set; }
         public ulong ServiceID { get; set; }
         public string SnID { get; set; }
         public string SerialNumber { get; set; }

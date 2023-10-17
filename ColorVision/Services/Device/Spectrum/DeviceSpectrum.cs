@@ -6,7 +6,7 @@ namespace ColorVision.Device.Spectrum
 {
     public class DeviceSpectrum : BaseDevice<SpectrumConfig>
     {
-        public SpectrumService SpectrumService { get; set; }
+        public SpectrumService Service { get; set; }
 
         public SpectrumView ChartView { get; set; }
 
@@ -14,7 +14,7 @@ namespace ColorVision.Device.Spectrum
 
         public DeviceSpectrum(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
-            SpectrumService = new SpectrumService(Config);
+            Service = new SpectrumService(Config);
             ChartView = new SpectrumView();
         }
 

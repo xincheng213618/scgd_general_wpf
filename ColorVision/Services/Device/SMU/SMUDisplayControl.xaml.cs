@@ -16,7 +16,7 @@ namespace ColorVision.Device.SMU
     {
 
         public DeviceSMU DeviceSMU { get; set; }
-        private SMUService SMUService { get => DeviceSMU.SMUService;  }
+        private SMUService SMUService { get => DeviceSMU.Service;  }
         public SMUView View { get => DeviceSMU.View; }
 
         PassSxSource passSxSource;
@@ -251,7 +251,7 @@ namespace ColorVision.Device.SMU
 
         private void MQTTVIGetData(object sender, RoutedEventArgs e)
         {
-            //SMUService.GetData();
+            //Service.GetData();
         }
 
 

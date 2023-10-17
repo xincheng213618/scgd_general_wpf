@@ -9,5 +9,5 @@ namespace ColorVision.Services.Msg
         [JsonProperty("params")]
         public dynamic Params { get; set; }
         public override string ToString() => JsonConvert.SerializeObject(this);
-    }
+    }     
 }

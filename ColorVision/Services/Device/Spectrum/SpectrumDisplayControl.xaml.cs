@@ -14,7 +14,7 @@ namespace ColorVision.Device.Spectrum
     public partial class SpectrumDisplayControl : UserControl
     {
         public DeviceSpectrum DeviceSpectrum { get; set; }
-        public SpectrumService SpectrumService { get => DeviceSpectrum.SpectrumService; }
+        public SpectrumService SpectrumService { get => DeviceSpectrum.Service; }
 
         public SpectrumView View { get => DeviceSpectrum.ChartView;}
         public SpectrumDisplayControl(DeviceSpectrum DeviceSpectrum)
@@ -156,7 +156,7 @@ namespace ColorVision.Device.Spectrum
 
         private void Button_Click_3(object sender, RoutedEventArgs e)
         {
-            //SpectrumService.SetParam();
+            //Service.SetParam();
         }
 
         private void Button_Click_OneTest(object sender, RoutedEventArgs e)
@@ -167,7 +167,7 @@ namespace ColorVision.Device.Spectrum
         private void Button_Click_Close(object sender, RoutedEventArgs e)
         {
             SpectrumService.Close();
-            //SpectrumService.UnInit();
+            //Service.UnInit();
         }
         private void Button_Click_AutoTest(object sender, RoutedEventArgs e)
         {

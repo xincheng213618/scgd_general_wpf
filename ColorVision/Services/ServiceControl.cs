@@ -13,7 +13,6 @@ using ColorVision.RC;
 using ColorVision.SettingUp;
 using MQTTMessageLib;
 using Newtonsoft.Json;
-using NPOI.HSSF.Record.Chart;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -237,19 +236,19 @@ namespace ColorVision.Services
                                         break;
                                     case DeviceType.Spectum:
                                         DeviceSpectrum deviceSpectrum = new DeviceSpectrum(device);
-                                        svrObj = deviceSpectrum.SpectrumService;
+                                        svrObj = deviceSpectrum.Service;
                                         mQTTService.AddChild(deviceSpectrum);
                                         MQTTDevices.Add(deviceSpectrum);
                                         break;
                                     case DeviceType.SMU:
                                         DeviceSMU deviceSMU = new DeviceSMU(device);
-                                        svrObj = deviceSMU.SMUService;
+                                        svrObj = deviceSMU.Service;
                                         mQTTService.AddChild(deviceSMU);
                                         MQTTDevices.Add(deviceSMU);
                                         break;
                                     case DeviceType.Sensor:
                                         DeviceSensor device1 = new DeviceSensor(device);
-                                        svrObj = device1.SensorService;
+                                        svrObj = device1.Service;
                                         mQTTService.AddChild(device1);
                                         MQTTDevices.Add(device1);
                                         break;
@@ -266,8 +265,6 @@ namespace ColorVision.Services
 
                             if (svrObj != null)
                             {
-                                //mQTTService.AddChild(devObj);
-                                //MQTTDevices.Add(devObj);
                                 svrObj.ServiceName = service.Code;
                                 svrDevices[svrKey].Add(svrObj);
                             }
@@ -329,14 +326,14 @@ namespace ColorVision.Services
             {
                 foreach (var svr in item.VisualChildren)
                 {
-                    MQTTService service = svr as MQTTService;
-                    if (serviceName.Equals(service.ServiceConfig.Code, StringComparison.Ordinal))
+                    if (svr is MQTTService service)
                     {
-                        service.ServiceConfig.SetLiveTime(liveTime, overTime, true);
-                        //if (overTime > 0) service.ServiceConfig.HeartbeatTime = overTime;
-                        //service.ServiceConfig.LastAliveTime = liveTime;
-                        //service.ServiceConfig.IsAlive = true;
+                        if (serviceName.Equals(service.ServiceConfig.Code, StringComparison.Ordinal))
+                        {
+                            service.ServiceConfig.SetLiveTime(liveTime, overTime, true);
+                        }
                     }
+
                 }
             }
         }
