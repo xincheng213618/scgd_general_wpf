@@ -2,6 +2,7 @@
 using cvColorVision;
 using ColorVision.MVVM;
 using ColorVision.Services.Device.Camera.Video;
+using System.Collections.Generic;
 
 namespace ColorVision.Device.Camera
 {
@@ -61,6 +62,9 @@ namespace ColorVision.Device.Camera
         public double SaturationB { get => _SaturationB; set { _SaturationB = value; NotifyPropertyChanged(); } }
         private double _SaturationB = -1;
 
+
+        public List<ChannelConfig> ChannelConfigs { get; set; } = new List<ChannelConfig>{ new ChannelConfig(), new ChannelConfig(), new ChannelConfig() };
+
         public MotorConfig MotorConfig { get; set; } = new MotorConfig();
     }
 
@@ -77,6 +81,15 @@ namespace ColorVision.Device.Camera
         private int _BaudRate = 9600;
 
         public AutoFocusConfig AutoFocusConfig { get; set; } = new AutoFocusConfig();
+    }
+
+    public class ChannelConfig: ViewModelBase
+    {
+        public int Port { get => _Port; set { _Port = value; NotifyPropertyChanged(); } }
+        private int _Port = 0;
+
+        public ImageChannelType ChannelType { get => _ChannelType; set { _ChannelType = value; NotifyPropertyChanged(); } }
+        private ImageChannelType _ChannelType;
     }
 
 

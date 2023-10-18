@@ -21,7 +21,7 @@ namespace ColorVision
         {
             if (account == daccount && password == dpassword)
             {
-                UserManager.Current.UserConfig = new SettingUp.UserConfig()
+                UserManager.Current.UserConfig = new UserConfig()
                 {
                     Account = account,
                     UserPwd = password,
@@ -34,7 +34,7 @@ namespace ColorVision
             }
             else if (account != "admin")
             {
-                UserManager.Current.UserConfig = new SettingUp.UserConfig()
+                UserManager.Current.UserConfig = new UserConfig()
                 {
                     Account = account,
                     UserPwd = password,

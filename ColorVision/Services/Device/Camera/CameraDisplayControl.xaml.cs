@@ -58,12 +58,14 @@ namespace ColorVision.Device.Camera
             };
 
 
-            chType1.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannelType)).Cast<ImageChannelType>()
-                                  select new KeyValuePair<ImageChannelType, string>(e1, e1.ToString());
-            chType2.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannelType)).Cast<ImageChannelType>()
-                                  select new KeyValuePair<ImageChannelType, string>(e1, e1.ToString());
-            chType3.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannelType)).Cast<ImageChannelType>()
-                                  select new KeyValuePair<ImageChannelType, string>(e1, e1.ToString());
+            var ImageChannelTypeList = new[]{
+                 new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_X, "Channel_X"),
+                 new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_Y, "Channel_Y"),
+                 new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_Z, "Channel_Z")
+            };
+            chType1.ItemsSource = ImageChannelTypeList;
+            chType2.ItemsSource = ImageChannelTypeList;
+            chType3.ItemsSource = ImageChannelTypeList;
 
 
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>

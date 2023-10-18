@@ -190,14 +190,25 @@ namespace ColorVision.Device.Camera
                                 Config.ExpTimeR = msg.Data.result[0].result;
                                 Config.ExpTimeG = msg.Data.result[1].result;
                                 Config.ExpTimeB = msg.Data.result[2].result;
+
                                 Config.SaturationR = msg.Data.result[0].resultSaturation;
                                 Config.SaturationG = msg.Data.result[1].resultSaturation;
                                 Config.SaturationB = msg.Data.result[2].resultSaturation;
+
+                                string Msg = "SaturationR:" + Config.SaturationR.ToString() + Environment.NewLine +
+                                             "SaturationG:" + Config.SaturationG.ToString() + Environment.NewLine +
+                                             "SaturationB:" + Config.SaturationB.ToString() + Environment.NewLine;
+                                MessageBox.Show(Msg);
+
+
                             }
                             else
                             {
                                 Config.ExpTime = msg.Data.result[0].result;
                                 Config.Saturation = msg.Data.result[0].resultSaturation;
+
+                                string Msg = "Saturation:" + Config.Saturation.ToString();
+                                MessageBox.Show(Msg);
                             }
                         } 
                         break;
@@ -452,13 +463,13 @@ namespace ColorVision.Device.Camera
                         "SetCfwport", new List<Dictionary<string, object>>()
                         {
                             new Dictionary<string, object>() {
-                                { "nIndex",0},{ "nPort",0},{"eImgChlType",0 }
+                                { "nIndex",0},{ "nPort",Config.ChannelConfigs[0].Port},{"eImgChlType",(int)Config.ChannelConfigs[0].ChannelType }
                             },
                             new Dictionary<string, object>() {
-                                { "nIndex",1},{ "nPort",1},{"eImgChlType",0 }
+                                { "nIndex",1},{ "nPort",Config.ChannelConfigs[1].Port},{"eImgChlType",(int)Config.ChannelConfigs[1].ChannelType }
                             },
                             new Dictionary<string, object>() {
-                                { "nIndex",2},{ "nPort",2},{"eImgChlType",0 }
+                                { "nIndex",2},{ "nPort",Config.ChannelConfigs[2].Port},{"eImgChlType",(int)Config.ChannelConfigs[2].ChannelType }
                             },
                         }
                     }

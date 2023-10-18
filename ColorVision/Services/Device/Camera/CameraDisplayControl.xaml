@@ -95,45 +95,45 @@
                                     </hc:PreviewSlider.PreviewContent>
                                 </hc:PreviewSlider>
                             </DockPanel>
-  
+
+                            <UniformGrid Columns="3" Rows="1">
+                                <UniformGrid Columns="1" Rows="2" Margin="2">
+                                    <DockPanel>
+                                        <TextBox x:Name="cfwport1" DockPanel.Dock="Right" Width="40" Text=""/>
+                                        <TextBlock Text="cfwport"/>
+                                    </DockPanel>
+                                    <DockPanel >
+                                        <ComboBox x:Name="chType1" DockPanel.Dock="Right" Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Key"  DisplayMemberPath="Value" Text=""/>
+                                        <TextBlock Text="chType"/>
+                                    </DockPanel>
+                                </UniformGrid>
+                                <UniformGrid Columns="1" Rows="2">
+                                    <DockPanel >
+                                        <TextBox x:Name="cfwport2" DockPanel.Dock="Right" Width="40" Text=""/>
+                                        <TextBlock Text="cfwport"/>
+                                    </DockPanel>
+                                    <DockPanel >
+                                        <ComboBox x:Name="chType2" DockPanel.Dock="Right" Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Text=""/>
+                                        <TextBlock Text="chType"/>
+                                    </DockPanel>
+                                </UniformGrid>
+                                <UniformGrid Columns="1" Rows="2">
+                                    <DockPanel >
+                                        <TextBox x:Name="cfwport3" DockPanel.Dock="Right" Width="40" Text=""/>
+                                        <TextBlock Text="cfwport"/>
+                                    </DockPanel>
+                                    <DockPanel >
+                                        <ComboBox x:Name="chType3" DockPanel.Dock="Right" Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Key"  DisplayMemberPath="Value" Text=""/>
+                                        <TextBlock Text="chType"/>
+                                    </DockPanel>
+                                </UniformGrid>
+                            </UniformGrid>
                         </StackPanel>
                         <UniformGrid Columns="2" Margin="0,2">
                             <Button Content="自动曝光" Click="AutoExplose_Click" Margin="10,0" />
                             <Button Content="自动聚焦" Click="AutoFocus_Click" Margin="20,0,0,0" />
                         </UniformGrid>
 
-                        <UniformGrid Columns="3" Rows="1">
-                            <UniformGrid Columns="1" Rows="2" Margin="2">
-                                <DockPanel>
-                                    <TextBox x:Name="cfwport1" DockPanel.Dock="Right" Width="40" Text=""/>
-                                    <TextBlock Text="cfwport"/>
-                                </DockPanel>
-                                <DockPanel >
-                                    <ComboBox x:Name="chType1" DockPanel.Dock="Right" Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Key"  DisplayMemberPath="Value" Text=""/>
-                                    <TextBlock Text="chType"/>
-                                </DockPanel>
-                            </UniformGrid>
-                            <UniformGrid Columns="1" Rows="2">
-                                <DockPanel >
-                                    <TextBox x:Name="cfwport2" DockPanel.Dock="Right" Width="40" Text=""/>
-                                    <TextBlock Text="cfwport"/>
-                                </DockPanel>
-                                <DockPanel >
-                                    <ComboBox x:Name="chType2" DockPanel.Dock="Right" Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Text=""/>
-                                    <TextBlock Text="chType"/>
-                                </DockPanel>
-                            </UniformGrid>
-                            <UniformGrid Columns="1" Rows="2">
-                                <DockPanel >
-                                    <TextBox x:Name="cfwport3" DockPanel.Dock="Right" Width="40" Text=""/>
-                                    <TextBlock Text="cfwport"/>
-                                </DockPanel>
-                                <DockPanel >
-                                    <ComboBox x:Name="chType3" DockPanel.Dock="Right" Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Key"  DisplayMemberPath="Value" Text=""/>
-                                    <TextBlock Text="chType"/>
-                                </DockPanel>
-                            </UniformGrid>
-                        </UniformGrid>
                         <Button Content="设置相机转轮通道" Click="SetChannel" Margin="0,2"/>
                         <DockPanel Margin="0,2">
                             <TextBlock Text="校正：" />
