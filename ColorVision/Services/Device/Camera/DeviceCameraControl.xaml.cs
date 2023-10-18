@@ -15,8 +15,7 @@ namespace ColorVision.Device.Camera
     {
         public DeviceCamera MQTTDeviceCamera { get; set; }
 
-        public CameraDeviceService Service { get => MQTTDeviceCamera.Service; }
-
+        public CameraDeviceService Service { get => MQTTDeviceCamera.DeviceService; }
 
         public DeviceCameraControl(DeviceCamera mQTTDeviceCamera)
         {
@@ -72,7 +71,7 @@ namespace ColorVision.Device.Camera
 
             };
 
-            CameraID.ItemsSource = CameraDeviceService.CameraIDs;
+            //CameraID.ItemsSource = CameraDeviceService.CameraIDs;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

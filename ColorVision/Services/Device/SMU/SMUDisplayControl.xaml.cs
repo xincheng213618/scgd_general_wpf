@@ -251,7 +251,7 @@ namespace ColorVision.Device.SMU
 
         private void MQTTVIGetData(object sender, RoutedEventArgs e)
         {
-            //Service.GetData();
+            //DeviceService.GetData();
         }
 
 

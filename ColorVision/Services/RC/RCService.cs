@@ -1,7 +1,5 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.Services;
-using ColorVision.SettingUp;
-using Microsoft.Win32;
 using MQTTMessageLib;
 using MQTTMessageLib.RC;
 using MQTTnet.Client;

@@ -22,7 +22,7 @@ namespace ColorVision.Device.Camera
     /// </summary>
     public partial class CameraDisplayControl : UserControl
     {
-        public CameraDeviceService Service { get => Device.Service; }
+        public CameraDeviceService Service { get => Device.DeviceService; }
 
         public DeviceCamera Device { get; set; }
 

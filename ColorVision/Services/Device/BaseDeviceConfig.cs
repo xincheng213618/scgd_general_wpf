@@ -5,13 +5,6 @@ using System;
 
 namespace ColorVision.Device
 {
-    public class BaseServiceConfig : BaseConfig, IServiceConfig
-    {
-        public string Type { get => _Type; set { _Type = value; NotifyPropertyChanged(); } }
-        private string _Type;
-    }
-
-
     public class BaseConfig: ViewModelBase, IServiceConfig, IHeartbeat
     {
         public string SubscribeTopic { get => _SubscribeTopic; set { _SubscribeTopic = value; NotifyPropertyChanged(); } }

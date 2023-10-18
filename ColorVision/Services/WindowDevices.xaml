@@ -42,7 +42,7 @@
             </Grid.ColumnDefinitions>
             <TreeView x:Name="TreeView1" Loaded="TreeView1_Loaded" SelectedItemChanged="TreeView1_SelectedItemChanged " Margin="5">
                 <TreeView.Resources>
-                    <HierarchicalDataTemplate DataType="{x:Type local:MQTTServiceKind}" ItemsSource="{Binding VisualChildren}" >
+                    <HierarchicalDataTemplate DataType="{x:Type local:ServiceKind}" ItemsSource="{Binding VisualChildren}" >
                         <StackPanel >
                             <TextBlock Text="{Binding Name}"/>
                         </StackPanel>

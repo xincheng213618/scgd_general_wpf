@@ -6,7 +6,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 
-namespace ColorVision.SettingUp
+namespace ColorVision.MQTT
 {
     public class MQTTSetting : ViewModelBase
     {
@@ -15,10 +15,12 @@ namespace ColorVision.SettingUp
         {
             if (File.Exists(GlobalConst.MQTTMsgRecordsFileName))
             {
-                try {
+                try
+                {
                     MsgRecords = JsonConvert.DeserializeObject<ObservableCollection<MsgRecord>>(File.ReadAllText(GlobalConst.MQTTMsgRecordsFileName)) ?? new ObservableCollection<MsgRecord>();
                 }
-                catch {
+                catch
+                {
                     MsgRecords = new ObservableCollection<MsgRecord>();
                 }
             }
@@ -31,7 +33,7 @@ namespace ColorVision.SettingUp
                 Interval = TimeSpan.FromSeconds(1).TotalMilliseconds,
                 AutoReset = true,
             };
-            timer.Elapsed +=(s,e)=>
+            timer.Elapsed += (s, e) =>
             {
                 lock (_locker)
                 {
@@ -97,16 +99,20 @@ namespace ColorVision.SettingUp
         /// <summary>
         /// 端口地址
         /// </summary>
-        public int Port { get => _Port; set {
+        public int Port
+        {
+            get => _Port; set
+            {
                 _Port = value <= 0 ? 0 : value >= 65535 ? 65535 : value;
-                NotifyPropertyChanged(); 
-            } }
+                NotifyPropertyChanged();
+            }
+        }
         private int _Port = 1883;
 
         /// <summary>
         /// 账号
         /// </summary>
-        public string UserName { get=>_UserName; set { _UserName = value; NotifyPropertyChanged(); } }
+        public string UserName { get => _UserName; set { _UserName = value; NotifyPropertyChanged(); } }
         private string _UserName = string.Empty;
 
         /// <summary>

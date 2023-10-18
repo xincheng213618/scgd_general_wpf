@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.SettingUp;
 using System.IO;
 using Panuon.WPF.UI;
 using ColorVision.Services;

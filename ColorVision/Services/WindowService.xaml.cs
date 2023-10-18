@@ -17,7 +17,7 @@ namespace ColorVision.Services
         {
             InitializeComponent();
         }
-        public ObservableCollection<MQTTServiceKind> MQTTServices { get; set; }
+        public ObservableCollection<ServiceKind> MQTTServices { get; set; }
         private void Window_Initialized(object sender, EventArgs e)
         {
             MQTTServices = ServiceControl.GetInstance().MQTTServices;

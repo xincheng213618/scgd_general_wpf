@@ -77,7 +77,7 @@ namespace ColorVision.Services
             if (TextBox_Type.SelectedItem is MQTTService mQTTService)
             {
                 SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, mQTTService.SysResourceModel.Type, mQTTService.SysResourceModel.Id, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
-                if (mQTTService.Type == DeviceType.Camera)
+                if (mQTTService.Type == ServiceType.Camera)
                 {
                     CameraConfig cameraConfig1 = new CameraConfig
                     {
@@ -92,7 +92,7 @@ namespace ColorVision.Services
                     if (model != null)
                         mQTTService.AddChild(new DeviceCamera(model));
                 }
-                else if (mQTTService.Type == DeviceType.PG)
+                else if (mQTTService.Type == ServiceType.PG)
                 {
                     PGConfig pGConfig = new PGConfig
                     {
@@ -103,7 +103,7 @@ namespace ColorVision.Services
                     if (model != null)
                         mQTTService.AddChild(new DevicePG(model));
                 }
-                else if (mQTTService.Type == DeviceType.Spectum)
+                else if (mQTTService.Type == ServiceType.Spectum)
                 {
                     SpectrumConfig config = new SpectrumConfig
                     {
@@ -115,7 +115,7 @@ namespace ColorVision.Services
                         mQTTService.AddChild(new DeviceSpectrum(model));
                 }
 
-                else if (mQTTService.Type == DeviceType.SMU)
+                else if (mQTTService.Type == ServiceType.SMU)
                 {
                     SMUConfig config = new SMUConfig
                     {
@@ -126,7 +126,7 @@ namespace ColorVision.Services
                     if (model != null)
                         mQTTService.AddChild(new DeviceSMU(model));
                 }
-                else if (mQTTService.Type == DeviceType.Sensor)
+                else if (mQTTService.Type == ServiceType.Sensor)
                 {
                     SensorConfig config = new SensorConfig
                     {
@@ -135,7 +135,7 @@ namespace ColorVision.Services
                     if (model != null)
                         mQTTService.AddChild(new DeviceSpectrum(model));
                 }
-                else if (mQTTService.Type == DeviceType.FileServer)
+                else if (mQTTService.Type == ServiceType.FileServer)
                 {
                     FileServerConfig config = new FileServerConfig
                     {

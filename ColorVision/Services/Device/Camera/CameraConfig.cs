@@ -1,7 +1,7 @@
-﻿using ColorVision.SettingUp;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using cvColorVision;
 using ColorVision.MVVM;
+using ColorVision.Services.Device.Camera.Video;
 
 namespace ColorVision.Device.Camera
 {

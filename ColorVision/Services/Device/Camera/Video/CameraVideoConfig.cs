@@ -1,8 +1,8 @@
 ﻿using ColorVision.MVVM;
 
-namespace ColorVision.SettingUp
+namespace ColorVision.Services.Device.Camera.Video
 {
-    public class CameraVideoConfig:ViewModelBase
+    public class CameraVideoConfig : ViewModelBase
     {
         /// <summary>
         /// 连接名称

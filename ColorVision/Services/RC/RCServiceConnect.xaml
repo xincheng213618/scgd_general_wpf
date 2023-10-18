@@ -34,7 +34,7 @@
                                 </Style>
                             </ListView.ItemContainerStyle>
                             <ListView.ItemTemplate>
-                                <DataTemplate DataType="{x:Type setting:RCServiceConfig}" >
+                                <DataTemplate DataType="{x:Type local:RCServiceConfig}" >
                                     <Border>
                                         <TextBlock  Text="{Binding Name}" TextTrimming = "CharacterEllipsis"/>
                                     </Border>
@@ -48,7 +48,7 @@
                     </Grid>
                 </Border>
                 <Border Grid.Column="1"  Background="#F9F9F9"  BorderBrush="#EAEAEA" BorderThickness="1"  Margin="5" CornerRadius="10,10,3,3">
-                    <Grid x:Name="GridRCService" Margin="5,5,10,5"  d:DataContext="{d:DesignInstance setting:RCServiceConfig}">
+                    <Grid x:Name="GridRCService" Margin="5,5,10,5"  d:DataContext="{d:DesignInstance local:RCServiceConfig}">
                         <StackPanel>
                             <TextBlock Text="注册中心配置" HorizontalAlignment="Center" Margin="15" FontSize="17"/>
                             <DockPanel Margin="5">

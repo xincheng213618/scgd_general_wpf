@@ -150,10 +150,6 @@
                             </UniformGrid>
                         </UniformGrid>
                         <Button Content="设置相机转轮通道" Click="SetChannel" Margin="0,2"/>
-
-
-
-
                         <DockPanel Margin="0,2">
                             <TextBlock Text="校正：" />
                             <Button  DockPanel.Dock="Right" Content="应用"  HorizontalAlignment="Right" Click="Calibration_Click" />

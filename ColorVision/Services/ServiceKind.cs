@@ -3,25 +3,10 @@ using System.Windows.Controls;
 
 namespace ColorVision.Services
 {
-
-    public enum DeviceType
-    {
-        Camera = 1,
-        PG = 2,
-        Spectum = 3,
-        SMU = 4,
-        Sensor = 5,
-        FileServer = 6,
-        Algorithm =7,
-    }
-
-
-
-
-    public class MQTTServiceKind : BaseMQTTService
+    public class ServiceKind : BaseMQTTService
     {
         public SysDictionaryModel SysDictionaryModel { get; set; }
-        public MQTTServiceKind() : base()
+        public ServiceKind() : base()
         {
         }
 

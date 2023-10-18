@@ -19,6 +19,8 @@ namespace ColorVision.Services
     {
         public SysResourceModel SysResourceModel { get; set; }
         public BaseServiceConfig Config { get; set; }
+        public BaseService BaseService { get; set; }
+
         public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
 
         public MQTTService(SysResourceModel sysResourceModel) : base()
@@ -43,6 +45,9 @@ namespace ColorVision.Services
             Config.Name = Name;
             Config.SubscribeTopic = SysResourceModel.TypeCode + "/STATUS/" + SysResourceModel.Code;
             Config.SendTopic = SysResourceModel.TypeCode + "/CMD/" + SysResourceModel.Code;
+
+
+
             ContextMenu = new ContextMenu();
             MenuItem menuItem = new MenuItem() { Header = "删除服务" };
             menuItem.Click += (s, e) =>
@@ -55,9 +60,13 @@ namespace ColorVision.Services
                 }
             };
             ContextMenu.Items.Add(menuItem);
+
+            BaseService = new BaseService();
+
+
         }
 
-        public DeviceType Type { get => (DeviceType)SysResourceModel.Type; }
+        public ServiceType Type { get => (ServiceType)SysResourceModel.Type; }
 
 
         public override UserControl GenDeviceControl() => new MQTTServiceControl(this);

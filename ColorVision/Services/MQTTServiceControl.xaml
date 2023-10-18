@@ -32,8 +32,8 @@
                 <Border Margin="2" Background ="{DynamicResource GlobalBackground}" CornerRadius="5">
                     <StackPanel Margin="5">
                         <DockPanel Margin="5,2">
-                            <TextBlock Text="{Binding ServiceConfig.Name}" FontWeight="Bold" FontSize="20"/>
-                            <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  Height="20" Width="20"  HorizontalAlignment="Right" IsChecked="{Binding  ServiceConfig.IsAlive,Mode=OneWay}" IsEnabled="False" />
+                            <TextBlock Text="{Binding Config.Name}" FontWeight="Bold" FontSize="20"/>
+                            <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  Height="20" Width="20"  HorizontalAlignment="Right" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
                         </DockPanel>
                         <GroupBox Header="基本信息" Margin="0,5">
                             <StackPanel Margin="5">
@@ -43,19 +43,19 @@
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
                                     <TextBlock Text="发送信道:" Width="120"/>
-                                    <TextBlock Text="{Binding ServiceConfig.SendTopic}"/>
+                                    <TextBlock Text="{Binding Config.SendTopic}"/>
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
                                     <TextBlock Text="接收信道:" Width="120"/>
-                                    <TextBlock Text="{Binding ServiceConfig.SubscribeTopic}"/>
+                                    <TextBlock Text="{Binding Config.SubscribeTopic}"/>
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
                                     <TextBlock Text="上次连接:" Width="120"/>
-                                    <TextBlock Text="{Binding ServiceConfig.LastAliveTime}"/>
+                                    <TextBlock Text="{Binding Config.LastAliveTime}"/>
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
                                     <TextBlock Text="心跳:" Width="120"/>
-                                    <TextBlock Text="{Binding ServiceConfig.HeartbeatTime}"/>
+                                    <TextBlock Text="{Binding Config.HeartbeatTime}"/>
                                 </DockPanel>
                             </StackPanel>
                         </GroupBox>
@@ -90,8 +90,8 @@
                         <TextBox Text="{Binding SysResourceModel.Code}"/>
                     </DockPanel>
                     <DockPanel Margin="5">
-                        <TextBlock Text="上次连接:" Width="120"/>
-                        <TextBox Text="{Binding ServiceConfig.HeartbeatTime}"/>
+                        <TextBlock Text="心跳:" Width="120"/>
+                        <TextBox Text="{Binding Config.HeartbeatTime}"/>
                     </DockPanel>
                 </StackPanel>
                 <Button Grid.Column="1"  Content="{x:Static resx:Resource.Submit}" Click="Button_Click" Command="{Binding SaveCommand}" />

@@ -2,7 +2,6 @@
 using ColorVision.MVVM;
 using ColorVision.Services;
 using ColorVision.Services.Msg;
-using ColorVision.SettingUp;
 using log4net;
 using MQTTMessageLib;
 using MQTTnet.Client;

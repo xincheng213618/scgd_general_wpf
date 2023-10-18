@@ -1,7 +1,6 @@
 ﻿using ColorVision.MVVM;
 using ColorVision.MySql;
 using ColorVision.Services;
-using ColorVision.SettingUp;
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
