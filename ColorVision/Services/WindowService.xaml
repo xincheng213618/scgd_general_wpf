@@ -44,11 +44,9 @@
 
             </TreeView>
             <Border Background="{DynamicResource GlobalBorderBrush1}" CornerRadius="5" Grid.Column="1" Margin="5">
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Grid.Column="1" >
-                    <StackPanel x:Name="StackPanelShow"  >
+                <Grid x:Name="StackPanelShow"  >
 
-                    </StackPanel>
-                </ScrollViewer>
+                </Grid>
             </Border>
 
 
