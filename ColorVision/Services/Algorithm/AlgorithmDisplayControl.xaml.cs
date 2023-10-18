@@ -213,11 +213,21 @@ namespace ColorVision.Device.POI
             {
                 ImageFile.Text = openFileDialog.FileName;
             }
-
-
-             
         }
 
+        private void Button_Click_Refresh(object sender, RoutedEventArgs e)
+        {
 
+        }
+
+        private void Button_Click_Upload(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void Button_Click_Open(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }
