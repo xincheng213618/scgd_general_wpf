@@ -104,31 +104,31 @@
                                             <UniformGrid Columns="3" Rows="1">
                                                 <UniformGrid Columns="1" Rows="2" Margin="0,2">
                                                     <DockPanel>
-                                                        <TextBlock Text="cfwport"  Width="120"/>
+                                                        <TextBlock Text="cfwport"  Width="80"/>
                                                         <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ChannelConfigs[0].Port}"/>
                                                     </DockPanel>
                                                     <DockPanel >
-                                                        <TextBlock Text="chType" Width="120"/>
+                                                        <TextBlock Text="chType" Width="80"/>
                                                         <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ChannelConfigs[0].ChannelType}"/>
                                                     </DockPanel>
                                                 </UniformGrid>
                                                 <UniformGrid Columns="1" Rows="2" Margin="0,2">
                                                     <DockPanel>
-                                                        <TextBlock Text="cfwport"  Width="120"/>
+                                                        <TextBlock Text="cfwport"  Width="80"/>
                                                         <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ChannelConfigs[1].Port}"/>
                                                     </DockPanel>
                                                     <DockPanel >
-                                                        <TextBlock Text="chType" Width="120"/>
+                                                        <TextBlock Text="chType" Width="80"/>
                                                         <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ChannelConfigs[1].ChannelType}"/>
                                                     </DockPanel>
                                                 </UniformGrid>
                                                 <UniformGrid Columns="1" Rows="2" Margin="0,2">
                                                     <DockPanel>
-                                                        <TextBlock Text="cfwport"  Width="120"/>
+                                                        <TextBlock Text="cfwport"  Width="80"/>
                                                         <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ChannelConfigs[2].Port}"/>
                                                     </DockPanel>
                                                     <DockPanel >
-                                                        <TextBlock Text="chType" Width="120"/>
+                                                        <TextBlock Text="chType" Width="80"/>
                                                         <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ChannelConfigs[2].ChannelType}"/>
                                                     </DockPanel>
                                                 </UniformGrid>
@@ -305,7 +305,7 @@
                                                 <UniformGrid Columns="3" Rows="1">
                                                     <UniformGrid Columns="1" Rows="2" Margin="2">
                                                         <DockPanel Margin="0,2">
-                                                            <TextBox  DockPanel.Dock="Right" Width="110" Style="{StaticResource TextBox.Small}" Text="{Binding Config.ChannelConfigs[0].Port}"/>
+                                                            <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding Config.ChannelConfigs[0].Port}" Minimum="0"/>
                                                             <TextBlock Text="cfwport"/>
                                                         </DockPanel>
                                                         <DockPanel Margin="0,2">
@@ -315,7 +315,7 @@
                                                     </UniformGrid>
                                                     <UniformGrid Columns="1" Rows="2" Margin="2">
                                                         <DockPanel Margin="0,2">
-                                                            <TextBox x:Name="cfwport2" DockPanel.Dock="Right" Width="110" Style="{StaticResource TextBox.Small}"  Text="{Binding Config.ChannelConfigs[1].Port}"/>
+                                                            <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding Config.ChannelConfigs[1].Port}" Minimum="0"/>
                                                             <TextBlock Text="cfwport"/>
                                                         </DockPanel>
                                                         <DockPanel Margin="0,2">
@@ -325,7 +325,7 @@
                                                     </UniformGrid>
                                                     <UniformGrid Columns="1" Rows="2" Margin="2">
                                                         <DockPanel Margin="0,2">
-                                                            <TextBox x:Name="cfwport3" DockPanel.Dock="Right" Width="110" Style="{StaticResource TextBox.Small}"  Text="{Binding Config.ChannelConfigs[2].Port}"/>
+                                                            <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding Config.ChannelConfigs[2].Port}" Minimum="0"/>
                                                             <TextBlock Text="cfwport"/>
                                                         </DockPanel>
                                                         <DockPanel Margin="0,2">
