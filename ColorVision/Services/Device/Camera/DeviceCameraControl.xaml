@@ -112,6 +112,9 @@
                                                     <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ExpTimeB}"/>
                                                 </DockPanel>
 
+                                            </StackPanel>
+
+                                            <StackPanel  Visibility="{Binding Config.IsChannelThree,Converter={StaticResource bool2VisibilityConverter}}">
                                                 <UniformGrid Columns="3" Rows="1">
                                                     <UniformGrid Columns="1" Rows="2" Margin="0,2">
                                                         <DockPanel>
@@ -144,6 +147,7 @@
                                                         </DockPanel>
                                                     </UniformGrid>
                                                 </UniformGrid>
+
                                             </StackPanel>
                                         </StackPanel>
                                     </GroupBox>
@@ -312,6 +316,10 @@
                                                     </DockPanel>
 
 
+
+                                                </StackPanel>
+
+                                                <StackPanel  Visibility="{Binding Config.IsChannelThree,Converter={StaticResource bool2VisibilityConverter}}">
                                                     <UniformGrid Columns="3" Rows="1">
                                                         <UniformGrid Columns="1" Rows="2" Margin="2">
                                                             <DockPanel Margin="0,2">
@@ -346,6 +354,7 @@
                                                     </UniformGrid>
 
                                                 </StackPanel>
+
                                             </StackPanel>
                                         </GroupBox>
                                         <GroupBox Header="电机配置" Margin="0,5">

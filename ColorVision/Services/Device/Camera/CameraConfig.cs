@@ -19,7 +19,7 @@ namespace ColorVision.Device.Camera
 
         public ImageBpp ImageBpp { get => _ImageBpp; set { _ImageBpp = value; NotifyPropertyChanged(); } }
         private ImageBpp _ImageBpp;
-        public ImageChannel Channel { get => _Channel; set { _Channel = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsExpThree)); } }
+        public ImageChannel Channel { get => _Channel; set { _Channel = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsExpThree)); NotifyPropertyChanged(nameof(IsChannelThree)); } }
         private ImageChannel _Channel;
 
         public CameraVideoConfig VideoConfig { get; set; } = new CameraVideoConfig();
@@ -37,6 +37,18 @@ namespace ColorVision.Device.Camera
             }
             set => NotifyPropertyChanged();
         }
+        [JsonIgnore]
+        public bool IsChannelThree
+        {
+            get
+            {
+                if (Channel == ImageChannel.Three)
+                    return true;
+                return false;
+            }
+            set => NotifyPropertyChanged();
+        }
+
 
         public double ExpTime { get => _ExpTime; set { _ExpTime = value; NotifyPropertyChanged(); } }
         private double _ExpTime =10;
