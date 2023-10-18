@@ -36,7 +36,7 @@ namespace ColorVision.Device
                 case DeviceType.Sensor:
                     result = new DeviceSensor(device);
                     break;
-                case DeviceType.Image:
+                case DeviceType.FileServer:
                     result = new DeviceSpectrum(device);
                     break;
                 case DeviceType.Algorithm:

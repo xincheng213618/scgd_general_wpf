@@ -11,7 +11,7 @@ namespace ColorVision.Services
         Spectum = 3,
         SMU = 4,
         Sensor = 5,
-        Image = 6,
+        FileServer = 6,
         Algorithm =7,
     }
 

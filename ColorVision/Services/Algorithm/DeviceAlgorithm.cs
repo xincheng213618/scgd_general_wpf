@@ -1,6 +1,8 @@
-﻿using ColorVision.Device.POI;
+﻿using ColorVision.Device.FileServer;
+using ColorVision.Device.POI;
 using ColorVision.MQTT;
 using ColorVision.MySql.DAO;
+using ColorVision.Services.Algorithm;
 using System.Windows.Controls;
 
 namespace ColorVision.Device.Algorithm
@@ -22,6 +24,7 @@ namespace ColorVision.Device.Algorithm
             Control = new AlgorithmDisplayControl(this);
         }
 
+        public override UserControl GetDeviceControl() => new DeviceAlgorithmConfigControl(this);
         public override UserControl GetDisplayControl() => Control;
     }
 }

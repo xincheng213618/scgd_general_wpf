@@ -135,7 +135,7 @@ namespace ColorVision.Services
                     if (model != null)
                         mQTTService.AddChild(new DeviceSpectrum(model));
                 }
-                else if (mQTTService.Type == DeviceType.Image)
+                else if (mQTTService.Type == DeviceType.FileServer)
                 {
                     FileServerConfig config = new FileServerConfig
                     {
