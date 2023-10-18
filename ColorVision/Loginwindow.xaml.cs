@@ -1,4 +1,5 @@
 ﻿using ColorVision.Services;
+using ColorVision.User;
 using System;
 using System.Windows;
 
@@ -25,7 +26,7 @@ namespace ColorVision
                     Account = account,
                     UserPwd = password,
                     UserName =account,
-                    PerMissionMode = SettingUp.PerMissionMode.Administrator,
+                    PerMissionMode = PerMissionMode.Administrator,
                 };
 
                 new WindowService() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show(); ;
@@ -38,7 +39,7 @@ namespace ColorVision
                     Account = account,
                     UserPwd = password,
                     UserName = account,
-                    PerMissionMode = SettingUp.PerMissionMode.User,
+                    PerMissionMode = PerMissionMode.User,
                 };
 
 

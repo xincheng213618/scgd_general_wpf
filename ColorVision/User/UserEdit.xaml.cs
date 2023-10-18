@@ -1,4 +1,5 @@
 ﻿using ColorVision.Themes.Controls;
+using ColorVision.User;
 using System;
 using System.Windows;
 

@@ -11,7 +11,7 @@ using ColorVision.MySql;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.RC;
-using ColorVision.SettingUp;
+using ColorVision.User;
 using MQTTMessageLib;
 using Newtonsoft.Json;
 using System;
