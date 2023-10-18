@@ -23,7 +23,7 @@ namespace ColorVision.Device.Camera
 
         public CameraVideoConfig VideoConfig { get; set; } = new CameraVideoConfig();
         public int Gain { get => _Gain; set { _Gain = value; NotifyPropertyChanged(); } }
-        private int _Gain;
+        private int _Gain =10;
 
         [JsonIgnore]
         public bool IsExpThree
@@ -38,15 +38,15 @@ namespace ColorVision.Device.Camera
         }
 
         public double ExpTime { get => _ExpTime; set { _ExpTime = value; NotifyPropertyChanged(); } }
-        private double _ExpTime;
+        private double _ExpTime =10;
         public double ExpTimeR { get => _ExpTimeR; set { _ExpTimeR = value; NotifyPropertyChanged(); } }
-        private double _ExpTimeR;
+        private double _ExpTimeR = 10;
 
         public double ExpTimeG { get => _ExpTimeG; set { _ExpTimeG = value; NotifyPropertyChanged(); } }
-        private double _ExpTimeG;
+        private double _ExpTimeG = 10;
 
         public double ExpTimeB { get => _ExpTimeB; set { _ExpTimeB = value; NotifyPropertyChanged(); } }
-        private double _ExpTimeB;
+        private double _ExpTimeB =10;
 
         public MotorConfig MotorConfig { get; set; } = new MotorConfig();
     }
@@ -61,7 +61,7 @@ namespace ColorVision.Device.Camera
         private string _szComName;
 
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; NotifyPropertyChanged(); } }
-        private int _BaudRate;
+        private int _BaudRate = 9600;
 
         public AutoFocusConfig AutoFocusConfig { get; set; } = new AutoFocusConfig();
     }

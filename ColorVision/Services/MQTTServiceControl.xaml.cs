@@ -86,6 +86,7 @@ namespace ColorVision.Services
                         CameraType = CameraType.LV_Q,
                         TakeImageMode = TakeImageMode.Measure_Normal,
                         ImageBpp = ImageBpp.bpp8
+                        
                     };
                     SysResourceModel model = saveConfigInfo(cameraConfig1, sysResource);
                     if (model != null)

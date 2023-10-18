@@ -56,10 +56,9 @@ namespace ColorVision.Device.Camera
                 CameraVideoSetButton.Visibility = ComboxCameraTakeImageMode.SelectedValue is TakeImageMode mode && mode == TakeImageMode.Live ? Visibility.Visible : Visibility.Collapsed;
             };
 
-
-            ComCalibration.ItemsSource = from e1 in Enum.GetValues(typeof(CalibrationType)).Cast<CalibrationType>()
-                                         select new KeyValuePair<CalibrationType, string>(e1, e1.ToString());
-            ComCalibration.SelectedIndex = 13;
+            ComCalibration.ItemsSource = from e1 in Enum.GetValues(typeof(CalibrationType1)).Cast<CalibrationType1>()
+                                         select new KeyValuePair<CalibrationType1, string>(e1, e1.ToString());
+            ComCalibration.SelectedIndex = 1;
 
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
             {
@@ -198,17 +197,9 @@ namespace ColorVision.Device.Camera
                     MessageBox.Show("曝光时间小于0");
                     return;
                 }
-
-                if (ComCalibration.SelectedIndex > -1 && ComCalibration.SelectedValue is CalibrationType calibrationType)
-                {
-                    string filename = DateTime.Now.ToString("yyyyMMddHHmmss") + ".tif";
-                    MsgRecord msgRecord = Service.GetData(SliderexpTime.Value, SliderGain.Value, calibrationType);
-                    Helpers.SendCommand(msgRecord, msgRecord.MsgRecordState.ToDescription());
-                }
-                else
-                {
-                    MessageBox.Show("请选择校正模板");
-                }
+                string filename = DateTime.Now.ToString("yyyyMMddHHmmss") + ".tif";
+                MsgRecord msgRecord = Service.GetData(SliderexpTime.Value, SliderGain.Value,ChromaChoice);
+                Helpers.SendCommand(msgRecord, msgRecord.MsgRecordState.ToDescription());
 
             }
         }
@@ -377,7 +368,13 @@ namespace ColorVision.Device.Camera
 
         private void ComboxCalibrationTemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+
+
         }
+
+
+        /// 这里是因为在C++的代码中， 色度校正和均匀场等校正做了一个分离的逻辑，不在一起，所以要做成单独的
+        private CalibrationType ChromaChoice = CalibrationType.Empty_Num;
 
         private void Calibration_Click(object sender, RoutedEventArgs e)
         {
@@ -385,6 +382,14 @@ namespace ColorVision.Device.Camera
             {
                 if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
                 {
+                    if (param.SelectedColorFour)
+                        ChromaChoice = CalibrationType.LumFourColor;
+                    if (param.SelectedColorOne)
+                        ChromaChoice = CalibrationType.LumOneColor;
+                    if (param.SelectedColorMulti)
+                        ChromaChoice = CalibrationType.LumMultiColor;
+                    if (param.SelectedLuminance)
+                        ChromaChoice = CalibrationType.Luminance;
                     MsgRecord msgRecord = Service.Calibration(param);
                     Helpers.SendCommand(button, msgRecord);
 

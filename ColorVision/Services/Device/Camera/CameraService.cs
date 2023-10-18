@@ -35,10 +35,10 @@ namespace ColorVision.Device.Camera
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
             DeviceStatus = DeviceStatus.UnInit;
 
-            //Connected += (s, e) =>
-            //{
-            //    CM_GetAllSnID();
-            //};
+            Connected += (s, e) =>
+            {
+                GetAllCameraID();
+            };
         }
 
 
@@ -294,7 +294,6 @@ namespace ColorVision.Device.Camera
                             { "bEnabled", bEnabled} ,
                             { "filename", fileName }
                         }
-
                 };
             }
 
@@ -347,7 +346,7 @@ namespace ColorVision.Device.Camera
                 EventName = "GetData",
                 Params = new Dictionary<string, object>() { { "nBatchID", model.Id }, { "expTime", expTime }, { "gain", gain }, { "eCalibType", eCalibType } }
             };
-            return PublishAsyncClient(msg);
+            return PublishAsyncClient(msg, expTime + 10000);
         }
 
         public MsgRecord GetAllCameraID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });

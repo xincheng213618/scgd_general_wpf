@@ -50,33 +50,76 @@ namespace ColorVision.Template
         public string FileNameLuminance { get => _FileNameLuminance; set { _FileNameLuminance = value; NotifyPropertyChanged(); } }
         private string _FileNameLuminance;
 
-        [JsonProperty("Selected_Luminance")]
-        public bool SelectedLuminance { get => _SelectedLuminance; set { _SelectedLuminance = value; NotifyPropertyChanged(); } }
+
         private bool _SelectedLuminance;
+        [JsonProperty("Selected_Luminance")]
+        public bool SelectedLuminance { get => _SelectedLuminance; set {
+                _SelectedLuminance = value; NotifyPropertyChanged();
+                if (value)
+                {
+                    SelectedColorOne = false;
+                    SelectedColorFour = false;
+                    SelectedColorMulti = false;
+                }
+            } }
 
         [JsonProperty("FileName_ColorOne")]
         public string FileNameColorOne { get => _FileNameColorOne; set { _FileNameColorOne = value; NotifyPropertyChanged(); } }
         private string _FileNameColorOne;
 
         [JsonProperty("Selected_ColorOne")]
-        public bool SelectedColorOne { get => _SelectedColorOne; set { _SelectedColorOne = value; NotifyPropertyChanged(); } }
+        public bool SelectedColorOne { get => _SelectedColorOne;
+            set { 
+                _SelectedColorOne = value; 
+                NotifyPropertyChanged();
+                if (value)
+                {
+                    SelectedColorFour = false;
+                    SelectedColorMulti = false;
+                    SelectedLuminance = false;
+                }
+            } }
         private bool _SelectedColorOne;
 
         [JsonProperty("FileName_ColorFour")]
-        public string FileNameColorFour { get => _FileNameColorFour; set { _FileNameColorFour = value; NotifyPropertyChanged(); } }
+        public string FileNameColorFour { get => _FileNameColorFour;  set { _FileNameColorFour = value; NotifyPropertyChanged();}  }
         private string _FileNameColorFour;
 
-        [JsonProperty("Selected_ColorFour")]
-        public bool SelectedColorFour { get => _SelectedColorFour; set { _SelectedColorFour = value; NotifyPropertyChanged(); } }
         private bool _SelectedColorFour;
+        [JsonProperty("Selected_ColorFour")]
+        public bool SelectedColorFour { get => _SelectedColorFour; 
+            set {
+                _SelectedColorFour = value; 
+                NotifyPropertyChanged();
+                if (value)
+                {
+                    SelectedColorOne = false;
+                    SelectedColorMulti = false;
+                    SelectedLuminance = false;
+                }
+
+
+            } }
 
         [JsonProperty("FileName_ColorMulti")]
         public string FileNameColorMulti { get => _FileNameColorMulti; set { _FileNameColorMulti = value; NotifyPropertyChanged(); } }
         private string _FileNameColorMulti;
 
-        [JsonProperty("Selected_ColorMulti")]
-        public bool SelectedColorMulti { get => _SelectedColorMulti; set { _SelectedColorMulti = value; NotifyPropertyChanged(); } }
+
         private bool _SelectedColorMulti;
+        [JsonProperty("Selected_ColorMulti")]
+        public bool SelectedColorMulti { get => _SelectedColorMulti; 
+            set {
+                _SelectedColorMulti = value; 
+                NotifyPropertyChanged();
+                if (value)
+                {
+                    SelectedColorOne = false;
+                    SelectedColorFour = false;
+                    SelectedLuminance = false;
+                }
+            }
+        }
 
         [JsonProperty("FileName_Uniformity_Y")]
         public string FileNameUniformityY { get => _FileNameUniformityY; set { _FileNameUniformityY = value; NotifyPropertyChanged(); } }

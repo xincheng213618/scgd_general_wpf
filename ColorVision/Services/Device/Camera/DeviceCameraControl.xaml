@@ -222,7 +222,7 @@
                                             <DockPanel>
                                                 <TextBlock  Text="默认增益" Width="120" />
                                                 <TextBox DockPanel.Dock="Right" Text="{Binding Config.Gain}"  Width="50"/>
-                                                <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" Value="{Binding Config.Gain}" Maximum="10"  >
+                                                <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" Value="{Binding Config.Gain}" Maximum="100"  >
                                                     <hc:PreviewSlider.PreviewContent>
                                                         <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0.00"/>
                                                     </hc:PreviewSlider.PreviewContent>

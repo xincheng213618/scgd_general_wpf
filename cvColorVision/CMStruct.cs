@@ -48,6 +48,14 @@ namespace cvColorVision
         Empty_Num = 13,
     };
 
+    public enum CalibrationType1
+    {
+        Luminance = 6,
+        LumOneColor = 7,
+        LumFourColor = 8,
+        LumMultiColor = 9,
+    };
+
 
 
 

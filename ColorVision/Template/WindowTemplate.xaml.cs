@@ -17,8 +17,6 @@ using System.Windows.Input;
 namespace ColorVision.Template
 {
     //Aoi检测部分
-
-
     public class ListConfig:ViewModelBase
     {
         public int ID { get; set; }

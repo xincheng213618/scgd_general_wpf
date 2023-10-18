@@ -174,7 +174,7 @@ namespace ColorVision.MQTT
         /// 这里修改成可以继承的
         /// </summary>
         /// <param name="msg"></param>
-        internal virtual MsgRecord PublishAsyncClient(MsgSend msg)
+        internal virtual MsgRecord PublishAsyncClient(MsgSend msg,double Timeout = 60000)
         {
             if (!MQTTControl.IsConnect)
                 return new MsgRecord();
@@ -202,7 +202,7 @@ namespace ColorVision.MQTT
                 MsgRecords.Add(msgRecord);
             });
 
-            Timer timer = new Timer(MQTTSetting.SendTimeout * 1000);
+            Timer timer = new Timer(Timeout);
             timer.Elapsed += (s, e) =>
             {
                 timer.Enabled = false;

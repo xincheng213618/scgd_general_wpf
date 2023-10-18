@@ -7,7 +7,7 @@
              d:DataContext="{d:DesignInstance Type=local:CalibrationParam}"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="400">
-    <Grid>
+    <ScrollViewer>
         <StackPanel Margin="2">
             <DockPanel  Margin="0,2">
                 <TextBlock DockPanel.Dock="Left" Text="暗噪声"  Width="80" />
@@ -39,30 +39,37 @@
                 <Button DockPanel.Dock="Right" Content="..." Click="Button_Click" Tag="Distortion" Width="40"  Margin="5,0"/>
                 <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding FileNameDistortion}" />
             </DockPanel>
-            <DockPanel  Margin="0,2">
-                <TextBlock DockPanel.Dock="Left" Text="亮度" Width="80"  />
-                <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding SelectedLuminance}"   Margin="5,0"/>
-                <Button DockPanel.Dock="Right" Content="..." Click="Button_Click" Tag="Luminance" Width="40"  Margin="5,0"/>
-                <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding FileNameLuminance}" />
-            </DockPanel>
-            <DockPanel  Margin="0,2">
-                <TextBlock DockPanel.Dock="Left" Text="单色" Width="80"  />
-                <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding SelectedColorOne}"   Margin="5,0"/>
-                <Button DockPanel.Dock="Right" Content="..." Click="Button_Click" Tag="ColorOne" Width="40"  Margin="5,0"/>
-                <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding FileNameColorOne}" />
-            </DockPanel>
-            <DockPanel  Margin="0,2">
-                <TextBlock DockPanel.Dock="Left" Text="四色" Width="80"  />
-                <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding SelectedColorFour}"   Margin="5,0"/>
-                <Button DockPanel.Dock="Right" Content="..." Click="Button_Click" Tag="ColorFour" Width="40"  Margin="5,0"/>
-                <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding FileNameColorFour}" />
-            </DockPanel>
-            <DockPanel  Margin="0,2">
-                <TextBlock DockPanel.Dock="Left" Text="多色" Width="80"  />
-                <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding SelectedColorMulti }"   Margin="5,0"/>
-                <Button DockPanel.Dock="Right" Content="..." Click="Button_Click" Tag="ColorMulti" Width="40"  Margin="5,0"/>
-                <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding FileNameColorMulti}" />
-            </DockPanel>
+            <GroupBox Header="色度校正" >
+                <StackPanel>
+                    <DockPanel  Margin="0,2">
+                        <TextBlock DockPanel.Dock="Left" Text="亮度" Width="80"  />
+                        <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding SelectedLuminance}"   Margin="5,0"/>
+                        <Button DockPanel.Dock="Right" Content="..." Click="Button_Click" Tag="Luminance" Width="40"  Margin="5,0"/>
+                        <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding FileNameLuminance}" />
+                    </DockPanel>
+                    <DockPanel  Margin="0,2">
+                        <TextBlock DockPanel.Dock="Left" Text="单色" Width="80"  />
+                        <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding SelectedColorOne}"   Margin="5,0"/>
+                        <Button DockPanel.Dock="Right" Content="..." Click="Button_Click" Tag="ColorOne" Width="40"  Margin="5,0"/>
+                        <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding FileNameColorOne}" />
+                    </DockPanel>
+                    <DockPanel  Margin="0,2">
+                        <TextBlock DockPanel.Dock="Left" Text="四色" Width="80"  />
+                        <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding SelectedColorFour}"   Margin="5,0"/>
+                        <Button DockPanel.Dock="Right" Content="..." Click="Button_Click" Tag="ColorFour" Width="40"  Margin="5,0"/>
+                        <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding FileNameColorFour}" />
+                    </DockPanel>
+                    <DockPanel  Margin="0,2">
+                        <TextBlock DockPanel.Dock="Left" Text="多色" Width="80"  />
+                        <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding SelectedColorMulti }"   Margin="5,0"/>
+                        <Button DockPanel.Dock="Right" Content="..." Click="Button_Click" Tag="ColorMulti" Width="40"  Margin="5,0"/>
+                        <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding FileNameColorMulti}" />
+                    </DockPanel>
+                </StackPanel>
+
+            </GroupBox>
+
+
             <GroupBox Header="均匀场校正" >
                 <StackPanel>
                     <DockPanel Margin="0,2">
@@ -86,5 +93,5 @@
                 </StackPanel>
             </GroupBox>
         </StackPanel>
-    </Grid>
+    </ScrollViewer>
 </UserControl>
