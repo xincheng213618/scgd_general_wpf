@@ -15,7 +15,7 @@ using System.Windows;
 
 namespace ColorVision.Device.Algorithm
 {
-    public class AlgorithmService : BaseService<AlgorithmConfig>
+    public class AlgorithmService : BaseDevService<AlgorithmConfig>
     {
         public event DeviceStatusChangedHandler DeviceStatusChanged;
 

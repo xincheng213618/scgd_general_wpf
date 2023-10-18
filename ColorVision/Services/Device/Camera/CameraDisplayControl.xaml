@@ -11,7 +11,7 @@
              xmlns:cv="clr-namespace:ColorVision"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d" 
-             d:DataContext="{d:DesignInstance local:CameraService}"
+             d:DataContext="{d:DesignInstance local:CameraDeviceService}"
              d:DesignHeight="800" d:DesignWidth="300" Initialized="UserControl_Initialized">
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}">
@@ -47,20 +47,6 @@
                     <Button x:Name="CameraOpenButton" Content="打开" Click="Open_Click" />
 
                     <StackPanel x:Name="StackPanelImage">
-                        <GroupBox Header="应用校正模板" Margin="0,5">
-                            <StackPanel>
-                                <DockPanel Margin="0,2">
-                                    <Button  DockPanel.Dock="Right" Content="应用"  HorizontalAlignment="Right" Click="Calibration_Click" />
-                                    <ComboBox  x:Name="ComboxCalibrationTemplate" Width="150" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}"  SelectionChanged="ComboxCalibrationTemplate_SelectionChanged" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                                </DockPanel>
-                                <DockPanel Margin="0,2" >
-                                    <TextBlock Text="色度校正：" />
-                                    <ComboBox  x:Name="ComCalibration"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Margin="0,0,0,0"/>
-                                </DockPanel>
-                            </StackPanel>
-         
-                        </GroupBox>
-
                         <DockPanel Margin="0,2">
                             <TextBlock  Text="增益" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0" />
                             <TextBox  DockPanel.Dock="Right" Text="{Binding ElementName=SliderGain,Path=Value}"  Width="50"/>
@@ -79,6 +65,10 @@
                                         <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0."/>
                                     </hc:PreviewSlider.PreviewContent>
                                 </hc:PreviewSlider>
+                            </DockPanel>
+                            <DockPanel>
+                                <TextBlock Text="饱和度"/>
+                                <TextBlock Text="{Binding Config.Saturation}"/>
                             </DockPanel>
                         </StackPanel>
                         <StackPanel Visibility="{Binding Config.IsExpThree,Converter={StaticResource bool2VisibilityConverter}}">
@@ -109,11 +99,66 @@
                                     </hc:PreviewSlider.PreviewContent>
                                 </hc:PreviewSlider>
                             </DockPanel>
+                            <DockPanel>
+                                <TextBlock Text="饱和度R"/>
+                                <TextBlock Text="{Binding Config.SaturationR}"/>
+                            </DockPanel>
+                            <DockPanel>
+                                <TextBlock Text="饱和度G"/>
+                                <TextBlock Text="{Binding Config.SaturationG}"/>
+                            </DockPanel>
+                            <DockPanel>
+                                <TextBlock Text="饱和度B"/>
+                                <TextBlock Text="{Binding Config.SaturationB}"/>
+                            </DockPanel>
                         </StackPanel>
                         <UniformGrid Columns="2" Margin="0,2">
                             <Button Content="自动曝光" Click="AutoExplose_Click" Margin="10,0" />
-                            <Button Content="自动聚焦" Click="AutoFocus_Click" Margin="10,0" />
+                            <Button Content="自动聚焦" Click="AutoFocus_Click" Margin="20,0,0,0" />
                         </UniformGrid>
+
+                        <UniformGrid Columns="3" Rows="1">
+                            <UniformGrid Columns="1" Rows="2" Margin="2">
+                                <DockPanel>
+                                    <TextBox x:Name="cfwport1" DockPanel.Dock="Right" Width="40" Text=""/>
+                                    <TextBlock Text="cfwport"/>
+                                </DockPanel>
+                                <DockPanel >
+                                    <ComboBox x:Name="chType1" DockPanel.Dock="Right" Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Key"  DisplayMemberPath="Value" Text=""/>
+                                    <TextBlock Text="chType"/>
+                                </DockPanel>
+                            </UniformGrid>
+                            <UniformGrid Columns="1" Rows="2">
+                                <DockPanel >
+                                    <TextBox x:Name="cfwport2" DockPanel.Dock="Right" Width="40" Text=""/>
+                                    <TextBlock Text="cfwport"/>
+                                </DockPanel>
+                                <DockPanel >
+                                    <ComboBox x:Name="chType2" DockPanel.Dock="Right" Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Text=""/>
+                                    <TextBlock Text="chType"/>
+                                </DockPanel>
+                            </UniformGrid>
+                            <UniformGrid Columns="1" Rows="2">
+                                <DockPanel >
+                                    <TextBox x:Name="cfwport3" DockPanel.Dock="Right" Width="40" Text=""/>
+                                    <TextBlock Text="cfwport"/>
+                                </DockPanel>
+                                <DockPanel >
+                                    <ComboBox x:Name="chType3" DockPanel.Dock="Right" Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Key"  DisplayMemberPath="Value" Text=""/>
+                                    <TextBlock Text="chType"/>
+                                </DockPanel>
+                            </UniformGrid>
+                        </UniformGrid>
+                        <Button Content="设置相机转轮通道" Click="SetChannel" Margin="0,2"/>
+
+
+
+
+                        <DockPanel Margin="0,2">
+                            <TextBlock Text="校正：" />
+                            <Button  DockPanel.Dock="Right" Content="应用"  HorizontalAlignment="Right" Click="Calibration_Click" />
+                            <ComboBox  x:Name="ComboxCalibrationTemplate" Width="150" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}"  SelectionChanged="ComboxCalibrationTemplate_SelectionChanged" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                        </DockPanel>
                         <Button Content="取图" Click="SendDemo3_Click" Margin="0,2"/>
                     </StackPanel>
                     <StackPanel  x:Name="StackPanelFilterWheel" Initialized="StackPanelFilterWheel_Initialized" Visibility="Collapsed">

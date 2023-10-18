@@ -28,6 +28,8 @@ namespace ColorVision.Services
         private static readonly object _locker = new();
         public static ServiceControl GetInstance() { lock (_locker) { return _instance ??= new ServiceControl(); } }
 
+
+
         public ObservableCollection<MQTTServiceKind> MQTTServices { get; set; }
 
         public ObservableCollection<BaseChannel> MQTTDevices { get; set; }
@@ -43,9 +45,7 @@ namespace ColorVision.Services
         public StackPanel StackPanel { get; set; }
 
         private Dictionary<string, List<BaseService>> svrDevices;
-
         public RCService rcService { get;}
-        private int heartbeatTime;
         public ServiceControl()
         {
             ResourceService = new SysResourceService();
@@ -55,15 +55,18 @@ namespace ColorVision.Services
             MQTTDevices = new ObservableCollection<BaseChannel>();
             svrDevices = new Dictionary<string, List<BaseService>>();
             rcService = new RCService(new RCConfig());
-            this.heartbeatTime = 10 * 1000;
+
+
+            int heartbeatTime = 10 * 1000;
             System.Timers.Timer hbTimer = new System.Timers.Timer(heartbeatTime);
-            hbTimer.Elapsed += new System.Timers.ElapsedEventHandler(timer_KeepLive);
+            hbTimer.Elapsed += (s,e) => rcService.KeepLive(heartbeatTime);
             hbTimer.Enabled = true;
 
             GC.KeepAlive(hbTimer);
 
             UserConfig = GlobalSetting.GetInstance().SoftwareConfig.UserConfig;
             StackPanel = new StackPanel();
+
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => Reload();
 
             Task.Run(() => rcService.Regist());
@@ -73,10 +76,6 @@ namespace ColorVision.Services
             };
 
             Reload();
-        }
-        private void timer_KeepLive(object? sender, System.Timers.ElapsedEventArgs e)
-        {
-            rcService.KeepLive(heartbeatTime);
         }
         public ObservableCollection<BaseChannel> LastGenControl { get; set; }
 
@@ -328,9 +327,9 @@ namespace ColorVision.Services
                 {
                     if (svr is MQTTService service)
                     {
-                        if (serviceName.Equals(service.ServiceConfig.Code, StringComparison.Ordinal))
+                        if (serviceName.Equals(service.Config.Code, StringComparison.Ordinal))
                         {
-                            service.ServiceConfig.SetLiveTime(liveTime, overTime, true);
+                            service.Config.SetLiveTime(liveTime, overTime, true);
                         }
                     }
 

@@ -59,8 +59,8 @@ namespace ColorVision.Services
             deviceConfig.Name = TextBox_Name.Text;
             deviceConfig.Code = TextBox_Code.Text;
 
-            deviceConfig.SendTopic = MQTTService.ServiceConfig.SendTopic;
-            deviceConfig.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;
+            deviceConfig.SendTopic = MQTTService.Config.SendTopic;
+            deviceConfig.SubscribeTopic = MQTTService.Config.SubscribeTopic;
             sysResource.Value = JsonConvert.SerializeObject(deviceConfig);
             ServiceControl.ResourceService.Save(sysResource);
             int pkId = sysResource.GetPK();
@@ -154,15 +154,15 @@ namespace ColorVision.Services
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            MQTTService.ServiceConfig.SubscribeTopic = MQTTService.SysResourceModel.TypeCode + "/STATUS/" + MQTTService.SysResourceModel.Code;
-            MQTTService.ServiceConfig.SendTopic = MQTTService.SysResourceModel.TypeCode + "/CMD/" + MQTTService.SysResourceModel.Code;
+            MQTTService.Config.SubscribeTopic = MQTTService.SysResourceModel.TypeCode + "/STATUS/" + MQTTService.SysResourceModel.Code;
+            MQTTService.Config.SendTopic = MQTTService.SysResourceModel.TypeCode + "/CMD/" + MQTTService.SysResourceModel.Code;
 
             foreach (var item in MQTTService.VisualChildren)
             {
                 if(item is BaseChannel mQTTDevice)
                 {
-                    mQTTDevice.SendTopic = MQTTService.ServiceConfig.SendTopic;
-                    mQTTDevice.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;
+                    mQTTDevice.SendTopic = MQTTService.Config.SendTopic;
+                    mQTTDevice.SubscribeTopic = MQTTService.Config.SubscribeTopic;
                     mQTTDevice.Save();
                 }
             }

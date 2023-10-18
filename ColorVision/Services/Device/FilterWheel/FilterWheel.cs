@@ -3,7 +3,7 @@
 namespace ColorVision.Device.FilterWheel
 {
 
-    public class FilterWheel : BaseService<BaseDeviceConfig>
+    public class FilterWheel : BaseDevService<BaseDeviceConfig>
     {
 
         public FilterWheel(BaseDeviceConfig baseDeviceConfig) : base(baseDeviceConfig)

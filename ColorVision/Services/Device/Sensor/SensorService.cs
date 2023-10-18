@@ -9,7 +9,7 @@ namespace ColorVision.Device.Sensor
     /// 传感器的部分
     /// </summary>
 
-    public class SensorService : BaseService<SensorConfig>
+    public class SensorService : BaseDevService<SensorConfig>
     {
 
         public SensorService(SensorConfig sensorConfig) : base(sensorConfig)

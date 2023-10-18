@@ -20,4 +20,6 @@ namespace ColorVision.Device
         UnConnected
     }
 
+
+
 }

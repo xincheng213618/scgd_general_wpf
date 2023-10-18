@@ -48,6 +48,19 @@ namespace ColorVision.Device.Camera
         public double ExpTimeB { get => _ExpTimeB; set { _ExpTimeB = value; NotifyPropertyChanged(); } }
         private double _ExpTimeB =10;
 
+
+        public double Saturation { get => _Saturation; set { _Saturation = value; NotifyPropertyChanged(); } }
+        private double _Saturation = -1;
+
+        public double SaturationR { get => _SaturationR; set { _SaturationR = value; NotifyPropertyChanged(); } }
+        private double _SaturationR = -1;
+
+        public double SaturationG { get => _SaturationG; set { _SaturationG = value; NotifyPropertyChanged(); } }
+        private double _SaturationG = -1;
+
+        public double SaturationB { get => _SaturationB; set { _SaturationB = value; NotifyPropertyChanged(); } }
+        private double _SaturationB = -1;
+
         public MotorConfig MotorConfig { get; set; } = new MotorConfig();
     }
 

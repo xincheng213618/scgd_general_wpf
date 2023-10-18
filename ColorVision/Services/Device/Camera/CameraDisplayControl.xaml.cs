@@ -12,6 +12,7 @@ using ColorVision.Template;
 using System.Security.Cryptography.X509Certificates;
 using MySqlX.XDevAPI.Common;
 using ColorVision.Services.Msg;
+using static Google.Protobuf.Reflection.FieldOptions.Types;
 
 namespace ColorVision.Device.Camera
 {
@@ -21,7 +22,7 @@ namespace ColorVision.Device.Camera
     /// </summary>
     public partial class CameraDisplayControl : UserControl
     {
-        public CameraService Service { get => Device.Service; }
+        public CameraDeviceService Service { get => Device.Service; }
 
         public DeviceCamera Device { get; set; }
 
@@ -56,9 +57,14 @@ namespace ColorVision.Device.Camera
                 CameraVideoSetButton.Visibility = ComboxCameraTakeImageMode.SelectedValue is TakeImageMode mode && mode == TakeImageMode.Live ? Visibility.Visible : Visibility.Collapsed;
             };
 
-            ComCalibration.ItemsSource = from e1 in Enum.GetValues(typeof(CalibrationType1)).Cast<CalibrationType1>()
-                                         select new KeyValuePair<CalibrationType1, string>(e1, e1.ToString());
-            ComCalibration.SelectedIndex = 1;
+
+            chType1.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannelType)).Cast<ImageChannelType>()
+                                  select new KeyValuePair<ImageChannelType, string>(e1, e1.ToString());
+            chType2.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannelType)).Cast<ImageChannelType>()
+                                  select new KeyValuePair<ImageChannelType, string>(e1, e1.ToString());
+            chType3.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannelType)).Cast<ImageChannelType>()
+                                  select new KeyValuePair<ImageChannelType, string>(e1, e1.ToString());
+
 
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
             {
@@ -394,6 +400,28 @@ namespace ColorVision.Device.Camera
                     Helpers.SendCommand(button, msgRecord);
 
                 }
+            }
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void SetChannel(object sender, RoutedEventArgs e)
+        {
+            if (chType1.SelectedValue is ImageChannelType ImageChannelType1 && chType2.SelectedValue is ImageChannelType ImageChannelType2 && chType3.SelectedValue is ImageChannelType ImageChannelType3 )
+            {
+                MsgSend msg = new MsgSend
+                {
+                    EventName = "SetParam",
+                    Params = new Dictionary<string, object>() { { "Func",new List<ParamFunction> (){
+                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 0 }, { "nPort", int.Parse(cfwport1.Text) },{ "eImgChlType", (int)ImageChannelType1 } } },
+                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 1 }, { "nPort", int.Parse(cfwport2.Text) },{ "eImgChlType", (int)ImageChannelType2 } } },
+                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 2 }, { "nPort", int.Parse(cfwport3.Text) },{ "eImgChlType", (int)ImageChannelType3 } } },
+                } } }
+                };
+                Service.PublishAsyncClient(msg);
             }
         }
     }

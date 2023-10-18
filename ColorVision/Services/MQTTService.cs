@@ -1,4 +1,5 @@
 ﻿using ColorVision.Device;
+using ColorVision.Device.Camera;
 using ColorVision.MQTT;
 using ColorVision.MySql.DAO;
 using Newtonsoft.Json;
@@ -17,7 +18,7 @@ namespace ColorVision.Services
     public class MQTTService : BaseMQTTService
     {
         public SysResourceModel SysResourceModel { get; set; }
-        public ServiceConfig ServiceConfig { get; set; }
+        public BaseServiceConfig Config { get; set; }
         public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
 
         public MQTTService(SysResourceModel sysResourceModel) : base()
@@ -25,23 +26,23 @@ namespace ColorVision.Services
             SysResourceModel = sysResourceModel;
             if (string.IsNullOrEmpty(SysResourceModel.Value))
             {
-                ServiceConfig ??= new ServiceConfig();
+                Config ??= new BaseServiceConfig();
             }
             else
             {
                 try
                 {
-                    ServiceConfig = JsonConvert.DeserializeObject<ServiceConfig>(SysResourceModel.Value) ?? new ServiceConfig();
+                    Config = JsonConvert.DeserializeObject<BaseServiceConfig>(SysResourceModel.Value) ?? new BaseServiceConfig();
                 }
                 catch
                 {
-                    ServiceConfig = new ServiceConfig();
+                    Config = new BaseServiceConfig();
                 }
             }
-            ServiceConfig.Code = SysResourceModel.Code ?? string.Empty;
-            ServiceConfig.Name = Name;
-            ServiceConfig.SubscribeTopic = SysResourceModel.TypeCode + "/STATUS/" + SysResourceModel.Code;
-            ServiceConfig.SendTopic = SysResourceModel.TypeCode + "/CMD/" + SysResourceModel.Code;
+            Config.Code = SysResourceModel.Code ?? string.Empty;
+            Config.Name = Name;
+            Config.SubscribeTopic = SysResourceModel.TypeCode + "/STATUS/" + SysResourceModel.Code;
+            Config.SendTopic = SysResourceModel.TypeCode + "/CMD/" + SysResourceModel.Code;
             ContextMenu = new ContextMenu();
             MenuItem menuItem = new MenuItem() { Header = "删除服务" };
             menuItem.Click += (s, e) =>
@@ -49,7 +50,6 @@ namespace ColorVision.Services
                 Parent.RemoveChild(this);
                 if (SysResourceModel != null)
                 {
-                    //先标记自己为删除状态，在将自己的子节点标记为删除状态
                     ServiceControl.GetInstance().ResourceService.DeleteById(SysResourceModel.Id);
                     ServiceControl.GetInstance().ResourceService.DeleteAllByPid(SysResourceModel.Id);
                 }
@@ -65,7 +65,7 @@ namespace ColorVision.Services
         public override void Save()
         {
             base.Save();
-            SysResourceModel.Value = JsonConvert.SerializeObject(ServiceConfig);
+            SysResourceModel.Value = JsonConvert.SerializeObject(Config);
             ServiceControl.GetInstance().ResourceService.Save(SysResourceModel);
         }
     }

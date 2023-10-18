@@ -25,7 +25,7 @@ namespace ColorVision.RC
     }
 
     public delegate void RCServiceStatusChangedEventHandler(object sender, RCServiceStatusChangedEventArgs args);
-    public class RCService : BaseService<RCConfig>
+    public class RCService : BaseDevService<RCConfig>
     {
         private string NodeName;
         private string NodeType;

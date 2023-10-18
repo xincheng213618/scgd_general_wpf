@@ -17,7 +17,7 @@ using System.Windows;
 
 namespace ColorVision.MQTT
 {
-    public class BaseService<T> : BaseService where T : BaseDeviceConfig
+    public class BaseDevService<T> : BaseService where T : BaseConfig
     {
         public T Config { get; set; }
 
@@ -32,7 +32,7 @@ namespace ColorVision.MQTT
 
         public override DateTime LastAliveTime { get => Config.LastAliveTime; set => Config.LastAliveTime = value; }
 
-        public BaseService(T config)
+        public BaseDevService(T config):base()
         {
             Config = config;
             SendTopic = Config.SendTopic;

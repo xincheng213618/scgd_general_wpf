@@ -45,7 +45,7 @@ namespace ColorVision
             ListViewLicense.ItemsSource = LicenseConfigs;
 
             LicenseConfigs.Add(new LicenseConfig() { Name = "ColorVision", Sn = "0000005EAD286752E9BF44AD08D23250", Tag = $"免费版\n\r永久有效", IsCanImport = false });
-            CameraService.MD5.ForEach(x =>
+            CameraDeviceService.MD5.ForEach(x =>
             {
                 LicenseConfigs.Add(new LicenseConfig() { Name = "相机", Sn = x, Tag = $"业务还在开发中" });
             });

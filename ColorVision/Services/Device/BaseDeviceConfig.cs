@@ -5,10 +5,14 @@ using System;
 
 namespace ColorVision.Device
 {
-    /// <summary>
-    /// 基础硬件配置信息
-    /// </summary>
-    public class BaseDeviceConfig : ViewModelBase, IServiceConfig, IHeartbeat
+    public class BaseServiceConfig : BaseConfig, IServiceConfig
+    {
+        public string Type { get => _Type; set { _Type = value; NotifyPropertyChanged(); } }
+        private string _Type;
+    }
+
+
+    public class BaseConfig: ViewModelBase, IServiceConfig, IHeartbeat
     {
         public string SubscribeTopic { get => _SubscribeTopic; set { _SubscribeTopic = value; NotifyPropertyChanged(); } }
         private string _SubscribeTopic;
@@ -38,14 +42,26 @@ namespace ColorVision.Device
         public DateTime LastAliveTime { get => _LastAliveTime; set { _LastAliveTime = value; NotifyPropertyChanged(); } }
         private DateTime _LastAliveTime = DateTime.MinValue;
 
-
         public void SetLiveTime(DateTime liveTime, int overTime, bool isLive)
         {
             this.LastAliveTime = liveTime;
             this.IsAlive = isLive;
             if (overTime > 0) this.HeartbeatTime = overTime;
         }
+    }
 
+
+    public enum DeviceServiceStatus
+    {
+        Offline,
+        Online
+    }
+
+    /// <summary>
+    /// 基础硬件配置信息
+    /// </summary>
+    public class BaseDeviceConfig : BaseConfig
+    {
         /// <summary>
         /// 设备序号
         /// </summary>
@@ -54,7 +70,25 @@ namespace ColorVision.Device
 
         public string MD5 { get => _MD5; set { _MD5 = value; NotifyPropertyChanged(); } }
         private string _MD5;
+
+
+
+        public bool IsOnline { get => DeviceServiceStatus == DeviceServiceStatus.Online; }
+        private DeviceServiceStatus _DeviceServiceStatus;
+        public DeviceServiceStatus DeviceServiceStatus
+        {
+            get => _DeviceServiceStatus;
+            set
+            {
+                _DeviceServiceStatus = value;
+                NotifyPropertyChanged(nameof(IsOnline));
+            }
+        }
+
     }
+
+
+
 
     public delegate void HeartbeatHandler(HeartbeatParam heartbeat);
 
