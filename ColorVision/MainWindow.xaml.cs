@@ -85,9 +85,6 @@ namespace ColorVision
             StatusBarGrid.DataContext = GlobalSetting.GetInstance();
             MenuStatusBar.DataContext = GlobalSetting.GetInstance().SoftwareConfig;
 
-            DeviceAlgorithm deviceAlgorithm = new DeviceAlgorithm(new MySql.DAO.SysResourceModel());
-            SPDisplay.Children.Add(deviceAlgorithm.Control);
-
             FlowDisplayControl flowDisplayControl = new FlowDisplayControl();
             SPDisplay.Children.Insert(0, flowDisplayControl);
 

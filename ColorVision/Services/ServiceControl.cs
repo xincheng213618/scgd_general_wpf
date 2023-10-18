@@ -1,4 +1,5 @@
-﻿using ColorVision.Device.Camera;
+﻿using ColorVision.Device.Algorithm;
+using ColorVision.Device.Camera;
 using ColorVision.Device.FileServer;
 using ColorVision.Device.PG;
 using ColorVision.Device.Sensor;
@@ -252,11 +253,17 @@ namespace ColorVision.Services
                                         mQTTService.AddChild(device1);
                                         MQTTDevices.Add(device1);
                                         break;
-                                    case DeviceType.Image:
+                                    case DeviceType.FileServer:
                                         DeviceFileServer img = new DeviceFileServer(device);
                                         svrObj = img.Service;
                                         mQTTService.AddChild(img);
                                         MQTTDevices.Add(img);
+                                        break;
+                                    case DeviceType.Algorithm:
+                                        DeviceAlgorithm alg = new DeviceAlgorithm(device);
+                                        svrObj = alg.Service;
+                                        mQTTService.AddChild(alg);
+                                        MQTTDevices.Add(alg);
                                         break;
                                     default:
                                         break;
