@@ -1,5 +1,5 @@
-﻿using ColorVision.Themes.Controls;
-using ColorVision.Solution.RecentFile;
+﻿using ColorVision.RecentFile;
+using ColorVision.Themes.Controls;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;

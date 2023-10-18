@@ -1,6 +1,5 @@
 ﻿using ColorVision.HotKey;
 using ColorVision.Solution;
-using ColorVision.Solution.RecentFile;
 using ColorVision.SettingUp;
 using ColorVision.Template;
 using System;
@@ -18,6 +17,7 @@ using System.Diagnostics;
 using ColorVision.Util;
 using ColorVision.Services;
 using ColorVision.RC;
+using ColorVision.RecentFile;
 
 namespace ColorVision
 {

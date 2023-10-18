@@ -50,7 +50,6 @@ namespace ColorVision.Device
         }
     }
 
-
     public enum DeviceServiceStatus
     {
         Offline,

@@ -492,10 +492,10 @@ namespace ColorVision.Device.Camera
                         "SetCfwport", new List<Dictionary<string, object>>()
                         {
                             new Dictionary<string, object>() {
-                                { "nIndex",0},{ "nPort",2},{"eImgChlType",0 }
+                                { "nIndex",0},{ "nPort",0},{"eImgChlType",0 }
                             },
                             new Dictionary<string, object>() {
-                                { "nIndex",1},{ "nPort",2},{"eImgChlType",0 }
+                                { "nIndex",1},{ "nPort",1},{"eImgChlType",0 }
                             },
                             new Dictionary<string, object>() {
                                 { "nIndex",2},{ "nPort",2},{"eImgChlType",0 }
