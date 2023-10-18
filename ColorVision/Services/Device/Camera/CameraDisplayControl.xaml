@@ -66,10 +66,6 @@
                                     </hc:PreviewSlider.PreviewContent>
                                 </hc:PreviewSlider>
                             </DockPanel>
-                            <DockPanel>
-                                <TextBlock Text="饱和度"/>
-                                <TextBlock Text="{Binding Config.Saturation}"/>
-                            </DockPanel>
                         </StackPanel>
                         <StackPanel Visibility="{Binding Config.IsExpThree,Converter={StaticResource bool2VisibilityConverter}}">
                             <DockPanel Margin="0,2">
@@ -99,18 +95,7 @@
                                     </hc:PreviewSlider.PreviewContent>
                                 </hc:PreviewSlider>
                             </DockPanel>
-                            <DockPanel>
-                                <TextBlock Text="饱和度R"/>
-                                <TextBlock Text="{Binding Config.SaturationR}"/>
-                            </DockPanel>
-                            <DockPanel>
-                                <TextBlock Text="饱和度G"/>
-                                <TextBlock Text="{Binding Config.SaturationG}"/>
-                            </DockPanel>
-                            <DockPanel>
-                                <TextBlock Text="饱和度B"/>
-                                <TextBlock Text="{Binding Config.SaturationB}"/>
-                            </DockPanel>
+  
                         </StackPanel>
                         <UniformGrid Columns="2" Margin="0,2">
                             <Button Content="自动曝光" Click="AutoExplose_Click" Margin="10,0" />
