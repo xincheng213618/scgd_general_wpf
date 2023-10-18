@@ -60,7 +60,7 @@ namespace ColorVision.Device.FileServer
                     {
                         if (json.EventName.Equals(FileServerEventName.Heartbeat, StringComparison.Ordinal))
                         {
-                            ServiceControl.GetInstance().UpdateServiceStatus(this.ServiceName, DateTime.Now, -1);
+                            ServiceManager.GetInstance().UpdateServiceStatus(this.ServiceName, DateTime.Now, -1);
                         }
                         else
                         {

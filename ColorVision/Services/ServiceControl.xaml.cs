@@ -21,10 +21,10 @@ namespace ColorVision.Services
     /// </summary>
     public partial class MQTTServiceControl : UserControl
     {
-        public MQTTService MQTTService { get; set; }
-        public ServiceControl ServiceControl { get; set; }
+        public ServiceViewMode MQTTService { get; set; }
+        public ServiceManager ServiceControl { get; set; }
 
-        public MQTTServiceControl(MQTTService mQTTService)
+        public MQTTServiceControl(ServiceViewMode mQTTService)
         {
             this.MQTTService = mQTTService;
             InitializeComponent();
@@ -32,7 +32,7 @@ namespace ColorVision.Services
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            ServiceControl = ServiceControl.GetInstance();
+            ServiceControl = ServiceManager.GetInstance();
             this.DataContext = MQTTService;
             TextBox_Type.ItemsSource = MQTTService.Parent.VisualChildren;
             TextBox_Type.SelectedItem = MQTTService;
@@ -74,7 +74,7 @@ namespace ColorVision.Services
                 return;
 
 
-            if (TextBox_Type.SelectedItem is MQTTService mQTTService)
+            if (TextBox_Type.SelectedItem is ServiceViewMode mQTTService)
             {
                 SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, mQTTService.SysResourceModel.Type, mQTTService.SysResourceModel.Id, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
                 if (mQTTService.Type == ServiceType.Camera)

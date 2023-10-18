@@ -87,7 +87,7 @@ namespace ColorVision.Device.POI
                 return;
             }
             string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            var Batch = ServiceControl.GetInstance().GetResultBatch(sn);
+            var Batch = ServiceManager.GetInstance().GetResultBatch(sn);
             Service.GetData(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, Batch.Id);
         }
 

@@ -7,7 +7,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Services
 {
-    public class BaseMQTTService : BaseObject
+    public class BaseServiceViewMode : BaseObject
     {
         public virtual UserControl GenDeviceControl()
         {
@@ -15,7 +15,7 @@ namespace ColorVision.Services
         }
     }
 
-    public class MQTTService : BaseMQTTService
+    public class ServiceViewMode : BaseServiceViewMode
     {
         public SysResourceModel SysResourceModel { get; set; }
         public BaseServiceConfig Config { get; set; }
@@ -23,7 +23,7 @@ namespace ColorVision.Services
 
         public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
 
-        public MQTTService(SysResourceModel sysResourceModel) : base()
+        public ServiceViewMode(SysResourceModel sysResourceModel) : base()
         {
             SysResourceModel = sysResourceModel;
             if (string.IsNullOrEmpty(SysResourceModel.Value))
@@ -46,7 +46,9 @@ namespace ColorVision.Services
             Config.SubscribeTopic = SysResourceModel.TypeCode + "/STATUS/" + SysResourceModel.Code;
             Config.SendTopic = SysResourceModel.TypeCode + "/CMD/" + SysResourceModel.Code;
 
+            Config.IsAlive = false;
 
+            BaseService = new BaseService<BaseServiceConfig>(Config);
 
             ContextMenu = new ContextMenu();
             MenuItem menuItem = new MenuItem() { Header = "删除服务" };
@@ -55,8 +57,8 @@ namespace ColorVision.Services
                 Parent.RemoveChild(this);
                 if (SysResourceModel != null)
                 {
-                    ServiceControl.GetInstance().ResourceService.DeleteById(SysResourceModel.Id);
-                    ServiceControl.GetInstance().ResourceService.DeleteAllByPid(SysResourceModel.Id);
+                    ServiceManager.GetInstance().ResourceService.DeleteById(SysResourceModel.Id);
+                    ServiceManager.GetInstance().ResourceService.DeleteAllByPid(SysResourceModel.Id);
                 }
             };
             ContextMenu.Items.Add(menuItem);
@@ -75,7 +77,7 @@ namespace ColorVision.Services
         {
             base.Save();
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
-            ServiceControl.GetInstance().ResourceService.Save(SysResourceModel);
+            ServiceManager.GetInstance().ResourceService.Save(SysResourceModel);
         }
     }
 }

@@ -20,7 +20,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <GroupBox Header="创建服务" Grid.Row="1">
-            <StackPanel x:Name="MQTTCreate"   d:DataContext="{d:DesignInstance local:ServiceControl}" Margin="5">
+            <StackPanel x:Name="MQTTCreate"   d:DataContext="{d:DesignInstance local:ServiceManager}" Margin="5">
                 <DockPanel Margin="5" >
                     <TextBlock Text="类型" Width="60"/>
                     <ComboBox x:Name="TextBox_Type"  SelectedValuePath="Name"  DisplayMemberPath="Name" />
@@ -49,28 +49,28 @@
                     <GridView>
                         <GridViewColumn  Header="服务名称">
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:MQTTService}">
+                                <DataTemplate  DataType="{x:Type local:ServiceViewMode}">
                                     <TextBlock Text="{ Binding Name}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn  Header="发送信道">
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:MQTTService}">
+                                <DataTemplate  DataType="{x:Type local:ServiceViewMode}">
                                     <TextBlock Text="{ Binding  Config.SendTopic}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn  Header="接收信道">
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:MQTTService}">
+                                <DataTemplate  DataType="{x:Type local:ServiceViewMode}">
                                     <TextBlock Text="{ Binding  Config.SubscribeTopic}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn  Header="是否存活">
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:MQTTService}">
+                                <DataTemplate  DataType="{x:Type local:ServiceViewMode}">
                                     <TextBlock Text="{ Binding  Config.IsAlive}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>

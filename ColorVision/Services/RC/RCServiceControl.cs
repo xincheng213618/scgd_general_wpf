@@ -13,8 +13,8 @@ namespace ColorVision.RC
 
         public RCServiceControl()
         {
-            _IsConnect = ServiceControl.GetInstance().rcService.IsRegisted();
-            ServiceControl.GetInstance().rcService.StatusChangedEventHandler += RcService_StatusChangedEventHandler;
+            _IsConnect = ServiceManager.GetInstance().rcService.IsRegisted();
+            ServiceManager.GetInstance().rcService.StatusChangedEventHandler += RcService_StatusChangedEventHandler;
         }
 
         private void RcService_StatusChangedEventHandler(object sender, RCServiceStatusChangedEventArgs args)

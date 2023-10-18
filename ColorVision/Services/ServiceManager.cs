@@ -23,11 +23,11 @@ using static cvColorVision.GCSDLL;
 
 namespace ColorVision.Services
 {
-    public class ServiceControl
+    public class ServiceManager
     {
-        private static ServiceControl _instance;
+        private static ServiceManager _instance;
         private static readonly object _locker = new();
-        public static ServiceControl GetInstance() { lock (_locker) { return _instance ??= new ServiceControl(); } }
+        public static ServiceManager GetInstance() { lock (_locker) { return _instance ??= new ServiceManager(); } }
 
 
 
@@ -46,7 +46,7 @@ namespace ColorVision.Services
 
         private Dictionary<string, List<BaseService>> svrDevices;
         public RCService rcService { get;}
-        public ServiceControl()
+        public ServiceManager()
         {
             ResourceService = new SysResourceService();
             DictionaryService = new SysDictionaryService();
@@ -131,7 +131,7 @@ namespace ColorVision.Services
                 {
                     if (service.Type == item.Value)
                     {
-                        MQTTService mQTTService = new MQTTService(service);
+                        ServiceViewMode mQTTService = new ServiceViewMode(service);
 
                         string svrKey = GetServiceKey(service.TypeCode, service.Code);
                         svrDevices?.Add(svrKey, new List<BaseService>());
@@ -254,7 +254,7 @@ namespace ColorVision.Services
             {
                 foreach (var svr in item.VisualChildren)
                 {
-                    if (svr is MQTTService service)
+                    if (svr is ServiceViewMode service)
                     {
                         if (serviceName.Equals(service.Config.Code, StringComparison.Ordinal))
                         {

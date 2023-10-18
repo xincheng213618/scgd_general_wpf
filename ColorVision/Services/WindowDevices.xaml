@@ -47,7 +47,7 @@
                             <TextBlock Text="{Binding Name}"/>
                         </StackPanel>
                     </HierarchicalDataTemplate>
-                    <HierarchicalDataTemplate DataType="{x:Type local:MQTTService}" ItemsSource="{Binding VisualChildren}" >
+                    <HierarchicalDataTemplate DataType="{x:Type local:ServiceViewMode}" ItemsSource="{Binding VisualChildren}" >
                         <StackPanel >
                             <TextBlock Text="{Binding Name}"/>
                         </StackPanel>

@@ -11,7 +11,7 @@ namespace ColorVision.Device.SMU
     public partial class DeviceSMUControl : UserControl, IDisposable
     {
         public DeviceSMU MQTTDeviceSMU { get; set; }
-        public ServiceControl ServiceControl { get; set; }
+        public ServiceManager ServiceControl { get; set; }
 
 
         public DeviceSMUControl(DeviceSMU mqttDeviceSMU)

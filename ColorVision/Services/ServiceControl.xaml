@@ -7,7 +7,7 @@
              xmlns:mqtt="clr-namespace:ColorVision.MQTT"
              xmlns:resx="clr-namespace:ColorVision.Properties"
              mc:Ignorable="d" 
-             d:DataContext="{d:DesignInstance local:MQTTService}"
+             d:DataContext="{d:DesignInstance local:ServiceViewModeMode}"
              d:DesignHeight="500" d:DesignWidth="600" Initialized="UserControl_Initialized">
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}">

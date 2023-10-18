@@ -55,7 +55,7 @@ namespace ColorVision.MQTT
             menuItem.Click += (s, e) =>
             {
                 if (SysResourceModel != null)
-                    ServiceControl.GetInstance().ResourceService.DeleteById(SysResourceModel.Id);
+                    ServiceManager.GetInstance().ResourceService.DeleteById(SysResourceModel.Id);
                 Parent.RemoveChild(this);
 
             };
@@ -89,7 +89,7 @@ namespace ColorVision.MQTT
         {
             base.Save();
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
-            ServiceControl.GetInstance().ResourceService.Save(SysResourceModel);
+            ServiceManager.GetInstance().ResourceService.Save(SysResourceModel);
         }
     }
 }

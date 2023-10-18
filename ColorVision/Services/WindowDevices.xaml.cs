@@ -21,7 +21,7 @@ namespace ColorVision.Services
         public ObservableCollection<BaseChannel> MQTTDevices { get; set; }
         private void Window_Initialized(object sender, EventArgs e)
         {
-            MQTTDevices = ServiceControl.GetInstance().LastGenControl ?? ServiceControl.GetInstance().MQTTDevices;
+            MQTTDevices = ServiceManager.GetInstance().LastGenControl ?? ServiceManager.GetInstance().MQTTDevices;
             TreeView1.ItemsSource = MQTTDevices;
             Grid1.DataContext = GlobalSetting.GetInstance().SoftwareConfig.UserConfig;
 
@@ -33,13 +33,13 @@ namespace ColorVision.Services
             if (TreeView1.SelectedItem is BaseChannel baseObject)
                 StackPanelShow.Children.Add(baseObject.GetDeviceControl());
 
-            if (TreeView1.SelectedItem is BaseMQTTService baseService)
+            if (TreeView1.SelectedItem is BaseServiceViewMode baseService)
                 StackPanelShow.Children.Add(baseService.GenDeviceControl());
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            ServiceControl.GetInstance().GenControl(MQTTDevices);
+            ServiceManager.GetInstance().GenControl(MQTTDevices);
 
             this.Close();
         }

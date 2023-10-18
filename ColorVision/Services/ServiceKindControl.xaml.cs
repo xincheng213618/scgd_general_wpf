@@ -16,7 +16,7 @@ namespace ColorVision.Services
     {
         public ServiceKind ServiceKind { get; set; }
 
-        public ServiceControl ServiceControl { get; set; }
+        public ServiceManager ServiceControl { get; set; }
         public ServiceKindControl(ServiceKind mQTTServiceKind)
         {
             this.ServiceKind = mQTTServiceKind;
@@ -25,7 +25,7 @@ namespace ColorVision.Services
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            ServiceControl = ServiceControl.GetInstance();
+            ServiceControl = ServiceManager.GetInstance();
             this.DataContext = ServiceKind;
             TextBox_Type.ItemsSource = ServiceControl.MQTTServices;
             TextBox_Type.SelectedItem = ServiceKind;
@@ -70,7 +70,7 @@ namespace ColorVision.Services
 
                 int pkId = sysResource.GetPK();
                 if (pkId > 0 && sysResourceService.GetMasterById(pkId) is SysResourceModel model)
-                    serviceKind.AddChild(new MQTTService(model));
+                    serviceKind.AddChild(new ServiceViewMode(model));
             }
 
         }

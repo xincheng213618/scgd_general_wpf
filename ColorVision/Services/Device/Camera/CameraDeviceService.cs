@@ -30,7 +30,17 @@ namespace ColorVision.Device.Camera
     public class BaseService<T>: BaseService where T : BaseServiceConfig
     {
         public T Config { get; set; }
-        
+
+        public override string SubscribeTopic { get => Config.SubscribeTopic; set { Config.SubscribeTopic = value; } }
+        public override string SendTopic { get => Config.SendTopic; set { Config.SendTopic = value; } }
+
+        public override int HeartbeatTime { get => Config.HeartbeatTime; set { Config.HeartbeatTime = value; NotifyPropertyChanged(); } }
+
+        public override bool IsAlive { get => Config.IsAlive; set { Config.IsAlive = value; NotifyPropertyChanged(); } }
+
+        public override DateTime LastAliveTime { get => Config.LastAliveTime; set => Config.LastAliveTime = value; }
+
+
         public void UpdateServiceConfig(IServiceConfig config)
         {
             Task.Run(() => MQTTControl.UnsubscribeAsyncClientAsync(Config.SubscribeTopic));
@@ -385,7 +395,7 @@ namespace ColorVision.Device.Camera
         public MsgRecord GetData(double expTime, double gain, CalibrationType eCalibType = CalibrationType.Empty_Num)
         {
             string SerialNumber  = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            var model = ServiceControl.GetInstance().GetResultBatch(SerialNumber);
+            var model = ServiceManager.GetInstance().GetResultBatch(SerialNumber);
             MsgSend msg = new MsgSend
             {
                 EventName = "GetData",
