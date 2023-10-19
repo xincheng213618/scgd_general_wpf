@@ -42,7 +42,7 @@
             </ToolBar>
             <ListView   Grid.Row="2" x:Name="listView1" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" />
         </Grid>
-        <ListView x:Name="listView2"  Grid.Column="1" SelectionChanged="listView2_SelectionChanged" />
+        <ListView x:Name="listView2"  Grid.Column="1" SelectionChanged="listView2_SelectionChanged"/>
         <GridSplitter  Grid.Column="1" IsEnabled="{Binding ElementName=toggle2,Path=IsChecked}" Background="LightGray"  Width="2" HorizontalAlignment="Left"   DragCompleted="GridSplitter_DragCompleted1"  />
 
     </Grid>

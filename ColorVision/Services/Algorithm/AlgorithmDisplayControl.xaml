@@ -38,7 +38,7 @@
                         <Button Content="刷新" Click="Button_Click_Refresh" />
                         <Button DockPanel.Dock="Right" Content="上传" Click="Button_Click_Upload" />
                         <Button DockPanel.Dock="Right" Content="打开" Click="Button_Click_Open" />
-                        <ComboBox x:Name="CB_ImageFiles"  Style="{StaticResource ComboBox.Small}"  />
+                        <ComboBox x:Name="CB_CIEImageFiles"  Style="{StaticResource ComboBox.Small}"  />
                     </DockPanel>
                 </GroupBox>
 

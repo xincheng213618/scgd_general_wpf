@@ -2,22 +2,36 @@
 
 using ColorVision.MQTT;
 using ColorVision.Services.Msg;
-using ColorVision.Template;
 using ColorVision.Template.Algorithm;
 using cvColorVision;
+using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
-using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Security.Cryptography;
 using System.Windows;
 
 namespace ColorVision.Device.Algorithm
 {
+    public class AlgorithmEvent
+    {
+        public string EventName { get; set; }
+        public string SerialNumber { get; set; }
+        public dynamic Data { get; set; }
+
+        public AlgorithmEvent(string eventName, string serialNumber, dynamic Data)
+        {
+            this.EventName = eventName;
+            this.SerialNumber = serialNumber;
+            this.Data = Data;
+        }
+    }
+    public delegate void MQTTAlgorithmHandler(object sender, AlgorithmEvent arg);
+
     public class AlgorithmService : BaseService<AlgorithmConfig>
     {
         public event DeviceStatusChangedHandler DeviceStatusChanged;
+        public event MQTTAlgorithmHandler OnAlgorithmEvent;
 
         public DeviceStatus DeviceStatus { get => _DeviceStatus; set { if (value == _DeviceStatus) return;  _DeviceStatus = value; Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value)); NotifyPropertyChanged(); } }
         private DeviceStatus _DeviceStatus;
@@ -77,10 +91,16 @@ namespace ColorVision.Device.Algorithm
                     case "Open":
                         DeviceStatus = DeviceStatus.Opened;
                         break;
-                    case "GetData":
+                    case MQTTAlgorithmEventEnum.Event_POI_GetData:
+                        OnAlgorithmEvent?.Invoke(this, new AlgorithmEvent(msg.EventName, msg.SerialNumber, msg.Data));
                         DeviceStatus = DeviceStatus.Opened;
                         break;
                     case "SaveLicense":
+                        break;
+                    case MQTTAlgorithmEventEnum.Event_DownloadFile:
+                        break;
+                    case MQTTAlgorithmEventEnum.Event_GetCIEFiles:
+                        OnAlgorithmEvent?.Invoke(this, new AlgorithmEvent(msg.EventName, msg.SerialNumber, msg.Data));
                         break;
                     default:
                         MessageBox.Show($"未定义{msg.EventName}");
@@ -131,13 +151,25 @@ namespace ColorVision.Device.Algorithm
             return PublishAsyncClient(msg);
         }
 
-
-        public MsgRecord GetData(int pid,int Batchid)
+        public void GetCIEFiles()
         {
             MsgSend msg = new MsgSend
             {
+                EventName = MQTTAlgorithmEventEnum.Event_GetCIEFiles,
+                ServiceName = Config.Code
+            };
+            PublishAsyncClient(msg);
+        }
+
+        public MsgRecord GetData(int pid,int Batchid,string fileName,string tempName)
+        {
+            this.SerialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            MsgSend msg = new MsgSend
+            {
                 EventName = "GetData",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid } }
+                ServiceName = Config.Code,
+                //Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid } }
+                Params = new Dictionary<string, object>() { { "FileName", fileName }, { "TemplateId", pid }, { "TemplateName", tempName }, { "nBatch", Batchid } }
             };
             //Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid },{ "eCalibType", (int)eCalibType }, { "szFileNameX", "X.tif " }, { "szFileNameY", "Y.tif " }, { "szFileNameZ", "Z.tif " } }
             return PublishAsyncClient(msg);
@@ -394,6 +426,16 @@ namespace ColorVision.Device.Algorithm
             return PublishAsyncClient(msg);
         }
 
+        internal void Open(string fileName)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = MQTTAlgorithmEventEnum.Event_DownloadFile,
+                ServiceName = Config.Code,
+                Params = new Dictionary<string, object> { { "FileName", fileName } }
+            };
+            PublishAsyncClient(msg);
+        }
     }
 
 

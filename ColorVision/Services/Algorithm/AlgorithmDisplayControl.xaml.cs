@@ -2,9 +2,16 @@
 using ColorVision.MySql.Service;
 using ColorVision.Services;
 using ColorVision.Template;
+using FlowEngineLib;
+using log4net;
+using MQTTMessageLib.Algorithm;
+using NetMQ;
+using NetMQ.Sockets;
+using Newtonsoft.Json;
+using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Design;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -15,17 +22,58 @@ namespace ColorVision.Device.POI
     /// </summary>
     public partial class AlgorithmDisplayControl : UserControl
     {
+        private static readonly ILog logger = LogManager.GetLogger(typeof(AlgorithmDisplayControl));
+
         public DeviceAlgorithm Device { get; set; }
 
         public AlgorithmService Service { get => Device.Service; }
 
         public AlgorithmView View { get => Device.View; }
 
+        private IPendingHandler handler { get; set; }
+
 
         public AlgorithmDisplayControl(DeviceAlgorithm device)
         {
             Device = device;
             InitializeComponent();
+
+            Service.OnAlgorithmEvent += Service_OnAlgorithmEvent;
+        }
+
+        private void Service_OnAlgorithmEvent(object sender, AlgorithmEvent arg)
+        {
+            switch (arg.EventName)
+            {
+                case MQTTAlgorithmEventEnum.Event_GetCIEFiles:
+                    List<string> data = JsonConvert.DeserializeObject<List<string>>(JsonConvert.SerializeObject(arg.Data));
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        CB_CIEImageFiles.ItemsSource = data;
+                        CB_CIEImageFiles.SelectedIndex = 0;
+                    });
+                    break;
+
+                case MQTTAlgorithmEventEnum.Event_POI_GetData:
+                    string poiData = JsonConvert.SerializeObject(arg.Data);
+                    MQTTPOIGetDataResult poiResp = JsonConvert.DeserializeObject<MQTTPOIGetDataResult>(poiData);
+                    if(poiResp.ResultType == POIResultType.XY_UV)
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            Device.View.PoiDataDraw(arg.SerialNumber, JsonConvert.DeserializeObject<MQTTPOIGetDataCIExyuvResult>(poiData).Results);
+                        });
+                    }else if (poiResp.ResultType == POIResultType.Y)
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            Device.View.PoiDataDraw(arg.SerialNumber, JsonConvert.DeserializeObject<MQTTPOIGetDataCIEYResult>(poiData).Results);
+                        });
+                    }
+
+
+                    break;
+            }
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -87,8 +135,8 @@ namespace ColorVision.Device.POI
                 return;
             }
             string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            var Batch = ServiceControl.GetInstance().GetResultBatch(sn);
-            Service.GetData(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, Batch.Id);
+            //var Batch = ServiceControl.GetInstance().GetResultBatch(sn);
+            Service.GetData(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, -1, CB_CIEImageFiles.Text, ComboxPoiTemplate.Text);
         }
 
         private void Algorithm_INI(object sender, RoutedEventArgs e)
@@ -217,7 +265,7 @@ namespace ColorVision.Device.POI
 
         private void Button_Click_Refresh(object sender, RoutedEventArgs e)
         {
-
+            Service.GetCIEFiles();
         }
 
         private void Button_Click_Upload(object sender, RoutedEventArgs e)
@@ -227,7 +275,47 @@ namespace ColorVision.Device.POI
 
         private void Button_Click_Open(object sender, RoutedEventArgs e)
         {
+            doOpen(CB_CIEImageFiles.Text);
+        }
 
+        private void doOpen(string fileName)
+        {
+            Service.Open(fileName);
+            Task t = new(() => { Task_Start(); });
+            t.Start();
+
+            handler = PendingBox.Show(Application.Current.MainWindow, "", "打开图片", true);
+            handler.Cancelling += delegate
+            {
+                handler?.Close();
+            };
+        }
+
+        private void Task_Start()
+        {
+            DealerSocket client = null;
+            try
+            {
+                client = new DealerSocket(Device.Config.Endpoint);
+                List<byte[]> data = client.ReceiveMultipartBytes();
+                if (data.Count == 1)
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        View.OpenImage(data[0]);
+                    });
+                }
+                client?.Close();
+                client?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex);
+                client?.Close();
+                client?.Dispose();
+            }
+
+            handler?.Close();
         }
     }
 }

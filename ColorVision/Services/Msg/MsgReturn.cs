@@ -6,6 +6,7 @@ namespace ColorVision.Services.Msg
     {
         public string Version { get; set; }
         public string EventName { get; set; }
+        public string SerialNumber { get; set; }
         public string ServiceName { get; set; }
         public string DeviceName { get; set; }
         public ulong ServiceID { get; set; }
