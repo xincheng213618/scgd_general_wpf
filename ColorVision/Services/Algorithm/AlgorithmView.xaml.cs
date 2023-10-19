@@ -28,7 +28,11 @@ namespace ColorVision.Device.Algorithm
         public string SerialNumber { get { return _SerialNumber; } set { _SerialNumber = value; OnPropertyChanged(new PropertyChangedEventArgs("SerialNumber")); } }
         public string RecvTime { get { return _RecvTime; } set { _RecvTime = value; OnPropertyChanged(new PropertyChangedEventArgs("RecvTime")); } }
 
-        public POIResultType ResultType { get; set; }
+        public POIResultType ResultType
+        {
+            get { return _ResultType; }
+            set { _ResultType = value; }
+        }
         public ObservableCollection<PoiResultData> PoiData { get { return _PoiData; } set { _PoiData = value; OnPropertyChanged(new PropertyChangedEventArgs("PoiData")); } }
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -181,8 +185,8 @@ namespace ColorVision.Device.Algorithm
             };
 
             GridView gridView = new GridView();
-            List<string> headers = new List<string> { "序号","批次号", "测量时间" };
-            List<string> bdheaders = new List<string> { "Id", "SerialNumber", "RecvTime" };
+            List<string> headers = new List<string> { "序号","批次号", "测量时间","类型" };
+            List<string> bdheaders = new List<string> { "Id", "SerialNumber", "RecvTime", "ResultType" };
             for (int i = 0; i < headers.Count; i++)
             {
                 gridView.Columns.Add(new GridViewColumn() { Header = headers[i], Width = 100, DisplayMemberBinding = new Binding(bdheaders[i]) });
