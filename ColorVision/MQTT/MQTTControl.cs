@@ -1,5 +1,4 @@
 ﻿using ColorVision.MVVM;
-using ColorVision.SettingUp;
 using log4net;
 using MQTTnet;
 using MQTTnet.Client;

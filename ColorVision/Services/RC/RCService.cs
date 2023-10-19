@@ -1,7 +1,5 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.Services;
-using ColorVision.SettingUp;
-using Microsoft.Win32;
 using MQTTMessageLib;
 using MQTTMessageLib.RC;
 using MQTTnet.Client;
@@ -25,7 +23,7 @@ namespace ColorVision.RC
     }
 
     public delegate void RCServiceStatusChangedEventHandler(object sender, RCServiceStatusChangedEventArgs args);
-    public class RCService : BaseService<RCConfig>
+    public class RCService : BaseDevService<RCConfig>
     {
         private string NodeName;
         private string NodeType;
@@ -101,8 +99,8 @@ namespace ColorVision.RC
                             break;
                         case MQTTNodeServiceEventEnum.Event_ServicesQuery:
                             MQTTRCServicesQueryResponse respQurey = JsonConvert.DeserializeObject<MQTTRCServicesQueryResponse>(Msg);
-                            ServiceControl.GetInstance().UpdateServiceStatus(respQurey.Data);
-                            ServiceControl.GetInstance().UpdateStatus(respQurey.Data);
+                            ServiceManager.GetInstance().UpdateServiceStatus(respQurey.Data);
+                            ServiceManager.GetInstance().UpdateStatus(respQurey.Data);
                             break;
                         case MQTTNodeServiceEventEnum.Event_NotRegist:
                             StatusChangedEventHandler?.Invoke(this, new RCServiceStatusChangedEventArgs(ServiceNodeStatus.Unregistered));

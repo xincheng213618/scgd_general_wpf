@@ -1,5 +1,7 @@
 ﻿#pragma warning disable CS8602  
 
+using ColorVision.Device.SMU;
+using ColorVision.Lincense;
 using ColorVision.MQTT;
 using ColorVision.Services;
 using ColorVision.Services.Msg;
@@ -9,6 +11,8 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Security.Cryptography;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Device.Camera
@@ -16,8 +20,106 @@ namespace ColorVision.Device.Camera
 
     public delegate void MQTTCameraFileHandler(object sender, string? FilePath);
     public delegate void MQTTCameraMsgHandler(object sender, MsgReturn msg);
+    
+    public class CameraServiceConfig : BaseServiceConfig
+    {
 
-    public class CameraService : BaseService<CameraConfig>
+    }
+
+
+    public class BaseService<T>: BaseService where T : BaseServiceConfig
+    {
+        public T Config { get; set; }
+
+        public override string SubscribeTopic { get => Config.SubscribeTopic; set { Config.SubscribeTopic = value; } }
+        public override string SendTopic { get => Config.SendTopic; set { Config.SendTopic = value; } }
+
+        public override int HeartbeatTime { get => Config.HeartbeatTime; set { Config.HeartbeatTime = value; NotifyPropertyChanged(); } }
+
+        public override bool IsAlive { get => Config.IsAlive; set { Config.IsAlive = value; NotifyPropertyChanged(); } }
+
+        public override DateTime LastAliveTime { get => Config.LastAliveTime; set => Config.LastAliveTime = value; }
+
+
+        public void UpdateServiceConfig(IServiceConfig config)
+        {
+            Task.Run(() => MQTTControl.UnsubscribeAsyncClientAsync(Config.SubscribeTopic));
+
+            Config.SendTopic = config.SendTopic;
+            Config.SubscribeTopic = config.SubscribeTopic;
+            MQTTControl.SubscribeCache(Config.SubscribeTopic);
+        }
+
+        public BaseService(T Config) : base()
+        {
+            this.Config = Config;
+            MQTTControl.SubscribeCache(Config.SubscribeTopic);
+        }
+    }
+
+    public class CameraService : BaseService<CameraServiceConfig>
+    {
+        public CameraService(CameraServiceConfig Config) :base(Config)
+        {
+            Devices = new List<CameraDeviceService>();
+            GetAllDevice();
+            Connected += (s, e) =>
+            {
+                GetAllDevice();
+            };
+            MsgReturnReceived += MQTTCamera_MsgReturnChanged;
+        }
+        public List<CameraDeviceService> Devices { get; set; }
+        public List<string> DevicesSN { get; set; } = new List<string>();
+        public Dictionary<string, string> DevicesSNMD5 { get; set; } = new Dictionary<string, string>();
+
+        private void MQTTCamera_MsgReturnChanged(MsgReturn msg)
+        {
+            switch (msg.EventName)
+            {
+                case "CM_GetAllSnID":
+                    try
+                    {
+                        JArray SnIDs = msg.Data.SnID;
+                        if (SnIDs != null)
+                        {
+                            DevicesSN.Clear();
+                            for (int i = 0; i < SnIDs.Count; i++)
+                            {
+                                DevicesSN.Add(SnIDs[i].ToString());
+                            }
+                        }
+
+                        JArray MD5IDs = msg.Data.MD5ID;
+
+                        if (SnIDs == null || MD5IDs == null)
+                        {
+                            return;
+                        }
+
+                        for (int i = 0; i < MD5IDs.Count; i++)
+                        {
+                            DevicesSNMD5.Add(SnIDs[i].ToString(), MD5IDs[i].ToString());
+                            LicenseManager.GetInstance().AddLicense(new LicenseConfig() { Name = SnIDs[i].ToString(), Sn = MD5IDs[i].ToString(), IsCanImport = true });
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        if (log.IsErrorEnabled)
+                            log.Error(ex);
+                    }
+
+                    return;
+            }
+        }
+        public void GetAllDevice()
+        {
+            PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });
+        }
+    }
+
+
+    public class CameraDeviceService : BaseDevService<CameraConfig>
     {
         public event MQTTCameraFileHandler FileHandler;
         public event DeviceStatusChangedHandler DeviceStatusChanged;
@@ -25,12 +127,7 @@ namespace ColorVision.Device.Camera
         public DeviceStatus DeviceStatus { get => _DeviceStatus; set { _DeviceStatus = value; Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value)); NotifyPropertyChanged(); } }
         private DeviceStatus _DeviceStatus;
 
-        public static List<string> MD5 { get; set; } = new List<string>();
-        public static List<string> CameraIDs { get; set; } = new List<string>();
-
-        public static Dictionary<string, ObservableCollection<string>> ServicesDevices { get; set; } = new Dictionary<string, ObservableCollection<string>>();
-
-        public CameraService(CameraConfig CameraConfig) : base(CameraConfig)
+        public CameraDeviceService(CameraConfig CameraConfig) : base(CameraConfig)
         {
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
             DeviceStatus = DeviceStatus.UnInit;
@@ -40,54 +137,11 @@ namespace ColorVision.Device.Camera
                 GetAllCameraID();
             };
         }
-
-
         private void MQTTCamera_MsgReturnChanged(MsgReturn msg)
         {
-            IsRun = false;
             switch (msg.EventName)
             {
                 case "CM_GetAllSnID":
-                    try
-                    {
-                        JArray SnIDs = msg.Data.SnID;
-                        JArray MD5IDs = msg.Data.MD5ID;
-
-
-                        if (SnIDs == null || MD5IDs == null)
-                        {
-                            return;
-                        }
-
-                        for (int i = 0; i < SnIDs.Count; i++)
-                        {
-                            if (SnIDs[i].ToString() == SnID)
-                                Config.MD5 = MD5IDs[i].ToString();
-
-                            if (!CameraIDs.Contains(SnIDs[i].ToString()))
-                                CameraIDs.Add(SnIDs[i].ToString());
-
-                            if (!MD5.Contains(MD5IDs[i].ToString()))
-                                MD5.Add(MD5IDs[i].ToString());
-
-
-                            if (ServicesDevices.TryGetValue(SubscribeTopic, out ObservableCollection<string> list))
-                            {
-                                if (!list.Contains(SnIDs[i].ToString()))
-                                    list.Add(SnIDs[i].ToString());
-                            }
-                            else
-                            {
-                                ServicesDevices.Add(SubscribeTopic, new ObservableCollection<string>() { SnIDs[i].ToString() });
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        if (log.IsErrorEnabled)
-                            log.Error(ex);
-                    }
-
                     return;
             }
 
@@ -136,10 +190,25 @@ namespace ColorVision.Device.Camera
                                 Config.ExpTimeR = msg.Data.result[0].result;
                                 Config.ExpTimeG = msg.Data.result[1].result;
                                 Config.ExpTimeB = msg.Data.result[2].result;
+
+                                Config.SaturationR = msg.Data.result[0].resultSaturation;
+                                Config.SaturationG = msg.Data.result[1].resultSaturation;
+                                Config.SaturationB = msg.Data.result[2].resultSaturation;
+
+                                string Msg = "SaturationR:" + Config.SaturationR.ToString() + Environment.NewLine +
+                                             "SaturationG:" + Config.SaturationG.ToString() + Environment.NewLine +
+                                             "SaturationB:" + Config.SaturationB.ToString() + Environment.NewLine;
+                                MessageBox.Show(Msg);
+
+
                             }
                             else
                             {
                                 Config.ExpTime = msg.Data.result[0].result;
+                                Config.Saturation = msg.Data.result[0].resultSaturation;
+
+                                string Msg = "Saturation:" + Config.Saturation.ToString();
+                                MessageBox.Show(Msg);
                             }
                         } 
                         break;
@@ -183,16 +252,13 @@ namespace ColorVision.Device.Camera
             }
         }
 
-        public bool IsRun { get; set; }
+
         public CameraType CurrentCameraType { get; set; }
 
         public bool Init() => Init(Config.CameraType, Config.ID);
 
         public bool Init(CameraType CameraType, string CameraID)
         {
-            if (CameraIDs.Count == 0)
-                GetAllCameraID();
-
             CurrentCameraType = CameraType;
             SnID = CameraID;
             MsgSend msg = new MsgSend
@@ -340,7 +406,7 @@ namespace ColorVision.Device.Camera
         public MsgRecord GetData(double expTime, double gain, CalibrationType eCalibType = CalibrationType.Empty_Num)
         {
             string SerialNumber  = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            var model = ServiceControl.GetInstance().GetResultBatch(SerialNumber);
+            var model = ServiceManager.GetInstance().GetResultBatch(SerialNumber);
             MsgSend msg = new MsgSend
             {
                 EventName = "GetData",
@@ -397,13 +463,13 @@ namespace ColorVision.Device.Camera
                         "SetCfwport", new List<Dictionary<string, object>>()
                         {
                             new Dictionary<string, object>() {
-                                { "nIndex",0},{ "nPort",2},{"eImgChlType",0 }
+                                { "nIndex",0},{ "nPort",Config.ChannelConfigs[0].Port},{"eImgChlType",(int)Config.ChannelConfigs[0].ChannelType }
                             },
                             new Dictionary<string, object>() {
-                                { "nIndex",1},{ "nPort",2},{"eImgChlType",0 }
+                                { "nIndex",1},{ "nPort",Config.ChannelConfigs[1].Port},{"eImgChlType",(int)Config.ChannelConfigs[1].ChannelType }
                             },
                             new Dictionary<string, object>() {
-                                { "nIndex",2},{ "nPort",2},{"eImgChlType",0 }
+                                { "nIndex",2},{ "nPort",Config.ChannelConfigs[2].Port},{"eImgChlType",(int)Config.ChannelConfigs[2].ChannelType }
                             },
                         }
                     }

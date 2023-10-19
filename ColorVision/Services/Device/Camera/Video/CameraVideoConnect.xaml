@@ -34,17 +34,12 @@
                                     <Setter Property="ContextMenu" Value="{StaticResource ContextMenuItem}"/>
                                 </Style>
                             </ListView.ItemContainerStyle>
-                            <ListView.ItemTemplate>
-                                <DataTemplate DataType="{x:Type setting:MySqlConfig}" >
-                                    <TextBlock  Text="{Binding Name}" TextTrimming = "CharacterEllipsis"/>
-                                </DataTemplate>
-                            </ListView.ItemTemplate>
                         </ListView>
                         <Button Content="复制当前配置" Click="Button_Click_Test2" BorderThickness="1,0.5,1,1" Margin="0,0,0,-1"  VerticalAlignment="Bottom"/>
                     </Grid>
                 </Border>
                 <Border Grid.Column="1"  Background="#F9F9F9"  BorderBrush="#EAEAEA" BorderThickness="1"  Margin="5" CornerRadius="10,10,3,3">
-                    <Grid x:Name="GridMQTT" Margin="5,5,10,5"  d:DataContext="{d:DesignInstance setting:CameraVideoConfig}">
+                    <Grid x:Name="GridMQTT" Margin="5,5,10,5"  d:DataContext="{d:DesignInstance local:CameraVideoConfig}">
                         <StackPanel>
                             <TextBlock Text="相机视频端口配置" HorizontalAlignment="Center" Margin="15" FontSize="17"/>
                             <DockPanel Margin="5">

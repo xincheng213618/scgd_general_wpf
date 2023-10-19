@@ -1,11 +1,11 @@
 ﻿using ColorVision.MVVM;
 
-namespace ColorVision.SettingUp
+namespace ColorVision.MySql
 {
     /// <summary>
     /// MySql配置
     /// </summary>
-    public class MySqlConfig: ViewModelBase
+    public class MySqlConfig : ViewModelBase
     {
         /// <summary>
         /// 连接名称

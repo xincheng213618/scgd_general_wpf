@@ -122,7 +122,7 @@ namespace ColorVision
             else
             {
                 MainWindow MainWindow = new MainWindow();
-                ServiceControl.GetInstance().GenContorl();
+                ServiceManager.GetInstance().GenContorl();
                 MainWindow.Show();
             }
 

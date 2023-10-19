@@ -15,7 +15,7 @@ namespace ColorVision.Solution
         public SolutionSetting SolutionSetting { get => SolutionConfig.SolutionSetting; }
         public SoftwareConfig SoftwareConfig { get; private set; }
 
-        public SolutionControl() 
+        public SolutionControl()
         {
             SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
         }

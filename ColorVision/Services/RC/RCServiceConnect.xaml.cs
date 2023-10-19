@@ -1,7 +1,6 @@
 ﻿using ColorVision.MVVM;
 using ColorVision.MySql;
 using ColorVision.Services;
-using ColorVision.SettingUp;
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
@@ -65,7 +64,7 @@ namespace ColorVision.RC
             rcServiceConfigs.Remove(rcServiceConfig);
 
             GlobalSetting.GetInstance().SaveSoftwareConfig();
-            Task.Run(() => ServiceControl.GetInstance().rcService.ReRegist());
+            Task.Run(() => ServiceManager.GetInstance().rcService.ReRegist());
             this.Close();
         }
 
@@ -80,7 +79,7 @@ namespace ColorVision.RC
             rcServiceConfig.AppSecret = PasswordBox1.Password;
             Task.Run(() =>
             {
-                bool IsConnect = ServiceControl.GetInstance().rcService.TryRegist(rcServiceConfig);
+                bool IsConnect = ServiceManager.GetInstance().rcService.TryRegist(rcServiceConfig);
                 MessageBox.Show($"连接{(IsConnect ? "成功" : "失败")}");
             });
         }

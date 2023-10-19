@@ -11,7 +11,7 @@ using ColorVision.MySql;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.RC;
-using ColorVision.SettingUp;
+using ColorVision.User;
 using MQTTMessageLib;
 using Newtonsoft.Json;
 using System;
@@ -23,14 +23,15 @@ using static cvColorVision.GCSDLL;
 
 namespace ColorVision.Services
 {
-    public class ServiceControl
+    public class ServiceManager
     {
-        private static ServiceControl _instance;
+        private static ServiceManager _instance;
         private static readonly object _locker = new();
-        public static ServiceControl GetInstance() { lock (_locker) { return _instance ??= new ServiceControl(); } }
+        public static ServiceManager GetInstance() { lock (_locker) { return _instance ??= new ServiceManager(); } }
 
-        public ObservableCollection<MQTTServiceKind> MQTTServices { get; set; }
 
+
+        public ObservableCollection<ServiceKind> MQTTServices { get; set; }
         public ObservableCollection<BaseChannel> MQTTDevices { get; set; }
 
 
@@ -44,27 +45,28 @@ namespace ColorVision.Services
         public StackPanel StackPanel { get; set; }
 
         private Dictionary<string, List<BaseService>> svrDevices;
-
         public RCService rcService { get;}
-        private int heartbeatTime;
-        public ServiceControl()
+        public ServiceManager()
         {
             ResourceService = new SysResourceService();
             DictionaryService = new SysDictionaryService();
             resultService = new ResultService();
-            MQTTServices = new ObservableCollection<MQTTServiceKind>();
+            MQTTServices = new ObservableCollection<ServiceKind>();
             MQTTDevices = new ObservableCollection<BaseChannel>();
             svrDevices = new Dictionary<string, List<BaseService>>();
             rcService = new RCService(new RCConfig());
-            this.heartbeatTime = 10 * 1000;
+
+
+            int heartbeatTime = 10 * 1000;
             System.Timers.Timer hbTimer = new System.Timers.Timer(heartbeatTime);
-            hbTimer.Elapsed += new System.Timers.ElapsedEventHandler(timer_KeepLive);
+            hbTimer.Elapsed += (s,e) => rcService.KeepLive(heartbeatTime);
             hbTimer.Enabled = true;
 
             GC.KeepAlive(hbTimer);
 
             UserConfig = GlobalSetting.GetInstance().SoftwareConfig.UserConfig;
             StackPanel = new StackPanel();
+
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => Reload();
 
             Task.Run(() => rcService.Regist());
@@ -74,10 +76,6 @@ namespace ColorVision.Services
             };
 
             Reload();
-        }
-        private void timer_KeepLive(object? sender, System.Timers.ElapsedEventArgs e)
-        {
-            rcService.KeepLive(heartbeatTime);
         }
         public ObservableCollection<BaseChannel> LastGenControl { get; set; }
 
@@ -114,6 +112,161 @@ namespace ColorVision.Services
             }
             LastGenControl = MQTTDevices;
         }
+        public void Reload()
+        {
+            MQTTServices.Clear();
+            MQTTDevices.Clear();
+            LastGenControl?.Clear();
+            svrDevices?.Clear();
+
+            List<SysResourceModel> Services = ResourceService.GetAllServices(UserConfig.TenantId);
+            List<SysResourceModel> devices = ResourceService.GetAllDevices(UserConfig.TenantId);
+
+            foreach (var item in DictionaryService.GetAllServiceType())
+            {
+                ServiceKind mQTTServicetype = new ServiceKind();
+                mQTTServicetype.Name = item.Name ?? string.Empty;
+                mQTTServicetype.SysDictionaryModel = item;
+                foreach (var service in Services)
+                {
+                    if (service.Type == item.Value)
+                    {
+                        ServiceViewMode mQTTService = new ServiceViewMode(service);
+
+                        string svrKey = GetServiceKey(service.TypeCode, service.Code);
+                        svrDevices?.Add(svrKey, new List<BaseService>());
+
+
+                        foreach (var device in devices)
+                        {
+                            BaseService svrObj = null;
+                            if (device.Pid == service.Id)
+                            {
+                                switch ((ServiceType)device.Type)
+                                {
+                                    case ServiceType.Camera:
+                                        DeviceCamera deviceCamera = new DeviceCamera(device);
+                                        svrObj = deviceCamera.DeviceService;
+                                        mQTTService.AddChild(deviceCamera);
+                                        MQTTDevices.Add(deviceCamera);
+                                        break;
+                                    case ServiceType.PG:
+                                        DevicePG devicePG = new DevicePG(device);
+                                        svrObj = devicePG.PGService;
+                                        mQTTService.AddChild(devicePG);
+                                        MQTTDevices.Add(devicePG);
+                                        break;
+                                    case ServiceType.Spectum:
+                                        DeviceSpectrum deviceSpectrum = new DeviceSpectrum(device);
+                                        svrObj = deviceSpectrum.DeviceService;
+                                        mQTTService.AddChild(deviceSpectrum);
+                                        MQTTDevices.Add(deviceSpectrum);
+                                        break;
+                                    case ServiceType.SMU:
+                                        DeviceSMU deviceSMU = new DeviceSMU(device);
+                                        svrObj = deviceSMU.Service;
+                                        mQTTService.AddChild(deviceSMU);
+                                        MQTTDevices.Add(deviceSMU);
+                                        break;
+                                    case ServiceType.Sensor:
+                                        DeviceSensor device1 = new DeviceSensor(device);
+                                        svrObj = device1.Service;
+                                        mQTTService.AddChild(device1);
+                                        MQTTDevices.Add(device1);
+                                        break;
+                                    case ServiceType.FileServer:
+                                        DeviceFileServer img = new DeviceFileServer(device);
+                                        svrObj = img.Service;
+                                        mQTTService.AddChild(img);
+                                        MQTTDevices.Add(img);
+                                        break;
+                                    case ServiceType.Algorithm:
+                                        DeviceAlgorithm alg = new DeviceAlgorithm(device);
+                                        svrObj = alg.Service;
+                                        mQTTService.AddChild(alg);
+                                        MQTTDevices.Add(alg);
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+
+                            if (svrObj != null)
+                            {
+                                svrObj.ServiceName = service.Code;
+                                svrDevices[svrKey].Add(svrObj);
+                            }
+                        }
+                        mQTTServicetype.AddChild(mQTTService);
+                    }
+                }
+                MQTTServices.Add(mQTTServicetype);
+            }
+
+        }
+
+        public void ProcResult(FlowControlData flowControlData)
+        {
+            int totalTime = flowControlData.Params.TTL;
+            resultService.BatchUpdateEnd(flowControlData.SerialNumber, totalTime, flowControlData.EventName);
+
+            SpectrumDrawPlotFromDB(flowControlData.SerialNumber);
+        }
+
+
+        public void UpdateStatus(Dictionary<string, List<MQTTNodeService>> data)
+        {
+            foreach (var item in data)
+            {
+                foreach(var nodeService in item.Value)
+                {
+                    string svrKey = GetServiceKey(nodeService.ServiceType, nodeService.ServiceName);
+                    if (svrDevices.ContainsKey(svrKey))
+                    {
+                        foreach (BaseService svr in svrDevices[svrKey])
+                        {
+                            svr.UpdateStatus(nodeService);
+                        }
+                    }
+                }
+            }
+        }
+
+        public void UpdateServiceStatus(Dictionary<string, List<MQTTNodeService>> data)
+        {
+            foreach (var item in data.Values)
+            {
+                foreach (var svr in item)
+                {
+                    UpdateServiceStatus(svr);
+                }
+            }
+        }
+
+        private void UpdateServiceStatus(MQTTNodeService svr)
+        {
+            UpdateServiceStatus(svr.ServiceName, svr.LiveTime, svr.OverTime);
+        }
+
+        public void UpdateServiceStatus(string serviceName, DateTime liveTime, int overTime)
+        {
+            foreach (var item in MQTTServices)
+            {
+                foreach (var svr in item.VisualChildren)
+                {
+                    if (svr is ServiceViewMode service)
+                    {
+                        if (serviceName.Equals(service.Config.Code, StringComparison.Ordinal))
+                        {
+                            service.Config.SetLiveTime(liveTime, overTime, true);
+                        }
+                    }
+
+                }
+            }
+        }
+
+
 
         public void SpectrumDrawPlotFromDB(string bid)
         {
@@ -190,160 +343,11 @@ namespace ColorVision.Services
             return resultService.BatchSave(model);
         }
 
-        private  static string GetServiceKey(string svrType,string svrCode)
+        private static string GetServiceKey(string svrType, string svrCode)
         {
-            return svrType +":"+ svrCode;
+            return svrType + ":" + svrCode;
         }
 
-        public void Reload()
-        {
-            MQTTServices.Clear();
-            MQTTDevices.Clear();
-            LastGenControl?.Clear();
-            svrDevices?.Clear();
-            List<SysResourceModel> Services = ResourceService.GetAllServices(UserConfig.TenantId);
-            List<SysResourceModel> devices = ResourceService.GetAllDevices(UserConfig.TenantId);
-
-            foreach (var item in DictionaryService.GetAllServiceType())
-            {
-                MQTTServiceKind mQTTServicetype = new MQTTServiceKind();
-                mQTTServicetype.Name = item.Name ?? string.Empty;
-                mQTTServicetype.SysDictionaryModel = item;
-                foreach (var service in Services)
-                {
-                    if (service.Type == item.Value)
-                    {
-                        MQTTService mQTTService = new MQTTService(service);
-                        string svrKey = GetServiceKey(service.TypeCode, service.Code);
-                        svrDevices?.Add(svrKey, new List<BaseService>());
-                        foreach (var device in devices)
-                        {
-                            BaseService svrObj = null;
-                            if (device.Pid == service.Id)
-                            {
-                                switch ((DeviceType)device.Type)
-                                {
-                                    case DeviceType.Camera:
-                                        DeviceCamera deviceCamera = new DeviceCamera(device);
-                                        svrObj = deviceCamera.Service;
-                                        mQTTService.AddChild(deviceCamera);
-                                        MQTTDevices.Add(deviceCamera);
-                                        break;
-                                    case DeviceType.PG:
-                                        DevicePG devicePG = new DevicePG(device);
-                                        svrObj = devicePG.PGService;
-                                        mQTTService.AddChild(devicePG);
-                                        MQTTDevices.Add(devicePG);
-                                        break;
-                                    case DeviceType.Spectum:
-                                        DeviceSpectrum deviceSpectrum = new DeviceSpectrum(device);
-                                        svrObj = deviceSpectrum.Service;
-                                        mQTTService.AddChild(deviceSpectrum);
-                                        MQTTDevices.Add(deviceSpectrum);
-                                        break;
-                                    case DeviceType.SMU:
-                                        DeviceSMU deviceSMU = new DeviceSMU(device);
-                                        svrObj = deviceSMU.Service;
-                                        mQTTService.AddChild(deviceSMU);
-                                        MQTTDevices.Add(deviceSMU);
-                                        break;
-                                    case DeviceType.Sensor:
-                                        DeviceSensor device1 = new DeviceSensor(device);
-                                        svrObj = device1.Service;
-                                        mQTTService.AddChild(device1);
-                                        MQTTDevices.Add(device1);
-                                        break;
-                                    case DeviceType.FileServer:
-                                        DeviceFileServer img = new DeviceFileServer(device);
-                                        svrObj = img.Service;
-                                        mQTTService.AddChild(img);
-                                        MQTTDevices.Add(img);
-                                        break;
-                                    case DeviceType.Algorithm:
-                                        DeviceAlgorithm alg = new DeviceAlgorithm(device);
-                                        svrObj = alg.Service;
-                                        mQTTService.AddChild(alg);
-                                        MQTTDevices.Add(alg);
-                                        break;
-                                    default:
-                                        break;
-                                }
-                            }
-
-                            if (svrObj != null)
-                            {
-                                svrObj.ServiceName = service.Code;
-                                svrDevices[svrKey].Add(svrObj);
-                            }
-                        }
-                        mQTTServicetype.AddChild(mQTTService);
-                    }
-                }
-                MQTTServices.Add(mQTTServicetype);
-            }
-
-        }
-
-        public void ProcResult(FlowControlData flowControlData)
-        {
-            int totalTime = flowControlData.Params.TTL;
-            resultService.BatchUpdateEnd(flowControlData.SerialNumber, totalTime, flowControlData.EventName);
-
-            SpectrumDrawPlotFromDB(flowControlData.SerialNumber);
-        }
-
-
-        public void UpdateStatus(Dictionary<string, List<MQTTNodeService>> data)
-        {
-            foreach (var item in data)
-            {
-                foreach(var nodeService in item.Value)
-                {
-                    string svrKey = GetServiceKey(nodeService.ServiceType, nodeService.ServiceName);
-                    if (svrDevices.ContainsKey(svrKey))
-                    {
-                        foreach (BaseService svr in svrDevices[svrKey])
-                        {
-                            svr.UpdateStatus(nodeService);
-                        }
-                    }
-                }
-            }
-        }
-
-        public void UpdateServiceStatus(Dictionary<string, List<MQTTNodeService>> data)
-        {
-            foreach (var item in data.Values)
-            {
-                foreach (var svr in item)
-                {
-                    UpdateServiceStatus(svr);
-                }
-            }
-        }
-
-        private void UpdateServiceStatus(MQTTNodeService svr)
-        {
-            UpdateServiceStatus(svr.ServiceName, svr.LiveTime, svr.OverTime);
-        }
-
-        public void UpdateServiceStatus(string serviceName, DateTime liveTime, int overTime)
-        {
-            foreach (var item in MQTTServices)
-            {
-                foreach (var svr in item.VisualChildren)
-                {
-                    if (svr is MQTTService service)
-                    {
-                        if (serviceName.Equals(service.ServiceConfig.Code, StringComparison.Ordinal))
-                        {
-                            service.ServiceConfig.SetLiveTime(liveTime, overTime, true);
-                        }
-                    }
-
-                }
-            }
-        }
         public void UpdateServiceStatus(string serviceName, string liveTime, int overTime)
         {
             DateTime lvTime = DateTime.Now;

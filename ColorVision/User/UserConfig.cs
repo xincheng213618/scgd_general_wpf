@@ -1,14 +1,14 @@
 ﻿using ColorVision.MVVM;
 using System.ComponentModel;
 
-namespace ColorVision.SettingUp
+namespace ColorVision.User
 {
-    public class UserConfig:ViewModelBase
+    public class UserConfig : ViewModelBase
     {
         /// <summary>
         /// 账号
         /// </summary>
-        public string Account{ get => _Account; set { _Account = value; NotifyPropertyChanged(); } }
+        public string Account { get => _Account; set { _Account = value; NotifyPropertyChanged(); } }
         private string _Account = string.Empty;
         /// <summary>
         /// 密码
@@ -26,7 +26,7 @@ namespace ColorVision.SettingUp
         /// <summary>
         /// 租户ID
         /// </summary>
-        public int TenantId { get=>_TenantId; set { _TenantId = value; NotifyPropertyChanged(); } }
+        public int TenantId { get => _TenantId; set { _TenantId = value; NotifyPropertyChanged(); } }
         private int _TenantId;
 
         //性别
@@ -35,7 +35,7 @@ namespace ColorVision.SettingUp
         public string Email { get => _Email; set { _Email = value; NotifyPropertyChanged(); } }
         private string _Email = string.Empty;
 
-        public string Phone { get => _Phone; set { _Phone = value; NotifyPropertyChanged(); } } 
+        public string Phone { get => _Phone; set { _Phone = value; NotifyPropertyChanged(); } }
         private string _Phone = string.Empty;
 
         public string Address { get => _Address; set { _Address = value; NotifyPropertyChanged(); } }

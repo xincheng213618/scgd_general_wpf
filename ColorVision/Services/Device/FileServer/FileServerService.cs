@@ -29,7 +29,7 @@ namespace ColorVision.Device.FileServer
         }
     }
     public delegate void MQTTImageDataHandler(object sender, FileServerDataEvent arg);
-    public class FileServerService : BaseService<FileServerConfig>
+    public class FileServerService : BaseDevService<FileServerConfig>
     {
         public event MQTTImageDataHandler OnImageData;
         public FileServerService(FileServerConfig config) : base(config)
@@ -60,7 +60,7 @@ namespace ColorVision.Device.FileServer
                     {
                         if (json.EventName.Equals(FileServerEventName.Heartbeat, StringComparison.Ordinal))
                         {
-                            ServiceControl.GetInstance().UpdateServiceStatus(this.ServiceName, DateTime.Now, -1);
+                            ServiceManager.GetInstance().UpdateServiceStatus(this.ServiceName, DateTime.Now, -1);
                         }
                         else
                         {

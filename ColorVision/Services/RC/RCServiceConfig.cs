@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ColorVision.SettingUp
+namespace ColorVision.RC
 {
     public class RCServiceConfig : ViewModelBase
     {

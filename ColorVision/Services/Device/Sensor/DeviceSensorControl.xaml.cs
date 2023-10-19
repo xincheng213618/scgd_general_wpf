@@ -11,7 +11,7 @@ namespace ColorVision.Device.Sensor
     public partial class DeviceSensorControl : UserControl
     {
         public DeviceSensor DeviceSensor { get; set; }
-        public ServiceControl ServiceControl { get; set; }
+        public ServiceManager ServiceControl { get; set; }
 
         public DeviceSensorControl(DeviceSensor deviceSensor)
         {
@@ -21,7 +21,7 @@ namespace ColorVision.Device.Sensor
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            ServiceControl = ServiceControl.GetInstance();
+            ServiceControl = ServiceManager.GetInstance();
             this.DataContext = DeviceSensor;
         }
 

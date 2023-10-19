@@ -21,10 +21,10 @@ namespace ColorVision.Services
     /// </summary>
     public partial class MQTTServiceControl : UserControl
     {
-        public MQTTService MQTTService { get; set; }
-        public ServiceControl ServiceControl { get; set; }
+        public ServiceViewMode MQTTService { get; set; }
+        public ServiceManager ServiceControl { get; set; }
 
-        public MQTTServiceControl(MQTTService mQTTService)
+        public MQTTServiceControl(ServiceViewMode mQTTService)
         {
             this.MQTTService = mQTTService;
             InitializeComponent();
@@ -32,7 +32,7 @@ namespace ColorVision.Services
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            ServiceControl = ServiceControl.GetInstance();
+            ServiceControl = ServiceManager.GetInstance();
             this.DataContext = MQTTService;
             TextBox_Type.ItemsSource = MQTTService.Parent.VisualChildren;
             TextBox_Type.SelectedItem = MQTTService;
@@ -59,8 +59,8 @@ namespace ColorVision.Services
             deviceConfig.Name = TextBox_Name.Text;
             deviceConfig.Code = TextBox_Code.Text;
 
-            deviceConfig.SendTopic = MQTTService.ServiceConfig.SendTopic;
-            deviceConfig.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;
+            deviceConfig.SendTopic = MQTTService.Config.SendTopic;
+            deviceConfig.SubscribeTopic = MQTTService.Config.SubscribeTopic;
             sysResource.Value = JsonConvert.SerializeObject(deviceConfig);
             ServiceControl.ResourceService.Save(sysResource);
             int pkId = sysResource.GetPK();
@@ -74,10 +74,10 @@ namespace ColorVision.Services
                 return;
 
 
-            if (TextBox_Type.SelectedItem is MQTTService mQTTService)
+            if (TextBox_Type.SelectedItem is ServiceViewMode mQTTService)
             {
                 SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, mQTTService.SysResourceModel.Type, mQTTService.SysResourceModel.Id, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
-                if (mQTTService.Type == DeviceType.Camera)
+                if (mQTTService.Type == ServiceType.Camera)
                 {
                     CameraConfig cameraConfig1 = new CameraConfig
                     {
@@ -92,7 +92,7 @@ namespace ColorVision.Services
                     if (model != null)
                         mQTTService.AddChild(new DeviceCamera(model));
                 }
-                else if (mQTTService.Type == DeviceType.PG)
+                else if (mQTTService.Type == ServiceType.PG)
                 {
                     PGConfig pGConfig = new PGConfig
                     {
@@ -103,7 +103,7 @@ namespace ColorVision.Services
                     if (model != null)
                         mQTTService.AddChild(new DevicePG(model));
                 }
-                else if (mQTTService.Type == DeviceType.Spectum)
+                else if (mQTTService.Type == ServiceType.Spectum)
                 {
                     SpectrumConfig config = new SpectrumConfig
                     {
@@ -115,7 +115,7 @@ namespace ColorVision.Services
                         mQTTService.AddChild(new DeviceSpectrum(model));
                 }
 
-                else if (mQTTService.Type == DeviceType.SMU)
+                else if (mQTTService.Type == ServiceType.SMU)
                 {
                     SMUConfig config = new SMUConfig
                     {
@@ -126,7 +126,7 @@ namespace ColorVision.Services
                     if (model != null)
                         mQTTService.AddChild(new DeviceSMU(model));
                 }
-                else if (mQTTService.Type == DeviceType.Sensor)
+                else if (mQTTService.Type == ServiceType.Sensor)
                 {
                     SensorConfig config = new SensorConfig
                     {
@@ -135,7 +135,7 @@ namespace ColorVision.Services
                     if (model != null)
                         mQTTService.AddChild(new DeviceSpectrum(model));
                 }
-                else if (mQTTService.Type == DeviceType.FileServer)
+                else if (mQTTService.Type == ServiceType.FileServer)
                 {
                     FileServerConfig config = new FileServerConfig
                     {
@@ -154,15 +154,15 @@ namespace ColorVision.Services
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            MQTTService.ServiceConfig.SubscribeTopic = MQTTService.SysResourceModel.TypeCode + "/STATUS/" + MQTTService.SysResourceModel.Code;
-            MQTTService.ServiceConfig.SendTopic = MQTTService.SysResourceModel.TypeCode + "/CMD/" + MQTTService.SysResourceModel.Code;
+            MQTTService.Config.SubscribeTopic = MQTTService.SysResourceModel.TypeCode + "/STATUS/" + MQTTService.SysResourceModel.Code;
+            MQTTService.Config.SendTopic = MQTTService.SysResourceModel.TypeCode + "/CMD/" + MQTTService.SysResourceModel.Code;
 
             foreach (var item in MQTTService.VisualChildren)
             {
                 if(item is BaseChannel mQTTDevice)
                 {
-                    mQTTDevice.SendTopic = MQTTService.ServiceConfig.SendTopic;
-                    mQTTDevice.SubscribeTopic = MQTTService.ServiceConfig.SubscribeTopic;
+                    mQTTDevice.SendTopic = MQTTService.Config.SendTopic;
+                    mQTTDevice.SubscribeTopic = MQTTService.Config.SubscribeTopic;
                     mQTTDevice.Save();
                 }
             }

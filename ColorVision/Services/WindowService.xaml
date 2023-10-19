@@ -20,12 +20,12 @@
             </Grid.ColumnDefinitions>
             <TreeView x:Name="TreeView1" Loaded="TreeView1_Loaded" SelectedItemChanged="TreeView1_SelectedItemChanged " Margin="5">
                 <TreeView.Resources>
-                    <HierarchicalDataTemplate DataType="{x:Type local:MQTTServiceKind}" ItemsSource="{Binding VisualChildren}" >
+                    <HierarchicalDataTemplate DataType="{x:Type local:ServiceKind}" ItemsSource="{Binding VisualChildren}" >
                         <StackPanel >
                             <TextBlock Text="{Binding Name}"/>
                         </StackPanel>
                     </HierarchicalDataTemplate>
-                    <HierarchicalDataTemplate DataType="{x:Type local:MQTTService}" ItemsSource="{Binding VisualChildren}" >
+                    <HierarchicalDataTemplate DataType="{x:Type local:ServiceViewMode}" ItemsSource="{Binding VisualChildren}" >
                         <StackPanel >
                             <TextBlock Text="{Binding Name}"/>
                         </StackPanel>
@@ -44,11 +44,9 @@
 
             </TreeView>
             <Border Background="{DynamicResource GlobalBorderBrush1}" CornerRadius="5" Grid.Column="1" Margin="5">
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Grid.Column="1" >
-                    <StackPanel x:Name="StackPanelShow"  >
+                <Grid x:Name="StackPanelShow"  >
 
-                    </StackPanel>
-                </ScrollViewer>
+                </Grid>
             </Border>
 
 

@@ -1,6 +1,4 @@
 ﻿using ColorVision.Themes.Controls;
-using ColorVision.Device.Camera;
-using ColorVision.MVVM;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -9,46 +7,27 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision
+namespace ColorVision.Lincense
 {
-    public class LicenseConfig : ViewModelBase
-    {
-        public int ID { get; set; }
-        public string Name { get; set; }
-        public string Tag { get => _Tag; set { _Tag = value; NotifyPropertyChanged(); } }
-        private string _Tag;
-        public string Sn { get => _Sn; set { _Sn = value; NotifyPropertyChanged(); } }
-        private string _Sn;
 
-        public string ActivationCode { get => _ActivationCode; set { _ActivationCode = value; NotifyPropertyChanged(); } }
-        private string _ActivationCode;
-
-        public bool IsCanImport { get => _IsCanImport; set { _IsCanImport = value; NotifyPropertyChanged(); } }
-        private bool _IsCanImport = true;
-
-        public object? Value { set; get; }
-    }
 
     /// <summary>
     /// LicenseManger.xaml 的交互逻辑
     /// </summary>
-    public partial class LicenseManger : BaseWindow
+    public partial class LicenseMangerWindow : BaseWindow
     {
-        public ObservableCollection<LicenseConfig> LicenseConfigs { get; set; } = new ObservableCollection<LicenseConfig>();
-        public LicenseManger()
+        public LicenseMangerWindow()
         {
             InitializeComponent();
-
         }
+
+        public ObservableCollection<LicenseConfig> Licenses { get; set; }
+
+
         private void BaseWindow_Initialized(object sender, EventArgs e)
         {
-            ListViewLicense.ItemsSource = LicenseConfigs;
-
-            LicenseConfigs.Add(new LicenseConfig() { Name = "ColorVision", Sn = "0000005EAD286752E9BF44AD08D23250", Tag = $"免费版\n\r永久有效", IsCanImport = false });
-            CameraService.MD5.ForEach(x =>
-            {
-                LicenseConfigs.Add(new LicenseConfig() { Name = "相机", Sn = x, Tag = $"业务还在开发中" });
-            });
+            Licenses = LicenseManager.GetInstance().Licenses;
+            ListViewLicense.ItemsSource = Licenses;
             ListViewLicense.SelectedIndex = 0;
         }
 
@@ -59,10 +38,8 @@ namespace ColorVision
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 string Key = File.ReadAllText(openFileDialog.FileName);
-                LicenseConfigs[ListViewLicense.SelectedIndex].Tag = $"{Key}";
-
+                Licenses[ListViewLicense.SelectedIndex].Tag = $"{Key}";
             }
-
         }
 
         private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)
@@ -74,7 +51,7 @@ namespace ColorVision
         {
             if (ListViewLicense.SelectedIndex > -1)
             {
-                GridContent.DataContext = LicenseConfigs[ListViewLicense.SelectedIndex];
+                GridContent.DataContext = Licenses[ListViewLicense.SelectedIndex];
             }
         }
 

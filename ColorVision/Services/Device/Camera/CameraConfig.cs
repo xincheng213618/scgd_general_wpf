@@ -1,7 +1,8 @@
-﻿using ColorVision.SettingUp;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using cvColorVision;
 using ColorVision.MVVM;
+using ColorVision.Services.Device.Camera.Video;
+using System.Collections.Generic;
 
 namespace ColorVision.Device.Camera
 {
@@ -18,7 +19,7 @@ namespace ColorVision.Device.Camera
 
         public ImageBpp ImageBpp { get => _ImageBpp; set { _ImageBpp = value; NotifyPropertyChanged(); } }
         private ImageBpp _ImageBpp;
-        public ImageChannel Channel { get => _Channel; set { _Channel = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsExpThree)); } }
+        public ImageChannel Channel { get => _Channel; set { _Channel = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsExpThree)); NotifyPropertyChanged(nameof(IsChannelThree)); } }
         private ImageChannel _Channel;
 
         public CameraVideoConfig VideoConfig { get; set; } = new CameraVideoConfig();
@@ -36,6 +37,18 @@ namespace ColorVision.Device.Camera
             }
             set => NotifyPropertyChanged();
         }
+        [JsonIgnore]
+        public bool IsChannelThree
+        {
+            get
+            {
+                if (Channel == ImageChannel.Three)
+                    return true;
+                return false;
+            }
+            set => NotifyPropertyChanged();
+        }
+
 
         public double ExpTime { get => _ExpTime; set { _ExpTime = value; NotifyPropertyChanged(); } }
         private double _ExpTime =10;
@@ -47,6 +60,22 @@ namespace ColorVision.Device.Camera
 
         public double ExpTimeB { get => _ExpTimeB; set { _ExpTimeB = value; NotifyPropertyChanged(); } }
         private double _ExpTimeB =10;
+
+
+        public double Saturation { get => _Saturation; set { _Saturation = value; NotifyPropertyChanged(); } }
+        private double _Saturation = -1;
+
+        public double SaturationR { get => _SaturationR; set { _SaturationR = value; NotifyPropertyChanged(); } }
+        private double _SaturationR = -1;
+
+        public double SaturationG { get => _SaturationG; set { _SaturationG = value; NotifyPropertyChanged(); } }
+        private double _SaturationG = -1;
+
+        public double SaturationB { get => _SaturationB; set { _SaturationB = value; NotifyPropertyChanged(); } }
+        private double _SaturationB = -1;
+
+
+        public List<ChannelConfig> ChannelConfigs { get; set; } = new List<ChannelConfig>{ new ChannelConfig(), new ChannelConfig(), new ChannelConfig() };
 
         public MotorConfig MotorConfig { get; set; } = new MotorConfig();
     }
@@ -64,6 +93,15 @@ namespace ColorVision.Device.Camera
         private int _BaudRate = 9600;
 
         public AutoFocusConfig AutoFocusConfig { get; set; } = new AutoFocusConfig();
+    }
+
+    public class ChannelConfig: ViewModelBase
+    {
+        public int Port { get => _Port; set { _Port = value; NotifyPropertyChanged(); } }
+        private int _Port = 0;
+
+        public ImageChannelType ChannelType { get => _ChannelType; set { _ChannelType = value; NotifyPropertyChanged(); } }
+        private ImageChannelType _ChannelType;
     }
 
 

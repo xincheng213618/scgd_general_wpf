@@ -15,8 +15,7 @@ namespace ColorVision.Device.Camera
     {
         public DeviceCamera MQTTDeviceCamera { get; set; }
 
-        public CameraService Service { get => MQTTDeviceCamera.Service; }
-
+        public CameraDeviceService Service { get => MQTTDeviceCamera.DeviceService; }
 
         public DeviceCameraControl(DeviceCamera mQTTDeviceCamera)
         {
@@ -71,8 +70,18 @@ namespace ColorVision.Device.Camera
                 }
 
             };
+    
+            var ImageChannelTypeList = new[]{
+                 new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_X, "Channel_R"),
+                 new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_Y, "Channel_G"),
+                 new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_Z, "Channel_B")
+            };
+            chType1.ItemsSource = ImageChannelTypeList;
+            chType2.ItemsSource = ImageChannelTypeList;
+            chType3.ItemsSource = ImageChannelTypeList;
 
-            CameraID.ItemsSource = CameraService.CameraIDs;
+
+            //CameraID.ItemsSource = CameraDeviceService.CameraIDs;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

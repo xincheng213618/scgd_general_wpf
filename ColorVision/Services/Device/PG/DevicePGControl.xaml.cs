@@ -11,7 +11,7 @@ namespace ColorVision.Device.PG
     public partial class DevicePGControl : UserControl
     {
         public DevicePG DevicePG { get; set; }
-        public ServiceControl ServiceControl { get; set; }
+        public ServiceManager ServiceControl { get; set; }
 
         public DevicePGControl(DevicePG devicePG)
         {
@@ -33,7 +33,7 @@ namespace ColorVision.Device.PG
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            ServiceControl = ServiceControl.GetInstance();
+            ServiceControl = ServiceManager.GetInstance();
             this.DataContext = DevicePG;
 
             IsNet.Checked += IsNet_Checked;

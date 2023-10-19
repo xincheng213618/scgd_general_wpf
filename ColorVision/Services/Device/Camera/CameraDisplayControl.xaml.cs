@@ -12,6 +12,7 @@ using ColorVision.Template;
 using System.Security.Cryptography.X509Certificates;
 using MySqlX.XDevAPI.Common;
 using ColorVision.Services.Msg;
+using static Google.Protobuf.Reflection.FieldOptions.Types;
 
 namespace ColorVision.Device.Camera
 {
@@ -21,7 +22,7 @@ namespace ColorVision.Device.Camera
     /// </summary>
     public partial class CameraDisplayControl : UserControl
     {
-        public CameraService Service { get => Device.Service; }
+        public CameraDeviceService Service { get => Device.DeviceService; }
 
         public DeviceCamera Device { get; set; }
 
@@ -55,10 +56,6 @@ namespace ColorVision.Device.Camera
             {
                 CameraVideoSetButton.Visibility = ComboxCameraTakeImageMode.SelectedValue is TakeImageMode mode && mode == TakeImageMode.Live ? Visibility.Visible : Visibility.Collapsed;
             };
-
-            ComCalibration.ItemsSource = from e1 in Enum.GetValues(typeof(CalibrationType1)).Cast<CalibrationType1>()
-                                         select new KeyValuePair<CalibrationType1, string>(e1, e1.ToString());
-            ComCalibration.SelectedIndex = 1;
 
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
             {
@@ -395,6 +392,25 @@ namespace ColorVision.Device.Camera
 
                 }
             }
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void SetChannel(object sender, RoutedEventArgs e)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "SetParam",
+                Params = new Dictionary<string, object>() { { "Func",new List<ParamFunction> (){
+                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 0 }, { "nPort", Service.Config.ChannelConfigs[0].Port },{ "eImgChlType", (int)Service.Config.ChannelConfigs[0].ChannelType } } },
+                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 1 }, { "nPort", Service.Config.ChannelConfigs[1].Port },{ "eImgChlType", (int)Service.Config.ChannelConfigs[1].ChannelType } } },
+                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 2 }, { "nPort", Service.Config.ChannelConfigs[2].Port },{ "eImgChlType", (int)Service.Config.ChannelConfigs[2].ChannelType } } },
+                } } }
+            };
+            Service.PublishAsyncClient(msg);
         }
     }
 }
