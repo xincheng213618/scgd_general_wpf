@@ -71,6 +71,7 @@ namespace ColorVision
             this.Focusable = true;
             Zoombox1.LayoutUpdated += Zoombox1_LayoutUpdated;
 
+
             ImageShow.VisualsAdd += (s, e) =>
             {
                 if (s is IDrawingVisual visual && !DrawingVisualLists.Contains(visual) && s is Visual visual1)

@@ -57,17 +57,6 @@ namespace ColorVision.Device.Camera
                 CameraVideoSetButton.Visibility = ComboxCameraTakeImageMode.SelectedValue is TakeImageMode mode && mode == TakeImageMode.Live ? Visibility.Visible : Visibility.Collapsed;
             };
 
-
-            var ImageChannelTypeList = new[]{
-                 new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_X, "Channel_X"),
-                 new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_Y, "Channel_Y"),
-                 new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_Z, "Channel_Z")
-            };
-            chType1.ItemsSource = ImageChannelTypeList;
-            chType2.ItemsSource = ImageChannelTypeList;
-            chType3.ItemsSource = ImageChannelTypeList;
-
-
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
             {
                 List<KeyValuePair<string, int>> KeyValues = new List<KeyValuePair<string, int>>();
@@ -412,19 +401,16 @@ namespace ColorVision.Device.Camera
 
         private void SetChannel(object sender, RoutedEventArgs e)
         {
-            if (chType1.SelectedValue is ImageChannelType ImageChannelType1 && chType2.SelectedValue is ImageChannelType ImageChannelType2 && chType3.SelectedValue is ImageChannelType ImageChannelType3 )
+            MsgSend msg = new MsgSend
             {
-                MsgSend msg = new MsgSend
-                {
-                    EventName = "SetParam",
-                    Params = new Dictionary<string, object>() { { "Func",new List<ParamFunction> (){
-                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 0 }, { "nPort", int.Parse(cfwport1.Text) },{ "eImgChlType", (int)ImageChannelType1 } } },
-                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 1 }, { "nPort", int.Parse(cfwport2.Text) },{ "eImgChlType", (int)ImageChannelType2 } } },
-                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 2 }, { "nPort", int.Parse(cfwport3.Text) },{ "eImgChlType", (int)ImageChannelType3 } } },
+                EventName = "SetParam",
+                Params = new Dictionary<string, object>() { { "Func",new List<ParamFunction> (){
+                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 0 }, { "nPort", Service.Config.ChannelConfigs[0].Port },{ "eImgChlType", (int)Service.Config.ChannelConfigs[0].ChannelType } } },
+                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 1 }, { "nPort", Service.Config.ChannelConfigs[1].Port },{ "eImgChlType", (int)Service.Config.ChannelConfigs[1].ChannelType } } },
+                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 2 }, { "nPort", Service.Config.ChannelConfigs[2].Port },{ "eImgChlType", (int)Service.Config.ChannelConfigs[2].ChannelType } } },
                 } } }
-                };
-                Service.PublishAsyncClient(msg);
-            }
+            };
+            Service.PublishAsyncClient(msg);
         }
     }
 }

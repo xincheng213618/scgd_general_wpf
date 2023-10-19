@@ -295,9 +295,15 @@ namespace ColorVision.Template
                 Save2DB(item.Value);
         }
 
+
+
         public void Save2DB<T>(T value) where T : ParamBase
         {
             modService.Save(value);
+        }
+        public void Save2DB(PoiParam poiParam)
+        {
+            poiService.Save(poiParam);
         }
 
 

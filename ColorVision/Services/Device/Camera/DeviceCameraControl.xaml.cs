@@ -70,11 +70,11 @@ namespace ColorVision.Device.Camera
                 }
 
             };
-
+    
             var ImageChannelTypeList = new[]{
-                 new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_X, "Channel_X"),
-                 new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_Y, "Channel_Y"),
-                 new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_Z, "Channel_Z")
+                 new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_X, "Channel_R"),
+                 new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_Y, "Channel_G"),
+                 new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_Z, "Channel_B")
             };
             chType1.ItemsSource = ImageChannelTypeList;
             chType2.ItemsSource = ImageChannelTypeList;
