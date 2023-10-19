@@ -28,7 +28,7 @@ namespace ColorVision.Device.Algorithm
     }
     public delegate void MQTTAlgorithmHandler(object sender, AlgorithmEvent arg);
 
-    public class AlgorithmService : BaseService<AlgorithmConfig>
+    public class AlgorithmService : BaseDevService<AlgorithmConfig>
     {
         public event DeviceStatusChangedHandler DeviceStatusChanged;
         public event MQTTAlgorithmHandler OnAlgorithmEvent;

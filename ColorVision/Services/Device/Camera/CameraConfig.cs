@@ -75,7 +75,9 @@ namespace ColorVision.Device.Camera
         private double _SaturationB = -1;
 
 
-        public List<ChannelConfig> ChannelConfigs { get; set; } = new List<ChannelConfig>{ new ChannelConfig(), new ChannelConfig(), new ChannelConfig() };
+        public ChannelConfig[] ChannelConfigs { get; set; } = new ChannelConfig[3]{
+            new ChannelConfig() {ChannelType =ImageChannelType.Gray_X }, new ChannelConfig(){ChannelType =ImageChannelType.Gray_Y }, new ChannelConfig(){ ChannelType =ImageChannelType.Gray_Z}
+        };
 
         public MotorConfig MotorConfig { get; set; } = new MotorConfig();
     }
@@ -98,10 +100,26 @@ namespace ColorVision.Device.Camera
     public class ChannelConfig: ViewModelBase
     {
         public int Port { get => _Port; set { _Port = value; NotifyPropertyChanged(); } }
-        private int _Port = 0;
+        private int _Port ;
 
-        public ImageChannelType ChannelType { get => _ChannelType; set { _ChannelType = value; NotifyPropertyChanged(); } }
+        public ImageChannelType ChannelType { get => _ChannelType; set { if (_ChannelType == value) return; _ChannelType = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ChannelTypeString)); } }
         private ImageChannelType _ChannelType;
+
+
+        [JsonIgnore]
+        public string ChannelTypeString
+        {
+            get 
+            {
+                return ChannelType switch
+                {
+                    ImageChannelType.Gray_X => "Channel_R",
+                    ImageChannelType.Gray_Y => "Channel_G",
+                    ImageChannelType.Gray_Z => "Channel_B",
+                    _ => ChannelType.ToString(),
+                };
+            }
+        }
     }
 
 

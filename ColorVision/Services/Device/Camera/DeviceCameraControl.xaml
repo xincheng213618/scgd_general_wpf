@@ -123,7 +123,7 @@
                                                         </DockPanel>
                                                         <DockPanel >
                                                             <TextBlock Text="chType" Width="80"/>
-                                                            <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ChannelConfigs[0].ChannelType}"/>
+                                                            <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ChannelConfigs[0].ChannelTypeString,Mode=OneWay}"/>
                                                         </DockPanel>
                                                     </UniformGrid>
                                                     <UniformGrid Columns="1" Rows="2" Margin="0,2">
@@ -133,7 +133,7 @@
                                                         </DockPanel>
                                                         <DockPanel >
                                                             <TextBlock Text="chType" Width="80"/>
-                                                            <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ChannelConfigs[1].ChannelType}"/>
+                                                            <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ChannelConfigs[1].ChannelTypeString,Mode=OneWay}"/>
                                                         </DockPanel>
                                                     </UniformGrid>
                                                     <UniformGrid Columns="1" Rows="2" Margin="0,2">
@@ -143,7 +143,7 @@
                                                         </DockPanel>
                                                         <DockPanel >
                                                             <TextBlock Text="chType" Width="80"/>
-                                                            <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ChannelConfigs[2].ChannelType}"/>
+                                                            <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ChannelConfigs[2].ChannelTypeString ,Mode=OneWay}"/>
                                                         </DockPanel>
                                                     </UniformGrid>
                                                 </UniformGrid>
