@@ -131,11 +131,11 @@ namespace ColorVision.Device.Camera
         {
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
             DeviceStatus = DeviceStatus.UnInit;
-
-            //Connected += (s, e) =>
-            //{
-            //    GetAllCameraID();
-            //};
+            GetAllCameraID();
+            Connected += (s, e) =>
+            {
+                GetAllCameraID();
+            };
         }
         private void MQTTCamera_MsgReturnChanged(MsgReturn msg)
         {
