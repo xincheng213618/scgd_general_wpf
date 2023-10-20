@@ -30,25 +30,29 @@ namespace ColorVision.Template
         public bool SelectedDistortion { get => _SelectedDistortion; set { _SelectedDistortion = value; NotifyPropertyChanged(); } }
         private bool _SelectedDistortion;
 
-        [JsonProperty("FileName_DefectWPoint")]
-        public string FileNameDefectWPoint { get => _FileNameDefectWPoint; set { _FileNameDefectWPoint = value; NotifyPropertyChanged(); } }
-        private string _FileNameDefectWPoint;
+        [JsonProperty("FileName_DefectPoint")]
+        public string FileNameDefectPoint { get => _FileNameDefectPoint; set { _FileNameDefectPoint = value; NotifyPropertyChanged(); } }
+        private string _FileNameDefectPoint;
 
-        [JsonProperty("Selected_DefectWPoint")]
-        public bool SelectedDefectWPoint { get => _SelectedDefectWPoint; set { _SelectedDefectWPoint = value; NotifyPropertyChanged(); } }
-        private bool _SelectedDefectWPoint;
+        [JsonProperty("Selected_DefectPoint")]
+        public bool SelectedDefectPoint { get => _SelectedDefectPoint; set { _SelectedDefectPoint = value; NotifyPropertyChanged(); } }
+        private bool _SelectedDefectPoint;
 
-        [JsonProperty("FileName_DefectBPoint")]
-        public string FileNameDefectBPoint { get => _FileNameDefectBPoint; set { _FileNameDefectBPoint = value; NotifyPropertyChanged(); } }
-        private string _FileNameDefectBPoint;
-
-       [JsonProperty("Selected_DefectBPoint")]
-        public bool SelectedDefectBPoint { get => _SelectedDefectBPoint; set { _SelectedDefectBPoint = value; NotifyPropertyChanged(); } }
-        private bool _SelectedDefectBPoint;
 
         [JsonProperty("FileName_Luminance")]
         public string FileNameLuminance { get => _FileNameLuminance; set { _FileNameLuminance = value; NotifyPropertyChanged(); } }
         private string _FileNameLuminance;
+
+
+        public bool SelectedColorShift { get => _SelectedColorShift; set { _SelectedColorShift = value; NotifyPropertyChanged(); } }
+        private bool _SelectedColorShift;
+
+        [JsonProperty("FileName_ColorShift")]
+        public string FileNameColorShift { get => _FileNameColorShift; set { _FileNameColorShift = value; NotifyPropertyChanged(); } }
+        private string _FileNameColorShift;
+
+
+
 
 
         private bool _SelectedLuminance;

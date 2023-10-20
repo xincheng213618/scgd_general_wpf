@@ -55,14 +55,14 @@ namespace ColorVision.Template
                         case "DSNU":
                             CalibrationParam.FileNameDSNU = FileName;
                             break;
-                        case "DefectWPoint":
-                            CalibrationParam.FileNameDefectWPoint = FileName;
-                            break;
-                        case "DefectBPoint":
-                            CalibrationParam.FileNameDefectBPoint = FileName;
+                        case "DefectPoint":
+                            CalibrationParam.FileNameDefectPoint = FileName;
                             break;
                         case "Distortion":
                             CalibrationParam.FileNameDistortion = FileName;
+                            break;
+                        case "ColorShift":
+                            CalibrationParam.FileNameColorShift = FileName;
                             break;
                         case "Luminance":
                             CalibrationParam.FileNameLuminance = FileName;
