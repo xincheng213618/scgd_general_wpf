@@ -26,6 +26,8 @@
     <None Remove="Assets\Image\ColorVision.png" />
     <None Remove="Assets\Image\ColorVision1.ico" />
     <None Remove="Assets\Image\connect.png" />
+    <None Remove="Assets\Image\pictureBox1.Image.000000.png" />
+    <None Remove="Assets\Image\pictureBox1.Image.ffffff.png" />
     <None Remove="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
     <None Remove="Assets\Image\pictureBox1.Image.png" />
   </ItemGroup>  
@@ -68,6 +70,12 @@
     <Reference Include="ST.Library.UI">
       <HintPath>..\DLL\ST.Library.UI.dll</HintPath>
     </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\Image\pictureBox1.Image.000000.png" />
+    <Resource Include="Assets\Image\pictureBox1.Image.ffffff.png" />
+    <Resource Include="Assets\Image\pictureBox1.Image.png" />
   </ItemGroup>
 
   <ItemGroup>

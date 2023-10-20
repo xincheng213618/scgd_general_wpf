@@ -7,7 +7,7 @@
              xmlns:local="clr-namespace:ColorVision"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" x:Class="ColorVision.PseudoColor"
              mc:Ignorable="d" 
-             d:DesignHeight="400" d:DesignWidth="220" Width="450" Height="400">
+             d:DesignHeight="400" d:DesignWidth="220" Width="450" Height="400" Initialized="UserControl_Initialized">
     <Grid>
 
         <Grid.RowDefinitions>
@@ -23,38 +23,57 @@
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
         <Label x:Name="label" Grid.Row="1" Grid.Column="0" Content="等级:" HorizontalAlignment="Stretch" Margin="0,0,0,0" VerticalAlignment="Stretch"/>
-        <hc:TextBox x:Name="textBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,0" TextWrapping="Wrap" Text="TextBox"/>
+        <hc:TextBox x:Name="textBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,0" TextWrapping="Wrap" Text="10"/>
         <Grid Margin="0,0,0,0" Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="0">
-            <DataGrid AutoGenerateColumns="False"
-              CanUserAddRows="False" CanUserDeleteRows="False" 
-              CanUserReorderColumns="False" CanUserResizeColumns="False"
-              CanUserResizeRows="False" ColumnHeaderHeight="30"
-              FontSize="16" GridLinesVisibility="Horizontal" 
-              HeadersVisibility="Column" IsReadOnly="True" x:Name="datagrid"
-              ItemsSource="{Binding UserDB}" RowHeight="28">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Binding="{Binding UserName}" Header="像素范围"/>
-                    <DataGridTextColumn Binding="{Binding UserSex}" Header="颜色"/>
-                </DataGrid.Columns>
-            </DataGrid>
+
+            <ListView x:Name="dataGrid1">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}">
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.View >
+                    <GridView>
+                        <GridViewColumn  Header="像素范围">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:DataGridValue}">
+                                    <TextBlock Text="{ Binding  ValText}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn  Header="颜色">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:DataGridValue}">
+                                    <Label Content=" " Background="{Binding Color}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+           
         </Grid>
 
         <StackPanel Grid.Column="2"  Grid.RowSpan="4" Orientation="Vertical">
             <TextBox Text="{Binding ValueEnd, ElementName=RangeSlider1, StringFormat=#0}"  Width="20" Style="{StaticResource BaseStyle}" BorderThickness="0"  HorizontalContentAlignment="Center" HorizontalAlignment="Right"/>
             <Grid>
-                <Border  CornerRadius="9" Width="18" Margin="1,0,0,0" HorizontalAlignment="Right" >
-                    <Border.Background>
-                        <!--<LinearGradientBrush  StartPoint="0,0" EndPoint="0,1">
-                            <GradientStop Offset="0" Color="#BBBBBB"/>
-                            <GradientStop Offset="1" Color="#000000"/>
-                        </LinearGradientBrush>-->
-                        <ImageBrush ImageSource="/Assets/Image/pictureBox1.Image.png" TileMode="Tile" Stretch="Uniform" ViewportUnits="Absolute"/>
-                    </Border.Background>
-                </Border>
-
-                <hc:RangeSlider x:Name="RangeSlider1" FocusVisualStyle="{x:Null}" Height="370" Width="20" Style="{StaticResource RangeSliderBaseStyle}" Background="Transparent" hc:TipElement.Visibility="Visible" BorderBrush="Transparent" hc:TipElement.Placement="Right" hc:TipElement.StringFormat="#0" ValueEnd="255"  Maximum="255" ValueStart="0"  Minimum="0" Orientation="Vertical" HorizontalAlignment="Right"/>
+                <Grid Height="370">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="0"  x:Name="RowDefinitionStart"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="0"  x:Name="RowDefinitionEnd"/>
+                    </Grid.RowDefinitions>
+                    <Border Grid.Row="0"  CornerRadius="9" Width="18" Margin="1,0,0,0" HorizontalAlignment="Right">
+                        <Image Source="/Assets/Image/pictureBox1.Image.ffffff.png" Stretch="Fill"  />
+                    </Border>
+                    <Border Grid.Row="1"  CornerRadius="9" Width="18" Margin="1,0,0,0" HorizontalAlignment="Right" >
+                        <Image Source="/Assets/Image/pictureBox1.Image.png" Stretch="Fill" VerticalAlignment="Top"/>
+                    </Border>
+                    <Border Grid.Row="2"  CornerRadius="9" Width="18" Margin="1,0,0,0" HorizontalAlignment="Right" >
+                        <Image Source="/Assets/Image/pictureBox1.Image.000000.png" Stretch="Fill" VerticalAlignment="Top"/>
+                    </Border>
+                </Grid>
+                <hc:RangeSlider x:Name="RangeSlider1" FocusVisualStyle="{x:Null}" Height="370" Width="20" Style="{StaticResource RangeSliderBaseStyle}" Background="Transparent" hc:TipElement.Visibility="Visible" BorderBrush="Transparent" hc:TipElement.Placement="Right" hc:TipElement.StringFormat="#0" ValueEnd="255"  Maximum="255" ValueStart="0"  Minimum="0" Orientation="Vertical" HorizontalAlignment="Right" ValueChanged="RangeSlider1_ValueChanged"/>
             </Grid>
-
             <TextBox  Text="{Binding ValueStart, ElementName=RangeSlider1, StringFormat=#0}" Style="{StaticResource BaseStyle}" Width="20" BorderThickness="0" HorizontalContentAlignment="Center" HorizontalAlignment="Right"/>
         </StackPanel>
 
