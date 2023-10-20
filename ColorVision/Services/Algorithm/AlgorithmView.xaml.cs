@@ -1,5 +1,6 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604
 using ColorVision.MySql.DAO;
+using HandyControl.Data;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using System;
@@ -28,6 +29,20 @@ namespace ColorVision.Device.Algorithm
         public string SerialNumber { get { return _SerialNumber; } set { _SerialNumber = value; OnPropertyChanged(new PropertyChangedEventArgs("SerialNumber")); } }
         public string RecvTime { get { return _RecvTime; } set { _RecvTime = value; OnPropertyChanged(new PropertyChangedEventArgs("RecvTime")); } }
 
+        public string ResultTypeDis { get {
+                string result = "";
+                switch (_ResultType)
+                {
+                    case POIResultType.XY_UV:
+                        result = "色度";
+                        break;
+                    case POIResultType.Y:
+                        result = "亮度";
+                        break;
+                    default:
+                        break;
+                }
+                return result; } }
         public POIResultType ResultType
         {
             get { return _ResultType; }
@@ -186,7 +201,7 @@ namespace ColorVision.Device.Algorithm
 
             GridView gridView = new GridView();
             List<string> headers = new List<string> { "序号","批次号", "测量时间","类型" };
-            List<string> bdheaders = new List<string> { "Id", "SerialNumber", "RecvTime", "ResultType" };
+            List<string> bdheaders = new List<string> { "Id", "SerialNumber", "RecvTime", "ResultTypeDis" };
             for (int i = 0; i < headers.Count; i++)
             {
                 gridView.Columns.Add(new GridViewColumn() { Header = headers[i], Width = 100, DisplayMemberBinding = new Binding(bdheaders[i]) });

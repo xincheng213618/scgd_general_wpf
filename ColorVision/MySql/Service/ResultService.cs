@@ -10,6 +10,7 @@ namespace ColorVision.MySql.Service
         private BatchResultMasterDao batchDao;
 
         private PoiResultDao poiResultDao;
+        private POIPointResultDao poiPointResultDao;
 
 
         public ResultService()
@@ -18,6 +19,7 @@ namespace ColorVision.MySql.Service
             smuDao = new SMUResultDao();
             batchDao = new BatchResultMasterDao();
             poiResultDao = new PoiResultDao();
+            poiPointResultDao = new POIPointResultDao();
         }
 
         internal int SpectumDeleteById(int id)
@@ -26,6 +28,8 @@ namespace ColorVision.MySql.Service
         }
 
         internal List<PoiResultModel> PoiSelectByBatchID(int batchid) => poiResultDao.GetAllByBatchid(batchid);
+        internal List<POIPointResultModel> PoiPointSelectByBatchID(int batchid) => poiPointResultDao.GetAllByBatchid(batchid);
+        internal List<POIPointResultModel> PoiPointSelectByBatchCode(string sn) => poiPointResultDao.selectBySN(sn);
 
         internal List<PoiResultModel> PoiSelectBySN(string sn) 
         {

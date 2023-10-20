@@ -32,6 +32,8 @@ namespace ColorVision.Device.POI
 
         private IPendingHandler handler { get; set; }
 
+        private ResultService resultService { get; set; }
+
 
         public AlgorithmDisplayControl(DeviceAlgorithm device)
         {
@@ -57,17 +59,47 @@ namespace ColorVision.Device.POI
                 case MQTTAlgorithmEventEnum.Event_POI_GetData:
                     string poiData = JsonConvert.SerializeObject(arg.Data);
                     MQTTPOIGetDataResult poiResp = JsonConvert.DeserializeObject<MQTTPOIGetDataResult>(poiData);
-                    if(poiResp.ResultType == POIResultType.XY_UV)
+                    var poiDbResults = resultService.PoiPointSelectByBatchCode(arg.SerialNumber);
+                    if (poiResp.ResultType == POIResultType.XY_UV)
                     {
+                        List<POIResultCIExyuv> poiResultData;
+                        if (poiResp.HasRecord)
+                        {
+                            poiResultData = JsonConvert.DeserializeObject<MQTTPOIGetDataCIExyuvResult>(poiData).Results;
+                        }
+                        else
+                        {
+                            poiResultData = new List<POIResultCIExyuv>();
+                            foreach (var item in poiDbResults)
+                            {
+                                poiResultData.Add(new POIResultCIExyuv(new POIPoint((int)item.PoiId, (int)item.Pid, item.Name, (POIPointTypes)item.Type, (int)item.PixX, (int)item.PixY, (int)item.PixWidth, (int)item.PixHeight),
+                                   JsonConvert.DeserializeObject<POIDataCIExyuv>(item.Value)));
+                            }
+                        }
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            Device.View.PoiDataDraw(arg.SerialNumber, JsonConvert.DeserializeObject<MQTTPOIGetDataCIExyuvResult>(poiData).Results);
+                            Device.View.PoiDataDraw(arg.SerialNumber, poiResultData);
                         });
                     }else if (poiResp.ResultType == POIResultType.Y)
                     {
+                        List<POIResultCIEY> poiResultData;
+                        if (poiResp.HasRecord)
+                        {
+                            poiResultData = JsonConvert.DeserializeObject<MQTTPOIGetDataCIEYResult>(poiData).Results;
+                        }
+                        else
+                        {
+                            poiResultData = new List<POIResultCIEY>();
+                            foreach (var item in poiDbResults)
+                            {
+                                poiResultData.Add(new POIResultCIEY(new POIPoint((int)item.PoiId, (int)item.Pid, item.Name, (POIPointTypes)item.Type, (int)item.PixX, (int)item.PixY, (int)item.PixWidth, (int)item.PixHeight),
+                                   JsonConvert.DeserializeObject<POIDataCIEY>(item.Value)));
+                            }
+                        }
+
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            Device.View.PoiDataDraw(arg.SerialNumber, JsonConvert.DeserializeObject<MQTTPOIGetDataCIEYResult>(poiData).Results);
+                            Device.View.PoiDataDraw(arg.SerialNumber, poiResultData);
                         });
                     }
 
@@ -124,7 +156,7 @@ namespace ColorVision.Device.POI
             };
             View.View.ViewIndex = -1;
 
-
+            resultService = new ResultService();
         }
 
         private void PoiClick(object sender, RoutedEventArgs e)
@@ -157,7 +189,7 @@ namespace ColorVision.Device.POI
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            var a = new ResultService().PoiSelectByBatchID(10);
+            var a = resultService.PoiSelectByBatchID(10);
             Device.View.PoiDataDraw(a);
         }
 
