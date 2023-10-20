@@ -61,17 +61,17 @@
                         </Border.BorderBrush>
                         <TreeView x:Name="SeriesExportTreeView1" Margin="2">
                             <TreeView.Resources>
-                                <HierarchicalDataTemplate DataType="{x:Type local:MQTTServiceKind}" ItemsSource="{Binding VisualChildren}" >
+                                <HierarchicalDataTemplate DataType="{x:Type local:ServiceKind}" ItemsSource="{Binding VisualChildren}" >
                                     <StackPanel >
                                         <TextBlock Text="{Binding Name}"/>
                                     </StackPanel>
                                 </HierarchicalDataTemplate>
-                                <HierarchicalDataTemplate DataType="{x:Type local:MQTTService}" ItemsSource="{Binding VisualChildren}" >
+                                <HierarchicalDataTemplate DataType="{x:Type local:ServiceViewMode}" ItemsSource="{Binding VisualChildren}" >
                                     <StackPanel >
                                         <TextBlock Text="{Binding Name}"/>
                                     </StackPanel>
                                 </HierarchicalDataTemplate>
-                                <HierarchicalDataTemplate DataType="{x:Type mqtt:BaseDevice}" ItemsSource="{Binding VisualChildren}" >
+                                <HierarchicalDataTemplate DataType="{x:Type mqtt:BaseChannel}" ItemsSource="{Binding VisualChildren}" >
                                     <StackPanel>
                                         <TextBlock Text="{Binding Name}"/>
                                     </StackPanel>
@@ -113,17 +113,17 @@
                             </Border.BorderBrush>
                             <TreeView x:Name="SeriesExportTreeView2"  AllowDrop="True"  Margin="2">
                                 <TreeView.Resources>
-                                    <HierarchicalDataTemplate DataType="{x:Type local:MQTTServiceKind}" ItemsSource="{Binding VisualChildren}" >
+                                    <HierarchicalDataTemplate DataType="{x:Type local:ServiceKind}" ItemsSource="{Binding VisualChildren}" >
                                         <StackPanel >
                                             <TextBlock Text="{Binding Name}"/>
                                         </StackPanel>
                                     </HierarchicalDataTemplate>
-                                    <HierarchicalDataTemplate DataType="{x:Type local:MQTTService}" ItemsSource="{Binding VisualChildren}" >
+                                    <HierarchicalDataTemplate DataType="{x:Type local:ServiceViewMode}" ItemsSource="{Binding VisualChildren}" >
                                         <StackPanel >
                                             <TextBlock Text="{Binding Name}"/>
                                         </StackPanel>
                                     </HierarchicalDataTemplate>
-                                    <HierarchicalDataTemplate DataType="{x:Type mqtt:BaseDevice}" ItemsSource="{Binding VisualChildren}" >
+                                    <HierarchicalDataTemplate DataType="{x:Type mqtt:BaseChannel}" ItemsSource="{Binding VisualChildren}" >
                                         <StackPanel>
                                             <TextBlock Text="{Binding Name}"/>
                                         </StackPanel>

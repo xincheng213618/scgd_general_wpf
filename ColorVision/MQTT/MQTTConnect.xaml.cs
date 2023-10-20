@@ -1,5 +1,4 @@
 ﻿using ColorVision.MVVM;
-using ColorVision.SettingUp;
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
@@ -123,12 +122,20 @@ namespace ColorVision.MQTT
                 MQTTConfigs.Remove(config);
             }
         }
-
-        private void Button_Click_Test2(object sender, RoutedEventArgs e)
+        private void Button_Click_Copy(object sender, RoutedEventArgs e)
         {
-            MQTTConfig config = new MQTTConfig() { };
-            MQTTConfig.CopyTo(config);
-            MQTTConfigs.Add(config);
+            MQTTConfig  mQTTConfig = new MQTTConfig() { };
+            mQTTConfig.Name = mQTTConfig.Name + "_1";
+
+            MQTTConfig.CopyTo(mQTTConfig);
+            MQTTConfigs.Add(mQTTConfig);
+        }
+
+        private void Button_Click_New(object sender, RoutedEventArgs e)
+        {
+            MQTTConfig newCfg = new MQTTConfig();
+            newCfg.Name = "New Profile";
+            MQTTConfigs.Add(newCfg);
         }
     }
 }

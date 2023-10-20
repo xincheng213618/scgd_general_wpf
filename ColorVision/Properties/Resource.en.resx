@@ -279,4 +279,28 @@
   <data name="Reseted" xml:space="preserve">
     <value>Reset Completed</value>
   </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Add" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="TesConnection" xml:space="preserve">
+    <value>Test connection</value>
+  </data>
+  <data name="Host" xml:space="preserve">
+    <value>Host</value>
+  </data>
+  <data name="Port" xml:space="preserve">
+    <value>Port</value>
+  </data>
+  <data name="Database" xml:space="preserve">
+    <value>Database</value>
+  </data>
+  <data name="UserName" xml:space="preserve">
+    <value>UserName</value>
+  </data>
+  <data name="UserPwd" xml:space="preserve">
+    <value>UserPwd</value>
+  </data>
 </root>

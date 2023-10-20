@@ -13,13 +13,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Image\**" />
-    <EmbeddedResource Remove="Image\**" />
-    <None Remove="Image\**" />
-    <Page Remove="Image\**" />
-  </ItemGroup>
-
-  <ItemGroup>
     <AdditionalFiles Remove="app.manifest" />
   </ItemGroup>
 	
@@ -35,13 +28,8 @@
     <None Remove="Assets\Image\connect.png" />
     <None Remove="Assets\Image\pictureBox1.Image.000000.png" />
     <None Remove="Assets\Image\pictureBox1.Image.ffffff.png" />
+    <None Remove="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
     <None Remove="Assets\Image\pictureBox1.Image.png" />
-    <None Remove="ColorVision.png" />
-    <None Remove="pictureBox1.Image.png" />
-  </ItemGroup>  
-
-  <ItemGroup>
-    <Content Include="Assets\Image\ColorVision.ico" />
   </ItemGroup>  
 
   <ItemGroup>
@@ -94,19 +82,10 @@
     <Compile Update="App.xaml.cs">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Compile>
-    <Compile Update="Device\Spectrum\SpectrumView.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Update="Device\Spectrum\DeviceSpectrumControl.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Update="Properties\Resource.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>Resource.resx</DependentUpon>
-    </Compile>
-    <Compile Update="Template\WindowTemplate - 复制.xaml.cs">
-      <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
 
@@ -128,6 +107,22 @@
     <EmbeddedResource Update="Properties\Resource.en.resx">
       <Generator></Generator>
     </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <_DeploymentManifestIconFile Remove="Assets\Image\ColorVision.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\Image\ColorVision.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\Image\ColorVision.png" />
+    <Resource Include="Assets\Image\ColorVision1.ico" />
+    <Resource Include="Assets\Image\connect.png" />
+    <Resource Include="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
+    <Resource Include="Assets\Image\pictureBox1.Image.png" />
   </ItemGroup>
 
 </Project>

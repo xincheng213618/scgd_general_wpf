@@ -1,8 +1,12 @@
-﻿using ColorVision.Draw;
+﻿using ColorVision.Device.Algorithm;
+using ColorVision.Draw;
 using ColorVision.Draw.Ruler;
 using ColorVision.Extension;
 using ColorVision.MVVM;
+using ColorVision.Template;
 using ColorVision.Util;
+using MQTTMessageLib.Algorithm;
+using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -70,6 +74,7 @@ namespace ColorVision
 
             this.Focusable = true;
             Zoombox1.LayoutUpdated += Zoombox1_LayoutUpdated;
+
 
             ImageShow.VisualsAdd += (s, e) =>
             {
@@ -674,6 +679,54 @@ namespace ColorVision
             window.Content = pseudoColor;
             window.Show();
 
+        }
+
+        public void AddPOIPoint(ObservableCollection<PoiResultData> poiResultDatas)
+        {
+            try
+            {
+                int i = 0;
+
+                foreach (var item in poiResultDatas)
+                {
+                    i++;
+                    switch (item.Point.PointType)
+                    {
+                        case POIPointTypes.Circle:
+                            DrawingVisualCircleWord Circle = new DrawingVisualCircleWord();
+                            Circle.Attribute.Center = new Point(item.Point.PixelX, item.Point.PixelY);
+                            Circle.Attribute.Radius = item.Point.Radius;
+                            Circle.Attribute.Brush = Brushes.Transparent;
+                            Circle.Attribute.Pen = new Pen(Brushes.Red, item.Point.Width / 30.0);
+                            //Circle.Attribute.ID = item.ID;
+                            //Circle.Attribute.Name = item.Name;
+                            Circle.Render();
+                            ImageShow.AddVisual(Circle);
+                            break;
+                        case POIPointTypes.Rect:
+                            DrawingVisualRectangleWord Rectangle = new DrawingVisualRectangleWord();
+                            Rectangle.Attribute.Rect = new Rect(item.Point.PixelX, item.Point.PixelY, item.Point.Width, item.Point.Height);
+                            Rectangle.Attribute.Brush = Brushes.Transparent;
+                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.Point.Width / 30.0);
+                            //Rectangle.Attribute.ID = item.ID;
+                            //Rectangle.Attribute.Name = item.Name;
+                            Rectangle.Render();
+                            ImageShow.AddVisual(Rectangle);
+                            break;
+                        //case RiPointTypes.Mask:
+                        //    break;
+                    }
+                }
+            }
+            catch
+            {
+
+            }
+        }
+
+        public void ResetPOIPoint()
+        {
+            ImageShow.Clear();
         }
     }
 }

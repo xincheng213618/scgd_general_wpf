@@ -10,7 +10,7 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         ShowInTaskbar="False"
-        Title="WindowTemplate" Height="500" Width="600"  MinWidth="600" Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner" Initialized="Window_Initialized">
+        Title="WindowTemplate" Height="600" Width="700"  MinWidth="600" Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner" Initialized="Window_Initialized">
     <Grid Margin="5">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="2*"/>

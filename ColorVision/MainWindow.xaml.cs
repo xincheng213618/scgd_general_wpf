@@ -14,6 +14,7 @@ using ColorVision.Services;
 using ColorVision.MySql.DAO;
 using NPOI.SS.Formula.Functions;
 using System.Collections.Generic;
+using ColorVision.Services.Msg;
 
 namespace ColorVision
 {
@@ -84,9 +85,6 @@ namespace ColorVision
             StatusBarGrid.DataContext = GlobalSetting.GetInstance();
             MenuStatusBar.DataContext = GlobalSetting.GetInstance().SoftwareConfig;
 
-            DeviceAlgorithm deviceAlgorithm = new DeviceAlgorithm(new MySql.DAO.SysResourceModel());
-            SPDisplay.Children.Add(deviceAlgorithm.Control);
-
             FlowDisplayControl flowDisplayControl = new FlowDisplayControl();
             SPDisplay.Children.Insert(0, flowDisplayControl);
 
@@ -105,13 +103,13 @@ namespace ColorVision
 
         private void MenuItem12_Click(object sender, RoutedEventArgs e)
         {
-            new MQTTList() { Owner = this }.Show();
+            new MsgList() { Owner = this }.Show();
         }
 
         private void StackPanelMQTT_Initialized(object sender, EventArgs e)
         {
             if (sender is StackPanel stackPanel)
-                stackPanel.Children.Add(ServiceControl.GetInstance().StackPanel);
+                stackPanel.Children.Add(ServiceManager.GetInstance().StackPanel);
         }
 
         private void ViewGrid_Click(object sender, RoutedEventArgs e)

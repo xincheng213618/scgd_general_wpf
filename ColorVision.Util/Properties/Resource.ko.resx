@@ -168,4 +168,16 @@
   <data name="ru" xml:space="preserve">
     <value>러시아인</value>
   </data>
+  <data name="ThemeLight" xml:space="preserve">
+    <value>밝은</value>
+  </data>
+  <data name="ThemeDark" xml:space="preserve">
+    <value>진한 색상</value>
+  </data>
+  <data name="Theme" xml:space="preserve">
+    <value>테마</value>
+  </data>
+  <data name="UseSystem" xml:space="preserve">
+    <value>시스템 테마 사용</value>
+  </data>
 </root>

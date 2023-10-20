@@ -48,9 +48,6 @@ namespace cvColorVision
         Empty_Num = 13,
     };
 
-
-
-
     public enum TakeImageMode
     {
         [Description("Measure_Normal")]

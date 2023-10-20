@@ -154,7 +154,7 @@
     <value>Simplified Chinese</value>
   </data>
   <data name="zh-Hant" xml:space="preserve">
-    <value>traditional Chinese</value>
+    <value>Traditional Chinese</value>
   </data>
   <data name="ja" xml:space="preserve">
     <value>Japanese</value>
@@ -167,5 +167,17 @@
   </data>
   <data name="ru" xml:space="preserve">
     <value>Russian</value>
+  </data>
+  <data name="ThemeLight" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="ThemeDark" xml:space="preserve">
+    <value>Drak</value>
+  </data>
+  <data name="Theme" xml:space="preserve">
+    <value>Theme</value>
+  </data>
+  <data name="UseSystem" xml:space="preserve">
+    <value>UseSystem</value>
   </data>
 </root>

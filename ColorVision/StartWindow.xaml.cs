@@ -51,6 +51,7 @@ namespace ColorVision
             //检测服务连接情况，需要在界面启动之后，否则会出现问题。因为界面启动之后才会初始化MQTTControl和MySqlControl，所以代码上问题不大
             MQTTControl.GetInstance();
             MySqlControl.GetInstance();
+            ServiceManager.GetInstance();
 
             SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
             TextBoxMsg.Text += Environment.NewLine + "检测服务连接情况";
@@ -69,7 +70,14 @@ namespace ColorVision
                 mQTTConnect.ShowDialog();
                 TextBoxMsg.Text += $"{Environment.NewLine}MQTT服务连接: {(MQTTControl.GetInstance().IsConnect ? "成功" : "失败")}";
             }
-            RCServiceControl.GetInstance().RCRegist();
+            TextBoxMsg.Text += $"{Environment.NewLine}注册: {(ServiceManager.GetInstance().rcService.IsRegisted() ? "成功" : "失败")}";
+            if (!ServiceManager.GetInstance().rcService.IsRegisted() && SoftwareConfig.IsUseRCService)
+            {
+                RCServiceConnect rcServiceConnect = new RCServiceConnect() { Owner = this }; 
+                rcServiceConnect.ShowDialog();
+                await Task.Delay(200);
+                TextBoxMsg.Text += $"{Environment.NewLine}注册: {(ServiceManager.GetInstance().rcService.IsRegisted() ? "成功" : "失败")}";
+            }
             await Task.Delay(100);
             TextBoxMsg.Text += Environment.NewLine + "初始化服务" + MySqlControl.GetInstance().IsConnect;
             try
@@ -77,7 +85,7 @@ namespace ColorVision
                 if (!GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting.IsDeFaultOpenService)
                     new WindowDevices() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                 else
-                    ServiceControl.GetInstance().GenContorl();
+                    ServiceManager.GetInstance().GenContorl();
             }
             catch
             {

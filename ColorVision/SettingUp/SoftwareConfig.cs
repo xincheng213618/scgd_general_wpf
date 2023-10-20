@@ -4,6 +4,7 @@ using ColorVision.MySql;
 using ColorVision.RC;
 using ColorVision.SettingUp;
 using ColorVision.Template;
+using ColorVision.User;
 using System;
 using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;

@@ -1,6 +1,5 @@
 ﻿using ColorVision.HotKey;
 using ColorVision.Solution;
-using ColorVision.Solution.RecentFile;
 using ColorVision.SettingUp;
 using ColorVision.Template;
 using System;
@@ -18,6 +17,8 @@ using System.Diagnostics;
 using ColorVision.Util;
 using ColorVision.Services;
 using ColorVision.RC;
+using ColorVision.RecentFile;
+using ColorVision.Lincense;
 
 namespace ColorVision
 {
@@ -276,7 +277,7 @@ namespace ColorVision
         }
         private void License_Click(object sender, RoutedEventArgs e)
         {
-            new LicenseManger() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new LicenseMangerWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         private void MenuItem_Exit(object sender, RoutedEventArgs e)

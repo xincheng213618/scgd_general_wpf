@@ -1,4 +1,5 @@
 ﻿using ColorVision.MySql.DAO;
+using ColorVision.MySql.Service;
 using ColorVision.Services;
 using ColorVision.SettingUp;
 using Newtonsoft.Json;
@@ -13,28 +14,29 @@ namespace ColorVision.Services
     /// </summary>
     public partial class ServiceKindControl : UserControl
     {
-        public MQTTServiceKind MQTTServiceKind { get; set; }
-        public ServiceControl ServiceControl { get; set; }
-        public ServiceKindControl(MQTTServiceKind mQTTServiceKind)
+        public ServiceKind ServiceKind { get; set; }
+
+        public ServiceManager ServiceControl { get; set; }
+        public ServiceKindControl(ServiceKind mQTTServiceKind)
         {
-            this.MQTTServiceKind = mQTTServiceKind;
+            this.ServiceKind = mQTTServiceKind;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            ServiceControl = ServiceControl.GetInstance();
-            this.DataContext = MQTTServiceKind;
+            ServiceControl = ServiceManager.GetInstance();
+            this.DataContext = ServiceKind;
             TextBox_Type.ItemsSource = ServiceControl.MQTTServices;
-            TextBox_Type.SelectedItem = MQTTServiceKind;
+            TextBox_Type.SelectedItem = ServiceKind;
 
-            if (MQTTServiceKind.VisualChildren.Count == 0)
+            if (ServiceKind.VisualChildren.Count == 0)
                 ListViewService.Visibility = Visibility.Collapsed;
-            ListViewService.ItemsSource = MQTTServiceKind.VisualChildren;
+            ListViewService.ItemsSource = ServiceKind.VisualChildren;
 
-            MQTTServiceKind.VisualChildren.CollectionChanged += (s, e) =>
+            ServiceKind.VisualChildren.CollectionChanged += (s, e) =>
             {
-                if (MQTTServiceKind.VisualChildren.Count == 0)
+                if (ServiceKind.VisualChildren.Count == 0)
                 {
                     ListViewService.Visibility = Visibility.Collapsed;
                 }
@@ -51,20 +53,24 @@ namespace ColorVision.Services
             if (!MQTT.Util.IsInvalidPath(TextBox_Name.Text, "服务名称") || !MQTT.Util.IsInvalidPath(TextBox_Code.Text, "服务标识"))
                 return;
 
-            if (TextBox_Type.SelectedItem is MQTTServiceKind mQTTServiceKind)
+            if (TextBox_Type.SelectedItem is ServiceKind serviceKind)
             {
-                SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, mQTTServiceKind.SysDictionaryModel.Value, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
-                ServiceConfig serviceConfig = new ServiceConfig
+                SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, serviceKind.SysDictionaryModel.Value, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                
+                BaseServiceConfig serviceConfig = new BaseServiceConfig
                 {
-                    SendTopic = mQTTServiceKind.SysDictionaryModel.Code + "/" + "CMD/" + sysResource.Code,
-                    SubscribeTopic = mQTTServiceKind.SysDictionaryModel.Code + "/" + "STATUS/" + sysResource.Code
+                    SendTopic = serviceKind.SysDictionaryModel.Code + "/" + "CMD/" + sysResource.Code,
+                    SubscribeTopic = serviceKind.SysDictionaryModel.Code + "/" + "STATUS/" + sysResource.Code
                 };
             
                 sysResource.Value = JsonConvert.SerializeObject(serviceConfig);
-                ServiceControl.ResourceService.Save(sysResource);
+
+                SysResourceService sysResourceService = new SysResourceService();
+                sysResourceService.Save(sysResource);
+
                 int pkId = sysResource.GetPK();
-                if (pkId > 0 && ServiceControl.ResourceService.GetMasterById(pkId) is SysResourceModel model)
-                    mQTTServiceKind.AddChild(new MQTTService(model));
+                if (pkId > 0 && sysResourceService.GetMasterById(pkId) is SysResourceModel model)
+                    serviceKind.AddChild(new ServiceViewMode(model));
             }
 
         }

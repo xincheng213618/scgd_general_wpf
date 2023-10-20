@@ -15,6 +15,7 @@ using ColorVision.Themes;
 using ColorVision.Language;
 using System.Globalization;
 using ColorVision.Themes.Controls;
+using ColorVision.RC;
 
 namespace ColorVision.SettingUp
 {
@@ -143,6 +144,11 @@ namespace ColorVision.SettingUp
             new MQTTConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
+        private void TextBlock_MouseLeftButtonDown2(object sender, MouseButtonEventArgs e)
+        {
+            new RCServiceConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+
         private void TextBlock_MouseLeftButtonDown1(object sender, MouseButtonEventArgs e)
         {
             new MySqlConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
@@ -153,6 +159,7 @@ namespace ColorVision.SettingUp
             GlobalSetting.GetInstance().SaveSoftwareConfig();
             MessageBox.Show("MQTT历史记录清理完毕", "ColorVision");
         }
+
 
     }
 }

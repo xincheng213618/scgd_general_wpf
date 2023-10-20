@@ -8,7 +8,7 @@
         xmlns:resx="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         xmlns:set="clr-namespace:ColorVision.SettingUp"
-        Title="服务配置" Height="600" Width="800" Background="{DynamicResource GlobalBackground}"  Initialized="Window_Initialized" >
+        Title="服务配置" Height="800" Width="1000" Background="{DynamicResource GlobalBackground}"  Initialized="Window_Initialized" >
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -27,9 +27,7 @@
             <Border>
                 <Grid Margin="10">
                     <TextBlock  HorizontalAlignment="Left" FontSize="15"  VerticalAlignment="Center">
-                        <Run Text="尊敬的："/>
-                        <Run Text="{Binding UserName}"/>
-                        <Run Text="用户您好，请选择您要加载的资源："/>
+                        <Run Text="请选择您要加载的资源："/>
                     </TextBlock>
                 </Grid>
             </Border>
@@ -44,17 +42,17 @@
             </Grid.ColumnDefinitions>
             <TreeView x:Name="TreeView1" Loaded="TreeView1_Loaded" SelectedItemChanged="TreeView1_SelectedItemChanged " Margin="5">
                 <TreeView.Resources>
-                    <HierarchicalDataTemplate DataType="{x:Type local:MQTTServiceKind}" ItemsSource="{Binding VisualChildren}" >
+                    <HierarchicalDataTemplate DataType="{x:Type local:ServiceKind}" ItemsSource="{Binding VisualChildren}" >
                         <StackPanel >
                             <TextBlock Text="{Binding Name}"/>
                         </StackPanel>
                     </HierarchicalDataTemplate>
-                    <HierarchicalDataTemplate DataType="{x:Type local:MQTTService}" ItemsSource="{Binding VisualChildren}" >
+                    <HierarchicalDataTemplate DataType="{x:Type local:ServiceViewMode}" ItemsSource="{Binding VisualChildren}" >
                         <StackPanel >
                             <TextBlock Text="{Binding Name}"/>
                         </StackPanel>
                     </HierarchicalDataTemplate>
-                    <HierarchicalDataTemplate DataType="{x:Type mqtt:BaseDevice}" ItemsSource="{Binding VisualChildren}" >
+                    <HierarchicalDataTemplate DataType="{x:Type mqtt:BaseChannel}" ItemsSource="{Binding VisualChildren}" >
                         <StackPanel>
                             <TextBlock Text="{Binding Name}"/>
                         </StackPanel>
@@ -62,16 +60,13 @@
                 </TreeView.Resources>
                 <TreeView.ItemContainerStyle>
                     <Style TargetType="{x:Type TreeViewItem}" BasedOn="{StaticResource TreeViewItemBaseStyle}">
-                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
                     </Style>
                 </TreeView.ItemContainerStyle>
 
             </TreeView>
             <Border Background="{DynamicResource GlobalBorderBrush1}" CornerRadius="5" Grid.Column="1" Margin="5" >
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" >
-                    <StackPanel x:Name="StackPanelShow" Grid.Column="1"  >
-                    </StackPanel>
-                </ScrollViewer>
+                <Grid x:Name="StackPanelShow" >
+                </Grid>
             </Border>
 
 

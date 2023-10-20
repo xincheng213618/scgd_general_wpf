@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.SettingUp;
 using System.IO;
 using Panuon.WPF.UI;
 using ColorVision.Services;
@@ -97,7 +96,7 @@ namespace ColorVision.Flow
             if (sender != null)
             {
                 FlowControlData flowControlData = (FlowControlData)sender;
-                ServiceControl.GetInstance().ProcResult(flowControlData);
+                ServiceManager.GetInstance().ProcResult(flowControlData);
             }
             handler?.Close();
 
@@ -140,7 +139,7 @@ namespace ColorVision.Flow
                     };
                     flowControl.FlowCompleted += FlowControl_FlowCompleted;
                     string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-                    ServiceControl.GetInstance().ResultBatchSave(sn);
+                    ServiceManager.GetInstance().ResultBatchSave(sn);
                     flowControl.Start(sn);
                 }
                 else

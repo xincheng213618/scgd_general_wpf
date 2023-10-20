@@ -1312,12 +1312,11 @@ namespace ColorVision.Template
 
         private void Button3_Click(object sender, RoutedEventArgs e)
         {
-            
+            if (MessageBox.Show("清空关注点", "ColorVision", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
+                return;
             foreach (var item in DrawingVisualLists.ToList())
-            {
                 if (item is Visual visual)
                     ImageShow.RemoveVisual(visual);
-            }
             PropertyGrid2.SelectedObject = null;
         }
 
@@ -1382,7 +1381,7 @@ namespace ColorVision.Template
                         Circle.Attribute.Center = PoiParam.DatumArea.Center;
                         Circle.Attribute.Radius = PoiParam.DatumArea.AreaCircleRadius;
                         Circle.Attribute.Brush = Brushes.Transparent;
-                        Circle.Attribute.Pen = new Pen(Brushes.Yellow, 1 / Zoombox1.ContentMatrix.M11);
+                        Circle.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
                         Circle.Render();
                         drawingVisualDatum = Circle;
                         ImageShow.AddVisual(drawingVisualDatum);
@@ -1393,7 +1392,7 @@ namespace ColorVision.Template
                         DrawingVisualDatumRectangle Rectangle = new DrawingVisualDatumRectangle();
                         Rectangle.Attribute.Rect = new Rect(PoiParam.DatumArea.Center - new Vector((int)(Width / 2), (int)(Height / 2)), (PoiParam.DatumArea.Center + new Vector((int)(Width / 2), (int)(Height / 2))));
                         Rectangle.Attribute.Brush = Brushes.Transparent;
-                        Rectangle.Attribute.Pen = new Pen(Brushes.Yellow, 1 / Zoombox1.ContentMatrix.M11);
+                        Rectangle.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
                         Rectangle.Render();
                         drawingVisualDatum = Rectangle;
                         ImageShow.AddVisual(drawingVisualDatum);
@@ -1408,11 +1407,8 @@ namespace ColorVision.Template
 
 
                         List<Point> result = SortPolyPoints(pts_src);
-
-
-
                         DrawingVisualDatumPolygon Polygon = new DrawingVisualDatumPolygon() { IsDrawing = false };
-                        Polygon.Attribute.Pen = new Pen(Brushes.Yellow, 1 / Zoombox1.ContentMatrix.M11);
+                        Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
                         Polygon.Attribute.Brush = Brushes.Transparent;
                         Polygon.Attribute.Points.Add(result[0]);
                         Polygon.Attribute.Points.Add(result[1]);
@@ -1522,6 +1518,7 @@ namespace ColorVision.Template
                     {
                         WaitControl.Visibility = Visibility.Collapsed;
                     });
+                    MessageBox.Show("保存成功");
                 });
                 thread.Start();
             }

@@ -1,0 +1,432 @@
+﻿<UserControl x:Class="ColorVision.Device.Camera.DeviceCameraControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             xmlns:local="clr-namespace:ColorVision.Device.Camera"
+             xmlns:hc="https://handyorg.github.io/handycontrol"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:resx="clr-namespace:ColorVision.Properties"
+             d:DataContext="{d:DesignInstance local:DeviceCamera}"
+             d:DesignHeight="400" d:DesignWidth="600" Initialized="UserControl_Initialized">
+    <UserControl.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        </Style>
+    </UserControl.Resources>
+    <Grid Margin="0,0,0,5">
+        <Border Background="{DynamicResource GlobalBorderBrush1}" CornerRadius="5"/>
+        <Border Background="{DynamicResource GlobalBackground}" CornerRadius="5" Margin="5"/>
+
+        <Grid Margin="5">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Border  Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="0,0,0,1">
+                <DockPanel  Margin="5">
+                    <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  DockPanel.Dock="Right" Width="20"  HorizontalAlignment="Right" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
+                    <Grid  DockPanel.Dock="Right" Width="20" Margin="10,0">
+                        <Image Source="{StaticResource  DrawingImageEdit}" Margin="-4" />
+                        <Button Background="Transparent" BorderThickness="0"   Click="Button_Click_1"/>
+                    </Grid>
+                    <TextBlock Text="{Binding Config.Name}" FontWeight="Bold" FontSize="20"/>
+                </DockPanel>
+            </Border>
+
+
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="3">
+                    <Grid x:Name="MQTTShow" Margin="2">
+                        <Grid  x:Name="MQTTShowContent">
+                            <Border Background ="{DynamicResource GlobalBackground}"  CornerRadius="5" Margin="0,0,0,0">
+                                <StackPanel Margin="5" >
+                                    <GroupBox Header="基本信息" Margin="0,5">
+                                        <StackPanel Margin="5">
+                                            <DockPanel>
+                                                <TextBlock Text="相机类型:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CameraType}"/>
+                                            </DockPanel>
+                                            <DockPanel>
+                                                <TextBlock Text="相机ID:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ID}"/>
+                                            </DockPanel>
+                                            <DockPanel>
+                                                <TextBlock Text="相机MD5:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.MD5}"/>
+                                            </DockPanel>
+                                            <DockPanel>
+                                                <TextBlock Text="发送信道:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.SendTopic}"/>
+                                            </DockPanel>
+                                            <DockPanel>
+                                                <TextBlock Text="接收信道:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.SubscribeTopic}"/>
+                                            </DockPanel>
+                                            <DockPanel>
+                                                <TextBlock Text="心跳时间"  Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.HeartbeatTime}"/>
+                                            </DockPanel>
+                                        </StackPanel>
+                                    </GroupBox>
+
+                                    <GroupBox Header="默认参数配置" Margin="0,5">
+                                        <StackPanel Margin="5">
+                                            <DockPanel>
+                                                <TextBlock Text="打开方式:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.TakeImageMode}"/>
+                                            </DockPanel>
+                                            <DockPanel>
+                                                <TextBlock Text="图像位数:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ImageBpp}"/>
+                                            </DockPanel>
+                                            <DockPanel>
+                                                <TextBlock Text="图像通道:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.Channel}"/>
+                                            </DockPanel>
+                                            <DockPanel>
+                                                <TextBlock Text="默认增益:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.Gain}"/>
+                                            </DockPanel>
+                                            <StackPanel Visibility="{Binding Config.IsExpThree,Converter={StaticResource bool2VisibilityConverter1}}">
+                                                <DockPanel>
+                                                    <TextBlock Text="默认曝光:" Width="120"/>
+                                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ExpTime}"/>
+                                                </DockPanel>
+                                            </StackPanel>
+                                            <StackPanel Visibility="{Binding Config.IsExpThree,Converter={StaticResource bool2VisibilityConverter}}">
+                                                <DockPanel>
+                                                    <TextBlock Text="默认R通道曝光:" Width="120"/>
+                                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ExpTimeR}"/>
+                                                </DockPanel>
+                                                <DockPanel>
+                                                    <TextBlock Text="默认G通道曝光:" Width="120"/>
+                                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ExpTimeG}"/>
+                                                </DockPanel>
+                                                <DockPanel>
+                                                    <TextBlock Text="默认B通道曝光:" Width="120"/>
+                                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ExpTimeB}"/>
+                                                </DockPanel>
+
+                                            </StackPanel>
+
+                                            <StackPanel  Visibility="{Binding Config.IsChannelThree,Converter={StaticResource bool2VisibilityConverter}}">
+                                                <UniformGrid Columns="3" Rows="1">
+                                                    <UniformGrid Columns="1" Rows="2" Margin="0,2">
+                                                        <DockPanel>
+                                                            <TextBlock Text="cfwport"  Width="80"/>
+                                                            <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ChannelConfigs[0].Port}"/>
+                                                        </DockPanel>
+                                                        <DockPanel >
+                                                            <TextBlock Text="chType" Width="80"/>
+                                                            <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ChannelConfigs[0].ChannelTypeString,Mode=OneWay}"/>
+                                                        </DockPanel>
+                                                    </UniformGrid>
+                                                    <UniformGrid Columns="1" Rows="2" Margin="0,2">
+                                                        <DockPanel>
+                                                            <TextBlock Text="cfwport"  Width="80"/>
+                                                            <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ChannelConfigs[1].Port}"/>
+                                                        </DockPanel>
+                                                        <DockPanel >
+                                                            <TextBlock Text="chType" Width="80"/>
+                                                            <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ChannelConfigs[1].ChannelTypeString,Mode=OneWay}"/>
+                                                        </DockPanel>
+                                                    </UniformGrid>
+                                                    <UniformGrid Columns="1" Rows="2" Margin="0,2">
+                                                        <DockPanel>
+                                                            <TextBlock Text="cfwport"  Width="80"/>
+                                                            <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ChannelConfigs[2].Port}"/>
+                                                        </DockPanel>
+                                                        <DockPanel >
+                                                            <TextBlock Text="chType" Width="80"/>
+                                                            <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ChannelConfigs[2].ChannelTypeString ,Mode=OneWay}"/>
+                                                        </DockPanel>
+                                                    </UniformGrid>
+                                                </UniformGrid>
+
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </GroupBox>
+                                    <GroupBox Header="电机配置" Margin="0,5">
+                                        <StackPanel Margin="5">
+                                            <DockPanel>
+                                                <TextBlock Text="电机类型:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.MotorConfig.eFOCUSCOMMUN}" />
+                                            </DockPanel>
+                                            <DockPanel>
+                                                <TextBlock Text="串口:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.MotorConfig.szComName}" />
+                                            </DockPanel>
+                                            <DockPanel>
+                                                <TextBlock Text="波特率:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.MotorConfig.BaudRate}" />
+                                            </DockPanel>
+                                            <DockPanel>
+                                                <TextBlock Text="forwardparam:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.MotorConfig.AutoFocusConfig.forwardparam}" />
+                                            </DockPanel>
+                                            <DockPanel>
+                                                <TextBlock Text="curtailparam:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.MotorConfig.AutoFocusConfig.curtailparam}" />
+                                            </DockPanel>
+                                            <DockPanel>
+                                                <TextBlock Text="curStep:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.MotorConfig.AutoFocusConfig.curStep}" />
+                                            </DockPanel>
+                                            <DockPanel>
+                                                <TextBlock Text="stopStep:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.MotorConfig.AutoFocusConfig.stopStep}" />
+                                            </DockPanel>
+                                            <DockPanel>
+                                                <TextBlock Text="minPosition:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.MotorConfig.AutoFocusConfig.minPosition}" />
+                                            </DockPanel>
+                                            <DockPanel>
+                                                <TextBlock Text="maxPosition:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.MotorConfig.AutoFocusConfig.maxPosition}" />
+                                            </DockPanel>
+                                            <DockPanel>
+                                                <TextBlock Text="eEvaFunc:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.MotorConfig.AutoFocusConfig.eEvaFunc}" />
+                                            </DockPanel>
+                                            <DockPanel>
+                                                <TextBlock Text="dMinValue:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.MotorConfig.AutoFocusConfig.dMinValue}" />
+                                            </DockPanel>
+                                        </StackPanel>
+                                    </GroupBox>
+
+                                    <GroupBox Header="远程视频串流配置" Margin="0,5">
+                                        <StackPanel Margin="5">
+                                            <DockPanel>
+                                                <TextBlock Text="串流指定IP:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.VideoConfig.Host}"/>
+                                            </DockPanel>
+                                            <DockPanel>
+                                                <TextBlock Text="串流指定端口:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.VideoConfig.Port}"/>
+                                            </DockPanel>
+                                        </StackPanel>
+                                    </GroupBox>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                        <Grid  x:Name="MQTTEditContent" Visibility="Collapsed">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="50"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5" Margin="0,0,5,0">
+                                <ScrollViewer >
+                                    <StackPanel Margin="5">
+                                        <GroupBox Header="资源信息" Margin="0,5">
+                                            <StackPanel Margin="5">
+                                                <DockPanel>
+                                                    <TextBlock Text="设备名称" Width="120"/>
+                                                    <TextBox Text="{Binding Name}"/>
+                                                </DockPanel>
+                                                <DockPanel>
+                                                    <TextBlock Text="界面展示名称" Width="120"/>
+                                                    <TextBox Text="{Binding Config.Name}"/>
+                                                </DockPanel>
+                                                <DockPanel>
+                                                    <TextBlock Text="心跳时间"  Width="120"/>
+                                                    <TextBox Text="{Binding Config.HeartbeatTime}"/>
+                                                </DockPanel>
+                                            </StackPanel>
+                                        </GroupBox>
+                                        <GroupBox Header="配置信息" Margin="0,5">
+                                            <StackPanel Margin="5">
+                                                <DockPanel>
+                                                    <TextBlock Text="相机ID" Width="120"/>
+                                                    <hc:ComboBox  x:Name="CameraID" IsEditable="True" SelectedIndex="0" Text="{Binding Config.ID}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
+                                                </DockPanel>
+                                                <DockPanel>
+                                                    <TextBlock Text="相机类型" Width="120"/>
+                                                    <hc:ComboBox x:Name="ComboxCameraType"  SelectedValue="{Binding Config.CameraType}" SelectedValuePath="Key"  DisplayMemberPath="Value"  Margin="0,0,10,0"/>
+                                                </DockPanel>
+                                                <DockPanel>
+                                                    <TextBlock Text="默认取图模式" Width="120"/>
+                                                    <ComboBox  x:Name="ComboxCameraTakeImageMode"  SelectedValue="{Binding Config.TakeImageMode}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Margin="0,0,10,0"/>
+                                                </DockPanel>
+                                                <DockPanel>
+                                                    <TextBlock Text="默认通道数" Width="120"/>
+                                                    <hc:ComboBox  x:Name="ComboxCameraChannel"   SelectedValue="{Binding Config.Channel}"   SelectedValuePath="Key"  DisplayMemberPath="Value" Margin="0,0,10,0"/>
+                                                </DockPanel>
+                                                <DockPanel>
+                                                    <TextBlock Text="默认图像位数" Width="120"/>
+                                                    <ComboBox  x:Name="ComboxCameraImageBpp"    SelectedValue="{Binding Config.ImageBpp}"  SelectedValuePath="Key"  DisplayMemberPath="Value" Margin="0,0,10,0" />
+                                                </DockPanel>
+                                            </StackPanel>
+                                        </GroupBox>
+
+                                        <GroupBox Header="默认参数" Margin="0,5">
+                                            <StackPanel Margin="5">
+                                                <DockPanel>
+                                                    <TextBlock  Text="默认增益" Width="120" />
+                                                    <TextBox DockPanel.Dock="Right" Text="{Binding Config.Gain}"  Width="50"/>
+                                                    <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" Value="{Binding Config.Gain}" Maximum="100"  >
+                                                        <hc:PreviewSlider.PreviewContent>
+                                                            <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0.00"/>
+                                                        </hc:PreviewSlider.PreviewContent>
+                                                    </hc:PreviewSlider>
+                                                </DockPanel>
+                                                <StackPanel Margin="0.2" Visibility="{Binding Config.IsExpThree,Converter={StaticResource bool2VisibilityConverter1}}">
+                                                    <DockPanel  >
+                                                        <TextBlock  Text="默认曝光" Width="120" />
+                                                        <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTime}"  Width="50"/>
+                                                        <hc:PreviewSlider x:Name="SliderexpTime"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="{Binding Config.ExpTime}" Maximum="6000">
+                                                            <hc:PreviewSlider.PreviewContent>
+                                                                <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0."/>
+                                                            </hc:PreviewSlider.PreviewContent>
+                                                        </hc:PreviewSlider>
+                                                    </DockPanel>
+                                                </StackPanel>
+                                                <StackPanel Margin="0.2" Visibility="{Binding Config.IsExpThree,Converter={StaticResource bool2VisibilityConverter}}">
+                                                    <DockPanel Margin="0,2">
+                                                        <TextBlock  Text="默认R通道曝光" Width="120"/>
+                                                        <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeR}"  Width="50"/>
+                                                        <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="100"  Value="{Binding Config.ExpTimeR}" Maximum="6000">
+                                                            <hc:PreviewSlider.PreviewContent>
+                                                                <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0."/>
+                                                            </hc:PreviewSlider.PreviewContent>
+                                                        </hc:PreviewSlider>
+                                                    </DockPanel>
+                                                    <DockPanel Margin="0,2">
+                                                        <TextBlock  Text="默认G通道曝光" Width="120" />
+                                                        <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeG}"  Width="50"/>
+                                                        <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="100"  Value="{Binding Config.ExpTimeG}" Maximum="6000">
+                                                            <hc:PreviewSlider.PreviewContent>
+                                                                <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0."/>
+                                                            </hc:PreviewSlider.PreviewContent>
+                                                        </hc:PreviewSlider>
+                                                    </DockPanel>
+                                                    <DockPanel Margin="0,2">
+                                                        <TextBlock  Text="默认B通道曝光" Width="120" />
+                                                        <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeB}"  Width="50"/>
+                                                        <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="100"  Value="{Binding Config.ExpTimeB}" Maximum="6000">
+                                                            <hc:PreviewSlider.PreviewContent>
+                                                                <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0."/>
+                                                            </hc:PreviewSlider.PreviewContent>
+                                                        </hc:PreviewSlider>
+                                                    </DockPanel>
+
+
+
+                                                </StackPanel>
+
+                                                <StackPanel  Visibility="{Binding Config.IsChannelThree,Converter={StaticResource bool2VisibilityConverter}}">
+                                                    <UniformGrid Columns="3" Rows="1">
+                                                        <UniformGrid Columns="1" Rows="2" Margin="2">
+                                                            <DockPanel Margin="0,2">
+                                                                <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding Config.ChannelConfigs[0].Port}" Minimum="0"/>
+                                                                <TextBlock Text="cfwport"/>
+                                                            </DockPanel>
+                                                            <DockPanel Margin="0,2">
+                                                                <ComboBox x:Name="chType1" DockPanel.Dock="Right" Width="110" Style="{StaticResource ComboBox.Small}"  SelectedValue="{Binding Config.ChannelConfigs[0].ChannelType}"   SelectedValuePath="Key"  DisplayMemberPath="Value" Text=""/>
+                                                                <TextBlock Text="chType"/>
+                                                            </DockPanel>
+                                                        </UniformGrid>
+                                                        <UniformGrid Columns="1" Rows="2" Margin="2">
+                                                            <DockPanel Margin="0,2">
+                                                                <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding Config.ChannelConfigs[1].Port}" Minimum="0"/>
+                                                                <TextBlock Text="cfwport"/>
+                                                            </DockPanel>
+                                                            <DockPanel Margin="0,2">
+                                                                <ComboBox x:Name="chType2" DockPanel.Dock="Right" Width="110" Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding Config.ChannelConfigs[1].ChannelType}"  SelectedValuePath="Key"  DisplayMemberPath="Value"/>
+                                                                <TextBlock Text="chType"/>
+                                                            </DockPanel>
+                                                        </UniformGrid>
+                                                        <UniformGrid Columns="1" Rows="2" Margin="2">
+                                                            <DockPanel Margin="0,2">
+                                                                <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding Config.ChannelConfigs[2].Port}" Minimum="0"/>
+                                                                <TextBlock Text="cfwport"/>
+                                                            </DockPanel>
+                                                            <DockPanel Margin="0,2">
+                                                                <ComboBox x:Name="chType3" DockPanel.Dock="Right" Width="110" Style="{StaticResource ComboBox.Small}"  SelectedValue="{Binding Config.ChannelConfigs[2].ChannelType}"   SelectedValuePath="Key"  DisplayMemberPath="Value" Text=""/>
+                                                                <TextBlock Text="chType"/>
+                                                            </DockPanel>
+                                                        </UniformGrid>
+                                                    </UniformGrid>
+
+                                                </StackPanel>
+
+                                            </StackPanel>
+                                        </GroupBox>
+                                        <GroupBox Header="电机配置" Margin="0,5">
+                                            <StackPanel Margin="5">
+                                                <DockPanel Margin="0,2">
+                                                    <TextBlock Text="电机类型:" Width="120"/>
+                                                    <TextBox Text="{Binding Config.MotorConfig.eFOCUSCOMMUN}" />
+                                                </DockPanel>
+                                                <DockPanel Margin="0,2">
+                                                    <TextBlock Text="串口:" Width="120"/>
+                                                    <TextBox Text="{Binding Config.MotorConfig.szComName}" />
+                                                </DockPanel>
+                                                <DockPanel Margin="0,2">
+                                                    <TextBlock Text="波特率:" Width="120"/>
+                                                    <TextBox Text="{Binding Config.MotorConfig.BaudRate}" />
+                                                </DockPanel>
+                                                <DockPanel Margin="0,2">
+                                                    <TextBlock Text="forwardparam:" Width="120"/>
+                                                    <TextBox Text="{Binding Config.MotorConfig.AutoFocusConfig.forwardparam}" />
+                                                </DockPanel>
+                                                <DockPanel Margin="0,2">
+                                                    <TextBlock Text="curtailparam:" Width="120"/>
+                                                    <TextBox Text="{Binding Config.MotorConfig.AutoFocusConfig.curtailparam}" />
+                                                </DockPanel>
+                                                <DockPanel Margin="0,2">
+                                                    <TextBlock Text="curStep:" Width="120"/>
+                                                    <TextBox Text="{Binding Config.MotorConfig.AutoFocusConfig.curStep}" />
+                                                </DockPanel>
+                                                <DockPanel Margin="0,2">
+                                                    <TextBlock Text="stopStep:" Width="120"/>
+                                                    <TextBox Text="{Binding Config.MotorConfig.AutoFocusConfig.stopStep}" />
+                                                </DockPanel>
+                                                <DockPanel Margin="0,2">
+                                                    <TextBlock Text="minPosition:" Width="120"/>
+                                                    <TextBox Text="{Binding Config.MotorConfig.AutoFocusConfig.minPosition}" />
+                                                </DockPanel>
+                                                <DockPanel Margin="0,2">
+                                                    <TextBlock Text="maxPosition:" Width="120"/>
+                                                    <TextBox Text="{Binding Config.MotorConfig.AutoFocusConfig.maxPosition}" />
+                                                </DockPanel>
+                                                <DockPanel Margin="0,2">
+                                                    <TextBlock Text="eEvaFunc:" Width="120"/>
+                                                    <TextBox Text="{Binding Config.MotorConfig.AutoFocusConfig.eEvaFunc}" />
+                                                </DockPanel>
+                                                <DockPanel Margin="0,2">
+                                                    <TextBlock Text="dMinValue:" Width="120"/>
+                                                    <TextBox Text="{Binding Config.MotorConfig.AutoFocusConfig.dMinValue}" />
+                                                </DockPanel>
+                                            </StackPanel>
+                                        </GroupBox>
+
+                                        <GroupBox Header="远程视频串流配置" Margin="0,5">
+                                            <StackPanel Margin="5">
+                                                <DockPanel Margin="0,2">
+                                                    <TextBlock Text="串流指定IP:" Width="120"/>
+                                                    <TextBox Text="{Binding Config.VideoConfig.Host}" />
+                                                </DockPanel>
+                                                <DockPanel Margin="0,2">
+                                                    <TextBlock Text="串流指定端口:" Width="120"/>
+                                                    <TextBox Text="{Binding Config.VideoConfig.Port}"/>
+                                                </DockPanel>
+                                            </StackPanel>
+                                        </GroupBox>
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </Border>
+                            <Button Grid.Column="1"  Content="{x:Static resx:Resource.Submit}" Click="Button_Click" Command="{Binding SaveCommand}" />
+                        </Grid>
+                    </Grid>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+
+</UserControl>
