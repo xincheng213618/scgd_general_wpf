@@ -1,8 +1,7 @@
 ﻿using ColorVision.Device.Algorithm;
+using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
-using ColorVision.Services;
 using ColorVision.Template;
-using FlowEngineLib;
 using log4net;
 using MQTTMessageLib.Algorithm;
 using NetMQ;
@@ -11,6 +10,7 @@ using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -57,55 +57,86 @@ namespace ColorVision.Device.POI
                     break;
 
                 case MQTTAlgorithmEventEnum.Event_POI_GetData:
-                    string poiData = JsonConvert.SerializeObject(arg.Data);
-                    MQTTPOIGetDataResult poiResp = JsonConvert.DeserializeObject<MQTTPOIGetDataResult>(poiData);
+                    string rawDataMsg = JsonConvert.SerializeObject(arg.Data);
+                    MQTTPOIGetDataResult poiResp = JsonConvert.DeserializeObject<MQTTPOIGetDataResult>(rawDataMsg);
                     var poiDbResults = resultService.PoiPointSelectByBatchCode(arg.SerialNumber);
-                    if (poiResp.ResultType == POIResultType.XY_UV)
-                    {
-                        List<POIResultCIExyuv> poiResultData;
-                        if (poiResp.HasRecord)
-                        {
-                            poiResultData = JsonConvert.DeserializeObject<MQTTPOIGetDataCIExyuvResult>(poiData).Results;
-                        }
-                        else
-                        {
-                            poiResultData = new List<POIResultCIExyuv>();
-                            foreach (var item in poiDbResults)
-                            {
-                                poiResultData.Add(new POIResultCIExyuv(new POIPoint((int)item.PoiId, (int)item.Pid, item.Name, (POIPointTypes)item.Type, (int)item.PixX, (int)item.PixY, (int)item.PixWidth, (int)item.PixHeight),
-                                   JsonConvert.DeserializeObject<POIDataCIExyuv>(item.Value)));
-                            }
-                        }
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            Device.View.PoiDataDraw(arg.SerialNumber, poiResultData);
-                        });
-                    }else if (poiResp.ResultType == POIResultType.Y)
-                    {
-                        List<POIResultCIEY> poiResultData;
-                        if (poiResp.HasRecord)
-                        {
-                            poiResultData = JsonConvert.DeserializeObject<MQTTPOIGetDataCIEYResult>(poiData).Results;
-                        }
-                        else
-                        {
-                            poiResultData = new List<POIResultCIEY>();
-                            foreach (var item in poiDbResults)
-                            {
-                                poiResultData.Add(new POIResultCIEY(new POIPoint((int)item.PoiId, (int)item.Pid, item.Name, (POIPointTypes)item.Type, (int)item.PixX, (int)item.PixY, (int)item.PixWidth, (int)item.PixHeight),
-                                   JsonConvert.DeserializeObject<POIDataCIEY>(item.Value)));
-                            }
-                        }
-
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            Device.View.PoiDataDraw(arg.SerialNumber, poiResultData);
-                        });
-                    }
-
-
+                    ShowResult(arg.SerialNumber, poiDbResults, rawDataMsg, poiResp);
+                    break;
+                case MQTTAlgorithmEventEnum.Event_UploadCIEFile:
+                    handler?.Close();
+                    Service.GetCIEFiles();
                     break;
             }
+        }
+
+        private void ShowResult(string serialNumber, List<POIPointResultModel> poiDbResults, string rawMsg, MQTTPOIGetDataResult response)
+        {
+            switch (response.ResultType)
+            {
+                case POIResultType.XY_UV:
+                    ShowResultCIExyuv(serialNumber, response.HasRecord, poiDbResults, rawMsg);
+                    break;
+                case POIResultType.Y:
+                    ShowResultCIEY(serialNumber, response.HasRecord, poiDbResults, rawMsg);
+                    break;
+            }
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                if (!CB_CIEImageFiles.Text.Equals(response.POIImgFileName, StringComparison.Ordinal))
+                {
+                    CB_CIEImageFiles.Text = response.POIImgFileName;
+                    doOpen(response.POIImgFileName);
+                }
+            });
+        }
+
+        private List<POIResultCIEY> ShowResultCIEY(string serialNumber, bool hasRecord, List<POIPointResultModel> poiDbResults, string rawMsg)
+        {
+            List<POIResultCIEY> poiResultData;
+            if (hasRecord)
+            {
+                MQTTPOIGetDataCIEYResult response = JsonConvert.DeserializeObject<MQTTPOIGetDataCIEYResult>(rawMsg);
+                poiResultData = response.Results;
+            }
+            else
+            {
+                poiResultData = new List<POIResultCIEY>();
+                foreach (var item in poiDbResults)
+                {
+                    poiResultData.Add(new POIResultCIEY(new POIPoint((int)item.PoiId, (int)item.Pid, item.Name, (POIPointTypes)item.Type, (int)item.PixX, (int)item.PixY, (int)item.PixWidth, (int)item.PixHeight),
+                       JsonConvert.DeserializeObject<POIDataCIEY>(item.Value)));
+                }
+            }
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                Device.View.PoiDataDraw(serialNumber, poiResultData);
+            });
+
+            return poiResultData;
+        }
+
+        private List<POIResultCIExyuv> ShowResultCIExyuv(string serialNumber,bool hasRecord, List<POIPointResultModel> poiDbResults, string rawMsg)
+        {
+            List<POIResultCIExyuv> poiResultData;
+            if (hasRecord)
+            {
+                poiResultData = JsonConvert.DeserializeObject<MQTTPOIGetDataCIExyuvResult>(rawMsg).Results;
+            }
+            else
+            {
+                poiResultData = new List<POIResultCIExyuv>();
+                foreach (var item in poiDbResults)
+                {
+                    poiResultData.Add(new POIResultCIExyuv(new POIPoint((int)item.PoiId, (int)item.Pid, item.Name, (POIPointTypes)item.Type, (int)item.PixX, (int)item.PixY, (int)item.PixWidth, (int)item.PixHeight),
+                       JsonConvert.DeserializeObject<POIDataCIExyuv>(item.Value)));
+                }
+            }
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                Device.View.PoiDataDraw(serialNumber, poiResultData);
+            });
+            return poiResultData;
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -302,7 +333,25 @@ namespace ColorVision.Device.POI
 
         private void Button_Click_Upload(object sender, RoutedEventArgs e)
         {
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
+            openFileDialog.InitialDirectory = Environment.CurrentDirectory;
+            openFileDialog.Filter = "CVCIE files (*.cvcie) | *.cvcie";
+            openFileDialog.RestoreDirectory = true;
+            openFileDialog.FilterIndex = 1;
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                Service.UploadCIEFile(System.IO.Path.GetFileName(openFileDialog.FileName));
 
+                Task t = new(() => { Task_StartUpload(openFileDialog.FileName); });
+                t.Start();
+
+                handler = PendingBox.Show(Application.Current.MainWindow, "", "上传", true);
+                handler.Cancelling += delegate
+                {
+                    t.Dispose();
+                    handler?.Close();
+                };
+            }
         }
 
         private void Button_Click_Open(object sender, RoutedEventArgs e)
@@ -348,6 +397,28 @@ namespace ColorVision.Device.POI
             }
 
             handler?.Close();
+        }
+
+        private static byte[] readFile(string path)
+        {
+            FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read);
+            BinaryReader binaryReader = new BinaryReader(fileStream);
+            //获取文件长度
+            long length = fileStream.Length;
+            byte[] bytes = new byte[length];
+            //读取文件中的内容并保存到字节数组中
+            binaryReader.Read(bytes, 0, bytes.Length);
+            return bytes;
+        }
+
+        private void Task_StartUpload(string fileName)
+        {
+            DealerSocket client = new DealerSocket(Device.Config.Endpoint);
+            var message = new List<byte[]>();
+            message.Add(readFile(fileName));
+            client.TrySendMultipartBytes(TimeSpan.FromMilliseconds(3000), message);
+            client.Close();
+            client.Dispose();
         }
     }
 }

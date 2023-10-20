@@ -99,6 +99,7 @@ namespace ColorVision.Device.Algorithm
                         break;
                     case MQTTAlgorithmEventEnum.Event_DownloadFile:
                         break;
+                    case MQTTAlgorithmEventEnum.Event_UploadCIEFile:
                     case MQTTAlgorithmEventEnum.Event_GetCIEFiles:
                         OnAlgorithmEvent?.Invoke(this, new AlgorithmEvent(msg.EventName, msg.SerialNumber, msg.Data));
                         break;
@@ -431,6 +432,17 @@ namespace ColorVision.Device.Algorithm
             MsgSend msg = new MsgSend
             {
                 EventName = MQTTAlgorithmEventEnum.Event_DownloadFile,
+                ServiceName = Config.Code,
+                Params = new Dictionary<string, object> { { "FileName", fileName } }
+            };
+            PublishAsyncClient(msg);
+        }
+
+        internal void UploadCIEFile(string fileName)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = MQTTAlgorithmEventEnum.Event_UploadCIEFile,
                 ServiceName = Config.Code,
                 Params = new Dictionary<string, object> { { "FileName", fileName } }
             };
