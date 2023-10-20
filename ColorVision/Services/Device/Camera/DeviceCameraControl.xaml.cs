@@ -1,10 +1,12 @@
 ﻿using ColorVision.Extension;
 using cvColorVision;
+using FlowEngineLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using static Google.Protobuf.Reflection.FieldOptions.Types;
 
 namespace ColorVision.Device.Camera
 {
@@ -44,6 +46,12 @@ namespace ColorVision.Device.Camera
                                                   where e1 != ImageChannel.Three
                                                   select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
             }
+            else if (type == CameraType.CV_Q || type == CameraType.BV_Q || type == CameraType.BV_H)
+            {
+                ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
+                                                  where e1 != ImageChannel.One
+                                                  select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
+            }
             else
             {
                 ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
@@ -79,6 +87,43 @@ namespace ColorVision.Device.Camera
             chType1.ItemsSource = ImageChannelTypeList;
             chType2.ItemsSource = ImageChannelTypeList;
             chType3.ItemsSource = ImageChannelTypeList;
+
+
+            Dictionary<ImageChannelType, ComboBox> keyValuePairs = new Dictionary<ImageChannelType, ComboBox>() { };
+            keyValuePairs.Add(ImageChannelType.Gray_X,chType1);
+            keyValuePairs.Add(ImageChannelType.Gray_Y, chType2);
+            keyValuePairs.Add(ImageChannelType.Gray_Z, chType3);
+
+
+            chType1.SelectionChanged += (s, e) =>
+            {
+                ComboBox comboBox = keyValuePairs[Service.Config.ChannelConfigs[0].ChannelType];
+                ImageChannelType lasttemp = keyValuePairs.FirstOrDefault(x => x.Value == chType1).Key;
+                comboBox.SelectedValue = lasttemp;
+                keyValuePairs[lasttemp] = comboBox;
+                keyValuePairs[Service.Config.ChannelConfigs[0].ChannelType] = chType1;
+
+
+            };
+            chType2.SelectionChanged += (s, e) =>
+            {
+                ComboBox comboBox = keyValuePairs[Service.Config.ChannelConfigs[1].ChannelType];
+                ImageChannelType lasttemp = keyValuePairs.FirstOrDefault(x => x.Value == chType2).Key;
+                comboBox.SelectedValue = lasttemp;
+
+                keyValuePairs[lasttemp] = comboBox;
+                keyValuePairs[Service.Config.ChannelConfigs[1].ChannelType] = chType2;
+            };
+            chType3.SelectionChanged += (s, e) =>
+            {
+                ComboBox comboBox = keyValuePairs[Service.Config.ChannelConfigs[2].ChannelType];
+                ImageChannelType lasttemp = keyValuePairs.FirstOrDefault(x => x.Value == chType3).Key;
+                comboBox.SelectedValue = lasttemp;
+
+                keyValuePairs[lasttemp] = comboBox;
+                keyValuePairs[Service.Config.ChannelConfigs[2].ChannelType] = chType3;
+            };
+
 
 
             //CameraID.ItemsSource = CameraDeviceService.CameraIDs;

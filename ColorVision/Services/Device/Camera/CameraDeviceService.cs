@@ -131,7 +131,7 @@ namespace ColorVision.Device.Camera
         {
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
             DeviceStatus = DeviceStatus.UnInit;
-
+            GetAllCameraID();
             Connected += (s, e) =>
             {
                 GetAllCameraID();
@@ -187,13 +187,27 @@ namespace ColorVision.Device.Camera
                         {
                             if (Config.IsExpThree)
                             {
-                                Config.ExpTimeR = msg.Data.result[0].result;
-                                Config.ExpTimeG = msg.Data.result[1].result;
-                                Config.ExpTimeB = msg.Data.result[2].result;
 
-                                Config.SaturationR = msg.Data.result[0].resultSaturation;
-                                Config.SaturationG = msg.Data.result[1].resultSaturation;
-                                Config.SaturationB = msg.Data.result[2].resultSaturation;
+                                for (int i = 0; i < Config.ChannelConfigs.Length; i++)
+                                {
+                                    if (Config.ChannelConfigs[i].ChannelType == ImageChannelType.Gray_X)
+                                    {
+                                        Config.ExpTimeR = msg.Data.result[i].result;
+                                        Config.SaturationR = msg.Data.result[i].resultSaturation;
+                                    }
+
+                                    if (Config.ChannelConfigs[i].ChannelType == ImageChannelType.Gray_Y)
+                                    {
+                                        Config.ExpTimeG = msg.Data.result[i].result;
+                                        Config.SaturationG = msg.Data.result[i].resultSaturation;
+                                    }
+
+                                    if (Config.ChannelConfigs[i].ChannelType == ImageChannelType.Gray_Z)
+                                    {
+                                        Config.ExpTimeB = msg.Data.result[i].result;
+                                        Config.SaturationB = msg.Data.result[i].resultSaturation;
+                                    }
+                                }
 
                                 string Msg = "SaturationR:" + Config.SaturationR.ToString() + Environment.NewLine +
                                              "SaturationG:" + Config.SaturationG.ToString() + Environment.NewLine +
@@ -407,11 +421,41 @@ namespace ColorVision.Device.Camera
         {
             string SerialNumber  = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             var model = ServiceManager.GetInstance().GetResultBatch(SerialNumber);
-            MsgSend msg = new MsgSend
+
+            MsgSend msg;
+            if (Config.IsExpThree)
             {
-                EventName = "GetData",
-                Params = new Dictionary<string, object>() { { "nBatchID", model.Id }, { "expTime", expTime }, { "gain", gain }, { "eCalibType", eCalibType } }
-            };
+                List<double> expTimes = new List<double>();
+
+                foreach (var item in Config.ChannelConfigs)
+                {
+                    if (item.ChannelType == ImageChannelType.Gray_X)
+                        expTimes.Add(Config.ExpTimeR);
+                    if (item.ChannelType == ImageChannelType.Gray_Y)
+                        expTimes.Add(Config.ExpTimeG);
+                    if (item.ChannelType == ImageChannelType.Gray_Z)
+                        expTimes.Add(Config.ExpTimeB);
+                }
+
+                msg = new MsgSend
+                {
+                    EventName = "GetData",
+                    Params = new Dictionary<string, object>() { { "nBatchID", model.Id }, { "expTime", expTimes }, { "gain", gain }, { "eCalibType", eCalibType } }
+                };
+            }
+            else
+            {
+                msg = new MsgSend
+                {
+                    EventName = "GetData",
+                    Params = new Dictionary<string, object>() { { "nBatchID", model.Id }, { "expTime", expTime }, { "gain", gain }, { "eCalibType", eCalibType } }
+                };
+            }
+
+
+
+
+
             return PublishAsyncClient(msg, expTime + 10000);
         }
 
