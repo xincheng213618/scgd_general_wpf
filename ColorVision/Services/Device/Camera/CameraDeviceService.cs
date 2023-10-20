@@ -203,54 +203,6 @@ namespace ColorVision.Device.Camera
             };
             return PublishAsyncClient(msg);
         }
-
-
-        public class CalibrationBase :ViewModelBase
-        {
-            public string FilePath { get => _FilePath; set { _FilePath = value; NotifyPropertyChanged(); } }
-            private string _FilePath;
-
-            public bool IsSelected { get => _IsSelected; set { _IsSelected = value; NotifyPropertyChanged(); } }
-            private bool _IsSelected;
-
-
-            public override string? ToString()
-            {
-                return IsSelected? FilePath : null;
-            }
-        }
-
-        public class CalibrationNormal
-        {
-            public CalibrationBase DarkNoise { get; set; } = new CalibrationBase();
-
-            public CalibrationBase DefectPoint { get; set; } = new CalibrationBase();
-
-            public CalibrationBase DSNU { get; set; } = new CalibrationBase();
-
-            public CalibrationBase Uniformity { get; set; } = new CalibrationBase();
-
-            public CalibrationBase Distortion { get; set; } = new CalibrationBase();
-            public CalibrationBase ColorShift { get; set; } = new CalibrationBase();
-        }
-
-        public class CalibrationColor
-        {
-            public CalibrationBase Luminance { get; set; } = new CalibrationBase();
-            public CalibrationBase LumOneColor { get; set; } = new CalibrationBase();
-            public CalibrationBase LumFourColor { get; set; } = new CalibrationBase();
-            public CalibrationBase LumMultiColor { get; set; } = new CalibrationBase();
-        }
-
-        public class CalibrationParam1
-        {
-            public CalibrationNormal NormalR { get; set; } = new CalibrationNormal();
-            public CalibrationNormal NormalG { get; set; } = new CalibrationNormal();
-            public CalibrationNormal NormalB { get; set; } = new CalibrationNormal();
-
-            public CalibrationColor Color { get; set; } = new CalibrationColor();
-        }
-
         public MsgRecord Calibration(CalibrationParam item)
         {
             Dictionary<string, object> Params = new Dictionary<string, object>();
@@ -259,52 +211,35 @@ namespace ColorVision.Device.Camera
                 EventName = "Calibration",
                 Params = Params
             };
-            if (item.SelectedLuminance)
+
+            if (item.Color.Luminance.IsSelected)
             {
                 Params.Add("CalibType", "Luminance");
-                Params.Add("CalibTypeFileName", item.FileNameLuminance);
+                Params.Add("CalibTypeFileName", item.Color.Luminance.FilePath);
             }
-            if (item.SelectedColorOne)
+
+            if (item.Color.LumOneColor.IsSelected)
             {
                 Params.Add("CalibType", "LumOneColor");
-                Params.Add("CalibTypeFileName", item.FileNameColorOne);
+                Params.Add("CalibTypeFileName", item.Color.LumOneColor.IsSelected);
             }
-            if (item.SelectedColorMulti)
+            if (item.Color.LumFourColor.IsSelected)
             {
                 Params.Add("CalibType", "LumTwoColor");
-                Params.Add("CalibTypeFileName", item.FileNameColorMulti);
+                Params.Add("CalibTypeFileName", item.Color.LumFourColor.IsSelected);
             }
-            if (item.SelectedColorFour)
+            if (item.Color.LumMultiColor.IsSelected)
             {
                 Params.Add("CalibType", "LumFourColor");
-                Params.Add("CalibTypeFileName", item.FileNameColorFour);
+                Params.Add("CalibTypeFileName", item.Color.LumMultiColor.IsSelected);
             }
 
-            List<Dictionary<string, object>> List = new List<Dictionary<string, object>>();
-
-            for (int i = 0; i < 3; i++)
+            List<Dictionary<string, object>> List = new List<Dictionary<string, object>>
             {
-                Dictionary<string, object> keyValuePairs1 = new Dictionary<string, object>();
-
-                if (item.SelectedDarkNoise)
-                    keyValuePairs1.Add("DarkNoise", item.FileNameDarkNoise);
-                if (item.SelectedDefectPoint)
-                    keyValuePairs1.Add("DefectPoint", item.SelectedDefectPoint);
-                if (item.SelectedDSNU)
-                    keyValuePairs1.Add("DSNU", item.FileNameDSNU);
-                if (item.SelectedDistortion)
-                    keyValuePairs1.Add("Distortion", item.FileNameDistortion);
-                if (item.SelectedColorShift)
-                    keyValuePairs1.Add("ColorShift", item.FileNameColorShift);
-                List.Add(keyValuePairs1);
-            }
-
-            if (item.SelectedUniformityX)
-                List[0].Add("Uniformity", item.FileNameUniformityX);
-            if (item.SelectedUniformityY)
-                List[1].Add("Uniformity", item.FileNameUniformityY);
-            if (item.SelectedUniformityZ)
-                List[2].Add("Uniformity", item.FileNameUniformityZ);
+                item.NormalR.ToDictionary(),
+                item.NormalG.ToDictionary(),
+                item.NormalB.ToDictionary()
+            };
             Params.Add("List", List);
             return PublishAsyncClient(msg);
         }

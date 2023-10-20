@@ -175,10 +175,8 @@ namespace ColorVision.Services.Algorithm
             {
                 EventName = "GetData",
                 ServiceName = Config.Code,
-                //Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid } }
                 Params = new Dictionary<string, object>() { { "FileName", fileName }, { "TemplateId", pid }, { "TemplateName", tempName }, { "nBatchID", Batchid } }
             };
-            //Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid },{ "eCalibType", (int)eCalibType }, { "szFileNameX", "X.tif " }, { "szFileNameY", "Y.tif " }, { "szFileNameZ", "Z.tif " } }
             return PublishAsyncClient(msg);
         }
 
