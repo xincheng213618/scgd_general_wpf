@@ -1,4 +1,5 @@
 ﻿using ColorVision.Device;
+using ColorVision.Device.Algorithm;
 using ColorVision.Device.Camera;
 using ColorVision.Device.FileServer;
 using ColorVision.Device.PG;
@@ -150,8 +151,16 @@ namespace ColorVision.Services
                     SysResourceModel model = saveConfigInfo(config, sysResource);
                     if (model != null)
                         serviceTerminal.AddChild(new DeviceFileServer(model));
-                }
+                }else if (serviceTerminal.Type == ServiceType.Algorithm)
+                {
+                    AlgorithmConfig config = new AlgorithmConfig
+                    {
 
+                    };
+                    SysResourceModel model = saveConfigInfo(config, sysResource);
+                    if (model != null)
+                        serviceTerminal.AddChild(new DeviceAlgorithm(model));
+                }
                 MessageBox.Show("添加资源成功");
                 MQTTCreate.Visibility = Visibility.Collapsed;
             }
