@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using System.Windows;
 
 namespace ColorVision.Lincense
 {
@@ -17,7 +18,7 @@ namespace ColorVision.Lincense
 
         public void AddLicense(LicenseConfig licenseConfig)
         {
-            Licenses.Add(licenseConfig);
+            Application.Current.Dispatcher.Invoke(() => Licenses.Add(licenseConfig));
         }
     }
 }

@@ -41,7 +41,7 @@
                     <MenuItem Header="{x:Static resx:Resource.MenuOpen}" Click="MenuItem_ProjectOpen_Click" InputGestureText="Ctrl + O">
                         <MenuItem.Icon >
                             <TextBlock Text="&#xE8E5;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                        </MenuItem.Icon>
+                        </MenuItem.Icon>E72C
                     </MenuItem>
                     <Separator/>
                     <MenuItem Header="{x:Static resx:Resource.MenuExit}" InputGestureText="Alt + F4" Click="MenuItem_Exit"/>

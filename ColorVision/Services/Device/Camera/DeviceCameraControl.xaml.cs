@@ -15,19 +15,19 @@ namespace ColorVision.Device.Camera
     /// </summary>
     public partial class DeviceCameraControl : UserControl
     {
-        public DeviceCamera MQTTDeviceCamera { get; set; }
+        public DeviceCamera DeviceCamera { get; set; }
 
-        public CameraDeviceService Service { get => MQTTDeviceCamera.DeviceService; }
+        public CameraDeviceService Service { get => DeviceCamera.DeviceService; }
 
         public DeviceCameraControl(DeviceCamera mQTTDeviceCamera)
         {
-            MQTTDeviceCamera = mQTTDeviceCamera;
+            DeviceCamera = mQTTDeviceCamera;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = MQTTDeviceCamera;
+            this.DataContext = DeviceCamera;
 
             ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()
                                            select new KeyValuePair<CameraType, string>(e1, e1.ToDescription());
@@ -38,7 +38,7 @@ namespace ColorVision.Device.Camera
             ComboxCameraImageBpp.ItemsSource = from e1 in Enum.GetValues(typeof(ImageBpp)).Cast<ImageBpp>()
                                                 select new KeyValuePair<ImageBpp, string>(e1, e1.ToDescription());
 
-            var type = MQTTDeviceCamera.Config.CameraType;
+            var type = DeviceCamera.Config.CameraType;
 
             if (type == CameraType.LV_Q || type == CameraType.LV_H || type == CameraType.LV_MIL_CL || type == CameraType.MIL_CL)
             {
@@ -126,7 +126,7 @@ namespace ColorVision.Device.Camera
 
 
 
-            //CameraID.ItemsSource = CameraDeviceService.CameraIDs;
+            CameraID.ItemsSource = DeviceCamera.Service.DevicesSN;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

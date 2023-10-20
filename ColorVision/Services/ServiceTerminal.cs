@@ -1,7 +1,9 @@
 ﻿using ColorVision.Device;
 using ColorVision.Device.Camera;
 using ColorVision.MQTT;
+using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
+using Microsoft.DwayneNeed.Win32.User32;
 using Newtonsoft.Json;
 using System.Windows.Controls;
 
@@ -21,7 +23,11 @@ namespace ColorVision.Services
         public BaseServiceConfig Config { get; set; }
         public BaseService BaseService { get; set; }
 
+        public ServiceType ServiceType { get => (ServiceType)SysResourceModel.Type; }
+
         public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
+
+        public RelayCommand RefreshCommand { get; set; }
 
         public ServiceTerminal(SysResourceModel sysResourceModel) : base()
         {
@@ -48,7 +54,39 @@ namespace ColorVision.Services
 
             Config.IsAlive = false;
 
-            BaseService = new BaseService<BaseServiceConfig>(Config);
+
+            switch (ServiceType)
+            {
+                case ServiceType.Camera:
+                    CameraService cameraService = new CameraService(Config);
+                    BaseService = cameraService;
+                    RefreshCommand = new RelayCommand(a => cameraService.GetAllDevice());
+                    break;
+                case ServiceType.PG:
+                    BaseService = new BaseService<BaseServiceConfig>(Config);
+                    break;
+                case ServiceType.Spectum:
+                    BaseService = new BaseService<BaseServiceConfig>(Config);
+                    break;
+                case ServiceType.SMU:
+                    BaseService = new BaseService<BaseServiceConfig>(Config);
+                    break;
+                case ServiceType.Sensor:
+                    BaseService = new BaseService<BaseServiceConfig>(Config);
+                    break;
+                case ServiceType.FileServer:
+                    BaseService = new BaseService<BaseServiceConfig>(Config);
+                    break;
+                case ServiceType.Algorithm:
+                    BaseService = new BaseService<BaseServiceConfig>(Config);
+                    break;
+                case ServiceType.Flow_temp:
+                    BaseService = new BaseService<BaseServiceConfig>(Config);
+                    break;
+                default:
+                    BaseService = new BaseService<BaseServiceConfig>(Config);
+                    break;
+            }
 
             ContextMenu = new ContextMenu();
             MenuItem menuItem = new MenuItem() { Header = "删除服务" };
@@ -62,13 +100,10 @@ namespace ColorVision.Services
                 }
             };
             ContextMenu.Items.Add(menuItem);
-
-            BaseService = new BaseService();
-
-
         }
 
         public ServiceType Type { get => (ServiceType)SysResourceModel.Type; }
+
 
 
         public override UserControl GenDeviceControl() => new ServiceTerminalControl(this);

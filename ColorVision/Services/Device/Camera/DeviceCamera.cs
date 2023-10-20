@@ -13,10 +13,13 @@ namespace ColorVision.Device.Camera
 
         public ImageView View { get; set; }
 
+        public CameraService Service { get; set; }
 
-        public DeviceCamera(SysResourceModel sysResourceModel) : base(sysResourceModel)
+
+        public DeviceCamera(SysResourceModel sysResourceModel, CameraService cameraService) : base(sysResourceModel)
         {
-            DeviceService = new CameraDeviceService(Config);
+            Service = cameraService;
+            DeviceService = new CameraDeviceService(Config, Service);
             View = new ImageView();
             DeviceService.FileHandler += (s, e) =>
             {
@@ -24,6 +27,9 @@ namespace ColorVision.Device.Camera
             };
             Control = new CameraDisplayControl(this);
         }
+
+
+
 
         public override UserControl GetDeviceControl() => new DeviceCameraControl(this);
 

@@ -6,6 +6,7 @@
              xmlns:local="clr-namespace:ColorVision.Services"
              xmlns:mqtt="clr-namespace:ColorVision.MQTT"
              xmlns:resx="clr-namespace:ColorVision.Properties"
+             xmlns:hc ="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:ServiceTerminal}"
              d:DesignHeight="500" d:DesignWidth="600" Initialized="UserControl_Initialized">
@@ -64,12 +65,20 @@
 
                 </Border>
                 <StackPanel  Grid.Column="1"  Margin="2">
-                    <Button  Click="Button_Click_1" Margin="2">
-                        <Image Source="{StaticResource DrawingImageDelete}"/>
-                    </Button>
-                    <Button  Grid.Column="2" Click="Button_Click_2"  VerticalAlignment="Stretch" Margin="2" >
-                        <TextBlock Text="添加资源" TextWrapping="Wrap" />
-                    </Button>
+                    <UniformGrid Columns="1">
+                        <Button  Click="Button_Click_1" Margin="2">
+                            <Image Source="{StaticResource DrawingImageDelete}"/>
+                        </Button>
+                        <Button  Grid.Column="2" Click="Button_Click_2"  VerticalAlignment="Stretch" Margin="2" >
+                            <TextBlock Text="添加资源" TextWrapping="Wrap" />
+                        </Button>
+                        <Button  Grid.Column="2"  Click="ReFresh_Click" Command="{Binding RefreshCommand}"  VerticalAlignment="Stretch" Margin="2" >
+                            <Button.Content>
+                                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"   Foreground="{DynamicResource GlobalTextBrush}"/>
+                            </Button.Content>
+                        </Button>
+                    </UniformGrid>
+
                 </StackPanel>
 
 
@@ -106,11 +115,11 @@
                 </DockPanel>
                 <DockPanel Margin="5" >
                     <TextBlock Text="标识" Width="60"/>
-                    <TextBox x:Name="TextBox_Code"/>
+                    <hc:ComboBox  x:Name="TextBox_Code" IsEditable="True" SelectedIndex="0" Text=""  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
                 </DockPanel>
                 <DockPanel Margin="5" >
                     <TextBlock Text="名称" Width="60"/>
-                    <TextBox x:Name="TextBox_Name" />
+                    <hc:ComboBox  x:Name="TextBox_Name" IsEditable="True" SelectedIndex="0" Text=""  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
                 </DockPanel>
                 <Button   Click="Button_New_Click" Content="添加资源" />
             </StackPanel>

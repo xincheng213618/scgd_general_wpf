@@ -69,15 +69,16 @@ namespace ColorVision.Services
         }
         private void Button_New_Click(object sender, RoutedEventArgs e)
         {
-
             if (!MQTT.Util.IsInvalidPath(TextBox_Name.Text, "资源名称") || !MQTT.Util.IsInvalidPath(TextBox_Code.Text, "资源标识"))
                 return;
 
+            
 
-            if (TextBox_Type.SelectedItem is ServiceTerminal mQTTService)
+
+            if (TextBox_Type.SelectedItem is ServiceTerminal serviceTerminal)
             {
-                SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, mQTTService.SysResourceModel.Type, mQTTService.SysResourceModel.Id, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
-                if (mQTTService.Type == ServiceType.Camera)
+                SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, serviceTerminal.SysResourceModel.Type, serviceTerminal.SysResourceModel.Id, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                if (serviceTerminal.Type == ServiceType.Camera)
                 {
                     CameraConfig cameraConfig1 = new CameraConfig
                     {
@@ -90,9 +91,14 @@ namespace ColorVision.Services
                     };
                     SysResourceModel model = saveConfigInfo(cameraConfig1, sysResource);
                     if (model != null)
-                        mQTTService.AddChild(new DeviceCamera(model));
+                    {
+                        if (serviceTerminal.BaseService is CameraService cameraService)
+                        {
+                            serviceTerminal.AddChild(new DeviceCamera(model, cameraService));
+                        }
+                    }
                 }
-                else if (mQTTService.Type == ServiceType.PG)
+                else if (serviceTerminal.Type == ServiceType.PG)
                 {
                     PGConfig pGConfig = new PGConfig
                     {
@@ -101,9 +107,9 @@ namespace ColorVision.Services
                     };
                     SysResourceModel model = saveConfigInfo(pGConfig, sysResource);
                     if (model != null)
-                        mQTTService.AddChild(new DevicePG(model));
+                        serviceTerminal.AddChild(new DevicePG(model));
                 }
-                else if (mQTTService.Type == ServiceType.Spectum)
+                else if (serviceTerminal.Type == ServiceType.Spectum)
                 {
                     SpectrumConfig config = new SpectrumConfig
                     {
@@ -112,10 +118,10 @@ namespace ColorVision.Services
                     };
                     SysResourceModel model = saveConfigInfo(config, sysResource);
                     if (model != null)
-                        mQTTService.AddChild(new DeviceSpectrum(model));
+                        serviceTerminal.AddChild(new DeviceSpectrum(model));
                 }
 
-                else if (mQTTService.Type == ServiceType.SMU)
+                else if (serviceTerminal.Type == ServiceType.SMU)
                 {
                     SMUConfig config = new SMUConfig
                     {
@@ -124,18 +130,18 @@ namespace ColorVision.Services
                     };
                     SysResourceModel model = saveConfigInfo(config, sysResource);
                     if (model != null)
-                        mQTTService.AddChild(new DeviceSMU(model));
+                        serviceTerminal.AddChild(new DeviceSMU(model));
                 }
-                else if (mQTTService.Type == ServiceType.Sensor)
+                else if (serviceTerminal.Type == ServiceType.Sensor)
                 {
                     SensorConfig config = new SensorConfig
                     {
                     };
                     SysResourceModel model = saveConfigInfo(config, sysResource);
                     if (model != null)
-                        mQTTService.AddChild(new DeviceSpectrum(model));
+                        serviceTerminal.AddChild(new DeviceSpectrum(model));
                 }
-                else if (mQTTService.Type == ServiceType.FileServer)
+                else if (serviceTerminal.Type == ServiceType.FileServer)
                 {
                     FileServerConfig config = new FileServerConfig
                     {
@@ -143,7 +149,7 @@ namespace ColorVision.Services
                     };
                     SysResourceModel model = saveConfigInfo(config, sysResource);
                     if (model != null)
-                        mQTTService.AddChild(new DeviceFileServer(model));
+                        serviceTerminal.AddChild(new DeviceFileServer(model));
                 }
 
                 MessageBox.Show("添加资源成功");
@@ -181,6 +187,16 @@ namespace ColorVision.Services
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
             MQTTCreate.Visibility = MQTTCreate.Visibility == Visibility.Visible? Visibility.Collapsed : Visibility.Visible;
+            if (MQTTService.BaseService is CameraService cameraService)
+            {
+                TextBox_Code.ItemsSource = cameraService.DevicesSN;
+                TextBox_Name.ItemsSource = cameraService.DevicesSN;
+            }
+        }
+
+        private void ReFresh_Click(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

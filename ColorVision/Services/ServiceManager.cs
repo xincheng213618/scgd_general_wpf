@@ -133,10 +133,9 @@ namespace ColorVision.Services
                     {
                         ServiceTerminal mQTTService = new ServiceTerminal(service);
 
+
                         string svrKey = GetServiceKey(service.TypeCode, service.Code);
                         svrDevices?.Add(svrKey, new List<BaseService>());
-
-
                         foreach (var device in devices)
                         {
                             BaseService svrObj = null;
@@ -145,10 +144,14 @@ namespace ColorVision.Services
                                 switch ((ServiceType)device.Type)
                                 {
                                     case ServiceType.Camera:
-                                        DeviceCamera deviceCamera = new DeviceCamera(device);
-                                        svrObj = deviceCamera.DeviceService;
-                                        mQTTService.AddChild(deviceCamera);
-                                        MQTTDevices.Add(deviceCamera);
+
+                                        if (mQTTService.BaseService is CameraService cameraService)
+                                        {
+                                            DeviceCamera deviceCamera = new DeviceCamera(device, cameraService);
+                                            svrObj = deviceCamera.DeviceService;
+                                            mQTTService.AddChild(deviceCamera);
+                                            MQTTDevices.Add(deviceCamera);
+                                        }
                                         break;
                                     case ServiceType.PG:
                                         DevicePG devicePG = new DevicePG(device);

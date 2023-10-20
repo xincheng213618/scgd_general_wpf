@@ -1,18 +1,15 @@
 ﻿#pragma warning disable CS8602  
 
 using ColorVision.Device.SMU;
-using ColorVision.Lincense;
 using ColorVision.MQTT;
 using ColorVision.Services;
 using ColorVision.Services.Msg;
 using ColorVision.Template;
 using cvColorVision;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Security.Cryptography;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Device.Camera
@@ -21,104 +18,6 @@ namespace ColorVision.Device.Camera
     public delegate void MQTTCameraFileHandler(object sender, string? FilePath);
     public delegate void MQTTCameraMsgHandler(object sender, MsgReturn msg);
     
-    public class CameraServiceConfig : BaseServiceConfig
-    {
-
-    }
-
-
-    public class BaseService<T>: BaseService where T : BaseServiceConfig
-    {
-        public T Config { get; set; }
-
-        public override string SubscribeTopic { get => Config.SubscribeTopic; set { Config.SubscribeTopic = value; } }
-        public override string SendTopic { get => Config.SendTopic; set { Config.SendTopic = value; } }
-
-        public override int HeartbeatTime { get => Config.HeartbeatTime; set { Config.HeartbeatTime = value; NotifyPropertyChanged(); } }
-
-        public override bool IsAlive { get => Config.IsAlive; set { Config.IsAlive = value; NotifyPropertyChanged(); } }
-
-        public override DateTime LastAliveTime { get => Config.LastAliveTime; set => Config.LastAliveTime = value; }
-
-
-        public void UpdateServiceConfig(IServiceConfig config)
-        {
-            Task.Run(() => MQTTControl.UnsubscribeAsyncClientAsync(Config.SubscribeTopic));
-
-            Config.SendTopic = config.SendTopic;
-            Config.SubscribeTopic = config.SubscribeTopic;
-            MQTTControl.SubscribeCache(Config.SubscribeTopic);
-        }
-
-        public BaseService(T Config) : base()
-        {
-            this.Config = Config;
-            MQTTControl.SubscribeCache(Config.SubscribeTopic);
-        }
-    }
-
-    public class CameraService : BaseService<CameraServiceConfig>
-    {
-        public CameraService(CameraServiceConfig Config) :base(Config)
-        {
-            Devices = new List<CameraDeviceService>();
-            GetAllDevice();
-            Connected += (s, e) =>
-            {
-                GetAllDevice();
-            };
-            MsgReturnReceived += MQTTCamera_MsgReturnChanged;
-        }
-        public List<CameraDeviceService> Devices { get; set; }
-        public List<string> DevicesSN { get; set; } = new List<string>();
-        public Dictionary<string, string> DevicesSNMD5 { get; set; } = new Dictionary<string, string>();
-
-        private void MQTTCamera_MsgReturnChanged(MsgReturn msg)
-        {
-            switch (msg.EventName)
-            {
-                case "CM_GetAllSnID":
-                    try
-                    {
-                        JArray SnIDs = msg.Data.SnID;
-                        if (SnIDs != null)
-                        {
-                            DevicesSN.Clear();
-                            for (int i = 0; i < SnIDs.Count; i++)
-                            {
-                                DevicesSN.Add(SnIDs[i].ToString());
-                            }
-                        }
-
-                        JArray MD5IDs = msg.Data.MD5ID;
-
-                        if (SnIDs == null || MD5IDs == null)
-                        {
-                            return;
-                        }
-
-                        for (int i = 0; i < MD5IDs.Count; i++)
-                        {
-                            DevicesSNMD5.Add(SnIDs[i].ToString(), MD5IDs[i].ToString());
-                            LicenseManager.GetInstance().AddLicense(new LicenseConfig() { Name = SnIDs[i].ToString(), Sn = MD5IDs[i].ToString(), IsCanImport = true });
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        if (log.IsErrorEnabled)
-                            log.Error(ex);
-                    }
-
-                    return;
-            }
-        }
-        public void GetAllDevice()
-        {
-            PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });
-        }
-    }
-
-
     public class CameraDeviceService : BaseDevService<CameraConfig>
     {
         public event MQTTCameraFileHandler FileHandler;
@@ -127,15 +26,19 @@ namespace ColorVision.Device.Camera
         public DeviceStatus DeviceStatus { get => _DeviceStatus; set { _DeviceStatus = value; Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value)); NotifyPropertyChanged(); } }
         private DeviceStatus _DeviceStatus;
 
-        public CameraDeviceService(CameraConfig CameraConfig) : base(CameraConfig)
+        public CameraService CameraService { get; set; }
+
+        public bool IsOnlie { get => CameraService.DevicesSN.Contains(Config.ID); }
+        public override bool IsAlive { get =>
+                Config.IsAlive && IsOnlie; set { 
+                Config.IsAlive = (value && IsOnlie); NotifyPropertyChanged(); } }
+
+        public CameraDeviceService(CameraConfig CameraConfig, CameraService cameraService) : base(CameraConfig)
         {
+            CameraService = cameraService;
+            CameraService.Devices.Add(this);
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
             DeviceStatus = DeviceStatus.UnInit;
-            GetAllCameraID();
-            Connected += (s, e) =>
-            {
-                GetAllCameraID();
-            };
         }
         private void MQTTCamera_MsgReturnChanged(MsgReturn msg)
         {

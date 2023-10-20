@@ -9,5 +9,6 @@
         Sensor = 5,
         FileServer = 6,
         Algorithm =7,
+        Flow_temp =101
     }
 }
