@@ -185,7 +185,7 @@ namespace ColorVision.Device.Camera
                     case "GetAutoExpTime":
                         if (msg.Data != null && msg.Data.result[0].result != null)
                         {
-                            if (Config.IsExpThree)
+                            if (Config. IsExpThree)
                             {
 
                                 for (int i = 0; i < Config.ChannelConfigs.Length; i++)
