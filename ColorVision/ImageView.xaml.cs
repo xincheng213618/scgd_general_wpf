@@ -693,7 +693,7 @@ namespace ColorVision
                             Circle.Attribute.Center = new Point(item.Point.PixelX, item.Point.PixelY);
                             Circle.Attribute.Radius = item.Point.Radius;
                             Circle.Attribute.Brush = Brushes.Transparent;
-                            Circle.Attribute.Pen = new Pen(Brushes.Red, item.Point.Width / 30);
+                            Circle.Attribute.Pen = new Pen(Brushes.Red, item.Point.Width / 30.0);
                             //Circle.Attribute.ID = item.ID;
                             //Circle.Attribute.Name = item.Name;
                             Circle.Render();
@@ -703,7 +703,7 @@ namespace ColorVision
                             DrawingVisualRectangleWord Rectangle = new DrawingVisualRectangleWord();
                             Rectangle.Attribute.Rect = new Rect(item.Point.PixelX, item.Point.PixelY, item.Point.Width, item.Point.Height);
                             Rectangle.Attribute.Brush = Brushes.Transparent;
-                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.Point.Width / 30);
+                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.Point.Width / 30.0);
                             //Rectangle.Attribute.ID = item.ID;
                             //Rectangle.Attribute.Name = item.Name;
                             Rectangle.Render();

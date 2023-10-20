@@ -13,5 +13,22 @@ namespace ColorVision.Services.Algorithm
             InitializeComponent();
             this.Device = device;
         }
+
+        private void Button_Click_Edit(object sender, RoutedEventArgs e)
+        {
+            MQTTShowContent.Visibility = Visibility.Collapsed;
+            MQTTEditContent.Visibility = Visibility.Visible;
+        }
+
+        private void Button_Click_Save(object sender, RoutedEventArgs e)
+        {
+            MQTTEditContent.Visibility = Visibility.Collapsed;
+            MQTTShowContent.Visibility = Visibility.Visible;
+        }
+
+        private void UserControl_Initialized(object sender, EventArgs e)
+        {
+            this.DataContext = Device;
+        }
     }
 }
