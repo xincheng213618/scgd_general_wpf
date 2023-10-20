@@ -17,14 +17,14 @@ using System.Windows.Controls;
 namespace ColorVision.Services
 {
     /// <summary>
-    /// MQTTServiceControl.xaml 的交互逻辑
+    /// ServiceTerminalControl.xaml 的交互逻辑
     /// </summary>
-    public partial class MQTTServiceControl : UserControl
+    public partial class ServiceTerminalControl : UserControl
     {
-        public ServiceViewMode MQTTService { get; set; }
+        public ServiceTerminal MQTTService { get; set; }
         public ServiceManager ServiceControl { get; set; }
 
-        public MQTTServiceControl(ServiceViewMode mQTTService)
+        public ServiceTerminalControl(ServiceTerminal mQTTService)
         {
             this.MQTTService = mQTTService;
             InitializeComponent();
@@ -74,7 +74,7 @@ namespace ColorVision.Services
                 return;
 
 
-            if (TextBox_Type.SelectedItem is ServiceViewMode mQTTService)
+            if (TextBox_Type.SelectedItem is ServiceTerminal mQTTService)
             {
                 SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, mQTTService.SysResourceModel.Type, mQTTService.SysResourceModel.Id, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
                 if (mQTTService.Type == ServiceType.Camera)

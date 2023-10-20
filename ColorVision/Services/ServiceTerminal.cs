@@ -7,7 +7,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Services
 {
-    public class BaseServiceViewMode : BaseObject
+    public class BaseServiceTerminal : BaseObject
     {
         public virtual UserControl GenDeviceControl()
         {
@@ -15,7 +15,7 @@ namespace ColorVision.Services
         }
     }
 
-    public class ServiceViewMode : BaseServiceViewMode
+    public class ServiceTerminal : BaseServiceTerminal
     {
         public SysResourceModel SysResourceModel { get; set; }
         public BaseServiceConfig Config { get; set; }
@@ -23,7 +23,7 @@ namespace ColorVision.Services
 
         public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
 
-        public ServiceViewMode(SysResourceModel sysResourceModel) : base()
+        public ServiceTerminal(SysResourceModel sysResourceModel) : base()
         {
             SysResourceModel = sysResourceModel;
             if (string.IsNullOrEmpty(SysResourceModel.Value))
@@ -71,7 +71,7 @@ namespace ColorVision.Services
         public ServiceType Type { get => (ServiceType)SysResourceModel.Type; }
 
 
-        public override UserControl GenDeviceControl() => new MQTTServiceControl(this);
+        public override UserControl GenDeviceControl() => new ServiceTerminalControl(this);
 
         public override void Save()
         {

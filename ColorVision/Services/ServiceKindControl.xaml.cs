@@ -70,7 +70,7 @@ namespace ColorVision.Services
 
                 int pkId = sysResource.GetPK();
                 if (pkId > 0 && sysResourceService.GetMasterById(pkId) is SysResourceModel model)
-                    serviceKind.AddChild(new ServiceViewMode(model));
+                    serviceKind.AddChild(new ServiceTerminal(model));
             }
 
         }

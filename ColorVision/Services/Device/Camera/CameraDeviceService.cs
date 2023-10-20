@@ -188,14 +188,13 @@ namespace ColorVision.Device.Camera
                             if (Config. IsExpThree)
                             {
 
-                                for (int i = 0; i < Config.ChannelConfigs.Length; i++)
+                                for (int i = 0; i < 3; i++)
                                 {
                                     if (Config.ChannelConfigs[i].ChannelType == ImageChannelType.Gray_X)
                                     {
                                         Config.ExpTimeR = msg.Data.result[i].result;
                                         Config.SaturationR = msg.Data.result[i].resultSaturation;
                                     }
-
                                     if (Config.ChannelConfigs[i].ChannelType == ImageChannelType.Gray_Y)
                                     {
                                         Config.ExpTimeG = msg.Data.result[i].result;

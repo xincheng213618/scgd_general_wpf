@@ -131,7 +131,7 @@ namespace ColorVision.Services
                 {
                     if (service.Type == item.Value)
                     {
-                        ServiceViewMode mQTTService = new ServiceViewMode(service);
+                        ServiceTerminal mQTTService = new ServiceTerminal(service);
 
                         string svrKey = GetServiceKey(service.TypeCode, service.Code);
                         svrDevices?.Add(svrKey, new List<BaseService>());
@@ -254,7 +254,7 @@ namespace ColorVision.Services
             {
                 foreach (var svr in item.VisualChildren)
                 {
-                    if (svr is ServiceViewMode service)
+                    if (svr is ServiceTerminal service)
                     {
                         if (serviceName.Equals(service.Config.Code, StringComparison.Ordinal))
                         {

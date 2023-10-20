@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="ColorVision.Services.MQTTServiceControl"
+﻿<UserControl x:Class="ColorVision.Services.ServiceTerminalControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -7,7 +7,7 @@
              xmlns:mqtt="clr-namespace:ColorVision.MQTT"
              xmlns:resx="clr-namespace:ColorVision.Properties"
              mc:Ignorable="d" 
-             d:DataContext="{d:DesignInstance local:ServiceViewModeMode}"
+             d:DataContext="{d:DesignInstance local:ServiceTerminal}"
              d:DesignHeight="500" d:DesignWidth="600" Initialized="UserControl_Initialized">
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}">
