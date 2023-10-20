@@ -19,6 +19,7 @@ using ColorVision.Services;
 using ColorVision.RC;
 using ColorVision.RecentFile;
 using ColorVision.Lincense;
+using ColorVision.Services.Msg;
 
 namespace ColorVision
 {
@@ -221,6 +222,17 @@ namespace ColorVision
         }
 
 
+        private void MenuItem12_Click(object sender, RoutedEventArgs e)
+        {
+            MsgList();
+        }
+
+        private void MsgList()
+        {
+            new MsgList() { Owner = this }.Show();
+        }
+
+
         RecentFileList SolutionHistory = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
 
         private void Menu_Initialized(object sender, EventArgs e)
@@ -230,6 +242,7 @@ namespace ColorVision
             Application.Current.MainWindow.AddHotKeys(new HotKeys("新建工程", new Hotkey(Key.N, ModifierKeys.Control), NewCreatSolution));
             Application.Current.MainWindow.AddHotKeys(new HotKeys("设置", new Hotkey(Key.I, ModifierKeys.Control), OpenSetting));
             Application.Current.MainWindow.AddHotKeys(new HotKeys(Properties.Resource.About, new Hotkey(Key.F1, ModifierKeys.Control), AboutMsg));
+            Application.Current.MainWindow.AddHotKeys(new HotKeys("MsgList", new Hotkey(Key.M, ModifierKeys.Control), MsgList));
 
             MenuItem RecentListMenuItem = null;
 

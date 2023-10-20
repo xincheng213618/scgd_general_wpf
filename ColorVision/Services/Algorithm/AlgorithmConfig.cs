@@ -1,6 +1,7 @@
-﻿using ColorVision.Services;
+﻿using ColorVision.Device;
+using ColorVision.Services;
 
-namespace ColorVision.Device.Algorithm
+namespace ColorVision.Services.Algorithm
 {
     public class AlgorithmConfig : BaseDeviceConfig, IServiceConfig
     {

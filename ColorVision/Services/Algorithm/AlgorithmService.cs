@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS8602  
 
+using ColorVision.Device;
 using ColorVision.MQTT;
 using ColorVision.Services.Msg;
 using ColorVision.Template.Algorithm;
@@ -11,7 +12,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
 
-namespace ColorVision.Device.Algorithm
+namespace ColorVision.Services.Algorithm
 {
     public class AlgorithmEvent
     {
@@ -44,7 +45,10 @@ namespace ColorVision.Device.Algorithm
         {
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
             DeviceStatus = DeviceStatus.UnInit;
+            GetAllSnID();
+            Connected +=(s,e)=> GetAllSnID();
         }
+
 
         private void MQTTCamera_MsgReturnChanged(MsgReturn msg)
         {
@@ -55,6 +59,7 @@ namespace ColorVision.Device.Algorithm
                     try
                     {
                         SnID = msg.Data.SnID[0];
+                        Init();
                     }
                     catch (Exception ex)
                     {
@@ -78,6 +83,7 @@ namespace ColorVision.Device.Algorithm
                 {
                     case "Init":
                         ServiceID = msg.ServiceID;
+                        SnID = msg.SnID;
                         DeviceStatus = DeviceStatus.Init;
                         break;
                     case "UnInit":
@@ -169,7 +175,7 @@ namespace ColorVision.Device.Algorithm
                 EventName = "GetData",
                 ServiceName = Config.Code,
                 //Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid } }
-                Params = new Dictionary<string, object>() { { "FileName", fileName }, { "TemplateId", pid }, { "TemplateName", tempName }, { "nBatch", Batchid } }
+                Params = new Dictionary<string, object>() { { "FileName", fileName }, { "TemplateId", pid }, { "TemplateName", tempName }, { "nBatchID", Batchid } }
             };
             //Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid },{ "eCalibType", (int)eCalibType }, { "szFileNameX", "X.tif " }, { "szFileNameY", "Y.tif " }, { "szFileNameZ", "Z.tif " } }
             return PublishAsyncClient(msg);
@@ -180,7 +186,7 @@ namespace ColorVision.Device.Algorithm
             MsgSend msg = new MsgSend
             {
                 EventName = "GetData",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid } }
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatchID", Batchid } }
             };
             msg.Params.Add.Add("file_data", ToJsonFileList(ImageChannelType.Gray_Y,fileName, fileName1, fileName2));
             return PublishAsyncClient(msg);
@@ -191,7 +197,7 @@ namespace ColorVision.Device.Algorithm
             MsgSend msg = new MsgSend
             {
                 EventName = "FOV",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid } }
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatchID", Batchid } }
             };
             //Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid },{ "eCalibType", (int)eCalibType }, { "szFileNameX", "X.tif " }, { "szFileNameY", "Y.tif " }, { "szFileNameZ", "Z.tif " } }
             return PublishAsyncClient(msg);
@@ -202,7 +208,7 @@ namespace ColorVision.Device.Algorithm
             MsgSend msg = new MsgSend
             {
                 EventName = "FOV",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", 0 } }
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatchID", -1 } }
             };
 
             msg.Params.Add("radio", fOVParam.Radio);
@@ -247,7 +253,7 @@ namespace ColorVision.Device.Algorithm
             MsgSend msg = new MsgSend
             {
                 EventName = "MTF",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid }, { "nMod", modid } }
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatchID", Batchid }, { "nMod", modid } }
             };
             return PublishAsyncClient(msg);
         }
@@ -257,7 +263,7 @@ namespace ColorVision.Device.Algorithm
             MsgSend msg = new MsgSend
             {
                 EventName = "MTF",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", 0 }, }
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatchID", -1 }, }
             };
 
             msg.Params.Add("eEvaFunc", (int)mTFParam.eEvaFunc);
@@ -295,7 +301,7 @@ namespace ColorVision.Device.Algorithm
             MsgSend msg = new MsgSend
             {
                 EventName = "SFR",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid }, { "nMod", modid } }
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatchID", Batchid }, { "nMod", modid } }
             };
             return PublishAsyncClient(msg);
         }
@@ -305,7 +311,7 @@ namespace ColorVision.Device.Algorithm
             MsgSend msg = new MsgSend
             {
                 EventName = "SFR",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", 0 } }
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatchID", -1 } }
             };
             msg.Params.Add("x", sFRParam.ROI.x);
             msg.Params.Add("y", sFRParam.ROI.y);
@@ -322,7 +328,7 @@ namespace ColorVision.Device.Algorithm
             MsgSend msg = new MsgSend
             {
                 EventName = "Ghost",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid }, { "nMod", modid } }
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatchID", Batchid }, { "nMod", modid } }
             };
             return PublishAsyncClient(msg);
         }
@@ -333,7 +339,7 @@ namespace ColorVision.Device.Algorithm
             MsgSend msg = new MsgSend
             {
                 EventName = "Ghost",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", 0 } }
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatchID", -1 } }
             };
             msg.Params.Add("cols", ghostParam.Ghost_cols);
             msg.Params.Add("rows", ghostParam.Ghost_rows);
@@ -353,7 +359,7 @@ namespace ColorVision.Device.Algorithm
             MsgSend msg = new MsgSend
             {
                 EventName = "Distortion",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid } }
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatchID", Batchid } }
             };
             return PublishAsyncClient(msg);
         }
@@ -363,7 +369,7 @@ namespace ColorVision.Device.Algorithm
             MsgSend msg = new MsgSend
             {
                 EventName = "Distortion",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", 0 } }
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatchID", -1 } }
             };
 
             msg.Params.Add("filterByColor", distortionParam.filterByColor);
@@ -404,7 +410,7 @@ namespace ColorVision.Device.Algorithm
             MsgSend msg = new MsgSend
             {
                 EventName = "FocusPoints",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid } }
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatchID", Batchid } }
             };
             return PublishAsyncClient(msg);
         }
@@ -414,7 +420,7 @@ namespace ColorVision.Device.Algorithm
             MsgSend msg = new MsgSend
             {
                 EventName = "LedCheck",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid } }
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatchID", Batchid } }
             };
             return PublishAsyncClient(msg);
         }

@@ -1,5 +1,4 @@
 ﻿using ColorVision.Device;
-using ColorVision.Device.Algorithm;
 using ColorVision.Device.Camera;
 using ColorVision.Device.FileServer;
 using ColorVision.Device.PG;
@@ -8,10 +7,10 @@ using ColorVision.Device.SMU;
 using ColorVision.Device.Spectrum;
 using ColorVision.MQTT;
 using ColorVision.MySql.DAO;
+using ColorVision.Services.Algorithm;
 using cvColorVision;
 using Newtonsoft.Json;
 using System;
-using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 

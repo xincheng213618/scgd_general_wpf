@@ -1,11 +1,8 @@
-﻿using ColorVision.Device.FileServer;
-using ColorVision.Device.POI;
-using ColorVision.MQTT;
+﻿using ColorVision.MQTT;
 using ColorVision.MySql.DAO;
-using ColorVision.Services.Algorithm;
 using System.Windows.Controls;
 
-namespace ColorVision.Device.Algorithm
+namespace ColorVision.Services.Algorithm
 {
     public class DeviceAlgorithm : BaseDevice<AlgorithmConfig>
     {

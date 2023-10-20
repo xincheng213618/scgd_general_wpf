@@ -1,4 +1,4 @@
-﻿using ColorVision.Device.Algorithm;
+﻿using ColorVision.Device;
 using ColorVision.MySql.Service;
 using ColorVision.Services;
 using ColorVision.Template;
@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Device.POI
+namespace ColorVision.Services.Algorithm
 {
     /// <summary>
     /// AlgorithmDisplayControl.xaml 的交互逻辑
@@ -78,6 +78,7 @@ namespace ColorVision.Device.POI
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            this.DataContext = Device;
             ComboxPoiTemplate.ItemsSource = TemplateControl.GetInstance().PoiParams;
             ComboxPoiTemplate.SelectedIndex = 0;
 

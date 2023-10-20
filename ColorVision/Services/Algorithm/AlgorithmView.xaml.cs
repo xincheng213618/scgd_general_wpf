@@ -14,7 +14,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 
-namespace ColorVision.Device.Algorithm
+namespace ColorVision.Services.Algorithm
 {
     public class PoiResult : INotifyPropertyChanged
     {

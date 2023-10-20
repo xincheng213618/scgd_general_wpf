@@ -1,5 +1,4 @@
-﻿using ColorVision.Device.Algorithm;
-using ColorVision.Device.Camera;
+﻿using ColorVision.Device.Camera;
 using ColorVision.Device.FileServer;
 using ColorVision.Device.PG;
 using ColorVision.Device.Sensor;
@@ -11,6 +10,7 @@ using ColorVision.MySql;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.RC;
+using ColorVision.Services.Algorithm;
 using ColorVision.User;
 using MQTTMessageLib;
 using Newtonsoft.Json;
