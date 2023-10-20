@@ -17,7 +17,7 @@ namespace ColorVision.RC
             ServiceManager.GetInstance().rcService.StatusChangedEventHandler += RcService_StatusChangedEventHandler;
         }
 
-        private void RcService_StatusChangedEventHandler(object sender, RCServiceStatusChangedEventArgs args)
+        private void RcService_StatusChangedEventHandler(object sender, RCServiceStatusChangedEvent args)
         {
             if (args.NodeStatus == MQTTMessageLib.ServiceNodeStatus.Registered) IsConnect = true;
             else IsConnect = false;

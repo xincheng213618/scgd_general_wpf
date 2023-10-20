@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:ColorVision.Device.Algorithm"
+             xmlns:local="clr-namespace:ColorVision.Services.Algorithm"
              xmlns:resx="clr-namespace:ColorVision.Properties"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:DeviceAlgorithm}"

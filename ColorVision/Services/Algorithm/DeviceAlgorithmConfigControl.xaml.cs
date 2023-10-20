@@ -1,9 +1,11 @@
-﻿using System.Windows.Controls;
+﻿using System;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision.Services.Algorithm
 {
     /// <summary>
-    /// DeviceAlgorithmConfigControl.xaml 的交互逻辑
+    /// DeviceAlgorithmConfigControl.xaml 的交互逻辑s
     /// </summary>
     public partial class DeviceAlgorithmConfigControl : UserControl
     {

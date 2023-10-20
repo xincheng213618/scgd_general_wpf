@@ -1,4 +1,4 @@
-﻿using ColorVision.Device.Algorithm;
+﻿using ColorVision.Device;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.Template;
@@ -117,10 +117,10 @@ namespace ColorVision.Services.Algorithm
 
         private List<POIResultCIExyuv> ShowResultCIExyuv(string serialNumber,bool hasRecord, List<POIPointResultModel> poiDbResults, string rawMsg)
         {
-            List<POIResultCIExyuv> poiResultData;
+            List<POIResultCIExyuv> poiResultData = new List<POIResultCIExyuv>();
             if (hasRecord)
             {
-                poiResultData = JsonConvert.DeserializeObject<MQTTPOIGetDataCIExyuvResult>(rawMsg).Results;
+                poiResultData = JsonConvert.DeserializeObject<MQTTPOIGetDataCIExyuvResult>(rawMsg)?.Results;
             }
             else
             {

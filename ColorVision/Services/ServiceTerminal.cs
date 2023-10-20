@@ -80,7 +80,7 @@ namespace ColorVision.Services
                 case ServiceType.Algorithm:
                     BaseService = new BaseService<BaseServiceConfig>(Config);
                     break;
-                case ServiceType.Flow_temp:
+                case ServiceType.Flowtemp:
                     BaseService = new BaseService<BaseServiceConfig>(Config);
                     break;
                 default:

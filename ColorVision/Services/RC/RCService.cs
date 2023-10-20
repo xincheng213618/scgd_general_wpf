@@ -12,9 +12,9 @@ using System.Threading.Tasks;
 
 namespace ColorVision.RC
 {
-    public class RCServiceStatusChangedEventArgs
+    public class RCServiceStatusChangedEvent
     {
-        public RCServiceStatusChangedEventArgs(ServiceNodeStatus status)
+        public RCServiceStatusChangedEvent(ServiceNodeStatus status)
         {
             NodeStatus = status;
         }
@@ -22,7 +22,7 @@ namespace ColorVision.RC
         public ServiceNodeStatus NodeStatus { get;set; }
     }
 
-    public delegate void RCServiceStatusChangedEventHandler(object sender, RCServiceStatusChangedEventArgs args);
+    public delegate void RCServiceStatusChangedHandler(object sender, RCServiceStatusChangedEvent args);
     public class RCService : BaseDevService<RCConfig>
     {
         private string NodeName;
@@ -38,7 +38,7 @@ namespace ColorVision.RC
         private bool TryTestRegist;
         private ServiceNodeStatus regStatus;
 
-        public event RCServiceStatusChangedEventHandler StatusChangedEventHandler;
+        public event RCServiceStatusChangedHandler StatusChangedEventHandler;
         public RCService(RCConfig config) : base(config)
         {
             Config = config;
@@ -93,7 +93,7 @@ namespace ColorVision.RC
                             if (!TryTestRegist)
                             {
                                 Token = req.Data;
-                                StatusChangedEventHandler?.Invoke(this, new RCServiceStatusChangedEventArgs(ServiceNodeStatus.Registered));
+                                StatusChangedEventHandler?.Invoke(this, new RCServiceStatusChangedEvent(ServiceNodeStatus.Registered));
                                 QueryServices();
                             }
                             break;
@@ -103,7 +103,7 @@ namespace ColorVision.RC
                             ServiceManager.GetInstance().UpdateStatus(respQurey.Data);
                             break;
                         case MQTTNodeServiceEventEnum.Event_NotRegist:
-                            StatusChangedEventHandler?.Invoke(this, new RCServiceStatusChangedEventArgs(ServiceNodeStatus.Unregistered));
+                            StatusChangedEventHandler?.Invoke(this, new RCServiceStatusChangedEvent(ServiceNodeStatus.Unregistered));
                             Regist();
                             break;
                     }
@@ -126,7 +126,7 @@ namespace ColorVision.RC
 
         public bool Regist()
         {
-            StatusChangedEventHandler?.Invoke(this, new RCServiceStatusChangedEventArgs(ServiceNodeStatus.Unregistered));
+            StatusChangedEventHandler?.Invoke(this, new RCServiceStatusChangedEvent(ServiceNodeStatus.Unregistered));
             this.Token = null;
             this.regStatus = ServiceNodeStatus.Unregistered;
             MQTTNodeServiceRegist reg = new MQTTNodeServiceRegist(NodeName, AppId, AppSecret, SubscribeTopic, NodeType);

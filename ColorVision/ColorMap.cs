@@ -213,7 +213,7 @@ namespace ColorVision
             return cm;
         }
 
-        private byte[,] ConvertToBytes(Mat src, int cols)
+        private static byte[,] ConvertToBytes(Mat src, int cols)
         {
             src.ConvertTo(src, MatType.CV_8UC1);
             bool isRow = src.Rows > src.Cols;

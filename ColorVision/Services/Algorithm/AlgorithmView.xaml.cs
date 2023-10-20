@@ -1,4 +1,5 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604
+using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using HandyControl.Data;
 using MQTTMessageLib.Algorithm;
@@ -17,7 +18,7 @@ using System.Windows.Input;
 
 namespace ColorVision.Services.Algorithm
 {
-    public class PoiResult : INotifyPropertyChanged
+    public class PoiResult : ViewModelBase
     {
         private int _Id;
         private string _SerialNumber;
@@ -25,9 +26,9 @@ namespace ColorVision.Services.Algorithm
         private POIResultType _ResultType;
         private ObservableCollection<PoiResultData> _PoiData;
 
-        public int Id { get { return _Id; } set { _Id = value; OnPropertyChanged(new PropertyChangedEventArgs("Id")); } }
-        public string SerialNumber { get { return _SerialNumber; } set { _SerialNumber = value; OnPropertyChanged(new PropertyChangedEventArgs("SerialNumber")); } }
-        public string RecvTime { get { return _RecvTime; } set { _RecvTime = value; OnPropertyChanged(new PropertyChangedEventArgs("RecvTime")); } }
+        public int Id { get { return _Id; } set { _Id = value; NotifyPropertyChanged(); } }
+        public string SerialNumber { get { return _SerialNumber; } set { _SerialNumber = value; NotifyPropertyChanged(); } }
+        public string RecvTime { get { return _RecvTime; } set { _RecvTime = value; NotifyPropertyChanged(); } }
 
         public string ResultTypeDis { get {
                 string result = "";
@@ -48,17 +49,7 @@ namespace ColorVision.Services.Algorithm
             get { return _ResultType; }
             set { _ResultType = value; }
         }
-        public ObservableCollection<PoiResultData> PoiData { get { return _PoiData; } set { _PoiData = value; OnPropertyChanged(new PropertyChangedEventArgs("PoiData")); } }
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-
-        public void OnPropertyChanged(PropertyChangedEventArgs e)
-        {
-            if (PropertyChanged != null)
-            {
-                PropertyChanged(this, e);
-            }
-        }
+        public ObservableCollection<PoiResultData> PoiData { get { return _PoiData; } set { _PoiData = value; NotifyPropertyChanged(); } }
 
         public PoiResult()
         {
@@ -66,9 +57,9 @@ namespace ColorVision.Services.Algorithm
         }
     }
 
-    public class PoiResultData
+    public class PoiResultData:ViewModelBase
     {
-        public POIPoint Point { get { return _point; } set { _point = value; OnPropertyChanged(new PropertyChangedEventArgs("Point")); } }
+        public POIPoint Point { get { return _point; } set { _point = value; NotifyPropertyChanged(); } }
 
         public string PixelPos { get { return string.Format("{0},{1}", _point.PixelX, _point.PixelY); } }
         public string PixelSize { get { return string.Format("{0},{1}", _point.Width, _point.Height); } }
@@ -76,28 +67,18 @@ namespace ColorVision.Services.Algorithm
         public string Shapes { get { return string.Format("{0}", _point.PointType == 0 ? "圆形" : "矩形"); } }
 
         protected POIPoint _point;
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-
-        public void OnPropertyChanged(PropertyChangedEventArgs e)
-        {
-            if (PropertyChanged != null)
-            {
-                PropertyChanged(this, e);
-            }
-        }
     }
-    public class PoiResultCIExyuvData : PoiResultData, INotifyPropertyChanged
+    public class PoiResultCIExyuvData : PoiResultData
     {
-        public double CCT { get { return _CCT; } set { _CCT = value; OnPropertyChanged(new PropertyChangedEventArgs("CCT")); } }
-        public double Wave { get { return _Wave; } set { _Wave = value; OnPropertyChanged(new PropertyChangedEventArgs("Wave")); } }
-        public double X { get { return _X; } set { _X = value; OnPropertyChanged(new PropertyChangedEventArgs("X")); } }
-        public double Y { get { return _Y; } set { _Y = value; OnPropertyChanged(new PropertyChangedEventArgs("Y")); } }
-        public double Z { get { return _Z; } set { _Z = value; OnPropertyChanged(new PropertyChangedEventArgs("Z")); } }
-        public double u { get { return _u; } set { _u = value; OnPropertyChanged(new PropertyChangedEventArgs("u")); } }
-        public double v { get { return _v; } set { _v = value; OnPropertyChanged(new PropertyChangedEventArgs("v")); } }
-        public double x { get { return _x; } set { _x = value; OnPropertyChanged(new PropertyChangedEventArgs("x")); } }
-        public double y { get { return _y; } set { _y = value; OnPropertyChanged(new PropertyChangedEventArgs("y")); } }
+        public double CCT { get { return _CCT; } set { _CCT = value; NotifyPropertyChanged(); } }
+        public double Wave { get { return _Wave; } set { _Wave = value; NotifyPropertyChanged(); } }
+        public double X { get { return _X; } set { _X = value; NotifyPropertyChanged(); } }
+        public double Y { get { return _Y; } set { _Y = value; NotifyPropertyChanged(); } }
+        public double Z { get { return _Z; } set { _Z = value; NotifyPropertyChanged(); } }
+        public double u { get { return _u; } set { _u = value; NotifyPropertyChanged(); } }
+        public double v { get { return _v; } set { _v = value; NotifyPropertyChanged(); } }
+        public double x { get { return _x; } set { _x = value; NotifyPropertyChanged(); } }
+        public double y { get { return _y; } set { _y = value; NotifyPropertyChanged(); } }
 
         private double _y;
         private double _x;
@@ -124,9 +105,9 @@ namespace ColorVision.Services.Algorithm
         }
     }
 
-    public class PoiResultCIEYData : PoiResultData, INotifyPropertyChanged
+    public class PoiResultCIEYData : PoiResultData
     {
-        public double Y { get { return _Y; } set { _Y = value; OnPropertyChanged(new PropertyChangedEventArgs("Y")); } }
+        public double Y { get { return _Y; } set { _Y = value; NotifyPropertyChanged(); } }
 
         private double _Y;
 
