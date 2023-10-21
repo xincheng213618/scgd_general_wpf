@@ -1,4 +1,5 @@
 ﻿using ColorVision.MQTT;
+using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.Services;
 using System.Windows.Controls;

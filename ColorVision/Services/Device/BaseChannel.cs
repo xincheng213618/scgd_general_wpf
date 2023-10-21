@@ -1,8 +1,10 @@
 ﻿using ColorVision.Device;
+using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.Services;
 using Newtonsoft.Json;
 using System;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.MQTT
@@ -16,6 +18,8 @@ namespace ColorVision.MQTT
 
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; NotifyPropertyChanged(); } }
         private bool _IsSelected;
+
+        public RelayCommand PropertyCommand { get; set; }
 
         public virtual UserControl GetDeviceControl()
         {
@@ -60,6 +64,16 @@ namespace ColorVision.MQTT
 
             };
             ContextMenu.Items.Add(menuItem);
+
+
+            PropertyCommand = new RelayCommand((e) =>
+            {
+                Window window = new Window() { Width = 400, Height=400};
+                window.Content = GetDeviceControl();
+                window.Owner = Application.Current.MainWindow;
+                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                window.ShowDialog();
+            });
 
 
             if (string.IsNullOrEmpty(SysResourceModel.Value))

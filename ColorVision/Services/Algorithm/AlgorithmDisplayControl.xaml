@@ -17,9 +17,9 @@
     </UserControl.Resources>
     <StackPanel Margin="0,5">
         <DockPanel Margin="5,0">
-            <ToggleButton  Style="{StaticResource ButtonMQTTConnect}" DockPanel.Dock="Right"  Height="20" Width="20"  HorizontalAlignment="Right" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
+            <ToggleButton  Style="{StaticResource ButtonMQTTConnect}" DockPanel.Dock="Right" Command="{Binding PropertyCommand}" Height="20" Width="20"  HorizontalAlignment="Right" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
             <TextBox Text="{Binding Service.DeviceStatus}"  DockPanel.Dock="Right" IsReadOnly="True"  BorderThickness="0" Background="Transparent" />
-            <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Content="关注点服务"  FontSize="15"  IsChecked="True" />
+            <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"   Content="{Binding Config.Name}"  FontSize="15"  IsChecked="True" />
         </DockPanel>
        
         <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >

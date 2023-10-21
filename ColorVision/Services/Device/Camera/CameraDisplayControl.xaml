@@ -11,7 +11,7 @@
              xmlns:cv="clr-namespace:ColorVision"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d" 
-             d:DataContext="{d:DesignInstance local:CameraDeviceService}"
+             d:DataContext="{d:DesignInstance local:DeviceCamera}"
              d:DesignHeight="800" d:DesignWidth="300" Initialized="UserControl_Initialized">
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}">
@@ -23,18 +23,20 @@
         <Style TargetType="TextBox" BasedOn="{StaticResource TextBox.Small}"/>
     </UserControl.Resources>
     <StackPanel x:Name="StackPanelCamera"  Margin="0,5">
-        <DockPanel>
-            <ToggleButton  x:Name="ToggleButton1"  Style="{StaticResource ButtonPageControl1}" Content="{Binding Config.Name}"  FontSize="15"  IsChecked="True" />
+        <DockPanel Margin="5,0">
+            <Grid DockPanel.Dock="Right" >
+                <ToggleButton  Style="{StaticResource ButtonMQTTConnect}" Command="{Binding PropertyCommand}" Height="20" Width="20"  HorizontalAlignment="Right" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
+                <Button Content="属性" Background="Transparent" BorderThickness="0" Command="{Binding PropertyCommand}" />
+            </Grid>
+            <TextBox Text="{Binding DeviceService.DeviceStatus}"  DockPanel.Dock="Right" IsReadOnly="True"  BorderThickness="0" Background="Transparent" />
+            <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Content="{Binding Config.Name}"  FontSize="15"  IsChecked="True" />
             <TextBlock  FontSize="10" VerticalAlignment="Bottom" Margin="2" Style="{DynamicResource TextBlock1}">
-                <Run Text="("/>
-                <Run Text="{Binding Config.Code}"/>
-                <Run Text=","/>
                 <Run Text="{Binding Config.CameraType}"/>
                 <Run Text=","/>
                 <Run Text="{Binding Config.Channel}"/>
-                <Run Text=")"/>
             </TextBlock>
         </DockPanel>
+
         <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton1,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="5">
                 <Button x:Name="CamerInitButton" Margin="0,0,0,2" Content="连接" Click="MQTTCamera_Init_Click"/>

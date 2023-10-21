@@ -38,7 +38,7 @@ namespace ColorVision.Device.Camera
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = Service;
+            this.DataContext = Device;
 
             ComboxCalibrationTemplate.ItemsSource = TemplateControl.GetInstance().CalibrationParams;
             ComboxCalibrationTemplate.SelectedIndex = 0;
