@@ -18,7 +18,7 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid Margin="0,0,0,5">
+    <Grid>
         <Border Background="{DynamicResource GlobalBorderBrush1}" CornerRadius="5"/>
         <Grid Margin="5">
             <Grid.RowDefinitions>
@@ -36,10 +36,10 @@
                 </DockPanel>
             </Border>
 
-            <Grid x:Name="MQTTShow" Grid.Row="1" Margin="2,2,2,5">
+            <Grid x:Name="MQTTShow" Grid.Row="1" Margin="0,2,0,0">
                 <Grid  x:Name="MQTTShowContent">
                     <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5" >
-                        <StackPanel Margin="3">
+                        <StackPanel Margin="5,3">
                             <GroupBox Header="基本信息" Margin="0,5">
                                 <StackPanel Margin="5">
                                     <DockPanel Margin="0,2">

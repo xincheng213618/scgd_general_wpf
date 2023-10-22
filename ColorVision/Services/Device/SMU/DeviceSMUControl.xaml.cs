@@ -25,7 +25,7 @@ namespace ColorVision.Device.SMU
             this.DataContext = this.MQTTDeviceSMU;
         }
 
-        private void Button_Click_Edit(object sender, RoutedEventArgs e)
+        private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             MQTTShowContent.Visibility = Visibility.Collapsed;
             MQTTEditContent.Visibility = Visibility.Visible;
@@ -42,5 +42,7 @@ namespace ColorVision.Device.SMU
         {
             GC.SuppressFinalize(this);
         }
+
+
     }
 }
