@@ -53,7 +53,7 @@ namespace ColorVision.Device.FileServer
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = DeviceImg.Service;
+            this.DataContext = DeviceImg;
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
             {
                 List<KeyValuePair<string, int>> KeyValues = new List<KeyValuePair<string, int>>();
