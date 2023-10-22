@@ -3,8 +3,9 @@ using cvColorVision;
 using ColorVision.MVVM;
 using ColorVision.Services.Device.Camera.Video;
 using System.Collections.Generic;
+using ColorVision.Device;
 
-namespace ColorVision.Device.Camera
+namespace ColorVision.Services.Device.Camera
 {
     /// <summary>
     /// 相机配置
@@ -24,7 +25,7 @@ namespace ColorVision.Device.Camera
 
         public CameraVideoConfig VideoConfig { get; set; } = new CameraVideoConfig();
         public int Gain { get => _Gain; set { _Gain = value; NotifyPropertyChanged(); } }
-        private int _Gain =10;
+        private int _Gain = 10;
 
         [JsonIgnore]
         public bool IsExpThree
@@ -51,7 +52,7 @@ namespace ColorVision.Device.Camera
 
 
         public double ExpTime { get => _ExpTime; set { _ExpTime = value; NotifyPropertyChanged(); } }
-        private double _ExpTime =10;
+        private double _ExpTime = 10;
         public double ExpTimeR { get => _ExpTimeR; set { _ExpTimeR = value; NotifyPropertyChanged(); } }
         private double _ExpTimeR = 10;
 
@@ -59,7 +60,7 @@ namespace ColorVision.Device.Camera
         private double _ExpTimeG = 10;
 
         public double ExpTimeB { get => _ExpTimeB; set { _ExpTimeB = value; NotifyPropertyChanged(); } }
-        private double _ExpTimeB =10;
+        private double _ExpTimeB = 10;
 
 
         public double Saturation { get => _Saturation; set { _Saturation = value; NotifyPropertyChanged(); } }
@@ -97,10 +98,10 @@ namespace ColorVision.Device.Camera
         public AutoFocusConfig AutoFocusConfig { get; set; } = new AutoFocusConfig();
     }
 
-    public class ChannelConfig: ViewModelBase
+    public class ChannelConfig : ViewModelBase
     {
         public int Port { get => _Port; set { _Port = value; NotifyPropertyChanged(); } }
-        private int _Port ;
+        private int _Port;
 
         public ImageChannelType ChannelType { get => _ChannelType; set { if (_ChannelType == value) return; _ChannelType = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ChannelTypeString)); } }
         private ImageChannelType _ChannelType;
@@ -109,7 +110,7 @@ namespace ColorVision.Device.Camera
         [JsonIgnore]
         public string ChannelTypeString
         {
-            get 
+            get
             {
                 return ChannelType switch
                 {
@@ -144,7 +145,7 @@ namespace ColorVision.Device.Camera
         public int maxPosition { get => _maxPosition; set { _maxPosition = value; NotifyPropertyChanged(); } }
         private int _maxPosition;
         public double eEvaFunc { get => _eEvaFunc; set { _eEvaFunc = value; NotifyPropertyChanged(); } }
-        private double _eEvaFunc;   
+        private double _eEvaFunc;
         public double dMinValue { get => _dMinValue; set { _dMinValue = value; NotifyPropertyChanged(); } }
         private double _dMinValue;
 

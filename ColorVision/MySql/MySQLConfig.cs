@@ -22,7 +22,14 @@ namespace ColorVision.MySql
         /// <summary>
         /// 端口地址
         /// </summary>
-        public int Port { get => _Port; set { _Port = value; NotifyPropertyChanged(); } }
+        public int Port
+        {
+            get => _Port; set
+            {
+                _Port = value <= 0 ? 0 : value >= 65535 ? 65535 : value;
+                NotifyPropertyChanged();
+            }
+        }
         private int _Port = 3306;
 
         /// <summary>

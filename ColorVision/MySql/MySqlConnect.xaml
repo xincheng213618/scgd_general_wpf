@@ -65,7 +65,7 @@
                             </DockPanel>
                             <DockPanel Margin="5,2">
                                 <TextBlock Text="端口:" VerticalAlignment="Center" Width="120"/>
-                                <TextBox ToolTip="端口"  VerticalAlignment="Center"  Text="{Binding Port}" PreviewKeyDown="NumberValidationTextBox" Width="50"  HorizontalAlignment="Left" BorderThickness="0,0,0,1" />
+                                <TextBox ToolTip="端口"  VerticalAlignment="Center"  Text="{Binding Port,UpdateSourceTrigger=PropertyChanged}" PreviewKeyDown="NumberValidationTextBox" Width="50"  HorizontalAlignment="Left" BorderThickness="0,0,0,1" />
                             </DockPanel>
 
                             <DockPanel Margin="5,2">

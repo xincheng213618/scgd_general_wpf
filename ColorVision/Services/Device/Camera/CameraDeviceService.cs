@@ -4,6 +4,7 @@ using ColorVision.Device.SMU;
 using ColorVision.MQTT;
 using ColorVision.MVVM;
 using ColorVision.Services;
+using ColorVision.Services.Device.Camera;
 using ColorVision.Services.Msg;
 using ColorVision.Template;
 using cvColorVision;
