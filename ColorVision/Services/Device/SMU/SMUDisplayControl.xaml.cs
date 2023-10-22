@@ -29,7 +29,7 @@ namespace ColorVision.Device.SMU
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = SMUService;
+            this.DataContext = DeviceSMU;
 
             SMUService.HeartbeatEvent += (e) => SMUService_DeviceStatusHandler(e.DeviceStatus);
             SMUService.ScanResultEvent += SMUService_ScanResultHandler;

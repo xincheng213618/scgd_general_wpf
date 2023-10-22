@@ -155,7 +155,7 @@ namespace ColorVision.Services
                                         break;
                                     case ServiceType.PG:
                                         DevicePG devicePG = new DevicePG(device);
-                                        svrObj = devicePG.PGService;
+                                        svrObj = devicePG.DeviceService;
                                         mQTTService.AddChild(devicePG);
                                         MQTTDevices.Add(devicePG);
                                         break;

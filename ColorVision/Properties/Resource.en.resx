@@ -303,4 +303,10 @@
   <data name="UserPwd" xml:space="preserve">
     <value>UserPwd</value>
   </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Property" xml:space="preserve">
+    <value>Property</value>
+  </data>
 </root>

@@ -303,4 +303,10 @@
   <data name="UserPwd" xml:space="preserve">
     <value>비밀번호</value>
   </data>
+  <data name="Settings" xml:space="preserve">
+    <value>설정</value>
+  </data>
+  <data name="Property" xml:space="preserve">
+    <value>속성</value>
+  </data>
 </root>

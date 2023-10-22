@@ -18,10 +18,10 @@ namespace ColorVision.Device.PG
             DevicePG = devicePG;
             InitializeComponent();
 
-            DevicePG.PGService.ReLoadCategoryLib();
-            pgCategory.ItemsSource = DevicePG.PGService.PGCategoryLib;
+            DevicePG.DeviceService.ReLoadCategoryLib();
+            pgCategory.ItemsSource = DevicePG.DeviceService.PGCategoryLib;
 
-            foreach (var item in DevicePG.PGService.PGCategoryLib)
+            foreach (var item in DevicePG.DeviceService.PGCategoryLib)
             {
                 if (item.Key.Equals(DevicePG.Config.Category, StringComparison.Ordinal))
                 {

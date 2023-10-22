@@ -303,4 +303,10 @@
   <data name="UserPwd" xml:space="preserve">
     <value>パスワード</value>
   </data>
+  <data name="Settings" xml:space="preserve">
+    <value>設定</value>
+  </data>
+  <data name="Property" xml:space="preserve">
+    <value>属性</value>
+  </data>
 </root>

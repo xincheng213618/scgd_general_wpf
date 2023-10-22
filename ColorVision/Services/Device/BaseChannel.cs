@@ -68,7 +68,7 @@ namespace ColorVision.MQTT
 
             PropertyCommand = new RelayCommand((e) =>
             {
-                Window window = new Window() { Width = 400, Height=400};
+                Window window = new Window() { Width = 400, Height=400 , Title =Properties.Resource.Property};
                 window.Content = GetDeviceControl();
                 window.Owner = Application.Current.MainWindow;
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;

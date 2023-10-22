@@ -303,4 +303,10 @@
   <data name="UserPwd" xml:space="preserve">
     <value>Пароль</value>
   </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Настройки</value>
+  </data>
+  <data name="Property" xml:space="preserve">
+    <value>Атрибуты</value>
+  </data>
 </root>

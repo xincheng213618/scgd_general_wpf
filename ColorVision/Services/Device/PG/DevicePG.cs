@@ -6,18 +6,15 @@ namespace ColorVision.Device.PG
 {
     public class DevicePG : BaseDevice<PGConfig>
     {
-
-        public PGDisplayControl Control { get; set; }
-        public PGService PGService { get; set; }
+        public PGDevService DeviceService { get; set; }
 
         public DevicePG(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
-            PGService = new PGService(Config);
-            Control = new PGDisplayControl(PGService);
+            DeviceService = new PGDevService(Config);
         }
 
         public override UserControl GetDeviceControl() => new DevicePGControl(this);
-        public override UserControl GetDisplayControl() => Control;
+        public override UserControl GetDisplayControl() => new PGDisplayControl(this);
 
         public string IsNet
         {

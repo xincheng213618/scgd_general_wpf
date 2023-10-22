@@ -25,7 +25,7 @@ namespace ColorVision.Device.Spectrum
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = SpectrumService;
+            this.DataContext = DeviceSpectrum;
             ViewGridManager.GetInstance().AddView(View);
 
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>

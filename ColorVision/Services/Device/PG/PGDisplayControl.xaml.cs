@@ -9,20 +9,20 @@ namespace ColorVision.Device.PG
     /// </summary>
     public partial class PGDisplayControl : UserControl
     {
-        private PGService PGService { get; set; }
+        private PGDevService PGService { get => DevicePG.DeviceService; }
+        private DevicePG DevicePG { get; set; }
 
-        public PGDisplayControl(PGService pg)
+
+        public PGDisplayControl(DevicePG devicePG)
         {
-            PGService = pg;
+            DevicePG = devicePG;
             InitializeComponent();
-            this.DataContext = PGService;
+            this.DataContext = DevicePG;
         }
 
 
         private void StackPanelPG_Initialized(object sender, EventArgs e)
         {
-            StackPanelPG.DataContext = PGService;
-
             this.PGService.HeartbeatEvent += (e) => PGService_DeviceStatusHandler(e.DeviceStatus);
 
             if (this.PGService.Config.IsNet)

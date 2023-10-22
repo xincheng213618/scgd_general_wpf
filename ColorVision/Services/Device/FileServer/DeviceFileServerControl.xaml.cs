@@ -21,17 +21,16 @@ namespace ColorVision.Device.FileServer
             this.DataContext = DeviceFileServer;
         }
 
-
-        private void Button_Click_Edit(object sender, RoutedEventArgs e)
-        {
-            MQTTShowContent.Visibility = Visibility.Collapsed;
-            MQTTEditContent.Visibility = Visibility.Visible;
-        }
-
         private void Button_Click_Save(object sender, RoutedEventArgs e)
         {
             MQTTEditContent.Visibility = Visibility.Collapsed;
             MQTTShowContent.Visibility = Visibility.Visible;
+        }
+
+        private void ButtonEdit_Click(object sender, RoutedEventArgs e)
+        {
+            MQTTShowContent.Visibility = Visibility.Collapsed;
+            MQTTEditContent.Visibility = Visibility.Visible;
         }
     }
 }
