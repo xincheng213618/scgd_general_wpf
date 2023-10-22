@@ -16,21 +16,21 @@
         </Style>
         <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}"/>
     </UserControl.Resources>
-    <StackPanel Margin="0,5">
-        <DockPanel Margin="5,0">
+    <StackPanel Margin="0,3">
+        <DockPanel Margin="0,0,5,0">
             <Grid DockPanel.Dock="Right" >
                 <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  Height="10" Width="10"  HorizontalAlignment="Center" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
                 <Image Source="{DynamicResource DrawingImageProperty}" Height="18" Margin="0,0,0,0"/>
                 <Button Background="Transparent" BorderThickness="0" Command="{Binding PropertyCommand}" />
             </Grid>
-            <ToggleButton  x:Name="ToggleButton4"  Style="{StaticResource ButtonPageControl1}"  Content="{Binding Config.Name}"  FontSize="15" IsChecked="True" />
+            <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Content="{Binding Config.Name}"  FontSize="15" IsChecked="True" />
             <TextBlock  FontSize="10" VerticalAlignment="Bottom" Margin="2">
                 <Run Text="("/>
                 <Run Text="{Binding Config.Code}"/>
                 <Run Text=")"/>
             </TextBlock>
         </DockPanel>
-        <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton4,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
+        <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel  x:Name="StackPanelVI" Margin="5"  Initialized="StackPanelVI_Initialized" >
                 <DockPanel Margin="2">
                     <CheckBox IsChecked="{Binding IsNet}" VerticalAlignment="Center" Content="网络" DockPanel.Dock="Right" IsEnabled="False"/>

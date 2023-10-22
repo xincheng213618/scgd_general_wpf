@@ -14,10 +14,15 @@
             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
             <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
         </Style>
+        <Style TargetType="TextBox" BasedOn="{StaticResource TextBox.Small}"/>
     </UserControl.Resources>
-    <StackPanel Margin="0,5">
-        <DockPanel Margin="5,0">
-            <ToggleButton  Style="{StaticResource ButtonMQTTConnect}" DockPanel.Dock="Right" Command="{Binding PropertyCommand}" Height="20" Width="20"  HorizontalAlignment="Right" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
+    <StackPanel Margin="0,3">
+        <DockPanel Margin="0,0,5,0">
+            <Grid DockPanel.Dock="Right" >
+                <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  Height="10" Width="10"  HorizontalAlignment="Center" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
+                <Image Source="{DynamicResource DrawingImageProperty}" Height="18" Margin="0,0,0,0"/>
+                <Button Background="Transparent" BorderThickness="0" Command="{Binding PropertyCommand}" />
+            </Grid>
             <TextBox Text="{Binding Service.DeviceStatus}"  DockPanel.Dock="Right" IsReadOnly="True"  BorderThickness="0" Background="Transparent" />
             <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"   Content="{Binding Config.Name}"  FontSize="15"  IsChecked="True" />
         </DockPanel>

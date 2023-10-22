@@ -10,7 +10,7 @@
              xmlns:hc="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:DevicePG}"
-             d:DesignHeight="400" d:DesignWidth="300">
+             d:DesignHeight="400" d:DesignWidth="300" Initialized="UserControl_Initialized">
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -20,8 +20,8 @@
         </Style>
         <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}"/>
     </UserControl.Resources>
-    <StackPanel Margin="0,5" x:Name="StackPanelPG" Initialized="StackPanelPG_Initialized">
-        <DockPanel Margin="5,0">
+    <StackPanel Margin="0,3">
+        <DockPanel Margin="0,0,5,0">
             <Grid DockPanel.Dock="Right" >
                 <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  Height="10" Width="10"  HorizontalAlignment="Center" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
                 <Image Source="{DynamicResource DrawingImageProperty}" Height="18" Margin="0,0,0,0"/>

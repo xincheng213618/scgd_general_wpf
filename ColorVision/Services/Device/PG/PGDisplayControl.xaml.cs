@@ -19,9 +19,7 @@ namespace ColorVision.Device.PG
             InitializeComponent();
             this.DataContext = DevicePG;
         }
-
-
-        private void StackPanelPG_Initialized(object sender, EventArgs e)
+        private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.PGService.HeartbeatEvent += (e) => PGService_DeviceStatusHandler(e.DeviceStatus);
 
@@ -98,5 +96,7 @@ namespace ColorVision.Device.PG
         {
             PGService.CustomPG(PGCmdMsg.Text);
         }
+
+
     }
 }

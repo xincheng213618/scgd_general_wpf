@@ -22,8 +22,8 @@
         </Style>
         <Style TargetType="TextBox" BasedOn="{StaticResource TextBox.Small}"/>
     </UserControl.Resources>
-    <StackPanel x:Name="StackPanelCamera"  Margin="0,5">
-        <DockPanel Margin="5,0">
+    <StackPanel Margin="0,3">
+        <DockPanel Margin="0,0,5,0">
             <Grid DockPanel.Dock="Right" >
                 <ToggleButton  Style="{StaticResource ButtonMQTTConnect}" Command="{Binding PropertyCommand}" Height="10" Width="10"  HorizontalAlignment="Center" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
                 <Image Source="{DynamicResource DrawingImageProperty}" Height="18" Margin="0,0,0,0"/>
@@ -38,7 +38,7 @@
             </TextBlock>
         </DockPanel>
 
-        <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton1,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
+        <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="5">
                 <Button x:Name="CamerInitButton" Margin="0,0,0,2" Content="连接" Click="MQTTCamera_Init_Click"/>
                 <StackPanel x:Name="StackPanelOpen" Margin="0,5">
