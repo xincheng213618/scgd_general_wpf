@@ -1,6 +1,4 @@
 ﻿#pragma warning disable CA1711,CA2211
-using NPOI.SS.Formula.Functions;
-using System.ComponentModel;
 using System.Windows;
 using System.Windows.Media;
 

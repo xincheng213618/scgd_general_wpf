@@ -1,5 +1,4 @@
-﻿using ColorVision;
-using ST.Library.UI.NodeEditor;
+﻿using ST.Library.UI.NodeEditor;
 using System;
 using System.Windows;
 using System.Windows.Controls;

@@ -1,8 +1,6 @@
 ﻿using ColorVision.Extension;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
-using ColorVision.MySql.Service;
-using ColorVision.SettingUp;
 using ColorVision.Template.Algorithm;
 using ColorVision.Util;
 using System;

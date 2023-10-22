@@ -9,10 +9,8 @@ using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using cvColorVision;
 using ColorVision.Template;
-using System.Security.Cryptography.X509Certificates;
-using MySqlX.XDevAPI.Common;
 using ColorVision.Services.Msg;
-using static Google.Protobuf.Reflection.FieldOptions.Types;
+using ColorVision.Services.Device.Camera.Video;
 
 namespace ColorVision.Device.Camera
 {

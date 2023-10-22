@@ -1,5 +1,4 @@
 ﻿using ColorVision.Device;
-using ColorVision.Services;
 
 namespace ColorVision.Services.Algorithm
 {

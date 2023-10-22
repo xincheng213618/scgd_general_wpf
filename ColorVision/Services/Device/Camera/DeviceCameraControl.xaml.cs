@@ -1,12 +1,10 @@
 ﻿using ColorVision.Extension;
 using cvColorVision;
-using FlowEngineLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using static Google.Protobuf.Reflection.FieldOptions.Types;
 
 namespace ColorVision.Device.Camera
 {

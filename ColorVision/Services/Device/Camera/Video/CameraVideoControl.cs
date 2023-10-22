@@ -5,7 +5,6 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using ColorVision.SettingUp;
 using log4net;
 using OpenH264Lib;
 

@@ -1,6 +1,5 @@
 ﻿using ColorVision.NativeMethods;
 using ColorVision.Services;
-using ColorVision.SettingUp;
 using ColorVision.Themes;
 using log4net;
 using log4net.Config;

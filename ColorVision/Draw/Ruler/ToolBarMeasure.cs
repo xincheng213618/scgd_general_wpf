@@ -1,7 +1,5 @@
 ﻿using System.Windows;
 using System.Windows.Input;
-using ColorVision.Draw;
-using NPOI.POIFS.Properties;
 
 namespace ColorVision.Draw.Ruler
 {

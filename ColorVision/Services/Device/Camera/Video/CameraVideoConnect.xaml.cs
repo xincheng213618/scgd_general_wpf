@@ -1,5 +1,4 @@
 ﻿using ColorVision.MVVM;
-using ColorVision.Services.Device.Camera.Video;
 using System;
 using System.Collections.ObjectModel;
 using System.Windows;

@@ -1,5 +1,4 @@
-﻿using ColorVision.Device.PG;
-using ColorVision.MVVM;
+﻿using ColorVision.MVVM;
 using ColorVision.Services;
 
 namespace ColorVision.RC

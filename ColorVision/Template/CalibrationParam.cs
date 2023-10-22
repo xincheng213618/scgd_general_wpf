@@ -1,10 +1,8 @@
 ﻿using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using cvColorVision;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.IO;
 
 namespace ColorVision.Template
 {

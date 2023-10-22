@@ -2,7 +2,6 @@
 using ColorVision.Extension;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
-using ColorVision.SettingUp;
 using ColorVision.Util;
 using cvColorVision;
 using cvColorVision.Util;

@@ -3,7 +3,6 @@ using ColorVision.Device.Camera;
 using ColorVision.MQTT;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
-using Microsoft.DwayneNeed.Win32.User32;
 using Newtonsoft.Json;
 using System.Windows.Controls;
 

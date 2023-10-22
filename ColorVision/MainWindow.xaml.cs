@@ -7,7 +7,6 @@ using ColorVision.Themes;
 using ColorVision.Flow;
 using System.Diagnostics;
 using ColorVision.Services;
-using ColorVision.Services.Msg;
 
 namespace ColorVision
 {

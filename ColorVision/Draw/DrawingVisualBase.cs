@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CA1711,CA2211
-using ColorVision.Device;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Media;

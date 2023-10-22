@@ -1,7 +1,5 @@
 ﻿using ColorVision.MQTT;
-using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
-using ColorVision.Services;
 using ColorVision.Services.Device.Camera;
 using System.Windows.Controls;
 

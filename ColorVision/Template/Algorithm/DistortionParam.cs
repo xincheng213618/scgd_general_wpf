@@ -1,12 +1,8 @@
 ﻿#pragma warning disable CA1707,CA1822
 using ColorVision.MySql.DAO;
 using cvColorVision;
-using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ColorVision.Template.Algorithm
 {
