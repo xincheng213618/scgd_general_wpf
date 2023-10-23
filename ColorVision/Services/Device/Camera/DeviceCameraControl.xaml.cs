@@ -25,6 +25,8 @@ namespace ColorVision.Device.Camera
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            CameraID.ItemsSource = DeviceCamera.Service.DevicesSN;
+
             this.DataContext = DeviceCamera;
 
             ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()
@@ -122,9 +124,7 @@ namespace ColorVision.Device.Camera
                 keyValuePairs[Service.Config.ChannelConfigs[2].ChannelType] = chType3;
             };
 
-
-
-            CameraID.ItemsSource = DeviceCamera.Service.DevicesSN;
+            
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
