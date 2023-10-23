@@ -16,7 +16,6 @@ namespace ColorVision.Template
             SelectFileCommand = new RelayCommand((s) =>
             {
                 using var dialog = new System.Windows.Forms.OpenFileDialog();
-                dialog.InitialDirectory = Environment.CurrentDirectory;
                 dialog.Filter = "DAT|*.dat||";
                 dialog.RestoreDirectory = true;
                 dialog.FilterIndex = 1;
