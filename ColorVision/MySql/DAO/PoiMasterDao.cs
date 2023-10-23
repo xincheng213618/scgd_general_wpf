@@ -78,7 +78,7 @@ namespace ColorVision.MySql.DAO
 
     public class PoiMasterDao : BaseDaoMaster<PoiMasterModel>
     {
-        public PoiMasterDao() : base("", "t_scgd_cfg_poi_master", "id", true)
+        public PoiMasterDao() : base("", "t_scgd_algorithm_poi_template_master", "id", true)
         {
 
         }

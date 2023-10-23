@@ -14,17 +14,17 @@ namespace ColorVision.MySql.DAO
 
         public string? Value { get; set; }
 
-        public string? Name { get; set; }
-        public int? Type { get; set; }
-        public int? PixX { get; set; }
-        public int? PixY { get; set; }
-        public int? PixWidth { get; set; }
-        public int? PixHeight { get; set; }
-        public DateTime? CreateDate { get; set; } = DateTime.Now;
+        public string? PoiName { get; set; }
+        public int? PoiType { get; set; }
+        public int? PoiX { get; set; }
+        public int? PoiY { get; set; }
+        public int? PoiWidth { get; set; }
+        public int? PoiHeight { get; set; }
+        //public DateTime? CreateDate { get; set; } = DateTime.Now;
     }
     public class POIPointResultDao : BaseDaoMaster<POIPointResultModel>
     {
-        public POIPointResultDao() : base(string.Empty, "v_scgd_poi_result", "id", false)
+        public POIPointResultDao() : base(string.Empty, "v_scgd_algorithm_poi_detail_result", "id", false)
         {
         }
 
@@ -61,12 +61,12 @@ namespace ColorVision.MySql.DAO
                 Pid = item.Field<int?>("pid"),
                 PoiId = item.Field<int?>("poi_id"),
                 Value = item.Field<string>("value"),
-                Name = item.Field<string>("name"),
-                Type = item.Field<sbyte>("pt_type"),
-                PixWidth = item.Field<int>("pix_width"),
-                PixHeight = item.Field<int>("pix_height"),
-                PixX = item.Field<int>("pix_x"),
-                PixY = item.Field<int>("pix_y"),
+                PoiName = item.Field<string>("poi_name"),
+                PoiType = item.Field<sbyte>("poi_type"),
+                PoiWidth = item.Field<int>("poi_width"),
+                PoiHeight = item.Field<int>("poi_height"),
+                PoiX = item.Field<int>("poi_x"),
+                PoiY = item.Field<int>("poi_y"),
             };
 
             return model;

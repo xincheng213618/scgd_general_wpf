@@ -41,6 +41,12 @@ namespace ColorVision.Services.Algorithm
             InitializeComponent();
 
             Service.OnAlgorithmEvent += Service_OnAlgorithmEvent;
+            View.OnCurSelectionChanged += View_OnCurSelectionChanged;
+        }
+
+        private void View_OnCurSelectionChanged(PoiResult data)
+        {
+            doOpen(data.ImgFileName);
         }
 
         private void Service_OnAlgorithmEvent(object sender, AlgorithmEvent arg)
@@ -74,10 +80,10 @@ namespace ColorVision.Services.Algorithm
             switch (response.ResultType)
             {
                 case POIResultType.XY_UV:
-                    ShowResultCIExyuv(serialNumber, response.HasRecord, poiDbResults, rawMsg);
+                    ShowResultCIExyuv(serialNumber, response.POIImgFileName, response.HasRecord, poiDbResults, rawMsg);
                     break;
                 case POIResultType.Y:
-                    ShowResultCIEY(serialNumber, response.HasRecord, poiDbResults, rawMsg);
+                    ShowResultCIEY(serialNumber, response.POIImgFileName, response.HasRecord, poiDbResults, rawMsg);
                     break;
             }
             Application.Current.Dispatcher.Invoke(() =>
@@ -90,7 +96,7 @@ namespace ColorVision.Services.Algorithm
             });
         }
 
-        private List<POIResultCIEY> ShowResultCIEY(string serialNumber, bool hasRecord, List<POIPointResultModel> poiDbResults, string rawMsg)
+        private List<POIResultCIEY> ShowResultCIEY(string serialNumber, string POIImgFileName, bool hasRecord, List<POIPointResultModel> poiDbResults, string rawMsg)
         {
             List<POIResultCIEY> poiResultData;
             if (hasRecord)
@@ -103,19 +109,19 @@ namespace ColorVision.Services.Algorithm
                 poiResultData = new List<POIResultCIEY>();
                 foreach (var item in poiDbResults)
                 {
-                    poiResultData.Add(new POIResultCIEY(new POIPoint((int)item.PoiId, (int)item.Pid, item.Name, (POIPointTypes)item.Type, (int)item.PixX, (int)item.PixY, (int)item.PixWidth, (int)item.PixHeight),
+                    poiResultData.Add(new POIResultCIEY(new POIPoint((int)item.PoiId, (int)item.Pid, item.PoiName, (POIPointTypes)item.PoiType, (int)item.PoiX, (int)item.PoiY, (int)item.PoiWidth, (int)item.PoiHeight),
                        JsonConvert.DeserializeObject<POIDataCIEY>(item.Value)));
                 }
             }
             Application.Current.Dispatcher.Invoke(() =>
             {
-                Device.View.PoiDataDraw(serialNumber, poiResultData);
+                Device.View.PoiDataDraw(serialNumber, POIImgFileName, poiResultData);
             });
 
             return poiResultData;
         }
 
-        private List<POIResultCIExyuv> ShowResultCIExyuv(string serialNumber,bool hasRecord, List<POIPointResultModel> poiDbResults, string rawMsg)
+        private List<POIResultCIExyuv> ShowResultCIExyuv(string serialNumber, string POIImgFileName, bool hasRecord, List<POIPointResultModel> poiDbResults, string rawMsg)
         {
             List<POIResultCIExyuv> poiResultData = new List<POIResultCIExyuv>();
             if (hasRecord)
@@ -127,14 +133,14 @@ namespace ColorVision.Services.Algorithm
                 poiResultData = new List<POIResultCIExyuv>();
                 foreach (var item in poiDbResults)
                 {
-                    poiResultData.Add(new POIResultCIExyuv(new POIPoint((int)item.PoiId, (int)item.Pid, item.Name, (POIPointTypes)item.Type, (int)item.PixX, (int)item.PixY, (int)item.PixWidth, (int)item.PixHeight),
+                    poiResultData.Add(new POIResultCIExyuv(new POIPoint((int)item.PoiId, (int)item.Pid, item.PoiName, (POIPointTypes)item.PoiType, (int)item.PoiX, (int)item.PoiY, (int)item.PoiWidth, (int)item.PoiHeight),
                        JsonConvert.DeserializeObject<POIDataCIExyuv>(item.Value)));
                 }
             }
 
             Application.Current.Dispatcher.Invoke(() =>
             {
-                Device.View.PoiDataDraw(serialNumber, poiResultData);
+                Device.View.PoiDataDraw(serialNumber, POIImgFileName, poiResultData);
             });
             return poiResultData;
         }
@@ -217,12 +223,6 @@ namespace ColorVision.Services.Algorithm
         private void Algorithm_GET(object sender, RoutedEventArgs e)
         {
             Service.GetAllSnID();
-        }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            var a = resultService.PoiSelectByBatchID(10);
-            Device.View.PoiDataDraw(a);
         }
 
         private void MTF_Click(object sender, RoutedEventArgs e)
