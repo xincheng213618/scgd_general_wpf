@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS8602  
 
+using ColorVision.Device.SMU;
 using ColorVision.Lincense;
 using ColorVision.Services;
 using ColorVision.Services.Msg;
@@ -44,7 +45,7 @@ namespace ColorVision.Device.Camera
                        JArray SnIDs = msg.Data.SnID;
                         if (SnIDs != null)
                         {
-                            DevicesSN.Clear();
+                            DevicesSN = new ObservableCollection<string>();
                             for (int i = 0; i < SnIDs.Count; i++)
                             {
                                 Application.Current.Dispatcher.Invoke(() =>

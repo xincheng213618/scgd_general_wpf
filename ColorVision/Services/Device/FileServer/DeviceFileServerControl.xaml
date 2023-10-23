@@ -33,7 +33,7 @@
                     <TextBlock Text="{Binding Config.Name}" FontWeight="Bold" FontSize="20"/>
                 </DockPanel>
             </Border>
-            <Border  Grid.Row="1"  Background="{DynamicResource GlobalBackground}" CornerRadius="5" Margin="0,2,0,0" >
+            <Border  Grid.Row="1"  Background="{DynamicResource GlobalBackground}" CornerRadius="5" Margin="0,5,0,0">
                 <Grid x:Name="MQTTShow" Margin="5">
                     <Grid  x:Name="MQTTShowContent">
                         <StackPanel Margin="5">

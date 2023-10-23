@@ -57,7 +57,7 @@ namespace ColorVision.Device
         /// <summary>
         /// 设备序号
         /// </summary>
-        public string ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
+        public string ID { get => _ID; set {  _ID = value; NotifyPropertyChanged(); } }
         private string _ID;
 
         public string MD5 { get => _MD5; set { _MD5 = value; NotifyPropertyChanged(); } }

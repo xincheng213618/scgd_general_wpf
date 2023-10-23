@@ -70,7 +70,7 @@
                             <Image Source="{StaticResource DrawingImageDelete}"/>
                         </Button>
                         <Button  Grid.Column="2" Click="Button_Click_2"  VerticalAlignment="Stretch" Margin="2" >
-                            <TextBlock Text="添加资源" TextWrapping="Wrap" />
+                            <TextBlock Text="添加设备" TextWrapping="Wrap" />
                         </Button>
                         <Button  Grid.Column="2"  Click="ReFresh_Click" Command="{Binding RefreshCommand}"  VerticalAlignment="Stretch" Margin="2" >
                             <Button.Content>
@@ -107,9 +107,9 @@
             </Grid>
 
         </Grid>
-        <GroupBox x:Name="MQTTCreate" Header="创建资源" Grid.Row="2" Visibility="Collapsed">
+        <GroupBox x:Name="MQTTCreate" Header="配置设备" Grid.Row="2" Visibility="Collapsed">
             <StackPanel x:Name="MQTTCreateStackPanel"  Grid.Column="1" Grid.Row="1" Margin="5">
-                <DockPanel Margin="5" >
+                <DockPanel Margin="5" Visibility="Collapsed" >
                     <TextBlock Text="类型" Width="60"/>
                     <ComboBox x:Name="TextBox_Type" SelectedValuePath="Name"  DisplayMemberPath="Name" />
                 </DockPanel>
@@ -121,7 +121,7 @@
                     <TextBlock Text="名称" Width="60"/>
                     <hc:ComboBox  x:Name="TextBox_Name" IsEditable="True" SelectedIndex="0" Text=""  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
                 </DockPanel>
-                <Button   Click="Button_New_Click" Content="添加资源" />
+                <Button   Click="Button_New_Click" Content="添加" />
             </StackPanel>
         </GroupBox>
 
