@@ -544,7 +544,6 @@ namespace ColorVision
                     window.Content = OldWindowStatus.Root;
                     OldWindowStatus.Parent.Children.Add(this);
                 }
-
             }
         }
 
