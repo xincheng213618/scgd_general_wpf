@@ -149,6 +149,8 @@ namespace ColorVision.Device.Camera
                         DeviceStatus = DeviceStatus.UnInit;
                         break;
                     case "Open":
+                        if (DeviceStatus == DeviceStatus.Init)
+                            MessageBox.Show("许可证异常，请配置相机设备许可证");
                         DeviceStatus = DeviceStatus.UnInit;
                         break;
                     case "Init":
@@ -218,17 +220,17 @@ namespace ColorVision.Device.Camera
             if (item.Color.LumOneColor.IsSelected)
             {
                 Params.Add("CalibType", "LumOneColor");
-                Params.Add("CalibTypeFileName", item.Color.LumOneColor.IsSelected);
+                Params.Add("CalibTypeFileName", item.Color.LumOneColor.FilePath);
             }
             if (item.Color.LumFourColor.IsSelected)
             {
                 Params.Add("CalibType", "LumTwoColor");
-                Params.Add("CalibTypeFileName", item.Color.LumFourColor.IsSelected);
+                Params.Add("CalibTypeFileName", item.Color.LumFourColor.FilePath);
             }
             if (item.Color.LumMultiColor.IsSelected)
             {
                 Params.Add("CalibType", "LumFourColor");
-                Params.Add("CalibTypeFileName", item.Color.LumMultiColor.IsSelected);
+                Params.Add("CalibTypeFileName", item.Color.LumMultiColor.FilePath);
             }
 
             List<Dictionary<string, object>> List = new List<Dictionary<string, object>>
