@@ -132,10 +132,11 @@ namespace ColorVision.Services
                     if (service.Type == item.Value)
                     {
                         ServiceTerminal mQTTService = new ServiceTerminal(service);
-
-
                         string svrKey = GetServiceKey(service.TypeCode, service.Code);
-                        svrDevices?.Add(svrKey, new List<BaseService>());
+                        
+                        if (!svrDevices.ContainsKey(svrKey))
+                            svrDevices?.Add(svrKey, new List<BaseService>());
+
                         foreach (var device in devices)
                         {
                             BaseService svrObj = null;
