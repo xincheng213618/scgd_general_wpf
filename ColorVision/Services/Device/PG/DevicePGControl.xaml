@@ -36,7 +36,7 @@
                 </DockPanel>
             </Border>
 
-            <Grid x:Name="MQTTShow" Grid.Row="1" Margin="0,2,0,0">
+            <Grid x:Name="MQTTShow" Grid.Row="1" Margin="0,5,0,0">
                 <Grid  x:Name="MQTTShowContent">
                     <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5" >
                         <StackPanel Margin="5,3">

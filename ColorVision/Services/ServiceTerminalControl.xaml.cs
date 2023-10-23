@@ -73,11 +73,15 @@ namespace ColorVision.Services
             if (!MQTT.Util.IsInvalidPath(TextBox_Name.Text, "资源名称") || !MQTT.Util.IsInvalidPath(TextBox_Code.Text, "资源标识"))
                 return;
 
-            
-
-
             if (TextBox_Type.SelectedItem is ServiceTerminal serviceTerminal)
             {
+                if (serviceTerminal.ServicesCodes.Contains(TextBox_Code.Text))
+                {
+                    MessageBox.Show("设备标识已存在,不允许重复添加");
+                    return;
+                }
+
+
                 SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, serviceTerminal.SysResourceModel.Type, serviceTerminal.SysResourceModel.Id, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
                 if (serviceTerminal.Type == ServiceType.Camera)
                 {
@@ -137,6 +141,8 @@ namespace ColorVision.Services
                 {
                     SensorConfig config = new SensorConfig
                     {
+                        ID = TextBox_Code.Text,
+                        Name = TextBox_Name.Text
                     };
                     SysResourceModel model = saveConfigInfo(config, sysResource);
                     if (model != null)
@@ -146,7 +152,8 @@ namespace ColorVision.Services
                 {
                     FileServerConfig config = new FileServerConfig
                     {
-
+                        ID = TextBox_Code.Text,
+                        Name = TextBox_Name.Text
                     };
                     SysResourceModel model = saveConfigInfo(config, sysResource);
                     if (model != null)
@@ -155,7 +162,8 @@ namespace ColorVision.Services
                 {
                     AlgorithmConfig config = new AlgorithmConfig
                     {
-
+                        ID = TextBox_Code.Text,
+                        Name = TextBox_Name.Text
                     };
                     SysResourceModel model = saveConfigInfo(config, sysResource);
                     if (model != null)

@@ -20,6 +20,7 @@ namespace ColorVision.MQTT
         private bool _IsSelected;
 
         public RelayCommand PropertyCommand { get; set; }
+        public SysResourceModel SysResourceModel { get; set; }
 
         public virtual UserControl GetDeviceControl()
         {
@@ -47,7 +48,6 @@ namespace ColorVision.MQTT
     public class BaseDevice<T> : BaseChannel where T :BaseDeviceConfig,new()
     {
         public T Config { get; set; }
-        public SysResourceModel SysResourceModel { get; set; }
         public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
 
         public BaseDevice(SysResourceModel sysResourceModel) : base()

@@ -12,8 +12,8 @@ namespace ColorVision.Services.Algorithm
         public DeviceAlgorithm Device { get; set; }
         public DeviceAlgorithmControl(DeviceAlgorithm device)
         {
-            InitializeComponent();
             this.Device = device;
+            InitializeComponent();
         }
 
         private void Button_Click_Save(object sender, RoutedEventArgs e)
