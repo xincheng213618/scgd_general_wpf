@@ -45,7 +45,7 @@ namespace ColorVision.MySql.DAO
 
     public class PoiDetailDao : BaseDaoMaster<PoiDetailModel>
     {
-        public PoiDetailDao() : base(string.Empty, "t_scgd_cfg_poi_detail", "id", true)
+        public PoiDetailDao() : base(string.Empty, "t_scgd_algorithm_poi_template_detail", "id", true)
         {
         }
 

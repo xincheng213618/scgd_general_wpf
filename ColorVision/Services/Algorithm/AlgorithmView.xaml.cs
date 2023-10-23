@@ -20,12 +20,14 @@ namespace ColorVision.Services.Algorithm
     {
         private int _Id;
         private string _SerialNumber;
+        private string _ImgFileName;
         private string _RecvTime;
         private POIResultType _ResultType;
         private ObservableCollection<PoiResultData> _PoiData;
 
         public int Id { get { return _Id; } set { _Id = value; NotifyPropertyChanged(); } }
         public string SerialNumber { get { return _SerialNumber; } set { _SerialNumber = value; NotifyPropertyChanged(); } }
+        public string ImgFileName { get { return _ImgFileName; } set { _ImgFileName = value; NotifyPropertyChanged(); } }
         public string RecvTime { get { return _RecvTime; } set { _RecvTime = value; NotifyPropertyChanged(); } }
 
         public string ResultTypeDis { get {
@@ -116,12 +118,15 @@ namespace ColorVision.Services.Algorithm
         }
     }
 
+    public delegate void CurSelectionChanged(PoiResult data);
+
     /// <summary>
     /// SpectrumView.xaml 的交互逻辑
     /// </summary>
     public partial class AlgorithmView : UserControl,IView
     {
         public View View { get; set; }
+        public event CurSelectionChanged OnCurSelectionChanged;
         public AlgorithmView()
         {
             InitializeComponent();
@@ -179,8 +184,8 @@ namespace ColorVision.Services.Algorithm
             };
 
             GridView gridView = new GridView();
-            List<string> headers = new List<string> { "序号","批次号", "测量时间","类型" };
-            List<string> bdheaders = new List<string> { "Id", "SerialNumber", "RecvTime", "ResultTypeDis" };
+            List<string> headers = new List<string> { "序号", "批次号", "图像数据文件", "测量时间","类型" };
+            List<string> bdheaders = new List<string> { "Id", "SerialNumber", "ImgFileName", "RecvTime", "ResultTypeDis" };
             for (int i = 0; i < headers.Count; i++)
             {
                 gridView.Columns.Add(new GridViewColumn() { Header = headers[i], Width = 100, DisplayMemberBinding = new Binding(bdheaders[i]) });
@@ -235,31 +240,15 @@ namespace ColorVision.Services.Algorithm
             }
         }
 
-        public void PoiDataDraw(List<PoiResultModel> poiResultModels)
-        {
-            foreach (var item in poiResultModels)
-            {
-                try
-                {
-                    PoiResultCIExyuvData poiResult = JsonConvert.DeserializeObject<PoiResultCIExyuvData>(item.Value.ToString());
-                    PoiResultDatas.Add(poiResult);
-                }
-                catch
-                {
-
-                }
-
-            }
-
-        }
         //TODO: 需要新增亮度listview
-        public void PoiDataDraw(string serialNumber, List<POIResultCIEY> poiResultData)
+        public void PoiDataDraw(string serialNumber, string POIImgFileName, List<POIResultCIEY> poiResultData)
         {
             if (!resultDis.ContainsKey(serialNumber))
             {
                 PoiResult result = new PoiResult();
                 result.Id = PoiResults.Count + 1;
                 result.SerialNumber = serialNumber;
+                result.ImgFileName = POIImgFileName;
                 result.RecvTime = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss");
                 result.ResultType = POIResultType.Y;
                 //PoiResults.Add(result);
@@ -279,13 +268,14 @@ namespace ColorVision.Services.Algorithm
             }
             if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
         }
-        public void PoiDataDraw(string serialNumber, List<POIResultCIExyuv> poiResultData)
+        public void PoiDataDraw(string serialNumber, string POIImgFileName, List<POIResultCIExyuv> poiResultData)
         {
             if (!resultDis.ContainsKey(serialNumber))
             {
                 PoiResult result = new PoiResult();
                 result.Id = PoiResults.Count + 1;
                 result.SerialNumber = serialNumber;
+                result.ImgFileName = POIImgFileName;
                 result.RecvTime = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss");
                 result.ResultType = POIResultType.XY_UV;
                 PoiResults.Add(result);
@@ -322,6 +312,7 @@ namespace ColorVision.Services.Algorithm
             PoiResult data = listView1.Items[listView1.SelectedIndex] as PoiResult;
             if(data != null)
             {
+                OnCurSelectionChanged?.Invoke(data);
                 PoiResultDatas.Clear();
                 //if(data.ResultType == POIResultType.XY_UV)
                 {
