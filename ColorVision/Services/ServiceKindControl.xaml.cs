@@ -53,8 +53,14 @@ namespace ColorVision.Services
 
             if (TextBox_Type.SelectedItem is ServiceKind serviceKind)
             {
+
+                if (serviceKind.ServicesCodes.Contains(TextBox_Code.Text))
+                {
+                    MessageBox.Show("服务标识已存在,不允许重复添加");
+                    return;
+                }
                 SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, serviceKind.SysDictionaryModel.Value, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
-                
+               
                 BaseServiceConfig serviceConfig = new BaseServiceConfig
                 {
                     SendTopic = serviceKind.SysDictionaryModel.Code + "/" + "CMD/" + sysResource.Code,

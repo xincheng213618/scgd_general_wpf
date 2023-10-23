@@ -21,7 +21,7 @@
         </Grid.RowDefinitions>
         <GroupBox Header="创建服务" Grid.Row="1">
             <StackPanel x:Name="MQTTCreate"   d:DataContext="{d:DesignInstance local:ServiceManager}" Margin="5">
-                <DockPanel Margin="5" >
+                <DockPanel Margin="5"  Visibility="Collapsed">
                     <TextBlock Text="类型" Width="60"/>
                     <ComboBox x:Name="TextBox_Type"  SelectedValuePath="Name"  DisplayMemberPath="Name" />
                 </DockPanel>
