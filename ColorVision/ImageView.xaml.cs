@@ -511,7 +511,7 @@ namespace ColorVision
         {
             if (sender is ToggleButton toggleButton)
             {
-                var mainWindow = Application.Current.MainWindow;
+                var window = Window.GetWindow(this);
 
                 if (toggleButton.IsChecked == true)
                 {
@@ -519,15 +519,15 @@ namespace ColorVision
                     {
                         OldWindowStatus = new WindowStatus();
                         OldWindowStatus.Parent = p;
-                        OldWindowStatus.WindowState = mainWindow.WindowState;
-                        OldWindowStatus.WindowStyle = mainWindow.WindowStyle;
-                        OldWindowStatus.ResizeMode = mainWindow.ResizeMode;
-                        OldWindowStatus.Root = mainWindow.Content;
-                        mainWindow.WindowStyle = WindowStyle.None;
-                        mainWindow.WindowState = WindowState.Maximized;
+                        OldWindowStatus.WindowState = window.WindowState;
+                        OldWindowStatus.WindowStyle = window.WindowStyle;
+                        OldWindowStatus.ResizeMode = window.ResizeMode;
+                        OldWindowStatus.Root = window.Content;
+                        window.WindowStyle = WindowStyle.None;
+                        window.WindowState = WindowState.Maximized;
 
                         OldWindowStatus.Parent.Children.Remove(this);
-                        mainWindow.Content = this;
+                        window.Content = this;
                     }
                     else
                     {
@@ -537,11 +537,11 @@ namespace ColorVision
                 else
                 {
 
-                    mainWindow.WindowStyle = OldWindowStatus.WindowStyle;
-                    mainWindow.WindowState = OldWindowStatus.WindowState;
-                    mainWindow.ResizeMode = OldWindowStatus.ResizeMode;
+                    window.WindowStyle = OldWindowStatus.WindowStyle;
+                    window.WindowState = OldWindowStatus.WindowState;
+                    window.ResizeMode = OldWindowStatus.ResizeMode;
 
-                    mainWindow.Content = OldWindowStatus.Root;
+                    window.Content = OldWindowStatus.Root;
                     OldWindowStatus.Parent.Children.Add(this);
                 }
 
