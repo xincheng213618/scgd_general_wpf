@@ -175,7 +175,7 @@ namespace ColorVision.Services.Algorithm
             {
                 EventName = "GetData",
                 ServiceName = Config.Code,
-                Params = new Dictionary<string, object>() { { "FileName", fileName }, { "TemplateId", pid }, { "TemplateName", tempName }, { "nBatchID", Batchid } }
+                Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "TemplateId", pid }, { "TemplateName", tempName }, { "nBatchID", Batchid } }
             };
             return PublishAsyncClient(msg);
         }
