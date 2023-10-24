@@ -4,6 +4,7 @@ using ColorVision.MQTT;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 using System.Windows.Controls;
 
 namespace ColorVision.Services
@@ -102,6 +103,24 @@ namespace ColorVision.Services
         }
 
         public ServiceType Type { get => (ServiceType)SysResourceModel.Type; }
+
+        public List<string> ServicesCodes
+        {
+            get
+            {
+                List<string> codes = new List<string>();
+                foreach (var item in VisualChildren)
+                {
+                    if (item is BaseChannel baseChannel)
+                    {
+                        if (!string.IsNullOrWhiteSpace(baseChannel.SysResourceModel.Code))
+                            codes.Add(baseChannel.SysResourceModel.Code);
+                    }
+                }
+                return codes;
+            }
+        }
+
 
 
 

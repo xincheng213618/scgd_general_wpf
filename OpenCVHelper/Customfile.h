@@ -21,7 +21,7 @@ typedef struct CustomMatFile
 
 typedef struct  CustomFileHeader
 {
-    char Name[6] = { 0x43,0x75,0x73,0x74,0x6f,0x6d };
+    char Name[6] = { 0x43,0x75,0x73,0x74,0x6f,0x6d }; //Custom
     int Version; //0
     int Matoffset; //直接读取Mat数据的偏移量 int 限制了2G大小，如果需要更多，则需要float or double d但是这回让内存对齐比较麻烦
 }CustomFileHeader;

@@ -21,6 +21,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -1401,7 +1402,7 @@ namespace ColorVision.Template
                         List<Point> pts_src = new List<Point>();
                         pts_src.Add(PoiParam.DatumArea.Polygon1);
                         pts_src.Add(PoiParam.DatumArea.Polygon2);
-                        pts_src.Add(PoiParam.DatumArea.Polygon3);
+                        pts_src.Add(PoiParam.DatumArea.Polygon3);  
                         pts_src.Add(PoiParam.DatumArea.Polygon4);
 
 
@@ -1620,6 +1621,48 @@ namespace ColorVision.Template
         private void Grid_MouseDown(object sender, MouseButtonEventArgs e)
         {
 
+        }
+
+        private WindowStatus OldWindowStatus { get; set; }
+
+        private void Button8_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is ToggleButton toggleButton)
+            {
+                var window = Window.GetWindow(ImageContentGrid);
+
+                if (toggleButton.IsChecked == true)
+                {
+                    if (ImageContentGrid.Parent is Grid p)
+                    {
+                        OldWindowStatus = new WindowStatus();
+                        OldWindowStatus.Parent = p;
+                        OldWindowStatus.WindowState = window.WindowState;
+                        OldWindowStatus.WindowStyle = window.WindowStyle;
+                        OldWindowStatus.ResizeMode = window.ResizeMode;
+                        OldWindowStatus.Root = window.Content;
+                        window.WindowStyle = WindowStyle.None;
+                        window.WindowState = WindowState.Maximized;
+
+                        OldWindowStatus.Parent.Children.Remove(ImageContentGrid);
+                        window.Content = ImageContentGrid;
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
+                else
+                {
+
+                    window.WindowStyle = OldWindowStatus.WindowStyle;
+                    window.WindowState = OldWindowStatus.WindowState;
+                    window.ResizeMode = OldWindowStatus.ResizeMode;
+
+                    window.Content = OldWindowStatus.Root;
+                    OldWindowStatus.Parent.Children.Add(ImageContentGrid);
+                }
+            }
         }
     }
 

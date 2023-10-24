@@ -224,12 +224,12 @@ namespace ColorVision.Device.Camera
             }
             if (item.Color.LumFourColor.IsSelected)
             {
-                Params.Add("CalibType", "LumTwoColor");
+                Params.Add("CalibType", "LumFourColor");
                 Params.Add("CalibTypeFileName", item.Color.LumFourColor.FilePath);
             }
             if (item.Color.LumMultiColor.IsSelected)
             {
-                Params.Add("CalibType", "LumFourColor");
+                Params.Add("CalibType", "LumMultiColor");
                 Params.Add("CalibTypeFileName", item.Color.LumMultiColor.FilePath);
             }
 

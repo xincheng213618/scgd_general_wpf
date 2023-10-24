@@ -43,6 +43,7 @@ namespace ColorVision
             ShowImage = new ToolBarTopShowImage(zombox, drawCanvas);
             ToolBarMeasure = new ToolBarMeasure(Parent, zombox, drawCanvas);
             ToolBarScaleRuler = new ToolBarScaleRuler(Parent, zombox, drawCanvas);
+            ToolBarScaleRuler.IsShow = false;
 
             ZoomUniformToFill = new RelayCommand(a => ZoomboxSub.ZoomUniformToFill());
             ZoomUniform = new RelayCommand(a => ZoomboxSub.ZoomUniform());
@@ -52,6 +53,11 @@ namespace ColorVision
             OpenProperty = new RelayCommand(a => new DrawProperties().Show());
             this.Parent.PreviewKeyDown += PreviewKeyDown;
             zombox.Cursor = Cursors.Hand;
+        }
+
+        public void OpenImage()
+        {
+            ToolBarScaleRuler.IsShow = true;
         }
 
         private void PreviewKeyDown(object sender, KeyEventArgs e)
