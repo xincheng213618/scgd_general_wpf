@@ -120,7 +120,7 @@ namespace ColorVision
                         System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
                         ofd.Filter = "*.stn|*.stn";
                         ofd.FileName = FileName;
-                        ofd.InitialDirectory = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.SolutionFullName;
+                        ofd.InitialDirectory = SolutionControl.GetInstance().SolutionConfig.SolutionFullName;
                         if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
                         if (FlowParam != null)
                         {
@@ -168,7 +168,7 @@ namespace ColorVision
             else if (!IsSave)
             {
                 FlowParam.FileName = FlowParam.Name + ".stn";
-                FileName = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.SolutionFullName + "\\" + FlowParam.Name + ".stn";
+                FileName = SolutionControl.GetInstance().SolutionConfig.SolutionFullName + "\\" + FlowParam.Name + ".stn";
                 SaveFlow(FileName, true);
                 IsSave = true;
             }

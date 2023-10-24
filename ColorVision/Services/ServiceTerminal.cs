@@ -21,7 +21,7 @@ namespace ColorVision.Services
     {
         public SysResourceModel SysResourceModel { get; set; }
         public BaseServiceConfig Config { get; set; }
-        public BaseService BaseService { get; set; }
+        public BaseServiceBase BaseService { get; set; }
 
         public ServiceType ServiceType { get => (ServiceType)SysResourceModel.Type; }
 

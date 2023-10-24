@@ -13,6 +13,30 @@ namespace ColorVision.Util
 {
     public static partial class Tool
     {
+        public static bool CreateDirectory(string folderPath)
+        {
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.UseShellExecute = true;
+            startInfo.WorkingDirectory = @"C:\Windows\System32";
+            startInfo.FileName = "cmd.exe";
+            startInfo.Verb = "runas"; // 请求管理员权限
+            startInfo.Arguments = "/c mkdir " + folderPath; // 创建文件夹的命令
+            startInfo.WindowStyle = ProcessWindowStyle.Hidden; // 隐藏命令行窗口
+
+            try
+            {
+                Process process = Process.Start(startInfo);
+                process?.WaitForExit(); // 等待命令完成
+                return true;
+            }
+            catch
+            {
+                MessageBox.Show("需要管理员权限来创建文件夹.");
+                return false;
+            }
+        }
+
+
 
         public static float GetScreenScalingFactor()
         {

@@ -145,24 +145,32 @@ namespace ColorVision
 
         private void MenuItem_ProjectNew_Click(object sender, RoutedEventArgs e)
         {
-            NewCreatSolution();
+            SolutionNewCreat();
         }
 
         private void MenuItem_ProjectOpen_Click(object sender, RoutedEventArgs e)
         {
-            OpenSolution();
+            SolutionOpen();
         }
         private DateTime lastClickTime = DateTime.MinValue;
 
         private void TextBlock_MouseLeftButtonDown2(object sender, MouseButtonEventArgs e)
         {
-            TimeSpan elapsedTime = DateTime.Now - lastClickTime;
-            if (elapsedTime.TotalMilliseconds <= 300) 
+            if (SolutionControl.GetInstance().SolutionConfig.SolutionFullName != null)
             {
-                System.Diagnostics.Process.Start("explorer.exe", $"{GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.SolutionFullName}");
+                TimeSpan elapsedTime = DateTime.Now - lastClickTime;
+                if (elapsedTime.TotalMilliseconds <= 300)
+                {
+                    System.Diagnostics.Process.Start("explorer.exe", $"{SolutionControl.GetInstance().SolutionConfig.SolutionFullName}");
+                }
+                lastClickTime = DateTime.Now;
+            }
+            else
+            {
+                SolutionNewCreat();
             }
 
-            lastClickTime = DateTime.Now;
+
         }
 
         private void MenuItem_Click_2(object sender, RoutedEventArgs e)
@@ -170,27 +178,18 @@ namespace ColorVision
             OpenSetting();
         }
 
-        private void OpenSolution()
+        private void SolutionOpen()
         {
             OpenSolutionWindow openSolutionWindow = new OpenSolutionWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
             openSolutionWindow.Closed += delegate
             {
-                string SolutionDirectoryPath = openSolutionWindow.FullName;
-                SolutionConfig ProjectConfig = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig;
-                if (Directory.Exists(SolutionDirectoryPath))
-                {
-                    DirectoryInfo Info = new DirectoryInfo(SolutionDirectoryPath);
-                    ProjectConfig.SolutionName = Info.Name;
-                    ProjectConfig.SolutionFullName = Info.FullName;
-                    RecentFileList SolutionHistory = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
-                    SolutionHistory.InsertFile(Info.FullName);
-                }
-
+                if (Directory.Exists(openSolutionWindow.FullName))
+                    SolutionControl.GetInstance().CreateSolution(new DirectoryInfo(openSolutionWindow.FullName));
             };
             openSolutionWindow.Show();
         }
 
-        private void NewCreatSolution()
+        private void SolutionNewCreat()
         {
             NewCreateWindow newCreatWindow = new NewCreateWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
             newCreatWindow.Closed += delegate
@@ -206,14 +205,7 @@ namespace ColorVision
 
         private void OpenSolution(string SolutionFullPath)
         {
-            SolutionConfig ProjectConfig = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig;
-            if (Directory.Exists(SolutionFullPath))
-            {
-                DirectoryInfo Info = new DirectoryInfo(SolutionFullPath);
-                ProjectConfig.SolutionName = Info.Name;
-                ProjectConfig.SolutionFullName = Info.FullName;
-                SolutionHistory.InsertFile(Info.FullName);
-            }
+
         }
 
         private void OpenSetting()
@@ -232,14 +224,11 @@ namespace ColorVision
             new MsgList() { Owner = this }.Show();
         }
 
-
-        RecentFileList SolutionHistory = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
-
         private void Menu_Initialized(object sender, EventArgs e)
         {
             Application.Current.MainWindow = this;
-            Application.Current.MainWindow.AddHotKeys(new HotKeys("打开工程", new Hotkey(Key.O, ModifierKeys.Control), OpenSolution));
-            Application.Current.MainWindow.AddHotKeys(new HotKeys("新建工程", new Hotkey(Key.N, ModifierKeys.Control), NewCreatSolution));
+            Application.Current.MainWindow.AddHotKeys(new HotKeys("打开工程", new Hotkey(Key.O, ModifierKeys.Control), SolutionOpen));
+            Application.Current.MainWindow.AddHotKeys(new HotKeys("新建工程", new Hotkey(Key.N, ModifierKeys.Control), SolutionNewCreat));
             Application.Current.MainWindow.AddHotKeys(new HotKeys("设置", new Hotkey(Key.I, ModifierKeys.Control), OpenSetting));
             Application.Current.MainWindow.AddHotKeys(new HotKeys(Properties.Resource.About, new Hotkey(Key.F1, ModifierKeys.Control), AboutMsg));
             Application.Current.MainWindow.AddHotKeys(new HotKeys("MsgList", new Hotkey(Key.M, ModifierKeys.Control), MsgList));
@@ -251,7 +240,7 @@ namespace ColorVision
             RecentListMenuItem.SubmenuOpened += (s, e) =>
             {
                 var firstMenuItem = RecentListMenuItem.Items[0];
-                foreach (var item in SolutionHistory.RecentFiles)
+                foreach (var item in  SolutionControl.GetInstance().SolutionHistory.RecentFiles)
                 {
                     if (Directory.Exists(item))
                     {
@@ -259,13 +248,13 @@ namespace ColorVision
                         menuItem.Header = item;
                         menuItem.Click += (sender, e) =>
                         {
-                            OpenSolution(item);
+                            SolutionControl.GetInstance().OpenSolution(item);
                         };
                         RecentListMenuItem.Items.Add(menuItem);
                     }
                     else
                     {
-                        SolutionHistory.RecentFiles.Remove(item);
+                        SolutionControl.GetInstance().SolutionHistory.RecentFiles.Remove(item);
                     }
 
 
@@ -345,8 +334,9 @@ namespace ColorVision
         private void Setting_Click(object sender, RoutedEventArgs e)
         {
             string fileName = GlobalSetting.GetInstance().SoftwareConfigFileName;
-            if (!Tool.HasDefaultProgram(fileName))
-                Process.Start(Tool.HasDefaultProgram(fileName) ? "explorer.exe" : "notepad.exe", fileName);
+            bool result = Tool.HasDefaultProgram(fileName);
+            if (!result)
+                Process.Start(result ? "explorer.exe" : "notepad.exe", fileName);
         }
     }
 }

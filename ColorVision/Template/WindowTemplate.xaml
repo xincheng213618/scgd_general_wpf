@@ -57,7 +57,7 @@
                                                 <TextBlock Text="{ Binding ID}" HorizontalAlignment="Left"/>
                                             </Grid>
                                             <Grid >
-                                                <TextBlock Text="{ Binding Name}" HorizontalAlignment="Left"/>
+                                                <TextBox Text="{ Binding Name}" HorizontalAlignment="Left"/>
                                             </Grid>
                                         </DockPanel>
                                     </DataTemplate>

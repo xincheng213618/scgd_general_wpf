@@ -205,10 +205,10 @@ namespace ColorVision.Services
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
             MQTTCreate.Visibility = MQTTCreate.Visibility == Visibility.Visible? Visibility.Collapsed : Visibility.Visible;
-            if (MQTTService.BaseService is CameraService cameraService)
+            if (MQTTService.BaseService is BaseServiceBase baseServiceBase)
             {
-                TextBox_Code.ItemsSource = cameraService.DevicesSN;
-                TextBox_Name.ItemsSource = cameraService.DevicesSN;
+                TextBox_Code.ItemsSource = baseServiceBase.DevicesSN;
+                TextBox_Name.ItemsSource = baseServiceBase.DevicesSN;
             }
         }
 
