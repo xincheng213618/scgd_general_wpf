@@ -1,12 +1,24 @@
 ﻿#pragma warning disable CS8602  
 
+using ColorVision.Device.Camera;
 using ColorVision.MQTT;
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 
 namespace ColorVision.Services
 {
-    public class BaseService<T> : BaseService where T : BaseServiceConfig
+    public class BaseServiceBase : BaseService
+    {
+        public virtual ObservableCollection<string> DevicesSN { get; set; } = new ObservableCollection<string>();
+        public virtual Dictionary<string, string> DevicesSNMD5 { get; set; } = new Dictionary<string, string>();
+
+        public List<CameraDeviceService> Devices { get; set; }
+    }
+
+
+    public class BaseService<T> : BaseServiceBase where T : BaseServiceConfig
     {
         public T Config { get; set; }
 
@@ -18,6 +30,7 @@ namespace ColorVision.Services
         public override bool IsAlive { get => Config.IsAlive; set { Config.IsAlive = value; NotifyPropertyChanged(); } }
 
         public override DateTime LastAliveTime { get => Config.LastAliveTime; set => Config.LastAliveTime = value; }
+
 
 
         public void UpdateServiceConfig(IServiceConfig config)

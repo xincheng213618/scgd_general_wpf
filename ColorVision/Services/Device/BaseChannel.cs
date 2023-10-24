@@ -16,6 +16,8 @@ namespace ColorVision.MQTT
         public virtual bool IsAlive { get; set; }
         public virtual DateTime LastAliveTime { get; set; }
 
+        public virtual int HeartbeatTime { get; set; }
+
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; NotifyPropertyChanged(); } }
         private bool _IsSelected;
 
@@ -98,6 +100,7 @@ namespace ColorVision.MQTT
         public override string SubscribeTopic { get => Config.SubscribeTopic; set { Config.SubscribeTopic = value; NotifyPropertyChanged(); } }
         public override bool IsAlive { get => Config.IsAlive; set { Config.IsAlive = value; NotifyPropertyChanged(); } }
         public override DateTime LastAliveTime { get => Config.LastAliveTime; set { Config.LastAliveTime = value; NotifyPropertyChanged(); } }
+        public override int HeartbeatTime { get => Config.HeartbeatTime; set { Config.HeartbeatTime = value; NotifyPropertyChanged(); } }
 
         public override void Save()
         {

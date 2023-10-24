@@ -16,7 +16,13 @@ using System.Windows;
 
 namespace ColorVision.MQTT
 {
-    public class BaseDevService<T> : BaseService where T : BaseConfig
+
+    public class BaseDevService : BaseService
+    {
+
+    }
+
+    public class BaseDevService<T> : BaseDevService where T : BaseConfig
     {
         public T Config { get; set; }
 

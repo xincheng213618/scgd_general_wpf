@@ -12,11 +12,16 @@ using ColorVision.MySql.Service;
 using ColorVision.RC;
 using ColorVision.Services.Algorithm;
 using ColorVision.User;
+using cvColorVision;
+using EnumsNET;
 using MQTTMessageLib;
 using Newtonsoft.Json;
+using NPOI.HPSF;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Data;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using static cvColorVision.GCSDLL;
@@ -218,60 +223,6 @@ namespace ColorVision.Services
         }
 
 
-        public void UpdateStatus(Dictionary<string, List<MQTTNodeService>> data)
-        {
-            foreach (var item in data)
-            {
-                foreach(var nodeService in item.Value)
-                {
-                    string svrKey = GetServiceKey(nodeService.ServiceType, nodeService.ServiceName);
-                    if (svrDevices.ContainsKey(svrKey))
-                    {
-                        foreach (BaseService svr in svrDevices[svrKey])
-                        {
-                            svr.UpdateStatus(nodeService);
-                        }
-                    }
-                }
-            }
-        }
-
-        public void UpdateServiceStatus(Dictionary<string, List<MQTTNodeService>> data)
-        {
-            foreach (var item in data.Values)
-            {
-                foreach (var svr in item)
-                {
-                    UpdateServiceStatus(svr);
-                }
-            }
-        }
-
-        private void UpdateServiceStatus(MQTTNodeService svr)
-        {
-            UpdateServiceStatus(svr.ServiceName, svr.LiveTime, svr.OverTime);
-        }
-
-        public void UpdateServiceStatus(string serviceName, DateTime liveTime, int overTime)
-        {
-            foreach (var item in MQTTServices)
-            {
-                foreach (var svr in item.VisualChildren)
-                {
-                    if (svr is ServiceTerminal service)
-                    {
-                        if (serviceName.Equals(service.Config.Code, StringComparison.Ordinal))
-                        {
-                            service.Config.SetLiveTime(liveTime, overTime, true);
-                        }
-                    }
-
-                }
-            }
-        }
-
-
-
         public void SpectrumDrawPlotFromDB(string bid)
         {
             List<SpectumData> datas = new List<SpectumData>();
@@ -350,19 +301,6 @@ namespace ColorVision.Services
         private static string GetServiceKey(string svrType, string svrCode)
         {
             return svrType + ":" + svrCode;
-        }
-
-        public void UpdateServiceStatus(string serviceName, string liveTime, int overTime)
-        {
-            DateTime lvTime = DateTime.Now;
-            if (!string.IsNullOrWhiteSpace(liveTime))
-            {
-                if (!DateTime.TryParse(liveTime, out lvTime))
-                {
-
-                }
-            }
-            UpdateServiceStatus(serviceName, lvTime, overTime);
         }
     }
 }

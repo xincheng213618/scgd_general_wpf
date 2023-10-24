@@ -26,10 +26,6 @@ namespace ColorVision.Device.Camera
         }
 
 
-        public ObservableCollection<string> DevicesSN { get; set; } = new ObservableCollection<string>();
-        public Dictionary<string, string> DevicesSNMD5 { get; set; } = new Dictionary<string, string>();
-
-        public List<CameraDeviceService> Devices { get; set; }
 
         private void MQTTCamera_MsgReturnChanged(MsgReturn msg)
         {

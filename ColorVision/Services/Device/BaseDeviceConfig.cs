@@ -39,7 +39,7 @@ namespace ColorVision.Device
         {
             this.LastAliveTime = liveTime;
             this.IsAlive = isLive;
-            if (overTime > 0) this.HeartbeatTime = overTime;
+            HeartbeatTime = 100000;
         }
     }
 

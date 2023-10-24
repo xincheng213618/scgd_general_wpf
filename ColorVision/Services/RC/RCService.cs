@@ -6,6 +6,7 @@ using MQTTnet.Client;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,6 +24,10 @@ namespace ColorVision.RC
     }
 
     public delegate void RCServiceStatusChangedHandler(object sender, RCServiceStatusChangedEvent args);
+
+    /// <summary>
+    /// 注册服务
+    /// </summary>
     public class RCService : BaseDevService<RCConfig>
     {
         private string NodeName;
@@ -89,18 +94,23 @@ namespace ColorVision.RC
                             break;
                         case MQTTNodeServiceEventEnum.Event_Startup:
                             MQTTNodeServiceStartupRequest req = JsonConvert.DeserializeObject<MQTTNodeServiceStartupRequest>(Msg);
-                            this.regStatus = ServiceNodeStatus.Registered;
-                            if (!TryTestRegist)
+                            if (req != null)
                             {
-                                Token = req.Data;
-                                StatusChangedEventHandler?.Invoke(this, new RCServiceStatusChangedEvent(ServiceNodeStatus.Registered));
-                                QueryServices();
+                                this.regStatus = ServiceNodeStatus.Registered;
+                                if (!TryTestRegist)
+                                {
+                                    Token = req.Data;
+                                    StatusChangedEventHandler?.Invoke(this, new RCServiceStatusChangedEvent(ServiceNodeStatus.Registered));
+                                    QueryServices();
+                                }
                             }
                             break;
                         case MQTTNodeServiceEventEnum.Event_ServicesQuery:
                             MQTTRCServicesQueryResponse respQurey = JsonConvert.DeserializeObject<MQTTRCServicesQueryResponse>(Msg);
-                            ServiceManager.GetInstance().UpdateServiceStatus(respQurey.Data);
-                            ServiceManager.GetInstance().UpdateStatus(respQurey.Data);
+                            if (respQurey != null)
+                            {
+                                UpdateServiceStatus(respQurey.Data);
+                            }
                             break;
                         case MQTTNodeServiceEventEnum.Event_NotRegist:
                             StatusChangedEventHandler?.Invoke(this, new RCServiceStatusChangedEvent(ServiceNodeStatus.Unregistered));
@@ -116,6 +126,69 @@ namespace ColorVision.RC
             }
             return Task.CompletedTask;
         }
+
+
+        public void UpdateServiceStatus(Dictionary<string, List<MQTTNodeService>> data)
+        {
+            foreach (var serviceKind in ServiceManager.GetInstance().MQTTServices)
+            {
+                foreach (var item in data)
+                {
+                    if (item.Key.ToString() == serviceKind.ServiceType.ToString())
+                    {
+                        Dictionary<string, List<MQTTNodeService>> keyValuePairs = new Dictionary<string, List<MQTTNodeService>>();
+                        foreach (var nodeService in item.Value)
+                        {
+                            if (keyValuePairs.ContainsKey(nodeService.UpChannel))
+                                keyValuePairs[nodeService.UpChannel].Add(nodeService);
+                            else
+                                keyValuePairs.Add(nodeService.UpChannel, new List<MQTTNodeService>() { nodeService });
+                        }
+
+                        foreach (var baseObject in serviceKind.VisualChildren)
+                        {
+                            if (baseObject is ServiceTerminal serviceTerminal)
+                                foreach (var item1 in keyValuePairs)
+                                {
+                                    if (serviceTerminal.Config.SendTopic == item1.Key)
+                                    {
+                                        List<DateTime> dateTimes = new List<DateTime>();
+                                        foreach (var mQTTNodeService in item1.Value)
+                                        {
+                                            dateTimes.Add(DateTime.Parse(mQTTNodeService.LiveTime));
+                                        }
+                                        List<DateTime> sortedDates = dateTimes.OrderBy(date => date).ToList();
+
+
+                                        serviceTerminal.Config.LastAliveTime = sortedDates.LastOrDefault();
+                                        serviceTerminal.Config.IsAlive = true;
+                                        serviceTerminal.Config.HeartbeatTime = 99999;
+
+                                        foreach (var baseObject1 in serviceTerminal.VisualChildren)
+                                        {
+                                            if (baseObject1 is BaseChannel baseChannel)
+                                            {
+                                                baseChannel.IsAlive = true;
+                                                baseChannel.LastAliveTime = sortedDates.LastOrDefault(); ;
+                                                baseChannel.HeartbeatTime = 99999;
+                                            }
+                                        }
+
+                                    }
+
+                                }
+
+                        }
+
+
+
+                    }
+                }
+            }
+
+        }
+
+
 
         public bool ReRegist()
         {
