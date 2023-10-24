@@ -1,6 +1,7 @@
 ﻿using ColorVision.Device;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
+using ColorVision.Solution;
 using ColorVision.Template;
 using log4net;
 using MQTTMessageLib.Algorithm;
@@ -10,7 +11,9 @@ using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -34,6 +37,8 @@ namespace ColorVision.Services.Algorithm
 
         private ResultService resultService { get; set; }
 
+        private Dictionary<string, string> fileCache;
+
 
         public AlgorithmDisplayControl(DeviceAlgorithm device)
         {
@@ -42,6 +47,8 @@ namespace ColorVision.Services.Algorithm
 
             Service.OnAlgorithmEvent += Service_OnAlgorithmEvent;
             View.OnCurSelectionChanged += View_OnCurSelectionChanged;
+
+            fileCache = new Dictionary<string, string>();
         }
 
         private void View_OnCurSelectionChanged(PoiResult data)
@@ -77,28 +84,32 @@ namespace ColorVision.Services.Algorithm
 
         private void ShowResult(string serialNumber, List<POIPointResultModel> poiDbResults, string rawMsg, MQTTPOIGetDataResult response)
         {
+            Application.Current.Dispatcher.Invoke(() => { _ShowResult(serialNumber, poiDbResults, rawMsg, response); });
+        }
+
+        private void _ShowResult(string serialNumber, List<POIPointResultModel> poiDbResults, string rawMsg, MQTTPOIGetDataResult response)
+        {
             switch (response.ResultType)
             {
                 case POIResultType.XY_UV:
-                    ShowResultCIExyuv(serialNumber, response.POIImgFileName, response.HasRecord, poiDbResults, rawMsg);
+                    ShowResultCIExyuv(serialNumber, response.POITemplateName, response.POIImgFileName, response.HasRecord, poiDbResults, rawMsg);
                     break;
                 case POIResultType.Y:
-                    ShowResultCIEY(serialNumber, response.POIImgFileName, response.HasRecord, poiDbResults, rawMsg);
+                    ShowResultCIEY(serialNumber, response.POITemplateName, response.POIImgFileName, response.HasRecord, poiDbResults, rawMsg);
                     break;
             }
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                if (!CB_CIEImageFiles.Text.Equals(response.POIImgFileName, StringComparison.Ordinal))
-                {
-                    CB_CIEImageFiles.Text = response.POIImgFileName;
-                    doOpen(response.POIImgFileName);
-                }
-            });
+            //if (!CB_CIEImageFiles.Text.Equals(response.POIImgFileName, StringComparison.Ordinal))
+            //{
+            //    CB_CIEImageFiles.Text = response.POIImgFileName;
+            //    doOpen(response.POIImgFileName);
+            //}
+            handler?.Close();
+            handler = null;
         }
 
-        private List<POIResultCIEY> ShowResultCIEY(string serialNumber, string POIImgFileName, bool hasRecord, List<POIPointResultModel> poiDbResults, string rawMsg)
+        private List<POIResultCIEY> ShowResultCIEY(string serialNumber, string templateName, string POIImgFileName, bool hasRecord, List<POIPointResultModel> poiDbResults, string rawMsg)
         {
-            List<POIResultCIEY> poiResultData;
+            List<POIResultCIEY> poiResultData = null;
             if (hasRecord)
             {
                 MQTTPOIGetDataCIEYResult response = JsonConvert.DeserializeObject<MQTTPOIGetDataCIEYResult>(rawMsg);
@@ -113,17 +124,13 @@ namespace ColorVision.Services.Algorithm
                        JsonConvert.DeserializeObject<POIDataCIEY>(item.Value)));
                 }
             }
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                Device.View.PoiDataDraw(serialNumber, POIImgFileName, poiResultData);
-            });
-
+            Device.View.PoiDataDraw(serialNumber, templateName, POIImgFileName, poiResultData);
             return poiResultData;
         }
 
-        private List<POIResultCIExyuv> ShowResultCIExyuv(string serialNumber, string POIImgFileName, bool hasRecord, List<POIPointResultModel> poiDbResults, string rawMsg)
+        private List<POIResultCIExyuv> ShowResultCIExyuv(string serialNumber, string templateName, string POIImgFileName, bool hasRecord, List<POIPointResultModel> poiDbResults, string rawMsg)
         {
-            List<POIResultCIExyuv> poiResultData = new List<POIResultCIExyuv>();
+            List<POIResultCIExyuv> poiResultData = null;
             if (hasRecord)
             {
                 poiResultData = JsonConvert.DeserializeObject<MQTTPOIGetDataCIExyuvResult>(rawMsg)?.Results;
@@ -137,11 +144,7 @@ namespace ColorVision.Services.Algorithm
                        JsonConvert.DeserializeObject<POIDataCIExyuv>(item.Value)));
                 }
             }
-
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                Device.View.PoiDataDraw(serialNumber, POIImgFileName, poiResultData);
-            });
+            Device.View.PoiDataDraw(serialNumber, templateName, POIImgFileName, poiResultData);
             return poiResultData;
         }
 
@@ -207,6 +210,11 @@ namespace ColorVision.Services.Algorithm
             string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             //var Batch = ServiceControl.GetInstance().GetResultBatch(sn);
             Service.GetData(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, -1, CB_CIEImageFiles.Text, ComboxPoiTemplate.Text);
+            handler = PendingBox.Show(Application.Current.MainWindow, "", "计算关注点", true);
+            handler.Cancelling += delegate
+            {
+                handler?.Close();
+            };
         }
 
         private void Algorithm_INI(object sender, RoutedEventArgs e)
@@ -362,18 +370,38 @@ namespace ColorVision.Services.Algorithm
 
         private void doOpen(string fileName)
         {
-            Service.Open(fileName);
-            Task t = new(() => { Task_Start(); });
-            t.Start();
-
-            handler = PendingBox.Show(Application.Current.MainWindow, "", "打开图片", true);
-            handler.Cancelling += delegate
+            if(fileCache.ContainsKey(fileName))
             {
-                handler?.Close();
-            };
+                Stopwatch sw = new Stopwatch();
+                sw.Start();
+                byte[] data = ColorVision.Common.Util.CVFileUtils.ReadBinaryFile(fileCache[fileName]);
+                sw.Stop();
+                long swtmfl = sw.ElapsedMilliseconds;
+                
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    Stopwatch sw = new Stopwatch();
+                    sw.Start();
+                    View.OpenImage(data);
+                    sw.Stop();
+                    long swtm = sw.ElapsedMilliseconds;
+                });
+            }
+            else
+            {
+                Service.Open(fileName);
+                Task t = new(() => { Task_Start(fileName); });
+                t.Start();
+
+                handler = PendingBox.Show(Application.Current.MainWindow, "", "打开图片", true);
+                handler.Cancelling += delegate
+                {
+                    handler?.Close();
+                };
+            }
         }
 
-        private void Task_Start()
+        private void Task_Start(string fileName)
         {
             DealerSocket client = null;
             try
@@ -382,6 +410,9 @@ namespace ColorVision.Services.Algorithm
                 List<byte[]> data = client.ReceiveMultipartBytes();
                 if (data.Count == 1)
                 {
+                    string fullFileName = SolutionControl.GetInstance().SolutionConfig.CachePath + "\\" + fileName;
+                    ColorVision.Common.Util.CVFileUtils.WriteBinaryFile(fullFileName, data[0]);
+                    fileCache.Add(fileName, fullFileName);
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         View.OpenImage(data[0]);
@@ -400,23 +431,11 @@ namespace ColorVision.Services.Algorithm
             handler?.Close();
         }
 
-        private static byte[] readFile(string path)
-        {
-            FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read);
-            BinaryReader binaryReader = new BinaryReader(fileStream);
-            //获取文件长度
-            long length = fileStream.Length;
-            byte[] bytes = new byte[length];
-            //读取文件中的内容并保存到字节数组中
-            binaryReader.Read(bytes, 0, bytes.Length);
-            return bytes;
-        }
-
         private void Task_StartUpload(string fileName)
         {
             DealerSocket client = new DealerSocket(Device.Config.Endpoint);
             var message = new List<byte[]>();
-            message.Add(readFile(fileName));
+            message.Add(ColorVision.Common.Util.CVFileUtils.ReadBinaryFile(fileName));
             client.TrySendMultipartBytes(TimeSpan.FromMilliseconds(3000), message);
             client.Close();
             client.Dispose();

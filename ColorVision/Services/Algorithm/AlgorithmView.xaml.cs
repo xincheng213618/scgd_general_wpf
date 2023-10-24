@@ -1,6 +1,7 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
+using HandyControl.Tools.Extension;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using System;
@@ -21,6 +22,7 @@ namespace ColorVision.Services.Algorithm
         private int _Id;
         private string _SerialNumber;
         private string _ImgFileName;
+        private string _POITemplateName;
         private string _RecvTime;
         private POIResultType _ResultType;
         private ObservableCollection<PoiResultData> _PoiData;
@@ -28,6 +30,7 @@ namespace ColorVision.Services.Algorithm
         public int Id { get { return _Id; } set { _Id = value; NotifyPropertyChanged(); } }
         public string SerialNumber { get { return _SerialNumber; } set { _SerialNumber = value; NotifyPropertyChanged(); } }
         public string ImgFileName { get { return _ImgFileName; } set { _ImgFileName = value; NotifyPropertyChanged(); } }
+        public string POITemplateName { get { return _POITemplateName; } set { _POITemplateName = value; NotifyPropertyChanged(); } }
         public string RecvTime { get { return _RecvTime; } set { _RecvTime = value; NotifyPropertyChanged(); } }
 
         public string ResultTypeDis { get {
@@ -54,6 +57,16 @@ namespace ColorVision.Services.Algorithm
         public PoiResult()
         {
             this._PoiData = new ObservableCollection<PoiResultData>();
+        }
+
+        public PoiResult(int id, string serialNumber, string imgFileName, string pOITemplateName, string recvTime, POIResultType resultType) : this()
+        {
+            _Id = id;
+            _SerialNumber = serialNumber;
+            _ImgFileName = imgFileName;
+            _POITemplateName = pOITemplateName;
+            _RecvTime = recvTime;
+            _ResultType = resultType;
         }
     }
 
@@ -184,13 +197,14 @@ namespace ColorVision.Services.Algorithm
             };
 
             GridView gridView = new GridView();
-            List<string> headers = new List<string> { "序号", "批次号", "图像数据文件", "测量时间","类型" };
-            List<string> bdheaders = new List<string> { "Id", "SerialNumber", "ImgFileName", "RecvTime", "ResultTypeDis" };
+            List<string> headers = new List<string> { "序号", "批次号","模板", "图像数据文件", "测量时间","类型" };
+            List<string> bdheaders = new List<string> { "Id", "SerialNumber",  "POITemplateName", "ImgFileName", "RecvTime", "ResultTypeDis" };
             for (int i = 0; i < headers.Count; i++)
             {
                 gridView.Columns.Add(new GridViewColumn() { Header = headers[i], Width = 100, DisplayMemberBinding = new Binding(bdheaders[i]) });
             }
             listView1.View = gridView;
+            //色度
             List<string> headers2 = new List<string> { "PixelPos", "PixelSize", "Shapes", "CCT","Wave","X","Y","Z","u","v","x","y" };
 
             GridView gridView2 = new GridView();
@@ -200,10 +214,21 @@ namespace ColorVision.Services.Algorithm
             }
             listView2.View = gridView2;
             listView2.ItemsSource = PoiResultDatas;
+            //亮度
+            List<string> headersY = new List<string> { "PixelPos", "PixelSize", "Shapes",  "Y" };
+            GridView gridViewY = new GridView();
+            for (int i = 0; i < headersY.Count; i++)
+            {
+                gridViewY.Columns.Add(new GridViewColumn() { Header = headersY[i], DisplayMemberBinding = new Binding(headersY[i]) });
+            }
+            listViewY.View = gridViewY;
+            listViewY.ItemsSource = PoiYResultDatas;
+            //
             listView1.ItemsSource = PoiResults;
         }
 
         public ObservableCollection<PoiResultData> PoiResultDatas { get; set; } = new ObservableCollection<PoiResultData>();
+        public ObservableCollection<PoiResultData> PoiYResultDatas { get; set; } = new ObservableCollection<PoiResultData>();
         public ObservableCollection<PoiResult> PoiResults { get; set; } = new ObservableCollection<PoiResult>();
         public Dictionary<string,PoiResult> resultDis { get; set; } = new Dictionary<string, PoiResult>();
 
@@ -241,17 +266,12 @@ namespace ColorVision.Services.Algorithm
         }
 
         //TODO: 需要新增亮度listview
-        public void PoiDataDraw(string serialNumber, string POIImgFileName, List<POIResultCIEY> poiResultData)
+        public void PoiDataDraw(string serialNumber, string templateName, string POIImgFileName, List<POIResultCIEY> poiResultData)
         {
             if (!resultDis.ContainsKey(serialNumber))
             {
-                PoiResult result = new PoiResult();
-                result.Id = PoiResults.Count + 1;
-                result.SerialNumber = serialNumber;
-                result.ImgFileName = POIImgFileName;
-                result.RecvTime = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss");
-                result.ResultType = POIResultType.Y;
-                //PoiResults.Add(result);
+                PoiResult result = new PoiResult(PoiResults.Count + 1, serialNumber, POIImgFileName, templateName, DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss"), POIResultType.Y);
+                PoiResults.Add(result);
                 resultDis[serialNumber] = result;
                 foreach (var item in poiResultData)
                 {
@@ -268,16 +288,11 @@ namespace ColorVision.Services.Algorithm
             }
             if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
         }
-        public void PoiDataDraw(string serialNumber, string POIImgFileName, List<POIResultCIExyuv> poiResultData)
+        public void PoiDataDraw(string serialNumber, string templateName, string POIImgFileName, List<POIResultCIExyuv> poiResultData)
         {
             if (!resultDis.ContainsKey(serialNumber))
             {
-                PoiResult result = new PoiResult();
-                result.Id = PoiResults.Count + 1;
-                result.SerialNumber = serialNumber;
-                result.ImgFileName = POIImgFileName;
-                result.RecvTime = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss");
-                result.ResultType = POIResultType.XY_UV;
+                PoiResult result = new PoiResult(PoiResults.Count + 1, serialNumber, POIImgFileName, templateName, DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss"), POIResultType.XY_UV);
                 PoiResults.Add(result);
                 resultDis[serialNumber] = result;
                 foreach (var item in poiResultData)
@@ -314,15 +329,28 @@ namespace ColorVision.Services.Algorithm
             {
                 OnCurSelectionChanged?.Invoke(data);
                 PoiResultDatas.Clear();
-                //if(data.ResultType == POIResultType.XY_UV)
+                PoiYResultDatas.Clear();
+                img_view.ResetPOIPoint();
+                if (data.ResultType == POIResultType.XY_UV)
                 {
+                    listViewY.Hide();
+                    listView2.Show();
                     foreach (var item in data.PoiData)
                     {
                         PoiResultDatas.Add(item);
                     }
+                    img_view.AddPOIPoint(PoiResultDatas);
                 }
-                img_view.ResetPOIPoint();
-                img_view.AddPOIPoint(PoiResultDatas);
+                else if (data.ResultType == POIResultType.Y)
+                {
+                    listView2.Hide();
+                    listViewY.Show();
+                    foreach (var item in data.PoiData)
+                    {
+                        PoiYResultDatas.Add(item);
+                    }
+                    img_view.AddPOIPoint(PoiYResultDatas);
+                }
             }
         }
 
@@ -349,6 +377,11 @@ namespace ColorVision.Services.Algorithm
         public void OpenImage(byte[] bytes)
         {
             img_view.OpenImage(bytes);
+        }
+
+        private void listViewY_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
         }
     }
 }

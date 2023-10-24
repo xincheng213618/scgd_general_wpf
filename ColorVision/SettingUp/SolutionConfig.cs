@@ -1,4 +1,5 @@
 ﻿using ColorVision.MVVM;
+using System.IO;
 
 namespace ColorVision.SettingUp
 {
@@ -19,11 +20,20 @@ namespace ColorVision.SettingUp
         public string SolutionName { get => _SolutionName; set { _SolutionName = value; NotifyPropertyChanged(); } }
         private string _SolutionName;
 
-        public string SolutionFullName { get =>  _SolutionFullName; set { _SolutionFullName = value; NotifyPropertyChanged(); } }
+        public string SolutionFullName 
+        { 
+            get =>  _SolutionFullName; 
+            set { 
+                _SolutionFullName = value;
+                NotifyPropertyChanged();
+                if (!Directory.Exists(CachePath))
+                    Directory.CreateDirectory(CachePath);
+                 }
+        }
         private string _SolutionFullName;
 
-        public string CachePath { get => _CachePath; set { _CachePath = value; NotifyPropertyChanged(); } }
-        private string _CachePath;
+        public string CachePath { get => _SolutionFullName + "\\cache"; }
+
 
         public int SolutionId { get => _SolutionId; set { _SolutionId = value; NotifyPropertyChanged(); } }
         private int _SolutionId;
@@ -51,8 +61,7 @@ namespace ColorVision.SettingUp
         public string ProjectFullName { get => _ProjectFullName; set { _ProjectFullName = value; NotifyPropertyChanged(); } }
         private string _ProjectFullName;
 
-        public string CachePath { get => _CachePath; set { _CachePath = value; NotifyPropertyChanged(); } }
-        private string _CachePath;
+        public string CachePath { get => _ProjectFullName+"\\cache";  } 
 
 
         public string GetFullFileName(string fileName)

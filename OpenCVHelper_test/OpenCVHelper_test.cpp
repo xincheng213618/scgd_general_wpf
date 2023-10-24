@@ -15,7 +15,7 @@ int main()
 	std::chrono::microseconds duration;
 	start = std::chrono::high_resolution_clock::now();
 
-	cv::Mat test1 = cv::imread("D:\\C#\\1.tif");
+	cv::Mat test1 = cv::imread("C:\\Users\\chg95\\Documents\\ColorVision\\新建工程4\\cache\\ttt.cvcie",cv::ImreadModes::IMREAD_UNCHANGED);
 
 	end = std::chrono::high_resolution_clock::now();
 	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);

@@ -138,11 +138,11 @@ namespace ColorVision
 
         private void Zoombox1_LayoutUpdated(object? sender, EventArgs e)
         {
-            foreach (var item in DrawingVisualLists)
-            {
-                item.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                item.Render();
-            }
+            //foreach (var item in DrawingVisualLists)
+            //{
+            //    item.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+            //    item.Render();
+            //}
         }
 
 
@@ -597,11 +597,7 @@ namespace ColorVision
             {
                 BitmapImage bitmapImage = ImageUtil.ByteArrayToBitmapImage(data);
 
-                ImageShow.Source = bitmapImage;
-                DrawGridImage(DrawingVisualGrid, bitmapImage);
-                Zoombox1.ZoomUniform();
-                ToolBar1.Visibility = Visibility.Visible;
-                ImageShow.ImageInitialize();
+                SetImageSource(bitmapImage);
             }
         }
 
@@ -610,12 +606,17 @@ namespace ColorVision
             if (filePath != null && File.Exists(filePath))
             {
                 BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
-                ImageShow.Source = bitmapImage;
-                DrawGridImage(DrawingVisualGrid, bitmapImage);
-                Zoombox1.ZoomUniform();
-                ToolBar1.Visibility = Visibility.Visible;
-                ImageShow.ImageInitialize();
+                SetImageSource(bitmapImage);
             }
+        }
+
+        private void SetImageSource(BitmapImage bitmapImage)
+        {
+            ImageShow.Source = bitmapImage;
+            DrawGridImage(DrawingVisualGrid, bitmapImage);
+            Zoombox1.ZoomUniform();
+            ToolBar1.Visibility = Visibility.Visible;
+            ImageShow.ImageInitialize();
         }
 
         private void ToolBar1_Loaded(object sender, RoutedEventArgs e)
