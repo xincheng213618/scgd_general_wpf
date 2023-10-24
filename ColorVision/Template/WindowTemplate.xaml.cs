@@ -42,7 +42,6 @@ namespace ColorVision.Template
             TemplateControl = TemplateControl.GetInstance();
             InitializeComponent();
 
-
             switch (TemplateType)
             {
                 case TemplateType.FlowParam:
@@ -345,7 +344,31 @@ namespace ColorVision.Template
             }
         }
 
+
+
+        private void Button_Save_Click(object sender, RoutedEventArgs e)
+        {
+            TemplateSave();
+        }
+
         private void Button_New_Click(object sender, RoutedEventArgs e)
+        {
+            TemplateNew();
+        }
+
+
+        private void Button_Del_Click(object sender, RoutedEventArgs e)
+        {
+            TemplateDel();
+        }
+        public void TemplateSave()
+        {
+            TemplateControl.Save(TemplateType);
+            this.Close();
+        }
+
+
+        public void TemplateNew()
         {
             if (!TextBox1.Text.IsNullOrEmpty())
             {
@@ -365,16 +388,16 @@ namespace ColorVision.Template
             }
         }
 
-        private void CreateNewTemplate<T>(ObservableCollection<KeyValuePair<string, T>> keyValuePairs ,string Name,T t )
+        private void CreateNewTemplate<T>(ObservableCollection<KeyValuePair<string, T>> keyValuePairs, string Name, T t)
         {
             keyValuePairs.Add(new KeyValuePair<string, T>(Name, t));
-            ListConfig config = new ListConfig() { ID = ListConfigs.Count + 1, Name = Name, Value = t  };
+            ListConfig config = new ListConfig() { ID = ListConfigs.Count + 1, Name = Name, Value = t };
             ListConfigs.Add(config);
             ListView1.SelectedIndex = ListConfigs.Count - 1;
             ListView1.ScrollIntoView(config);
         }
 
-        private void Button_Del_Click(object sender, RoutedEventArgs e)
+        public void TemplateDel()
         {
             void TemplateDel<T>(ObservableCollection<KeyValuePair<string, T>> keyValuePairs) where T : ParamBase
             {
@@ -385,7 +408,7 @@ namespace ColorVision.Template
 
             if (ListView1.SelectedIndex > -1)
             {
-                if (MessageBox.Show($"是否删除模板{ListView1.SelectedIndex+1},删除后无法恢复!", Application.Current.MainWindow.Title, MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK)
+                if (MessageBox.Show($"是否删除模板{ListView1.SelectedIndex + 1},删除后无法恢复!", Application.Current.MainWindow.Title, MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK)
                 {
                     switch (TemplateType)
                     {
@@ -434,7 +457,8 @@ namespace ColorVision.Template
                     ListView1.SelectedIndex = ListConfigs.Count - 1;
                     if (ListView1.SelectedIndex < 0)
                     {
-                        if (UserControl is MeasureParamControl mpc){
+                        if (UserControl is MeasureParamControl mpc)
+                        {
                             mpc.ListConfigs.Clear();
                         }
                     }
@@ -448,18 +472,11 @@ namespace ColorVision.Template
 
 
 
-
-
         private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)
         {
             e.Handled = true;
         }
 
-        private void Button_Save_Click(object sender, RoutedEventArgs e)
-        {
-            TemplateControl.Save(TemplateType);
-            this.Close();
-        }
 
         private void ListView1_Loaded(object sender, RoutedEventArgs e)
         {

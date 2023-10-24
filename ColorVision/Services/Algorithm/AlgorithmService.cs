@@ -198,7 +198,6 @@ namespace ColorVision.Services.Algorithm
                 EventName = "FOV",
                 Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatchID", Batchid } }
             };
-            //Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid },{ "eCalibType", (int)eCalibType }, { "szFileNameX", "X.tif " }, { "szFileNameY", "Y.tif " }, { "szFileNameZ", "Z.tif " } }
             return PublishAsyncClient(msg);
         }
 
@@ -212,7 +211,7 @@ namespace ColorVision.Services.Algorithm
 
             msg.Params.Add("radio", fOVParam.Radio);
             msg.Params.Add("cameraDegrees", fOVParam.CameraDegrees);
-            msg.Params.Add("DFovDist", fOVParam.DFovDist);
+            msg.Params.Add("dFovDist", fOVParam.DFovDist);
             msg.Params.Add("FovPattern", (int)fOVParam.FovPattern);
             msg.Params.Add("FovType", (int)fOVParam.FovType);
             msg.Params.Add("file_data", ToJsonFileList(ImageChannelType.Gray_Y, fileName));
@@ -393,10 +392,8 @@ namespace ColorVision.Services.Algorithm
             msg.Params.Add("minInertiaRatio", distortionParam.minInertiaRatio);
             msg.Params.Add("maxInertiaRatio", distortionParam.maxInertiaRatio);
 
-            msg.Params.Add("x", distortionParam.ROI.x);
-            msg.Params.Add("y", distortionParam.ROI.y);
-            msg.Params.Add("cx", distortionParam.ROI.cx);
-            msg.Params.Add("cy", distortionParam.ROI.cy);
+            msg.Params.Add("cx", distortionParam.Width);
+            msg.Params.Add("cy", distortionParam.Height);
             msg.Params.Add("file_data", ToJsonFileList(ImageChannelType.Gray_Y, FileName));
 
             return PublishAsyncClient(msg);
