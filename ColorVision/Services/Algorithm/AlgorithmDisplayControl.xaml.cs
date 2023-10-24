@@ -1,6 +1,7 @@
 ﻿using ColorVision.Device;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
+using ColorVision.Solution;
 using ColorVision.Template;
 using log4net;
 using MQTTMessageLib.Algorithm;
@@ -10,7 +11,9 @@ using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -34,6 +37,8 @@ namespace ColorVision.Services.Algorithm
 
         private ResultService resultService { get; set; }
 
+        private Dictionary<string, string> fileCache;
+
 
         public AlgorithmDisplayControl(DeviceAlgorithm device)
         {
@@ -42,6 +47,8 @@ namespace ColorVision.Services.Algorithm
 
             Service.OnAlgorithmEvent += Service_OnAlgorithmEvent;
             View.OnCurSelectionChanged += View_OnCurSelectionChanged;
+
+            fileCache = new Dictionary<string, string>();
         }
 
         private void View_OnCurSelectionChanged(PoiResult data)
@@ -362,18 +369,38 @@ namespace ColorVision.Services.Algorithm
 
         private void doOpen(string fileName)
         {
-            Service.Open(fileName);
-            Task t = new(() => { Task_Start(); });
-            t.Start();
-
-            handler = PendingBox.Show(Application.Current.MainWindow, "", "打开图片", true);
-            handler.Cancelling += delegate
+            if(fileCache.ContainsKey(fileName))
             {
-                handler?.Close();
-            };
+                Stopwatch sw = new Stopwatch();
+                sw.Start();
+                byte[] data = ColorVision.Common.Util.CVFileUtils.ReadBinaryFile(fileCache[fileName]);
+                sw.Stop();
+                long swtmfl = sw.ElapsedMilliseconds;
+                
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    Stopwatch sw = new Stopwatch();
+                    sw.Start();
+                    View.OpenImage(data);
+                    sw.Stop();
+                    long swtm = sw.ElapsedMilliseconds;
+                });
+            }
+            else
+            {
+                Service.Open(fileName);
+                Task t = new(() => { Task_Start(fileName); });
+                t.Start();
+
+                handler = PendingBox.Show(Application.Current.MainWindow, "", "打开图片", true);
+                handler.Cancelling += delegate
+                {
+                    handler?.Close();
+                };
+            }
         }
 
-        private void Task_Start()
+        private void Task_Start(string fileName)
         {
             DealerSocket client = null;
             try
@@ -382,6 +409,9 @@ namespace ColorVision.Services.Algorithm
                 List<byte[]> data = client.ReceiveMultipartBytes();
                 if (data.Count == 1)
                 {
+                    string fullFileName = SolutionControl.GetInstance().SolutionConfig.CachePath + "\\" + fileName;
+                    ColorVision.Common.Util.CVFileUtils.WriteBinaryFile(fullFileName, data[0]);
+                    fileCache.Add(fileName, fullFileName);
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         View.OpenImage(data[0]);
@@ -400,23 +430,11 @@ namespace ColorVision.Services.Algorithm
             handler?.Close();
         }
 
-        private static byte[] readFile(string path)
-        {
-            FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read);
-            BinaryReader binaryReader = new BinaryReader(fileStream);
-            //获取文件长度
-            long length = fileStream.Length;
-            byte[] bytes = new byte[length];
-            //读取文件中的内容并保存到字节数组中
-            binaryReader.Read(bytes, 0, bytes.Length);
-            return bytes;
-        }
-
         private void Task_StartUpload(string fileName)
         {
             DealerSocket client = new DealerSocket(Device.Config.Endpoint);
             var message = new List<byte[]>();
-            message.Add(readFile(fileName));
+            message.Add(ColorVision.Common.Util.CVFileUtils.ReadBinaryFile(fileName));
             client.TrySendMultipartBytes(TimeSpan.FromMilliseconds(3000), message);
             client.Close();
             client.Dispose();
