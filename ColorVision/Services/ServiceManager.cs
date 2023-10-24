@@ -12,11 +12,16 @@ using ColorVision.MySql.Service;
 using ColorVision.RC;
 using ColorVision.Services.Algorithm;
 using ColorVision.User;
+using cvColorVision;
+using EnumsNET;
 using MQTTMessageLib;
 using Newtonsoft.Json;
+using NPOI.HPSF;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Data;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using static cvColorVision.GCSDLL;
@@ -238,13 +243,64 @@ namespace ColorVision.Services
 
         public void UpdateServiceStatus(Dictionary<string, List<MQTTNodeService>> data)
         {
-            foreach (var item in data.Values)
+            foreach (var serviceKind in MQTTServices)
             {
-                foreach (var svr in item)
+                foreach (var item in data)
                 {
-                    UpdateServiceStatus(svr);
+                    if (item.Key.ToString()== serviceKind.ServiceType.ToString())
+                    {
+                        Dictionary<string, List<MQTTNodeService>> keyValuePairs = new Dictionary<string, List<MQTTNodeService>>();
+                        foreach (var nodeService in item.Value)
+                        {
+                            if (keyValuePairs.ContainsKey(nodeService.UpChannel))
+                                keyValuePairs[nodeService.UpChannel].Add(nodeService);
+                            else
+                                keyValuePairs.Add(nodeService.UpChannel, new List<MQTTNodeService>() { nodeService });
+                        }
+
+                        foreach (var  baseObject in serviceKind.VisualChildren)
+                        {
+                            if (baseObject is  ServiceTerminal serviceTerminal)
+                            foreach (var item1 in keyValuePairs)
+                            {
+                                    if (serviceTerminal.Config.SendTopic == item1.Key)
+                                    {
+                                        List<DateTime> dateTimes = new List<DateTime>();
+                                        foreach (var mQTTNodeService in item1.Value)
+                                        {
+                                            dateTimes.Add(DateTime.Parse(mQTTNodeService.LiveTime));
+                                        }
+                                        List<DateTime> sortedDates = dateTimes.OrderBy(date => date).ToList();
+
+
+                                        serviceTerminal.Config.LastAliveTime = sortedDates.LastOrDefault();
+                                        serviceTerminal.Config.IsAlive = true;
+                                        serviceTerminal.Config.HeartbeatTime = 99999;
+
+                                        foreach (var baseObject1 in serviceTerminal.VisualChildren)
+                                        {
+                                            if (baseObject1 is BaseChannel  baseChannel)
+                                            {
+                                                baseChannel.IsAlive = true;
+                                                baseChannel.LastAliveTime = sortedDates.LastOrDefault(); ;
+                                                baseChannel.HeartbeatTime = 99999;
+                                            }
+
+
+                                        }
+
+                                    }
+
+                                }
+
+                        }
+
+
+
+                    }
                 }
             }
+
         }
 
         private void UpdateServiceStatus(MQTTNodeService svr)

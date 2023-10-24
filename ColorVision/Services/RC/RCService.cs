@@ -89,18 +89,24 @@ namespace ColorVision.RC
                             break;
                         case MQTTNodeServiceEventEnum.Event_Startup:
                             MQTTNodeServiceStartupRequest req = JsonConvert.DeserializeObject<MQTTNodeServiceStartupRequest>(Msg);
-                            this.regStatus = ServiceNodeStatus.Registered;
-                            if (!TryTestRegist)
+                            if (req != null)
                             {
-                                Token = req.Data;
-                                StatusChangedEventHandler?.Invoke(this, new RCServiceStatusChangedEvent(ServiceNodeStatus.Registered));
-                                QueryServices();
+                                this.regStatus = ServiceNodeStatus.Registered;
+                                if (!TryTestRegist)
+                                {
+                                    Token = req.Data;
+                                    StatusChangedEventHandler?.Invoke(this, new RCServiceStatusChangedEvent(ServiceNodeStatus.Registered));
+                                    QueryServices();
+                                }
                             }
                             break;
                         case MQTTNodeServiceEventEnum.Event_ServicesQuery:
                             MQTTRCServicesQueryResponse respQurey = JsonConvert.DeserializeObject<MQTTRCServicesQueryResponse>(Msg);
-                            ServiceManager.GetInstance().UpdateServiceStatus(respQurey.Data);
-                            ServiceManager.GetInstance().UpdateStatus(respQurey.Data);
+                            if (respQurey != null)
+                            {
+                                ServiceManager.GetInstance().UpdateServiceStatus(respQurey.Data);
+                                ServiceManager.GetInstance().UpdateStatus(respQurey.Data);
+                            }
                             break;
                         case MQTTNodeServiceEventEnum.Event_NotRegist:
                             StatusChangedEventHandler?.Invoke(this, new RCServiceStatusChangedEvent(ServiceNodeStatus.Unregistered));
