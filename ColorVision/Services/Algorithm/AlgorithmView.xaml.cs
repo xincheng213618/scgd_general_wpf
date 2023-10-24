@@ -21,6 +21,7 @@ namespace ColorVision.Services.Algorithm
         private int _Id;
         private string _SerialNumber;
         private string _ImgFileName;
+        private string _POITemplateName;
         private string _RecvTime;
         private POIResultType _ResultType;
         private ObservableCollection<PoiResultData> _PoiData;
@@ -28,6 +29,7 @@ namespace ColorVision.Services.Algorithm
         public int Id { get { return _Id; } set { _Id = value; NotifyPropertyChanged(); } }
         public string SerialNumber { get { return _SerialNumber; } set { _SerialNumber = value; NotifyPropertyChanged(); } }
         public string ImgFileName { get { return _ImgFileName; } set { _ImgFileName = value; NotifyPropertyChanged(); } }
+        public string POITemplateName { get { return _POITemplateName; } set { _POITemplateName = value; NotifyPropertyChanged(); } }
         public string RecvTime { get { return _RecvTime; } set { _RecvTime = value; NotifyPropertyChanged(); } }
 
         public string ResultTypeDis { get {
@@ -54,6 +56,16 @@ namespace ColorVision.Services.Algorithm
         public PoiResult()
         {
             this._PoiData = new ObservableCollection<PoiResultData>();
+        }
+
+        public PoiResult(int id, string serialNumber, string imgFileName, string pOITemplateName, string recvTime, POIResultType resultType) : this()
+        {
+            _Id = id;
+            _SerialNumber = serialNumber;
+            _ImgFileName = imgFileName;
+            _POITemplateName = pOITemplateName;
+            _RecvTime = recvTime;
+            _ResultType = resultType;
         }
     }
 
@@ -184,8 +196,8 @@ namespace ColorVision.Services.Algorithm
             };
 
             GridView gridView = new GridView();
-            List<string> headers = new List<string> { "序号", "批次号", "图像数据文件", "测量时间","类型" };
-            List<string> bdheaders = new List<string> { "Id", "SerialNumber", "ImgFileName", "RecvTime", "ResultTypeDis" };
+            List<string> headers = new List<string> { "序号", "批次号","模板", "图像数据文件", "测量时间","类型" };
+            List<string> bdheaders = new List<string> { "Id", "SerialNumber",  "POITemplateName", "ImgFileName", "RecvTime", "ResultTypeDis" };
             for (int i = 0; i < headers.Count; i++)
             {
                 gridView.Columns.Add(new GridViewColumn() { Header = headers[i], Width = 100, DisplayMemberBinding = new Binding(bdheaders[i]) });
@@ -241,7 +253,7 @@ namespace ColorVision.Services.Algorithm
         }
 
         //TODO: 需要新增亮度listview
-        public void PoiDataDraw(string serialNumber, string POIImgFileName, List<POIResultCIEY> poiResultData)
+        public void PoiDataDraw(string serialNumber, string templateName, string POIImgFileName, List<POIResultCIEY> poiResultData)
         {
             if (!resultDis.ContainsKey(serialNumber))
             {
@@ -249,6 +261,7 @@ namespace ColorVision.Services.Algorithm
                 result.Id = PoiResults.Count + 1;
                 result.SerialNumber = serialNumber;
                 result.ImgFileName = POIImgFileName;
+                result.POITemplateName = templateName;
                 result.RecvTime = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss");
                 result.ResultType = POIResultType.Y;
                 //PoiResults.Add(result);
@@ -268,16 +281,11 @@ namespace ColorVision.Services.Algorithm
             }
             if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
         }
-        public void PoiDataDraw(string serialNumber, string POIImgFileName, List<POIResultCIExyuv> poiResultData)
+        public void PoiDataDraw(string serialNumber, string templateName, string POIImgFileName, List<POIResultCIExyuv> poiResultData)
         {
             if (!resultDis.ContainsKey(serialNumber))
             {
-                PoiResult result = new PoiResult();
-                result.Id = PoiResults.Count + 1;
-                result.SerialNumber = serialNumber;
-                result.ImgFileName = POIImgFileName;
-                result.RecvTime = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss");
-                result.ResultType = POIResultType.XY_UV;
+                PoiResult result = new PoiResult(PoiResults.Count + 1, serialNumber, POIImgFileName, templateName, DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss"), POIResultType.XY_UV);
                 PoiResults.Add(result);
                 resultDis[serialNumber] = result;
                 foreach (var item in poiResultData)
