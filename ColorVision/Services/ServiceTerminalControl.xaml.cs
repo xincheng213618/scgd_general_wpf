@@ -169,7 +169,7 @@ namespace ColorVision.Services
                     {
                         ID = TextBox_Code.Text,
                         Name = TextBox_Name.Text,
-                        Endpoint = "tcp://127.0.0.1:" + (Math.Abs(new Random().Next()) % 99 + 6500),
+                        Endpoint = "tcp://127.0.0.1:" + (Math.Abs(new Random().Next()) % 99 + 6600),
                         FileBasePath = "F:/img/cvcie",
                     };
                     SysResourceModel model = saveConfigInfo(config, sysResource);
