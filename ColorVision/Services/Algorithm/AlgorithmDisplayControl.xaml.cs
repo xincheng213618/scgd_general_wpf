@@ -365,6 +365,11 @@ namespace ColorVision.Services.Algorithm
 
         private void Button_Click_Open(object sender, RoutedEventArgs e)
         {
+            handler = PendingBox.Show(Application.Current.MainWindow, "", "打开图片", true);
+            handler.Cancelling += delegate
+            {
+                handler?.Close();
+            };
             doOpen(CB_CIEImageFiles.Text);
         }
 
@@ -372,32 +377,20 @@ namespace ColorVision.Services.Algorithm
         {
             if(fileCache.ContainsKey(fileName))
             {
-                Stopwatch sw = new Stopwatch();
-                sw.Start();
                 byte[] data = ColorVision.Common.Util.CVFileUtils.ReadBinaryFile(fileCache[fileName]);
-                sw.Stop();
-                long swtmfl = sw.ElapsedMilliseconds;
                 
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    Stopwatch sw = new Stopwatch();
-                    sw.Start();
                     View.OpenImage(data);
-                    sw.Stop();
-                    long swtm = sw.ElapsedMilliseconds;
                 });
+                handler?.Close();
+                handler = null;
             }
             else
             {
                 Service.Open(fileName);
                 Task t = new(() => { Task_Start(fileName); });
                 t.Start();
-
-                handler = PendingBox.Show(Application.Current.MainWindow, "", "打开图片", true);
-                handler.Cancelling += delegate
-                {
-                    handler?.Close();
-                };
             }
         }
 

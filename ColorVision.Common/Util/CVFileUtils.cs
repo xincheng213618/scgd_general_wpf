@@ -1,10 +1,15 @@
 ﻿using System;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading.Channels;
+using System.Windows.Media.Media3D;
 
 namespace ColorVision.Common.Util
 {
     public class CVFileUtils
     {
+        private const string LIBRARY_CVCommonFile = "CVCommonFileUtils.dll";
         public static byte[] ReadBinaryFile(string fileName)
         {
             if (File.Exists(fileName))
@@ -30,5 +35,15 @@ namespace ColorVision.Common.Util
                 writer.Write(data);
             }
         }
+
+
+        [DllImport(LIBRARY_CVCommonFile, EntryPoint = "ReadCVCIEHeader", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int ReadCVCIEHeader(string cieFileName, out int width, out int height,out int bpp, out int channels, out int dataLen, out int srcFileNameLen);
+
+        [DllImport(LIBRARY_CVCommonFile, EntryPoint = "ReadCVCIE", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int ReadCVCIE(string cieFileName, float[] exp, byte[] data, int dateLen, StringBuilder srcFileName, int srcFileNameLen);
+
+        [DllImport(LIBRARY_CVCommonFile, EntryPoint = "WriteCVCIE", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int WriteCVCIE(string cieFileName, float[] exp, int width, int height, int bpp, int channels, byte[] data, int dateLen, string srcFileName);
     }
 }

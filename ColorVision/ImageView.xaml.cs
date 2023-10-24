@@ -1,4 +1,5 @@
-﻿using ColorVision.Draw;
+﻿using ColorVision.Common.Util;
+using ColorVision.Draw;
 using ColorVision.Draw.Ruler;
 using ColorVision.MVVM;
 using ColorVision.Services.Algorithm;
@@ -10,6 +11,7 @@ using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -589,7 +591,18 @@ namespace ColorVision
             }
         }
 
-
+        public void OpenCVCIE(string fileName)
+        {
+            int width=0, height=0, bpp=0, channels=0, dataLen=0, srcFileNameLen = 0;
+            CVFileUtils.ReadCVCIEHeader(fileName,out width,out height,out bpp,out channels,out dataLen,out srcFileNameLen);
+            float[] exp=new float[3];
+            byte[] data = new byte[dataLen];
+            srcFileNameLen += 1;
+            StringBuilder sb = new StringBuilder(srcFileNameLen);
+            CVFileUtils.ReadCVCIE(fileName, exp, data, dataLen, sb, srcFileNameLen);
+            string fileN = sb.ToString();
+            CVFileUtils.WriteCVCIE(fileName+".1", exp, width, height, bpp, channels, data, dataLen, fileN);
+        }
 
         public void OpenImage(byte[] data)
         {
