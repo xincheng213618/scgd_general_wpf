@@ -97,8 +97,6 @@ namespace ColorVision.RC
             }
         }
 
-
-
         private void MenuItem_Click_Delete(object sender, RoutedEventArgs e)
         {
             if (sender is MenuItem menuItem && menuItem.Tag is RCServiceConfig rcConfig)

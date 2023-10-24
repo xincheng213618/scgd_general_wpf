@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Services"
+             xmlns:hc ="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d" 
              d:DesignHeight="500" d:DesignWidth="800" Initialized="UserControl_Initialized">
     <UserControl.Resources>
@@ -27,11 +28,11 @@
                 </DockPanel>
                 <DockPanel Margin="5" >
                     <TextBlock Text="标识" Width="60"/>
-                    <TextBox x:Name="TextBox_Code"/>
+                    <hc:ComboBox  x:Name="TextBox_Code" IsEditable="True" SelectedIndex="0" Text=""  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
                 </DockPanel>
                 <DockPanel Margin="5" >
                     <TextBlock Text="名称" Width="60"/>
-                    <TextBox x:Name="TextBox_Name" />
+                    <hc:ComboBox  x:Name="TextBox_Name" IsEditable="True" SelectedIndex="0" Text=""  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
                 </DockPanel>
                 <Button   Click="Button_New_Click"   Width="250" Content="添加" />
             </StackPanel>
