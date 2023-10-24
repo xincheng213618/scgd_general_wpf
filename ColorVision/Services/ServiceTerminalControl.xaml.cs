@@ -12,6 +12,7 @@ using ColorVision.Services.Device.Camera;
 using cvColorVision;
 using Newtonsoft.Json;
 using System;
+using System.Net;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -153,17 +154,22 @@ namespace ColorVision.Services
                     FileServerConfig config = new FileServerConfig
                     {
                         ID = TextBox_Code.Text,
-                        Name = TextBox_Name.Text
+                        Name = TextBox_Name.Text,
+                        Endpoint = "tcp://127.0.0.1:" + (Math.Abs(new Random().Next()) % 99 + 6500),
+                        FileBasePath = "F:/img",
                     };
                     SysResourceModel model = saveConfigInfo(config, sysResource);
                     if (model != null)
                         serviceTerminal.AddChild(new DeviceFileServer(model));
-                }else if (serviceTerminal.Type == ServiceType.Algorithm)
+                }
+                else if (serviceTerminal.Type == ServiceType.Algorithm)
                 {
                     AlgorithmConfig config = new AlgorithmConfig
                     {
                         ID = TextBox_Code.Text,
-                        Name = TextBox_Name.Text
+                        Name = TextBox_Name.Text,
+                        Endpoint = "tcp://127.0.0.1:" + (Math.Abs(new Random().Next()) % 99 + 6500),
+                        FileBasePath = "F:/img/cvcie",
                     };
                     SysResourceModel model = saveConfigInfo(config, sysResource);
                     if (model != null)

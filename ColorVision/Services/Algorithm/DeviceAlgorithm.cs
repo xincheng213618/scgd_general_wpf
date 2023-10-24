@@ -13,7 +13,6 @@ namespace ColorVision.Services.Algorithm
         public DeviceAlgorithm(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             View ??= new AlgorithmView();
-            Config.Endpoint = "tcp://192.168.1.7:6550";
             Service = new AlgorithmService(Config);
         }
 
