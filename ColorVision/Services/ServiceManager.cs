@@ -303,31 +303,6 @@ namespace ColorVision.Services
 
         }
 
-        private void UpdateServiceStatus(MQTTNodeService svr)
-        {
-            UpdateServiceStatus(svr.ServiceName, svr.LiveTime, svr.OverTime);
-        }
-
-        public void UpdateServiceStatus(string serviceName, DateTime liveTime, int overTime)
-        {
-            foreach (var item in MQTTServices)
-            {
-                foreach (var svr in item.VisualChildren)
-                {
-                    if (svr is ServiceTerminal service)
-                    {
-                        if (serviceName.Equals(service.Config.Code, StringComparison.Ordinal))
-                        {
-                            service.Config.SetLiveTime(liveTime, overTime, true);
-                        }
-                    }
-
-                }
-            }
-        }
-
-
-
         public void SpectrumDrawPlotFromDB(string bid)
         {
             List<SpectumData> datas = new List<SpectumData>();
@@ -406,19 +381,6 @@ namespace ColorVision.Services
         private static string GetServiceKey(string svrType, string svrCode)
         {
             return svrType + ":" + svrCode;
-        }
-
-        public void UpdateServiceStatus(string serviceName, string liveTime, int overTime)
-        {
-            DateTime lvTime = DateTime.Now;
-            if (!string.IsNullOrWhiteSpace(liveTime))
-            {
-                if (!DateTime.TryParse(liveTime, out lvTime))
-                {
-
-                }
-            }
-            UpdateServiceStatus(serviceName, lvTime, overTime);
         }
     }
 }
