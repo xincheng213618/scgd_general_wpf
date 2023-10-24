@@ -4,6 +4,9 @@ using System;
 using System.IO;
 using ColorVision.Util;
 using ColorVision.RecentFile;
+using ColorVision.MySql;
+using log4net;
+using System.Windows;
 
 namespace ColorVision.Solution
 {
@@ -12,6 +15,8 @@ namespace ColorVision.Solution
     /// </summary>
     public class SolutionControl
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(SolutionControl));
+
         private static SolutionControl _instance;
         private static readonly object _locker = new();
         public static SolutionControl GetInstance() { lock (_locker) { return _instance ??= new SolutionControl(); } }
@@ -24,16 +29,31 @@ namespace ColorVision.Solution
         public SolutionControl()
         {
             SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
-            try
+
+            if (SolutionConfig.SolutionFullName == null)
+                return;
+            if (!Directory.Exists(SolutionConfig.SolutionFullName))
             {
-                if (!Directory.Exists(SolutionConfig.CachePath ))
-                    Directory.CreateDirectory(SolutionConfig.CachePath);
+                SolutionConfig.SolutionFullName = null;
+                SolutionConfig.SolutionName = null;
+                log.Debug("工程文件失效");
+                MessageBox.Show("工程文件不存在，在使用之前请重新创建");
             }
-            catch
+            else
             {
-                if (!Directory.Exists(SolutionConfig.CachePath))
-                    Tool.CreateDirectory(SolutionConfig.CachePath);
+                try
+                {
+                    if (!Directory.Exists(SolutionConfig.CachePath))
+                        Directory.CreateDirectory(SolutionConfig.CachePath);
+                }
+                catch
+                {
+                    if (!Directory.Exists(SolutionConfig.CachePath))
+                        Tool.CreateDirectory(SolutionConfig.CachePath);
+                }
             }
+
+
         }
 
         public bool OpenSolution(string SolutionFullPath)

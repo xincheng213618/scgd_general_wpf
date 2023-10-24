@@ -1261,14 +1261,14 @@ namespace ColorVision.Template
                 else if (RadioButtonMode3.IsChecked ==true)
                 {
                     
-                    var ListConfigs =new ObservableCollection<ListConfig>();
+                    var ListConfigs =new ObservableCollection<TemplateBase>();
                     foreach (var item in TemplateControl.GetInstance().PoiParams)
                     {
                         if (item.Value != PoiParam)
                         {
-                            ListConfig listConfig = new ListConfig();
-                            listConfig.Name = item.Key;
-                            listConfig.Value = item.Value;
+                            TemplateBase listConfig = new TemplateBase();
+                            listConfig.Key = item.Key;
+                            listConfig.Value1 = item.Value;
                             ListConfigs.Add(listConfig);
                         }
                     }

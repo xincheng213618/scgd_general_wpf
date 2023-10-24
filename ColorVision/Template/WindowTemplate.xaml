@@ -50,14 +50,14 @@
                         <GridView>
                             <GridViewColumn Width="{Binding ElementName=GridListLen,Path=ActualWidth}" >
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate x:Name="ListConfigDataTemplate"  DataType="{x:Type local:ListConfig}">
+                                    <DataTemplate x:Name="ListConfigDataTemplate"  DataType="{x:Type local:TemplateBase}">
                                         <DockPanel Width="{Binding ElementName=GridListLen,Path=ActualWidth}" Margin="0,0,-30,0">
                                             <TextBlock DockPanel.Dock="Right"  Text="{ Binding Tag}"  FontSize="10" HorizontalAlignment="Left" VerticalAlignment="Center"/>
                                             <Grid Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}">
                                                 <TextBlock Text="{ Binding ID}" HorizontalAlignment="Left"/>
                                             </Grid>
                                             <Grid >
-                                                <TextBox Text="{ Binding Name}" HorizontalAlignment="Left"/>
+                                                <TextBox Text="{ Binding Key}" HorizontalAlignment="Left"/>
                                             </Grid>
                                         </DockPanel>
                                     </DataTemplate>

@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8604
+using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.Template.Algorithm;
@@ -133,20 +134,20 @@ namespace ColorVision.Template
             if (!Directory.Exists(AppDomain.CurrentDomain.BaseDirectory+ "cfg"))
                 Directory.CreateDirectory(AppDomain.CurrentDomain.BaseDirectory + "cfg");
 
-            AoiParams = new ObservableCollection<KeyValuePair<string, AoiParam>>();
-            CalibrationParams = new ObservableCollection<KeyValuePair<string, CalibrationParam>>();
-            PGParams = new ObservableCollection<KeyValuePair<string, PGParam>>();
-            LedReusltParams = new ObservableCollection<KeyValuePair<string, LedReusltParam>>();
-            SMUParams = new ObservableCollection<KeyValuePair<string, SMUParam>>();
-            FlowParams = new ObservableCollection<KeyValuePair<string, FlowParam>>();
-            PoiParams = new ObservableCollection<KeyValuePair<string, PoiParam>>();
-            MeasureParams = new ObservableCollection<KeyValuePair<string, MeasureParam>>();
+            AoiParams = new ObservableCollection<Template<AoiParam>>();
+            CalibrationParams = new ObservableCollection<Template<CalibrationParam>>();
+            PGParams = new ObservableCollection<Template<PGParam>>();
+            LedReusltParams = new ObservableCollection<Template<LedReusltParam>>();
+            SMUParams = new ObservableCollection<Template<SMUParam>>();
+            FlowParams = new ObservableCollection<Template<FlowParam>>();
+            PoiParams = new ObservableCollection<Template<PoiParam>>();
+            MeasureParams = new ObservableCollection<Template<MeasureParam>>();
 
-            MTFParams = new ObservableCollection<KeyValuePair<string, MTFParam>>();
-            SFRParams = new ObservableCollection<KeyValuePair<string, SFRParam>>();
-            FOVParams = new ObservableCollection<KeyValuePair<string, FOVParam>>();
-            GhostParams = new ObservableCollection<KeyValuePair<string, GhostParam>>();
-            DistortionParams = new ObservableCollection<KeyValuePair<string, DistortionParam>>();
+            MTFParams = new ObservableCollection<Template<MTFParam>>();
+            SFRParams = new ObservableCollection<Template<SFRParam>>();
+            FOVParams = new ObservableCollection<Template<FOVParam>>();
+            GhostParams = new ObservableCollection<Template<GhostParam>>();
+            DistortionParams = new ObservableCollection<Template<DistortionParam>>();
             
 
             GlobalSetting.GetInstance().SoftwareConfig.UseMySqlChanged += (s) =>
@@ -187,14 +188,14 @@ namespace ColorVision.Template
         /// 这里是初始化模板的封装，因为模板的代码高度统一，所以使用泛型T来设置具体的模板参数。
         /// 最后在给模板的每一个元素加上一个切换的效果，即当某一个模板启用时，关闭其他已经启用的模板；
         /// 同一类型，只能存在一个启用的模板
-        private static ObservableCollection<KeyValuePair<string, T>> IDefault<T>(string FileName ,T Default) where T : ParamBase
+        private static ObservableCollection<Template<T>> IDefault<T>(string FileName ,T Default) where T : ParamBase
         {
-            ObservableCollection<KeyValuePair<string, T>> Params = new ObservableCollection<KeyValuePair<string, T>>();
+            ObservableCollection<Template<T >> Params = new ObservableCollection<Template<T>>();
 
-            Params = CfgFile.Load<ObservableCollection<KeyValuePair<string, T>>>(FileName) ?? new ObservableCollection<KeyValuePair<string, T>>();
+            Params = CfgFile.Load<ObservableCollection<Template<T>>>(FileName) ?? new ObservableCollection<Template<T>>();
             if (Params.Count == 0)
             {
-                Params.Add(new KeyValuePair<string, T>("default", Default));
+                Params.Add(new Template<T>("default", Default));
             }
 
             foreach (var item in Params)
@@ -280,7 +281,7 @@ namespace ColorVision.Template
             }
         }
 
-        private void Save<T>(ObservableCollection<KeyValuePair<string, T>> t ,string code) where T: ParamBase
+        private void Save<T>(ObservableCollection<Template<T>> t ,string code) where T: ParamBase
         {
             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
                 Save2DB(t);
@@ -289,7 +290,7 @@ namespace ColorVision.Template
         }
 
 
-        public void Save2DB<T>(ObservableCollection<KeyValuePair<string, T>>  keyValuePairs) where T : ParamBase
+        public void Save2DB<T>(ObservableCollection<Template<T>>  keyValuePairs) where T : ParamBase
         {
             foreach (var item in keyValuePairs)
                 Save2DB(item.Value);
@@ -307,14 +308,14 @@ namespace ColorVision.Template
         }
 
 
-        private static void SaveDefault<T>(string FileNameParams, ObservableCollection<KeyValuePair<string, T>> t)
+        private static void SaveDefault<T>(string FileNameParams, ObservableCollection<Template<T>> t) where T :ParamBase
         {
             CfgFile.Save(FileNameParams, t);
         }
 
 
 
-        public ObservableCollection<KeyValuePair<string, PoiParam>> LoadPoiParam()
+        public ObservableCollection<Template<PoiParam>> LoadPoiParam()
         {
             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
             {
@@ -322,8 +323,7 @@ namespace ColorVision.Template
                 List<PoiMasterModel> poiMaster = poiService.GetMasterAll(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
                 foreach (var dbModel in poiMaster)
                 {
-                    KeyValuePair<string, PoiParam> item = new KeyValuePair<string, PoiParam>(dbModel.Name ?? "default", new PoiParam(dbModel));
-                    PoiParams.Add(item);
+                    PoiParams.Add(new Template<PoiParam>(dbModel.Name ?? "default", new PoiParam(dbModel)));
                 }
             }
             else
@@ -448,7 +448,7 @@ namespace ColorVision.Template
             else return null;
         }
 
-        private void LoadModParam<T>(ObservableCollection<KeyValuePair<string, T>> ParamModes, string ModeType) where T : ParamBase,new ()
+        private void LoadModParam<T>(ObservableCollection<Template<T>> ParamModes, string ModeType) where T : ParamBase,new ()
         {
             DicTemplate.TryAdd(ModeType, AoiParams);
             ParamModes.Clear();
@@ -464,8 +464,7 @@ namespace ColorVision.Template
                     {
                         dbDetail.ValueA = dbDetail?.ValueA?.Replace("\\r", "\r");
                     }
-                    KeyValuePair<string, T> item = new KeyValuePair<string, T>(dbModel.Name ?? "default", (T)Activator.CreateInstance(typeof(T), new object[] { dbModel, smuDetails }));
-                    ParamModes.Add(item);
+                    ParamModes.Add(new Template<T>(dbModel.Name ?? "default", (T)Activator.CreateInstance(typeof(T), new object[] { dbModel, smuDetails })));
                 }
             }
             else
@@ -477,7 +476,7 @@ namespace ColorVision.Template
         }
 
 
-        internal ObservableCollection<KeyValuePair<string, FlowParam>> LoadFlowParam()
+        internal ObservableCollection<Template<FlowParam>> LoadFlowParam()
         {
             FlowParams.Clear();
             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
@@ -486,7 +485,7 @@ namespace ColorVision.Template
                 foreach (var dbModel in flows)
                 {
                     List<ModDetailModel> flowDetails = modService.GetDetailByPid(dbModel.Id);
-                    KeyValuePair<string, FlowParam> item = new KeyValuePair<string, FlowParam>(dbModel.Name ?? "default", new FlowParam(dbModel, flowDetails));
+                    var item = new Template<FlowParam>(dbModel.Name ?? "default", new FlowParam(dbModel, flowDetails));
                     ModDetailModel fn = item.Value.GetParameter(FlowParam.FileNameKey);
                     if (fn != null)
                     {
@@ -519,7 +518,7 @@ namespace ColorVision.Template
         }
 
 
-        internal ObservableCollection<KeyValuePair<string, MeasureParam>> LoadMeasureParams()
+        internal ObservableCollection<Template<MeasureParam>> LoadMeasureParams()
         {
             MeasureParams.Clear();
             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
@@ -527,8 +526,7 @@ namespace ColorVision.Template
                 List<MeasureMasterModel> devices = measureService.GetAll(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
                 foreach (var dbModel in devices)
                 {
-                    KeyValuePair<string, MeasureParam> item = new KeyValuePair<string, MeasureParam>(dbModel.Name ?? "default", new MeasureParam(dbModel));
-                    MeasureParams.Add(item);
+                    MeasureParams.Add(new Template<MeasureParam>(dbModel.Name ?? "default", new MeasureParam(dbModel)));
                 }
             }
             return MeasureParams;
@@ -592,22 +590,52 @@ namespace ColorVision.Template
             return measureService.MasterDeleteById(id);
         }
 
-        public ObservableCollection<KeyValuePair<string, MeasureParam>> MeasureParams { get; set; }
-        public ObservableCollection<KeyValuePair<string, AoiParam>> AoiParams { get; set; }
-        public ObservableCollection<KeyValuePair<string, CalibrationParam>> CalibrationParams { get; set; } 
-        public ObservableCollection<KeyValuePair<string, PGParam>> PGParams { get; set; }
-        public ObservableCollection<KeyValuePair<string, SMUParam>> SMUParams { get; set; }
-        public ObservableCollection<KeyValuePair<string, LedReusltParam>> LedReusltParams { get; set; }
-        public ObservableCollection<KeyValuePair<string, PoiParam>> PoiParams { get; set; }
-        public ObservableCollection<KeyValuePair<string, FlowParam>> FlowParams { get; set; }
+        public ObservableCollection<Template<MeasureParam>> MeasureParams { get; set; }
+        public ObservableCollection<Template<AoiParam>> AoiParams { get; set; }
+        public ObservableCollection<Template<CalibrationParam>> CalibrationParams { get; set; } 
+        public ObservableCollection<Template<PGParam>> PGParams { get; set; }
+        public ObservableCollection<Template<SMUParam>> SMUParams { get; set; }
+        public ObservableCollection<Template<LedReusltParam>> LedReusltParams { get; set; }
+        public ObservableCollection<Template<PoiParam>> PoiParams { get; set; }
+        public ObservableCollection<Template<FlowParam>> FlowParams { get; set; }
+        public ObservableCollection<Template<MTFParam>> MTFParams { get; set; }
+        public ObservableCollection<Template<SFRParam>> SFRParams { get; set; }
+        public ObservableCollection<Template<FOVParam>> FOVParams { get; set; }
+        public ObservableCollection<Template<GhostParam>> GhostParams { get; set; }
+        public ObservableCollection<Template<DistortionParam>> DistortionParams { get; set; }
 
-        public ObservableCollection<KeyValuePair<string, MTFParam>> MTFParams { get; set; }
-        public ObservableCollection<KeyValuePair<string, SFRParam>> SFRParams { get; set; }
+    }
 
-        public ObservableCollection<KeyValuePair<string, FOVParam>> FOVParams { get; set; }
+    public class TemplateBase : ViewModelBase
+    {
+        public virtual int ID { get; set; }
 
-        public ObservableCollection<KeyValuePair<string,GhostParam>> GhostParams { get; set; }
-        public ObservableCollection<KeyValuePair<string, DistortionParam>> DistortionParams { get; set; }
+        public string Key { get => _Key; set { _Key = value; NotifyPropertyChanged(); } }
+        private string _Key;
+        public string Tag { get => _Tag; set { _Tag = value; NotifyPropertyChanged(); } }
+        private string _Tag;
+
+        public object Value1 { get; set; }    
+    }
+
+    public class Template<T>: TemplateBase where T : ParamBase
+    {
+        public Template()
+        {
+        }
+        public Template(string Key, T Value)
+        {
+            this.Key = Key;
+            this.Value = Value;
+        }
+        public Template(KeyValuePair<string, T> keyValuePair)
+        {
+            Key = keyValuePair.Key;
+            Value = keyValuePair.Value;
+        }
+        public override int ID { get => Value.ID;}
+        public T Value { get => _Value; set { _Value = value; Value1 = value;  } }
+        private T _Value;
 
 
 

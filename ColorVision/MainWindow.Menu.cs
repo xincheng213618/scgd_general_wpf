@@ -111,23 +111,19 @@ namespace ColorVision
                 }
             }
         }
-        private void TemplateAbb<T>(WindowTemplate windowTemplate, ObservableCollection<KeyValuePair<string, T>> keyValuePairs)
+        private void TemplateAbb<T>(WindowTemplate windowTemplate, ObservableCollection<Template<T>> keyValuePairs) where T: ParamBase
         {
             windowTemplate.Owner = this;
             int id = 1;
             windowTemplate.ListConfigs.Clear();
             foreach (var item in keyValuePairs)
             {
-                ListConfig listConfig = new ListConfig();
-                listConfig.ID = id++;
-                listConfig.Name = item.Key;
-                listConfig.Value = item.Value;
                 if (item.Value is PoiParam poiParam)
                 {
-                    listConfig.Tag = $"{poiParam.Width}*{poiParam.Height}{(GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql?"": $"_{poiParam.PoiPoints.Count}")}";
+                    item.Tag = $"{poiParam.Width}*{poiParam.Height}{(GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql?"": $"_{poiParam.PoiPoints.Count}")}";
                 }
 
-                windowTemplate.ListConfigs.Add(listConfig);
+                windowTemplate.ListConfigs.Add(item);
             }
             windowTemplate.ShowDialog();
         }
@@ -197,16 +193,12 @@ namespace ColorVision
                 if (newCreatWindow.IsCreate)
                 {
                     string SolutionDirectoryPath = newCreatWindow.NewCreateViewMode.DirectoryPath + "\\" + newCreatWindow.NewCreateViewMode.Name;
-                    OpenSolution(SolutionDirectoryPath);
+                    SolutionControl.GetInstance().OpenSolution(SolutionDirectoryPath);
                 }
             };
             newCreatWindow.ShowDialog();
         }
 
-        private void OpenSolution(string SolutionFullPath)
-        {
-
-        }
 
         private void OpenSetting()
         {
