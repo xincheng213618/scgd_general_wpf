@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable CA1806,CA1833,CA1401,CA2101,CA1838
+using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -23,7 +24,6 @@ namespace ColorVision.Common.Util
                 binaryReader.Read(bytes, 0, bytes.Length);
                 return bytes;
             }
-
             return null;
         }
 

@@ -76,7 +76,7 @@ namespace ColorVision.Services.Algorithm
                 {
                     case "Init":
                         ServiceID = msg.ServiceID;
-                        SnID = msg.SnID;
+                        SnID = msg.SnID??string.Empty;
                         DeviceStatus = DeviceStatus.Init;
                         break;
                     case "UnInit":

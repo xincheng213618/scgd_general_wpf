@@ -87,6 +87,9 @@ namespace ColorVision.RC
                     //{
                     //}
 
+                    if (json==null)
+                        return Task.CompletedTask;
+
                     switch (json.EventName)
                     {
                         case MQTTNodeServiceEventEnum.Event_Regist:
@@ -128,7 +131,7 @@ namespace ColorVision.RC
         }
 
 
-        public void UpdateServiceStatus(Dictionary<string, List<MQTTNodeService>> data)
+        public static void UpdateServiceStatus(Dictionary<string, List<MQTTNodeService>> data)
         {
             foreach (var serviceKind in ServiceManager.GetInstance().MQTTServices)
             {

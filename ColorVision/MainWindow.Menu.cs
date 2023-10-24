@@ -114,7 +114,6 @@ namespace ColorVision
         private void TemplateAbb<T>(WindowTemplate windowTemplate, ObservableCollection<Template<T>> keyValuePairs) where T: ParamBase
         {
             windowTemplate.Owner = this;
-            int id = 1;
             windowTemplate.ListConfigs.Clear();
             foreach (var item in keyValuePairs)
             {

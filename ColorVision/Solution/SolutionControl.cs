@@ -30,12 +30,12 @@ namespace ColorVision.Solution
         {
             SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
 
-            if (SolutionConfig.SolutionFullName == null)
+            if (string.IsNullOrWhiteSpace(SolutionConfig.SolutionFullName))
                 return;
             if (!Directory.Exists(SolutionConfig.SolutionFullName))
             {
-                SolutionConfig.SolutionFullName = null;
-                SolutionConfig.SolutionName = null;
+                SolutionConfig.SolutionFullName = string.Empty;
+                SolutionConfig.SolutionName = string.Empty;
                 log.Debug("工程文件失效");
                 MessageBox.Show("工程文件不存在，在使用之前请重新创建");
             }

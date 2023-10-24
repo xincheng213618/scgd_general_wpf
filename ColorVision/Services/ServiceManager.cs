@@ -123,7 +123,6 @@ namespace ColorVision.Services
             MQTTDevices.Clear();
             LastGenControl?.Clear();
             svrDevices?.Clear();
-
             List<SysResourceModel> Services = ResourceService.GetAllServices(UserConfig.TenantId);
             List<SysResourceModel> devices = ResourceService.GetAllDevices(UserConfig.TenantId);
 
@@ -137,8 +136,9 @@ namespace ColorVision.Services
                     if (service.Type == item.Value)
                     {
                         ServiceTerminal mQTTService = new ServiceTerminal(service);
-                        string svrKey = GetServiceKey(service.TypeCode, service.Code);
-                        
+                        string svrKey = GetServiceKey(service.TypeCode ?? string.Empty, service.Code ?? string.Empty);
+
+                        svrDevices ??= new Dictionary<string, List<BaseService>>();
                         if (!svrDevices.ContainsKey(svrKey))
                             svrDevices?.Add(svrKey, new List<BaseService>());
 
@@ -200,9 +200,9 @@ namespace ColorVision.Services
                                 }
                             }
 
-                            if (svrObj != null)
+                            if (svrObj != null&& svrDevices!=null)
                             {
-                                svrObj.ServiceName = service.Code;
+                                svrObj.ServiceName = service.Code ?? string.Empty;
                                 svrDevices[svrKey].Add(svrObj);
                             }
                         }

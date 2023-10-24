@@ -103,7 +103,7 @@ namespace ColorVision
             //src8uc3 = null;
             GC.Collect();
         }
-        public void ApplyLUTColorMapNew(Mat src, Mat dst)
+        public void ApplyLUTColorMap2(Mat src, Mat dst)
         {
             //算图片平均步长
             double[] step = stepPer;//这里的步长不用固定值用数组

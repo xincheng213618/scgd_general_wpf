@@ -33,7 +33,7 @@ namespace ColorVision.Services.Algorithm
 
         public AlgorithmView View { get => Device.View; }
 
-        private IPendingHandler handler { get; set; }
+        private IPendingHandler? handler { get; set; }
 
         private ResultService resultService { get; set; }
 
@@ -73,7 +73,8 @@ namespace ColorVision.Services.Algorithm
                     string rawDataMsg = JsonConvert.SerializeObject(arg.Data);
                     MQTTPOIGetDataResult poiResp = JsonConvert.DeserializeObject<MQTTPOIGetDataResult>(rawDataMsg);
                     var poiDbResults = resultService.PoiPointSelectByBatchCode(arg.SerialNumber);
-                    ShowResult(arg.SerialNumber, poiDbResults, rawDataMsg, poiResp);
+                    if (poiResp!=null)
+                        ShowResult(arg.SerialNumber, poiDbResults, rawDataMsg, poiResp);
                     break;
                 case MQTTAlgorithmEventEnum.Event_UploadCIEFile:
                     handler?.Close();
@@ -104,31 +105,32 @@ namespace ColorVision.Services.Algorithm
             //    doOpen(response.POIImgFileName);
             //}
             handler?.Close();
-            handler = null;
         }
 
-        private List<POIResultCIEY> ShowResultCIEY(string serialNumber, string templateName, string POIImgFileName, bool hasRecord, List<POIPointResultModel> poiDbResults, string rawMsg)
+        private List<POIResultCIEY>? ShowResultCIEY(string serialNumber, string templateName, string POIImgFileName, bool hasRecord, List<POIPointResultModel> poiDbResults, string rawMsg)
         {
             List<POIResultCIEY> poiResultData = null;
             if (hasRecord)
             {
                 MQTTPOIGetDataCIEYResult response = JsonConvert.DeserializeObject<MQTTPOIGetDataCIEYResult>(rawMsg);
-                poiResultData = response.Results;
+                if (response!=null)
+                    poiResultData = response.Results;
             }
             else
             {
                 poiResultData = new List<POIResultCIEY>();
                 foreach (var item in poiDbResults)
                 {
-                    poiResultData.Add(new POIResultCIEY(new POIPoint((int)item.PoiId, (int)item.Pid, item.PoiName, (POIPointTypes)item.PoiType, (int)item.PoiX, (int)item.PoiY, (int)item.PoiWidth, (int)item.PoiHeight),
-                       JsonConvert.DeserializeObject<POIDataCIEY>(item.Value)));
+                    poiResultData.Add(new POIResultCIEY(new POIPoint(item.PoiId ?? 0, item.Pid ?? 0, item.PoiName, (POIPointTypes)(item.PoiType ?? 0), item.PoiX ?? 0, item.PoiY ?? 0  , item.PoiWidth ?? 0, item.PoiHeight ?? 0),
+                       JsonConvert.DeserializeObject<POIDataCIEY>(item.Value??string.Empty)));
                 }
             }
-            Device.View.PoiDataDraw(serialNumber, templateName, POIImgFileName, poiResultData);
+            if (poiResultData!=null)
+                Device.View.PoiDataDraw(serialNumber, templateName, POIImgFileName, poiResultData);
             return poiResultData;
         }
 
-        private List<POIResultCIExyuv> ShowResultCIExyuv(string serialNumber, string templateName, string POIImgFileName, bool hasRecord, List<POIPointResultModel> poiDbResults, string rawMsg)
+        private List<POIResultCIExyuv>? ShowResultCIExyuv(string serialNumber, string templateName, string POIImgFileName, bool hasRecord, List<POIPointResultModel> poiDbResults, string rawMsg)
         {
             List<POIResultCIExyuv> poiResultData = null;
             if (hasRecord)
@@ -140,11 +142,12 @@ namespace ColorVision.Services.Algorithm
                 poiResultData = new List<POIResultCIExyuv>();
                 foreach (var item in poiDbResults)
                 {
-                    poiResultData.Add(new POIResultCIExyuv(new POIPoint((int)item.PoiId, (int)item.Pid, item.PoiName, (POIPointTypes)item.PoiType, (int)item.PoiX, (int)item.PoiY, (int)item.PoiWidth, (int)item.PoiHeight),
-                       JsonConvert.DeserializeObject<POIDataCIExyuv>(item.Value)));
+                    poiResultData.Add(new POIResultCIExyuv(new POIPoint(item.PoiId??0, item.Pid ?? 0, item.PoiName, (POIPointTypes)(item.PoiType??0), item.PoiX??0, item.PoiY ?? 0, item.PoiWidth ?? 0, item.PoiHeight ?? 0),
+                       JsonConvert.DeserializeObject<POIDataCIExyuv>(item.Value ?? string.Empty)));
                 }
             }
-            Device.View.PoiDataDraw(serialNumber, templateName, POIImgFileName, poiResultData);
+            if (poiResultData!=null)
+                Device.View.PoiDataDraw(serialNumber, templateName, POIImgFileName, poiResultData);
             return poiResultData;
         }
 
