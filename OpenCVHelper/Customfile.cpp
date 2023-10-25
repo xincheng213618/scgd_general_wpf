@@ -1,15 +1,15 @@
 ﻿// ConsoleApplication1.cpp : 此文件包含 "main" 函数。程序执行将在此处开始并结束。
 //
 #include "pch.h"
-#include <Windows.h>
-#include <iostream>
-#include <fstream>
-#include <opencv2/opencv.hpp>
-#include<stdlib.h>
-#include<stdio.h>
-#include<string.h>
-#include "zlib.h"
 #include "Customfile.h"
+#include "zlib.h"
+#include <fstream>
+#include <iostream>
+#include <opencv2/opencv.hpp>
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include <Windows.h>
 
 using namespace std;
 
