@@ -119,9 +119,9 @@ namespace ColorVision
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         TextBoxMsg.Text += $"{Environment.NewLine}正在检测注册中心连接情况";
+                        ServiceManager.GetInstance();
                     });
 
-                    ServiceManager.GetInstance();
                     await Task.Delay(100);
                     if (!ServiceManager.GetInstance().rcService.IsRegisted() && SoftwareConfig.IsUseRCService)
                     {
