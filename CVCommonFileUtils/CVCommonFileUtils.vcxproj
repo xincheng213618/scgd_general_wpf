@@ -141,6 +141,10 @@ copy $(TargetDir)$(TargetName).pdb E:\work\cv\New版\scgd_general_wpf\ColorVisio
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
     </Link>
+    <PostBuildEvent>
+      <Command>copy $(TargetPath) E:\work\cv\New版\scgd_general_wpf\ColorVision\bin\x64\Debug\net6.0-windows\
+copy $(TargetDir)$(TargetName).pdb E:\work\cv\New版\scgd_general_wpf\ColorVision\bin\x64\Debug\net6.0-windows\</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="CVCIEFile.h" />
