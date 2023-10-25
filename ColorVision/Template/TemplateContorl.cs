@@ -153,7 +153,7 @@ namespace ColorVision.Template
             DistortionParams = new ObservableCollection<Template<DistortionParam>>();
             
 
-            GlobalSetting.GetInstance().SoftwareConfig.UseMySqlChanged += async (s) =>
+            GlobalSetting.GetInstance().SoftwareConfig.UseMySqlChanged += (s) =>
             {
                 if (!GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
                     CSVSave();

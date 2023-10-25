@@ -144,7 +144,7 @@ namespace ColorVision.Template
         {
 
         }
-        public CalibrationParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name, modDetails)
+        public CalibrationParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name??string.Empty, modDetails)
         {
         }
     }
