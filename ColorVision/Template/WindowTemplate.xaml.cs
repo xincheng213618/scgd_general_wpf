@@ -375,7 +375,7 @@ namespace ColorVision.Template
         private void CreateNewTemplate<T>(ObservableCollection<Template<T>> keyValuePairs, string Name, T t) where T : ParamBase
         {
             keyValuePairs.Add(new Template<T>(Name, t));
-            Template<T> config = new Template<T> { ID = ListConfigs.Count + 1, Key = Name, Value = t };
+            Template<T> config = new Template<T> {Value = t, Key = Name, };
             ListConfigs.Add(config);
             ListView1.SelectedIndex = ListConfigs.Count - 1;
             ListView1.ScrollIntoView(config);

@@ -10,7 +10,7 @@ namespace ColorVision.Template.Algorithm
     public class MTFParam : ParamBase
     {
         public MTFParam() { }
-        public MTFParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modDetails)
+        public MTFParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name??string.Empty, modDetails)
         {
         }
 

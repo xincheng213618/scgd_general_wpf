@@ -1,15 +1,20 @@
 ﻿#pragma warning disable CS8604
 using ColorVision.MVVM;
+using ColorVision.MySql;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.Template.Algorithm;
 using ColorVision.Util;
 using cvColorVision.Util;
+using Newtonsoft.Json;
+using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Threading;
 using System.Windows;
+using System.Windows.Forms.Design;
 
 namespace ColorVision.Template
 {
@@ -118,8 +123,6 @@ namespace ColorVision.Template
 
         private static string FileNameCalibrationParams = "cfg\\CalibrationSetup.cfg";
         private static string FileNameLedJudgeParams = "cfg\\LedJudgeSetup.cfg";
-
-        private static string FileNamePoiParms = "cfg\\PoiParmSetup.cfg";
         private static string FileNameFlowParms = "cfg\\FlowParmSetup.cfg";
 
         private PoiService poiService = new PoiService();
@@ -150,12 +153,28 @@ namespace ColorVision.Template
             DistortionParams = new ObservableCollection<Template<DistortionParam>>();
             
 
-            GlobalSetting.GetInstance().SoftwareConfig.UseMySqlChanged += (s) =>
+            GlobalSetting.GetInstance().SoftwareConfig.UseMySqlChanged += async (s) =>
             {
-                Init();
+                if (!GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+                    CSVSave();
+
+                Thread  thread  = new Thread(async () =>
+                {
+                    if (!MySqlControl.GetInstance().IsConnect)
+                        await MySqlControl.GetInstance().Connect();
+
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        Init();
+                    });
+                });
+                thread.Start();
+
             };
 
             Init();
+
+
 
             Application.Current.MainWindow.Closed += (s, e) =>
             {
@@ -246,6 +265,29 @@ namespace ColorVision.Template
                 case TemplateType.LedReuslt:
                     SaveDefault(FileNameLedJudgeParams, LedReusltParams);
                     break;
+                case TemplateType.PoiParam:
+                    Save(PoiParams, ModMasterType.POI);
+
+                    if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+                    {
+                        foreach (var item in PoiParams)
+                        {
+
+                            var modMasterModel = poiService.GetMasterById(item.ID);
+                            if (modMasterModel != null)
+                            {
+                                modMasterModel.Name = item.Key;
+                                poiService.Save(modMasterModel);
+                            }
+                        }
+                    }
+                    else
+                        SaveDefault($"cfg\\{ModMasterType.POI}.cfg", PoiParams);
+
+                    break;
+                case TemplateType.FlowParam:
+                    SaveDefault(FileNameFlowParms, FlowParams);
+                    break;
                 case TemplateType.AoiParam:
                     Save(AoiParams, ModMasterType.Aoi);
                     break;
@@ -270,12 +312,7 @@ namespace ColorVision.Template
                 case TemplateType.DistortionParam:
                     Save(DistortionParams, ModMasterType.Distortion);
                     break;
-                case TemplateType.PoiParam:
-                    SaveDefault(FileNamePoiParms, PoiParams);
-                    break;
-                case TemplateType.FlowParam:
-                    SaveDefault(FileNameFlowParms, FlowParams);
-                    break;
+
                 default:
                     break;
             }
@@ -293,7 +330,15 @@ namespace ColorVision.Template
         public void Save2DB<T>(ObservableCollection<Template<T>>  keyValuePairs) where T : ParamBase
         {
             foreach (var item in keyValuePairs)
+            {
+                ModMasterModel modMasterModel = modService.GetMasterById(item.ID);
+                if (modMasterModel != null)
+                {
+                    modMasterModel.Name = item.Key;
+                    modService.Save(modMasterModel);
+                }
                 Save2DB(item.Value);
+            }
         }
 
 
@@ -330,7 +375,7 @@ namespace ColorVision.Template
             {
                 PoiParams.Clear();
                 if (PoiParams.Count == 0)
-                    PoiParams = IDefault(FileNamePoiParms, new PoiParam());
+                    PoiParams = IDefault($"cfg\\{ModMasterType.POI}.cfg", new PoiParam());
             }
 
             return PoiParams;
@@ -610,8 +655,7 @@ namespace ColorVision.Template
     {
         public virtual int ID { get; set; }
 
-        public string Key { get => _Key; set { _Key = value; NotifyPropertyChanged(); } }
-        private string _Key;
+        public virtual string Key { get; set;  }
         public string Tag { get => _Tag; set { _Tag = value; NotifyPropertyChanged(); } }
         private string _Tag;
 
@@ -629,15 +673,26 @@ namespace ColorVision.Template
         }
         public Template(string Key, T Value)
         {
-            this.Key = Key;
             this.Value = Value;
+            this.Key = Key;
         }
         public Template(KeyValuePair<string, T> keyValuePair)
         {
             Key = keyValuePair.Key;
             Value = keyValuePair.Value;
         }
+
+        [JsonIgnore]
         public override int ID { get => Value.ID;}
+
+        [JsonIgnore]
+        public override string Key
+        { 
+            get =>   Value.Name;
+            set { Value.Name = value;  NotifyPropertyChanged(); 
+            } 
+        }
+
         public T Value { get; set; }
 
         public override object GetValue()

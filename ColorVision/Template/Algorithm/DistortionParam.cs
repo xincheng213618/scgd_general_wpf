@@ -9,7 +9,7 @@ namespace ColorVision.Template.Algorithm
     public class DistortionParam:ParamBase
     {
         public DistortionParam() { }
-        public DistortionParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modDetails)
+        public DistortionParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
         {
         }
 

@@ -9,7 +9,7 @@ namespace ColorVision.Template.Algorithm
     public class FOVParam : ParamBase
     {
         public FOVParam() { }
-        public FOVParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modDetails)
+        public FOVParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
         {
         }
 
