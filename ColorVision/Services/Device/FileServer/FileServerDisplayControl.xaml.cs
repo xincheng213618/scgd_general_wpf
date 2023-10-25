@@ -99,7 +99,10 @@ namespace ColorVision.Device.FileServer
             //doOpen(FilesView.Text);
             Application.Current.Dispatcher.Invoke(() =>
             {
-                View.OpenCVCIE(@"F:\img\cvcie\20230322142640_1_src.cvcie");
+                View.OpenCVCIE(@"F:\img\cvcie\20230322142727_1_src.cvcie");
+                View.OpenCVCIE(@"F:\img\cvcie\20230322142727_Y_src.cvcie");
+                View.OpenCVCIE(@"F:\img\cvcie\0524MTF-H.cvcie");
+                View.OpenCVCIE(@"F:\img\cvcie\ttt.cvcie");
             });
         }
 

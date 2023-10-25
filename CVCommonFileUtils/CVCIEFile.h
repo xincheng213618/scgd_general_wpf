@@ -47,7 +47,7 @@ struct CVCIEFileInfo
 * 0 : 写入成功
  -1 : 写入失败
 */
-EXPORTC MYDLL int STDCALL WriteCVCIE(char* cieFileName, CVCIEFileInfo fileInfo);
+EXPORTC MYDLL int STDCALL WriteCVCIE(char* cieFileName, CVCIEFileInfo* fileInfo);
 
 /*
 * 读取CVCIE文件头信息
@@ -57,17 +57,7 @@ EXPORTC MYDLL int STDCALL WriteCVCIE(char* cieFileName, CVCIEFileInfo fileInfo);
  -2 : 文件版本非法
  -999 : 文件不存在
 */
-EXPORTC MYDLL int STDCALL ReadCVCIEHeader(char* cieFileName, CVCIEFileInfo& fileInfo);
-
-/*
-* 读取CVCIE文件信息
-* 返回值:
-* 0 : 成功
- -1 : 文件头非法
- -2 : 文件版本非法
- -999 : 文件不存在
-*/
-EXPORTC MYDLL int STDCALL ReadCVCIE(char* cieFileName, CVCIEFileInfo& fileInfo);
+EXPORTC MYDLL int STDCALL ReadCVCIEHeader(char* cieFileName, CVCIEFileInfo* fileInfo);
 
 /*
 * 获取文件大小
@@ -79,7 +69,7 @@ EXPORTC MYDLL int STDCALL ReadCVCIE(char* cieFileName, CVCIEFileInfo& fileInfo);
 EXPORTC MYDLL long STDCALL GetCVCIEFileLength(char* cieFileName);
 
 /*
-* 一次读取CVCIE文件
+* 读取CVCIE文件
 * 返回值:
 * 0 : 成功
  -1 : 文件头非法
@@ -87,4 +77,4 @@ EXPORTC MYDLL long STDCALL GetCVCIEFileLength(char* cieFileName);
  -3 : 数据区长度不够
  -999 : 文件不存在
 */
-EXPORTC MYDLL int STDCALL ReadCVCIEByOne(char* cieFileName, CVCIEFileInfo& fileInfo);
+EXPORTC MYDLL int STDCALL ReadCVCIE(char* cieFileName, CVCIEFileInfo* fileInfo);

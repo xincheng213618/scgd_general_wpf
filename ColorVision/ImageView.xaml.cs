@@ -5,6 +5,8 @@ using ColorVision.MVVM;
 using ColorVision.Services.Algorithm;
 using ColorVision.Util;
 using MQTTMessageLib.Algorithm;
+using NPOI.SS.Formula.Functions;
+using NPOI.Util;
 using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -593,14 +595,26 @@ namespace ColorVision
 
         public void OpenCVCIE(string fileName)
         {
+            //fileInfo.gain = 1;
+            //CVFileUtils.WriteCVCIE(fileName, fileInfo);
+            fileName = "F:\\img\\cvcie\\20230322142640_1.cvcie";
+            read(fileName);
+            //convert();
+        }
+        private void read(string fileName)
+        {
             CVCIEFileInfo fileInfo = new CVCIEFileInfo();
-            CVFileUtils.ReadCVCIEHeader(fileName,out fileInfo);
-            fileInfo.exp = new float[3];
-            fileInfo.data = new byte[fileInfo.dataLen];
-            fileInfo.srcFileNameLen += 1;
-            fileInfo.srcFileName = new char[fileInfo.srcFileNameLen];
-            CVFileUtils.ReadCVCIE(fileName,out fileInfo);
-            CVFileUtils.WriteCVCIE(fileName+".2", fileInfo);
+            int ret = CVFileUtils.ReadCVCIE(fileName, ref fileInfo);
+        }
+        private void convert()
+        {
+            string srcPath = "F:\\img\\XYZ\\";
+            string cieFileName = "F:\\img\\cvcie\\20230322142640_1.cvcie", xFileName = srcPath + "20230322142640_1_X.tif", yFileName = srcPath + "20230322142640_1_Y.tif", zFileName = srcPath + "20230322142640_1_Z.tif";
+            CVCIEFileInfo fileInfo = new CVCIEFileInfo();
+            fileInfo.srcFileName = srcPath + "20230322142640_1_src.tif";
+            fileInfo.exp = new float[3] { 100, 100, 100 };
+            fileInfo.gain = 1;
+            CVFileUtils.ConvertXYZToCVCIE(cieFileName, xFileName, yFileName, zFileName, ref fileInfo);
         }
 
         public void OpenImage(byte[] data)
