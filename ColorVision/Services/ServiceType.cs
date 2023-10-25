@@ -4,7 +4,7 @@
     {
         Camera = 1,
         PG = 2,
-        Spectum = 3,
+        Spectrum = 3,
         SMU = 4,
         Sensor = 5,
         FileServer = 6,
@@ -13,6 +13,6 @@
         Calibration =9,
         Motor =10,
         FocusRing =11,
-        Flowtemp =101
+        Flowtime =101
     }
 }

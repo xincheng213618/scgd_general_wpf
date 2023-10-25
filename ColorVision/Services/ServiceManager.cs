@@ -165,7 +165,7 @@ namespace ColorVision.Services
                                         mQTTService.AddChild(devicePG);
                                         MQTTDevices.Add(devicePG);
                                         break;
-                                    case ServiceType.Spectum:
+                                    case ServiceType.Spectrum:
                                         DeviceSpectrum deviceSpectrum = new DeviceSpectrum(device);
                                         svrObj = deviceSpectrum.DeviceService;
                                         mQTTService.AddChild(deviceSpectrum);

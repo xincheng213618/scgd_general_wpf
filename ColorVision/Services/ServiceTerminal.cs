@@ -65,7 +65,7 @@ namespace ColorVision.Services
                 case ServiceType.PG:
                     BaseService = new BaseService<BaseServiceConfig>(Config);
                     break;
-                case ServiceType.Spectum:
+                case ServiceType.Spectrum:
                     BaseService = new BaseService<BaseServiceConfig>(Config);
                     break;
                 case ServiceType.SMU:
@@ -80,7 +80,7 @@ namespace ColorVision.Services
                 case ServiceType.Algorithm:
                     BaseService = new BaseService<BaseServiceConfig>(Config);
                     break;
-                case ServiceType.Flowtemp:
+                case ServiceType.Flowtime:
                     BaseService = new BaseService<BaseServiceConfig>(Config);
                     break;
                 default:
