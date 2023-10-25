@@ -361,9 +361,9 @@
                 <RowDefinition Height="auto"/>
             </Grid.RowDefinitions>
             <TextBox Grid.Column="0" x:Name="TextBox1" Background="Transparent" Width="5" BorderThickness="0" Foreground="Transparent"/>
-            <local:ZoomboxSub x:Name="Zoombox1" >
-                <local:DrawCanvas x:Name="ImageShow" Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_MouseDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
-            </local:ZoomboxSub>
+            <draw:ZoomboxSub x:Name="Zoombox1" >
+                <draw:DrawCanvas x:Name="ImageShow" Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_MouseDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
+            </draw:ZoomboxSub>
             <StackPanel Grid.Row="0" Grid.RowSpan="2" >
                 <ToolBar x:Name="ToolBar1" d:DataContext="{d:DesignInstance local:ToolBarTop}" Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" HorizontalAlignment="Center">
                     <ToolBar.Resources>

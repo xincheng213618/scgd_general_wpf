@@ -5,7 +5,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Windows.Input;
 
-namespace ColorVision
+namespace ColorVision.Draw
 {
     public class ToolBarTopShowImage
     {

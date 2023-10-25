@@ -1,7 +1,7 @@
 ﻿#pragma warning disable CA1711,CA2211
 using System.ComponentModel;
 
-namespace ColorVision
+namespace ColorVision.Draw
 {
 
     public class DrawBaseAttribute : BaseAttribute

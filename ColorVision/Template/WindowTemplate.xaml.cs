@@ -354,7 +354,7 @@ namespace ColorVision.Template
 
         public void TemplateNew()
         {
-            if (!TextBox1.Text.IsNullOrEmpty())
+            if (!string.IsNullOrEmpty(TextBox1.Text))
             {
                 if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
                 {

@@ -8,7 +8,7 @@ using Gu.Wpf.Geometry;
 using System.Reflection;
 using ColorVision.Draw.Ruler;
 
-namespace ColorVision
+namespace ColorVision.Draw
 {
 
 

@@ -10,10 +10,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="OpenCvSharp4" Version="4.8.0.20230708" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Resource Include="Assets\Cursor\eraser.cur" />
   </ItemGroup>
 

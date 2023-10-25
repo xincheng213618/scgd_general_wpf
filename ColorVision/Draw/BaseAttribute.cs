@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace ColorVision
+namespace ColorVision.Draw
 {
     [AttributeUsage(AttributeTargets.All)]
     public class BaseAttribute : Attribute, INotifyPropertyChanged

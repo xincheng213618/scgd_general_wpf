@@ -3,7 +3,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Media;
 
-namespace ColorVision
+namespace ColorVision.Draw
 {
     public class DrawingVisualBase : DrawingVisual, INotifyPropertyChanged
     {
