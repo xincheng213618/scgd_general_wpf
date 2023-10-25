@@ -23,6 +23,7 @@ namespace ColorVision.Device
         private string _Code;
 
         //Token
+        [JsonIgnore]
         public string ServiceToken { get => _ServiceToken; set { _ServiceToken = value; NotifyPropertyChanged(); } }
         private string _ServiceToken;
 
@@ -35,17 +36,11 @@ namespace ColorVision.Device
         /// <summary>
         /// 是否存活
         /// </summary>
+        [JsonIgnore]
         public bool IsAlive { get => _IsAlive; set { _IsAlive = value; NotifyPropertyChanged(); } }
         private bool _IsAlive;
         public DateTime LastAliveTime { get => _LastAliveTime; set { _LastAliveTime = value; NotifyPropertyChanged(); } }
         private DateTime _LastAliveTime = DateTime.MinValue;
-
-        public void SetLiveTime(DateTime liveTime, int overTime, bool isLive)
-        {
-            this.LastAliveTime = liveTime;
-            this.IsAlive = isLive;
-            HeartbeatTime = 100000;
-        }
     }
 
     public enum DeviceServiceStatus
