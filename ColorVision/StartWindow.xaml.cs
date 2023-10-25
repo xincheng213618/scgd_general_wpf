@@ -9,6 +9,7 @@ using ColorVision.MQTT;
 using System.Reflection;
 using ColorVision.Services;
 using ColorVision.RC;
+using System.Threading;
 
 namespace ColorVision
 {
@@ -32,7 +33,11 @@ namespace ColorVision
 #else
             labelVersion.Text = $"{(DebugBuild(Assembly.GetExecutingAssembly()) ? " (Debug)" : "")}{(Debugger.IsAttached ? " (调试中) " : "")} {(IntPtr.Size == 4 ? "32" : "64")}位) -  {System.Reflection.Assembly.GetExecutingAssembly().GetName().Version} - Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy/MM/dd}";
 #endif
-            Dispatcher.BeginInvoke(new Action(async () => await InitializedOver()));
+
+            MQTTControl.GetInstance();
+            MySqlControl.GetInstance();
+            Thread thread = new Thread(async () => await InitializedOver());
+            thread.Start();
         }
         private static bool DebugBuild(Assembly assembly)
         {
@@ -49,53 +54,121 @@ namespace ColorVision
         private async Task InitializedOver()
         {
             //检测服务连接情况，需要在界面启动之后，否则会出现问题。因为界面启动之后才会初始化MQTTControl和MySqlControl，所以代码上问题不大
-            MQTTControl.GetInstance();
-            MySqlControl.GetInstance();
-            ServiceManager.GetInstance();
-
             SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
-            TextBoxMsg.Text += Environment.NewLine + "检测服务连接情况";
-            await Task.Delay(100);
 
-            TextBoxMsg.Text += $"{Environment.NewLine}Mysql服务连接: {(MySqlControl.GetInstance().IsConnect ? "成功" : "失败")}";
-            if (!MySqlControl.GetInstance().IsConnect && SoftwareConfig.IsUseMySql)
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                MySqlConnect mySqlConnect = new MySqlConnect() { Owner = this };
-                mySqlConnect.ShowDialog();
+                TextBoxMsg.Text += $"正在启动服务";
+            });
+
+            if (SoftwareConfig.IsUseMySql)
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    TextBoxMsg.Text += $"{Environment.NewLine}正在检测MySQL数据库连接情况";
+                });
+                bool IsConnect = await MySqlControl.GetInstance().Connect();
+
+
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    TextBoxMsg.Text += $"{Environment.NewLine}MySQL数据库连接{(MySqlControl.GetInstance().IsConnect ? "成功" : "失败")}";
+                    if (!IsConnect)
+                    {
+                        MySqlConnect mySqlConnect = new MySqlConnect() { Owner = this };
+                        mySqlConnect.ShowDialog();
+                    }
+                });
+
             }
-            TextBoxMsg.Text += $"{Environment.NewLine}MQTT服务连接: {(MQTTControl.GetInstance().IsConnect ? "成功" : "失败")}";
-            if (!MQTTControl.GetInstance().IsConnect && SoftwareConfig.IsUseMQTT)
+            else
             {
-                MQTTConnect mQTTConnect = new MQTTConnect() { Owner = this };
-                mQTTConnect.ShowDialog();
-                TextBoxMsg.Text += $"{Environment.NewLine}MQTT服务连接: {(MQTTControl.GetInstance().IsConnect ? "成功" : "失败")}";
+                Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}已经跳过数据库连接"; });
+                await Task.Delay(100);
+
             }
-            TextBoxMsg.Text += $"{Environment.NewLine}注册: {(ServiceManager.GetInstance().rcService.IsRegisted() ? "成功" : "失败")}";
-            if (!ServiceManager.GetInstance().rcService.IsRegisted() && SoftwareConfig.IsUseRCService)
+            if (SoftwareConfig.IsUseMQTT)
             {
-                RCServiceConnect rcServiceConnect = new RCServiceConnect() { Owner = this }; 
-                rcServiceConnect.ShowDialog();
-                await Task.Delay(200);
-                TextBoxMsg.Text += $"{Environment.NewLine}注册: {(ServiceManager.GetInstance().rcService.IsRegisted() ? "成功" : "失败")}";
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    TextBoxMsg.Text += $"{Environment.NewLine}正在检测MQTT服务器连接情况";
+                });
+
+                bool IsConnect = await MQTTControl.GetInstance().Connect();
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    TextBoxMsg.Text += $"{Environment.NewLine}MQTT服务器连接{(MQTTControl.GetInstance().IsConnect ? "成功" : "失败")}";
+                    if (!IsConnect)
+                    {
+                        MQTTConnect mQTTConnect = new MQTTConnect() { Owner = this };
+                        mQTTConnect.ShowDialog();
+                    }
+                });
             }
-            await Task.Delay(100);
-            TextBoxMsg.Text += Environment.NewLine + "初始化服务" + MySqlControl.GetInstance().IsConnect;
-            try
+            else
             {
-                if (!GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting.IsDeFaultOpenService)
-                    new WindowDevices() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}已经跳过MQTT服务器连接"; });
+                await Task.Delay(100);
+            }
+
+            if (MQTTControl.GetInstance().IsConnect)
+            {
+                if (SoftwareConfig.IsUseRCService)
+                {
+
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        TextBoxMsg.Text += $"{Environment.NewLine}正在检测注册中心连接情况";
+                    });
+
+                    ServiceManager.GetInstance();
+                    await Task.Delay(100);
+                    if (!ServiceManager.GetInstance().rcService.IsRegisted() && SoftwareConfig.IsUseRCService)
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            RCServiceConnect rcServiceConnect = new RCServiceConnect() { Owner = this };
+                            rcServiceConnect.ShowDialog();
+                        });
+                        Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}注册中心: {(ServiceManager.GetInstance().rcService.IsRegisted() ? "成功" : "失败")}"; });
+                    }
+                }
                 else
-                    ServiceManager.GetInstance().GenContorl();
+                {
+                    Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}已经跳过MQTT服务器连接"; });
+                    await Task.Delay(100);
+                }
             }
-            catch
+            else
             {
-                MessageBox.Show("窗口创建错误");
-                Environment.Exit(-1);
+                Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}注册中心需要MQTT连接成功，已经跳过MQTT服务器连接"; });
+                await Task.Delay(200);
             }
+
+            Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}初始化服务"; });
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                try
+                {
+                    if (!GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting.IsDeFaultOpenService)
+                        new WindowDevices() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                    else
+                        ServiceManager.GetInstance().GenContorl();
+                }
+                catch
+                {
+                    MessageBox.Show("窗口创建错误");
+                    Environment.Exit(-1);
+                }
+            });
             await Task.Delay(100);
-            MainWindow mainWindow = new MainWindow();
-            mainWindow.Show();
-            this.Close();
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+
+                MainWindow mainWindow = new MainWindow();
+                mainWindow.Show();
+                this.Close();
+            });
         }
         
         private void TextBoxMsg_TextChanged(object sender, TextChangedEventArgs e)

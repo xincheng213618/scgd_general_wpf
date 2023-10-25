@@ -74,7 +74,7 @@ namespace ColorVision.Services
 
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => Reload();
 
-            Task.Run(() => rcService.Regist());
+            //Task.Run(() => rcService.Regist());
             MQTTControl.GetInstance().MQTTConnectChanged += (s, e) =>
             {
                 Task.Run(() => rcService.Regist());
