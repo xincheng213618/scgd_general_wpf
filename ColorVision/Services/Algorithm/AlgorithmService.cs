@@ -102,8 +102,10 @@ namespace ColorVision.Services.Algorithm
                     case MQTTAlgorithmEventEnum.Event_GetCIEFiles:
                         OnAlgorithmEvent?.Invoke(this, new AlgorithmEvent(msg.EventName, msg.SerialNumber, msg.Data));
                         break;
+                    case "MTF":
+                        break;
                     default:
-                        MessageBox.Show($"未定义{msg.EventName}");
+                        MessageBox.Show($"{msg.EventName}执行成功");
                         break;
                 }
             }
