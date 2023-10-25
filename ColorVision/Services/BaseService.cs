@@ -31,7 +31,7 @@ namespace ColorVision.Services
 
         public override DateTime LastAliveTime { get => Config.LastAliveTime; set => Config.LastAliveTime = value; }
 
-
+        public override string ServiceToken { get => Config.ServiceToken; set => Config.ServiceToken = value; }
 
         public void UpdateServiceConfig(IServiceConfig config)
         {

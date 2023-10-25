@@ -80,13 +80,6 @@ namespace ColorVision.RC
                 try
                 {
                     MQTTNodeServiceHeader json = JsonConvert.DeserializeObject<MQTTNodeServiceHeader>(Msg);
-                    //if (json == null || !json.ServiceName.Equals(Config.Code, StringComparison.Ordinal))
-                    //    return Task.CompletedTask;
-
-                    //if (json.Code == 0)
-                    //{
-                    //}
-
                     if (json==null)
                         return Task.CompletedTask;
 
@@ -163,7 +156,6 @@ namespace ColorVision.RC
                                             dateTimes.Add(DateTime.Parse(mQTTNodeService.LiveTime));
                                         }
                                         List<DateTime> sortedDates = dateTimes.OrderBy(date => date).ToList();
-
 
                                         serviceTerminal.Config.LastAliveTime = sortedDates.LastOrDefault();
                                         serviceTerminal.Config.IsAlive = true;

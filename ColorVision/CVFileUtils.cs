@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Channels;
 using System.Windows.Media.Media3D;
 
-namespace ColorVision.Common.Util
+namespace ColorVision
 {
     public class CVFileUtils
     {

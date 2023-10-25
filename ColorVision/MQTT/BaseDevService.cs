@@ -37,6 +37,8 @@ namespace ColorVision.MQTT
 
         public override DateTime LastAliveTime { get => Config.LastAliveTime; set => Config.LastAliveTime = value; }
 
+        public override string ServiceToken { get => Config.ServiceToken; set => Config.ServiceToken = value; }
+
         public BaseDevService(T config):base()
         {
             Config = config;
@@ -157,7 +159,7 @@ namespace ColorVision.MQTT
         public string SnID { get; set; }
         public string SerialNumber { get; set; }
         public string ServiceName { get; set; }
-        public string ServiceToken { get; set; }
+        public virtual string ServiceToken { get; set; }
 
         public virtual int HeartbeatTime { get => _HeartbeatTime; set { _HeartbeatTime = value; NotifyPropertyChanged(); } }
         private int _HeartbeatTime = 2000;

@@ -22,6 +22,11 @@ namespace ColorVision.Device
         public string Code { get => _Code; set { _Code = value; NotifyPropertyChanged(); } }
         private string _Code;
 
+        //Token
+        public string ServiceToken { get => _ServiceToken; set { _ServiceToken = value; NotifyPropertyChanged(); } }
+        private string _ServiceToken;
+
+
         /// <summary>
         /// 心跳时间
         /// </summary>
