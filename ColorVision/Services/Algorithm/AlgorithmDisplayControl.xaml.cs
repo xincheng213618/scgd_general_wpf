@@ -490,5 +490,11 @@ namespace ColorVision.Services.Algorithm
             }
             windowTemplate.ShowDialog();
         }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            WindowSolution windowSolution = new WindowSolution() { Owner = Window.GetWindow(this) };
+            windowSolution.Show();
+        }
     }
 }

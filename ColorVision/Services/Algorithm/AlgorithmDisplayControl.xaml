@@ -30,7 +30,7 @@
         <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel Margin="5" >
                 <Button Content="算法服务初始化(除POI)"  HorizontalAlignment="Left" Click="Algorithm_INI" />
-                <Button Content="数据显示窗口"  HorizontalAlignment="Left" Click="Algorithm_INI" />
+                <Button Content="数据显示窗口"  HorizontalAlignment="Left" Click="Button_Click" />
                 <GroupBox  Header="图片文件">
                     <DockPanel Margin="0,2">
                         <Button  Content="..." DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Open_File" />
