@@ -103,6 +103,7 @@ namespace ColorVision.Services.Algorithm
                         OnAlgorithmEvent?.Invoke(this, new AlgorithmEvent(msg.EventName, msg.SerialNumber, msg.Data));
                         break;
                     case "MTF":
+                        MessageBox.Show($"{msg.EventName}执行成功");
                         break;
                     default:
                         MessageBox.Show($"{msg.EventName}执行成功");
