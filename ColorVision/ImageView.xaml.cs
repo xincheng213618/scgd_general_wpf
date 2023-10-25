@@ -593,15 +593,14 @@ namespace ColorVision
 
         public void OpenCVCIE(string fileName)
         {
-            int width=0, height=0, bpp=0, channels=0, dataLen=0, srcFileNameLen = 0;
-            CVFileUtils.ReadCVCIEHeader(fileName,out width,out height,out bpp,out channels,out dataLen,out srcFileNameLen);
-            float[] exp=new float[3];
-            byte[] data = new byte[dataLen];
-            srcFileNameLen += 1;
-            StringBuilder sb = new StringBuilder(srcFileNameLen);
-            CVFileUtils.ReadCVCIE(fileName, exp, data, dataLen, sb, srcFileNameLen);
-            string fileN = sb.ToString();
-            CVFileUtils.WriteCVCIE(fileName+".1", exp, width, height, bpp, channels, data, dataLen, fileN);
+            CVCIEFileInfo fileInfo = new CVCIEFileInfo();
+            CVFileUtils.ReadCVCIEHeader(fileName,out fileInfo);
+            fileInfo.exp = new float[3];
+            fileInfo.data = new byte[fileInfo.dataLen];
+            fileInfo.srcFileNameLen += 1;
+            fileInfo.srcFileName = new char[fileInfo.srcFileNameLen];
+            CVFileUtils.ReadCVCIE(fileName,out fileInfo);
+            CVFileUtils.WriteCVCIE(fileName+".2", fileInfo);
         }
 
         public void OpenImage(byte[] data)

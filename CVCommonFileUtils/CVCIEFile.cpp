@@ -1,5 +1,7 @@
 #include "CVCIEFile.h"
 #include "pch.h"
+
+#include <sys/stat.h> // struct stat
 #include<iostream>
 #include<fstream>
 using namespace std;
@@ -7,34 +9,47 @@ using namespace std;
 char ciehd[] = { 'C', 'V', 'C', 'I', 'E' };
 int cur_ver = 1;
 
-EXPORTC MYDLL int STDCALL WriteCVCIE(char* cieFileName, float* exp, int width, int height, int bpp, int channels, const char* data, int dateLen, char* srcFileName) {
+EXPORTC MYDLL int STDCALL WriteCVCIE(char* cieFileName, CVCIEFileInfo fileInfo) {
 	ofstream file(cieFileName);
-	file.write(ciehd, 5);//标识
-	//版本
-	file.write((char*)&cur_ver, sizeof(cur_ver));
-	int len = strlen(srcFileName);
-	file.write((char*)&len, sizeof(len));//显示的源图
-	file.write(srcFileName, len);//显示的源图
-	//通道
-	file.write((char*)&channels, sizeof(channels));
-	//曝光
-	for (int i = 0; i < channels; i++) {
-		file.write((char*)&exp[i], sizeof(float));
+	int ret = -1;
+	if (file.good()) {
+		file.write(ciehd, 5);//标识
+		//版本
+		file.write((char*)&cur_ver, sizeof(cur_ver));
+		int len = strlen(fileInfo.srcFileName);
+		file.write((char*)&len, sizeof(len));//显示的源图
+		file.write(fileInfo.srcFileName, len);//显示的源图
+		//通道
+		file.write((char*)&fileInfo.channels, sizeof(fileInfo.channels));
+		//曝光
+		for (int i = 0; i < fileInfo.channels; i++) {
+			file.write((char*)&fileInfo.exp[i], sizeof(float));
+		}
+		//宽
+		file.write((char*)&fileInfo.width, sizeof(fileInfo.width));
+		//高
+		file.write((char*)&fileInfo.height, sizeof(fileInfo.height));
+		//位
+		file.write((char*)&fileInfo.bpp, sizeof(fileInfo.bpp));
+		//数据长度
+		file.write((char*)&fileInfo.dataLen, sizeof(fileInfo.dataLen));
+		//数据
+		file.write(fileInfo.data, fileInfo.dataLen);
+		file.flush();
+		ret = 0;
 	}
-	//宽
-	file.write((char*)&width, sizeof(width));
-	//高
-	file.write((char*)&height, sizeof(height));
-	//位
-	file.write((char*)&bpp, sizeof(bpp));
-	//数据长度
-	file.write((char*)&dateLen, sizeof(dateLen));
-	//数据
-	file.write(data, dateLen);
+	else {
+		ret = -1;
+	}
 	file.close();
-	return 0;
+	return ret;
 }
-
+/*
+* 返回值:
+* 0 : 成功
+ -1 : 文件头非法
+ -2 : 文件版本非法
+*/
 int readHeader(ifstream& file, float* exp, int& width, int& height, int& bpp, int& channels, int& dateLen, char* srcFileName, int& srcFileNameLen) {
 	char hd[5];
 	file.read(hd, 5);
@@ -75,13 +90,21 @@ int readHeader(ifstream& file, float* exp, int& width, int& height, int& bpp, in
 
 /*
 * 返回值:
+* 0 : 成功
  -1 : 文件头非法
  -2 : 文件版本非法
+ -999 : 文件不存在
 */
-EXPORTC MYDLL int STDCALL ReadCVCIEHeader(char* cieFileName, int& width, int& height, int& bpp, int& channels, int& dataLen, int& srcFileNameLen) {
+EXPORTC MYDLL int STDCALL ReadCVCIEHeader(char* cieFileName, CVCIEFileInfo& fileInfo) {
 	ifstream file(cieFileName);
-	float* exp = new float[3];
-	int ret = readHeader(file, exp, width, height, bpp, channels, dataLen, NULL, srcFileNameLen);
+	int ret = -999;
+	if (file.good()) {
+		float* exp = new float[3];
+		ret = readHeader(file, exp, fileInfo.width, fileInfo.height, fileInfo.bpp, fileInfo.channels, fileInfo.dataLen, NULL, fileInfo.srcFileNameLen);
+	}
+	else {
+		ret = -999;
+	}
 	file.close();
 	return ret;
 }
@@ -89,23 +112,80 @@ EXPORTC MYDLL int STDCALL ReadCVCIEHeader(char* cieFileName, int& width, int& he
 
 /*
 * 返回值:
+* 0 : 成功
  -1 : 文件头非法
  -2 : 文件版本非法
  -3 : 数据区长度不够
+ -999 : 文件不存在
 */
-EXPORTC MYDLL int STDCALL ReadCVCIE(char* cieFileName, float* exp, char* data, int dataLen, char* srcFileName, int srcFileNameLen) {
+EXPORTC MYDLL int STDCALL ReadCVCIE(char* cieFileName, CVCIEFileInfo& fileInfo) {
 	ifstream file(cieFileName);
-	int width, height, bpp, channels, _dataLen, _srcFileNameLen = srcFileNameLen;
-	int ret = readHeader(file, exp, width, height, bpp, channels, _dataLen, srcFileName, _srcFileNameLen);
-	if (ret == 0) {
-		if (dataLen >= _dataLen) {
-			file.read(data, _dataLen);
-		}
-		else {
-			ret = -3;
+	int ret = -999;
+	if (file.good()) {
+		int width, height, bpp, channels, _dataLen, _srcFileNameLen = fileInfo.srcFileNameLen;
+		ret = readHeader(file, fileInfo.exp, width, height, bpp, channels, _dataLen, fileInfo.srcFileName, _srcFileNameLen);
+		if (ret == 0) {
+			if (fileInfo.dataLen >= _dataLen) {
+				file.read(fileInfo.data, _dataLen);
+				fileInfo.dataLen = _dataLen;
+			}
+			else {
+				ret = -3;
+			}
 		}
 	}
+	else {
+		ret = -999;
+	}
 
+	file.close();
+	return ret;
+}
+
+EXPORTC MYDLL long STDCALL GetCVCIEFileLength(char* cieFileName) {
+	if (cieFileName == NULL) {
+		return -1;
+	}
+	// 这是一个存储文件(夹)信息的结构体，其中有文件大小和创建时间、访问时间、修改时间等
+	struct stat statbuf;
+	// 提供文件名字符串，获得文件属性结构体
+	if (stat(cieFileName, &statbuf) == 0) {
+		// 获取文件大小
+		size_t filesize = statbuf.st_size;
+		return filesize;
+	}
+	else {
+		return -1;
+	}
+}
+
+/*
+* 返回值:
+* 0 : 成功
+ -1 : 文件头非法
+ -2 : 文件版本非法
+ -3 : 数据区长度不够
+ -999 : 文件不存在
+*/
+EXPORTC MYDLL int STDCALL ReadCVCIEByOne(char* cieFileName, CVCIEFileInfo& fileInfo) {
+	ifstream file(cieFileName);
+	int ret = -999;
+	if (file.good()) {
+		int _dataLen, _srcFileNameLen = fileInfo.srcFileNameLen;
+		ret = readHeader(file, fileInfo.exp, fileInfo.width, fileInfo.height, fileInfo.bpp, fileInfo.channels, _dataLen, fileInfo.srcFileName, _srcFileNameLen);
+		if (ret == 0) {
+			if (fileInfo.dataLen >= _dataLen) {
+				file.read(fileInfo.data, _dataLen);
+				fileInfo.dataLen = _dataLen;
+			}
+			else {
+				ret = -3;
+			}
+		}
+	}
+	else {
+		ret = -999;
+	}
 	file.close();
 	return ret;
 }

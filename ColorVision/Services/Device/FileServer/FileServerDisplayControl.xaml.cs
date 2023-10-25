@@ -96,11 +96,11 @@ namespace ColorVision.Device.FileServer
 
         private void Button_Click_Open(object sender, RoutedEventArgs e)
         {
-            doOpen(FilesView.Text);
-            //Application.Current.Dispatcher.Invoke(() =>
-            //{
-            //    View.OpenCVCIE(@"F:\img\cvcie\20230322142640_1_src.cvcie.1");
-            //});
+            //doOpen(FilesView.Text);
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                View.OpenCVCIE(@"F:\img\cvcie\20230322142640_1_src.cvcie");
+            });
         }
 
         private void doOpen(string fileName)
