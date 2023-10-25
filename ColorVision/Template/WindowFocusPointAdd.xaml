@@ -11,9 +11,9 @@
         <TextBlock Text="导入关注点" FontSize="20"  HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,-20,0,0"/>
         <ListView x:Name="ListView1"   Margin="5,5,5,5"  Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" SelectionChanged="ListView1_SelectionChanged">
             <ListView.ItemTemplate>
-                <DataTemplate DataType="{x:Type local:ListConfig}" >
+                <DataTemplate DataType="{x:Type local:TemplateBase}" >
                     <Border>
-                        <TextBlock  Text="{Binding Name}" TextTrimming = "CharacterEllipsis"/>
+                        <TextBlock  Text="{Binding Key}" TextTrimming = "CharacterEllipsis"/>
                     </Border>
                 </DataTemplate>
             </ListView.ItemTemplate>

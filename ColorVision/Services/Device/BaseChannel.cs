@@ -40,6 +40,13 @@ namespace ColorVision.MQTT
         }
 
 
+        //继承Config
+        public virtual object GetConfig()
+        {
+            throw new NotImplementedException();
+        }
+
+
         public void Dispose()
         {
             GC.SuppressFinalize(this);
@@ -50,6 +57,10 @@ namespace ColorVision.MQTT
     public class BaseDevice<T> : BaseChannel where T :BaseDeviceConfig,new()
     {
         public T Config { get; set; }
+        public override object GetConfig()
+        {
+            return Config;
+        }
         public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
 
         public BaseDevice(SysResourceModel sysResourceModel) : base()

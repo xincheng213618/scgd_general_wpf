@@ -1,4 +1,4 @@
-﻿using ColorVision.Common.Util;
+﻿using ColorVision;
 using ColorVision.Draw;
 using ColorVision.Draw.Ruler;
 using ColorVision.MVVM;
@@ -593,7 +593,7 @@ namespace ColorVision
             }
         }
 
-        public void OpenCVCIE(string fileName)
+        public static void OpenCVCIE(string fileName)
         {
             //fileInfo.gain = 1;
             //CVFileUtils.WriteCVCIE(fileName, fileInfo);

@@ -1,10 +1,11 @@
-﻿using System;
+﻿#pragma warning disable CA1806,CA1833,CA1401,CA2101,CA1838,CS8603
+using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Channels;
 using System.Windows.Media.Media3D;
 
-namespace ColorVision.Common.Util
+namespace ColorVision
 {
     public struct C_CVCIEFileInfo
     {
@@ -47,7 +48,6 @@ namespace ColorVision.Common.Util
                 binaryReader.Read(bytes, 0, bytes.Length);
                 return bytes;
             }
-
             return null;
         }
 

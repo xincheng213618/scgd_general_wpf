@@ -72,14 +72,14 @@ namespace ColorVision.Services.Algorithm
 
     public class PoiResultData:ViewModelBase
     {
-        public POIPoint Point { get { return _point; } set { _point = value; NotifyPropertyChanged(); } }
+        public POIPoint Point { get { return POIPoint; } set { POIPoint = value; NotifyPropertyChanged(); } }
 
-        public string PixelPos { get { return string.Format("{0},{1}", _point.PixelX, _point.PixelY); } }
-        public string PixelSize { get { return string.Format("{0},{1}", _point.Width, _point.Height); } }
+        public string PixelPos { get { return string.Format("{0},{1}", POIPoint.PixelX, POIPoint.PixelY); } }
+        public string PixelSize { get { return string.Format("{0},{1}", POIPoint.Width, POIPoint.Height); } }
 
-        public string Shapes { get { return string.Format("{0}", _point.PointType == 0 ? "圆形" : "矩形"); } }
+        public string Shapes { get { return string.Format("{0}", POIPoint.PointType == 0 ? "圆形" : "矩形"); } }
 
-        protected POIPoint _point;
+        protected POIPoint POIPoint { get; set; }
     }
     public class PoiResultCIExyuvData : PoiResultData
     {

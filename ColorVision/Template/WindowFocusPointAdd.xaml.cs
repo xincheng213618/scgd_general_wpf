@@ -10,8 +10,8 @@ namespace ColorVision.Template
     /// </summary>
     public partial class WindowFocusPointAdd : BaseWindow
     {
-        public ObservableCollection<ListConfig> ListConfigs { get; set; }
-        public WindowFocusPointAdd(ObservableCollection<ListConfig> ListConfigs )
+        public ObservableCollection<TemplateBase> ListConfigs { get; set; }
+        public WindowFocusPointAdd(ObservableCollection<TemplateBase> ListConfigs )
         {
             this.ListConfigs = ListConfigs;
             InitializeComponent();
@@ -27,7 +27,7 @@ namespace ColorVision.Template
         {
             if (ListView1.SelectedIndex > -1)
             {
-                if (ListConfigs[ListView1.SelectedIndex].Value is PoiParam poiParam)
+                if (ListConfigs[ListView1.SelectedIndex].GetValue() is PoiParam poiParam)
                 SelectPoiParam = poiParam;
                 this.Close();
             }

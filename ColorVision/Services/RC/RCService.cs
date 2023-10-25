@@ -1,4 +1,5 @@
-﻿using ColorVision.MQTT;
+﻿using ColorVision.Device;
+using ColorVision.MQTT;
 using ColorVision.Services;
 using MQTTMessageLib;
 using MQTTMessageLib.RC;
@@ -80,12 +81,8 @@ namespace ColorVision.RC
                 try
                 {
                     MQTTNodeServiceHeader json = JsonConvert.DeserializeObject<MQTTNodeServiceHeader>(Msg);
-                    //if (json == null || !json.ServiceName.Equals(Config.Code, StringComparison.Ordinal))
-                    //    return Task.CompletedTask;
-
-                    //if (json.Code == 0)
-                    //{
-                    //}
+                    if (json==null)
+                        return Task.CompletedTask;
 
                     switch (json.EventName)
                     {
@@ -128,10 +125,12 @@ namespace ColorVision.RC
         }
 
 
-        public void UpdateServiceStatus(Dictionary<string, List<MQTTNodeService>> data)
+        public static void UpdateServiceStatus(Dictionary<string, List<MQTTNodeService>> data)
         {
             foreach (var serviceKind in ServiceManager.GetInstance().MQTTServices)
             {
+                if (serviceKind.ServiceType.ToString() == ServiceType.Algorithm.ToString())
+                    continue;
                 foreach (var item in data)
                 {
                     if (item.Key.ToString() == serviceKind.ServiceType.ToString())
@@ -148,35 +147,43 @@ namespace ColorVision.RC
                         foreach (var baseObject in serviceKind.VisualChildren)
                         {
                             if (baseObject is ServiceTerminal serviceTerminal)
+                            {
                                 foreach (var item1 in keyValuePairs)
                                 {
                                     if (serviceTerminal.Config.SendTopic == item1.Key)
                                     {
                                         List<DateTime> dateTimes = new List<DateTime>();
+                                        Dictionary<DateTime, MQTTNodeService> DateNodeServices = new Dictionary<DateTime, MQTTNodeService>();
                                         foreach (var mQTTNodeService in item1.Value)
                                         {
-                                            dateTimes.Add(DateTime.Parse(mQTTNodeService.LiveTime));
+                                            DateTime dateTime = DateTime.Parse(mQTTNodeService.LiveTime);
+                                            dateTimes.Add(dateTime);
+                                            DateNodeServices.Add(dateTime, mQTTNodeService);
                                         }
                                         List<DateTime> sortedDates = dateTimes.OrderBy(date => date).ToList();
-
 
                                         serviceTerminal.Config.LastAliveTime = sortedDates.LastOrDefault();
                                         serviceTerminal.Config.IsAlive = true;
                                         serviceTerminal.Config.HeartbeatTime = 99999;
+                                        if (serviceTerminal.BaseService.ServiceToken != DateNodeServices[sortedDates.LastOrDefault()].ServiceToken)
+                                            serviceTerminal.BaseService.ServiceToken = DateNodeServices[sortedDates.LastOrDefault()].ServiceToken;
 
                                         foreach (var baseObject1 in serviceTerminal.VisualChildren)
                                         {
-                                            if (baseObject1 is BaseChannel baseChannel)
+                                            if (baseObject1 is BaseChannel baseChannel && baseChannel.GetConfig() is BaseDeviceConfig baseDeviceConfig)
                                             {
-                                                baseChannel.IsAlive = true;
-                                                baseChannel.LastAliveTime = sortedDates.LastOrDefault(); ;
-                                                baseChannel.HeartbeatTime = 99999;
+                                                baseDeviceConfig.IsAlive = true;
+                                                baseDeviceConfig.LastAliveTime = sortedDates.LastOrDefault(); ;
+                                                baseDeviceConfig.HeartbeatTime = 99999;
+                                                baseDeviceConfig.ServiceToken = DateNodeServices[sortedDates.LastOrDefault()].ServiceToken;
                                             }
                                         }
 
                                     }
 
                                 }
+
+                            }
 
                         }
 

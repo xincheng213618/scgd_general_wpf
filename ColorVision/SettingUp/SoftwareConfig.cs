@@ -3,6 +3,7 @@ using ColorVision.MVVM;
 using ColorVision.MySql;
 using ColorVision.RC;
 using ColorVision.SettingUp;
+using ColorVision.Solution;
 using ColorVision.Template;
 using ColorVision.User;
 using System;

@@ -65,7 +65,7 @@ namespace ColorVision.User
         Female,
     }
 
-    public enum PerMissionMode
+    public enum PerMissionMode  
     {
         Administrator,
         User

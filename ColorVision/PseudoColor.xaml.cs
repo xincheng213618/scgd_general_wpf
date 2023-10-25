@@ -23,9 +23,9 @@ namespace ColorVision
     public partial class PseudoColor : System.Windows.Controls.UserControl
     {
         public ColorMap colorMap { get; set; }
-        double min_max = 0;
-        double mindata = 0;
-        double maxdata = 255;
+        double min_max { get; set; } 
+        double mindata { get; set; }
+        double maxdata { get; set; }= 255;
         public ObservableCollection<DataGridValue> DataGridValues { get; set; }
 
         public PseudoColor(double mindata = 0, double maxdata = 255)

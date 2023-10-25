@@ -13,7 +13,6 @@ namespace ColorVision.Template.Algorithm
         {
         }
 
-        private int _Y;
         [Category("Distortion"), Description("ISIZE cx"), DisplayName("cx")]
         public int Width { get => GetValue(_Width); set { SetProperty(ref _Width, value); } }
         private int _Width = 16;

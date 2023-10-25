@@ -1,7 +1,6 @@
 ﻿using ColorVision.MVVM;
-using System.IO;
 
-namespace ColorVision.SettingUp
+namespace ColorVision.Solution
 {
     public class SolutionSetting: ViewModelBase
     {
@@ -22,13 +21,12 @@ namespace ColorVision.SettingUp
 
         public string SolutionFullName 
         { 
-            get =>  _SolutionFullName; 
-            set { 
+            get =>  _SolutionFullName;
+            set
+            {
                 _SolutionFullName = value;
                 NotifyPropertyChanged();
-                if (!Directory.Exists(CachePath))
-                    Directory.CreateDirectory(CachePath);
-                 }
+            }
         }
         private string _SolutionFullName;
 
