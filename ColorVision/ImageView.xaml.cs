@@ -593,7 +593,7 @@ namespace ColorVision
             }
         }
 
-        public static void OpenCVCIE(string fileName)
+        public void OpenCVCIE(string fileName)
         {
             //fileInfo.gain = 1;
             //CVFileUtils.WriteCVCIE(fileName, fileInfo);
