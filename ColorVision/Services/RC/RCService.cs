@@ -135,6 +135,8 @@ namespace ColorVision.RC
         {
             foreach (var serviceKind in ServiceManager.GetInstance().MQTTServices)
             {
+                if (serviceKind.ServiceType.ToString() == ServiceType.Algorithm.ToString())
+                    continue;
                 foreach (var item in data)
                 {
                     if (item.Key.ToString() == serviceKind.ServiceType.ToString())
