@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1806,CA1833,CA1401,CA2101,CA1838
+﻿#pragma warning disable CA1806,CA1833,CA1401,CA2101,CA1838,CS8603
 using System;
 using System.IO;
 using System.Runtime.InteropServices;

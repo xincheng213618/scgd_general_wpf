@@ -380,7 +380,7 @@ namespace ColorVision.Services.Algorithm
         {
             if(fileCache.ContainsKey(fileName))
             {
-                byte[] data = ColorVision.Common.Util.CVFileUtils.ReadBinaryFile(fileCache[fileName]);
+                byte[] data = CVFileUtils.ReadBinaryFile(fileCache[fileName]);
                 
                 Application.Current.Dispatcher.Invoke(() =>
                 {
@@ -407,7 +407,7 @@ namespace ColorVision.Services.Algorithm
                 if (data.Count == 1)
                 {
                     string fullFileName = SolutionControl.GetInstance().SolutionConfig.CachePath + "\\" + fileName;
-                    ColorVision.Common.Util.CVFileUtils.WriteBinaryFile(fullFileName, data[0]);
+                    CVFileUtils.WriteBinaryFile(fullFileName, data[0]);
                     fileCache.Add(fileName, fullFileName);
                     Application.Current.Dispatcher.Invoke(() =>
                     {
@@ -431,7 +431,7 @@ namespace ColorVision.Services.Algorithm
         {
             DealerSocket client = new DealerSocket(Device.Config.Endpoint);
             var message = new List<byte[]>();
-            message.Add(ColorVision.Common.Util.CVFileUtils.ReadBinaryFile(fileName));
+            message.Add(CVFileUtils.ReadBinaryFile(fileName));
             client.TrySendMultipartBytes(TimeSpan.FromMilliseconds(3000), message);
             client.Close();
             client.Dispose();
