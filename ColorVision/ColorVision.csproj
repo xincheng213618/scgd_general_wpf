@@ -120,4 +120,8 @@
     <Resource Include="Assets\Image\pictureBox1.Image.png" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Extension\" />
+  </ItemGroup>
+
 </Project>
