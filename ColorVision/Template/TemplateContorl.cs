@@ -615,7 +615,11 @@ namespace ColorVision.Template
         public string Tag { get => _Tag; set { _Tag = value; NotifyPropertyChanged(); } }
         private string _Tag;
 
-        public object Value1 { get; set; }    
+        public virtual object GetValue()
+        {
+            throw new NotImplementedException();
+        }
+
     }
 
     public class Template<T>: TemplateBase where T : ParamBase
@@ -634,10 +638,12 @@ namespace ColorVision.Template
             Value = keyValuePair.Value;
         }
         public override int ID { get => Value.ID;}
-        public T Value { get => _Value; set { _Value = value; Value1 = value;  } }
-        private T _Value;
+        public T Value { get; set; }
 
-
+        public override object GetValue()
+        {
+            return Value;
+        }
 
 
     }

@@ -27,7 +27,7 @@ namespace ColorVision.Template
         {
             if (ListView1.SelectedIndex > -1)
             {
-                if (ListConfigs[ListView1.SelectedIndex].Value1 is PoiParam poiParam)
+                if (ListConfigs[ListView1.SelectedIndex].GetValue() is PoiParam poiParam)
                 SelectPoiParam = poiParam;
                 this.Close();
             }

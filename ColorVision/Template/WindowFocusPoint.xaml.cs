@@ -1266,9 +1266,9 @@ namespace ColorVision.Template
                     {
                         if (item.Value != PoiParam)
                         {
-                            TemplateBase listConfig = new TemplateBase();
+                            Template<PoiParam> listConfig = new Template<PoiParam>();
                             listConfig.Key = item.Key;
-                            listConfig.Value1 = item.Value;
+                            listConfig.Value = item.Value;
                             ListConfigs.Add(listConfig);
                         }
                     }

@@ -145,7 +145,7 @@ namespace ColorVision.Template
                 switch (TemplateType)
                 {
                     case TemplateType.PoiParam:
-                        if (ListConfigs[listView.SelectedIndex].Value1 is PoiParam poiParam)
+                        if (ListConfigs[listView.SelectedIndex].GetValue() is PoiParam poiParam)
                         {
                             var WindowFocusPoint = new WindowFocusPoint(poiParam) { Owner = this };
                             WindowFocusPoint.Closed += async (s, e) =>
@@ -157,7 +157,7 @@ namespace ColorVision.Template
                         }
                         break;
                     case TemplateType.FlowParam:
-                        if (ListConfigs[listView.SelectedIndex].Value1 is FlowParam flowParam)
+                        if (ListConfigs[listView.SelectedIndex].GetValue() is FlowParam flowParam)
                         {
                             flowParam.Name ??= ListConfigs[listView.SelectedIndex].Key;
                             new WindowFlowEngine(flowParam) { Owner = Application.Current.MainWindow }.Show();
@@ -177,14 +177,14 @@ namespace ColorVision.Template
                 switch (TemplateType)
                 {
                     case TemplateType.Calibration:
-                        if (UserControl is Calibration calibration && ListConfigs[listView.SelectedIndex].Value1 is CalibrationParam calibrationParam)
+                        if (UserControl is Calibration calibration && ListConfigs[listView.SelectedIndex].GetValue() is CalibrationParam calibrationParam)
                         {
                             calibration.DataContext = calibrationParam;
                             calibration.CalibrationParam = calibrationParam;
                         }
                         break;
                     case TemplateType.MeasureParm:
-                        if (UserControl is MeasureParamControl mpc && ListConfigs[listView.SelectedIndex].Value1 is MeasureParam mp)
+                        if (UserControl is MeasureParamControl mpc && ListConfigs[listView.SelectedIndex].GetValue() is MeasureParam mp)
                         {
                             mpc.MasterID = mp.ID;
                             List<MeasureDetailModel> des = TemplateControl.LoadMeasureDetail(mp.ID);
@@ -199,7 +199,7 @@ namespace ColorVision.Template
                         }
                         break;
                     default:
-                        PropertyGrid1.SelectedObject = ListConfigs[listView.SelectedIndex].Value1;
+                        PropertyGrid1.SelectedObject = ListConfigs[listView.SelectedIndex].GetValue();
                         break;
                 }
             }
