@@ -5,6 +5,8 @@ using ColorVision.MVVM;
 using ColorVision.Services.Algorithm;
 using ColorVision.Util;
 using MQTTMessageLib.Algorithm;
+using NPOI.SS.Formula.Functions;
+using NPOI.Util;
 using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -593,15 +595,26 @@ namespace ColorVision
 
         public static void OpenCVCIE(string fileName)
         {
-            int width=0, height=0, bpp=0, channels=0, dataLen=0, srcFileNameLen = 0;
-            _ = CVFileUtils.ReadCVCIEHeader(fileName,out width,out height,out bpp,out channels,out dataLen,out srcFileNameLen);
-            float[] exp=new float[3];
-            byte[] data = new byte[dataLen];
-            srcFileNameLen += 1;
-            StringBuilder sb = new StringBuilder(srcFileNameLen);
-            _ = CVFileUtils.ReadCVCIE(fileName, exp, data, dataLen, sb, srcFileNameLen);
-            string fileN = sb.ToString();
-            _=CVFileUtils.WriteCVCIE(fileName+".1", exp, width, height, bpp, channels, data, dataLen, fileN);
+            //fileInfo.gain = 1;
+            //CVFileUtils.WriteCVCIE(fileName, fileInfo);
+            fileName = "F:\\img\\cvcie\\20230322142640_1.cvcie";
+            read(fileName);
+            //convert();
+        }
+        private void read(string fileName)
+        {
+            CVCIEFileInfo fileInfo = new CVCIEFileInfo();
+            int ret = CVFileUtils.ReadCVCIE(fileName, ref fileInfo);
+        }
+        private void convert()
+        {
+            string srcPath = "F:\\img\\XYZ\\";
+            string cieFileName = "F:\\img\\cvcie\\20230322142640_1.cvcie", xFileName = srcPath + "20230322142640_1_X.tif", yFileName = srcPath + "20230322142640_1_Y.tif", zFileName = srcPath + "20230322142640_1_Z.tif";
+            CVCIEFileInfo fileInfo = new CVCIEFileInfo();
+            fileInfo.srcFileName = srcPath + "20230322142640_1_src.tif";
+            fileInfo.exp = new float[3] { 100, 100, 100 };
+            fileInfo.gain = 1;
+            CVFileUtils.ConvertXYZToCVCIE(cieFileName, xFileName, yFileName, zFileName, ref fileInfo);
         }
 
         public void OpenImage(byte[] data)
