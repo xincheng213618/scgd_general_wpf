@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -211,7 +212,6 @@ namespace ColorVision.Services.Algorithm
                 return;
             }
             string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            //var Batch = ServiceControl.GetInstance().GetResultBatch(sn);
             Service.GetData(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, -1, CB_CIEImageFiles.Text, ComboxPoiTemplate.Text);
             handler = PendingBox.Show(Application.Current.MainWindow, "", "计算关注点", true);
             handler.Cancelling += delegate
@@ -224,18 +224,10 @@ namespace ColorVision.Services.Algorithm
         {
             if (sender is Button button)
             {
-                 var msg = Service.Init();
-
+                var msg = Service.Init();
                 Helpers.SendCommand(button, msg);
-
             }
         }
-
-        private void Algorithm_GET(object sender, RoutedEventArgs e)
-        {
-            Service.GetAllSnID();
-        }
-
         private void MTF_Click(object sender, RoutedEventArgs e)
         {
             if (ComboxMTFTemplate.SelectedIndex==-1)
@@ -435,6 +427,67 @@ namespace ColorVision.Services.Algorithm
             client.TrySendMultipartBytes(TimeSpan.FromMilliseconds(3000), message);
             client.Close();
             client.Dispose();
+        }
+
+        TemplateControl TemplateControl { get; set; }
+
+        private void MenuItem_Template(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem)
+            {
+                SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
+                WindowTemplate windowTemplate;
+                if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
+                {
+                    MessageBox.Show("数据库连接失败，请先连接数据库在操作");
+                    return;
+                }
+                switch (menuItem.Tag?.ToString() ?? string.Empty)
+                {
+                    case "FocusParm":
+                        windowTemplate = new WindowTemplate(TemplateType.PoiParam) { Title = "关注点设置" };
+                        TemplateAbb(windowTemplate, TemplateControl.PoiParams);
+                        break;
+                    case "MTFParam":
+                        windowTemplate = new WindowTemplate(TemplateType.MTFParam) { Title = "MTF算法设置" };
+                        TemplateAbb(windowTemplate, TemplateControl.MTFParams);
+                        break;
+                    case "SFRParam":
+                        windowTemplate = new WindowTemplate(TemplateType.SFRParam) { Title = "SFR算法设置" };
+                        TemplateAbb(windowTemplate, TemplateControl.SFRParams);
+                        break;
+                    case "FOVParam":
+                        windowTemplate = new WindowTemplate(TemplateType.FOVParam) { Title = "FOV算法设置" };
+                        TemplateAbb(windowTemplate, TemplateControl.FOVParams);
+                        break;
+                    case "GhostParam":
+                        windowTemplate = new WindowTemplate(TemplateType.GhostParam) { Title = "Ghost算法设置" };
+                        TemplateAbb(windowTemplate, TemplateControl.GhostParams);
+                        break;
+                    case "DistortionParam":
+                        windowTemplate = new WindowTemplate(TemplateType.DistortionParam) { Title = "Distortion算法设置" };
+                        TemplateAbb(windowTemplate, TemplateControl.DistortionParams);
+                        break;
+                    default:
+                        HandyControl.Controls.Growl.Info("开发中");
+                        break;
+                }
+            }
+        }
+        private void TemplateAbb<T>(WindowTemplate windowTemplate, ObservableCollection<Template<T>> keyValuePairs) where T : ParamBase
+        {
+            windowTemplate.Owner = Window.GetWindow(this);
+            windowTemplate.ListConfigs.Clear();
+            foreach (var item in keyValuePairs)
+            {
+                if (item.Value is PoiParam poiParam)
+                {
+                    item.Tag = $"{poiParam.Width}*{poiParam.Height}{(GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql ? "" : $"_{poiParam.PoiPoints.Count}")}";
+                }
+
+                windowTemplate.ListConfigs.Add(item);
+            }
+            windowTemplate.ShowDialog();
         }
     }
 }

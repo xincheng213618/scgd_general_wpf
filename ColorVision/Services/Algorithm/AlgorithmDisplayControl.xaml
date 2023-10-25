@@ -18,7 +18,7 @@
     </UserControl.Resources>
     <StackPanel Margin="0,3">
         <DockPanel Margin="0,0,5,0">
-            <Grid DockPanel.Dock="Right" >
+            <Grid DockPanel.Dock="Right" Visibility="Collapsed" >
                 <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  Height="10" Width="10"  HorizontalAlignment="Center" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
                 <Image Source="{DynamicResource DrawingImageProperty}" Height="18" Margin="0,0,0,0"/>
                 <Button Background="Transparent" BorderThickness="0" Command="{Binding PropertyCommand}" />
@@ -29,7 +29,7 @@
        
         <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel Margin="5" >
-                <Button Content="服务初始化"  HorizontalAlignment="Left" Click="Algorithm_INI" />
+                <Button Content="算法服务初始化(除POI)"  HorizontalAlignment="Left" Click="Algorithm_INI" />
                 <GroupBox  Header="图片文件">
                     <DockPanel Margin="0,2">
                         <Button  Content="..." DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Open_File" />
@@ -50,6 +50,10 @@
                     <DockPanel Margin="0,2">
                         <Button  Content="关注点" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="PoiClick" />
                         <ComboBox  x:Name="ComboxPoiTemplate"  Width="150" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                        <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="FocusParm" Click="MenuItem_Template"/>
+                        </Grid>
                     </DockPanel>
                 </GroupBox>
 
@@ -57,6 +61,10 @@
                     <DockPanel Margin="0,2">
                         <Button  Content="FOV" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="FOV_Click" />
                         <ComboBox  x:Name="ComboxFOVTemplate"  Width="150" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                        <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
+                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="FOVParam" Click="MenuItem_Template"/>
+                        </Grid>
                     </DockPanel>
                 </GroupBox>
 
@@ -64,6 +72,10 @@
                     <DockPanel Margin="0,2">
                         <Button  Content="MTF" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="MTF_Click" />
                         <ComboBox  x:Name="ComboxMTFTemplate"  Width="150" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                        <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="MTFParam" Click="MenuItem_Template"/>
+                        </Grid>
                     </DockPanel>
                 </GroupBox>
 
@@ -71,6 +83,10 @@
                     <DockPanel Margin="0,2">
                         <Button  Content="SFR" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="SFR_Clik" />
                         <ComboBox  x:Name="ComboxSFRTemplate"  Width="150" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                        <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="SFRParam" Click="MenuItem_Template"/>
+                        </Grid>
                     </DockPanel>
                 </GroupBox>
 
@@ -78,6 +94,10 @@
                     <DockPanel Margin="0,2">
                         <Button  Content="Ghost" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Ghost_Click" />
                         <ComboBox  x:Name="ComboxGhostTemplate"  Width="150" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                        <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="GhostParam" Click="MenuItem_Template"/>
+                        </Grid>
                     </DockPanel>
                 </GroupBox>
 
@@ -85,6 +105,10 @@
                     <DockPanel Margin="0,2">
                         <Button  Content="Distortion" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Distortion_Click" />
                         <ComboBox  x:Name="ComboxDistortionTemplate"  Width="150" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                        <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="DistortionParam" Click="MenuItem_Template"/>
+                        </Grid>
                     </DockPanel>
                 </GroupBox>
 
