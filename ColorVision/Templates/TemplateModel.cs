@@ -14,6 +14,9 @@ namespace ColorVision.Templates
         public string Tag { get => _Tag; set { _Tag = value; NotifyPropertyChanged(); } }
         private string _Tag;
 
+        public virtual bool IsEditMode { get => _IsEditMode;set { _IsEditMode =value; NotifyPropertyChanged(); }}
+        private bool _IsEditMode;
+
         public virtual object GetValue()
         {
             throw new NotImplementedException();

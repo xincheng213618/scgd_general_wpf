@@ -54,14 +54,21 @@
                             <GridViewColumn Width="{Binding ElementName=GridListLen,Path=ActualWidth}" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate x:Name="ListConfigDataTemplate" DataType="{x:Type local:TemplateModelBase}">
-                                        <DockPanel Width="{Binding ElementName=GridListLen,Path=ActualWidth}" Margin="0,0,-30,0">
+                                        <DockPanel Width="{Binding ElementName=GridListLen,Path=ActualWidth}" Margin="0,0,-30,0"  Tag="{Binding .}" >
                                             <TextBlock DockPanel.Dock="Right"  Text="{ Binding Tag}" FontSize="10" HorizontalAlignment="Left" VerticalAlignment="Center"/>
                                             <Grid Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}">
-                                                <TextBlock Text="{Binding ID}" HorizontalAlignment="Left"/>
+                                                <TextBlock Text="{Binding ID}" HorizontalAlignment="Left" />
+                                            </Grid>
+                                            <Grid Width="100">
+                                                <TextBlock Text="{Binding Key}" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter1}}" />
+                                                <TextBox  Text="{Binding Key}" LostFocus="TextBox_LostFocus" GotFocus="TextBox_GotFocus"  PreviewKeyDown="TextBox_PreviewKeyDown" Tag="{Binding .}"   HorizontalAlignment="Left" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter}}"/>
                                             </Grid>
                                             <Grid>
-                                                <TextBox Text="{Binding Key}"  Background="Transparent" BorderThickness="0" HorizontalAlignment="Left"/>
+                                                <Image Source="{DynamicResource DrawingImageEdit}" Height="15" Width="15"/>
+                                                <Button Background="Transparent" BorderThickness="0" Click="Button_Click" Height="15" Width="15" Tag="{Binding .}"/>
                                             </Grid>
+
+
                                         </DockPanel>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>

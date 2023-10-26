@@ -466,5 +466,50 @@ namespace ColorVision.Templates
         {
             TextBox1.Text = NewCreateFileName("default");
         }
+
+        private void TextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (sender is TextBox textBox && textBox.Tag is TemplateModelBase templateModelBase)
+            {
+                templateModelBase.IsEditMode = false;
+            }
+        }
+
+        private void TextBox_GotFocus(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (sender is TextBox textBox && textBox.Tag is TemplateModelBase templateModelBase)
+            {
+                if (e.Key == Key.F2)
+                {
+                    templateModelBase.IsEditMode = true;
+                }
+                if (e.Key == Key.Escape || e.Key == Key.Enter)
+                {
+                    templateModelBase.IsEditMode = false;
+                }
+            }
+        }
+
+        private void TextBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is TextBox textBox && textBox.Tag is TemplateModelBase templateModelBase)
+            {
+                templateModelBase.IsEditMode = true;
+            }
+        }
+
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.Tag is TemplateModelBase templateModelBase)
+            {
+                templateModelBase.IsEditMode = true;
+            }
+        }
     }
 }
