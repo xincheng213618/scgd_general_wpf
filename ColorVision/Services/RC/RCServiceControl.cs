@@ -1,5 +1,8 @@
-﻿using ColorVision.MVVM;
+﻿using ColorVision.MQTT;
+using ColorVision.MVVM;
 using ColorVision.Services;
+using System;
+using System.Threading.Tasks;
 
 namespace ColorVision.RC
 {
@@ -10,10 +13,30 @@ namespace ColorVision.RC
         public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; NotifyPropertyChanged(); } }
         private bool _IsConnect;
 
+        public RCService RCService { get;set;}
+
         public RCServiceControl()
         {
-            _IsConnect = RCService.GetInstance().IsRegisted();
-            ServiceManager.GetInstance().RCService.StatusChangedEventHandler += RcService_StatusChangedEventHandler;
+            RCService = RCService.GetInstance();
+            _IsConnect = RCService.IsRegisted();
+
+
+            RCService.StatusChangedEventHandler += RcService_StatusChangedEventHandler;
+
+            int heartbeatTime = 10 * 1000;
+            System.Timers.Timer hbTimer = new System.Timers.Timer(heartbeatTime);
+            hbTimer.Elapsed += (s, e) => RCService.KeepLive(heartbeatTime);
+            hbTimer.Enabled = true;
+            GC.KeepAlive(hbTimer);
+
+
+            MQTTControl.GetInstance().MQTTConnectChanged += (s, e) =>
+            {
+                Task.Run(() => RCService.Regist());
+
+
+
+            };
         }
 
         private void RcService_StatusChangedEventHandler(object sender, RCServiceStatusChangedEvent args)

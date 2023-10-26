@@ -172,9 +172,9 @@ namespace ColorVision.RC
                                         }
                                         List<DateTime> sortedDates = dateTimes.OrderBy(date => date).ToList();
 
-                                        serviceTerminal.Config.LastAliveTime = sortedDates.LastOrDefault();
+                                        serviceTerminal.Config.LastAliveTime = DateTime.Now;
                                         serviceTerminal.Config.IsAlive = true;
-                                        serviceTerminal.Config.HeartbeatTime = 99999;
+                                        serviceTerminal.Config.HeartbeatTime = DateNodeServices[sortedDates.LastOrDefault()].OverTime;
                                         if (serviceTerminal.BaseService.ServiceToken != DateNodeServices[sortedDates.LastOrDefault()].ServiceToken)
                                             serviceTerminal.BaseService.ServiceToken = DateNodeServices[sortedDates.LastOrDefault()].ServiceToken;
 
@@ -183,8 +183,8 @@ namespace ColorVision.RC
                                             if (baseObject1 is BaseChannel baseChannel && baseChannel.GetConfig() is BaseDeviceConfig baseDeviceConfig)
                                             {
                                                 baseDeviceConfig.IsAlive = true;
-                                                baseDeviceConfig.LastAliveTime = sortedDates.LastOrDefault(); ;
-                                                baseDeviceConfig.HeartbeatTime = 99999;
+                                                baseDeviceConfig.LastAliveTime = DateTime.Now;
+                                                baseDeviceConfig.HeartbeatTime = DateNodeServices[sortedDates.LastOrDefault()].OverTime;
                                                 baseDeviceConfig.ServiceToken = DateNodeServices[sortedDates.LastOrDefault()].ServiceToken;
                                             }
                                         }
