@@ -50,7 +50,7 @@ namespace ColorVision.Draw
             ZoomIncrease = new RelayCommand(a => ZoomboxSub.Zoom(1.25));
             ZoomDecrease = new RelayCommand(a => ZoomboxSub.Zoom(0.8));
             ZoomNone = new RelayCommand(a => ZoomboxSub.ZoomNone());
-            OpenProperty = new RelayCommand(a => new DrawProperties().Show());
+            OpenProperty = new RelayCommand(a => new DrawProperties() {Owner = Window.GetWindow(Parent),WindowStartupLocation =WindowStartupLocation.CenterOwner }.Show());
             this.Parent.PreviewKeyDown += PreviewKeyDown;
             zombox.Cursor = Cursors.Hand;
         }

@@ -60,7 +60,7 @@
                                                 <TextBlock Text="{Binding ID}" HorizontalAlignment="Left"/>
                                             </Grid>
                                             <Grid>
-                                                <TextBox Text="{Binding Key}" IsReadOnly="True" Background="Transparent" BorderThickness="0" HorizontalAlignment="Left"/>
+                                                <TextBox Text="{Binding Key}"  Background="Transparent" BorderThickness="0" HorizontalAlignment="Left"/>
                                             </Grid>
                                         </DockPanel>
                                     </DataTemplate>
