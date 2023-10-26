@@ -74,7 +74,7 @@ namespace ColorVision.Services
 
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => Reload();
 
-            Task.Run(() => rcService.Regist());
+            //Task.Run(() => rcService.Regist());
             MQTTControl.GetInstance().MQTTConnectChanged += (s, e) =>
             {
                 Task.Run(() => rcService.Regist());
@@ -165,7 +165,7 @@ namespace ColorVision.Services
                                         mQTTService.AddChild(devicePG);
                                         MQTTDevices.Add(devicePG);
                                         break;
-                                    case ServiceType.Spectum:
+                                    case ServiceType.Spectrum:
                                         DeviceSpectrum deviceSpectrum = new DeviceSpectrum(device);
                                         svrObj = deviceSpectrum.DeviceService;
                                         mQTTService.AddChild(deviceSpectrum);

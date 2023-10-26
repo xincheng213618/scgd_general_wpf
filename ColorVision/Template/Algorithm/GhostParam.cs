@@ -8,7 +8,7 @@ namespace ColorVision.Template.Algorithm
     public class GhostParam :ParamBase
     {
         public GhostParam() { }
-        public GhostParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modDetails)
+        public GhostParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
         {
         }
 

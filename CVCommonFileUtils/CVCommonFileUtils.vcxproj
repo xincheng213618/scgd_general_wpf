@@ -112,6 +112,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <BrowseInformation>true</BrowseInformation>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -122,6 +123,9 @@
       <Command>copy $(TargetPath) E:\work\cv\New版\scgd_general_wpf\ColorVision\bin\x64\Debug\net6.0-windows\
 copy $(TargetDir)$(TargetName).pdb E:\work\cv\New版\scgd_general_wpf\ColorVision\bin\x64\Debug\net6.0-windows\</Command>
     </PostBuildEvent>
+    <Bscmake>
+      <PreserveSbr>true</PreserveSbr>
+    </Bscmake>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>

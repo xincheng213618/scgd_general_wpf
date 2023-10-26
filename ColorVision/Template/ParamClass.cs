@@ -13,9 +13,11 @@ namespace ColorVision.Template
 
     public class ParamBase:ViewModelBase
     {
+        public static int No;
+
         public event EventHandler IsEnabledChanged;
 
-        [Category("设置"), DisplayName("是否启用模板")]
+        [Category("设置"), DisplayName("是否启用模板"),BrowsableAttribute(false)]
         public bool IsEnable
         {
             get => _IsEnable; set
@@ -28,22 +30,29 @@ namespace ColorVision.Template
         }
         private bool _IsEnable;
 
-        [Category("设置"), DisplayName("序号")]
+        [Category("设置"), DisplayName("序号"), BrowsableAttribute(false)]
         public int ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
         private int _ID;
+
+        [BrowsableAttribute(false)]
+        public string Name { get => _Name; set { _Name = value ; NotifyPropertyChanged(); } }
+        private string _Name;
+
+
 
         private Dictionary<string, ModDetailModel> parameters;
 
         public ParamBase()
         {
-            this.ID = -1;
+            this.ID = No++;
             this.parameters = new Dictionary<string, ModDetailModel>();
         }
 
 
-        public ParamBase(int id,List<ModDetailModel> detail)
+        public ParamBase(int id,string  name,List<ModDetailModel> detail)
         {
             this.ID = id;
+            this.Name = name;
             this.parameters = new Dictionary<string, ModDetailModel>();
             if (detail != null)
             {
@@ -55,7 +64,8 @@ namespace ColorVision.Template
         }
         public void AddParameter(string key, ModDetailModel value)
         {
-            parameters.Add(key, value);
+            if (!parameters.ContainsKey(key))
+                parameters.Add(key, value);
         }
 
         public ModDetailModel? GetParameter(string key)
@@ -159,13 +169,10 @@ namespace ColorVision.Template
         public const string FileNameKey = "filename";
         public FlowParam() {
         }
-        public FlowParam(ModMasterModel dbModel, List<ModDetailModel> flowDetail) : base(dbModel.Id,flowDetail)
+        public FlowParam(ModMasterModel dbModel, List<ModDetailModel> flowDetail) : base(dbModel.Id, dbModel.Name??string.Empty, flowDetail)
         {
-            this.name = dbModel.Name ?? string.Empty;
         }
 
-        private string name;
-        public string Name { get => name; set { name = value; } }
 
         private string dataBase64;
         public string DataBase64 { get => dataBase64; set { dataBase64 = value; } }
@@ -204,7 +211,7 @@ namespace ColorVision.Template
         }
 
 
-        public AoiParam(ModMasterModel aoiMaster, List<ModDetailModel> aoiDetail) : base(aoiMaster.Id,aoiDetail)
+        public AoiParam(ModMasterModel modMaster, List<ModDetailModel> aoiDetail) : base(modMaster.Id, modMaster.Name ?? string.Empty, aoiDetail)
         {
 
         }
@@ -262,7 +269,7 @@ namespace ColorVision.Template
         {
         }
 
-        public LedReusltParam(ModMasterModel ledMaster, List<ModDetailModel> ledDetail) : base(ledMaster.Id, ledDetail)
+        public LedReusltParam(ModMasterModel modMaster, List<ModDetailModel> ledDetail) : base(modMaster.Id, modMaster.Name ?? string.Empty, ledDetail)
         {
         }
 
@@ -538,7 +545,7 @@ namespace ColorVision.Template
         {
         }
 
-        public PGParam(ModMasterModel pgMaster, List<ModDetailModel> pgDetail) : base(pgMaster.Id, pgDetail)
+        public PGParam(ModMasterModel modMaster, List<ModDetailModel> pgDetail) : base(modMaster.Id, modMaster.Name ?? string.Empty, pgDetail)
         {
 
         }

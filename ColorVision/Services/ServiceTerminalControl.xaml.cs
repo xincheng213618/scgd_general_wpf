@@ -116,7 +116,7 @@ namespace ColorVision.Services
                     if (model != null)
                         serviceTerminal.AddChild(new DevicePG(model));
                 }
-                else if (serviceTerminal.Type == ServiceType.Spectum)
+                else if (serviceTerminal.Type == ServiceType.Spectrum)
                 {
                     SpectrumConfig config = new SpectrumConfig
                     {

@@ -9,7 +9,7 @@ namespace ColorVision.Template.Algorithm
     public class SFRParam : ParamBase
     {
         public SFRParam() { }
-        public SFRParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modDetails)
+        public SFRParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
         {
         }
 

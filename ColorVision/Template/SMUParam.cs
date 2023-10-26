@@ -10,7 +10,7 @@ namespace ColorVision.Template
     {
         public SMUParam() { }
 
-        public SMUParam(ModMasterModel sxMaster, List<ModDetailModel> sxDetail) : base(sxMaster.Id,sxDetail) {}
+        public SMUParam(ModMasterModel modMaster, List<ModDetailModel> sxDetail) : base(modMaster.Id, modMaster.Name ?? string.Empty, sxDetail) {}
 
         public double StartMeasureVal
         {

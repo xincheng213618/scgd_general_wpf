@@ -1,7 +1,7 @@
 ﻿#pragma warning disable CA1711,CA2211
 using System.Windows.Media;
 
-namespace ColorVision
+namespace ColorVision.Draw
 {
     public interface IDrawingVisual
     {

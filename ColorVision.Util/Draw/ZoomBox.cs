@@ -4,7 +4,7 @@ using System.Windows.Input;
 using System.Windows;
 using System.ComponentModel;
 
-namespace ColorVision
+namespace ColorVision.Draw
 {
     public class ZoomboxSub : Zoombox, INotifyPropertyChanged
     {

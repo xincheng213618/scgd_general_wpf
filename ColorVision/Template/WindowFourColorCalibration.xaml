@@ -3,7 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ColorVision"
+        xmlns:local="clr-namespace:ColorVision" 
+        xmlns:draw="clr-namespace:ColorVision.Draw;assembly=ColorVision.Util" 
         mc:Ignorable="d"
         Title="四色标定" Height="450" Width="800" Background="#F0F0F0">
     <Window.Resources>
@@ -84,9 +85,9 @@
                 <RowDefinition Height="120"/>
             </Grid.RowDefinitions>
             <Border Background="#F0F0F0"   >
-                <local:ZoomboxSub x:Name="Zoombox1"  MaxZoom="10" MinZoom="0.01">
-                    <local:DrawCanvas x:Name="ImageShow"  RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" />
-                </local:ZoomboxSub>
+                <draw:ZoomboxSub x:Name="Zoombox1"  MaxZoom="10" MinZoom="0.01">
+                    <draw:DrawCanvas x:Name="ImageShow"  RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" />
+                </draw:ZoomboxSub>
             </Border>
             <ListView  x:Name="ListView1" Grid.Row="1" ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged" >
                 <ListView.Resources>

@@ -3,6 +3,7 @@ using MySql.Data.MySqlClient;
 using System;
 using log4net;
 using System.Windows;
+using System.Threading.Tasks;
 
 namespace ColorVision.MySql
 {
@@ -24,8 +25,9 @@ namespace ColorVision.MySql
         public MySqlControl()
         {
             SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
+
+            //这里转移到初始化中执行
             //Task.Run(() => Connect());
-            Connect();
         }
 
         public event EventHandler MySqlConnectChanged;
@@ -37,13 +39,8 @@ namespace ColorVision.MySql
         private string _ConnectSign = "未连接";
 
 
-        public string GetCurConnectionString()
-        {
-            string connStr = GetConnectionString(MySqlConfig);
-            return connStr;
-        }
 
-        public bool Connect()
+        public Task<bool> Connect()
         {
             string connStr = GetConnectionString(MySqlConfig);
             try
@@ -57,17 +54,18 @@ namespace ColorVision.MySql
                 });
                 IsConnect = true;
                 ConnectSign = "已连接";
-                return true;
+                log.Info($"数据库连接成功:{connStr}");
+                return Task.FromResult(true);
             }
             catch (Exception ex)
             {
                 IsConnect = false;
                 ConnectSign = "未连接";
                 log.Error(ex);
-                return false;
+                return Task.FromResult(false);
             }
         }
-
+        public string GetConnectionString() => GetConnectionString(MySqlConfig);
         public static string GetConnectionString(MySqlConfig MySqlConfig,int timeout =3 )
         {
             string connStr = $"server={MySqlConfig.Host};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset=utf8;Connect Timeout={timeout}";

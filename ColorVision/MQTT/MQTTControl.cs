@@ -33,7 +33,8 @@ namespace ColorVision.MQTT
         private MQTTControl()
         {
             SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
-            Task.Run(() => Connect(MQTTConfig));
+
+            //Task.Run(() => Connect(MQTTConfig));
         }
 
         public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; NotifyPropertyChanged(); } }
@@ -43,6 +44,8 @@ namespace ColorVision.MQTT
 
         public event EventHandler MQTTConnectChanged;
 
+
+        public async Task<bool> Connect()=> await Connect(MQTTConfig);
         public async Task<bool> Connect(MQTTConfig MQTTConfig)
         {
 

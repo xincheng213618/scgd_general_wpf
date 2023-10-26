@@ -433,8 +433,9 @@ namespace ColorVision.Services.Algorithm
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
-            if (sender is MenuItem menuItem)
+            if (sender is Button button)
             {
+                TemplateControl= TemplateControl.GetInstance();
                 SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
                 WindowTemplate windowTemplate;
                 if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
@@ -442,7 +443,7 @@ namespace ColorVision.Services.Algorithm
                     MessageBox.Show("数据库连接失败，请先连接数据库在操作");
                     return;
                 }
-                switch (menuItem.Tag?.ToString() ?? string.Empty)
+                switch (button.Tag?.ToString() ?? string.Empty)
                 {
                     case "FocusParm":
                         windowTemplate = new WindowTemplate(TemplateType.PoiParam) { Title = "关注点设置" };
@@ -488,6 +489,12 @@ namespace ColorVision.Services.Algorithm
                 windowTemplate.ListConfigs.Add(item);
             }
             windowTemplate.ShowDialog();
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            WindowSolution windowSolution = new WindowSolution() { Owner = Window.GetWindow(this) };
+            windowSolution.Show();
         }
     }
 }

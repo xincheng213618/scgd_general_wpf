@@ -9,7 +9,6 @@ namespace ColorVision.Template
     /// </summary>
     public class PoiParam : ParamBase
     {
-        private static int No = 1;
         public PoiParam()
         {
             this.ID = No++;
