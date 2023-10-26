@@ -13,9 +13,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Commands\**" />
     <Compile Remove="Extension\**" />
+    <EmbeddedResource Remove="Commands\**" />
     <EmbeddedResource Remove="Extension\**" />
+    <None Remove="Commands\**" />
     <None Remove="Extension\**" />
+    <Page Remove="Commands\**" />
     <Page Remove="Extension\**" />
   </ItemGroup>
 
@@ -125,10 +129,6 @@
     <Resource Include="Assets\Image\pictureBox1.Image.000000.png" />
     <Resource Include="Assets\Image\pictureBox1.Image.ffffff.png" />
     <Resource Include="Assets\Image\pictureBox1.Image.png" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Commands\" />
   </ItemGroup>
 
 </Project>
