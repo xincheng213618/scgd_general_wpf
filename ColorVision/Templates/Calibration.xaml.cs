@@ -1,7 +1,7 @@
 ﻿using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Template
+namespace ColorVision.Templates
 {
     /// <summary>
     /// Calibration.xaml 的交互逻辑

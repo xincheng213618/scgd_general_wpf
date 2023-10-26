@@ -26,7 +26,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace ColorVision.Template
+namespace ColorVision.Templates
 {
 
 
@@ -1266,7 +1266,7 @@ namespace ColorVision.Template
                     {
                         if (item.Value != PoiParam)
                         {
-                            Template<PoiParam> listConfig = new Template<PoiParam>(item.Key,item.Value);
+                            TemplateModel<PoiParam> listConfig = new TemplateModel<PoiParam>(item.Key,item.Value);
                             ListConfigs.Add(listConfig);
                         }
                     }

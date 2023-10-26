@@ -4,7 +4,7 @@ using ColorVision.MQTT;
 using ColorVision.Services;
 using ColorVision.Services.Device.Camera;
 using ColorVision.Services.Msg;
-using ColorVision.Template;
+using ColorVision.Templates;
 using cvColorVision;
 using System;
 using System.Collections.Generic;

@@ -1,4 +1,4 @@
-﻿using ColorVision.Template;
+﻿using ColorVision.Templates;
 using System;
 using System.Windows;
 using System.Windows.Controls;

@@ -4,7 +4,7 @@ using ColorVision.MySql;
 using ColorVision.RC;
 using ColorVision.SettingUp;
 using ColorVision.Solution;
-using ColorVision.Template;
+using ColorVision.Templates;
 using ColorVision.User;
 using System;
 using System.Collections.ObjectModel;

@@ -3,7 +3,7 @@ using System.Collections.ObjectModel;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Template
+namespace ColorVision.Templates
 {
     /// <summary>
     /// WindowFocusPointAdd.xaml 的交互逻辑

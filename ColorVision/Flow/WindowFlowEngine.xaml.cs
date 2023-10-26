@@ -1,7 +1,7 @@
 ﻿using ColorVision.Flow;
 using ColorVision.MQTT;
 using ColorVision.Solution;
-using ColorVision.Template;
+using ColorVision.Templates;
 using FlowEngineLib;
 using FlowEngineLib.Start;
 using Newtonsoft.Json;

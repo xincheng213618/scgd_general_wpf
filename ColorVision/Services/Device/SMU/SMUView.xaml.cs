@@ -1,5 +1,5 @@
 ﻿using ColorVision.MySql.Service;
-using ColorVision.Template;
+using ColorVision.Templates;
 using ScottPlot;
 using ScottPlot.Plottable;
 using System;

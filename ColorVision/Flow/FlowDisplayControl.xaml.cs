@@ -1,5 +1,5 @@
 ﻿using ColorVision.MQTT;
-using ColorVision.Template;
+using ColorVision.Templates;
 using System;
 using System.Collections.Generic;
 using System.Windows;

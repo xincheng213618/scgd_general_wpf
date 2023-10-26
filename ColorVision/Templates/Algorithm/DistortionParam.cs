@@ -4,7 +4,7 @@ using cvColorVision;
 using System.Collections.Generic;
 using System.ComponentModel;
 
-namespace ColorVision.Template.Algorithm
+namespace ColorVision.Templates.Algorithm
 {
     public class DistortionParam:ParamBase
     {

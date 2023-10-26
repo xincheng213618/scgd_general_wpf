@@ -4,7 +4,7 @@ using cvColorVision;
 using System.Collections.Generic;
 using System.Text;
 
-namespace ColorVision.Template
+namespace ColorVision.Templates
 {
     public class SMUParam : ParamBase
     {

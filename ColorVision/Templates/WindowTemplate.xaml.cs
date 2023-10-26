@@ -1,7 +1,7 @@
 ﻿using ColorVision.Extension;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
-using ColorVision.Template.Algorithm;
+using ColorVision.Templates.Algorithm;
 using ColorVision.Util;
 using System;
 using System.Collections.Generic;
@@ -12,7 +12,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Template
+namespace ColorVision.Templates
 {
     /// <summary>
     /// WindowTemplate.xaml 的交互逻辑
@@ -372,10 +372,10 @@ namespace ColorVision.Template
             }
         }
 
-        private void CreateNewTemplate<T>(ObservableCollection<Template<T>> keyValuePairs, string Name, T t) where T : ParamBase
+        private void CreateNewTemplate<T>(ObservableCollection<TemplateModel<T>> keyValuePairs, string Name, T t) where T : ParamBase
         {
-            keyValuePairs.Add(new Template<T>(Name, t));
-            Template<T> config = new Template<T> {Value = t, Key = Name, };
+            keyValuePairs.Add(new TemplateModel<T>(Name, t));
+            TemplateModel<T> config = new TemplateModel<T> {Value = t, Key = Name, };
             ListConfigs.Add(config);
             ListView1.SelectedIndex = ListConfigs.Count - 1;
             ListView1.ScrollIntoView(config);
@@ -383,7 +383,7 @@ namespace ColorVision.Template
 
         public void TemplateDel()
         {
-            void TemplateDel<T>(ObservableCollection<Template<T>> keyValuePairs) where T : ParamBase
+            void TemplateDel<T>(ObservableCollection<TemplateModel<T>> keyValuePairs) where T : ParamBase
             {
                 if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
                     TemplateControl.ModMasterDeleteById(keyValuePairs[ListView1.SelectedIndex].Value.ID);

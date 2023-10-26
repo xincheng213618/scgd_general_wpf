@@ -6,7 +6,7 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Template
+namespace ColorVision.Templates
 {
     public class MParamConfig : ViewModelBase
     {

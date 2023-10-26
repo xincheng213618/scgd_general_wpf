@@ -1,7 +1,7 @@
 ﻿using ColorVision.HotKey;
 using ColorVision.Solution;
 using ColorVision.SettingUp;
-using ColorVision.Template;
+using ColorVision.Templates;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -111,7 +111,7 @@ namespace ColorVision
                 }
             }
         }
-        private void TemplateAbb<T>(WindowTemplate windowTemplate, ObservableCollection<Template<T>> keyValuePairs) where T: ParamBase
+        private void TemplateAbb<T>(WindowTemplate windowTemplate, ObservableCollection<TemplateModel<T>> keyValuePairs) where T: ParamBase
         {
             windowTemplate.Owner = this;
             windowTemplate.ListConfigs.Clear();

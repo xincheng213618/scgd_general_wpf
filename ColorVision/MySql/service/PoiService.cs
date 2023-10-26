@@ -1,5 +1,5 @@
 ﻿using ColorVision.MySql.DAO;
-using ColorVision.Template;
+using ColorVision.Templates;
 using System.Collections.Generic;
 
 namespace ColorVision.MySql.Service
