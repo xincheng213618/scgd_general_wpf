@@ -63,7 +63,7 @@ namespace ColorVision.RC
             rcServiceConfigs.Remove(rcServiceConfig);
 
             GlobalSetting.GetInstance().SaveSoftwareConfig();
-            Task.Run(() => ServiceManager.GetInstance().rcService.ReRegist());
+            Task.Run(() => RCService.GetInstance().ReRegist());
             this.Close();
         }
 
@@ -78,7 +78,7 @@ namespace ColorVision.RC
             rcServiceConfig.AppSecret = PasswordBox1.Password;
             Task.Run(() =>
             {
-                bool IsConnect = ServiceManager.GetInstance().rcService.TryRegist(rcServiceConfig);
+                bool IsConnect = RCService.GetInstance().TryRegist(rcServiceConfig);
                 MessageBox.Show($"连接{(IsConnect ? "成功" : "失败")}");
             });
         }

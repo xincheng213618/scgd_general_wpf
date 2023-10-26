@@ -50,7 +50,7 @@ namespace ColorVision.Services
         public StackPanel StackPanel { get; set; }
 
         private Dictionary<string, List<BaseService>> svrDevices;
-        public RCService rcService { get;}
+        public RCService RCService { get;}
         public ServiceManager()
         {
             ResourceService = new SysResourceService();
@@ -59,12 +59,12 @@ namespace ColorVision.Services
             MQTTServices = new ObservableCollection<ServiceKind>();
             MQTTDevices = new ObservableCollection<BaseChannel>();
             svrDevices = new Dictionary<string, List<BaseService>>();
-            rcService = new RCService(new RCConfig());
+            RCService = RCService.GetInstance();
 
 
             int heartbeatTime = 10 * 1000;
             System.Timers.Timer hbTimer = new System.Timers.Timer(heartbeatTime);
-            hbTimer.Elapsed += (s,e) => rcService.KeepLive(heartbeatTime);
+            hbTimer.Elapsed += (s,e) => RCService.KeepLive(heartbeatTime);
             hbTimer.Enabled = true;
 
             GC.KeepAlive(hbTimer);
@@ -74,10 +74,9 @@ namespace ColorVision.Services
 
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => Reload();
 
-            //Task.Run(() => rcService.Regist());
             MQTTControl.GetInstance().MQTTConnectChanged += (s, e) =>
             {
-                Task.Run(() => rcService.Regist());
+                Task.Run(() => RCService.Regist());
             };
 
             Reload();

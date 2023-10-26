@@ -1,6 +1,8 @@
 ﻿using ColorVision.Device;
 using ColorVision.MQTT;
+using ColorVision.MySql;
 using ColorVision.Services;
+using log4net;
 using MQTTMessageLib;
 using MQTTMessageLib.RC;
 using MQTTnet.Client;
@@ -31,6 +33,14 @@ namespace ColorVision.RC
     /// </summary>
     public class RCService : BaseDevService<RCConfig>
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(RCService));
+
+        private static RCService _instance;
+        private static readonly object _locker = new();
+        public static RCService GetInstance() { lock (_locker) { return _instance ??= new RCService(new RCConfig()); } }
+
+
+
         private string NodeName;
         private string NodeType;
         private string AppId;
@@ -213,6 +223,18 @@ namespace ColorVision.RC
             PublishAsyncClient(RCRegTopic, JsonConvert.SerializeObject(reg));
             return true;
         }
+        public async Task <bool> Connect()
+        {
+            Regist();
+            for (int i = 0; i < 200; i++)
+            {
+                await Task.Delay(1);
+                if (IsRegisted())
+                    return true;
+            }
+            return false;
+        }
+
 
         public void QueryServices()
         {
@@ -258,6 +280,9 @@ namespace ColorVision.RC
 
             return false;
         }
+
+
+
 
         public bool TryRegist(RCServiceConfig cfg)
         {

@@ -119,19 +119,17 @@ namespace ColorVision
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         TextBoxMsg.Text += $"{Environment.NewLine}正在检测注册中心连接情况";
-                        ServiceManager.GetInstance();
                     });
-
-                    await Task.Delay(100);
-                    if (!ServiceManager.GetInstance().rcService.IsRegisted() && SoftwareConfig.IsUseRCService)
+                    bool IsConnect = await RCService.GetInstance().Connect();
+                    Application.Current.Dispatcher.Invoke(() => 
                     {
-                        Application.Current.Dispatcher.Invoke(() =>
+                        TextBoxMsg.Text += $"{Environment.NewLine}注册中心: {(RCService.GetInstance().IsRegisted() ? "成功" : "失败")}";
+                        if (!IsConnect)
                         {
                             RCServiceConnect rcServiceConnect = new RCServiceConnect() { Owner = this };
                             rcServiceConnect.ShowDialog();
-                        });
-                        Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}注册中心: {(ServiceManager.GetInstance().rcService.IsRegisted() ? "成功" : "失败")}"; });
-                    }
+                        }
+                    });
                 }
                 else
                 {
