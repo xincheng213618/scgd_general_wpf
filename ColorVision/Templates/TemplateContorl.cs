@@ -167,7 +167,7 @@ namespace ColorVision.Templates
                 case TemplateType.Calibration:
                     SaveDefault(FileNameCalibrationParams, CalibrationParams);
                     break;
-                case TemplateType.LedReuslt:
+                case TemplateType.LedResult:
                     SaveDefault(FileNameLedJudgeParams, LedReusltParams);
                     break;
                 case TemplateType.PoiParam:

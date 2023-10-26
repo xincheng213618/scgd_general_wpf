@@ -183,7 +183,7 @@ namespace ColorVision.Templates
                             calibration.CalibrationParam = calibrationParam;
                         }
                         break;
-                    case TemplateType.MeasureParm:
+                    case TemplateType.MeasureParam:
                         if (UserControl is MeasureParamControl mpc && ListConfigs[listView.SelectedIndex].GetValue() is MeasureParam mp)
                         {
                             mpc.MasterID = mp.ID;
@@ -227,7 +227,7 @@ namespace ColorVision.Templates
                 case TemplateType.Calibration:
                     CreateNewTemplate(TemplateControl.CalibrationParams, TextBox1.Text, new CalibrationParam());
                     break;
-                case TemplateType.LedReuslt:
+                case TemplateType.LedResult:
                     CreateNewTemplate(TemplateControl.LedReusltParams, TextBox1.Text, new LedReusltParam());
                     break;
                 case TemplateType.AoiParam:
@@ -277,7 +277,7 @@ namespace ColorVision.Templates
                     if (flowParam != null) CreateNewTemplate(TemplateControl.FlowParams, TextBox1.Text, flowParam);
                     else MessageBox.Show("数据库创建流程模板失败");
                     break;
-                case TemplateType.MeasureParm:
+                case TemplateType.MeasureParam:
                     MeasureParam? measureParam = TemplateControl.AddMeasureParam(TextBox1.Text);
                     if (measureParam != null) CreateNewTemplate(TemplateControl.MeasureParams, TextBox1.Text, measureParam);
                     else MessageBox.Show("数据库创建流程模板失败");
@@ -298,7 +298,7 @@ namespace ColorVision.Templates
                 case TemplateType.PGParam:
                     CreateNewTemplate(TemplateControl.PGParams, TextBox1.Text, new PGParam());
                     break;
-                case TemplateType.LedReuslt:
+                case TemplateType.LedResult:
                     CreateNewTemplate(TemplateControl.LedReusltParams, TextBox1.Text, new LedReusltParam());
                     break;
                 case TemplateType.SMUParam:
@@ -405,7 +405,7 @@ namespace ColorVision.Templates
                         case TemplateType.PGParam:
                             TemplateDel(TemplateControl.PGParams);
                             break;
-                        case TemplateType.LedReuslt:
+                        case TemplateType.LedResult:
                             TemplateControl.LedReusltParams.RemoveAt(ListView1.SelectedIndex);
                             break;
                         case TemplateType.SMUParam:
@@ -432,7 +432,7 @@ namespace ColorVision.Templates
                         case TemplateType.FlowParam:
                             TemplateDel(TemplateControl.FlowParams);
                             break;
-                        case TemplateType.MeasureParm:
+                        case TemplateType.MeasureParam:
                             TemplateDel(TemplateControl.MeasureParams);
                             break;
                     }

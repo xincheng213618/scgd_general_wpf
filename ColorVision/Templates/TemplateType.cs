@@ -4,9 +4,9 @@ namespace ColorVision.Templates
     public enum TemplateType
     {
         FlowParam,
-        MeasureParm,
+        MeasureParam,
         Calibration,
-        LedReuslt,
+        LedResult,
         AoiParam,
         PGParam,
         SMUParam,

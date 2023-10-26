@@ -58,7 +58,7 @@ namespace ColorVision
                         TemplateAbb(windowTemplate, TemplateControl.PGParams);
                         break;
                     case "LedReusltParams":
-                        windowTemplate = new WindowTemplate(TemplateType.LedReuslt) { Title = "数据判断模板设置" };
+                        windowTemplate = new WindowTemplate(TemplateType.LedResult) { Title = "数据判断模板设置" };
                         TemplateAbb(windowTemplate, TemplateControl.LedReusltParams);
                         break;
                     case "SMUParam":
@@ -81,7 +81,7 @@ namespace ColorVision
                         break;
                     case "MeasureParm":
                         MeasureParamControl measure = new MeasureParamControl();
-                        windowTemplate = new WindowTemplate(TemplateType.MeasureParm, measure) { Title = "测量设置" };
+                        windowTemplate = new WindowTemplate(TemplateType.MeasureParam, measure) { Title = "测量设置" };
                         TemplateControl.LoadMeasureParams();
                         TemplateAbb(windowTemplate, TemplateControl.MeasureParams);
                         break;
