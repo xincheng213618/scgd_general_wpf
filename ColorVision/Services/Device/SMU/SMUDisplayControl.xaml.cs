@@ -57,30 +57,32 @@ namespace ColorVision.Device.SMU
             };
             ComboxVITemplate.SelectedIndex = 0;
 
-            ViewGridManager.GetInstance().AddView(View);
-            ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
+
+            ViewMaxChangedEvent(ViewGridManager.GetInstance().ViewMax);
+            ViewGridManager.GetInstance().ViewMaxChangedEvent += ViewMaxChangedEvent;
+
+            void ViewMaxChangedEvent(int max)
             {
                 List<KeyValuePair<string, int>> KeyValues = new List<KeyValuePair<string, int>>();
                 KeyValues.Add(new KeyValuePair<string, int>(Properties.Resource.WindowSingle, -2));
                 KeyValues.Add(new KeyValuePair<string, int>(Properties.Resource.WindowHidden, -1));
-                for (int i = 0; i < e; i++)
+                for (int i = 0; i < max; i++)
                 {
-                    KeyValues.Add(new KeyValuePair<string, int>((i+1).ToString(), i));
+                    KeyValues.Add(new KeyValuePair<string, int>((i + 1).ToString(), i));
                 }
                 ComboxView.ItemsSource = KeyValues;
                 ComboxView.SelectedValue = View.View.ViewIndex;
-            };
+            }
             View.View.ViewIndexChangedEvent += (e1, e2) =>
             {
                 ComboxView.SelectedIndex = e2 + 2;
             };
             ComboxView.SelectionChanged += (s, e) =>
             {
-                if (ComboxView.SelectedItem is  KeyValuePair<string, int> KeyValue)
+                if (ComboxView.SelectedItem is KeyValuePair<string, int> KeyValue)
                 {
                     View.View.ViewIndex = KeyValue.Value;
                     ViewGridManager.GetInstance().SetViewIndex(View, KeyValue.Value);
-
                 }
             };
             View.View.ViewIndex = -1;
