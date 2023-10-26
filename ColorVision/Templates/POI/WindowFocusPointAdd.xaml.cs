@@ -10,8 +10,8 @@ namespace ColorVision.Templates
     /// </summary>
     public partial class WindowFocusPointAdd : BaseWindow
     {
-        public ObservableCollection<TemplateBase> ListConfigs { get; set; }
-        public WindowFocusPointAdd(ObservableCollection<TemplateBase> ListConfigs )
+        public ObservableCollection<TemplateModelBase> ListConfigs { get; set; }
+        public WindowFocusPointAdd(ObservableCollection<TemplateModelBase> ListConfigs )
         {
             this.ListConfigs = ListConfigs;
             InitializeComponent();

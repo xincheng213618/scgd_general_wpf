@@ -1,12 +1,10 @@
 ﻿#pragma warning disable CS8604
-using ColorVision.MVVM;
 using ColorVision.MySql;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.Templates.Algorithm;
 using ColorVision.Util;
 using cvColorVision.Util;
-using Newtonsoft.Json;
 using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
@@ -18,99 +16,6 @@ using System.Windows.Forms.Design;
 
 namespace ColorVision.Templates
 {
-    public enum TemplateType
-    {
-        FlowParam,
-        MeasureParm,
-        Calibration,
-        LedReuslt,
-        AoiParam,
-        PGParam,
-        SMUParam,
-        PoiParam,
-        MTFParam,
-        SFRParam,
-        FOVParam,
-        GhostParam,
-        DistortionParam
-    }
-
-    public class TemplateTypeFactory 
-    { 
-        public static TemplateType GetWindowTemplateType(string code)
-        {
-            return code switch
-            {
-                ModMasterType.Aoi => TemplateType.AoiParam,
-                ModMasterType.PG => TemplateType.PGParam,
-                ModMasterType.SMU => TemplateType.SMUParam,
-                ModMasterType.MTF => TemplateType.MTFParam,
-                ModMasterType.SFR => TemplateType.SFRParam,
-                ModMasterType.FOV => TemplateType.FOVParam,
-                ModMasterType.Ghost => TemplateType.GhostParam,
-                ModMasterType.Distortion => TemplateType.DistortionParam,
-                _ => TemplateType.AoiParam,
-            };
-        }
-
-        public static string GetModeTemplateType(TemplateType windowTemplateType)
-        {
-            return windowTemplateType switch
-            {
-                TemplateType.AoiParam => ModMasterType.Aoi,
-                TemplateType.PGParam => ModMasterType.PG,
-                TemplateType.SMUParam => ModMasterType.SMU,
-                TemplateType.MTFParam => ModMasterType.MTF,
-                TemplateType.SFRParam => ModMasterType.SFR,
-                TemplateType.FOVParam => ModMasterType.FOV,
-                TemplateType.GhostParam => ModMasterType.Ghost,
-                TemplateType.DistortionParam => ModMasterType.Distortion,
-                _ => string.Empty,
-            };
-        }
-
-        public static ParamBase CreateParam(TemplateType windowTemplateType)
-        {
-            return windowTemplateType switch
-            {
-                TemplateType.AoiParam => new AoiParam(),
-                TemplateType.Calibration => new CalibrationParam(),
-                TemplateType.PGParam => new PGParam(),
-                TemplateType.LedReuslt => new LedReusltParam(),
-                TemplateType.SMUParam => new SMUParam(),
-                TemplateType.PoiParam => new PoiParam(),
-                TemplateType.FlowParam => new FlowParam(),
-                TemplateType.MeasureParm => new MeasureParam(),
-                TemplateType.MTFParam => new MTFParam(),
-                TemplateType.SFRParam => new SFRParam(),
-                TemplateType.FOVParam => new FOVParam(),
-                TemplateType.GhostParam => new GhostParam(),
-                TemplateType.DistortionParam => new DistortionParam(),
-                _ => new ParamBase(),
-            };
-        }
-        public static ParamBase CreateModeParam(TemplateType windowTemplateType, ModMasterModel  modMasterModel, List<ModDetailModel>  modDetailModels)
-        {
-            return windowTemplateType switch
-            {
-                TemplateType.AoiParam => new AoiParam(modMasterModel, modDetailModels),
-                TemplateType.Calibration => new CalibrationParam(modMasterModel, modDetailModels),
-                TemplateType.PGParam => new PGParam(modMasterModel, modDetailModels),
-                TemplateType.LedReuslt => new LedReusltParam(modMasterModel, modDetailModels),
-                TemplateType.SMUParam => new SMUParam(modMasterModel, modDetailModels),
-                TemplateType.FlowParam => new FlowParam(modMasterModel, modDetailModels),
-                TemplateType.MTFParam => new MTFParam(modMasterModel, modDetailModels),
-                TemplateType.SFRParam => new SFRParam(modMasterModel, modDetailModels),
-                TemplateType.FOVParam => new FOVParam(modMasterModel, modDetailModels),
-                TemplateType.GhostParam => new GhostParam(modMasterModel, modDetailModels),
-                TemplateType.DistortionParam => new DistortionParam(modMasterModel, modDetailModels),
-                _ => new ParamBase(),
-            };
-        }
-    }
-
-
-
     /// <summary>
     /// 模板管理
     /// </summary>
@@ -648,58 +553,6 @@ namespace ColorVision.Templates
         public ObservableCollection<TemplateModel<FOVParam>> FOVParams { get; set; }
         public ObservableCollection<TemplateModel<GhostParam>> GhostParams { get; set; }
         public ObservableCollection<TemplateModel<DistortionParam>> DistortionParams { get; set; }
-
-    }
-
-    public class TemplateBase : ViewModelBase
-    {
-        public virtual int ID { get; set; }
-
-        public virtual string Key { get; set;  }
-        public string Tag { get => _Tag; set { _Tag = value; NotifyPropertyChanged(); } }
-        private string _Tag;
-
-        public virtual object GetValue()
-        {
-            throw new NotImplementedException();
-        }
-
-    }
-
-    public class TemplateModel<T>: TemplateBase where T : ParamBase
-    {
-        public TemplateModel()
-        {
-        }
-        public TemplateModel(string Key, T Value)
-        {
-            this.Value = Value;
-            this.Key = Key;
-        }
-        public TemplateModel(KeyValuePair<string, T> keyValuePair)
-        {
-            Key = keyValuePair.Key;
-            Value = keyValuePair.Value;
-        }
-
-        [JsonIgnore]
-        public override int ID { get => Value.ID;}
-
-        [JsonIgnore]
-        public override string Key
-        { 
-            get =>   Value.Name;
-            set { Value.Name = value;  NotifyPropertyChanged(); 
-            } 
-        }
-
-        public T Value { get; set; }
-
-        public override object GetValue()
-        {
-            return Value;
-        }
-
 
     }
 }

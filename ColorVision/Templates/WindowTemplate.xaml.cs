@@ -131,7 +131,7 @@ namespace ColorVision.Templates
         {
             Tool.Base64ToFile(flow.DataBase64, sFileName);
         }
-        public ObservableCollection<TemplateBase> ListConfigs { get; set; } = new ObservableCollection<TemplateBase>();
+        public ObservableCollection<TemplateModelBase> ListConfigs { get; set; } = new ObservableCollection<TemplateModelBase>();
         private void Window_Initialized(object sender, EventArgs e)
         {
             ListView1.ItemsSource = ListConfigs;
@@ -188,7 +188,7 @@ namespace ColorVision.Templates
                         {
                             mpc.MasterID = mp.ID;
                             List<MeasureDetailModel> des = TemplateControl.LoadMeasureDetail(mp.ID);
-                            mpc.reload(des);
+                            mpc.Reload(des);
                             mpc.ModTypeConfigs.Clear();
                             mpc.ModTypeConfigs.Add(new MParamConfig(-1,"关注点","POI"));
                             List<SysModMasterModel> sysModMaster = TemplateControl.LoadSysModMaster();

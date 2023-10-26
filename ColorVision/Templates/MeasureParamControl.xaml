@@ -24,7 +24,7 @@
             <StackPanel x:Name="CreateGrid" Grid.Row="1">
                 <DockPanel Margin="5" >
                     <TextBlock Text="类型" Width="60"/>
-                    <ComboBox x:Name="Mod_Type" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Name"  DisplayMemberPath="Name" SelectionChanged="Mod_Type_SelectionChanged"/>
+                    <ComboBox x:Name="Mod_Type" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Name"  DisplayMemberPath="Name" SelectionChanged="ModTypeSelectionChanged"/>
                 </DockPanel>
                 <DockPanel Margin="5" >
                     <TextBlock Text="参数" Width="60"/>

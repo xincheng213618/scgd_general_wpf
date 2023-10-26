@@ -1261,7 +1261,7 @@ namespace ColorVision.Templates
                 else if (RadioButtonMode3.IsChecked ==true)
                 {
                     
-                    var ListConfigs =new ObservableCollection<TemplateBase>();
+                    var ListConfigs =new ObservableCollection<TemplateModelBase>();
                     foreach (var item in TemplateControl.GetInstance().PoiParams)
                     {
                         if (item.Value != PoiParam)

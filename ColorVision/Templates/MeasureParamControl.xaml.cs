@@ -74,7 +74,7 @@ namespace ColorVision.Templates
             Mod_Master.ItemsSource = ModMasterConfigs;
         }
 
-        private void Mod_Type_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void ModTypeSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if(Mod_Type.SelectedItem != null)
             {
@@ -120,7 +120,7 @@ namespace ColorVision.Templates
 
                     templateControl.Save(detailModel);
 
-                    reload();
+                    Reload();
                 }
             }
         }
@@ -132,17 +132,17 @@ namespace ColorVision.Templates
                 MParamConfig config = (MParamConfig)ListView1.SelectedItem;
                 templateControl.ModMDetailDeleteById(config.ID);
 
-                reload();
+                Reload();
             }
         }
 
-        private void reload()
+        private void Reload()
         {
             List<MeasureDetailModel> des = templateControl.LoadMeasureDetail(MasterID);
-            reload(des);
+            Reload(des);
         }
 
-        public void reload(List<MeasureDetailModel> des)
+        public void Reload(List<MeasureDetailModel> des)
         {
             this.ListConfigs.Clear();
             foreach (MeasureDetailModel model in des)

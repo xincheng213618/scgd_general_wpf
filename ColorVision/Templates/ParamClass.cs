@@ -13,7 +13,7 @@ namespace ColorVision.Templates
 
     public class ParamBase:ViewModelBase
     {
-        public static int No;
+        public static int No { get; set; }
 
         public event EventHandler IsEnabledChanged;
 
