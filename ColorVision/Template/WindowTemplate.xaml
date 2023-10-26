@@ -12,6 +12,9 @@
         mc:Ignorable="d"
         ShowInTaskbar="False"
         Title="WindowTemplate" Height="600" Width="700"  MinWidth="600" Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner" Initialized="Window_Initialized">
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}"/>
+    </Window.Resources>
     <Grid Margin="5">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="2*"/>
@@ -52,12 +55,12 @@
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate x:Name="ListConfigDataTemplate" DataType="{x:Type local:TemplateBase}">
                                         <DockPanel Width="{Binding ElementName=GridListLen,Path=ActualWidth}" Margin="0,0,-30,0">
-                                            <TextBlock DockPanel.Dock="Right"  Text="{ Binding Tag}"  FontSize="10" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                            <TextBlock DockPanel.Dock="Right"  Text="{ Binding Tag}" FontSize="10" HorizontalAlignment="Left" VerticalAlignment="Center"/>
                                             <Grid Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}">
-                                                <TextBlock Text="{ Binding ID}" HorizontalAlignment="Left"/>
+                                                <TextBlock Text="{Binding ID}" HorizontalAlignment="Left"/>
                                             </Grid>
-                                            <Grid >
-                                                <TextBox Text="{ Binding Key}" HorizontalAlignment="Left"/>
+                                            <Grid>
+                                                <TextBox Text="{Binding Key}" IsReadOnly="True" Background="Transparent" BorderThickness="0" HorizontalAlignment="Left"/>
                                             </Grid>
                                         </DockPanel>
                                     </DataTemplate>
