@@ -143,15 +143,21 @@ namespace ColorVision
                 await Task.Delay(200);
             }
 
-            Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}初始化服务"; });
+
             Application.Current.Dispatcher.Invoke(() =>
             {
                 try
                 {
                     if (!GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting.IsDeFaultOpenService)
+                    {
+                        TextBoxMsg.Text += $"{Environment.NewLine}初始化服务";
                         new WindowDevices() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                    }
                     else
+                    {
+                        TextBoxMsg.Text += $"{Environment.NewLine}自动配置服务中";
                         ServiceManager.GetInstance().GenContorl();
+                    }
                 }
                 catch
                 {
