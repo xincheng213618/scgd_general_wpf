@@ -1,6 +1,6 @@
 ﻿using ColorVision.Device;
+using ColorVision.MQTT;
 using ColorVision.MVVM;
-using ColorVision.Services;
 using ColorVision.Services.Msg;
 using log4net;
 using MQTTMessageLib;
@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
 
-namespace ColorVision.MQTT
+namespace ColorVision.Services
 {
 
     public class BaseDevService : BaseService
