@@ -10,11 +10,13 @@ using ColorVision.MySql.DAO;
 using ColorVision.Services.Algorithm;
 using ColorVision.Services.Device.Camera;
 using cvColorVision;
+using HandyControl.Tools.Extension;
 using Newtonsoft.Json;
 using System;
 using System.Net;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 
 namespace ColorVision.Services
 {
@@ -220,6 +222,18 @@ namespace ColorVision.Services
 
         private void ReFresh_Click(object sender, RoutedEventArgs e)
         {
+
+        }
+
+        private void TextBox_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            popup.IsOpen = true;
+        }
+
+        private void popup_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (sender is Popup popup)
+                popup.IsOpen = false;
 
         }
     }
