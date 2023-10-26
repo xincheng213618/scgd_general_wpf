@@ -98,20 +98,20 @@ namespace ColorVision.Flow
         private void FlowControl_FlowCompleted(object? sender, EventArgs e)
         {
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
-
-
-
             if (sender != null)
             {
                 FlowControlData FlowControlData = (FlowControlData)sender;
                 ServiceManager.GetInstance().ProcResult(FlowControlData);
+            }
+            handler?.Close();
+            if (sender != null)
+            {
+                FlowControlData FlowControlData = (FlowControlData)sender;
                 if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
                 {
                     MessageBox.Show("流程计算" + FlowControlData.EventName);
                 }
             }
-            handler?.Close();
-
         }
 
         IPendingHandler handler { get; set; }
