@@ -34,18 +34,21 @@ namespace ColorVision.Flow
             flowView = new CVFlowControl();
             ViewGridManager.GetInstance().AddView(0,flowView);
 
-            ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
+            ViewMaxChangedEvent(ViewGridManager.GetInstance().ViewMax);
+            ViewGridManager.GetInstance().ViewMaxChangedEvent += ViewMaxChangedEvent;
+
+            void ViewMaxChangedEvent(int max)
             {
                 List<KeyValuePair<string, int>> KeyValues = new List<KeyValuePair<string, int>>();
                 KeyValues.Add(new KeyValuePair<string, int>(Properties.Resource.WindowSingle, -2));
                 KeyValues.Add(new KeyValuePair<string, int>(Properties.Resource.WindowHidden, -1));
-                for (int i = 0; i < e; i++)
+                for (int i = 0; i < max; i++)
                 {
                     KeyValues.Add(new KeyValuePair<string, int>((i + 1).ToString(), i));
                 }
                 ComboxView.ItemsSource = KeyValues;
                 ComboxView.SelectedValue = flowView.View.ViewIndex;
-            };
+            }
             flowView.View.ViewIndexChangedEvent += (e1, e2) =>
             {
                 ComboxView.SelectedIndex = e2 + 2;
@@ -60,7 +63,10 @@ namespace ColorVision.Flow
             };
 
 
-        FlowTemplate.ItemsSource = TemplateControl.GetInstance().FlowParams;
+
+
+
+            FlowTemplate.ItemsSource = TemplateControl.GetInstance().FlowParams;
             FlowTemplate.SelectionChanged += (s, e) =>
             {
                 if (FlowTemplate.SelectedValue is FlowParam flowParam)
