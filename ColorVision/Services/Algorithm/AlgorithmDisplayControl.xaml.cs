@@ -93,10 +93,10 @@ namespace ColorVision.Services.Algorithm
         {
             switch (response.ResultType)
             {
-                case POIResultType.XY_UV:
+                case AlgorithmResultType.POI_XY_UV:
                     ShowResultCIExyuv(serialNumber, response.POITemplateName, response.POIImgFileName, response.HasRecord, poiDbResults, rawMsg);
                     break;
-                case POIResultType.Y:
+                case AlgorithmResultType.POI_Y:
                     ShowResultCIEY(serialNumber, response.POITemplateName, response.POIImgFileName, response.HasRecord, poiDbResults, rawMsg);
                     break;
             }
