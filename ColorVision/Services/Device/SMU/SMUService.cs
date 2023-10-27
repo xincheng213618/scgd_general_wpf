@@ -45,7 +45,6 @@ namespace ColorVision.Device.SMU
                     {
                         if (json.EventName == "Init")
                         {
-                            ServiceID = json.ServiceID;
                         }
                         else if (json.EventName == "SetParam")
                         {
@@ -91,11 +90,6 @@ namespace ColorVision.Device.SMU
 
         public bool SetParam()
         {
-            if (ServiceID == 0)
-            {
-                MessageBox.Show("请先初始化");
-                return false;
-            }
             MsgSend msg = new MsgSend
             {
                 EventName = "SetParam",

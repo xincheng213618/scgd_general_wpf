@@ -166,11 +166,6 @@ namespace ColorVision.Device.PG
 
         public bool GetData()
         {
-            if (ServiceID == 0)
-            {
-                MessageBox.Show("请先初始化");
-                return false;
-            }
             MsgSend msg = new MsgSend
             {
                 EventName = "GetData",
