@@ -107,7 +107,7 @@ namespace ColorVision.Services.Algorithm
             }
             else
             {
-                MessageBox.Show("返回失败" + Environment.NewLine + msg, "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                //MessageBox.Show("返回失败" + Environment.NewLine + msg, "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 switch (msg.EventName)
                 {
                     case "GetData":
