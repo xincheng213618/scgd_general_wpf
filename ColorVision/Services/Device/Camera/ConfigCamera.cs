@@ -9,7 +9,7 @@ namespace ColorVision.Services.Device.Camera
     /// <summary>
     /// 相机配置
     /// </summary>
-    public class CameraConfig : BaseDeviceConfig
+    public class ConfigCamera : BaseDeviceConfig
     {
         public CameraType CameraType { get => _CameraType; set { _CameraType = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsExpThree)); } }
         private CameraType _CameraType;

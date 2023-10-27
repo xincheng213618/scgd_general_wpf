@@ -5,21 +5,21 @@ using System.Windows.Controls;
 
 namespace ColorVision.Device.Camera
 {
-    public class DeviceCamera : BaseDevice<CameraConfig>
+    public class DeviceCamera : BaseDevice<ConfigCamera>
     {
-        public CameraDeviceService DeviceService { get; set; }
+        public DeviceServiceCamera DeviceService { get; set; }
 
         public CameraDisplayControl Control { get; set; }
 
         public ImageView View { get; set; }
 
-        public CameraService Service { get; set; }
+        public ServiceCamera Service { get; set; }
 
 
-        public DeviceCamera(SysResourceModel sysResourceModel, CameraService cameraService) : base(sysResourceModel)
+        public DeviceCamera(SysResourceModel sysResourceModel, ServiceCamera cameraService) : base(sysResourceModel)
         {
             Service = cameraService;
-            DeviceService = new CameraDeviceService(Config, Service);
+            DeviceService = new DeviceServiceCamera(Config, Service);
             View = new ImageView();
             DeviceService.FileHandler += (s, e) =>
             {

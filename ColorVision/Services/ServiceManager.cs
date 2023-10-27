@@ -138,7 +138,7 @@ namespace ColorVision.Services
                                 {
                                     case ServiceType.Camera:
 
-                                        if (mQTTService.BaseService is CameraService cameraService)
+                                        if (mQTTService.BaseService is ServiceCamera cameraService)
                                         {
                                             DeviceCamera deviceCamera = new DeviceCamera(device, cameraService);
                                             svrObj = deviceCamera.DeviceService;

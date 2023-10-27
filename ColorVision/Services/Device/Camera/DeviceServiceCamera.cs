@@ -16,19 +16,19 @@ namespace ColorVision.Device.Camera
     public delegate void MQTTCameraFileHandler(object sender, string? FilePath);
     public delegate void MQTTCameraMsgHandler(object sender, MsgReturn msg);
     
-    public class CameraDeviceService : BaseDevService<CameraConfig>
+    public class DeviceServiceCamera : BaseDevService<ConfigCamera>
     {
         public event MQTTCameraFileHandler FileHandler;
 
 
-        public CameraService CameraService { get; set; }
+        public ServiceCamera CameraService { get; set; }
 
         public bool IsOnlie { get => CameraService.DevicesSN.Contains(Config.ID); }
         public override bool IsAlive { get =>
                 Config.IsAlive && IsOnlie; set { 
                 Config.IsAlive = (value && IsOnlie); NotifyPropertyChanged(); } }
 
-        public CameraDeviceService(CameraConfig CameraConfig, CameraService cameraService) : base(CameraConfig)
+        public DeviceServiceCamera(ConfigCamera CameraConfig, ServiceCamera cameraService) : base(CameraConfig)
         {
             CameraService = cameraService;
             CameraService.Devices.Add(this);

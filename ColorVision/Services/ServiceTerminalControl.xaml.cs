@@ -94,7 +94,7 @@ namespace ColorVision.Services
                 switch (serviceTerminal.Type)
                 {   
                     case ServiceType.Camera:
-                        CameraConfig cameraConfig1 = new CameraConfig
+                        ConfigCamera cameraConfig1 = new ConfigCamera
                         {
                             ID = TextBox_Code.Text,
                             Name = TextBox_Name.Text,
@@ -106,7 +106,7 @@ namespace ColorVision.Services
                         sysResourceModel = saveConfigInfo(cameraConfig1, sysResource);
                         if (sysResourceModel != null)
                         {
-                            if (serviceTerminal.BaseService is CameraService cameraService)
+                            if (serviceTerminal.BaseService is ServiceCamera cameraService)
                             {
                                 serviceTerminal.AddChild(new DeviceCamera(sysResourceModel, cameraService));
                             }
