@@ -8,7 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using cvColorVision;
-using ColorVision.Template;
+using ColorVision.Templates;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Device.Camera.Video;
 

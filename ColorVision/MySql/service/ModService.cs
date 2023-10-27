@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using ColorVision.MySql.DAO;
-using ColorVision.Template;
+using ColorVision.Templates;
 
 namespace ColorVision.MySql.Service
 {

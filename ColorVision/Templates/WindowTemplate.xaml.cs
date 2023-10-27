@@ -1,7 +1,7 @@
 ﻿using ColorVision.Extension;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
-using ColorVision.Template.Algorithm;
+using ColorVision.Templates.Algorithm;
 using ColorVision.Util;
 using System;
 using System.Collections.Generic;
@@ -12,7 +12,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Template
+namespace ColorVision.Templates
 {
     /// <summary>
     /// WindowTemplate.xaml 的交互逻辑
@@ -131,7 +131,7 @@ namespace ColorVision.Template
         {
             Tool.Base64ToFile(flow.DataBase64, sFileName);
         }
-        public ObservableCollection<TemplateBase> ListConfigs { get; set; } = new ObservableCollection<TemplateBase>();
+        public ObservableCollection<TemplateModelBase> ListConfigs { get; set; } = new ObservableCollection<TemplateModelBase>();
         private void Window_Initialized(object sender, EventArgs e)
         {
             ListView1.ItemsSource = ListConfigs;
@@ -183,12 +183,12 @@ namespace ColorVision.Template
                             calibration.CalibrationParam = calibrationParam;
                         }
                         break;
-                    case TemplateType.MeasureParm:
+                    case TemplateType.MeasureParam:
                         if (UserControl is MeasureParamControl mpc && ListConfigs[listView.SelectedIndex].GetValue() is MeasureParam mp)
                         {
                             mpc.MasterID = mp.ID;
                             List<MeasureDetailModel> des = TemplateControl.LoadMeasureDetail(mp.ID);
-                            mpc.reload(des);
+                            mpc.Reload(des);
                             mpc.ModTypeConfigs.Clear();
                             mpc.ModTypeConfigs.Add(new MParamConfig(-1,"关注点","POI"));
                             List<SysModMasterModel> sysModMaster = TemplateControl.LoadSysModMaster();
@@ -227,7 +227,7 @@ namespace ColorVision.Template
                 case TemplateType.Calibration:
                     CreateNewTemplate(TemplateControl.CalibrationParams, TextBox1.Text, new CalibrationParam());
                     break;
-                case TemplateType.LedReuslt:
+                case TemplateType.LedResult:
                     CreateNewTemplate(TemplateControl.LedReusltParams, TextBox1.Text, new LedReusltParam());
                     break;
                 case TemplateType.AoiParam:
@@ -277,7 +277,7 @@ namespace ColorVision.Template
                     if (flowParam != null) CreateNewTemplate(TemplateControl.FlowParams, TextBox1.Text, flowParam);
                     else MessageBox.Show("数据库创建流程模板失败");
                     break;
-                case TemplateType.MeasureParm:
+                case TemplateType.MeasureParam:
                     MeasureParam? measureParam = TemplateControl.AddMeasureParam(TextBox1.Text);
                     if (measureParam != null) CreateNewTemplate(TemplateControl.MeasureParams, TextBox1.Text, measureParam);
                     else MessageBox.Show("数据库创建流程模板失败");
@@ -298,7 +298,7 @@ namespace ColorVision.Template
                 case TemplateType.PGParam:
                     CreateNewTemplate(TemplateControl.PGParams, TextBox1.Text, new PGParam());
                     break;
-                case TemplateType.LedReuslt:
+                case TemplateType.LedResult:
                     CreateNewTemplate(TemplateControl.LedReusltParams, TextBox1.Text, new LedReusltParam());
                     break;
                 case TemplateType.SMUParam:
@@ -372,10 +372,10 @@ namespace ColorVision.Template
             }
         }
 
-        private void CreateNewTemplate<T>(ObservableCollection<Template<T>> keyValuePairs, string Name, T t) where T : ParamBase
+        private void CreateNewTemplate<T>(ObservableCollection<TemplateModel<T>> keyValuePairs, string Name, T t) where T : ParamBase
         {
-            keyValuePairs.Add(new Template<T>(Name, t));
-            Template<T> config = new Template<T> {Value = t, Key = Name, };
+            keyValuePairs.Add(new TemplateModel<T>(Name, t));
+            TemplateModel<T> config = new TemplateModel<T> {Value = t, Key = Name, };
             ListConfigs.Add(config);
             ListView1.SelectedIndex = ListConfigs.Count - 1;
             ListView1.ScrollIntoView(config);
@@ -383,7 +383,7 @@ namespace ColorVision.Template
 
         public void TemplateDel()
         {
-            void TemplateDel<T>(ObservableCollection<Template<T>> keyValuePairs) where T : ParamBase
+            void TemplateDel<T>(ObservableCollection<TemplateModel<T>> keyValuePairs) where T : ParamBase
             {
                 if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
                     TemplateControl.ModMasterDeleteById(keyValuePairs[ListView1.SelectedIndex].Value.ID);
@@ -405,7 +405,7 @@ namespace ColorVision.Template
                         case TemplateType.PGParam:
                             TemplateDel(TemplateControl.PGParams);
                             break;
-                        case TemplateType.LedReuslt:
+                        case TemplateType.LedResult:
                             TemplateControl.LedReusltParams.RemoveAt(ListView1.SelectedIndex);
                             break;
                         case TemplateType.SMUParam:
@@ -432,7 +432,7 @@ namespace ColorVision.Template
                         case TemplateType.FlowParam:
                             TemplateDel(TemplateControl.FlowParams);
                             break;
-                        case TemplateType.MeasureParm:
+                        case TemplateType.MeasureParam:
                             TemplateDel(TemplateControl.MeasureParams);
                             break;
                     }
@@ -465,6 +465,51 @@ namespace ColorVision.Template
         private void ListView1_Loaded(object sender, RoutedEventArgs e)
         {
             TextBox1.Text = NewCreateFileName("default");
+        }
+
+        private void TextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (sender is TextBox textBox && textBox.Tag is TemplateModelBase templateModelBase)
+            {
+                templateModelBase.IsEditMode = false;
+            }
+        }
+
+        private void TextBox_GotFocus(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (sender is TextBox textBox && textBox.Tag is TemplateModelBase templateModelBase)
+            {
+                if (e.Key == Key.F2)
+                {
+                    templateModelBase.IsEditMode = true;
+                }
+                if (e.Key == Key.Escape || e.Key == Key.Enter)
+                {
+                    templateModelBase.IsEditMode = false;
+                }
+            }
+        }
+
+        private void TextBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is TextBox textBox && textBox.Tag is TemplateModelBase templateModelBase)
+            {
+                templateModelBase.IsEditMode = true;
+            }
+        }
+
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.Tag is TemplateModelBase templateModelBase)
+            {
+                templateModelBase.IsEditMode = true;
+            }
         }
     }
 }

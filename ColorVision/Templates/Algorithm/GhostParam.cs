@@ -3,7 +3,7 @@ using ColorVision.MySql.DAO;
 using System.Collections.Generic;
 using System.ComponentModel;
 
-namespace ColorVision.Template.Algorithm
+namespace ColorVision.Templates.Algorithm
 {
     public class GhostParam :ParamBase
     {

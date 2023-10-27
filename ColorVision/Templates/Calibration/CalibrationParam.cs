@@ -4,7 +4,7 @@ using cvColorVision;
 using System;
 using System.Collections.Generic;
 
-namespace ColorVision.Template
+namespace ColorVision.Templates
 {
 
     public class CalibrationBase : ViewModelBase

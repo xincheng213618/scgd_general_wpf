@@ -7,13 +7,13 @@
         xmlns:draw ="clr-namespace:ColorVision.Draw;assembly=ColorVision.Util"
         xmlns:colorvison ="clr-namespace:ColorVision"
         mc:Ignorable="d"
-        Title="数据查看窗口" Height="1080" Width="1920">
+        Title="数据查看窗口" Height="1080" Width="1920" Initialized="Window_Initialized">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition x:Name="ListCol1" Width="300"/>
             <ColumnDefinition x:Name="ListCol2" Width="*"/>
         </Grid.ColumnDefinitions>
-        <ListView  Grid.Column="0"/>
+        <ListView  x:Name="ListView1" Grid.Column="0"/>
         <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Black"/>
         <colorvison:ImageView Grid.Column="1" x:Name="imageview" />
     </Grid>

@@ -1,4 +1,7 @@
-﻿using ColorVision.NativeMethods;
+﻿using ColorVision.MQTT;
+using ColorVision.MySql;
+using ColorVision.NativeMethods;
+using ColorVision.RC;
 using ColorVision.Services;
 using ColorVision.Themes;
 using log4net;
@@ -120,6 +123,10 @@ namespace ColorVision
             }
             else
             {
+
+                MySqlControl.GetInstance().Connect();
+                MQTTControl.GetInstance().Connect();
+                RCService.GetInstance().Connect();
                 MainWindow MainWindow = new MainWindow();
                 ServiceManager.GetInstance().GenContorl();
                 MainWindow.Show();

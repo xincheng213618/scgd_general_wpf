@@ -2,7 +2,7 @@
 using Newtonsoft.Json;
 using System.Collections.Generic;
 
-namespace ColorVision.Template
+namespace ColorVision.Templates
 {
     /// <summary>
     /// 关注点模板

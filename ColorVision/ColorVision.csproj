@@ -13,9 +13,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Commands\**" />
     <Compile Remove="Extension\**" />
+    <EmbeddedResource Remove="Commands\**" />
     <EmbeddedResource Remove="Extension\**" />
+    <None Remove="Commands\**" />
     <None Remove="Extension\**" />
+    <Page Remove="Commands\**" />
     <Page Remove="Extension\**" />
   </ItemGroup>
 

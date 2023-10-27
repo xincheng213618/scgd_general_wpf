@@ -1,7 +1,7 @@
 ﻿using ColorVision.HotKey;
 using ColorVision.Solution;
 using ColorVision.SettingUp;
-using ColorVision.Template;
+using ColorVision.Templates;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -58,7 +58,7 @@ namespace ColorVision
                         TemplateAbb(windowTemplate, TemplateControl.PGParams);
                         break;
                     case "LedReusltParams":
-                        windowTemplate = new WindowTemplate(TemplateType.LedReuslt) { Title = "数据判断模板设置" };
+                        windowTemplate = new WindowTemplate(TemplateType.LedResult) { Title = "数据判断模板设置" };
                         TemplateAbb(windowTemplate, TemplateControl.LedReusltParams);
                         break;
                     case "SMUParam":
@@ -81,7 +81,7 @@ namespace ColorVision
                         break;
                     case "MeasureParm":
                         MeasureParamControl measure = new MeasureParamControl();
-                        windowTemplate = new WindowTemplate(TemplateType.MeasureParm, measure) { Title = "测量设置" };
+                        windowTemplate = new WindowTemplate(TemplateType.MeasureParam, measure) { Title = "测量设置" };
                         TemplateControl.LoadMeasureParams();
                         TemplateAbb(windowTemplate, TemplateControl.MeasureParams);
                         break;
@@ -111,7 +111,7 @@ namespace ColorVision
                 }
             }
         }
-        private void TemplateAbb<T>(WindowTemplate windowTemplate, ObservableCollection<Template<T>> keyValuePairs) where T: ParamBase
+        private void TemplateAbb<T>(WindowTemplate windowTemplate, ObservableCollection<TemplateModel<T>> keyValuePairs) where T: ParamBase
         {
             windowTemplate.Owner = this;
             windowTemplate.ListConfigs.Clear();

@@ -2,7 +2,7 @@
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.Solution;
-using ColorVision.Template;
+using ColorVision.Templates;
 using log4net;
 using MQTTMessageLib.Algorithm;
 using NetMQ;
@@ -478,7 +478,7 @@ namespace ColorVision.Services.Algorithm
                 }
             }
         }
-        private void TemplateAbb<T>(WindowTemplate windowTemplate, ObservableCollection<Template<T>> keyValuePairs) where T : ParamBase
+        private void TemplateAbb<T>(WindowTemplate windowTemplate, ObservableCollection<TemplateModel<T>> keyValuePairs) where T : ParamBase
         {
             windowTemplate.Owner = Window.GetWindow(this);
             windowTemplate.ListConfigs.Clear();

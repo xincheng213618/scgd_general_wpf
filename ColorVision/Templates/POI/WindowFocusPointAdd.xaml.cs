@@ -3,15 +3,15 @@ using System.Collections.ObjectModel;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Template
+namespace ColorVision.Templates
 {
     /// <summary>
     /// WindowFocusPointAdd.xaml 的交互逻辑
     /// </summary>
     public partial class WindowFocusPointAdd : BaseWindow
     {
-        public ObservableCollection<TemplateBase> ListConfigs { get; set; }
-        public WindowFocusPointAdd(ObservableCollection<TemplateBase> ListConfigs )
+        public ObservableCollection<TemplateModelBase> ListConfigs { get; set; }
+        public WindowFocusPointAdd(ObservableCollection<TemplateModelBase> ListConfigs )
         {
             this.ListConfigs = ListConfigs;
             InitializeComponent();

@@ -3,7 +3,7 @@
 using ColorVision.Device;
 using ColorVision.MQTT;
 using ColorVision.Services.Msg;
-using ColorVision.Template.Algorithm;
+using ColorVision.Templates.Algorithm;
 using cvColorVision;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
