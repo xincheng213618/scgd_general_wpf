@@ -68,7 +68,6 @@ namespace ColorVision.Device.PG
                     {
                         if (json.EventName == "Init")
                         {
-                            //ServiceID = json.ServiceID;
                             //MessageBox.Show("Init");
                         }
                         else if (json.EventName == "SetParam")
@@ -119,21 +118,6 @@ namespace ColorVision.Device.PG
             return true;
         }
 
-
-        public bool UnInit()
-        {
-            if (ServiceID == 0)
-            {
-                MessageBox.Show("请先初始化");
-                return false;
-            }
-            MsgSend msg = new MsgSend
-            {
-                EventName = "UnInit",
-            };
-            PublishAsyncClient(msg);
-            return true;
-        }
 
         public void PGStartPG() => SetParam(new List<ParamFunction>() { new ParamFunction() { Name = PGParam.StartKey } });
         public void PGStopPG() => SetParam(new List<ParamFunction>() { new ParamFunction() { Name = PGParam.StopKey } });

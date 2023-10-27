@@ -45,7 +45,7 @@ namespace ColorVision.Device.SMU
                     {
                         if (json.EventName == "Init")
                         {
-                            //ServiceID = json.ServiceID;
+                            ServiceID = json.ServiceID;
                         }
                         else if (json.EventName == "SetParam")
                         {

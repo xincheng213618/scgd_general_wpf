@@ -236,25 +236,6 @@ namespace ColorVision.Device.SMU
 
         }
 
-        private void MQTTVIOpen(object sender, RoutedEventArgs e)
-        {
-            SMUService.Open(passSxSource.IsNet, passSxSource.DevName);
-        }
-        private void MQTTVIClose(object sender, RoutedEventArgs e)
-        {
-            SMUService.Close();
-        }
-
-        private void MQTTVISetParam(object sender, RoutedEventArgs e)
-        {
-            SMUService.SetParam();
-        }
-
-
-        private void MQTTVIGetData(object sender, RoutedEventArgs e)
-        {
-            //DeviceService.GetData();
-        }
 
 
     }

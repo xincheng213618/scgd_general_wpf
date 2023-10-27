@@ -54,7 +54,6 @@ namespace ColorVision.Device.Spectrum
                     {
                         if (json.EventName == "Init")
                         {
-                            //ServiceID = json.ServiceID;
                         }
                         else if (json.EventName == "SetParam")
                         {

@@ -110,12 +110,15 @@ namespace ColorVision.Services
                         return Task.CompletedTask;
                     }
 
+
+                    bool msgee = false;
                     lock (_locker)
                     {
                         if (timers.TryGetValue(json.MsgID, out var value))
                         {
                             value.Enabled = false;
                             timers.Remove(json.MsgID);
+                            msgee = true;
                             MsgReturnReceived?.Invoke(json);
                         }
                         MsgRecord foundMsgRecord = MsgRecords.FirstOrDefault(record => record.MsgID == json.MsgID);
@@ -128,7 +131,8 @@ namespace ColorVision.Services
                         }
                     }
                     ///这里是因为这里先加载相机上，所以加在这里
-                    MsgReturnReceived?.Invoke(json);
+                    if (!msgee)
+                        MsgReturnReceived?.Invoke(json);
                 }
                 catch (Exception ex)
                 {
@@ -152,10 +156,10 @@ namespace ColorVision.Services
             }
         }
         public MsgReturnHandler MsgReturnReceived { get; set; }
+        public MsgReturnHandler MsgReturnReceived1 { get; set; }
 
         public virtual string SubscribeTopic { get; set; }
         public virtual string SendTopic { get; set; }
-        public ulong ServiceID { get; set; }
         public string SnID { get; set; }
         public string SerialNumber { get; set; }
         public string ServiceName { get; set; }

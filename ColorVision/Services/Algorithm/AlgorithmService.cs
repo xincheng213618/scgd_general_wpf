@@ -75,7 +75,6 @@ namespace ColorVision.Services.Algorithm
                 switch (msg.EventName)
                 {
                     case "Init":
-                        ServiceID = msg.ServiceID;
                         SnID = msg.SnID??string.Empty;
                         DeviceStatus = DeviceStatus.Init;
                         break;
