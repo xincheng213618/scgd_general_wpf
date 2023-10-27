@@ -174,7 +174,7 @@ namespace ColorVision
             }
             else
             {
-                MessageBox.Show("请先创建流程");
+                MessageBox.Show("请先创建流程", "ColorVision",MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
             }
         }
         private void Button_Click_Clear(object sender, RoutedEventArgs e)

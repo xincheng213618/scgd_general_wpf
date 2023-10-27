@@ -80,7 +80,7 @@ namespace ColorVision
             else
             {
                 PasswordBox1.Password = "";
-                MessageBox.Show("用户名或者密码不正确","ColorVision");
+                MessageBox.Show("用户名或者密码不正确", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
             }
         }
     }

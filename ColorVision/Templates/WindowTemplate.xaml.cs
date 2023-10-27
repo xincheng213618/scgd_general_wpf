@@ -90,7 +90,7 @@ namespace ColorVision.Templates
 
                             TemplateControl.GetInstance().Save2DB(flowParam);
                         }
-                        else MessageBox.Show("数据库创建流程模板失败");
+                        else MessageBox.Show("数据库创建流程模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     };
                     FunctionGrid.Children.Insert(2, button);
 
@@ -99,7 +99,7 @@ namespace ColorVision.Templates
                     {
                         if (ListView1.SelectedIndex<0)
                         {
-                            MessageBox.Show("请选择您要导出的流程");
+                            MessageBox.Show("请选择您要导出的流程", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                             return;
                         }
                         System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
@@ -233,54 +233,54 @@ namespace ColorVision.Templates
                 case TemplateType.AoiParam:
                     AoiParam? aoiParam = TemplateControl.AddParamMode<AoiParam>(TemplateTypeFactory.GetModeTemplateType(TemplateType), TextBox1.Text);
                     if (aoiParam != null) CreateNewTemplate(TemplateControl.AoiParams, TextBox1.Text, aoiParam);
-                    else MessageBox.Show("数据库创建AOI模板失败");
+                    else MessageBox.Show("数据库创建AOI模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     break;
                 case TemplateType.PGParam:
                     PGParam? pgParam = TemplateControl.AddParamMode<PGParam>(TemplateTypeFactory.GetModeTemplateType(TemplateType), TextBox1.Text);
                     if (pgParam != null) CreateNewTemplate(TemplateControl.PGParams, TextBox1.Text, pgParam);
-                    else MessageBox.Show("数据库创建PG模板失败");
+                    else MessageBox.Show("数据库创建PG模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     break;
 
                 case TemplateType.SMUParam:
                     SMUParam?  sMUParam = TemplateControl.AddParamMode<SMUParam>(TemplateTypeFactory.GetModeTemplateType(TemplateType), TextBox1.Text);
                     if (sMUParam != null) CreateNewTemplate(TemplateControl.SMUParams, TextBox1.Text, sMUParam);
-                    else MessageBox.Show("数据库创建源表模板失败");
+                    else MessageBox.Show("数据库创建源表模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     break;
                 case TemplateType.MTFParam:
                     MTFParam? mTFParam = TemplateControl.AddParamMode<MTFParam>(TemplateTypeFactory.GetModeTemplateType(TemplateType), TextBox1.Text);
                     if (mTFParam != null) CreateNewTemplate(TemplateControl.MTFParams, TextBox1.Text, mTFParam);
-                    else MessageBox.Show("数据库创建MTF模板失败");
+                    else MessageBox.Show("数据库创建MTF模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     break;
                 case TemplateType.SFRParam:
                     SFRParam? sFRParam = TemplateControl.AddParamMode<SFRParam>(TemplateTypeFactory.GetModeTemplateType(TemplateType), TextBox1.Text);
                     if (sFRParam != null) CreateNewTemplate(TemplateControl.SFRParams, TextBox1.Text, sFRParam);
-                    else MessageBox.Show("数据库创建MTF模板失败"); break;
+                    else MessageBox.Show("数据库创建MTF模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly); break;
                 case TemplateType.FOVParam:
                     FOVParam? fOVParam = TemplateControl.AddParamMode<FOVParam>(TemplateTypeFactory.GetModeTemplateType(TemplateType), TextBox1.Text);
                     if (fOVParam != null) CreateNewTemplate(TemplateControl.FOVParams, TextBox1.Text, fOVParam);
-                    else MessageBox.Show("数据库创建FOV模板失败"); break;
+                    else MessageBox.Show("数据库创建FOV模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly); break;
                 case TemplateType.GhostParam:
                     GhostParam? ghostParam = TemplateControl.AddParamMode<GhostParam>(TemplateTypeFactory.GetModeTemplateType(TemplateType), TextBox1.Text);
                     if (ghostParam != null) CreateNewTemplate(TemplateControl.GhostParams, TextBox1.Text, ghostParam);
-                    else MessageBox.Show("数据库创建Ghost模板失败"); break;
+                    else MessageBox.Show("数据库创建Ghost模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly); break;
                 case TemplateType.DistortionParam:
                     DistortionParam? distortionParam = TemplateControl.AddParamMode<DistortionParam>(TemplateTypeFactory.GetModeTemplateType(TemplateType), TextBox1.Text);
                     if (distortionParam != null) CreateNewTemplate(TemplateControl.DistortionParams, TextBox1.Text, distortionParam);
-                    else MessageBox.Show("数据库创建Distortion模板失败"); break;
+                    else MessageBox.Show("数据库创建Distortion模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly); break;
                 case TemplateType.PoiParam:
                     PoiParam? poiParam = TemplateControl.AddPoiParam(TextBox1.Text);
                     if (poiParam != null) CreateNewTemplate(TemplateControl.PoiParams, TextBox1.Text, poiParam);
-                    else MessageBox.Show("数据库创建POI模板失败");
+                    else MessageBox.Show("数据库创建POI模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     break;
                 case TemplateType.FlowParam:
                     FlowParam? flowParam = TemplateControl.AddFlowParam(TextBox1.Text);
                     if (flowParam != null) CreateNewTemplate(TemplateControl.FlowParams, TextBox1.Text, flowParam);
-                    else MessageBox.Show("数据库创建流程模板失败");
+                    else MessageBox.Show("数据库创建流程模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     break;
                 case TemplateType.MeasureParam:
                     MeasureParam? measureParam = TemplateControl.AddMeasureParam(TextBox1.Text);
                     if (measureParam != null) CreateNewTemplate(TemplateControl.MeasureParams, TextBox1.Text, measureParam);
-                    else MessageBox.Show("数据库创建流程模板失败");
+                    else MessageBox.Show("数据库创建流程模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     break;
             }
         }
@@ -450,7 +450,7 @@ namespace ColorVision.Templates
             }
             else
             {
-                MessageBox.Show("请先选择" + TemplateGrid.Header);
+                MessageBox.Show("请先选择" + TemplateGrid.Header, "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
             }
         }
 

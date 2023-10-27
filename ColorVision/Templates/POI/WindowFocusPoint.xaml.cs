@@ -936,7 +936,7 @@ namespace ColorVision.Templates
                         case RiPointTypes.Circle:
                             if (PoiParam.DatumArea.AreaCircleNum < 1)
                             {
-                                MessageBox.Show("绘制的个数不能小于1");
+                                MessageBox.Show("绘制的个数不能小于1", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                                 return;
                             }
 
@@ -997,7 +997,7 @@ namespace ColorVision.Templates
 
                             if (rows < 1 || cols < 1)
                             {
-                                MessageBox.Show("点阵数的行列不能小于1");
+                                MessageBox.Show("点阵数的行列不能小于1", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                                 return;
                             }
                             double Width = PoiParam.DatumArea.AreaRectWidth;
@@ -1138,7 +1138,7 @@ namespace ColorVision.Templates
                     OpenCvSharp.Mat mat;
                     if (ledPicData==null)
                     {
-                        MessageBox.Show("请先载入图片");
+                        MessageBox.Show("请先载入图片", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                         return;
                     }
                     else
@@ -1215,7 +1215,7 @@ namespace ColorVision.Templates
                         }
                         catch (Exception)
                         {
-                            MessageBox.Show("本地点位数据文件读取失败，请检查设置与文件！");
+                            MessageBox.Show("本地点位数据文件读取失败，请检查设置与文件！", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                             return;
                         }
                     }
@@ -1234,7 +1234,7 @@ namespace ColorVision.Templates
                     PoiParam.DatumArea.LedLen4 = Math.Round(LengthResult[3], 2);
                     if (calresult != 3)
                     {
-                        MessageBox.Show("灯珠抓取异常，请检查参数设置");
+                        MessageBox.Show("灯珠抓取异常，请检查参数设置", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                         return;
                     }
 
@@ -1284,7 +1284,7 @@ namespace ColorVision.Templates
                             {
                                 PoiParam.PoiPoints.Add(item);
                             }
-                            MessageBox.Show("导入成功");
+                            MessageBox.Show("导入成功", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                         }   
                     };
                     windowFocusPointAd.ShowDialog();
@@ -1516,7 +1516,7 @@ namespace ColorVision.Templates
                     {
                         WaitControl.Visibility = Visibility.Collapsed;
                     });
-                    MessageBox.Show("保存成功");
+                    MessageBox.Show("保存成功", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 });
                 thread.Start();
             }
@@ -1524,7 +1524,7 @@ namespace ColorVision.Templates
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("生成关注点");
+            MessageBox.Show("生成关注点", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
         }
 
         private void RadioButtonMode1_Checked(object sender, RoutedEventArgs e)
@@ -1584,7 +1584,7 @@ namespace ColorVision.Templates
                 var Cfg = CfgFile.Load<LedCheckCfg>(filePath);
                 if (Cfg == null)
                 {
-                    MessageBox.Show("读取配置文件失败");
+                    MessageBox.Show("读取配置文件失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     ledCheckCfg = new LedCheckCfg();
                 }
                 else
@@ -1606,11 +1606,11 @@ namespace ColorVision.Templates
                 bool result=CfgFile.Save(filePath, ledCheckCfg);
                 if (result)
                 {
-                    MessageBox.Show("保存成功");
+                    MessageBox.Show("保存成功", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 }
                 else
                 {
-                    MessageBox.Show("保存失败");
+                    MessageBox.Show("保存失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 }
             }
 

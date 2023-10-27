@@ -37,7 +37,7 @@ namespace ColorVision.Solution
                 SolutionConfig.SolutionFullName = string.Empty;
                 SolutionConfig.SolutionName = string.Empty;
                 log.Debug("工程文件失效");
-                MessageBox.Show("工程文件不存在，在使用之前请重新创建");
+                MessageBox.Show("工程文件不存在，在使用之前请重新创建", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
             }
             else
             {

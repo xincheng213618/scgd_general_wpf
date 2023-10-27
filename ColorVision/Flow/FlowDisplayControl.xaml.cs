@@ -109,7 +109,7 @@ namespace ColorVision.Flow
                 FlowControlData FlowControlData = (FlowControlData)sender;
                 if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
                 {
-                    MessageBox.Show("流程计算" + FlowControlData.EventName);
+                    MessageBox.Show("流程计算" + FlowControlData.EventName, "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 }
             }
         }

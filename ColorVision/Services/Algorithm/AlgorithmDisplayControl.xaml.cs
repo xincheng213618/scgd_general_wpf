@@ -211,7 +211,7 @@ namespace ColorVision.Services.Algorithm
         {
             if (ComboxPoiTemplate.SelectedIndex ==-1)
             {
-                MessageBox.Show("请先选择关注点模板");
+                MessageBox.Show("请先选择关注点模板", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 return;
             }
             string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
@@ -235,12 +235,12 @@ namespace ColorVision.Services.Algorithm
         {
             if (ComboxMTFTemplate.SelectedIndex==-1)
             {
-                MessageBox.Show("请先选择MTF模板");
+                MessageBox.Show("请先选择MTF模板", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 return;
             }
             if (ComboxPoiTemplate.SelectedIndex == -1)
             {
-                MessageBox.Show("请先选择关注点模板");
+                MessageBox.Show("请先选择关注点模板", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 return;
             }
 
@@ -252,12 +252,12 @@ namespace ColorVision.Services.Algorithm
         {
             if (ComboxSFRTemplate.SelectedIndex == -1)
             {
-                MessageBox.Show("请先选择SFR模板");
+                MessageBox.Show("请先选择SFR模板", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 return;
             }
             if (ComboxPoiTemplate.SelectedIndex == -1)
             {
-                MessageBox.Show("请先选择关注点模板");
+                MessageBox.Show("请先选择关注点模板", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 return;
             }
 
@@ -270,12 +270,12 @@ namespace ColorVision.Services.Algorithm
         {
             if (ComboxGhostTemplate.SelectedIndex == -1)
             {
-                MessageBox.Show("请先选择Ghost模板");
+                MessageBox.Show("请先选择Ghost模板", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 return;
             }
             if (ComboxPoiTemplate.SelectedIndex == -1)
             {
-                MessageBox.Show("请先选择关注点模板");
+                MessageBox.Show("请先选择关注点模板", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 return;
             }
 
@@ -289,12 +289,12 @@ namespace ColorVision.Services.Algorithm
         {
             if (ComboxDistortionTemplate.SelectedIndex == -1)
             {
-                MessageBox.Show("请先选择Distortion模板");
+                MessageBox.Show("请先选择Distortion模板", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 return;
             }
             if (ComboxPoiTemplate.SelectedIndex == -1)
             {
-                MessageBox.Show("请先选择关注点模板");
+                MessageBox.Show("请先选择关注点模板", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 return;
             }
             var msg = Service.Distortion(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, ImageFile.Text, TemplateControl.GetInstance().DistortionParams[ComboxDistortionTemplate.SelectedIndex].Value);
@@ -306,12 +306,12 @@ namespace ColorVision.Services.Algorithm
         {
             if (ComboxFOVTemplate.SelectedIndex == -1)
             {
-                MessageBox.Show("请先选择FOV模板");
+                MessageBox.Show("请先选择FOV模板", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 return;
             }
             if (ComboxPoiTemplate.SelectedIndex == -1)
             {
-                MessageBox.Show("请先选择关注点模板");
+                MessageBox.Show("请先选择关注点模板", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 return;
             }
 
@@ -443,7 +443,7 @@ namespace ColorVision.Services.Algorithm
                 WindowTemplate windowTemplate;
                 if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
                 {
-                    MessageBox.Show("数据库连接失败，请先连接数据库在操作");
+                    MessageBox.Show("数据库连接失败，请先连接数据库在操作", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     return;
                 }
                 switch (button.Tag?.ToString() ?? string.Empty)

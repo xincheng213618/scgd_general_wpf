@@ -132,7 +132,7 @@ namespace ColorVision
             if (UserManager.Current.UserConfig != null)
             {
                 var user = UserManager.Current.UserConfig;
-                MessageBox.Show(user.PerMissionMode.ToString() + ":"+  user.UserName +" 已经登录");
+                MessageBox.Show(user.PerMissionMode.ToString() + ":" + user.UserName + " 已经登录", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
 
             }
             else
