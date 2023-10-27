@@ -159,7 +159,7 @@ namespace ColorVision
                         ServiceManager.GetInstance().GenContorl();
                     }
                 }
-                catch
+                catch(Exception ex)
                 {
                     MessageBox.Show("窗口创建错误");
                     Environment.Exit(-1);

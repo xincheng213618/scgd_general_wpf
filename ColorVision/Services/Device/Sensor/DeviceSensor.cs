@@ -2,17 +2,18 @@
 using ColorVision.MySql.DAO;
 using System.Windows.Controls;
 
-namespace ColorVision.Device.Sensor
+namespace ColorVision.Services.Device.Sensor
 {
     public class DeviceSensor : BaseDevice<ConfigSensor>
     {
-        public SensorService Service { get; set; }
+        public DeviceServiceSensor DeviceService { get; set; }
 
         public DeviceSensor(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
-            Service = new SensorService(Config);
+            DeviceService = new DeviceServiceSensor(Config);
         }
 
         public override UserControl GetDeviceControl() => new DeviceSensorControl(this);
+
     }
 }

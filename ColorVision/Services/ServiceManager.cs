@@ -1,7 +1,6 @@
 ﻿using ColorVision.Device.Camera;
 using ColorVision.Device.FileServer;
 using ColorVision.Device.PG;
-using ColorVision.Device.Sensor;
 using ColorVision.Device.SMU;
 using ColorVision.Device.Spectrum;
 using ColorVision.Flow;
@@ -13,6 +12,8 @@ using ColorVision.RC;
 using ColorVision.Services.Algorithm;
 using ColorVision.Services.Device.Calibration;
 using ColorVision.Services.Device.FilterWheel;
+using ColorVision.Services.Device.Motor;
+using ColorVision.Services.Device.Sensor;
 using ColorVision.User;
 using cvColorVision;
 using EnumsNET;
@@ -193,6 +194,12 @@ namespace ColorVision.Services
                                         svrObj = deviceFilterWheel.DeviceService;
                                         mQTTService.AddChild(deviceFilterWheel);
                                         MQTTDevices.Add(deviceFilterWheel);
+                                        break;
+                                    case ServiceType.Motor:
+                                        DeviceMotor deviceMotor = new DeviceMotor(device);
+                                        svrObj = deviceMotor.DeviceService;
+                                        mQTTService.AddChild(deviceMotor);
+                                        MQTTDevices.Add(deviceMotor);
                                         break;
                                     default:
                                         break;

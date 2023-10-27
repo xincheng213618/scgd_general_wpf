@@ -2,7 +2,7 @@
 using ColorVision.Services;
 using ColorVision.Services.Msg;
 
-namespace ColorVision.Device.Sensor
+namespace ColorVision.Services.Device.Sensor
 {
 
 
@@ -10,10 +10,10 @@ namespace ColorVision.Device.Sensor
     /// 传感器的部分
     /// </summary>
 
-    public class SensorService : BaseDevService<ConfigSensor>
+    public class DeviceServiceSensor : BaseDevService<ConfigSensor>
     {
 
-        public SensorService(ConfigSensor sensorConfig) : base(sensorConfig)
+        public DeviceServiceSensor(ConfigSensor sensorConfig) : base(sensorConfig)
         {
 
         }

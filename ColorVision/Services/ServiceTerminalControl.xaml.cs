@@ -11,6 +11,7 @@ using ColorVision.Services.Algorithm;
 using ColorVision.Services.Device.Calibration;
 using ColorVision.Services.Device.Camera;
 using ColorVision.Services.Device.FilterWheel;
+using ColorVision.Services.Device.Motor;
 using cvColorVision;
 using HandyControl.Tools.Extension;
 using Newtonsoft.Json;
@@ -196,6 +197,14 @@ namespace ColorVision.Services
                             serviceTerminal.AddChild(new DeviceCalibration(sysResourceModel));
                         break;
                     case ServiceType.Motor:
+                        deviceConfig = new ConfigMotor
+                        {
+                            ID = TextBox_Code.Text,
+                            Name = TextBox_Name.Text,
+                        };
+                        sysResourceModel = saveConfigInfo(deviceConfig, sysResource);
+                        if (sysResourceModel != null)
+                            serviceTerminal.AddChild(new DeviceMotor(sysResourceModel));
                         break;
                     case ServiceType.FocusRing:
                         break;
