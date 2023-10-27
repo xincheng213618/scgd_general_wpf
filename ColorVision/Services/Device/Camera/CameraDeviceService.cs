@@ -19,10 +19,7 @@ namespace ColorVision.Device.Camera
     public class CameraDeviceService : BaseDevService<CameraConfig>
     {
         public event MQTTCameraFileHandler FileHandler;
-        public event DeviceStatusChangedHandler DeviceStatusChanged;
 
-        public DeviceStatus DeviceStatus { get => _DeviceStatus; set { _DeviceStatus = value; Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value)); NotifyPropertyChanged(); } }
-        private DeviceStatus _DeviceStatus;
 
         public CameraService CameraService { get; set; }
 

@@ -8,6 +8,7 @@ using ColorVision.Device.Spectrum;
 using ColorVision.MQTT;
 using ColorVision.MySql.DAO;
 using ColorVision.Services.Algorithm;
+using ColorVision.Services.Device.Calibration;
 using ColorVision.Services.Device.Camera;
 using cvColorVision;
 using HandyControl.Tools.Extension;
@@ -84,100 +85,117 @@ namespace ColorVision.Services
                     MessageBox.Show("设备标识已存在,不允许重复添加");
                     return;
                 }
-
-
                 SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, serviceTerminal.SysResourceModel.Type, serviceTerminal.SysResourceModel.Id, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
-                if (serviceTerminal.Type == ServiceType.Camera)
-                {
-                    CameraConfig cameraConfig1 = new CameraConfig
-                    {
-                        ID = TextBox_Code.Text,
-                        Name = TextBox_Name.Text,
-                        CameraType = CameraType.LV_Q,
-                        TakeImageMode = TakeImageMode.Measure_Normal,
-                        ImageBpp = ImageBpp.bpp8
-                        
-                    };
-                    SysResourceModel model = saveConfigInfo(cameraConfig1, sysResource);
-                    if (model != null)
-                    {
-                        if (serviceTerminal.BaseService is CameraService cameraService)
-                        {
-                            serviceTerminal.AddChild(new DeviceCamera(model, cameraService));
-                        }
-                    }
-                }
-                else if (serviceTerminal.Type == ServiceType.PG)
-                {
-                    PGConfig pGConfig = new PGConfig
-                    {
-                        ID = TextBox_Code.Text,
-                        Name = TextBox_Name.Text
-                    };
-                    SysResourceModel model = saveConfigInfo(pGConfig, sysResource);
-                    if (model != null)
-                        serviceTerminal.AddChild(new DevicePG(model));
-                }
-                else if (serviceTerminal.Type == ServiceType.Spectrum)
-                {
-                    SpectrumConfig config = new SpectrumConfig
-                    {
-                        ID = TextBox_Code.Text,
-                        Name = TextBox_Name.Text
-                    };
-                    SysResourceModel model = saveConfigInfo(config, sysResource);
-                    if (model != null)
-                        serviceTerminal.AddChild(new DeviceSpectrum(model));
-                }
 
-                else if (serviceTerminal.Type == ServiceType.SMU)
-                {
-                    SMUConfig config = new SMUConfig
-                    {
-                        ID = TextBox_Code.Text,
-                        Name = TextBox_Name.Text
-                    };
-                    SysResourceModel model = saveConfigInfo(config, sysResource);
-                    if (model != null)
-                        serviceTerminal.AddChild(new DeviceSMU(model));
-                }
-                else if (serviceTerminal.Type == ServiceType.Sensor)
-                {
-                    SensorConfig config = new SensorConfig
-                    {
-                        ID = TextBox_Code.Text,
-                        Name = TextBox_Name.Text
-                    };
-                    SysResourceModel model = saveConfigInfo(config, sysResource);
-                    if (model != null)
-                        serviceTerminal.AddChild(new DeviceSpectrum(model));
-                }
-                else if (serviceTerminal.Type == ServiceType.FileServer)
-                {
-                    FileServerConfig config = new FileServerConfig
-                    {
-                        ID = TextBox_Code.Text,
-                        Name = TextBox_Name.Text,
-                        Endpoint = "tcp://127.0.0.1:" + (Math.Abs(new Random().Next()) % 99 + 6500),
-                        FileBasePath = "F:/img",
-                    };
-                    SysResourceModel model = saveConfigInfo(config, sysResource);
-                    if (model != null)
-                        serviceTerminal.AddChild(new DeviceFileServer(model));
-                }
-                else if (serviceTerminal.Type == ServiceType.Algorithm)
-                {
-                    AlgorithmConfig config = new AlgorithmConfig
-                    {
-                        ID = TextBox_Code.Text,
-                        Name = TextBox_Name.Text,
-                        Endpoint = "tcp://127.0.0.1:" + (Math.Abs(new Random().Next()) % 99 + 6600),
-                        FileBasePath = "F:/img/cvcie",
-                    };
-                    SysResourceModel model = saveConfigInfo(config, sysResource);
-                    if (model != null)
-                        serviceTerminal.AddChild(new DeviceAlgorithm(model));
-                }
+
+                SysResourceModel sysResourceModel;
+                BaseDeviceConfig deviceConfig;
+                switch (serviceTerminal.Type)
+                {   
+                    case ServiceType.Camera:
+                        CameraConfig cameraConfig1 = new CameraConfig
+                        {
+                            ID = TextBox_Code.Text,
+                            Name = TextBox_Name.Text,
+                            CameraType = CameraType.LV_Q,
+                            TakeImageMode = TakeImageMode.Measure_Normal,
+                            ImageBpp = ImageBpp.bpp8
+
+                        };
+                        sysResourceModel = saveConfigInfo(cameraConfig1, sysResource);
+                        if (sysResourceModel != null)
+                        {
+                            if (serviceTerminal.BaseService is CameraService cameraService)
+                            {
+                                serviceTerminal.AddChild(new DeviceCamera(sysResourceModel, cameraService));
+                            }
+                        }
+                        break;
+                    case ServiceType.PG:
+                        PGConfig pGConfig = new PGConfig
+                        {
+                            ID = TextBox_Code.Text,
+                            Name = TextBox_Name.Text
+                        };
+                        sysResourceModel = saveConfigInfo(pGConfig, sysResource);
+                        if (sysResourceModel != null)
+                            serviceTerminal.AddChild(new DevicePG(sysResourceModel));
+                        break;
+                    case ServiceType.Spectrum:
+                        deviceConfig = new SpectrumConfig
+                        {
+                            ID = TextBox_Code.Text,
+                            Name = TextBox_Name.Text
+                        };
+                        sysResourceModel = saveConfigInfo(deviceConfig, sysResource);
+                        if (sysResourceModel != null)
+                            serviceTerminal.AddChild(new DeviceSpectrum(sysResourceModel));
+                        break;
+                    case ServiceType.SMU:
+                        deviceConfig = new SMUConfig
+                        {
+                            ID = TextBox_Code.Text,
+                            Name = TextBox_Name.Text
+                        };
+                        SysResourceModel model = saveConfigInfo(deviceConfig, sysResource);
+                        if (model != null)
+                            serviceTerminal.AddChild(new DeviceSMU(model));
+                        break;
+                    case ServiceType.Sensor:
+                        deviceConfig = new SensorConfig
+                        {
+                            ID = TextBox_Code.Text,
+                            Name = TextBox_Name.Text
+                        };
+                        sysResourceModel = saveConfigInfo(deviceConfig, sysResource);
+                        if (sysResourceModel != null)
+                            serviceTerminal.AddChild(new DeviceSpectrum(sysResourceModel));
+                        break;
+                    case ServiceType.FileServer:
+                        deviceConfig = new FileServerConfig
+                        {
+                            ID = TextBox_Code.Text,
+                            Name = TextBox_Name.Text,
+                            Endpoint = "tcp://127.0.0.1:" + (Math.Abs(new Random().Next()) % 99 + 6500),
+                            FileBasePath = "F:/img",
+                        };
+                        sysResourceModel = saveConfigInfo(deviceConfig, sysResource);
+                        if (sysResourceModel != null)
+                            serviceTerminal.AddChild(new DeviceFileServer(sysResourceModel));
+                        break;
+                    case ServiceType.Algorithm:
+                        deviceConfig = new AlgorithmConfig
+                        {
+                            ID = TextBox_Code.Text,
+                            Name = TextBox_Name.Text,
+                            Endpoint = "tcp://127.0.0.1:" + (Math.Abs(new Random().Next()) % 99 + 6600),
+                            FileBasePath = "F:/img/cvcie",
+                        };
+                        sysResourceModel = saveConfigInfo(deviceConfig, sysResource);
+                        if (sysResourceModel != null)
+                            serviceTerminal.AddChild(new DeviceAlgorithm(sysResourceModel));
+                        break;
+                    case ServiceType.FilterWheel:
+                        break;
+                    case ServiceType.Calibration:
+                        deviceConfig = new ConfigCalibration
+                        {
+                            ID = TextBox_Code.Text,
+                            Name = TextBox_Name.Text,
+                        };
+                        sysResourceModel = saveConfigInfo(deviceConfig, sysResource);
+                        if (sysResourceModel != null)
+                            serviceTerminal.AddChild(new DeviceCalibration(sysResourceModel));
+                        break;
+                    case ServiceType.Motor:
+                        break;
+                    case ServiceType.FocusRing:
+                        break;
+                    case ServiceType.Flowtime:
+                        break;
+                    default:
+                        break;
+                };
                 MessageBox.Show("添加资源成功");
                 MQTTCreate.Visibility = Visibility.Collapsed;
             }

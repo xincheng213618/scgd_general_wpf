@@ -11,6 +11,7 @@ using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.RC;
 using ColorVision.Services.Algorithm;
+using ColorVision.Services.Device.Calibration;
 using ColorVision.User;
 using cvColorVision;
 using EnumsNET;
@@ -179,6 +180,12 @@ namespace ColorVision.Services
                                         svrObj = alg.Service;
                                         mQTTService.AddChild(alg);
                                         MQTTDevices.Add(alg);
+                                        break;
+                                    case ServiceType.Calibration:
+                                        DeviceCalibration deviceCalibration = new DeviceCalibration(device);
+                                        svrObj = deviceCalibration.DeviceService;
+                                        mQTTService.AddChild(deviceCalibration);
+                                        MQTTDevices.Add(deviceCalibration);
                                         break;
                                     default:
                                         break;
