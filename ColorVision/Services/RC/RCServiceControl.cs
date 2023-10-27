@@ -18,7 +18,7 @@ namespace ColorVision.RC
         public RCServiceControl()
         {
             RCService = RCService.GetInstance();
-            _IsConnect = RCService.IsRegisted();
+            IsConnect = RCService.IsRegisted();
 
 
             RCService.StatusChangedEventHandler += RcService_StatusChangedEventHandler;
@@ -33,9 +33,6 @@ namespace ColorVision.RC
             MQTTControl.GetInstance().MQTTConnectChanged += (s, e) =>
             {
                 Task.Run(() => RCService.Regist());
-
-
-
             };
         }
 
