@@ -12,6 +12,7 @@ using ColorVision.MySql.Service;
 using ColorVision.RC;
 using ColorVision.Services.Algorithm;
 using ColorVision.Services.Device.Calibration;
+using ColorVision.Services.Device.FilterWheel;
 using ColorVision.User;
 using cvColorVision;
 using EnumsNET;
@@ -186,6 +187,12 @@ namespace ColorVision.Services
                                         svrObj = deviceCalibration.DeviceService;
                                         mQTTService.AddChild(deviceCalibration);
                                         MQTTDevices.Add(deviceCalibration);
+                                        break;
+                                    case ServiceType.FilterWheel:
+                                        DeviceFilterWheel deviceFilterWheel = new DeviceFilterWheel(device);
+                                        svrObj = deviceFilterWheel.DeviceService;
+                                        mQTTService.AddChild(deviceFilterWheel);
+                                        MQTTDevices.Add(deviceFilterWheel);
                                         break;
                                     default:
                                         break;

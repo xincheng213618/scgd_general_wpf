@@ -10,6 +10,7 @@ using ColorVision.MySql.DAO;
 using ColorVision.Services.Algorithm;
 using ColorVision.Services.Device.Calibration;
 using ColorVision.Services.Device.Camera;
+using ColorVision.Services.Device.FilterWheel;
 using cvColorVision;
 using HandyControl.Tools.Extension;
 using Newtonsoft.Json;
@@ -176,6 +177,13 @@ namespace ColorVision.Services
                             serviceTerminal.AddChild(new DeviceAlgorithm(sysResourceModel));
                         break;
                     case ServiceType.FilterWheel:
+                        deviceConfig = new ConfigFilterWheel { 
+                            ID = TextBox_Code.Text,
+                            Name = TextBox_Name.Text,
+                        };
+                        sysResourceModel = saveConfigInfo(deviceConfig, sysResource);
+                        if (sysResourceModel != null)
+                            serviceTerminal.AddChild(new DeviceFilterWheel(sysResourceModel));
                         break;
                     case ServiceType.Calibration:
                         deviceConfig = new ConfigCalibration
