@@ -10,19 +10,12 @@ namespace ColorVision.Device.Sensor
     /// 传感器的部分
     /// </summary>
 
-    public class SensorService : BaseDevService<SensorConfig>
+    public class SensorService : BaseDevService<ConfigSensor>
     {
 
-        public SensorService(SensorConfig sensorConfig) : base(sensorConfig)
+        public SensorService(ConfigSensor sensorConfig) : base(sensorConfig)
         {
-            Config = sensorConfig;
 
-            SendTopic = sensorConfig.SendTopic;
-            SubscribeTopic = sensorConfig.SubscribeTopic;
-
-
-            MQTTControl = MQTTControl.GetInstance();
-            MQTTControl.SubscribeCache(SubscribeTopic);
         }
 
 

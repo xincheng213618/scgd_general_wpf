@@ -143,7 +143,7 @@ namespace ColorVision.Services
                             serviceTerminal.AddChild(new DeviceSMU(model));
                         break;
                     case ServiceType.Sensor:
-                        deviceConfig = new SensorConfig
+                        deviceConfig = new ConfigSensor
                         {
                             ID = TextBox_Code.Text,
                             Name = TextBox_Name.Text

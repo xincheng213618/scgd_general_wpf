@@ -4,7 +4,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Device.Sensor
 {
-    public class DeviceSensor : BaseDevice<SensorConfig>
+    public class DeviceSensor : BaseDevice<ConfigSensor>
     {
         public SensorService Service { get; set; }
 
@@ -14,8 +14,5 @@ namespace ColorVision.Device.Sensor
         }
 
         public override UserControl GetDeviceControl() => new DeviceSensorControl(this);
-
-
-
     }
 }
