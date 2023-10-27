@@ -87,7 +87,7 @@ namespace ColorVision.MySql
             Task.Run(() =>
             {
                 bool IsConnect = MySqlControl.TestConnect(MySqlConfig);
-                MessageBox.Show($"连接{(IsConnect ? "成功" : "失败")}");
+                MessageBox.Show($"连接{(IsConnect ? "成功" : "失败")}","ColorVision",MessageBoxButton.OK,MessageBoxImage.None,MessageBoxResult.None,MessageBoxOptions.DefaultDesktopOnly);
             });
 
 
