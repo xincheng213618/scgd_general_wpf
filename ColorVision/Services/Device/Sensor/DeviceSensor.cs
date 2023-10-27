@@ -1,5 +1,6 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.MySql.DAO;
+using ColorVision.Services.Device.Motor;
 using System.Windows.Controls;
 
 namespace ColorVision.Services.Device.Sensor
@@ -14,6 +15,8 @@ namespace ColorVision.Services.Device.Sensor
         }
 
         public override UserControl GetDeviceControl() => new DeviceSensorControl(this);
+        public override UserControl GetDisplayControl() => new DisplaySensorControl(this);
+
 
     }
 }

@@ -2,7 +2,6 @@
 using ColorVision.Device.Camera;
 using ColorVision.Device.FileServer;
 using ColorVision.Device.PG;
-using ColorVision.Device.Sensor;
 using ColorVision.Device.SMU;
 using ColorVision.Device.Spectrum;
 using ColorVision.MQTT;
@@ -12,6 +11,7 @@ using ColorVision.Services.Device.Calibration;
 using ColorVision.Services.Device.Camera;
 using ColorVision.Services.Device.FilterWheel;
 using ColorVision.Services.Device.Motor;
+using ColorVision.Services.Device.Sensor;
 using cvColorVision;
 using HandyControl.Tools.Extension;
 using Newtonsoft.Json;
@@ -151,7 +151,7 @@ namespace ColorVision.Services
                         };
                         sysResourceModel = saveConfigInfo(deviceConfig, sysResource);
                         if (sysResourceModel != null)
-                            serviceTerminal.AddChild(new DeviceSpectrum(sysResourceModel));
+                            serviceTerminal.AddChild(new DeviceSensor(sysResourceModel));
                         break;
                     case ServiceType.FileServer:
                         deviceConfig = new FileServerConfig

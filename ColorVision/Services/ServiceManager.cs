@@ -167,7 +167,7 @@ namespace ColorVision.Services
                                         break;
                                     case ServiceType.Sensor:
                                         DeviceSensor device1 = new DeviceSensor(device);
-                                        svrObj = device1.Service;
+                                        svrObj = device1.DeviceService;
                                         mQTTService.AddChild(device1);
                                         MQTTDevices.Add(device1);
                                         break;
