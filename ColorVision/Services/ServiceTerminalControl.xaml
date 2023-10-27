@@ -133,7 +133,7 @@
             </StackPanel>
         </GroupBox>
 
-        <ListView  x:Name="ListViewService" Grid.Row="1">
+        <ListView  x:Name="ListViewService" SelectionChanged="ListViewService_SelectionChanged" Grid.Row="1">
             <ListView.Resources >
             </ListView.Resources>
             <ListView.ItemContainerStyle>

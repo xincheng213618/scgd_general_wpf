@@ -38,7 +38,7 @@
             </StackPanel>
         </GroupBox>
         <Grid>
-            <ListView  x:Name="ListViewService"  BorderThickness="0">
+            <ListView  x:Name="ListViewService"  SelectionChanged="ListViewService_SelectionChanged" BorderThickness="0">
                 <ListView.Resources >
                 </ListView.Resources>
                 <ListView.ItemContainerStyle>

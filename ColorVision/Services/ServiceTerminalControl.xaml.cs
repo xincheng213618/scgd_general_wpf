@@ -28,30 +28,30 @@ namespace ColorVision.Services
     /// </summary>
     public partial class ServiceTerminalControl : UserControl
     {
-        public ServiceTerminal MQTTService { get; set; }
+        public ServiceTerminal ServiceTerminal { get; set; }
         public ServiceManager ServiceControl { get; set; }
 
         public ServiceTerminalControl(ServiceTerminal mQTTService)
         {
-            this.MQTTService = mQTTService;
+            this.ServiceTerminal = mQTTService;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             ServiceControl = ServiceManager.GetInstance();
-            this.DataContext = MQTTService;
+            this.DataContext = ServiceTerminal;
 
-            TextBox_Type.ItemsSource = MQTTService.Parent.VisualChildren;
-            TextBox_Type.SelectedItem = MQTTService;
+            TextBox_Type.ItemsSource = ServiceTerminal.Parent.VisualChildren;
+            TextBox_Type.SelectedItem = ServiceTerminal;
 
-            if (MQTTService.VisualChildren.Count == 0)
+            if (ServiceTerminal.VisualChildren.Count == 0)
                 ListViewService.Visibility = Visibility.Collapsed;
-            ListViewService.ItemsSource = MQTTService.VisualChildren;
+            ListViewService.ItemsSource = ServiceTerminal.VisualChildren;
 
-            MQTTService.VisualChildren.CollectionChanged += (s, e) =>
+            ServiceTerminal.VisualChildren.CollectionChanged += (s, e) =>
             {
-                if (MQTTService.VisualChildren.Count == 0)
+                if (ServiceTerminal.VisualChildren.Count == 0)
                 {
                     ListViewService.Visibility = Visibility.Collapsed;
                 }
@@ -67,8 +67,8 @@ namespace ColorVision.Services
             deviceConfig.Name = TextBox_Name.Text;
             deviceConfig.Code = TextBox_Code.Text;
 
-            deviceConfig.SendTopic = MQTTService.Config.SendTopic;
-            deviceConfig.SubscribeTopic = MQTTService.Config.SubscribeTopic;
+            deviceConfig.SendTopic = ServiceTerminal.Config.SendTopic;
+            deviceConfig.SubscribeTopic = ServiceTerminal.Config.SubscribeTopic;
             sysResource.Value = JsonConvert.SerializeObject(deviceConfig);
             ServiceControl.ResourceService.Save(sysResource);
             int pkId = sysResource.GetPK();
@@ -221,19 +221,19 @@ namespace ColorVision.Services
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            MQTTService.Config.SubscribeTopic = MQTTService.SysResourceModel.TypeCode + "/STATUS/" + MQTTService.SysResourceModel.Code;
-            MQTTService.Config.SendTopic = MQTTService.SysResourceModel.TypeCode + "/CMD/" + MQTTService.SysResourceModel.Code;
+            ServiceTerminal.Config.SubscribeTopic = ServiceTerminal.SysResourceModel.TypeCode + "/STATUS/" + ServiceTerminal.SysResourceModel.Code;
+            ServiceTerminal.Config.SendTopic = ServiceTerminal.SysResourceModel.TypeCode + "/CMD/" + ServiceTerminal.SysResourceModel.Code;
 
-            foreach (var item in MQTTService.VisualChildren)
+            foreach (var item in ServiceTerminal.VisualChildren)
             {
                 if(item is BaseChannel mQTTDevice)
                 {
-                    mQTTDevice.SendTopic = MQTTService.Config.SendTopic;
-                    mQTTDevice.SubscribeTopic = MQTTService.Config.SubscribeTopic;
+                    mQTTDevice.SendTopic = ServiceTerminal.Config.SendTopic;
+                    mQTTDevice.SubscribeTopic = ServiceTerminal.Config.SubscribeTopic;
                     mQTTDevice.Save();
                 }
             }
-            MQTTService.Save();
+            ServiceTerminal.Save();
 
             MQTTEditContent.Visibility = Visibility.Collapsed;
             MQTTShowContent.Visibility = Visibility.Visible;
@@ -248,12 +248,30 @@ namespace ColorVision.Services
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
             MQTTCreate.Visibility = MQTTCreate.Visibility == Visibility.Visible? Visibility.Collapsed : Visibility.Visible;
-            if (MQTTService.BaseService is BaseServiceBase baseServiceBase)
+            if (ServiceTerminal.BaseService is BaseServiceBase baseServiceBase)
             {
                 TextBox_Code.ItemsSource = baseServiceBase.DevicesSN;
                 TextBox_Name.ItemsSource = baseServiceBase.DevicesSN;
             }
         }
+
+
+        private void ListViewService_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ListView listView && listView.SelectedIndex > -1)
+            {
+                if (ServiceTerminal.VisualChildren[listView.SelectedIndex] is BaseChannel baseObject)
+                {
+                    if (this.Parent is Grid grid)
+                    {
+                        grid.Children.Clear();
+                        grid.Children.Add(baseObject.GetDeviceControl());
+                    }
+
+                }
+            }
+        }
+
 
         private void ReFresh_Click(object sender, RoutedEventArgs e)
         {
