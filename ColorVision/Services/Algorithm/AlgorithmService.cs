@@ -196,6 +196,17 @@ namespace ColorVision.Services.Algorithm
             return PublishAsyncClient(msg);
         }
 
+        public MsgRecord FOV(int pid, string FileName, int templateId)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "FOV",
+                ServiceName = Config.Code,
+                Params = new Dictionary<string, object>() { { "ImgFileName", FileName }, { "nPid", pid }, { "TemplateId", templateId } }
+            };
+            return PublishAsyncClient(msg);
+        }
+
         public MsgRecord FOV(int pid, string fileName, FOVParam fOVParam)
         {  
             MsgSend msg = new MsgSend
@@ -229,18 +240,6 @@ namespace ColorVision.Services.Algorithm
             return PublishAsyncClient(msg); 
         }
 
-        //public MsgRecord GetData(int pid, int Batchid)
-        //{
-        //    MsgSend msg = new MsgSend 
-        //    { 
-        //        EventName = "GetData",
-        //        Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatch", Batchid } }
-        //    };
-        //    return PublishAsyncClient(msg);
-        //}
-
-
-
         public MsgRecord MTF(int pid, int Batchid,int modid)
         {
             MsgSend msg = new MsgSend
@@ -248,6 +247,18 @@ namespace ColorVision.Services.Algorithm
                 EventName = "MTF",
                 Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatchID", Batchid }, { "nMod", modid } }
             };
+            return PublishAsyncClient(msg);
+        }
+
+        public MsgRecord MTF(int pid, string FileName, int templateId)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "MTF",
+                ServiceName = Config.Code,
+                Params = new Dictionary<string, object>() { { "ImgFileName", FileName }, { "nPid", pid }, { "TemplateId", templateId } }
+            };
+
             return PublishAsyncClient(msg);
         }
 
@@ -299,6 +310,17 @@ namespace ColorVision.Services.Algorithm
             return PublishAsyncClient(msg);
         }
 
+        public MsgRecord SFR(int pid, string FileName, int templateId)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "SFR",
+                ServiceName = Config.Code,
+                Params = new Dictionary<string, object>() { { "ImgFileName", FileName }, { "nPid", pid }, { "TemplateId", templateId } }
+            };
+            return PublishAsyncClient(msg);
+        }
+
         public MsgRecord SFR(int pid,  string FileName,SFRParam sFRParam )
         {
             MsgSend msg = new MsgSend
@@ -326,6 +348,16 @@ namespace ColorVision.Services.Algorithm
             return PublishAsyncClient(msg);
         }
 
+        public MsgRecord Ghost(int pid, string FileName, int templateId)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "Ghost",
+                ServiceName = Config.Code,
+                Params = new Dictionary<string, object>() { { "ImgFileName", FileName }, { "nPid", pid }, { "TemplateId", templateId } }
+            };
+            return PublishAsyncClient(msg);
+        }
 
         public MsgRecord Ghost(int pid,string FileName, GhostParam ghostParam)
         {
@@ -353,6 +385,17 @@ namespace ColorVision.Services.Algorithm
             {
                 EventName = "Distortion",
                 Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatchID", Batchid } }
+            };
+            return PublishAsyncClient(msg);
+        }
+
+        public MsgRecord Distortion(int pid, string FileName, int templateId)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "Distortion",
+                ServiceName = Config.Code,
+                Params = new Dictionary<string, object>() { { "ImgFileName", FileName }, { "nPid", pid }, { "TemplateId", templateId } }
             };
             return PublishAsyncClient(msg);
         }
