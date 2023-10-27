@@ -123,10 +123,13 @@ namespace ColorVision
             }
             else
             {
-
                 MySqlControl.GetInstance().Connect();
+                MQTTControl.GetInstance().MQTTConnectChanged +=  async (s, e) =>
+                {
+                    await RCService.GetInstance().Connect();
+                };
                 MQTTControl.GetInstance().Connect();
-                RCService.GetInstance().Connect();
+
                 MainWindow MainWindow = new MainWindow();
                 ServiceManager.GetInstance().GenContorl();
                 MainWindow.Show();

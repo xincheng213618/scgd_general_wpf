@@ -123,7 +123,7 @@ namespace ColorVision
                     bool IsConnect = await RCService.GetInstance().Connect();
                     Application.Current.Dispatcher.Invoke(() => 
                     {
-                        TextBoxMsg.Text += $"{Environment.NewLine}注册中心: {(RCService.GetInstance().IsRegisted() ? "成功" : "失败")}";
+                        TextBoxMsg.Text += $"{Environment.NewLine}注册中心: {(IsConnect ? "成功" : "失败")}";
                         if (!IsConnect)
                         {
                             RCServiceConnect rcServiceConnect = new RCServiceConnect() { Owner = this };

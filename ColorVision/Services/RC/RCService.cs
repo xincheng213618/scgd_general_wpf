@@ -50,7 +50,11 @@ namespace ColorVision.RC
         private string RCPublicTopic;
         private NodeToken? Token;
         private bool TryTestRegist;
-        private ServiceNodeStatus regStatus;
+        public ServiceNodeStatus RegStatus { get=> _RegStatus; set { _RegStatus = value; NotifyPropertyChanged();NotifyPropertyChanged(nameof(IsConnect)); } }
+        private ServiceNodeStatus _RegStatus;
+
+
+        public bool IsConnect { get => RegStatus == ServiceNodeStatus.Registered; }
 
         public event RCServiceStatusChangedHandler StatusChangedEventHandler;
         public RCService(RCConfig config) : base(config)
@@ -60,13 +64,21 @@ namespace ColorVision.RC
             this.NodeName = MQTTRCServiceTypeConst.BuildNodeName(NodeType, null);
             this.DevcieName = "dev." + NodeType + ".127.0.0.1";
             LoadCfg();
-            this.regStatus = ServiceNodeStatus.Unregistered;
+            this.RegStatus = ServiceNodeStatus.Unregistered;
             ServiceName = Guid.NewGuid().ToString();
             SubscribeTopic = MQTTRCServiceTypeConst.BuildNodeTopic(NodeName);
 
             MQTTControl = MQTTControl.GetInstance();
             MQTTControl.SubscribeCache(SubscribeTopic);
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
+
+
+            int heartbeatTime = 10 * 1000;
+            System.Timers.Timer hbTimer = new System.Timers.Timer(heartbeatTime);
+            hbTimer.Elapsed += (s, e) => KeepLive(heartbeatTime);
+            hbTimer.Enabled = true;
+            GC.KeepAlive(hbTimer);
+
         }
 
         public void LoadCfg()
@@ -101,7 +113,7 @@ namespace ColorVision.RC
                             MQTTNodeServiceStartupRequest req = JsonConvert.DeserializeObject<MQTTNodeServiceStartupRequest>(Msg);
                             if (req != null)
                             {
-                                this.regStatus = ServiceNodeStatus.Registered;
+                                this.RegStatus = ServiceNodeStatus.Registered;
                                 if (!TryTestRegist)
                                 {
                                     Token = req.Data;
@@ -216,7 +228,7 @@ namespace ColorVision.RC
         {
             StatusChangedEventHandler?.Invoke(this, new RCServiceStatusChangedEvent(ServiceNodeStatus.Unregistered));
             this.Token = null;
-            this.regStatus = ServiceNodeStatus.Unregistered;
+            this.RegStatus = ServiceNodeStatus.Unregistered;
             MQTTNodeServiceRegist reg = new MQTTNodeServiceRegist(NodeName, AppId, AppSecret, SubscribeTopic, NodeType);
             PublishAsyncClient(RCRegTopic, JsonConvert.SerializeObject(reg));
             return true;
@@ -227,7 +239,7 @@ namespace ColorVision.RC
             for (int i = 0; i < 200; i++)
             {
                 await Task.Delay(1);
-                if (IsRegisted())
+                if (IsConnect)
                     return true;
             }
             return false;
@@ -267,13 +279,13 @@ namespace ColorVision.RC
             string RegTopic = MQTTRCServiceTypeConst.BuildRegTopic(cfg.RCName);
             string appId = cfg.AppId;
             string appSecret = cfg.AppSecret;
-            this.regStatus = ServiceNodeStatus.Unregistered;
+            this.RegStatus = ServiceNodeStatus.Unregistered;
             MQTTNodeServiceRegist reg = new MQTTNodeServiceRegist(NodeName, appId, appSecret, SubscribeTopic, NodeType);
             PublishAsyncClient(RegTopic, JsonConvert.SerializeObject(reg));
             for (int i = 0; i < 3; i++)
             {
                 Thread.Sleep(200);
-                if (IsRegisted()) return true;
+                if (IsConnect) return true;
             }
 
             return false;
@@ -284,7 +296,7 @@ namespace ColorVision.RC
 
         public bool TryRegist(RCServiceConfig cfg)
         {
-            ServiceNodeStatus curStatus = regStatus;
+            ServiceNodeStatus curStatus = RegStatus;
             TryTestRegist = true;
             for (int i = 0; i < 3; i++)
             {
@@ -292,13 +304,13 @@ namespace ColorVision.RC
                 Thread.Sleep(200);
             }
             TryTestRegist = false;
-            regStatus = curStatus;
+            RegStatus = curStatus;
             return false;
         }
 
         public bool IsRegisted()
         {
-            return regStatus == ServiceNodeStatus.Registered;
+            return RegStatus == ServiceNodeStatus.Registered;
         }
     }
 }

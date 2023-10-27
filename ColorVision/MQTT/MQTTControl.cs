@@ -37,7 +37,7 @@ namespace ColorVision.MQTT
             //Task.Run(() => Connect(MQTTConfig));
         }
 
-        public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; NotifyPropertyChanged(); } }
+        public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; MQTTConnectChanged?.Invoke(this, new EventArgs());  NotifyPropertyChanged(); } }
         private bool _IsConnect;
 
         public event Func<MqttApplicationMessageReceivedEventArgs, Task> ApplicationMessageReceivedAsync;
@@ -65,7 +65,6 @@ namespace ColorVision.MQTT
             MQTTClient = new MqttFactory().CreateMqttClient();
             MQTTClient.ConnectedAsync += (arg) => {
                 MQTTMsgChanged?.Invoke(new MQMsg(1, $"{DateTime.Now:HH:mm:ss.fff} MQTT连接成功"));
-                MQTTConnectChanged?.Invoke(this, new EventArgs());
                 IsConnect = true; return Task.CompletedTask; }; 
             MQTTClient.DisconnectedAsync += (arg) => {
                 MQTTMsgChanged?.Invoke(new MQMsg(-1, $"{DateTime.Now:HH:mm:ss.fff} MQTT失去连接"));

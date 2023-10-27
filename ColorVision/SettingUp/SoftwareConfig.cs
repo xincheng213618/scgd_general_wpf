@@ -42,7 +42,7 @@ namespace ColorVision
 
             RcServiceConfig = new RCServiceConfig();
             RcServiceConfigs = new ObservableCollection<RCServiceConfig>();
-            RcServiceControlLazy = new Lazy<RCServiceControl>(() => RCServiceControl.GetInstance());
+            RcServiceControlLazy = new Lazy<RCService>(() => RCService.GetInstance());
         }
 
 
@@ -108,9 +108,9 @@ namespace ColorVision
         public ObservableCollection<RCServiceConfig> RcServiceConfigs { get; set; }
 
         [JsonIgnore]
-        readonly Lazy<RCServiceControl> RcServiceControlLazy;
+        readonly Lazy<RCService> RcServiceControlLazy;
         [JsonIgnore]
-        public RCServiceControl RcServiceControl { get => RcServiceControlLazy.Value; }
+        public RCService RCService { get => RcServiceControlLazy.Value; }
     }
 
     public class UserManager
