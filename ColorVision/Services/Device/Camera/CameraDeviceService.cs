@@ -59,7 +59,7 @@ namespace ColorVision.Device.Camera
                 switch (msg.EventName)
                 {
                     case "Init":
-                        ServiceID = msg.ServiceID;
+                        //ServiceID = msg.ServiceID;
                         DeviceStatus = DeviceStatus.Init;
                         break;
                     case "UnInit":

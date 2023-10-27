@@ -54,6 +54,7 @@ namespace ColorVision.Services.Algorithm
             {
                 PoiResult poiResult = new PoiResult();
                 poiResult.Id = item.Id;
+                poiResult.SerialNumber = item.Name;
                 PoiResults.Add(poiResult);
             }
         }

@@ -50,11 +50,11 @@ namespace ColorVision.Device.Spectrum
                     MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg);
                     if (json == null)
                         return Task.CompletedTask;
-                    //if (json.Code == 0)
+                    if (json.Code == 0)
                     {
                         if (json.EventName == "Init")
                         {
-                            ServiceID = json.ServiceID;
+                            //ServiceID = json.ServiceID;
                         }
                         else if (json.EventName == "SetParam")
                         {

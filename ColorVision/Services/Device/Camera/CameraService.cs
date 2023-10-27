@@ -17,12 +17,12 @@ namespace ColorVision.Device.Camera
         public CameraService(BaseServiceConfig Config) :base(Config)
         {
             Devices = new List<CameraDeviceService>();
-            GetAllDevice();
             Connected += (s, e) =>
             {
                 GetAllDevice();
             };
-            MsgReturnReceived +=(msg) => Application.Current.Dispatcher.Invoke(()=> MQTTCamera_MsgReturnChanged(msg));
+            GetAllDevice();
+            MsgReturnReceived += (msg) => Application.Current.Dispatcher.Invoke(()=> MQTTCamera_MsgReturnChanged(msg));
         }
 
 
@@ -60,7 +60,17 @@ namespace ColorVision.Device.Camera
 
                         for (int i = 0; i < MD5IDs.Count; i++)
                         {
-                            DevicesSNMD5.Add(SnIDs[i].ToString(), MD5IDs[i].ToString());
+
+                            if (DevicesSNMD5.ContainsKey(SnIDs[i].ToString()))
+                            {
+                                DevicesSNMD5[SnIDs[i].ToString()]= MD5IDs[i].ToString();
+
+                            }
+                            else
+                            {
+                                DevicesSNMD5.Add(SnIDs[i].ToString(), MD5IDs[i].ToString());
+                            }
+
                             LicenseManager.GetInstance().AddLicense(new LicenseConfig() { Name = SnIDs[i].ToString(), Sn = MD5IDs[i].ToString(), IsCanImport = true });
                         }
                     }
