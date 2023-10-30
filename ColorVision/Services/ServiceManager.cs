@@ -1,7 +1,6 @@
 ﻿using ColorVision.Device.Camera;
 using ColorVision.Device.FileServer;
 using ColorVision.Device.PG;
-using ColorVision.Device.Sensor;
 using ColorVision.Device.SMU;
 using ColorVision.Device.Spectrum;
 using ColorVision.Flow;
@@ -11,6 +10,10 @@ using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.RC;
 using ColorVision.Services.Algorithm;
+using ColorVision.Services.Device.Calibration;
+using ColorVision.Services.Device.FilterWheel;
+using ColorVision.Services.Device.Motor;
+using ColorVision.Services.Device.Sensor;
 using ColorVision.User;
 using cvColorVision;
 using EnumsNET;
@@ -136,7 +139,7 @@ namespace ColorVision.Services
                                 {
                                     case ServiceType.Camera:
 
-                                        if (mQTTService.BaseService is CameraService cameraService)
+                                        if (mQTTService.BaseService is ServiceCamera cameraService)
                                         {
                                             DeviceCamera deviceCamera = new DeviceCamera(device, cameraService);
                                             svrObj = deviceCamera.DeviceService;
@@ -164,7 +167,7 @@ namespace ColorVision.Services
                                         break;
                                     case ServiceType.Sensor:
                                         DeviceSensor device1 = new DeviceSensor(device);
-                                        svrObj = device1.Service;
+                                        svrObj = device1.DeviceService;
                                         mQTTService.AddChild(device1);
                                         MQTTDevices.Add(device1);
                                         break;
@@ -179,6 +182,24 @@ namespace ColorVision.Services
                                         svrObj = alg.Service;
                                         mQTTService.AddChild(alg);
                                         MQTTDevices.Add(alg);
+                                        break;
+                                    case ServiceType.Calibration:
+                                        DeviceCalibration deviceCalibration = new DeviceCalibration(device);
+                                        svrObj = deviceCalibration.DeviceService;
+                                        mQTTService.AddChild(deviceCalibration);
+                                        MQTTDevices.Add(deviceCalibration);
+                                        break;
+                                    case ServiceType.FilterWheel:
+                                        DeviceFilterWheel deviceFilterWheel = new DeviceFilterWheel(device);
+                                        svrObj = deviceFilterWheel.DeviceService;
+                                        mQTTService.AddChild(deviceFilterWheel);
+                                        MQTTDevices.Add(deviceFilterWheel);
+                                        break;
+                                    case ServiceType.Motor:
+                                        DeviceMotor deviceMotor = new DeviceMotor(device);
+                                        svrObj = deviceMotor.DeviceService;
+                                        mQTTService.AddChild(deviceMotor);
+                                        MQTTDevices.Add(deviceMotor);
                                         break;
                                     default:
                                         break;

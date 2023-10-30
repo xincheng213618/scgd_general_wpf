@@ -31,11 +31,7 @@ namespace ColorVision.Services.Algorithm
 
     public class AlgorithmService : BaseDevService<AlgorithmConfig>
     {
-        public event DeviceStatusChangedHandler DeviceStatusChanged;
         public event MQTTAlgorithmHandler OnAlgorithmEvent;
-
-        public DeviceStatus DeviceStatus { get => _DeviceStatus; set { if (value == _DeviceStatus) return;  _DeviceStatus = value; Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value)); NotifyPropertyChanged(); } }
-        private DeviceStatus _DeviceStatus;
 
         public static Dictionary<string, ObservableCollection<string>> ServicesDevices { get; set; } = new Dictionary<string, ObservableCollection<string>>();
 
@@ -111,7 +107,7 @@ namespace ColorVision.Services.Algorithm
             }
             else
             {
-                MessageBox.Show("返回失败" + Environment.NewLine + msg, "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                //MessageBox.Show("返回失败" + Environment.NewLine + msg, "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 switch (msg.EventName)
                 {
                     case "GetData":

@@ -9,7 +9,7 @@ namespace ColorVision.Services.Device.Camera
     /// <summary>
     /// 相机配置
     /// </summary>
-    public class CameraConfig : BaseDeviceConfig
+    public class ConfigCamera : BaseDeviceConfig
     {
         public CameraType CameraType { get => _CameraType; set { _CameraType = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsExpThree)); } }
         private CameraType _CameraType;
@@ -74,9 +74,8 @@ namespace ColorVision.Services.Device.Camera
         public double SaturationB { get => _SaturationB; set { _SaturationB = value; NotifyPropertyChanged(); } }
         private double _SaturationB = -1;
 
-
         public ChannelConfig[] ChannelConfigs { get; set; } = new ChannelConfig[3]{
-            new ChannelConfig() {ChannelType =ImageChannelType.Gray_X }, new ChannelConfig(){ChannelType =ImageChannelType.Gray_Y }, new ChannelConfig(){ ChannelType =ImageChannelType.Gray_Z}
+            new ChannelConfig() { Port =0,ChannelType =ImageChannelType.Gray_X }, new ChannelConfig(){Port =1,ChannelType =ImageChannelType.Gray_Y }, new ChannelConfig(){ Port =2,ChannelType =ImageChannelType.Gray_Z}
         };
 
         public MotorConfig MotorConfig { get; set; } = new MotorConfig();

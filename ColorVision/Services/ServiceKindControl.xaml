@@ -15,7 +15,7 @@
             <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
         </Style>
     </UserControl.Resources>
-    <Grid Height="500">
+    <Grid >
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
@@ -38,7 +38,7 @@
             </StackPanel>
         </GroupBox>
         <Grid>
-            <ListView  x:Name="ListViewService"  BorderThickness="0">
+            <ListView  x:Name="ListViewService"  SelectionChanged="ListViewService_SelectionChanged" BorderThickness="0">
                 <ListView.Resources >
                 </ListView.Resources>
                 <ListView.ItemContainerStyle>

@@ -78,6 +78,22 @@ namespace ColorVision.Services
             }
 
         }
+
+        private void ListViewService_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ListView listView && listView.SelectedIndex > -1)
+            {
+                if (ServiceKind.VisualChildren[listView.SelectedIndex] is ServiceTerminal serviceTerminal)
+                {
+                    if (this.Parent is Grid grid)
+                    {
+                        grid.Children.Clear();
+                        grid.Children.Add(serviceTerminal.GenDeviceControl());
+                    }
+                    
+                }
+            }
+        }
     }
 }
  

@@ -24,6 +24,10 @@ namespace ColorVision.Services
 
     public class BaseDevService<T> : BaseDevService where T : BaseConfig
     {
+        public event DeviceStatusChangedHandler DeviceStatusChanged;
+        public DeviceStatus DeviceStatus { get => _DeviceStatus; set { _DeviceStatus = value; Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value)); NotifyPropertyChanged(); } }
+        private DeviceStatus _DeviceStatus;
+
         public T Config { get; set; }
 
         public event HeartbeatHandler HeartbeatEvent;

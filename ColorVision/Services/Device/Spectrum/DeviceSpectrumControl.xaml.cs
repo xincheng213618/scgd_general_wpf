@@ -45,14 +45,6 @@ namespace ColorVision.Device.Spectrum
             if (SpectrumService != null) SpectrumService.GetParam();
         }
 
-        private void Button_Click_Submit(object sender, RoutedEventArgs e)
-        {
-            MQTTEditContent.Visibility = Visibility.Collapsed;
-            MQTTShowContent.Visibility = Visibility.Visible;
-            ButtonEdit.Visibility = Visibility.Visible;
-            if (SpectrumService != null) SpectrumService.SetParam(MQTTDeviceSp.Config.TimeLimit, MQTTDeviceSp.Config.TimeFrom);
-        }
-
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
@@ -75,5 +67,12 @@ namespace ColorVision.Device.Spectrum
             GC.SuppressFinalize(this);
         }
 
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            MQTTEditContent.Visibility = Visibility.Collapsed;
+            MQTTShowContent.Visibility = Visibility.Visible;
+            ButtonEdit.Visibility = Visibility.Visible;
+            if (SpectrumService != null) SpectrumService.SetParam(MQTTDeviceSp.Config.TimeLimit, MQTTDeviceSp.Config.TimeFrom);
+        }
     }
 }

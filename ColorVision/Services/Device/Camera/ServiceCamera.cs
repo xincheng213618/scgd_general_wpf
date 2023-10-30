@@ -12,11 +12,11 @@ using System.Windows;
 
 namespace ColorVision.Device.Camera
 {
-    public class CameraService : BaseService<BaseServiceConfig>
+    public class ServiceCamera : BaseService<BaseServiceConfig>
     {
-        public CameraService(BaseServiceConfig Config) :base(Config)
+        public ServiceCamera(BaseServiceConfig Config) :base(Config)
         {
-            Devices = new List<CameraDeviceService>();
+            Devices = new List<DeviceServiceCamera>();
             Connected += (s, e) =>
             {
                 GetAllDevice();
