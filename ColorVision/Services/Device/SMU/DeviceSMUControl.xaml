@@ -69,7 +69,7 @@
                     <Grid  x:Name="MQTTEditContent" Visibility="Collapsed">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="50"/>
+                            <ColumnDefinition Width="60"/>
                         </Grid.ColumnDefinitions>
                         <Border Background ="{DynamicResource GlobalBackground}"  CornerRadius="5" Margin="0,0,5,0">
                             <StackPanel Margin="5" >
@@ -100,8 +100,10 @@
                                 </GroupBox>
                             </StackPanel>
                         </Border>
-                        <Button Grid.Column="1"  Content="{x:Static resx:Resource.Submit}" Click="Button_Click_Submit" Command="{Binding SaveCommand}" />
-                    </Grid>
+                        <Border Grid.Column="1" Margin="5">
+                            <Button  Content="{x:Static resx:Resource.Submit}" Click="Button_Click" Command="{Binding SaveCommand}" />
+                        </Border>
+                    </Grid>                    
                 </Grid>
             </Border>
         </Grid>

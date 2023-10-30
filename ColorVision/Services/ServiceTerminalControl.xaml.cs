@@ -101,9 +101,10 @@ namespace ColorVision.Services
                             Name = TextBox_Name.Text,
                             CameraType = CameraType.LV_Q,
                             TakeImageMode = TakeImageMode.Measure_Normal,
-                            ImageBpp = ImageBpp.bpp8
-
+                            ImageBpp = ImageBpp.bpp8,
+                            Channel = ImageChannel.One,
                         };
+
                         sysResourceModel = saveConfigInfo(cameraConfig1, sysResource);
                         if (sysResourceModel != null)
                         {

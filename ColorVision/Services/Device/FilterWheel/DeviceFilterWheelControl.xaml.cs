@@ -31,18 +31,15 @@ namespace ColorVision.Services.Device.FilterWheel
             MQTTEditContent.Visibility = Visibility.Visible;
         }
 
-        private void Button_Click_Submit(object sender, RoutedEventArgs e)
-        {
-            MQTTEditContent.Visibility = Visibility.Collapsed;
-            MQTTShowContent.Visibility = Visibility.Visible;
-        }
-
-
         public void Dispose()
         {
             GC.SuppressFinalize(this);
         }
 
-
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            MQTTEditContent.Visibility = Visibility.Collapsed;
+            MQTTShowContent.Visibility = Visibility.Visible;
+        }
     }
 }

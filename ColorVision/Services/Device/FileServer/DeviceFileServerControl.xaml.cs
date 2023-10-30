@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ColorVision.Device.Spectrum;
+using System;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -23,14 +24,19 @@ namespace ColorVision.Device.FileServer
 
         private void Button_Click_Save(object sender, RoutedEventArgs e)
         {
-            MQTTEditContent.Visibility = Visibility.Collapsed;
-            MQTTShowContent.Visibility = Visibility.Visible;
+
         }
 
         private void ButtonEdit_Click(object sender, RoutedEventArgs e)
         {
             MQTTShowContent.Visibility = Visibility.Collapsed;
             MQTTEditContent.Visibility = Visibility.Visible;
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            MQTTEditContent.Visibility = Visibility.Collapsed;
+            MQTTShowContent.Visibility = Visibility.Visible;
         }
     }
 }
