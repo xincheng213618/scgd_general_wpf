@@ -10,14 +10,7 @@
     {
         public int Id { get; set; }
 
-        public int GetPK()
-        {
-            return Id;
-        }
-
-        public void SetPK(int id)
-        {
-            Id = id;
-        }
+        public int GetPK() => Id;
+        public void SetPK(int id) => Id = id;
     }
 }

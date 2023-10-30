@@ -345,6 +345,22 @@ namespace ColorVision.MySql
             return d_info;
         }
 
+        public List<T> GetAll()
+        {
+            List<T> list = new List<T>();
+            string sql = $"select * from {GetTableName()} where 1=1";
+            DataTable d_info = GetData(sql);
+            foreach (var item in d_info.AsEnumerable())
+            {
+                T? model = GetModel(item);
+                if (model != null)
+                {
+                    list.Add(model);
+                }
+            }
+            return list;
+        }
+
         public List<T> GetAll(int tenantId)
         {
             List<T> list = new List<T>();
@@ -389,6 +405,8 @@ namespace ColorVision.MySql
             }
             return list;
         }
+
+
 
         public List<T> GetAllByPid(int pid)
         {

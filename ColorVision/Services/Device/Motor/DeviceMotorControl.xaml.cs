@@ -31,7 +31,6 @@ namespace ColorVision.Services.Device.Motor
             MQTTEditContent.Visibility = Visibility.Visible;
         }
 
-
         public void Dispose()
         {
             GC.SuppressFinalize(this);

@@ -5,14 +5,14 @@ namespace ColorVision.MySql.DAO
     public class AlgorithmFovResultModel : PKModel
     {
         public int BatchId { get; set; }
-
         public int ImgId { get; set; }
         public string? Value { get; set; }
-
         public float Coordinates1 { get; set; }
         public float Coordinates2 { get; set; }
         public float Coordinates3 { get; set; }
         public float Coordinates4 { get; set; }
+
+        public double FovDegrees { get; set; }
 
         public bool Result { get; set; }    
     }
@@ -33,6 +33,7 @@ namespace ColorVision.MySql.DAO
             dInfo.Columns.Add("coordinates2", typeof(float));
             dInfo.Columns.Add("coordinates3", typeof(float));
             dInfo.Columns.Add("coordinates4", typeof(float));
+            dInfo.Columns.Add("fovDegrees", typeof(double));
             dInfo.Columns.Add("ret", typeof(bool));
             return dInfo;
         }
@@ -43,14 +44,15 @@ namespace ColorVision.MySql.DAO
             AlgorithmFovResultModel model = new AlgorithmFovResultModel
             {
                 Id = item.Field<int>("id"),
-                BatchId = item.Field<int>("batch_id"),
-                ImgId = item.Field<int>("img_id"),
-                Value = item.Field<string>("value"),
-                Coordinates1 = item.Field<float>("coordinates1"),
-                Coordinates2 = item.Field<float>("coordinates2"),
-                Coordinates3 = item.Field<float>("coordinates3"),
-                Coordinates4 = item.Field<float>("coordinates4"),
-                Result = item.Field<bool>("ret"),
+                BatchId = item.Field<int?>("batch_id") ?? -1,
+                ImgId = item.Field<int?>("img_id") ?? -1,
+                Value = item.Field<string?>("value"),
+                Coordinates1 = item.Field<float?>("coordinates1") ?? 0,
+                Coordinates2 = item.Field<float?>("coordinates2") ?? 0,
+                Coordinates3 = item.Field<float?>("coordinates3") ?? 0,
+                Coordinates4 = item.Field<float?>("coordinates4") ?? 0,
+                FovDegrees = item.Field<double?>("fovDegrees") ?? 0,
+                Result = item.Field<bool?>("ret")??false,
             };
             return model;
         }
@@ -67,6 +69,7 @@ namespace ColorVision.MySql.DAO
                 row["coordinates2"] = item.Coordinates2;
                 row["coordinates3"] = item.Coordinates3;
                 row["coordinates4"] = item.Coordinates4;
+                row["fovDegrees"] = item.FovDegrees;
                 row["ret"] = item.Result;
             }
             return row;

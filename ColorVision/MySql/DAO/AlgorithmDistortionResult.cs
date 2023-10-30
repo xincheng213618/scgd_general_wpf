@@ -22,11 +22,11 @@ namespace ColorVision.MySql.DAO
         public bool Result { get; set; }    
     }
 
-
     public class AlgorithmDistortionResult : BaseDaoMaster<AlgorithmDistortionResultModel>
     {
         public AlgorithmDistortionResult() : base(string.Empty, "t_scgd_algorithm_distortion_result", "id", false)
         {
+
         }
         public override DataTable CreateColumns(DataTable dInfo)
         {

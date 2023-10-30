@@ -7,14 +7,24 @@
         xmlns:draw ="clr-namespace:ColorVision.Draw;assembly=ColorVision.Util"
         xmlns:colorvison ="clr-namespace:ColorVision"
         mc:Ignorable="d"
-        Title="数据查看窗口" Height="1080" Width="1920" Initialized="Window_Initialized">
+        Title="数据查看窗口" Height="720" Width="1280" Initialized="Window_Initialized">
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition x:Name="ListCol1" Width="300"/>
-            <ColumnDefinition x:Name="ListCol2" Width="*"/>
-        </Grid.ColumnDefinitions>
-        <ListView  x:Name="ListView1" Grid.Column="0"/>
-        <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Black"/>
-        <colorvison:ImageView Grid.Column="1" x:Name="imageview" />
+        <Grid Grid.Column="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <UniformGrid Grid.Row="0">
+                <Button Content="POI" Click="Button_Click"  Tag="POI"/>
+                <Button Content="MTF" Click="Button_Click"  Tag="MTF"/>
+                <Button Content="SFR" Click="Button_Click"  Tag="SFR"/>
+                <Button Content="Fov" Click="Button_Click"  Tag="Fov"/>
+                <Button Content="Ghost" Click="Button_Click"  Tag="Ghost"/>
+                <Button Content="Distortion" Click="Button_Click"  Tag="Distortion"/>
+            </UniformGrid>
+
+            <ListView  x:Name="ListView1" Grid.Row="1"/>
+        </Grid>
+
     </Grid>
 </Window>
