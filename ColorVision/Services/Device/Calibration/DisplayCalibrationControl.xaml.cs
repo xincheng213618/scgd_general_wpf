@@ -1,4 +1,6 @@
-﻿using ColorVision.Templates;
+﻿using ColorVision.Device;
+using ColorVision.Services.Msg;
+using ColorVision.Templates;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -28,6 +30,23 @@ namespace ColorVision.Services.Device.Calibration
         {
             this.DataContext = Device;
 
+
+            ComboxCalibrationTemplate.ItemsSource = TemplateControl.GetInstance().CalibrationParams;
+            ComboxCalibrationTemplate.SelectedIndex = 0;
+
+        }
+
+        private void Calibration_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button)
+            {
+                if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
+                {
+                    MsgRecord msgRecord = DeviceService.Calibration(param);
+                    Helpers.SendCommand(button, msgRecord);
+
+                }
+            }
         }
     }
 }
