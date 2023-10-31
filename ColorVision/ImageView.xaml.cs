@@ -606,16 +606,6 @@ namespace ColorVision
             CVCIEFileInfo fileInfo = new CVCIEFileInfo();
             int ret = CVFileUtils.ReadCVCIE(fileName, ref fileInfo);
         }
-        private void convert()
-        {
-            string srcPath = "F:\\img\\XYZ\\";
-            string cieFileName = "F:\\img\\cvcie\\20230322142640_1.cvcie", xFileName = srcPath + "20230322142640_1_X.tif", yFileName = srcPath + "20230322142640_1_Y.tif", zFileName = srcPath + "20230322142640_1_Z.tif";
-            CVCIEFileInfo fileInfo = new CVCIEFileInfo();
-            fileInfo.srcFileName = srcPath + "20230322142640_1_src.tif";
-            fileInfo.exp = new float[3] { 100, 100, 100 };
-            fileInfo.gain = 1;
-            CVFileUtils.ConvertXYZToCVCIE(cieFileName, xFileName, yFileName, zFileName, ref fileInfo);
-        }
 
         public void OpenImage(byte[] data)
         {
@@ -700,7 +690,6 @@ namespace ColorVision
             Window window = new Window() {  Owner =Window.GetWindow(this),WindowStartupLocation = WindowStartupLocation.CenterOwner};
             window.Content = pseudoColor;
             window.Show();
-
         }
 
         public void AddPOIPoint(ObservableCollection<PoiResultData> poiResultDatas)
@@ -720,8 +709,8 @@ namespace ColorVision
                             Circle.Attribute.Radius = item.Point.Radius;
                             Circle.Attribute.Brush = Brushes.Transparent;
                             Circle.Attribute.Pen = new Pen(Brushes.Red, item.Point.Width / 30.0);
-                            //Circle.Attribute.ID = item.ID;
-                            //Circle.Attribute.Name = item.Name;
+                            Circle.Attribute.ID = item.Point.Id;
+                            Circle.Attribute.Text = item.Point.Name;
                             Circle.Render();
                             ImageShow.AddVisual(Circle);
                             break;
@@ -730,8 +719,8 @@ namespace ColorVision
                             Rectangle.Attribute.Rect = new Rect(item.Point.PixelX, item.Point.PixelY, item.Point.Width, item.Point.Height);
                             Rectangle.Attribute.Brush = Brushes.Transparent;
                             Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.Point.Width / 30.0);
-                            //Rectangle.Attribute.ID = item.ID;
-                            //Rectangle.Attribute.Name = item.Name;
+                            Rectangle.Attribute.ID = item.Point.Id;
+                            Rectangle.Attribute.Text = item.Point.Name;
                             Rectangle.Render();
                             ImageShow.AddVisual(Rectangle);
                             break;
