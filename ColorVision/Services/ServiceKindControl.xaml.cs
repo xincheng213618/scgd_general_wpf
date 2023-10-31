@@ -48,7 +48,7 @@ namespace ColorVision.Services
 
         private void Button_New_Click(object sender, RoutedEventArgs e)
         {
-            if (!MQTT.Util.IsInvalidPath(TextBox_Name.Text, "服务名称") || !MQTT.Util.IsInvalidPath(TextBox_Code.Text, "服务标识"))
+            if (!Util.IsInvalidPath(TextBox_Name.Text, "服务名称") || !Util.IsInvalidPath(TextBox_Code.Text, "服务标识"))
                 return;
 
             if (TextBox_Type.SelectedItem is ServiceKind serviceKind)

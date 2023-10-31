@@ -14,16 +14,16 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <UniformGrid Grid.Row="0">
+            <UniformGrid Grid.Row="0" Rows="1">
                 <Button Content="POI" Click="Button_Click"  Tag="POI"/>
                 <Button Content="MTF" Click="Button_Click"  Tag="MTF"/>
                 <Button Content="SFR" Click="Button_Click"  Tag="SFR"/>
                 <Button Content="Fov" Click="Button_Click"  Tag="Fov"/>
-                <Button Content="Ghost" Click="Button_Click"  Tag="Ghost"/>
-                <Button Content="Distortion" Click="Button_Click"  Tag="Distortion"/>
+                <Button Content="鬼影" Click="Button_Click"  Tag="Ghost"/>
+                <Button Content="畸变" Click="Button_Click"  Tag="Distortion"/>
             </UniformGrid>
 
-            <ListView  x:Name="ListView1" Grid.Row="1"/>
+            <ListView  x:Name="ListView1"  ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" Grid.Row="1"/>
         </Grid>
 
     </Grid>

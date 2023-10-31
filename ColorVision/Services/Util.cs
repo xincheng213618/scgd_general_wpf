@@ -1,6 +1,7 @@
-﻿using System.Windows;
+﻿using Newtonsoft.Json;
+using System.Windows;
 
-namespace ColorVision.MQTT
+namespace ColorVision.Services
 {
     internal static class Util
     {
@@ -23,5 +24,20 @@ namespace ColorVision.MQTT
             }
             return true;
         }
+
+        public static T? DeserializeObject<T>(string? str)
+        {
+
+            try
+            {
+                return JsonConvert.DeserializeObject<T>(str ?? string.Empty);
+            }
+            catch
+            {
+                return default;
+            };
+        }
+
+
     }
 }

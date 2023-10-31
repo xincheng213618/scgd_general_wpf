@@ -291,7 +291,7 @@ namespace ColorVision.Services
             }
         }
 
-        public BatchResultMasterModel GetResultBatch(string sn)
+        public BatchResultMasterModel BatchSave(string sn)
         {
             BatchResultMasterModel model = new BatchResultMasterModel(sn, UserConfig.TenantId);
             resultService.BatchSave(model);

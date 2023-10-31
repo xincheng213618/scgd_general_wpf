@@ -7,7 +7,7 @@ namespace ColorVision.MySql.DAO
         public int BatchId { get; set; }
 
         public int ImgId { get; set; }
-        public string? Value { get; set; }
+        public double? Value { get; set; }
 
         public bool Result { get; set; }    
     }
@@ -23,7 +23,7 @@ namespace ColorVision.MySql.DAO
             dInfo.Columns.Add("id", typeof(int));
             dInfo.Columns.Add("batch_id", typeof(int));
             dInfo.Columns.Add("img_id", typeof(int));
-            dInfo.Columns.Add("value", typeof(string));
+            dInfo.Columns.Add("value", typeof(int));
             dInfo.Columns.Add("ret", typeof(bool));
             return dInfo;
         }
@@ -36,7 +36,7 @@ namespace ColorVision.MySql.DAO
                 Id = item.Field<int>("id"),
                 BatchId = item.Field<int>("batch_id"),
                 ImgId = item.Field<int>("img_id"),
-                Value = item.Field<string>("value"),
+                Value = item.Field<double>("value"),
                 Result = item.Field<bool>("ret"),
             };
             return model;
