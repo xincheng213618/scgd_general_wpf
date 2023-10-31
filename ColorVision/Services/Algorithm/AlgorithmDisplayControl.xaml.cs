@@ -257,13 +257,8 @@ namespace ColorVision.Services.Algorithm
                 MessageBox.Show("请先选择MTF模板", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 return;
             }
-            if (ComboxPoiTemplate.SelectedIndex == -1)
-            {
-                MessageBox.Show("请先选择关注点模板", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                return;
-            }
 
-            var ss = Service.MTF(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, ImageFile.Text, TemplateControl.GetInstance().MTFParams[ComboxMTFTemplate.SelectedIndex].Value);
+            var ss = Service.MTF(ImageFile.Text, TemplateControl.GetInstance().MTFParams[ComboxMTFTemplate.SelectedIndex].Value);
             Helpers.SendCommand(ss,"MTF");
         }
 
@@ -292,15 +287,10 @@ namespace ColorVision.Services.Algorithm
                 MessageBox.Show("请先选择Ghost模板", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 return;
             }
-            if (ComboxPoiTemplate.SelectedIndex == -1)
-            {
-                MessageBox.Show("请先选择关注点模板", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                return;
-            }
 
 
 
-            var msg = Service.Ghost(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, ImageFile.Text, TemplateControl.GetInstance().GhostParams[ComboxGhostTemplate.SelectedIndex].Value);
+            var msg = Service.Ghost(ImageFile.Text, TemplateControl.GetInstance().GhostParams[ComboxGhostTemplate.SelectedIndex].Value);
             Helpers.SendCommand(msg, "Ghost");
         }
 

@@ -263,7 +263,7 @@ namespace ColorVision.Device.Camera
         public MsgRecord GetData(double expTime, double gain, CalibrationType eCalibType = CalibrationType.Empty_Num)
         {
             string SerialNumber  = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            var model = ServiceManager.GetInstance().GetResultBatch(SerialNumber);
+            var model = ServiceManager.GetInstance().BatchSave(SerialNumber);
 
             MsgSend msg;
             if (Config.IsExpThree)

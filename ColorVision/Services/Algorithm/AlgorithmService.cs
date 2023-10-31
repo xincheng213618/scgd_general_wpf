@@ -172,44 +172,12 @@ namespace ColorVision.Services.Algorithm
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord GetData(int pid, int Batchid,string fileName,string fileName1,string fileName2)
-        {
-            MsgSend msg = new MsgSend
-            {
-                EventName = "GetData",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatchID", Batchid } }
-            };
-            msg.Params.Add.Add("file_data", ToJsonFileList(ImageChannelType.Gray_Y,fileName, fileName1, fileName2));
-            return PublishAsyncClient(msg);
-        }
-
-        public MsgRecord FOV(int pid, int Batchid)
-        {
-            MsgSend msg = new MsgSend
-            {
-                EventName = "FOV",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatchID", Batchid } }
-            };
-            return PublishAsyncClient(msg);
-        }
-
-        public MsgRecord FOV(int pid, string FileName, int templateId)
-        {
-            MsgSend msg = new MsgSend
-            {
-                EventName = "FOV",
-                ServiceName = Config.Code,
-                Params = new Dictionary<string, object>() { { "ImgFileName", FileName }, { "nPid", pid }, { "TemplateId", templateId } }
-            };
-            return PublishAsyncClient(msg);
-        }
-
-        public MsgRecord FOV(int pid, string fileName, FOVParam fOVParam)
+        public MsgRecord FOV( string fileName, FOVParam fOVParam)
         {  
             MsgSend msg = new MsgSend
             {
                 EventName = "FOV",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatchID", -1 } }
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nBatchID", -1 } }
             };
 
             msg.Params.Add("radio", fOVParam.Radio);
@@ -220,9 +188,6 @@ namespace ColorVision.Services.Algorithm
             msg.Params.Add("file_data", ToJsonFileList(ImageChannelType.Gray_Y, fileName));
             return PublishAsyncClient(msg);
         }
-
-
-
 
         public MsgRecord GetAllSnID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });
 
@@ -237,34 +202,17 @@ namespace ColorVision.Services.Algorithm
             return PublishAsyncClient(msg); 
         }
 
-        public MsgRecord MTF(int pid, int Batchid,int modid)
+
+        public MsgRecord MTF(string FileName,MTFParam mTFParam)
         {
+            string SerialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            var model = ServiceManager.GetInstance().BatchSave(SerialNumber);
+
             MsgSend msg = new MsgSend
             {
                 EventName = "MTF",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatchID", Batchid }, { "nMod", modid } }
-            };
-            return PublishAsyncClient(msg);
-        }
-
-        public MsgRecord MTF(int pid, string FileName, int templateId)
-        {
-            MsgSend msg = new MsgSend
-            {
-                EventName = "MTF",
-                ServiceName = Config.Code,
-                Params = new Dictionary<string, object>() { { "ImgFileName", FileName }, { "nPid", pid }, { "TemplateId", templateId } }
-            };
-
-            return PublishAsyncClient(msg);
-        }
-
-        public MsgRecord MTF(int pid, string FileName,MTFParam mTFParam)
-        {
-            MsgSend msg = new MsgSend
-            {
-                EventName = "MTF",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatchID", -1 }, }
+                SerialNumber = SerialNumber,
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nBatchID", -1 }, }
             };
 
             msg.Params.Add("eEvaFunc", (int)mTFParam.eEvaFunc);
@@ -295,36 +243,19 @@ namespace ColorVision.Services.Algorithm
             return JsonConvert.SerializeObject(file_data);
         }
 
-
-
-        public MsgRecord SFR(int pid, int Batchid, int modid)
+        public MsgRecord SFR(int pid, string FileName,SFRParam sFRParam )
         {
-            MsgSend msg = new MsgSend
-            {
-                EventName = "SFR",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatchID", Batchid }, { "nMod", modid } }
-            };
-            return PublishAsyncClient(msg);
-        }
+            string SerialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            var model = ServiceManager.GetInstance().BatchSave(SerialNumber);
 
-        public MsgRecord SFR(int pid, string FileName, int templateId)
-        {
             MsgSend msg = new MsgSend
             {
                 EventName = "SFR",
                 ServiceName = Config.Code,
-                Params = new Dictionary<string, object>() { { "ImgFileName", FileName }, { "nPid", pid }, { "TemplateId", templateId } }
+                SerialNumber = SerialNumber,
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }}
             };
-            return PublishAsyncClient(msg);
-        }
 
-        public MsgRecord SFR(int pid,  string FileName,SFRParam sFRParam )
-        {
-            MsgSend msg = new MsgSend
-            {
-                EventName = "SFR",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatchID", -1 } }
-            };
             msg.Params.Add("x", sFRParam.ROI.x);
             msg.Params.Add("y", sFRParam.ROI.y);
             msg.Params.Add("cx", sFRParam.ROI.cx);
@@ -335,33 +266,17 @@ namespace ColorVision.Services.Algorithm
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord Ghost(int pid, int Batchid, int modid)
-        {
-            MsgSend msg = new MsgSend
-            {
-                EventName = "Ghost",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatchID", Batchid }, { "nMod", modid } }
-            };
-            return PublishAsyncClient(msg);
-        }
 
-        public MsgRecord Ghost(int pid, string FileName, int templateId)
+        public MsgRecord Ghost(string FileName, GhostParam ghostParam)
         {
+            string SerialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            var model = ServiceManager.GetInstance().BatchSave(SerialNumber);
             MsgSend msg = new MsgSend
             {
                 EventName = "Ghost",
                 ServiceName = Config.Code,
-                Params = new Dictionary<string, object>() { { "ImgFileName", FileName }, { "nPid", pid }, { "TemplateId", templateId } }
-            };
-            return PublishAsyncClient(msg);
-        }
-
-        public MsgRecord Ghost(int pid,string FileName, GhostParam ghostParam)
-        {
-            MsgSend msg = new MsgSend
-            {
-                EventName = "Ghost",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatchID", -1 } }
+                SerialNumber = SerialNumber,
+                Params = new Dictionary<string, object>() { { "SnID", SnID },{ "nBatchID", -1 } }
             };
             msg.Params.Add("cols", ghostParam.Ghost_cols);
             msg.Params.Add("rows", ghostParam.Ghost_rows);
@@ -374,35 +289,12 @@ namespace ColorVision.Services.Algorithm
             return PublishAsyncClient(msg);
         }
 
-
-
-        public MsgRecord Distortion(int pid, int Batchid)
+        public MsgRecord Distortion(string FileName, DistortionParam distortionParam)
         {
             MsgSend msg = new MsgSend
             {
                 EventName = "Distortion",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatchID", Batchid } }
-            };
-            return PublishAsyncClient(msg);
-        }
-
-        public MsgRecord Distortion(int pid, string FileName, int templateId)
-        {
-            MsgSend msg = new MsgSend
-            {
-                EventName = "Distortion",
-                ServiceName = Config.Code,
-                Params = new Dictionary<string, object>() { { "ImgFileName", FileName }, { "nPid", pid }, { "TemplateId", templateId } }
-            };
-            return PublishAsyncClient(msg);
-        }
-
-        public MsgRecord Distortion(int pid, string FileName, DistortionParam distortionParam)
-        {
-            MsgSend msg = new MsgSend
-            {
-                EventName = "Distortion",
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nPid", pid }, { "nBatchID", -1 } }
+                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nBatchID", -1 } }
             };
 
             msg.Params.Add("filterByColor", distortionParam.filterByColor);

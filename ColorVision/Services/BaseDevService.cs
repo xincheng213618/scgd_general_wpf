@@ -197,7 +197,6 @@ namespace ColorVision.Services
             Guid guid = Guid.NewGuid();
             msg.MsgID = guid.ToString();
             msg.SnID = SnID;
-            msg.SerialNumber = SerialNumber;
             msg.Version = "1.0";
             msg.Token = ServiceToken;
             ///这里是为了兼容只前的写法，后面会修改掉

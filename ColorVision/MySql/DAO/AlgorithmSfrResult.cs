@@ -11,7 +11,7 @@ namespace ColorVision.MySql.DAO
 
         public string? Pdfrequency { get; set; }
 
-        public string? pdomainSamplingData { get; set; }
+        public string? PdomainSamplingData { get; set; }
 
         public bool Result { get; set; }    
     }
@@ -44,7 +44,7 @@ namespace ColorVision.MySql.DAO
                 ImgId = item.Field<int>("img_id"),
                 Value = item.Field<string>("value"),
                 Pdfrequency = item.Field<string>("pdfrequency"),
-                pdomainSamplingData = item.Field<string>("pdomainSamplingData"),
+                PdomainSamplingData = item.Field<string>("pdomainSamplingData"),
                 Result = item.Field<bool>("ret"),
             };
             return model;
@@ -59,7 +59,7 @@ namespace ColorVision.MySql.DAO
                 row["img_id"] = item.ImgId;
                 row["value"] = item.Value;
                 row["pdfrequency"] = item.Pdfrequency;
-                row["pdomainSamplingData"] = item.pdomainSamplingData;
+                row["pdomainSamplingData"] = item.PdomainSamplingData;
                 row["ret"] = item.Result;
             }
             return row;
