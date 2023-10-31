@@ -90,7 +90,7 @@ namespace ColorVision.SettingUp
                     MemoryThis = curRAM.ToString("f1") + "MB" + "/" + RAMAL.ToString("f1") + "GB";
                     ProcessorTotal = PCCPU.NextValue().ToString("f1") + "%";
                 }
-                catch(Exception ex)
+                catch
                 {
 
                 }

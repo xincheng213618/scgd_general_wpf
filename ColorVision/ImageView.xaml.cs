@@ -595,7 +595,7 @@ namespace ColorVision
 
         public void OpenCVCIE(string fileName)
         {
-            //fileInfo.gain = 1;
+            //fileInfo.Gain = 1;
             //CVFileUtils.WriteCVCIE(fileName, fileInfo);
             fileName = "F:\\img\\cvcie\\20230322142640_1.cvcie";
             read(fileName);
@@ -720,7 +720,7 @@ namespace ColorVision
                             Rectangle.Attribute.Brush = Brushes.Transparent;
                             Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.Point.Width / 30.0);
                             Rectangle.Attribute.ID = item.Point.Id;
-                            Rectangle.Attribute.Text = item.Point.Name;
+                            Rectangle.Attribute.Name = item.Point.Name;
                             Rectangle.Render();
                             ImageShow.AddVisual(Rectangle);
                             break;

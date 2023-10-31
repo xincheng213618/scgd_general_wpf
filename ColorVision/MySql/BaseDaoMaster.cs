@@ -255,7 +255,7 @@ namespace ColorVision.MySql
                     //check for problems
                     //if (result.Warnings.Count != 0)
                     //{
-                    //    /* handle potential data loss warnings */
+                    //    /* handle potential Data loss warnings */
                     //}
                 }
                 catch (Exception ex)

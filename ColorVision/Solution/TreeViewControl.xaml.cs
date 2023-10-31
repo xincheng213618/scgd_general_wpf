@@ -39,7 +39,7 @@ namespace ColorVision.Solution
             {
                 var sarr = e.Data.GetData(DataFormats.FileDrop);
                 var a = sarr as string[];
-                var fn = a.First();
+                var fn = a?.First();
 
                 if (File.Exists(fn))
                 {
@@ -86,15 +86,10 @@ namespace ColorVision.Solution
             this.AllowDrop = true;
             this.Drop += TreeViewControl_Drop;
 
-            Task.Run(Task_Loaded);
-
             SolutionTreeView.ContextMenu = new ContextMenu();
             SolutionTreeView.ContextMenuOpening += SolutionTreeView_ContextMenuOpening;
         }
 
-
-        private async void Task_Loaded() {
-        }
 
         private void SolutionTreeView_ContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
@@ -172,7 +167,7 @@ namespace ColorVision.Solution
             }
         }
 
-        private void Window_Closed(object sender, EventArgs e)
+        private void Window_Closed(object? sender, EventArgs e)
         {
 
         }
@@ -248,6 +243,7 @@ namespace ColorVision.Solution
 
         private void OpenSolution()
         {
+
         }
 
 

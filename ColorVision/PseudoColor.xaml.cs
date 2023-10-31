@@ -62,7 +62,7 @@ namespace ColorVision
             double maxLua = 0;
             minLua = RangeSlider1.ValueStart;
             maxLua = RangeSlider1.ValueEnd;
-            //if (!double.TryParse(this.tb_Dnlimit.Text, out minLua))
+            //if (!double.TryParse(this.tb_Dnlimit.Name, out minLua))
             //{
             //    MessageBox.Show("错误的下限格式，请输入数值");
             //    return;
@@ -72,7 +72,7 @@ namespace ColorVision
             //    MessageBox.Show("指定下限不能低于图像的下限:" + mindata.ToString() + "，请重新输入数值");
             //    return;
             //}
-            //if (!double.TryParse(this.tb_Uplimit.Text, out maxLua))
+            //if (!double.TryParse(this.tb_Uplimit.Name, out maxLua))
             //{
             //    MessageBox.Show("错误的上限格式，请输入数值");
             //    return;
@@ -82,18 +82,18 @@ namespace ColorVision
             //    MessageBox.Show("指定上限不能高于图像的上限:" + maxdata.ToString() + "，请重新输入数值");
             //    return;
             //}
-            //if (double.Parse(this.tb_Dnlimit.Text) >= double.Parse(this.tb_Uplimit.Text))
+            //if (double.Parse(this.tb_Dnlimit.Name) >= double.Parse(this.tb_Uplimit.Name))
             //{
             //    MessageBox.Show("下限不能>=上限，请重新输入");
             //    return;
             //}
-            //if (Int32.Parse(this.tb_Dnlimit.Text)+ (100- Int32.Parse(this.tb_Uplimit.Text)) >=100)
+            //if (Int32.Parse(this.tb_Dnlimit.Name)+ (100- Int32.Parse(this.tb_Uplimit.Name)) >=100)
             //{
             //    MessageBox.Show("输入的上限与下限之和>=100，请重新输入");
             //    return;
             //}
             colorMap.buildCustomMap(Int32.Parse(this.textBox.Text), minLua / min_max, maxLua / min_max);
-            //colormapNum = Int32.Parse(this.textBox_level.Text);
+            //colormapNum = Int32.Parse(this.textBox_level.Name);
             init();
             colorMap.reMap();
             //trackBar1.Value = (int)(maxLua / min_max);

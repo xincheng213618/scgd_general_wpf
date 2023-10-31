@@ -12,6 +12,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 
 [assembly: XmlConfigurator(ConfigFile = "log4net.config", Watch = true)]
@@ -128,8 +129,7 @@ namespace ColorVision
                 {
                     await RCService.GetInstance().Connect();
                 };
-                MQTTControl.GetInstance().Connect();
-
+                Task.Run(() => { _= RCService.GetInstance().Connect(); });
                 MainWindow MainWindow = new MainWindow();
                 ServiceManager.GetInstance().GenContorl();
                 MainWindow.Show();

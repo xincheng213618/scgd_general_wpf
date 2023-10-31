@@ -100,9 +100,9 @@ namespace ColorVision.Services.Algorithm
                     ShowResultCIEY(serialNumber, response.POITemplateName, response.POIImgFileName, response.HasRecord, poiDbResults, rawMsg);
                     break;
             }
-            //if (!CB_CIEImageFiles.Text.Equals(response.POIImgFileName, StringComparison.Ordinal))
+            //if (!CB_CIEImageFiles.Name.Equals(response.POIImgFileName, StringComparison.Ordinal))
             //{
-            //    CB_CIEImageFiles.Text = response.POIImgFileName;
+            //    CB_CIEImageFiles.Name = response.POIImgFileName;
             //    doOpen(response.POIImgFileName);
             //}
             handler?.Close();
@@ -234,12 +234,16 @@ namespace ColorVision.Services.Algorithm
                     return;
                 }
             }
-            Service.GetData(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, imgFileName, ComboxPoiTemplate.Text,sn);
-            handler = PendingBox.Show(Application.Current.MainWindow, "", "计算关注点", true);
-            handler.Cancelling += delegate
+            if (sn != null)
             {
-                handler?.Close();
-            };
+                Service.GetData(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, imgFileName, ComboxPoiTemplate.Text, sn);
+                handler = PendingBox.Show(Application.Current.MainWindow, "", "计算关注点", true);
+                handler.Cancelling += delegate
+                {
+                    handler?.Close();
+                };
+            }
+
         }
 
         private void Algorithm_INI(object sender, RoutedEventArgs e)
