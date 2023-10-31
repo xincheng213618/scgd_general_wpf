@@ -282,12 +282,7 @@ namespace ColorVision.Services.Algorithm
                 MessageBox.Show("请先选择Distortion模板", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 return;
             }
-            if (ComboxPoiTemplate.SelectedIndex == -1)
-            {
-                MessageBox.Show("请先选择关注点模板", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                return;
-            }
-            var msg = Service.Distortion(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, ImageFile.Text, TemplateControl.GetInstance().DistortionParams[ComboxDistortionTemplate.SelectedIndex].Value);
+            var msg = Service.Distortion(ImageFile.Text, TemplateControl.GetInstance().DistortionParams[ComboxDistortionTemplate.SelectedIndex].Value);
             Helpers.SendCommand(msg, "Distortion");
         }
 
@@ -299,13 +294,8 @@ namespace ColorVision.Services.Algorithm
                 MessageBox.Show("请先选择FOV模板", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 return;
             }
-            if (ComboxPoiTemplate.SelectedIndex == -1)
-            {
-                MessageBox.Show("请先选择关注点模板", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                return;
-            }
 
-            var msg = Service.FOV(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, ImageFile.Text, TemplateControl.GetInstance().FOVParams[ComboxFOVTemplate.SelectedIndex].Value);
+            var msg = Service.FOV(ImageFile.Text, TemplateControl.GetInstance().FOVParams[ComboxFOVTemplate.SelectedIndex].Value);
             Helpers.SendCommand(msg, "FOV");
         }
 

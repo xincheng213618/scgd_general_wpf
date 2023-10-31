@@ -165,7 +165,6 @@ namespace ColorVision.Services
         public virtual string SubscribeTopic { get; set; }
         public virtual string SendTopic { get; set; }
         public string SnID { get; set; }
-        public string SerialNumber { get; set; }
         public string ServiceName { get; set; }
         public virtual string ServiceToken { get; set; }
 
