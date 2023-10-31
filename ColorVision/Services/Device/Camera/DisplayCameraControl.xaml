@@ -30,7 +30,12 @@
                 <Button Background="Transparent" BorderThickness="0" Command="{Binding PropertyCommand}" />
             </Grid>
             <TextBox Text="{Binding DeviceService.DeviceStatus}"  DockPanel.Dock="Right" IsReadOnly="True"  BorderThickness="0" Background="Transparent" />
-            <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Content="{Binding Config.Name}"  FontSize="15"  IsChecked="True" />
+            <Grid>
+                <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Content="{Binding Config.Name}"  FontSize="15"  IsChecked="True" />
+                <Grid  Height="18"   HorizontalAlignment="Left" MouseLeftButtonDown="Grid_MouseLeftButtonDown" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" Background="{DynamicResource GlobalBackground}" Margin="2,0,0,0">
+                    <Image Source="{DynamicResource DrawingImageCamera}"/>
+                </Grid>
+            </Grid>
             <TextBlock  FontSize="10" VerticalAlignment="Bottom" Margin="2" Style="{DynamicResource TextBlock1}">
                 <Run Text="{Binding Config.CameraType}"/>
                 <Run Text=","/>
