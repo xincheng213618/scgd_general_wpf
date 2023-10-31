@@ -159,14 +159,15 @@ namespace ColorVision.Services.Algorithm
             PublishAsyncClient(msg);
         }
 
-        public MsgRecord GetData(int pid,int Batchid,string fileName,string tempName)
+        public MsgRecord GetData(int pid,string fileName,string tempName,string serialNumber)
         {
+            if(string.IsNullOrWhiteSpace(serialNumber))  this.SerialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            else this.SerialNumber = serialNumber;
             MsgSend msg = new MsgSend
             {
                 EventName = "GetData",
                 ServiceName = Config.Code,
-                SerialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff"),
-                Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "TemplateId", pid }, { "TemplateName", tempName }, { "nBatchID", Batchid } }
+                Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "TemplateId", pid }, { "TemplateName", tempName }, { "nBatchID", -1 } }
             };
             return PublishAsyncClient(msg);
         }
@@ -228,7 +229,7 @@ namespace ColorVision.Services.Algorithm
         {
             Dictionary<string, object> file_data  =new Dictionary<string, object>();
 
-            file_data.Add("eCalibType", CalibrationType.DarkNoise);
+            file_data.Add("eCalibType", cvColorVision.CalibrationType.DarkNoise);
 
             List<Dictionary<string, object>> keyValuePairs = new List<Dictionary<string, object>>();
             foreach (var item in FileNames)

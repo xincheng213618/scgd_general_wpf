@@ -214,8 +214,27 @@ namespace ColorVision.Services.Algorithm
                 MessageBox.Show("请先选择关注点模板", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 return;
             }
-            string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            Service.GetData(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, -1, CB_CIEImageFiles.Text, ComboxPoiTemplate.Text);
+            string sn = null;
+            string imgFileName = CB_CIEImageFiles.Text;
+            bool? isSN = BatchSelect.IsChecked;
+            if (isSN.HasValue && isSN.Value) {
+                if (string.IsNullOrWhiteSpace(BatchCode.Text))
+                {
+                    MessageBox.Show("批次号不能为空，请先输入批次号", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                    return;
+                }
+                sn = BatchCode.Text;
+                imgFileName = "";
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(imgFileName))
+                {
+                    MessageBox.Show("图像文件不能为空，请先选择图像文件", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                    return;
+                }
+            }
+            Service.GetData(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, imgFileName, ComboxPoiTemplate.Text,sn);
             handler = PendingBox.Show(Application.Current.MainWindow, "", "计算关注点", true);
             handler.Cancelling += delegate
             {

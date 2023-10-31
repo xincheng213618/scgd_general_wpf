@@ -33,12 +33,20 @@
 
                     <StackPanel Margin="5" >
                         <GroupBox  Header="CIE图像数据区">
-                            <DockPanel Margin="0,2">
-                                <Button Content="刷新" Click="Button_Click_Refresh" />
-                                <Button DockPanel.Dock="Right" Content="上传" Click="Button_Click_Upload" />
-                                <Button DockPanel.Dock="Right" Content="打开" Click="Button_Click_Open" />
-                                <ComboBox x:Name="CB_CIEImageFiles"  Style="{StaticResource ComboBox.Small}"  />
-                            </DockPanel>
+                            <StackPanel  Margin="5" >
+                                <DockPanel Margin="0,2">
+                                    <RadioButton IsChecked="True" GroupName="CIESrc"/>
+                                    <Button Content="刷新" Click="Button_Click_Refresh" />
+                                    <Button DockPanel.Dock="Right" Content="上传" Click="Button_Click_Upload" />
+                                    <Button DockPanel.Dock="Right" Content="打开" Click="Button_Click_Open" />
+                                    <ComboBox x:Name="CB_CIEImageFiles"  Style="{StaticResource ComboBox.Small}"  />
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <RadioButton x:Name="BatchSelect" GroupName="CIESrc"/>
+                                    <TextBlock Text="批次号："/>
+                                    <TextBox x:Name="BatchCode" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" />
+                                </DockPanel>
+                            </StackPanel>
                         </GroupBox>
                         <GroupBox  Header="POI">
                             <DockPanel Margin="0,2">
