@@ -161,12 +161,14 @@ namespace ColorVision.Services.Algorithm
 
         public MsgRecord GetData(int pid,string fileName,string tempName,string serialNumber)
         {
-            if(string.IsNullOrWhiteSpace(serialNumber))  this.SerialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            else this.SerialNumber = serialNumber;
+            string sn = null;
+            if(string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            else sn = serialNumber;
             MsgSend msg = new MsgSend
             {
                 EventName = "GetData",
                 ServiceName = Config.Code,
+                SerialNumber = sn,
                 Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "TemplateId", pid }, { "TemplateName", tempName }, { "nBatchID", -1 } }
             };
             return PublishAsyncClient(msg);
