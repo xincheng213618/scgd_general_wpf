@@ -36,7 +36,7 @@ namespace ColorVision
 
             MQTTControl.GetInstance();
             MySqlControl.GetInstance();
-            Thread thread = new Thread(async () => await InitializedOver());
+            Thread thread = new Thread(async () => await InitializedOver()) { IsBackground =true};
             thread.Start();
         }
         private static bool DebugBuild(Assembly assembly)
