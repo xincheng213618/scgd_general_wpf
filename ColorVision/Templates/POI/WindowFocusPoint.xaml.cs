@@ -204,6 +204,8 @@ namespace ColorVision.Templates
             Relative
         }
 
+        private string pre_name = "P_";
+
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
 
         DatumArea DatumAreaPoints { get; set; } = new DatumArea();
@@ -594,7 +596,7 @@ namespace ColorVision.Templates
                             Circle.Attribute.Brush = Brushes.Transparent;
                             Circle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
                             Circle.Attribute.ID = item.ID;
-                            Circle.Attribute.Name = item.Name;
+                            Circle.Attribute.Text = item.Name;
                             Circle.Render();
                             ImageShow.AddVisual(Circle);
                             break;
@@ -604,7 +606,7 @@ namespace ColorVision.Templates
                             Rectangle.Attribute.Brush = Brushes.Transparent;
                             Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
                             Rectangle.Attribute.ID = item.ID;
-                            Rectangle.Attribute.Name = item.Name;
+                            Rectangle.Attribute.Text = item.Name;
                             Rectangle.Render();
                             ImageShow.AddVisual(Rectangle);
                             break;
@@ -971,6 +973,7 @@ namespace ColorVision.Templates
                                         Circle.Attribute.Brush = Brushes.Transparent;
                                         Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
                                         Circle.Attribute.ID = start + i + 1;
+                                        Circle.Attribute.Text = string.Format("{0}{1}", pre_name, Circle.Attribute.ID);
                                         Circle.Render();
                                         ImageShow.AddVisual(Circle);
                                         break;
@@ -980,6 +983,7 @@ namespace ColorVision.Templates
                                         Rectangle.Attribute.Brush = Brushes.Transparent;
                                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
                                         Rectangle.Attribute.ID = start + i + 1;
+                                        Rectangle.Attribute.Text = string.Format("{0}{1}", pre_name, Rectangle.Attribute.ID);
                                         Rectangle.Render();
                                         ImageShow.AddVisual(Rectangle);
                                         break;
@@ -1043,6 +1047,7 @@ namespace ColorVision.Templates
                                             Circle.Attribute.Brush = Brushes.Transparent;
                                             Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
                                             Circle.Attribute.ID = start + i * cols + j + 1;
+                                            Circle.Attribute.Text = string.Format("{0}{1}", pre_name, Circle.Attribute.ID);
                                             Circle.Render();
                                             ImageShow.AddVisual(Circle);
                                             break;
@@ -1052,6 +1057,7 @@ namespace ColorVision.Templates
                                             Rectangle.Attribute.Brush = Brushes.Transparent;
                                             Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
                                             Rectangle.Attribute.ID = start + i * cols + j + 1;
+                                            Rectangle.Attribute.Text = string.Format("{0}{1}", pre_name, Rectangle.Attribute.ID);
                                             Rectangle.Render();
                                             ImageShow.AddVisual(Rectangle);
                                             break;
@@ -1105,6 +1111,7 @@ namespace ColorVision.Templates
                                             Circle.Attribute.Brush = Brushes.Transparent;
                                             Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius/30);
                                             Circle.Attribute.ID = start + i * cols + j + 1;
+                                            Circle.Attribute.Text = string.Format("{0}{1}", pre_name, Circle.Attribute.ID);
                                             Circle.Render();
                                             ImageShow.AddVisual(Circle);
                                             break;
@@ -1114,6 +1121,7 @@ namespace ColorVision.Templates
                                             Rectangle.Attribute.Brush = Brushes.Transparent;
                                             Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
                                             Rectangle.Attribute.ID = start + i * cols + j + 1;
+                                            Rectangle.Attribute.Text = string.Format("{0}{1}", pre_name, Rectangle.Attribute.ID);
                                             Rectangle.Render();
                                             ImageShow.AddVisual(Rectangle);
                                             break;
@@ -1246,6 +1254,7 @@ namespace ColorVision.Templates
                         Circle.Attribute.Brush = Brushes.Transparent;
                         Circle.Attribute.Pen = new Pen(Brushes.Red, (double)banjin[i]/ 30);
                         Circle.Attribute.ID = i + 1;
+                        Circle.Attribute.Text = string.Format("{0}{1}", pre_name, Circle.Attribute.ID);
                         Circle.Render();
                         ImageShow.AddVisual(Circle);
                     }
@@ -1481,7 +1490,7 @@ namespace ColorVision.Templates
                         PoiParamData poiParamData = new PoiParamData()
                         {
                             ID = circle.ID,
-                            Name = circle.Name,
+                            Name = ((CircleTextAttribute)circle).Text,
                             PointType = RiPointTypes.Circle,
                             PixX = circle.Center.X,
                             PixY = circle.Center.Y,
@@ -1496,7 +1505,7 @@ namespace ColorVision.Templates
                         PoiParamData poiParamData = new PoiParamData()
                         {
                             ID = rectangle.ID,
-                            Name = rectangle.Name,
+                            Name = rectangle.Text,
                             PointType = RiPointTypes.Rect,
                             PixX = rectangle.Rect.X,
                             PixY = rectangle.Rect.Y,

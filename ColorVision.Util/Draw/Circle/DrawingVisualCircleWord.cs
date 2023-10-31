@@ -66,6 +66,7 @@ namespace ColorVision.Draw
 
         public override void Render()
         {
+            TextAttribute.Text = Attribute.Text;
             TextAttribute.Text =  string.IsNullOrWhiteSpace(TextAttribute.Text)? "Point_" + Attribute.ID.ToString(): TextAttribute.Text;
             TextAttribute.FontSize = Attribute.Pen.Thickness * 10;
             using DrawingContext dc = RenderOpen();

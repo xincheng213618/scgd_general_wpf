@@ -10,6 +10,10 @@ namespace ColorVision.Draw
         public int ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
         private int _ID;
 
+        [Category("DrawBaseAttribute"), DisplayName("Text")]
+        public string Text { get => _Text; set { _Text = value; NotifyPropertyChanged(); } }
+        private string _Text;
+
         [Category("DrawBaseAttribute"), DisplayName("名称")]
         public string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
         private string _Name;

@@ -72,6 +72,7 @@ namespace ColorVision.Services.Algorithm
     {
         public POIPoint Point { get { return POIPoint; } set { POIPoint = value; NotifyPropertyChanged(); } }
 
+        public string Name { get { return POIPoint.Name; } }
         public string PixelPos { get { return string.Format("{0},{1}", POIPoint.PixelX, POIPoint.PixelY); } }
         public string PixelSize { get { return string.Format("{0},{1}", POIPoint.Width, POIPoint.Height); } }
 
@@ -195,16 +196,16 @@ namespace ColorVision.Services.Algorithm
             };
 
             GridView gridView = new GridView();
-            List<string> headers = new List<string> { "序号", "批次号","模板", "图像数据文件", "测量时间","类型" };
-            List<string> bdheaders = new List<string> { "Id", "SerialNumber",  "POITemplateName", "ImgFileName", "RecvTime", "ResultTypeDis" };
+            List<string> headers = new List<string> { "序号", "批次号", "模板", "图像数据文件", "测量时间", "类型" };
+            List<string> bdheaders = new List<string> { "Id", "SerialNumber", "POITemplateName", "ImgFileName", "RecvTime", "ResultTypeDis" };
             for (int i = 0; i < headers.Count; i++)
             {
                 gridView.Columns.Add(new GridViewColumn() { Header = headers[i], Width = 100, DisplayMemberBinding = new Binding(bdheaders[i]) });
             }
             listView1.View = gridView;
             //色度
-            List<string> cieBdHeader = new List<string> { "PixelPos", "PixelSize", "Shapes", "CCT","Wave","X","Y","Z","u","v","x","y" };
-            List<string> cieHeader = new List<string> { "POIPos", "POISize", "Shapes", "CCT","Wave","X","Y","Z","u","v","x","y" };
+            List<string> cieBdHeader = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
+            List<string> cieHeader = new List<string> { "名称", "位置", "大小", "形状", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
 
             GridView gridView2 = new GridView();
             for (int i = 0; i < cieHeader.Count; i++)
@@ -214,11 +215,12 @@ namespace ColorVision.Services.Algorithm
             listView2.View = gridView2;
             listView2.ItemsSource = PoiResultDatas;
             //亮度
-            List<string> headersY = new List<string> { "PixelPos", "PixelSize", "Shapes",  "Y" };
+            List<string> bdheadersY = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "Y" };
+            List<string> headersY = new List<string> { "名称", "位置", "大小", "形状", "Y" };
             GridView gridViewY = new GridView();
             for (int i = 0; i < headersY.Count; i++)
             {
-                gridViewY.Columns.Add(new GridViewColumn() { Header = headersY[i], DisplayMemberBinding = new Binding(headersY[i]) });
+                gridViewY.Columns.Add(new GridViewColumn() { Header = headersY[i], DisplayMemberBinding = new Binding(bdheadersY[i]) });
             }
             listViewY.View = gridViewY;
             listViewY.ItemsSource = PoiYResultDatas;
