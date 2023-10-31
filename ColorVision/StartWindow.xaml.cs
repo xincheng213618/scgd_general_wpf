@@ -168,7 +168,7 @@ namespace ColorVision
             Application.Current.Dispatcher.Invoke(() =>
             {
 
-                upMainWindow mainWindow = new MainWindow();
+                MainWindow mainWindow = new MainWindow();
                 mainWindow.Show();
                 this.Close();
             });
