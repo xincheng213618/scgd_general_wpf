@@ -96,7 +96,7 @@ namespace ColorVision.Services.Device.Calibration
 
 
             Params.Add("szSrcFileName", FilePath);
-            Params.Add("fname", 1);
+            Params.Add("fname", "1");
             return PublishAsyncClient(msg);
         }
     }
