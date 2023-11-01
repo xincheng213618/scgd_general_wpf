@@ -1,7 +1,10 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604
 using ColorVision.MVVM;
 using HandyControl.Tools.Extension;
+using log4net;
+using log4net.Repository.Hierarchy;
 using MQTTMessageLib.Algorithm;
+using Org.BouncyCastle.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -137,6 +140,7 @@ namespace ColorVision.Services.Algorithm
     /// </summary>
     public partial class AlgorithmView : UserControl,IView
     {
+        private static readonly ILog logger = LogManager.GetLogger(typeof(AlgorithmView));
         public View View { get; set; }
         public event CurSelectionChanged OnCurSelectionChanged;
         public AlgorithmView()
@@ -377,12 +381,21 @@ namespace ColorVision.Services.Algorithm
 
         public void OpenImage(byte[] bytes)
         {
+            logger.Info("OpenImage .....");
             img_view.OpenImage(bytes);
+            logger.Info("OpenImage end");
         }
 
         private void listViewY_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
 
+        }
+
+        internal void OpenImage(CVCIEFileInfo fileInfo)
+        {
+            logger.Info("OpenImage CVCIEFileInfo .....");
+            img_view.OpenImage(fileInfo);
+            logger.Info("OpenImage end");
         }
     }
 }

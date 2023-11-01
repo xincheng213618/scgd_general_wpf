@@ -4,9 +4,14 @@ using ColorVision.Draw.Ruler;
 using ColorVision.MVVM;
 using ColorVision.Services.Algorithm;
 using ColorVision.Util;
+using log4net;
+using log4net.Repository.Hierarchy;
 using MQTTMessageLib.Algorithm;
 using NPOI.SS.Formula.Functions;
 using NPOI.Util;
+using OpenCvSharp.WpfExtensions;
+using Org.BouncyCastle.Utilities;
+using ScottPlot.Drawing.Colormaps;
 using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -44,6 +49,7 @@ namespace ColorVision
     /// </summary>
     public partial class ImageView : UserControl, IView
     {
+        private static readonly ILog logger = LogManager.GetLogger(typeof(ImageView));
         public ToolBarTop ToolBarTop { get; set; }
 
         public View View { get; set; }
@@ -151,7 +157,7 @@ namespace ColorVision
 
 
 
-        private void DrawGridImage(DrawingVisual drawingVisual, BitmapImage bitmapImage)
+        private void DrawGridImage(DrawingVisual drawingVisual, BitmapSource bitmapImage)
         {
             Brush brush = Brushes.Black;
             FontFamily fontFamily = new FontFamily("Arial");
@@ -607,13 +613,43 @@ namespace ColorVision
             int ret = CVFileUtils.ReadCVCIE(fileName, ref fileInfo);
         }
 
+        public void OpenImage(CVCIEFileInfo fileInfo)
+        {
+            ShowImage(fileInfo);
+        }
+
+        private void ShowImage(CVCIEFileInfo fileInfo)
+        {
+            PixelFormat format = fileInfo.channels switch
+            {
+                1 => PixelFormats.Gray8,
+                3 => PixelFormats.Bgr24,
+                4 => PixelFormats.Bgr32,
+                _ => PixelFormats.Default,
+            };
+            if (fileInfo.height == 0) { return; }
+            int rows = fileInfo.height, cols = fileInfo.width;
+            logger.Info("OpenImage RtlMoveMemory ....");
+            Application.Current.Dispatcher.Invoke(delegate
+            {
+                logger.Info("OpenImage WriteableBitmap ....");
+                WriteableBitmap writeableBitmap = new WriteableBitmap(cols, rows, 96.0, 96.0, format, null);
+                Marshal.Copy(fileInfo.data,0,writeableBitmap.BackBuffer, fileInfo.data.Length);
+                writeableBitmap.Lock();
+                writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight));
+                writeableBitmap.Unlock();
+                ImageShow.Source = writeableBitmap;
+                logger.Info("OpenImage end");
+            });
+        }
+
         public void OpenImage(byte[] data)
         {
             if (data != null)
             {
-                BitmapImage bitmapImage = ImageUtil.ByteArrayToBitmapImage(data);
-
-                SetImageSource(bitmapImage);
+                logger.Info("OpenImage .....");
+                var src = OpenCvSharp.Cv2.ImDecode(data, OpenCvSharp.ImreadModes.Unchanged);
+                SetImageSource(src.ToBitmapSource());
             }
         }
 
@@ -624,6 +660,15 @@ namespace ColorVision
                 BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
                 SetImageSource(bitmapImage);
             }
+        }
+
+        private void SetImageSource(BitmapSource bitmapImage)
+        {
+            ImageShow.Source = bitmapImage;
+            DrawGridImage(DrawingVisualGrid, bitmapImage);
+            Zoombox1.ZoomUniform();
+            ToolBar1.Visibility = Visibility.Visible;
+            ImageShow.ImageInitialize();
         }
 
         private void SetImageSource(BitmapImage bitmapImage)
@@ -739,5 +784,7 @@ namespace ColorVision
         {
             ImageShow.Clear();
         }
+
+
     }
 }
