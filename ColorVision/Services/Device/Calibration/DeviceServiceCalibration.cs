@@ -26,7 +26,7 @@ namespace ColorVision.Services.Device.Calibration
         }
 
 
-        public MsgRecord Calibration(CalibrationParam item)
+        public MsgRecord Calibration(CalibrationParam item,string FilePath)
         {
             Dictionary<string, object> Params = new Dictionary<string, object>();
             MsgSend msg = new MsgSend
@@ -64,6 +64,10 @@ namespace ColorVision.Services.Device.Calibration
                 item.NormalB.ToDictionary()
             };
             Params.Add("List", List);
+
+
+            Params.Add("szSrcFileName", FilePath);
+            Params.Add("fname", 1);
             return PublishAsyncClient(msg);
         }
     }
