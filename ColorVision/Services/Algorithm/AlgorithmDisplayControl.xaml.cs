@@ -234,16 +234,13 @@ namespace ColorVision.Services.Algorithm
                     return;
                 }
             }
-            if (sn != null)
-            {
-                Service.GetData(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, imgFileName, ComboxPoiTemplate.Text, sn);
-                handler = PendingBox.Show(Application.Current.MainWindow, "", "计算关注点", true);
-                handler.Cancelling += delegate
-                {
-                    handler?.Close();
-                };
-            }
 
+            Service.GetData(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, imgFileName, ComboxPoiTemplate.Text, sn);
+            handler = PendingBox.Show(Application.Current.MainWindow, "", "计算关注点", true);
+            handler.Cancelling += delegate
+            {
+                handler?.Close();
+            };
         }
 
         private void Algorithm_INI(object sender, RoutedEventArgs e)
@@ -376,12 +373,16 @@ namespace ColorVision.Services.Algorithm
 
         private void doOpen(string fileName)
         {
-            if(fileCache.ContainsKey(fileName))
+            if (fileCache.ContainsKey(fileName))
             {
+                logger.Info("ReadBinaryFile .....");
+                CVCIEFileInfo fileInfo;
+                //bool ret = CVFileUtils.ReadBinaryFile_CVRGB(fileCache[fileName], out fileInfo);
                 byte[] data = CVFileUtils.ReadBinaryFile(fileCache[fileName]);
-                
+                logger.Info("ReadBinaryFile end");
                 Application.Current.Dispatcher.Invoke(() =>
                 {
+                    //View.OpenImage(fileInfo);
                     View.OpenImage(data);
                 });
                 handler?.Close();
@@ -405,10 +406,12 @@ namespace ColorVision.Services.Algorithm
                 if (data.Count == 1)
                 {
                     string fullFileName = SolutionControl.GetInstance().SolutionConfig.CachePath + "\\" + fileName;
+                    //CVCIEFileInfo fileInfo = CVFileUtils.WriteBinaryFile_CVRGB(fullFileName, data[0]);
                     CVFileUtils.WriteBinaryFile(fullFileName, data[0]);
                     fileCache.Add(fileName, fullFileName);
                     Application.Current.Dispatcher.Invoke(() =>
                     {
+                        //View.OpenImage(fileInfo);
                         View.OpenImage(data[0]);
                     });
                 }

@@ -231,5 +231,128 @@ namespace ColorVision
 
             return ret;
         }
+
+        public static bool ReadBinaryFile_CVRGB(string fullFileName, out CVCIEFileInfo fileInfo)
+        {
+            fileInfo = new CVCIEFileInfo();
+            byte[] fileData = ReadBinaryFile(fullFileName);
+            int startIndex = 0;
+            if (fileData[0] == 'C' && fileData[1] == 'V' && fileData[2] == 'R' && fileData[3] == 'G' && fileData[4] == 'B')
+            {
+                startIndex += 5;
+                uint ver = BitConverter.ToUInt32(fileData, startIndex);
+                startIndex += 4;
+                if (ver == 1)
+                {
+                    fileInfo.Channels = BitConverter.ToInt32(fileData, startIndex);
+                    startIndex += 4;
+                    fileInfo.Width = BitConverter.ToInt32(fileData, startIndex);
+                    startIndex += 4;
+                    fileInfo.Height = BitConverter.ToInt32(fileData, startIndex);
+                    startIndex += 4;
+                   int dataLen = BitConverter.ToInt32(fileData, startIndex);
+                    startIndex += 4;
+                    if (dataLen > 0)
+                    {
+                        fileInfo.Data = new byte[dataLen];
+                        Buffer.BlockCopy(fileData, startIndex, fileInfo.Data, 0, dataLen);
+
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        public static CVCIEFileInfo WriteBinaryFile_CVRGB(string fullFileName, byte[] bytes)
+        {
+            CVCIEFileInfo fileInfo = new CVCIEFileInfo();
+            var src = OpenCvSharp.Cv2.ImDecode(bytes, OpenCvSharp.ImreadModes.Unchanged);
+            OpenCvSharp.Mat dst = new OpenCvSharp.Mat();
+            int depth = src.Depth();
+            fileInfo.Channels = src.Channels();
+            switch (depth)
+            {
+                case 0:
+                    //text = "CV_8U";
+                    //type = 1;
+                    break;
+                case 1:
+                    //text = "CV_8S";
+                    //type = 1;
+                    break;
+                case 2:
+                    //text = "CV_16U";
+                    src.ConvertTo(dst, OpenCvSharp.MatType.MakeType(0, fileInfo.Channels), 255.0 / 65535, 0.5);
+                    break;
+                case 3:
+                    //text = "CV_16S";
+                    src.ConvertTo(dst, OpenCvSharp.MatType.MakeType(1, fileInfo.Channels), 255.0 / 65535, 0.5);
+                    break;
+                case 4:
+                    //text = "CV_32S";
+                    break;
+                case 5:
+                    //text = "CV_32F";
+                    break;
+                case 6:
+                    //text = "CV_64F";
+                    break;
+            }
+            fileInfo.Width = src.Width;
+            fileInfo.Height = src.Height;
+            int rows = src.Rows, cols = src.Cols;
+            fileInfo.Data = new byte[rows * cols * fileInfo.Channels];
+            Marshal.Copy(dst.Data, fileInfo.Data, 0, fileInfo.Data.Length);
+            WriteBinaryFile_CVRGB(fullFileName,src.Width,src.Height, fileInfo.Channels, fileInfo.Data);
+
+            return fileInfo;
+        }
+
+        public static void WriteBinaryFile_CVRGB(string fileName, int w, int h, int channels, byte[] data)
+        {
+            using (FileStream fileStream = new FileStream(fileName, FileMode.Create))
+            using (BinaryWriter writer = new BinaryWriter(fileStream))
+            {
+                int ver = 1;
+                char[] hd = { 'C', 'V', 'R', 'G', 'B' };
+                writer.Write(hd);
+                writer.Write(ver);
+                writer.Write(channels);
+                writer.Write(w);
+                writer.Write(h);
+                //
+                writer.Write(data.Length);
+                writer.Write(data);
+            }
+        }
+
+        public static void WriteBinaryFile_CVCIE(string fileName, int gain, float[] exp, int w, int h, int bpp, int channels, byte[] dst, string srcFileName)
+        {
+            using (FileStream fileStream = new FileStream(fileName, FileMode.Create))
+            using (BinaryWriter writer = new BinaryWriter(fileStream))
+            {
+                int ver = 1;
+                char[] hd = { 'C', 'V', 'C', 'I', 'E' };
+                writer.Write(hd);
+                writer.Write(ver);
+                byte[] srcFileNameBytes = System.Text.Encoding.Default.GetBytes(srcFileName);
+                writer.Write(srcFileNameBytes.Length);
+                writer.Write(srcFileNameBytes);
+                writer.Write(gain);
+                writer.Write(channels);
+                for (int i = 0; i < exp.Length; i++)
+                {
+                    writer.Write(exp[i]);
+                }
+                writer.Write(w);
+                writer.Write(h);
+                writer.Write(bpp);
+                //
+                writer.Write(dst.Length);
+                writer.Write(dst);
+            }
+        }
     }
 }
