@@ -151,7 +151,6 @@ namespace ColorVision.Device.PG
 
             MsgSend msg = new MsgSend()
             {
-                Version = "1.0",
                 EventName = "Open",
                 ServiceName = Config.Code,
                 Params = communicateType == CommunicateType.Serial ?

@@ -4,16 +4,21 @@ namespace ColorVision.Services.Msg
 {
     public class MsgSend : IMsg
     {
-        public string Version { get; set; }
+        public string Version { get; set; } = "1.0";
         /// <summary>
         /// 发送的函数名
         /// </summary>
         public string EventName { get; set; }
 
         /// <summary>
-        /// ServiceName
+        /// 服务名称
         /// </summary>
         public string ServiceName { get; set; }
+        /// <summary>
+        /// 设备Code
+        /// </summary>
+        [JsonProperty("CodeID")]
+        public string DeviceCode { get; set; }
         /// <summary>
         /// RC的结果，用来做认证的
         /// </summary>
@@ -23,12 +28,6 @@ namespace ColorVision.Services.Msg
         /// 批次号
         /// </summary>
         public string SerialNumber { get; set; }
-
-
-
-        [JsonProperty("CodeID")]
-        public string DeviceCode { get; set; }
-
         //MsgID,用来做消息同步确认的，如果是单方向发送的话，可以传空
         public string MsgID { get; set; }
 

@@ -62,7 +62,6 @@ namespace ColorVision.Device.Camera
                         DeviceStatus = DeviceStatus.UnInit;
                         break;
                     case "SetParam":
-
                         break;
                     case "Close":
                         DeviceStatus = DeviceStatus.Closed;
@@ -109,8 +108,6 @@ namespace ColorVision.Device.Camera
                                              "SaturationG:" + Config.SaturationG.ToString() + Environment.NewLine +
                                              "SaturationB:" + Config.SaturationB.ToString() + Environment.NewLine;
                                 MessageBox.Show(Msg);
-
-
                             }
                             else
                             {
@@ -167,7 +164,7 @@ namespace ColorVision.Device.Camera
 
         public CameraType CurrentCameraType { get; set; }
 
-        public bool Init() => Init(Config.CameraType, Config.ID);
+        public bool Init() => Init(Config.CameraType, Config.SNID);
 
         public bool Init(CameraType CameraType, string CameraID)
         {
@@ -176,7 +173,7 @@ namespace ColorVision.Device.Camera
             MsgSend msg = new MsgSend
             {
                 EventName = "Init",
-                Params = new Dictionary<string, object>() { { "CameraType", (int)CameraType }, { "SnID", CameraID }, { "szCfgName", "" } }
+                Params = new Dictionary<string, object>() { { "CameraType", (int)CameraType }, { "SnID", CameraID }, {"CodeID",Config.Code } , { "szCfgName", "" } }
             };
             PublishAsyncClient(msg);
             return true;

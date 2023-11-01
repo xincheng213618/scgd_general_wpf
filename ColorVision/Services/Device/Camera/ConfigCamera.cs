@@ -77,7 +77,6 @@ namespace ColorVision.Services.Device.Camera
         public ChannelConfig[] ChannelConfigs { get; set; } = new ChannelConfig[3]{
             new ChannelConfig() { Port =0,ChannelType =ImageChannelType.Gray_X }, new ChannelConfig(){Port =1,ChannelType =ImageChannelType.Gray_Y }, new ChannelConfig(){ Port =2,ChannelType =ImageChannelType.Gray_Z}
         };
-
         public MotorConfig MotorConfig { get; set; } = new MotorConfig();
     }
 

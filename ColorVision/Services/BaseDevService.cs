@@ -197,13 +197,13 @@ namespace ColorVision.Services
             Guid guid = Guid.NewGuid();
             msg.MsgID = guid.ToString();
             msg.DeviceCode = DeviceCode;
-            msg.Version = "1.0";
             msg.Token = ServiceToken;
             ///这里是为了兼容只前的写法，后面会修改掉
             if (string.IsNullOrWhiteSpace(msg.ServiceName))
             {
                 msg.ServiceName = SendTopic;
             }
+
             string json = JsonConvert.SerializeObject(msg, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
 
             Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, json, false));
