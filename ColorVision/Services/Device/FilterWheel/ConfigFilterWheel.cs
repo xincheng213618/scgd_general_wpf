@@ -14,5 +14,6 @@ namespace ColorVision.Services.Device.FilterWheel
 
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; NotifyPropertyChanged(); } }
         private int _BaudRate = 9600;
+
     }
 }

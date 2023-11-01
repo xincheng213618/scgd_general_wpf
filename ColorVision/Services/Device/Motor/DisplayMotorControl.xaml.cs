@@ -1,4 +1,5 @@
 ﻿using ColorVision.Device;
+using ColorVision.Services.Msg;
 using ColorVision.Templates;
 using System;
 using System.Collections.Generic;
@@ -35,8 +36,8 @@ namespace ColorVision.Services.Device.Motor
         {
             if (sender is Button button)
             {
-                var msgrecord = DeviceService.Open();
-                Helpers.SendCommand(button, msgrecord);
+                var msgRecord = DeviceService.Open();
+                Helpers.SendCommand(button, msgRecord);
             }
         }
 
@@ -44,8 +45,8 @@ namespace ColorVision.Services.Device.Motor
         {
             if (sender is Button button)
             {
-                var msgrecord= DeviceService.Move();
-                Helpers.SendCommand(button,msgrecord);
+                var msgRecord = DeviceService.Move();
+                Helpers.SendCommand(button, msgRecord);
             }
         }
     }

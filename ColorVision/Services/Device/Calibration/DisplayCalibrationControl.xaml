@@ -27,6 +27,11 @@
         </DockPanel>
         <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel   Margin="5" >
+                <DockPanel Margin="0,2">
+                    <TextBlock Text="校正：" />
+                    <Button  DockPanel.Dock="Right" Content="应用"  HorizontalAlignment="Right" Click="Calibration_Click" />
+                    <ComboBox  x:Name="ComboxCalibrationTemplate" Width="150" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                </DockPanel>
             </StackPanel>
         </Border>
     </StackPanel>
