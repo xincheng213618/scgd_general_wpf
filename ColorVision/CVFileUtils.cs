@@ -244,18 +244,18 @@ namespace ColorVision
                 startIndex += 4;
                 if (ver == 1)
                 {
-                    fileInfo.channels = BitConverter.ToInt32(fileData, startIndex);
+                    fileInfo.Channels = BitConverter.ToInt32(fileData, startIndex);
                     startIndex += 4;
-                    fileInfo.width = BitConverter.ToInt32(fileData, startIndex);
+                    fileInfo.Width = BitConverter.ToInt32(fileData, startIndex);
                     startIndex += 4;
-                    fileInfo.height = BitConverter.ToInt32(fileData, startIndex);
+                    fileInfo.Height = BitConverter.ToInt32(fileData, startIndex);
                     startIndex += 4;
                    int dataLen = BitConverter.ToInt32(fileData, startIndex);
                     startIndex += 4;
                     if (dataLen > 0)
                     {
-                        fileInfo.data = new byte[dataLen];
-                        Buffer.BlockCopy(fileData, startIndex, fileInfo.data, 0, dataLen);
+                        fileInfo.Data = new byte[dataLen];
+                        Buffer.BlockCopy(fileData, startIndex, fileInfo.Data, 0, dataLen);
 
                         return true;
                     }
@@ -271,7 +271,7 @@ namespace ColorVision
             var src = OpenCvSharp.Cv2.ImDecode(bytes, OpenCvSharp.ImreadModes.Unchanged);
             OpenCvSharp.Mat dst = new OpenCvSharp.Mat();
             int depth = src.Depth();
-            fileInfo.channels = src.Channels();
+            fileInfo.Channels = src.Channels();
             switch (depth)
             {
                 case 0:
@@ -284,11 +284,11 @@ namespace ColorVision
                     break;
                 case 2:
                     //text = "CV_16U";
-                    src.ConvertTo(dst, OpenCvSharp.MatType.MakeType(0, fileInfo.channels), 255.0 / 65535, 0.5);
+                    src.ConvertTo(dst, OpenCvSharp.MatType.MakeType(0, fileInfo.Channels), 255.0 / 65535, 0.5);
                     break;
                 case 3:
                     //text = "CV_16S";
-                    src.ConvertTo(dst, OpenCvSharp.MatType.MakeType(1, fileInfo.channels), 255.0 / 65535, 0.5);
+                    src.ConvertTo(dst, OpenCvSharp.MatType.MakeType(1, fileInfo.Channels), 255.0 / 65535, 0.5);
                     break;
                 case 4:
                     //text = "CV_32S";
@@ -300,12 +300,12 @@ namespace ColorVision
                     //text = "CV_64F";
                     break;
             }
-            fileInfo.width = src.Width;
-            fileInfo.height = src.Height;
+            fileInfo.Width = src.Width;
+            fileInfo.Height = src.Height;
             int rows = src.Rows, cols = src.Cols;
-            fileInfo.data = new byte[rows * cols * fileInfo.channels];
-            Marshal.Copy(dst.Data, fileInfo.data, 0, fileInfo.data.Length);
-            WriteBinaryFile_CVRGB(fullFileName,src.Width,src.Height, fileInfo.channels, fileInfo.data);
+            fileInfo.Data = new byte[rows * cols * fileInfo.Channels];
+            Marshal.Copy(dst.Data, fileInfo.Data, 0, fileInfo.Data.Length);
+            WriteBinaryFile_CVRGB(fullFileName,src.Width,src.Height, fileInfo.Channels, fileInfo.Data);
 
             return fileInfo;
         }

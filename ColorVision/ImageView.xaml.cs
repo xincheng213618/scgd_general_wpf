@@ -620,21 +620,21 @@ namespace ColorVision
 
         private void ShowImage(CVCIEFileInfo fileInfo)
         {
-            PixelFormat format = fileInfo.channels switch
+            PixelFormat format = fileInfo.Channels switch
             {
                 1 => PixelFormats.Gray8,
                 3 => PixelFormats.Bgr24,
                 4 => PixelFormats.Bgr32,
                 _ => PixelFormats.Default,
             };
-            if (fileInfo.height == 0) { return; }
-            int rows = fileInfo.height, cols = fileInfo.width;
+            if (fileInfo.Height == 0) { return; }
+            int rows = fileInfo.Height, cols = fileInfo.Width;
             logger.Info("OpenImage RtlMoveMemory ....");
             Application.Current.Dispatcher.Invoke(delegate
             {
                 logger.Info("OpenImage WriteableBitmap ....");
                 WriteableBitmap writeableBitmap = new WriteableBitmap(cols, rows, 96.0, 96.0, format, null);
-                Marshal.Copy(fileInfo.data,0,writeableBitmap.BackBuffer, fileInfo.data.Length);
+                Marshal.Copy(fileInfo.Data,0,writeableBitmap.BackBuffer, fileInfo.Data.Length);
                 writeableBitmap.Lock();
                 writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight));
                 writeableBitmap.Unlock();
