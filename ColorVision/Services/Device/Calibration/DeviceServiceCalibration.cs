@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using ColorVision.Services.Msg;
 using System.Diagnostics;
 using ColorVision.Templates;
+using System.Windows.Documents;
 
 namespace ColorVision.Services.Device.Calibration
 {
@@ -26,7 +27,7 @@ namespace ColorVision.Services.Device.Calibration
         }
 
 
-        public MsgRecord Calibration(CalibrationParam item,string FilePath)
+        public MsgRecord Calibration(CalibrationParam item,string FilePath,double R,double G,double B)
         {
             Dictionary<string, object> Params = new Dictionary<string, object>();
             MsgSend msg = new MsgSend
@@ -63,6 +64,13 @@ namespace ColorVision.Services.Device.Calibration
                 item.NormalG.ToDictionary(),
                 item.NormalB.ToDictionary()
             };
+
+            List[0].Add("EXPOSURE", R);
+            List[1].Add("EXPOSURE", G);
+            List[2].Add("EXPOSURE", B);
+
+
+
             Params.Add("List", List);
 
 

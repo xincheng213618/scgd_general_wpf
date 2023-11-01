@@ -42,7 +42,7 @@ namespace ColorVision.Services.Device.Calibration
             {
                 if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
                 {
-                    MsgRecord msgRecord = DeviceService.Calibration(param, ImageFile.Text);
+                    MsgRecord msgRecord = DeviceService.Calibration(param, ImageFile.Text, Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB );
                     Helpers.SendCommand(button, msgRecord);
 
                 }
