@@ -135,8 +135,8 @@ namespace ColorVision.Solution
         private Point SelectPoint;
 
         private VObject LastReNameObject;
-        private TreeViewItem SelectedTreeViewItem;
-        private TreeViewItem LastSelectedTreeViewItem;
+        private TreeViewItem? SelectedTreeViewItem;
+        private TreeViewItem? LastSelectedTreeViewItem;
 
         private string solutionDir;
 
@@ -173,7 +173,7 @@ namespace ColorVision.Solution
         }
 
         //第一次的点击逻辑
-        protected async override void OnPreviewMouseDown(MouseButtonEventArgs e)
+        protected override void OnPreviewMouseDown(MouseButtonEventArgs e)
         {
             base.OnPreviewMouseDown(e);
 
@@ -229,7 +229,7 @@ namespace ColorVision.Solution
 
 
 
-            //if (e.RightButton == MouseButtonState.Pressed)
+            //if (e.RightButton == MouseButtonState.Pressed)   vbv
             //{
             //    HitTestResult result = VisualTreeHelper.HitTest(TreeView1, SelectPoint);
             //}
