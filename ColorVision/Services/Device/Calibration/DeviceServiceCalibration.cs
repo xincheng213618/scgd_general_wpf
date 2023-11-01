@@ -10,6 +10,8 @@ using ColorVision.Services.Msg;
 using System.Diagnostics;
 using ColorVision.Templates;
 using System.Windows.Documents;
+using System.ServiceModel.Channels;
+using System.Windows;
 
 namespace ColorVision.Services.Device.Calibration
 {
@@ -23,6 +25,26 @@ namespace ColorVision.Services.Device.Calibration
 
         private void ProcessingReceived(MsgReturn msg)
         {
+
+            if (msg.Code == 0)
+            {
+                switch (msg.EventName)
+                {
+                    case "Calibration":
+                        MessageBox.Show(msg.Data);
+                        break;
+                }
+            }
+            else
+            {
+                switch (msg.EventName)
+                {
+                    case "Calibration":
+                        MessageBox.Show("校准失败");
+                        break;
+                }
+            }
+
 
         }
 
