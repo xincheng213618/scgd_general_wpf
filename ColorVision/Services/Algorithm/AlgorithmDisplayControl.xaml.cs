@@ -234,16 +234,13 @@ namespace ColorVision.Services.Algorithm
                     return;
                 }
             }
-            if (sn != null)
-            {
-                Service.GetData(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, imgFileName, ComboxPoiTemplate.Text, sn);
-                handler = PendingBox.Show(Application.Current.MainWindow, "", "计算关注点", true);
-                handler.Cancelling += delegate
-                {
-                    handler?.Close();
-                };
-            }
 
+            Service.GetData(TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value.ID, imgFileName, ComboxPoiTemplate.Text, sn);
+            handler = PendingBox.Show(Application.Current.MainWindow, "", "计算关注点", true);
+            handler.Cancelling += delegate
+            {
+                handler?.Close();
+            };
         }
 
         private void Algorithm_INI(object sender, RoutedEventArgs e)
