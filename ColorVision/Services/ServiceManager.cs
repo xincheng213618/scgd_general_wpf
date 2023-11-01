@@ -11,7 +11,7 @@ using ColorVision.MySql.Service;
 using ColorVision.RC;
 using ColorVision.Services.Algorithm;
 using ColorVision.Services.Device.Calibration;
-using ColorVision.Services.Device.FilterWheel;
+using ColorVision.Services.Device.CfwPort;
 using ColorVision.Services.Device.Motor;
 using ColorVision.Services.Device.Sensor;
 using ColorVision.User;
@@ -189,11 +189,11 @@ namespace ColorVision.Services
                                         mQTTService.AddChild(deviceCalibration);
                                         MQTTDevices.Add(deviceCalibration);
                                         break;
-                                    case ServiceType.FilterWheel:
-                                        DeviceFilterWheel deviceFilterWheel = new DeviceFilterWheel(device);
-                                        svrObj = deviceFilterWheel.DeviceService;
-                                        mQTTService.AddChild(deviceFilterWheel);
-                                        MQTTDevices.Add(deviceFilterWheel);
+                                    case ServiceType.CfwPort:
+                                        DeviceCfwPort deviceCfwPort = new DeviceCfwPort(device);
+                                        svrObj = deviceCfwPort.DeviceService;
+                                        mQTTService.AddChild(deviceCfwPort);
+                                        MQTTDevices.Add(deviceCfwPort);
                                         break;
                                     case ServiceType.Motor:
                                         DeviceMotor deviceMotor = new DeviceMotor(device);

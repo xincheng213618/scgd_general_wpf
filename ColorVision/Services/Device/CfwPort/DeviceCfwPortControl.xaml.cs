@@ -3,20 +3,20 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Services.Device.FilterWheel
+namespace ColorVision.Services.Device.CfwPort
 {
     /// <summary>
     /// DeviceSMUControl.xaml 的交互逻辑
     /// </summary>
-    public partial class DeviceFilterWheelControl : UserControl, IDisposable
+    public partial class DeviceCfwPortControl : UserControl, IDisposable
     {
-        public DeviceFilterWheel Device { get; set; }
+        public DeviceCfwPort Device { get; set; }
         public ServiceManager ServiceControl { get; set; }
 
 
-        public DeviceFilterWheelControl(DeviceFilterWheel deviceFilterWheel)
+        public DeviceCfwPortControl(DeviceCfwPort deviceCfwPort)
         {
-            this.Device = deviceFilterWheel;
+            this.Device = deviceCfwPort;
             InitializeComponent();
         }
 

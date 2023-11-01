@@ -9,7 +9,7 @@ using ColorVision.MySql.DAO;
 using ColorVision.Services.Algorithm;
 using ColorVision.Services.Device.Calibration;
 using ColorVision.Services.Device.Camera;
-using ColorVision.Services.Device.FilterWheel;
+using ColorVision.Services.Device.CfwPort;
 using ColorVision.Services.Device.Motor;
 using ColorVision.Services.Device.Sensor;
 using cvColorVision;
@@ -178,14 +178,14 @@ namespace ColorVision.Services
                         if (sysResourceModel != null)
                             serviceTerminal.AddChild(new DeviceAlgorithm(sysResourceModel));
                         break;
-                    case ServiceType.FilterWheel:
-                        deviceConfig = new ConfigFilterWheel { 
+                    case ServiceType.CfwPort:
+                        deviceConfig = new ConfigCfwPort { 
                             ID = TextBox_Code.Text,
                             Name = TextBox_Name.Text,
                         };
                         sysResourceModel = saveConfigInfo(deviceConfig, sysResource);
                         if (sysResourceModel != null)
-                            serviceTerminal.AddChild(new DeviceFilterWheel(sysResourceModel));
+                            serviceTerminal.AddChild(new DeviceCfwPort(sysResourceModel));
                         break;
                     case ServiceType.Calibration:
                         deviceConfig = new ConfigCalibration

@@ -188,7 +188,7 @@ namespace ColorVision.Device.Camera
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord FilterWheelSetPort(int nIndex, int nPort, int eImgChlType)
+        public MsgRecord CfwPortSetPort(int nIndex, int nPort, int eImgChlType)
         {
             MsgSend msg = new MsgSend
             {

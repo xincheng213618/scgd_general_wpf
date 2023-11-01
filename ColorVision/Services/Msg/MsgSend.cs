@@ -24,8 +24,10 @@ namespace ColorVision.Services.Msg
         /// </summary>
         public string SerialNumber { get; set; }
 
-        //设备ID
-        public string SnID { get; set; }
+
+
+        [JsonProperty("CodeID")]
+        public string DeviceCode { get; set; }
 
         //MsgID,用来做消息同步确认的，如果是单方向发送的话，可以传空
         public string MsgID { get; set; }
