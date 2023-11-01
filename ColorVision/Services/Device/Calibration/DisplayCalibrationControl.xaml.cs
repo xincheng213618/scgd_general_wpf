@@ -48,5 +48,10 @@ namespace ColorVision.Services.Device.Calibration
                 }
             }
         }
+
+        private void Open_File(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }

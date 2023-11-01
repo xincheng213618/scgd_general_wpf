@@ -27,6 +27,12 @@
         </DockPanel>
         <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel   Margin="5" >
+                <GroupBox  Header="图片文件">
+                    <DockPanel Margin="0,2">
+                        <Button  Content="..." DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Open_File" />
+                        <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" HorizontalAlignment="Left" Width="130" />
+                    </DockPanel>
+                </GroupBox>
                 <DockPanel Margin="0,2">
                     <TextBlock Text="校正：" />
                     <Button  DockPanel.Dock="Right" Content="应用"  HorizontalAlignment="Right" Click="Calibration_Click" />

@@ -27,7 +27,6 @@ namespace ColorVision.Services.Device.CfwPort
                 {
                     case "Open":
                         DeviceStatus = DeviceStatus.Opened;
-                        SnID = msg.SnID ?? string.Empty;
                         break;
 
                     case "SetPort":

@@ -10,7 +10,11 @@ namespace ColorVision.Services.Msg
         public string ServiceName { get; set; }
         public string DeviceName { get; set; }
         public ulong ServiceID { get; set; }
-        public string? SnID { get; set; }
+        /// <summary>
+        /// 设备Code
+        /// </summary>
+        [JsonProperty("CodeID")]
+        public string DeviceCode { get; set; }
         /// <summary>
         /// 函数执行状态
         /// </summary>
