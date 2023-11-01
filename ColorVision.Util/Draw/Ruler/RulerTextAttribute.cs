@@ -22,7 +22,7 @@ namespace ColorVision.Draw
         public TextAttribute TextAttribute { get; set; } = new TextAttribute();
 
         [Category("TextAttribute"), DisplayName("Text")]
-        public string Text { get => TextAttribute.Text; set { TextAttribute.Text = value; NotifyPropertyChanged(); } }
+        public  string Text { get => TextAttribute.Text; set { TextAttribute.Text = value; NotifyPropertyChanged(); } }
         [Category("TextAttribute"), DisplayName("FontSize")]
         public double FontSize { get => TextAttribute.FontSize; set { TextAttribute.FontSize = value; NotifyPropertyChanged(); } }
 

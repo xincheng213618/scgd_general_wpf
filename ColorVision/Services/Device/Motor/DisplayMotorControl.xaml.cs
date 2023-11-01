@@ -1,4 +1,6 @@
-﻿using ColorVision.Templates;
+﻿using ColorVision.Device;
+using ColorVision.Services.Msg;
+using ColorVision.Templates;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -28,6 +30,24 @@ namespace ColorVision.Services.Device.Motor
         {
             this.DataContext = Device;
 
+        }
+
+        private void Open_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button)
+            {
+                var msgRecord = DeviceService.Open();
+                Helpers.SendCommand(button, msgRecord);
+            }
+        }
+
+        private void Move_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button)
+            {
+                var msgRecord = DeviceService.Move();
+                Helpers.SendCommand(button, msgRecord);
+            }
         }
     }
 }

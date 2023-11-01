@@ -24,14 +24,15 @@
                 <Button Background="Transparent" BorderThickness="0" Command="{Binding PropertyCommand}" />
             </Grid>
             <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Content="{Binding Config.Name}"  FontSize="15" IsChecked="True" />
-            <TextBlock  FontSize="10" VerticalAlignment="Bottom" Margin="2">
-                <Run Text="("/>
-                <Run Text="{Binding Config.Code}"/>
-                <Run Text=")"/>
-            </TextBlock>
         </DockPanel>
         <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
-            <StackPanel   Margin="5" />
+            <StackPanel   Margin="5" >
+                <DockPanel Margin="0,2">
+                    <TextBlock Text="校正：" />
+                    <Button  DockPanel.Dock="Right" Content="应用"  HorizontalAlignment="Right" Click="Calibration_Click" />
+                    <ComboBox  x:Name="ComboxCalibrationTemplate" Width="150" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                </DockPanel>
+            </StackPanel>
         </Border>
     </StackPanel>
 

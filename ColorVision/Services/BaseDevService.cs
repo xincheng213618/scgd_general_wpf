@@ -188,11 +188,8 @@ namespace ColorVision.Services
         /// 这里修改成可以继承的
         /// </summary>
         /// <param name="msg"></param>
-        internal virtual MsgRecord PublishAsyncClient(MsgSend msg,double Timeout = 60000)
+        internal virtual MsgRecord PublishAsyncClient(MsgSend msg,double Timeout = 30000)
         {
-            if (!MQTTControl.IsConnect)
-                return new MsgRecord();
-
             Guid guid = Guid.NewGuid();
             msg.MsgID = guid.ToString();
             msg.SnID = SnID;

@@ -405,6 +405,11 @@ namespace ColorVision.Device.Camera
             };
             Service.PublishAsyncClient(msg);
         }
+
+        private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
+        }
     }
 }
 

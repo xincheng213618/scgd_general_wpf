@@ -606,7 +606,7 @@ namespace ColorVision.Templates
                             Rectangle.Attribute.Brush = Brushes.Transparent;
                             Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
                             Rectangle.Attribute.ID = item.ID;
-                            Rectangle.Attribute.Text = item.Name;
+                            Rectangle.Attribute.Name = item.Name;
                             Rectangle.Render();
                             ImageShow.AddVisual(Rectangle);
                             break;
@@ -983,7 +983,7 @@ namespace ColorVision.Templates
                                         Rectangle.Attribute.Brush = Brushes.Transparent;
                                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
                                         Rectangle.Attribute.ID = start + i + 1;
-                                        Rectangle.Attribute.Text = string.Format("{0}{1}", pre_name, Rectangle.Attribute.ID);
+                                        Rectangle.Attribute.Name = string.Format("{0}{1}", pre_name, Rectangle.Attribute.ID);
                                         Rectangle.Render();
                                         ImageShow.AddVisual(Rectangle);
                                         break;
@@ -1057,7 +1057,7 @@ namespace ColorVision.Templates
                                             Rectangle.Attribute.Brush = Brushes.Transparent;
                                             Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
                                             Rectangle.Attribute.ID = start + i * cols + j + 1;
-                                            Rectangle.Attribute.Text = string.Format("{0}{1}", pre_name, Rectangle.Attribute.ID);
+                                            Rectangle.Attribute.Name = string.Format("{0}{1}", pre_name, Rectangle.Attribute.ID);
                                             Rectangle.Render();
                                             ImageShow.AddVisual(Rectangle);
                                             break;
@@ -1121,7 +1121,7 @@ namespace ColorVision.Templates
                                             Rectangle.Attribute.Brush = Brushes.Transparent;
                                             Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
                                             Rectangle.Attribute.ID = start + i * cols + j + 1;
-                                            Rectangle.Attribute.Text = string.Format("{0}{1}", pre_name, Rectangle.Attribute.ID);
+                                            Rectangle.Attribute.Name = string.Format("{0}{1}", pre_name, Rectangle.Attribute.ID);
                                             Rectangle.Render();
                                             ImageShow.AddVisual(Rectangle);
                                             break;
@@ -1505,7 +1505,7 @@ namespace ColorVision.Templates
                         PoiParamData poiParamData = new PoiParamData()
                         {
                             ID = rectangle.ID,
-                            Name = rectangle.Text,
+                            Name = rectangle.Name,
                             PointType = RiPointTypes.Rect,
                             PixX = rectangle.Rect.X,
                             PixY = rectangle.Rect.Y,

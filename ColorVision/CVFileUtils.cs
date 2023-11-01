@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1806,CA1833,CA1401,CA2101,CA1838,CS8603
+﻿#pragma warning disable CA1806,CA1833,CA1401,CA2101,CA1838,CS8603,CS8605,CA1707
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -9,27 +9,27 @@ namespace ColorVision
 {
     public struct C_CVCIEFileInfo
     {
-        public int width;
-        public int height;
-        public int bpp;
-        public int channels;
-        public int gain;
-        public IntPtr exp;
-        public IntPtr srcFileName;
-        public int srcFileNameLen;
-        public IntPtr data;
-        public int dataLen;
+        public int Width { get; set; }
+        public int Height { get; set; }
+        public int Bpp { get; set; }
+        public int Channels { get; set; }
+        public int Gain { get; set; }
+        public IntPtr Exp { get; set; }
+        public IntPtr SrcFileName { get; set; }
+        public int SrcFileNameLen { get; set; }
+        public IntPtr Data { get; set; }
+        public int DataLen { get; set; }
     }
     public struct CVCIEFileInfo
     {
-        public int width;
-        public int height;
-        public int bpp;
-        public int channels;
-        public int gain;
-        public float[] exp;
-        public string srcFileName;
-        public byte[] data;
+        public int Width { get; set; }
+        public int Height { get; set; }
+        public int Bpp { get; set; }
+        public int Channels { get; set; }
+        public int Gain { get; set; }
+        public float[] Exp { get; set; }
+        public string SrcFileName { get; set; }
+        public byte[] Data { get; set; }
     }
     public static class CVFileUtils
     {
@@ -78,24 +78,24 @@ namespace ColorVision
         public static int ReadCVCIEHeader(string cieFileName, ref CVCIEFileInfo fileInfo)
         {
             C_CVCIEFileInfo c_fileInfo = new C_CVCIEFileInfo();
-            c_fileInfo.srcFileNameLen = MAX_DIRECTORY_PATH;
-            c_fileInfo.srcFileName = Marshal.AllocHGlobal(c_fileInfo.srcFileNameLen);
+            c_fileInfo.SrcFileNameLen = MAX_DIRECTORY_PATH;
+            c_fileInfo.SrcFileName = Marshal.AllocHGlobal(c_fileInfo.SrcFileNameLen);
             IntPtr fileInfoPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(C_CVCIEFileInfo)));
             Marshal.StructureToPtr(c_fileInfo, fileInfoPtr, true);
             int ret = CVFileUtils.C_ReadCVCIEHeader(cieFileName, fileInfoPtr);
             if (ret == 0)
             {
                 c_fileInfo = (C_CVCIEFileInfo)Marshal.PtrToStructure(fileInfoPtr, typeof(C_CVCIEFileInfo));
-                fileInfo.width = c_fileInfo.width;
-                fileInfo.height = c_fileInfo.height;
-                fileInfo.bpp = c_fileInfo.bpp;
-                fileInfo.channels = c_fileInfo.channels;
-                fileInfo.gain = c_fileInfo.gain;
-                byte[] buffer = new byte[c_fileInfo.srcFileNameLen];
-                Marshal.Copy(c_fileInfo.srcFileName, buffer, 0, buffer.Length);
-                fileInfo.srcFileName = System.Text.Encoding.Default.GetString(buffer);
+                fileInfo.Width = c_fileInfo.Width;
+                fileInfo.Height = c_fileInfo.Height;
+                fileInfo.Bpp = c_fileInfo.Bpp;
+                fileInfo.Channels = c_fileInfo.Channels;
+                fileInfo.Gain = c_fileInfo.Gain;
+                byte[] buffer = new byte[c_fileInfo.SrcFileNameLen];
+                Marshal.Copy(c_fileInfo.SrcFileName, buffer, 0, buffer.Length);
+                fileInfo.SrcFileName = System.Text.Encoding.Default.GetString(buffer);
             }
-            Marshal.FreeHGlobal(c_fileInfo.srcFileName);
+            Marshal.FreeHGlobal(c_fileInfo.SrcFileName);
             Marshal.FreeHGlobal(fileInfoPtr);
             return ret;
         }
@@ -118,31 +118,31 @@ namespace ColorVision
         public static int WriteCVCIE(string cieFileName, CVCIEFileInfo fileInfo)
         {
             C_CVCIEFileInfo c_fileInfo = new C_CVCIEFileInfo();
-            c_fileInfo.width = fileInfo.width;
-            c_fileInfo.height = fileInfo.height;
-            c_fileInfo.bpp = fileInfo.bpp;
-            c_fileInfo.channels = fileInfo.channels;
-            c_fileInfo.gain = fileInfo.gain;
+            c_fileInfo.Width = fileInfo.Width;
+            c_fileInfo.Height = fileInfo.Height;
+            c_fileInfo.Bpp = fileInfo.Bpp;
+            c_fileInfo.Channels = fileInfo.Channels;
+            c_fileInfo.Gain = fileInfo.Gain;
             //源文件名
-            byte[] srcFileNameBytes = System.Text.Encoding.Default.GetBytes(fileInfo.srcFileName);
-            c_fileInfo.srcFileNameLen = srcFileNameBytes.Length;
-            c_fileInfo.srcFileName = Marshal.AllocHGlobal(c_fileInfo.srcFileNameLen);
-            Marshal.Copy(srcFileNameBytes, 0, c_fileInfo.srcFileName, srcFileNameBytes.Length);
+            byte[] srcFileNameBytes = System.Text.Encoding.Default.GetBytes(fileInfo.SrcFileName);
+            c_fileInfo.SrcFileNameLen = srcFileNameBytes.Length;
+            c_fileInfo.SrcFileName = Marshal.AllocHGlobal(c_fileInfo.SrcFileNameLen);
+            Marshal.Copy(srcFileNameBytes, 0, c_fileInfo.SrcFileName, srcFileNameBytes.Length);
             //曝光
-            c_fileInfo.exp = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(float)) * fileInfo.exp.Length);
-            Marshal.Copy(fileInfo.exp, 0, c_fileInfo.exp, fileInfo.exp.Length);
+            c_fileInfo.Exp = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(float)) * fileInfo.Exp.Length);
+            Marshal.Copy(fileInfo.Exp, 0, c_fileInfo.Exp, fileInfo.Exp.Length);
             //数据
-            c_fileInfo.dataLen = fileInfo.data.Length;
-            c_fileInfo.data = Marshal.AllocHGlobal(c_fileInfo.dataLen);
-            Marshal.Copy(fileInfo.data, 0, c_fileInfo.data, fileInfo.data.Length);
+            c_fileInfo.DataLen = fileInfo.Data.Length;
+            c_fileInfo.Data = Marshal.AllocHGlobal(c_fileInfo.DataLen);
+            Marshal.Copy(fileInfo.Data, 0, c_fileInfo.Data, fileInfo.Data.Length);
             //
             IntPtr fileInfoPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(C_CVCIEFileInfo)));
             Marshal.StructureToPtr(c_fileInfo, fileInfoPtr, true);
             int ret = C_WriteCVCIE(cieFileName, fileInfoPtr);
 
-            Marshal.FreeHGlobal(c_fileInfo.exp);
-            Marshal.FreeHGlobal(c_fileInfo.srcFileName);
-            Marshal.FreeHGlobal(c_fileInfo.data);
+            Marshal.FreeHGlobal(c_fileInfo.Exp);
+            Marshal.FreeHGlobal(c_fileInfo.SrcFileName);
+            Marshal.FreeHGlobal(c_fileInfo.Data);
 
             Marshal.FreeHGlobal(fileInfoPtr);
             return ret;
@@ -171,35 +171,35 @@ namespace ColorVision
             if (fileLen > 0)
             {
                 C_CVCIEFileInfo c_fileInfo = new C_CVCIEFileInfo();
-                c_fileInfo.exp = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(float)) * 3);
-                c_fileInfo.srcFileNameLen = MAX_DIRECTORY_PATH;
-                c_fileInfo.srcFileName = Marshal.AllocHGlobal(c_fileInfo.srcFileNameLen);
+                c_fileInfo.Exp = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(float)) * 3);
+                c_fileInfo.SrcFileNameLen = MAX_DIRECTORY_PATH;
+                c_fileInfo.SrcFileName = Marshal.AllocHGlobal(c_fileInfo.SrcFileNameLen);
 
 
-                c_fileInfo.dataLen = (int)fileLen;
-                c_fileInfo.data = Marshal.AllocHGlobal(c_fileInfo.dataLen);
+                c_fileInfo.DataLen = (int)fileLen;
+                c_fileInfo.Data = Marshal.AllocHGlobal(c_fileInfo.DataLen);
                 IntPtr fileInfoPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(C_CVCIEFileInfo)));
                 Marshal.StructureToPtr(c_fileInfo, fileInfoPtr, true);
                 int ret = CVFileUtils.C_ReadCVCIE(cieFileName, fileInfoPtr);
                 if (ret == 0)
                 {
                     c_fileInfo = (C_CVCIEFileInfo)Marshal.PtrToStructure(fileInfoPtr, typeof(C_CVCIEFileInfo));
-                    fileInfo.width = c_fileInfo.width;
-                    fileInfo.height = c_fileInfo.height;
-                    fileInfo.bpp = c_fileInfo.bpp;
-                    fileInfo.channels = c_fileInfo.channels;
-                    fileInfo.gain = c_fileInfo.gain;
-                    byte[] buffer = new byte[c_fileInfo.srcFileNameLen];
-                    Marshal.Copy(c_fileInfo.srcFileName, buffer, 0, buffer.Length);
-                    fileInfo.srcFileName = System.Text.Encoding.Default.GetString(buffer);
-                    fileInfo.exp = new float[3];
-                    Marshal.Copy(c_fileInfo.exp, fileInfo.exp, 0, fileInfo.exp.Length);
-                    fileInfo.data = new byte[c_fileInfo.dataLen];
-                    Marshal.Copy(c_fileInfo.data, fileInfo.data, 0, fileInfo.data.Length);
+                    fileInfo.Width = c_fileInfo.Width;
+                    fileInfo.Height = c_fileInfo.Height;
+                    fileInfo.Bpp = c_fileInfo.Bpp;
+                    fileInfo.Channels = c_fileInfo.Channels;
+                    fileInfo.Gain = c_fileInfo.Gain;
+                    byte[] buffer = new byte[c_fileInfo.SrcFileNameLen];
+                    Marshal.Copy(c_fileInfo.SrcFileName, buffer, 0, buffer.Length);
+                    fileInfo.SrcFileName = System.Text.Encoding.Default.GetString(buffer);
+                    fileInfo.Exp = new float[3];
+                    Marshal.Copy(c_fileInfo.Exp, fileInfo.Exp, 0, fileInfo.Exp.Length);
+                    fileInfo.Data = new byte[c_fileInfo.DataLen];
+                    Marshal.Copy(c_fileInfo.Data, fileInfo.Data, 0, fileInfo.Data.Length);
                 }
-                Marshal.FreeHGlobal(c_fileInfo.exp);
-                Marshal.FreeHGlobal(c_fileInfo.srcFileName);
-                Marshal.FreeHGlobal(c_fileInfo.data);
+                Marshal.FreeHGlobal(c_fileInfo.Exp);
+                Marshal.FreeHGlobal(c_fileInfo.SrcFileName);
+                Marshal.FreeHGlobal(c_fileInfo.Data);
 
                 Marshal.FreeHGlobal(fileInfoPtr);
 
@@ -212,19 +212,19 @@ namespace ColorVision
         public static int ConvertXYZToCVCIE(string cieFileName, string xFileName, string yFileName, string zFileName, ref CVCIEFileInfo fileInfo)
         {
             int ret = -999;
-            if (System.IO.File.Exists(fileInfo.srcFileName) && System.IO.File.Exists(xFileName) && System.IO.File.Exists(yFileName) && System.IO.File.Exists(zFileName))
+            if (System.IO.File.Exists(fileInfo.SrcFileName) && System.IO.File.Exists(xFileName) && System.IO.File.Exists(yFileName) && System.IO.File.Exists(zFileName))
             {
                 var x = OpenCvSharp.Cv2.ImRead(xFileName, OpenCvSharp.ImreadModes.Unchanged);
                 var y = OpenCvSharp.Cv2.ImRead(yFileName, OpenCvSharp.ImreadModes.Unchanged);
                 var z = OpenCvSharp.Cv2.ImRead(zFileName, OpenCvSharp.ImreadModes.Unchanged);
                 OpenCvSharp.Mat[] src = new OpenCvSharp.Mat[3] { x, y, z };
-                fileInfo.width = x.Cols; fileInfo.height = x.Rows;
-                fileInfo.channels = 3;
-                fileInfo.bpp = 32;
-                fileInfo.data = new byte[fileInfo.width * fileInfo.height * fileInfo.channels * 4];
+                fileInfo.Width = x.Cols; fileInfo.Height = x.Rows;
+                fileInfo.Channels = 3;
+                fileInfo.Bpp = 32;
+                fileInfo.Data = new byte[fileInfo.Width * fileInfo.Height * fileInfo.Channels * 4];
                 OpenCvSharp.Mat mergeDst = new OpenCvSharp.Mat();
                 OpenCvSharp.Cv2.Merge(src, mergeDst);
-                Marshal.Copy(mergeDst.Data, fileInfo.data, 0, fileInfo.data.Length);
+                Marshal.Copy(mergeDst.Data, fileInfo.Data, 0, fileInfo.Data.Length);
 
                 WriteCVCIE(cieFileName, fileInfo);
             }

@@ -1,4 +1,6 @@
 ﻿using ColorVision.Device;
+using ColorVision.Services.Device.Camera;
+using cvColorVision;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +11,15 @@ namespace ColorVision.Services.Device.Motor
 {
     public class ConfigMotor: BaseDeviceConfig
     {
+        public FOCUS_COMMUN eFOCUSCOMMUN { get => _eFOCUSCOMMUN; set { _eFOCUSCOMMUN = value; NotifyPropertyChanged(); } }
+        private FOCUS_COMMUN _eFOCUSCOMMUN;
 
+        public string szComName { get => _szComName; set { _szComName = value; NotifyPropertyChanged(); } }
+        private string _szComName;
+
+        public int BaudRate { get => _BaudRate; set { _BaudRate = value; NotifyPropertyChanged(); } }
+        private int _BaudRate = 9600;
+
+        public AutoFocusConfig AutoFocusConfig { get; set; } = new AutoFocusConfig();
     }
 }

@@ -254,7 +254,7 @@ namespace ColorVision
         //private int _dr(Mat dst, int n)
         //{
         //    int cols = 100;
-        //    //int height = 0;
+        //    //int Height = 0;
         //    int i = 1;
         //    for (; i < colorMap.Length; i++)
         //    {
@@ -305,13 +305,13 @@ namespace ColorVision
         //    int n = colorMapIdx.Length;
         //    Mat cm = new Mat(rows, cols + 150, srcColor.Type(), Scalar.All(255));
         //    Mat cmRt = cm[new Rect(0, 0, cols, rows)];
-        //    int height = _dr(cmRt, 1024 / n);
+        //    int Height = _dr(cmRt, 1024 / n);
         //    //MatHelp.format(cmRt);
         //    ReMapInversion(cmRt).CopyTo(cmRt);
-        //    Mat m = linspace(rows - height, height - 1, n);
+        //    Mat m = linspace(rows - Height, Height - 1, n);
         //    Mat mClr = new Mat();
         //    m.ConvertTo(mClr, MatType.CV_16UC1);
-        //    cmRt = cm[new Rect(cols, rows - height, 150, height)];
+        //    cmRt = cm[new Rect(cols, rows - Height, 150, Height)];
         //    for (int i = 0; i < n; i++)
         //    {
         //        int y = mClr.Get<ushort>(i, 0);

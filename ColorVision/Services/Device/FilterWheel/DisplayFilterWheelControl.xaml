@@ -31,7 +31,12 @@
             </TextBlock>
         </DockPanel>
         <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
-            <StackPanel   Margin="5" />
+            <StackPanel   Margin="5" >
+                <Button Content="连接"  Click="Open_Click"/>
+                <Button Content="GetPort"  Click="GetPort_Click" />
+                <Button Content="SetPort"  Click="SetPort_Click" />
+
+            </StackPanel>
         </Border>
     </StackPanel>
 

@@ -19,7 +19,7 @@ namespace ColorVision.Solution.V
         /// <summary>
         /// 得到指定数据类型的祖先节点。
         /// </summary>
-        public static T GetAncestor<T>(this VObject This) where T : VObject
+        public static T? GetAncestor<T>(this VObject This) where T : VObject
         {
             if (This is T t)
                 return t;

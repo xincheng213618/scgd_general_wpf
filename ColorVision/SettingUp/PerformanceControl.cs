@@ -77,18 +77,24 @@ namespace ColorVision.SettingUp
         {
             if (PerformanceCounterIsOpen)
             {
+                try
+                {
+                    RAMPercent = 100 - PCRAM.NextValue() / 1024 / RAMAL * 100;
+                    RAMThisPercent = PCRAMThis.NextValue() / 1024 / 1024 / 1024 / RAMAL * 100;
 
+                    CPUThisPercent = PCCPUThis.NextValue();
+                    CPUPercent = PCCPU.NextValue();
 
-                RAMPercent = 100- PCRAM.NextValue() / 1024 / RAMAL * 100;
-                RAMThisPercent = PCRAMThis.NextValue() / 1024 / 1024 / 1024 / RAMAL * 100;
+                    float curRAM = PCRAMThis.NextValue() / 1024 / 1024;
+                    RAMThis = curRAM.ToString("f1") + "MB";
+                    MemoryThis = curRAM.ToString("f1") + "MB" + "/" + RAMAL.ToString("f1") + "GB";
+                    ProcessorTotal = PCCPU.NextValue().ToString("f1") + "%";
+                }
+                catch
+                {
 
-                CPUThisPercent = PCCPUThis.NextValue();
-                CPUPercent = PCCPU.NextValue();
+                }
 
-                float curRAM = PCRAMThis.NextValue() / 1024 / 1024;
-                RAMThis = curRAM.ToString("f1") + "MB";
-                MemoryThis = curRAM.ToString("f1") + "MB" + "/" + RAMAL.ToString("f1") + "GB";
-                ProcessorTotal = PCCPU.NextValue().ToString("f1") + "%";
                 Time = DateTime.Now.ToString(Config.DefaultTimeFormat);
             }
         }
@@ -109,20 +115,20 @@ namespace ColorVision.SettingUp
         /// 总处理器占用
         /// </summary>
         public string ProcessorTotal { get => _ProcessorTotal; set { _ProcessorTotal = value; NotifyPropertyChanged(); } }
-        private string _ProcessorTotal = String.Empty;
+        private string _ProcessorTotal = string.Empty;
 
 
         /// <summary>
         /// 内存获取
         /// </summary>
         public string MemoryAvailable { get => _MemoryAvailable; set { _MemoryAvailable = value; NotifyPropertyChanged(); } }
-        private string _MemoryAvailable = String.Empty;
+        private string _MemoryAvailable = string.Empty;
 
         /// <summary>
         /// 当前软件占用内存
         /// </summary>
         public string MemoryThis { get => _MemoryThis; set { _MemoryThis = value; NotifyPropertyChanged(); } }
-        private string _MemoryThis = String.Empty;
+        private string _MemoryThis = string.Empty;
 
         public double RAMPercent { get => _RAMPercent; set { _RAMPercent = value; NotifyPropertyChanged(); } }
         private double _RAMPercent;
@@ -131,7 +137,7 @@ namespace ColorVision.SettingUp
         private double _RAMThisPercent;
 
         public string RAMThis { get => _RAMThis; set { _RAMThis = value; NotifyPropertyChanged(); } }
-        private string _RAMThis = String.Empty;
+        private string _RAMThis = string.Empty;
 
         public double CPUPercent { get => _CPUPercent; set { _CPUPercent = value; NotifyPropertyChanged(); } }
         private double _CPUPercent;

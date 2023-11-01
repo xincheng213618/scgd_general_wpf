@@ -36,7 +36,7 @@ namespace ColorVision
 
             MQTTControl.GetInstance();
             MySqlControl.GetInstance();
-            Thread thread = new Thread(async () => await InitializedOver());
+            Thread thread = new Thread(async () => await InitializedOver()) { IsBackground =true};
             thread.Start();
         }
         private static bool DebugBuild(Assembly assembly)
@@ -115,7 +115,6 @@ namespace ColorVision
             {
                 if (SoftwareConfig.IsUseRCService)
                 {
-
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         TextBoxMsg.Text += $"{Environment.NewLine}正在检测注册中心连接情况";
@@ -133,13 +132,13 @@ namespace ColorVision
                 }
                 else
                 {
-                    Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}已经跳过MQTT服务器连接"; });
+                    Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}已经跳过注册中心服务器连接"; });
                     await Task.Delay(100);
                 }
             }
             else
             {
-                Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}注册中心需要MQTT连接成功，已经跳过MQTT服务器连接"; });
+                Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}注册中心需要MQTT连接成功，已经跳过注册中心服务器连接"; });
                 await Task.Delay(200);
             }
 
@@ -161,7 +160,7 @@ namespace ColorVision
                 }
                 catch(Exception ex)
                 {
-                    MessageBox.Show("窗口创建错误");
+                    MessageBox.Show("窗口创建错误:" +ex.Message);
                     Environment.Exit(-1);
                 }
             });
