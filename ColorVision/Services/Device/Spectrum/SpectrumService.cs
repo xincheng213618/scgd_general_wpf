@@ -61,7 +61,7 @@ namespace ColorVision.Device.Spectrum
                         }
                         else if (json.EventName == "Open")
                         {
-                            //MessageBox.Show("Open");
+                            //MessageBox.Show("Transparent");
                         }
                         else if (json.EventName == "GetData")
                         {
