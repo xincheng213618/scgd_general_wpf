@@ -252,7 +252,7 @@ namespace ColorVision.Services.Algorithm
             MsgSend msg = new MsgSend
             {
                 EventName = "SFR",
-                ServiceName = Config.Code,
+                DeviceCode = Config.Code,
                 SerialNumber = SerialNumber,
                 Params = new Dictionary<string, object>() {{ "nPid", pid }}
             };
@@ -275,7 +275,7 @@ namespace ColorVision.Services.Algorithm
             MsgSend msg = new MsgSend
             {
                 EventName = "Ghost",
-                ServiceName = Config.Code,
+                DeviceCode = Config.Code,
                 SerialNumber = SerialNumber,
                 Params = new Dictionary<string, object>() {{ "nBatchID", -1 } }
             };
