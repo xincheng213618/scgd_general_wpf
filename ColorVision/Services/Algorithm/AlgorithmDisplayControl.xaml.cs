@@ -323,7 +323,6 @@ namespace ColorVision.Services.Algorithm
         private void Open_File(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.InitialDirectory = Environment.CurrentDirectory;
             openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png,*.tif) | *.jpg; *.jpeg; *.png;*.tif";
             openFileDialog.RestoreDirectory = true;
             openFileDialog.FilterIndex = 1;
@@ -341,7 +340,6 @@ namespace ColorVision.Services.Algorithm
         private void Button_Click_Upload(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.InitialDirectory = Environment.CurrentDirectory;
             openFileDialog.Filter = "CVCIE files (*.cvcie) | *.cvcie";
             openFileDialog.RestoreDirectory = true;
             openFileDialog.FilterIndex = 1;

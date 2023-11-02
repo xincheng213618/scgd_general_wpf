@@ -162,7 +162,6 @@ namespace ColorVision.Device.FileServer
         private void Button_Click_Upload(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.InitialDirectory = Environment.CurrentDirectory;
             openFileDialog.Filter = "TIF|*.tif||";
             openFileDialog.RestoreDirectory = true;
             openFileDialog.FilterIndex = 1;
