@@ -71,7 +71,6 @@ namespace ColorVision.Services.Algorithm
                 switch (msg.EventName)
                 {
                     case "Init":
-                        SnID = msg.SnID??string.Empty;
                         DeviceStatus = DeviceStatus.Init;
                         break;
                     case "UnInit":
@@ -138,7 +137,7 @@ namespace ColorVision.Services.Algorithm
             MsgSend msg = new MsgSend
             {
                 EventName = "Init",
-                Params = new Dictionary<string, object>() {{ "SnID", SnID } }
+                Params = new Dictionary<string, object>() { { "SnID", SnID } , {"CodeID",Config.Code } }
             };
             return PublishAsyncClient(msg);
         }
