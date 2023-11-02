@@ -5,9 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ColorVision.Services.Device.FilterWheel
+namespace ColorVision.Services.Device.CfwPort
 {
-    public class ConfigFilterWheel: BaseDeviceConfig
+    public class ConfigCfwPort: BaseDeviceConfig
     {
         public string szComName { get => _szComName; set { _szComName = value; NotifyPropertyChanged(); } }
         private string _szComName;

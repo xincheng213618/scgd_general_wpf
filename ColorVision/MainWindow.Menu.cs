@@ -38,7 +38,7 @@ namespace ColorVision
                 WindowTemplate windowTemplate;
                 if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
                 {
-                    MessageBox.Show("数据库连接失败，请先连接数据库在操作", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                    MessageBox.Show(Application.Current.MainWindow, "数据库连接失败，请先连接数据库在操作", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     return;
                 }
                 switch (menuItem.Tag?.ToString()??string.Empty)
@@ -266,7 +266,7 @@ namespace ColorVision
 
         private void Update_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("当前版本已经是最新版本","ColorVision",MessageBoxButton.OK);
+            MessageBox.Show(Application.Current.MainWindow, "当前版本已经是最新版本","ColorVision",MessageBoxButton.OK);
         }
         private void License_Click(object sender, RoutedEventArgs e)
         {

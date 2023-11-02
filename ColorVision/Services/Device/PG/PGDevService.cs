@@ -76,7 +76,7 @@ namespace ColorVision.Device.PG
                         }
                         else if (json.EventName == "Open")
                         {
-                            //MessageBox.Show("Open");
+                            //MessageBox.Show("Transparent");
                         }
                         else if (json.EventName == "GetData")
                         {
@@ -151,7 +151,6 @@ namespace ColorVision.Device.PG
 
             MsgSend msg = new MsgSend()
             {
-                Version = "1.0",
                 EventName = "Open",
                 ServiceName = Config.Code,
                 Params = communicateType == CommunicateType.Serial ?

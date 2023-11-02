@@ -33,6 +33,9 @@ namespace ColorVision.Services
         public event HeartbeatHandler HeartbeatEvent;
 
         public override string SubscribeTopic { get => Config.SubscribeTopic; set { Config.SubscribeTopic = value; } }
+
+        public override string DeviceCode { get => Config.Code; set => Config.Code = value; }
+
         public override string SendTopic { get => Config.SendTopic; set { Config.SendTopic = value; } }
 
         public override int HeartbeatTime { get => Config.HeartbeatTime; set { Config.HeartbeatTime = value; NotifyPropertyChanged(); } }
@@ -164,6 +167,7 @@ namespace ColorVision.Services
 
         public virtual string SubscribeTopic { get; set; }
         public virtual string SendTopic { get; set; }
+        public virtual string DeviceCode { get; set; }
         public string SnID { get; set; }
         public string ServiceName { get; set; }
         public virtual string ServiceToken { get; set; }
@@ -192,14 +196,14 @@ namespace ColorVision.Services
         {
             Guid guid = Guid.NewGuid();
             msg.MsgID = guid.ToString();
-            msg.SnID = SnID;
-            msg.Version = "1.0";
+            msg.DeviceCode = DeviceCode;
             msg.Token = ServiceToken;
             ///这里是为了兼容只前的写法，后面会修改掉
             if (string.IsNullOrWhiteSpace(msg.ServiceName))
             {
                 msg.ServiceName = SendTopic;
             }
+
             string json = JsonConvert.SerializeObject(msg, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
 
             Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, json, false));

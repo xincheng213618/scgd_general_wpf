@@ -9,7 +9,7 @@
         Sensor = 5,
         FileServer = 6,
         Algorithm =7,
-        FilterWheel =8,
+        CfwPort =8,
         Calibration =9,
         Motor =10,
         FocusRing =11,

@@ -194,7 +194,7 @@ namespace ColorVision.Device.Camera
             {
                 if (SliderexpTime.Value <= 0)
                 {
-                    MessageBox.Show("曝光时间小于0");
+                    MessageBox.Show(Application.Current.MainWindow, "曝光时间小于0");
                     return;
                 }
                 string filename = DateTime.Now.ToString("yyyyMMddHHmmss") + ".tif";
@@ -212,20 +212,20 @@ namespace ColorVision.Device.Camera
             Service.Close();
         }
 
-        private void FilterWheelSetPort_Click(object sender, RoutedEventArgs e)
+        private void CfwPortSetPort_Click(object sender, RoutedEventArgs e)
         {
-            if (ComboxFilterWheelChannel.SelectedIndex > -1)
+            if (ComboxCfwPortChannel.SelectedIndex > -1)
             {
-                Service.FilterWheelSetPort(0, ComboxFilterWheelChannel.SelectedIndex + 0x30, (int)Service.CurrentCameraType);
+                Service.CfwPortSetPort(0, ComboxCfwPortChannel.SelectedIndex + 0x30, (int)Service.CurrentCameraType);
             }
         }
 
 
-        private void FilterWheelSet_Click(object sender, RoutedEventArgs e)
+        private void CfwPortSet_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                Service.FilterWheelSetPort(ComboxFilterWheelChannel1.SelectedIndex + 1, ComboxFilterWheelChannel2.SelectedIndex + 1, (int)Service.CurrentCameraType);
+                Service.CfwPortSetPort(ComboxCfwPortChannel1.SelectedIndex + 1, ComboxCfwPortChannel2.SelectedIndex + 1, (int)Service.CurrentCameraType);
             }
             catch
             {
@@ -233,17 +233,17 @@ namespace ColorVision.Device.Camera
             }
         }
 
-        private void FilterWheelReset_Click(object sender, RoutedEventArgs e)
+        private void CfwPortReset_Click(object sender, RoutedEventArgs e)
         {
-            Service.FilterWheelSetPort(0, 0x30, (int)Service.CurrentCameraType);
-            ComboxFilterWheelChannel.SelectedIndex = 0;
+            Service.CfwPortSetPort(0, 0x30, (int)Service.CurrentCameraType);
+            ComboxCfwPortChannel.SelectedIndex = 0;
         }
 
-        private void StackPanelFilterWheel_Initialized(object sender, EventArgs e)
+        private void StackPanelCfwPort_Initialized(object sender, EventArgs e)
         {
             for (int i = 0; i < 10; i++)
-                ComboxFilterWheelChannel.Items.Add(new ComboBoxItem() { Content = i });
-            ComboxFilterWheelChannel.SelectedIndex = 0;
+                ComboxCfwPortChannel.Items.Add(new ComboBoxItem() { Content = i });
+            ComboxCfwPortChannel.SelectedIndex = 0;
         }
 
         private void AutoExplose_Click(object sender, RoutedEventArgs e)

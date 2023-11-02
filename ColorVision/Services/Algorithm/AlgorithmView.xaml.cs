@@ -241,7 +241,7 @@ namespace ColorVision.Services.Algorithm
         {
             if (listView1.SelectedIndex < 0)
             {
-                MessageBox.Show("您需要先选择数据", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                MessageBox.Show(Application.Current.MainWindow, "您需要先选择数据", "ColorVision");
                 return;
             }
 

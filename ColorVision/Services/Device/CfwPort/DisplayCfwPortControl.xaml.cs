@@ -8,18 +8,18 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Services.Device.FilterWheel
+namespace ColorVision.Services.Device.CfwPort
 {
     /// <summary>
     /// SMUDisplayControl.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayFilterWheelControl : UserControl
+    public partial class DisplayCfwPortControl : UserControl
     {
 
-        public DeviceFilterWheel Device { get; set; }
-        private DeviceServiceFilterWheel DeviceService { get => Device.DeviceService;  }
+        public DeviceCfwPort Device { get; set; }
+        private DeviceServiceCfwPort DeviceService { get => Device.DeviceService;  }
 
-        public DisplayFilterWheelControl(DeviceFilterWheel device)
+        public DisplayCfwPortControl(DeviceCfwPort device)
         {
             this.Device = device;
             InitializeComponent();

@@ -156,7 +156,7 @@ namespace ColorVision.Flow
                 }
                 else
                 {
-                    MessageBox.Show("流程模板为空，不能运行！！！");
+                    MessageBox.Show(Application.Current.MainWindow, "流程模板为空，不能运行！！！");
                 }
             }
         }

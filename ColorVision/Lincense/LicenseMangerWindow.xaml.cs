@@ -19,6 +19,7 @@ namespace ColorVision.Lincense
         public LicenseMangerWindow()
         {
             InitializeComponent();
+            IsBlurEnabled = GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting.TransparentWindow && IsBlurEnabled;
         }
 
         public ObservableCollection<LicenseConfig> Licenses { get; set; }

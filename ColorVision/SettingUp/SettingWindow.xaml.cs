@@ -26,6 +26,7 @@ namespace ColorVision.SettingUp
         public SettingWindow()
         {
             InitializeComponent();
+            IsBlurEnabled = GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting.TransparentWindow && IsBlurEnabled;
         }
         private void Window_Initialized(object sender, EventArgs e)
         {

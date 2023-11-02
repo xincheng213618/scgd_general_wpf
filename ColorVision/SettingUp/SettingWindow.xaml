@@ -123,6 +123,12 @@
                                             <hc:ComboBox x:Name="cmtheme" SelectedValue="{Binding SoftwareSetting.Theme}" hc:InfoElement.Placeholder="{x:Static resx:Resource.Theme}"  DockPanel.Dock="Right" Style="{StaticResource ComboBox.Small}" Width="150"  />
                                             <TextBlock Text="{x:Static resx:Resource.Theme}"/>
                                         </DockPanel>
+                                        <DockPanel Margin="5">
+                                            <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding SoftwareSetting.TransparentWindow}"/>
+                                            <TextBlock Text="透明窗口"/>
+                                        </DockPanel>
+
+
                                         <DockPanel  Margin="5" x:Name="lauagDock">
                                             <hc:ComboBox x:Name="cmlauage" SelectedValue="{Binding SoftwareSetting.UICulture}" hc:InfoElement.Placeholder="{x:Static resx:Resource.Language}"  DockPanel.Dock="Right" Style="{StaticResource ComboBox.Small}" Width="150" />
                                             <TextBlock Text="{x:Static resx:Resource.Language}"/>

@@ -9,11 +9,11 @@ using System.Threading.Tasks;
 using ColorVision.Services.Msg;
 using System.Diagnostics;
 
-namespace ColorVision.Services.Device.FilterWheel
+namespace ColorVision.Services.Device.CfwPort
 {
-    public class DeviceServiceFilterWheel : BaseDevService<ConfigFilterWheel>
+    public class DeviceServiceCfwPort : BaseDevService<ConfigCfwPort>
     {
-        public DeviceServiceFilterWheel(ConfigFilterWheel config) : base(config)
+        public DeviceServiceCfwPort(ConfigCfwPort config) : base(config)
         {
             MsgReturnReceived += ProcessingReceived;
             DeviceStatus = DeviceStatus.UnInit;
@@ -27,7 +27,6 @@ namespace ColorVision.Services.Device.FilterWheel
                 {
                     case "Open":
                         DeviceStatus = DeviceStatus.Opened;
-                        SnID = msg.SnID ?? string.Empty;
                         break;
 
                     case "SetPort":
