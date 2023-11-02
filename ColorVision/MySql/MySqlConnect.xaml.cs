@@ -87,7 +87,7 @@ namespace ColorVision.MySql
             Task.Run(() =>
             {
                 bool IsConnect = MySqlControl.TestConnect(MySqlConfig);
-                MessageBox.Show(Application.Current.MainWindow, $"连接{(IsConnect ? "成功" : "失败")}","ColorVision");
+                MessageBox.Show($"连接{(IsConnect ? "成功" : "失败")}","ColorVision");
             });
 
 
@@ -96,7 +96,7 @@ namespace ColorVision.MySql
         private void Button_Click_Test1(object sender, RoutedEventArgs e)
         {
             if (ListViewMySqlBorder.Visibility == Visibility.Visible)
-            {
+            
                 ListViewMySqlBorder.Visibility = Visibility.Collapsed;
                 this.Width -= 170;
             }
