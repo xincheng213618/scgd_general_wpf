@@ -1527,7 +1527,7 @@ namespace cvColorVision
             }
             catch
             {
-                MessageBox.Show("畸变计算超时"); 
+                MessageBox.Show(Application.Current.MainWindow, "畸变计算超时"); 
                 return false; 
             }
         }

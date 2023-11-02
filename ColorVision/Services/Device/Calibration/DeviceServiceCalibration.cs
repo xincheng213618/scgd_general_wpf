@@ -30,7 +30,7 @@ namespace ColorVision.Services.Device.Calibration
                 switch (msg.EventName)
                 {
                     case "Calibration":
-                        MessageBox.Show(msg.Data);
+                        MessageBox.Show(Application.Current.MainWindow, msg.Data);
                         break;
                 }
             }
@@ -39,7 +39,7 @@ namespace ColorVision.Services.Device.Calibration
                 switch (msg.EventName)
                 {
                     case "Calibration":
-                        MessageBox.Show("校准失败");
+                        MessageBox.Show(Application.Current.MainWindow, "校准失败");
                         break;
                 }
             }
@@ -96,7 +96,7 @@ namespace ColorVision.Services.Device.Calibration
 
 
             Params.Add("SrcFileName", FilePath);
-            Params.Add("fname", "");
+            Params.Add("fname",DateTime.Now.ToString("yyyyMMddHHmmss") );
             return PublishAsyncClient(msg);
         }
     }

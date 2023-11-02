@@ -107,7 +107,7 @@ namespace ColorVision.Device.Camera
                                 string Msg = "SaturationR:" + Config.SaturationR.ToString() + Environment.NewLine +
                                              "SaturationG:" + Config.SaturationG.ToString() + Environment.NewLine +
                                              "SaturationB:" + Config.SaturationB.ToString() + Environment.NewLine;
-                                MessageBox.Show(Msg);
+                                MessageBox.Show(Application.Current.MainWindow,Msg);
                             }
                             else
                             {
@@ -115,7 +115,7 @@ namespace ColorVision.Device.Camera
                                 Config.Saturation = msg.Data.result[0].resultSaturation;
 
                                 string Msg = "Saturation:" + Config.Saturation.ToString();
-                                MessageBox.Show(Msg);
+                                MessageBox.Show(Application.Current.MainWindow, Msg);
                             }
                         } 
                         break;
@@ -126,7 +126,7 @@ namespace ColorVision.Device.Camera
                         log.Debug($"Calibration:{msg.Data}");
                         break;
                     default:
-                        MessageBox.Show($"未定义{msg.EventName}");
+                        MessageBox.Show(Application.Current.MainWindow, $"未定义{msg.EventName}");
                         break;
                 }
             }
@@ -143,7 +143,7 @@ namespace ColorVision.Device.Camera
                         break;
                     case "Open":
                         if (DeviceStatus == DeviceStatus.Init)
-                            MessageBox.Show("许可证异常，请配置相机设备许可证");
+                            MessageBox.Show(Application.Current.MainWindow, "许可证异常，请配置相机设备许可证");
                         DeviceStatus = DeviceStatus.UnInit;
                         break;
                     case "Init":

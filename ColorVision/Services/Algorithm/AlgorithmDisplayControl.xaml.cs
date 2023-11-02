@@ -211,7 +211,7 @@ namespace ColorVision.Services.Algorithm
         {
             if (ComboxPoiTemplate.SelectedIndex ==-1)
             {
-                MessageBox.Show("请先选择关注点模板", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                MessageBox.Show(Application.Current.MainWindow, "请先选择关注点模板", "ColorVision");
                 return;
             }
             string sn = null;
@@ -220,7 +220,7 @@ namespace ColorVision.Services.Algorithm
             if (isSN.HasValue && isSN.Value) {
                 if (string.IsNullOrWhiteSpace(BatchCode.Text))
                 {
-                    MessageBox.Show("批次号不能为空，请先输入批次号", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                    MessageBox.Show(Application.Current.MainWindow, "批次号不能为空，请先输入批次号", "ColorVision");
                     return;
                 }
                 sn = BatchCode.Text;
@@ -230,7 +230,7 @@ namespace ColorVision.Services.Algorithm
             {
                 if (string.IsNullOrWhiteSpace(imgFileName))
                 {
-                    MessageBox.Show("图像文件不能为空，请先选择图像文件", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                    MessageBox.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
                     return;
                 }
             }
@@ -255,7 +255,7 @@ namespace ColorVision.Services.Algorithm
         {
             if (ComboxMTFTemplate.SelectedIndex==-1)
             {
-                MessageBox.Show("请先选择MTF模板", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                MessageBox.Show(Application.Current.MainWindow, "请先选择MTF模板", "ColorVision");
                 return;
             }
 
@@ -267,12 +267,12 @@ namespace ColorVision.Services.Algorithm
         {
             if (ComboxSFRTemplate.SelectedIndex == -1)
             {
-                MessageBox.Show("请先选择SFR模板", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                MessageBox.Show(Application.Current.MainWindow, "请先选择SFR模板", "ColorVision");
                 return;
             }
             if (ComboxPoiTemplate.SelectedIndex == -1)
             {
-                MessageBox.Show("请先选择关注点模板", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                MessageBox.Show(Application.Current.MainWindow, "请先选择关注点模板", "ColorVision");
                 return;
             }
 
@@ -285,7 +285,7 @@ namespace ColorVision.Services.Algorithm
         {
             if (ComboxGhostTemplate.SelectedIndex == -1)
             {
-                MessageBox.Show("请先选择Ghost模板", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                MessageBox.Show(Application.Current.MainWindow, "请先选择Ghost模板", "ColorVision");
                 return;
             }
 
@@ -299,7 +299,7 @@ namespace ColorVision.Services.Algorithm
         {
             if (ComboxDistortionTemplate.SelectedIndex == -1)
             {
-                MessageBox.Show("请先选择Distortion模板", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                MessageBox.Show(Application.Current.MainWindow, "请先选择Distortion模板", "ColorVision");
                 return;
             }
             var msg = Service.Distortion(ImageFile.Text, TemplateControl.GetInstance().DistortionParams[ComboxDistortionTemplate.SelectedIndex].Value);
@@ -311,7 +311,7 @@ namespace ColorVision.Services.Algorithm
         {
             if (ComboxFOVTemplate.SelectedIndex == -1)
             {
-                MessageBox.Show("请先选择FOV模板", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                MessageBox.Show(Application.Current.MainWindow, "请先选择FOV模板", "ColorVision");
                 return;
             }
 
@@ -449,7 +449,7 @@ namespace ColorVision.Services.Algorithm
                 WindowTemplate windowTemplate;
                 if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
                 {
-                    MessageBox.Show("数据库连接失败，请先连接数据库在操作", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                    MessageBox.Show(Application.Current.MainWindow, "数据库连接失败，请先连接数据库在操作", "ColorVision");
                     return;
                 }
                 switch (button.Tag?.ToString() ?? string.Empty)
