@@ -64,7 +64,7 @@ namespace ColorVision.Device.PG
                 int port;
                 if (!int.TryParse(TextBoxPGPort.Text, out port))
                 {
-                    MessageBox.Show("端口配置错误");
+                    MessageBox.Show(Application.Current.MainWindow, "端口配置错误");
                     return;
                 }
                 if (this.PGService.Config.IsNet) PGService.Open(CommunicateType.Tcp, TextBoxPGIP.Text, port);

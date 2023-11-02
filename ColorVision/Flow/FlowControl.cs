@@ -123,7 +123,7 @@ namespace ColorVision.Flow
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                    MessageBox.Show(Application.Current.MainWindow, ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 }
             }
 

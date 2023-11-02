@@ -9,6 +9,9 @@ using System.Threading.Tasks;
 using ColorVision.Services.Msg;
 using System.Diagnostics;
 using ColorVision.Templates;
+using System.Windows.Documents;
+using System.ServiceModel.Channels;
+using System.Windows;
 
 namespace ColorVision.Services.Device.Calibration
 {
@@ -22,11 +25,30 @@ namespace ColorVision.Services.Device.Calibration
 
         private void ProcessingReceived(MsgReturn msg)
         {
+            if (msg.Code == 0)
+            {
+                switch (msg.EventName)
+                {
+                    case "Calibration":
+                        MessageBox.Show(Application.Current.MainWindow, msg.Data);
+                        break;
+                }
+            }
+            else
+            {
+                switch (msg.EventName)
+                {
+                    case "Calibration":
+                        MessageBox.Show(Application.Current.MainWindow, "校准失败");
+                        break;
+                }
+            }
+
 
         }
 
 
-        public MsgRecord Calibration(CalibrationParam item)
+        public MsgRecord Calibration(CalibrationParam item,string FilePath,double R,double G,double B)
         {
             Dictionary<string, object> Params = new Dictionary<string, object>();
             MsgSend msg = new MsgSend
@@ -63,7 +85,18 @@ namespace ColorVision.Services.Device.Calibration
                 item.NormalG.ToDictionary(),
                 item.NormalB.ToDictionary()
             };
+
+            List[0].Add("EXPOSURE", R);
+            List[1].Add("EXPOSURE", G);
+            List[2].Add("EXPOSURE", B);
+
+
+
             Params.Add("List", List);
+
+
+            Params.Add("SrcFileName", FilePath);
+            Params.Add("fname",DateTime.Now.ToString("yyyyMMddHHmmss") );
             return PublishAsyncClient(msg);
         }
     }

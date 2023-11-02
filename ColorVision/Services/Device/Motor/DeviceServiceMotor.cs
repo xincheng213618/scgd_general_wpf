@@ -29,7 +29,6 @@ namespace ColorVision.Services.Device.Motor
                 {
                     case "Open":
                         DeviceStatus = DeviceStatus.Opened;
-                        SnID = msg.SnID ?? string.Empty;
                         break;
 
                     case "Move":
