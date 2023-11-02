@@ -52,7 +52,6 @@ namespace ColorVision.Services.Device.Calibration
         private void Open_File(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.InitialDirectory = Environment.CurrentDirectory;
             openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png,*.tif) | *.jpg; *.jpeg; *.png;*.tif";
             openFileDialog.RestoreDirectory = true;
             openFileDialog.FilterIndex = 1;
