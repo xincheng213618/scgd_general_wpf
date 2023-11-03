@@ -102,7 +102,7 @@
 
         <StackPanel x:Name="CreateGrid"  Grid.Column="1" Grid.Row="1" HorizontalAlignment="Center">
             <DockPanel  >
-                <TextBlock Text="模板名称："/>
+                <TextBlock Text="模板名称："  Foreground="{DynamicResource GlobalTextBrush}"/>
                 <TextBox x:Name="TextBox1" Margin="3,3,0,3"/>
             </DockPanel>
             <UniformGrid x:Name="FunctionGrid" Columns="3" Margin="0,8"  Width="345"  HorizontalAlignment="Center">

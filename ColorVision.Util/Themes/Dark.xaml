@@ -12,6 +12,8 @@
     <Color x:Key="SelectedBackgroundColor">#FFC5CBF9</Color>
     <Color x:Key="SelectedUnfocusedColor">#FFDDDDDD</Color>
 
+    <SolidColorBrush x:Key="BordrBrush">#3D3D3D</SolidColorBrush>
+
     <SolidColorBrush x:Key="GlobalBackground" Color="{StaticResource GlobalBackgroundColor}" />
     <SolidColorBrush x:Key="GlobalBorderBrush" Color="{StaticResource GlobalBroderBrushColor}"/>
     <SolidColorBrush x:Key="GlobalBorderBrush1" Color="#151515"/>

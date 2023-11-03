@@ -3,7 +3,7 @@
     
     <BorderGapMaskConverter x:Key="BorderGapMaskConverter"/>
     <Style  TargetType="{x:Type GroupBox}">
-        <Setter Property="BorderBrush" Value="#D5DFE5"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BordrBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
         <Setter Property="Template">

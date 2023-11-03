@@ -13,6 +13,8 @@
     <Color x:Key="SelectedBackgroundColor">#FFC5CBF9</Color>
     <Color x:Key="SelectedUnfocusedColor">#FFDDDDDD</Color>
 
+    <SolidColorBrush x:Key="BordrBrush">#D5DFE5</SolidColorBrush>
+
 
     <SolidColorBrush x:Key="ButtonBackground" Color="#FBFBFB" />
     <SolidColorBrush x:Key="ButtonBorderBrush" Color="#E5E5E5" />

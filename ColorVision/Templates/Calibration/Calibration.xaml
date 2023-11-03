@@ -11,121 +11,126 @@
         <Style  TargetType="TextBox" BasedOn="{StaticResource TextBox.Small}"/> 
     </UserControl.Resources>
     <StackPanel Margin="0">
-        <TabControl>
-            <TabItem Header="R">
-                <Border Margin="5,0">
-                    <StackPanel>
-                        <DockPanel  Margin="0,2">
-                            <TextBlock DockPanel.Dock="Left" Text="暗噪声"  Width="80" />
-                            <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding  NormalR.DarkNoise.IsSelected}"   Margin="5,0"/>
-                            <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalR.DarkNoise.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                            <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding NormalR.DarkNoise.FilePath}" />
-                        </DockPanel>
-                        <DockPanel  Margin="0,2">
-                            <TextBlock DockPanel.Dock="Left" Text="DSNU" Width="80"  />
-                            <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalR.DSNU.IsSelected}"   Margin="5,0"/>
-                            <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalR.DSNU.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                            <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding NormalR.DSNU.FilePath}" />
-                        </DockPanel>
-                        <DockPanel  Margin="0,2">
-                            <TextBlock DockPanel.Dock="Left" Text="缺陷点" Width="80"  />
-                            <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalR.DefectPoint.IsSelected}"   Margin="5,0"/>
-                            <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalR.DefectPoint.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                            <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding NormalR.DefectPoint.FilePath}" />
-                        </DockPanel>
 
-                        <DockPanel  Margin="0,2">
-                            <TextBlock DockPanel.Dock="Left" Text="ColorShift" Width="80"  />
-                            <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalR.ColorShift.IsSelected}"   Margin="5,0"/>
-                            <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalR.ColorShift.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                            <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding NormalR.ColorShift.FilePath}" />
-                        </DockPanel>
-                        <DockPanel  Margin="0,2">
-                            <TextBlock DockPanel.Dock="Left" Text="畸变" Width="80"  />
-                            <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalR.Distortion.IsSelected}"   Margin="5,0"/>
-                            <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalR.Distortion.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                            <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding NormalR.Distortion.FilePath}" />
-                        </DockPanel>
-                    </StackPanel>
-                </Border>
-            </TabItem>
-            <TabItem Header="G">
-                <Border Margin="5,0">
-                    <StackPanel>
-                        <DockPanel  Margin="0,2">
-                            <TextBlock DockPanel.Dock="Left" Text="暗噪声"  Width="80" />
-                            <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding  NormalG.DarkNoise.IsSelected}"   Margin="5,0"/>
-                            <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalG.DarkNoise.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                            <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding NormalG.DarkNoise.FilePath}" />
-                        </DockPanel>
-                        <DockPanel  Margin="0,2">
-                            <TextBlock DockPanel.Dock="Left" Text="DSNU" Width="80"  />
-                            <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalG.DSNU.IsSelected}"   Margin="5,0"/>
-                            <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalG.DSNU.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                            <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding NormalG.DSNU.FilePath}" />
-                        </DockPanel>
-                        <DockPanel  Margin="0,2">
-                            <TextBlock DockPanel.Dock="Left" Text="缺陷点" Width="80"  />
-                            <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalG.DefectPoint.IsSelected}"   Margin="5,0"/>
-                            <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalG.DefectPoint.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                            <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding NormalG.DefectPoint.FilePath}" />
-                        </DockPanel>
+        <Border  BorderThickness="1" BorderBrush="{DynamicResource  BorderBrush}" CornerRadius="5">
+            <TabControl Background="Transparent">
+                <TabItem Header="R" Background="Transparent">
+                    <Border Margin="5,0">
+                        <StackPanel>
+                            <DockPanel  Margin="0,2">
+                                <TextBlock DockPanel.Dock="Left" Text="暗噪声"  Width="80" />
+                                <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding  NormalR.DarkNoise.IsSelected}"   Margin="5,0"/>
+                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalR.DarkNoise.SelectFileCommand}" Width="40"  Margin="5,0"/>
+                                <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding NormalR.DarkNoise.FilePath}" />
+                            </DockPanel>
+                            <DockPanel  Margin="0,2">
+                                <TextBlock DockPanel.Dock="Left" Text="DSNU" Width="80"  />
+                                <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalR.DSNU.IsSelected}"   Margin="5,0"/>
+                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalR.DSNU.SelectFileCommand}" Width="40"  Margin="5,0"/>
+                                <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding NormalR.DSNU.FilePath}" />
+                            </DockPanel>
+                            <DockPanel  Margin="0,2">
+                                <TextBlock DockPanel.Dock="Left" Text="缺陷点" Width="80"  />
+                                <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalR.DefectPoint.IsSelected}"   Margin="5,0"/>
+                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalR.DefectPoint.SelectFileCommand}" Width="40"  Margin="5,0"/>
+                                <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding NormalR.DefectPoint.FilePath}" />
+                            </DockPanel>
 
-                        <DockPanel  Margin="0,2">
-                            <TextBlock DockPanel.Dock="Left" Text="ColorShift" Width="80"  />
-                            <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalG.ColorShift.IsSelected}"   Margin="5,0"/>
-                            <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalG.ColorShift.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                            <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding NormalG.ColorShift.FilePath}" />
-                        </DockPanel>
-                        <DockPanel  Margin="0,2">
-                            <TextBlock DockPanel.Dock="Left" Text="畸变" Width="80"  />
-                            <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalG.Distortion.IsSelected}"   Margin="5,0"/>
-                            <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalG.Distortion.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                            <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding NormalG.Distortion.FilePath}" />
-                        </DockPanel>
-                    </StackPanel>
-                </Border>
-            </TabItem>
-            <TabItem Header="B">
-                <Border Margin="5,0">
-                    <StackPanel>
-                        <DockPanel  Margin="0,2">
-                            <TextBlock DockPanel.Dock="Left" Text="暗噪声"  Width="80" />
-                            <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding  NormalB.DarkNoise.IsSelected}"   Margin="5,0"/>
-                            <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalB.DarkNoise.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                            <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding NormalB.DarkNoise.FilePath}" />
-                        </DockPanel>
-                        <DockPanel  Margin="0,2">
-                            <TextBlock DockPanel.Dock="Left" Text="DSNU" Width="80"  />
-                            <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalB.DSNU.IsSelected}"   Margin="5,0"/>
-                            <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalB.DSNU.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                            <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding NormalB.DSNU.FilePath}" />
-                        </DockPanel>
-                        <DockPanel  Margin="0,2">
-                            <TextBlock DockPanel.Dock="Left" Text="缺陷点" Width="80"  />
-                            <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalB.DefectPoint.IsSelected}"   Margin="5,0"/>
-                            <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalB.DefectPoint.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                            <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding NormalB.DefectPoint.FilePath}" />
-                        </DockPanel>
+                            <DockPanel  Margin="0,2">
+                                <TextBlock DockPanel.Dock="Left" Text="ColorShift" Width="80"  />
+                                <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalR.ColorShift.IsSelected}"   Margin="5,0"/>
+                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalR.ColorShift.SelectFileCommand}" Width="40"  Margin="5,0"/>
+                                <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding NormalR.ColorShift.FilePath}" />
+                            </DockPanel>
+                            <DockPanel  Margin="0,2">
+                                <TextBlock DockPanel.Dock="Left" Text="畸变" Width="80"  />
+                                <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalR.Distortion.IsSelected}"   Margin="5,0"/>
+                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalR.Distortion.SelectFileCommand}" Width="40"  Margin="5,0"/>
+                                <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding NormalR.Distortion.FilePath}" />
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+                </TabItem>
+                <TabItem Header="G" Background="Transparent">
+                    <Border Margin="5,0">
+                        <StackPanel>
+                            <DockPanel  Margin="0,2">
+                                <TextBlock DockPanel.Dock="Left" Text="暗噪声"  Width="80" />
+                                <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding  NormalG.DarkNoise.IsSelected}"   Margin="5,0"/>
+                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalG.DarkNoise.SelectFileCommand}" Width="40"  Margin="5,0"/>
+                                <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding NormalG.DarkNoise.FilePath}" />
+                            </DockPanel>
+                            <DockPanel  Margin="0,2">
+                                <TextBlock DockPanel.Dock="Left" Text="DSNU" Width="80"  />
+                                <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalG.DSNU.IsSelected}"   Margin="5,0"/>
+                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalG.DSNU.SelectFileCommand}" Width="40"  Margin="5,0"/>
+                                <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding NormalG.DSNU.FilePath}" />
+                            </DockPanel>
+                            <DockPanel  Margin="0,2">
+                                <TextBlock DockPanel.Dock="Left" Text="缺陷点" Width="80"  />
+                                <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalG.DefectPoint.IsSelected}"   Margin="5,0"/>
+                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalG.DefectPoint.SelectFileCommand}" Width="40"  Margin="5,0"/>
+                                <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding NormalG.DefectPoint.FilePath}" />
+                            </DockPanel>
 
-                        <DockPanel  Margin="0,2">
-                            <TextBlock DockPanel.Dock="Left" Text="ColorShift" Width="80"  />
-                            <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalB.ColorShift.IsSelected}"   Margin="5,0"/>
-                            <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalB.ColorShift.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                            <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding NormalB.ColorShift.FilePath}" />
-                        </DockPanel>
-                        <DockPanel  Margin="0,2">
-                            <TextBlock DockPanel.Dock="Left" Text="畸变" Width="80"  />
-                            <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalB.Distortion.IsSelected}"   Margin="5,0"/>
-                            <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalB.Distortion.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                            <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding NormalB.Distortion.FilePath}" />
-                        </DockPanel>
-                    </StackPanel>
-                </Border>
-            </TabItem>
-        </TabControl>
+                            <DockPanel  Margin="0,2">
+                                <TextBlock DockPanel.Dock="Left" Text="ColorShift" Width="80"  />
+                                <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalG.ColorShift.IsSelected}"   Margin="5,0"/>
+                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalG.ColorShift.SelectFileCommand}" Width="40"  Margin="5,0"/>
+                                <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding NormalG.ColorShift.FilePath}" />
+                            </DockPanel>
+                            <DockPanel  Margin="0,2">
+                                <TextBlock DockPanel.Dock="Left" Text="畸变" Width="80"  />
+                                <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalG.Distortion.IsSelected}"   Margin="5,0"/>
+                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalG.Distortion.SelectFileCommand}" Width="40"  Margin="5,0"/>
+                                <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding NormalG.Distortion.FilePath}" />
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+                </TabItem>
+                <TabItem Header="B">
+                    <Border Margin="5,0">
+                        <StackPanel>
+                            <DockPanel  Margin="0,2">
+                                <TextBlock DockPanel.Dock="Left" Text="暗噪声"  Width="80" />
+                                <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding  NormalB.DarkNoise.IsSelected}"   Margin="5,0"/>
+                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalB.DarkNoise.SelectFileCommand}" Width="40"  Margin="5,0"/>
+                                <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding NormalB.DarkNoise.FilePath}" />
+                            </DockPanel>
+                            <DockPanel  Margin="0,2">
+                                <TextBlock DockPanel.Dock="Left" Text="DSNU" Width="80"  />
+                                <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalB.DSNU.IsSelected}"   Margin="5,0"/>
+                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalB.DSNU.SelectFileCommand}" Width="40"  Margin="5,0"/>
+                                <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding NormalB.DSNU.FilePath}" />
+                            </DockPanel>
+                            <DockPanel  Margin="0,2">
+                                <TextBlock DockPanel.Dock="Left" Text="缺陷点" Width="80"  />
+                                <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalB.DefectPoint.IsSelected}"   Margin="5,0"/>
+                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalB.DefectPoint.SelectFileCommand}" Width="40"  Margin="5,0"/>
+                                <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding NormalB.DefectPoint.FilePath}" />
+                            </DockPanel>
+
+                            <DockPanel  Margin="0,2">
+                                <TextBlock DockPanel.Dock="Left" Text="ColorShift" Width="80"  />
+                                <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalB.ColorShift.IsSelected}"   Margin="5,0"/>
+                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalB.ColorShift.SelectFileCommand}" Width="40"  Margin="5,0"/>
+                                <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding NormalB.ColorShift.FilePath}" />
+                            </DockPanel>
+                            <DockPanel  Margin="0,2">
+                                <TextBlock DockPanel.Dock="Left" Text="畸变" Width="80"  />
+                                <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalB.Distortion.IsSelected}"   Margin="5,0"/>
+                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalB.Distortion.SelectFileCommand}" Width="40"  Margin="5,0"/>
+                                <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding NormalB.Distortion.FilePath}" />
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+                </TabItem>
+            </TabControl>
+
+        </Border>
+       
         
-        
+ 
         
         <GroupBox Header="均匀场校正" >
             <StackPanel>
