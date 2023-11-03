@@ -99,7 +99,7 @@ namespace ColorVision.Services.Device.Motor
             };
             return PublishAsyncClient(msg);
         }
-        public MsgRecord MoveDiaphragm(int nPosition, int dwTimeOut = 5000, bool IsbAbs = true)
+        public MsgRecord MoveDiaphragm(double nPosition, int dwTimeOut = 5000, bool IsbAbs = true)
         {
 
             MsgSend msg = new MsgSend

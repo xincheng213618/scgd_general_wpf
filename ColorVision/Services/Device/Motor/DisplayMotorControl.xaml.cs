@@ -78,7 +78,7 @@ namespace ColorVision.Services.Device.Motor
         {
             if (sender is Button button)
             {
-                if (int.TryParse(TextDiaphragm.Text, out int pos))
+                if (double.TryParse(TextDiaphragm.Text, out double pos))
                 {
                     var msgRecord = DeviceService.MoveDiaphragm(pos);
                     Helpers.SendCommand(button, msgRecord);
