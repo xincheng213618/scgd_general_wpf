@@ -362,7 +362,7 @@
                                             <StackPanel Margin="5">
                                                 <DockPanel Margin="0,2">
                                                     <TextBlock Text="电机类型:" Width="120"/>
-                                                    <TextBox Text="{Binding Config.MotorConfig.eFOCUSCOMMUN}" />
+                                                    <ComboBox x:Name="ComboxMotorType"  SelectedValue="{Binding Config.MotorConfig.eFOCUSCOMMUN}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Margin="0,0,0,0"/>
                                                 </DockPanel>
                                                 <DockPanel Margin="0,2">
                                                     <TextBlock Text="串口:" Width="120"/>

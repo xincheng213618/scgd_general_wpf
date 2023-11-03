@@ -20,23 +20,24 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <GroupBox Header="配置服务" Grid.Row="1">
-            <StackPanel x:Name="MQTTCreate"   d:DataContext="{d:DesignInstance local:ServiceManager}" Margin="5">
-                <DockPanel Margin="5"  Visibility="Collapsed">
-                    <TextBlock Text="类型" Width="60"/>
-                    <ComboBox x:Name="TextBox_Type"  SelectedValuePath="Name"  DisplayMemberPath="Name" />
+        <Grid Grid.Row="1" Margin="5">
+            <StackPanel x:Name="MQTTCreate"   Width="300"  HorizontalAlignment="Left" d:DataContext="{d:DesignInstance local:ServiceManager}" >
+                <DockPanel Margin="0,2" Visibility="Collapsed">
+                    <TextBlock Text="类型" Width="60" />
+                    <ComboBox x:Name="TextBox_Type"  SelectedValuePath="Name" Style="{DynamicResource ComboBox.Small}"  DisplayMemberPath="Name" />
                 </DockPanel>
-                <DockPanel Margin="5" >
+                <DockPanel  Margin="0,2">
                     <TextBlock Text="标识" Width="60"/>
-                    <hc:ComboBox  x:Name="TextBox_Code" IsEditable="True" SelectedIndex="0" Text=""  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
+                    <hc:ComboBox  x:Name="TextBox_Code" IsEditable="True" SelectedIndex="0" Text="" Style="{DynamicResource ComboBox.Small}"  hc:InfoElement.ShowClearButton="True"   />
                 </DockPanel>
-                <DockPanel Margin="5" >
+                <DockPanel  Margin="0,2" >
                     <TextBlock Text="名称" Width="60"/>
-                    <hc:ComboBox  x:Name="TextBox_Name" IsEditable="True" SelectedIndex="0" Text=""  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
+                    <hc:ComboBox  x:Name="TextBox_Name" IsEditable="True" SelectedIndex="0" Text=""  Style="{DynamicResource ComboBox.Small}" hc:InfoElement.ShowClearButton="True" />
                 </DockPanel>
-                <Button   Click="Button_New_Click"   Width="250" Content="添加" />
+                <Button  Margin="0,2"  Click="Button_New_Click"   Width="100" Content="添加" HorizontalAlignment="Right" />
             </StackPanel>
-        </GroupBox>
+
+        </Grid>
         <Grid>
             <ListView  x:Name="ListViewService"  SelectionChanged="ListViewService_SelectionChanged" BorderThickness="0">
                 <ListView.Resources >

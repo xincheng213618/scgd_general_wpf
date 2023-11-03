@@ -78,7 +78,10 @@ namespace ColorVision.Device.Camera
                 }
 
             };
-    
+
+            ComboxMotorType.ItemsSource = from e1 in Enum.GetValues(typeof(FOCUS_COMMUN)).Cast<FOCUS_COMMUN>()
+                                          select new KeyValuePair<FOCUS_COMMUN, string>(e1, e1.ToString());
+
             var ImageChannelTypeList = new[]{
                  new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_X, "Channel_R"),
                  new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_Y, "Channel_G"),

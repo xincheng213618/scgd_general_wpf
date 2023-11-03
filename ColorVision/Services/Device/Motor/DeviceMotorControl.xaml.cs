@@ -1,5 +1,8 @@
 ﻿using ColorVision.Services;
+using cvColorVision;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -23,6 +26,9 @@ namespace ColorVision.Services.Device.Motor
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = this.Device;
+
+            ComboxMotorType.ItemsSource = from e1 in Enum.GetValues(typeof(FOCUS_COMMUN)).Cast<FOCUS_COMMUN>()
+                                                    select new KeyValuePair<FOCUS_COMMUN, string>(e1, e1.ToString());
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
