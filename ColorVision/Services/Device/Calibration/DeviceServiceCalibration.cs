@@ -30,7 +30,7 @@ namespace ColorVision.Services.Device.Calibration
                 switch (msg.EventName)
                 {
                     case "Calibration":
-                        MessageBox.Show(Application.Current.MainWindow, msg.Data);
+                        Application.Current.Dispatcher.BeginInvoke(new Action(() => MessageBox.Show(Application.Current.MainWindow, msg.Data)));
                         break;
                 }
             }
@@ -39,7 +39,7 @@ namespace ColorVision.Services.Device.Calibration
                 switch (msg.EventName)
                 {
                     case "Calibration":
-                        MessageBox.Show(Application.Current.MainWindow, "校准失败");
+                        Application.Current.Dispatcher.BeginInvoke(new Action(() => MessageBox.Show(Application.Current.MainWindow, "校准失败")));
                         break;
                 }
             }

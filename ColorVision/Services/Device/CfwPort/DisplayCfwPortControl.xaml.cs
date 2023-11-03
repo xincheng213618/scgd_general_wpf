@@ -29,6 +29,9 @@ namespace ColorVision.Services.Device.CfwPort
         {
             this.DataContext = Device;
 
+
+
+
         }
 
         private void GetPort_Click(object sender, RoutedEventArgs e)

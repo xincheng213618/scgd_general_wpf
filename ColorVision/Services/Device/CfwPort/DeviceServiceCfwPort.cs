@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using ColorVision.Services.Msg;
 using System.Diagnostics;
+using System.Windows;
 
 namespace ColorVision.Services.Device.CfwPort
 {
@@ -16,11 +17,12 @@ namespace ColorVision.Services.Device.CfwPort
         public DeviceServiceCfwPort(ConfigCfwPort config) : base(config)
         {
             MsgReturnReceived += ProcessingReceived;
-            DeviceStatus = DeviceStatus.UnInit;
+            DeviceStatus = DeviceStatus.Closed;
         }
 
         private void ProcessingReceived(MsgReturn msg)
         {
+
             if (msg.Code == 0)
             {
                 switch (msg.EventName)
@@ -28,16 +30,44 @@ namespace ColorVision.Services.Device.CfwPort
                     case "Open":
                         DeviceStatus = DeviceStatus.Opened;
                         break;
-
                     case "SetPort":
-
 
                         break;
                     case "GetPort":
-
-
+                        Application.Current.Dispatcher.BeginInvoke(new Action(() => MessageBox.Show(Application.Current.MainWindow, $"Port:{msg.Data}")));
+                        break;
+                    case "Clode":
+                        DeviceStatus = DeviceStatus.Closed;
+                        break;
+                    default:
+                        Application.Current.Dispatcher.BeginInvoke(new Action(() => MessageBox.Show(Application.Current.MainWindow, $"未定义{msg.EventName}")));
                         break;
                 }
+            }
+            else if (msg.Code == 1)
+            {
+
+                switch (msg.EventName)
+                {
+                    case "Open":
+                        DeviceStatus = DeviceStatus.Closed;
+                        break;
+                    case "SetPort":
+                        DeviceStatus = DeviceStatus.Closed;
+
+                        break;
+                    case "GetPort":
+                        DeviceStatus = DeviceStatus.Closed;
+                        break;
+                    case "Close":
+                        DeviceStatus = DeviceStatus.Closed;
+                        break;
+                    default:
+                        Application.Current.Dispatcher.BeginInvoke(new Action(() => MessageBox.Show(Application.Current.MainWindow, $"未定义{msg.EventName}")));
+                        break;
+                }
+
+
             }
 
 
