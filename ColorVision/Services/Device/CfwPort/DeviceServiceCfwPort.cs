@@ -31,10 +31,9 @@ namespace ColorVision.Services.Device.CfwPort
                         DeviceStatus = DeviceStatus.Opened;
                         break;
                     case "SetPort":
-
                         break;
                     case "GetPort":
-                        Application.Current.Dispatcher.BeginInvoke(new Action(() => MessageBox.Show(Application.Current.MainWindow, $"Port:{msg.Data}")));
+                        Application.Current.Dispatcher.BeginInvoke(new Action(() => MessageBox.Show(Application.Current.MainWindow, $"Port:{msg.Data.nPort}")));
                         break;
                     case "Clode":
                         DeviceStatus = DeviceStatus.Closed;
@@ -86,13 +85,13 @@ namespace ColorVision.Services.Device.CfwPort
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord SetPort()
+        public MsgRecord SetPort(int port)
         {
 
             MsgSend msg = new MsgSend
             {
                 EventName = "SetPort",
-                Params = new Dictionary<string, object>() { }
+                Params = new Dictionary<string, object>() { { "szComName", port } }
             };
 
             return PublishAsyncClient(msg);

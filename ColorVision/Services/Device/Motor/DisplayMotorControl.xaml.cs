@@ -47,7 +47,7 @@ namespace ColorVision.Services.Device.Motor
             {
                 if (int.TryParse(TextPos.Text ,out int pos))
                 {
-                    var msgRecord = DeviceService.Move(pos);
+                    var msgRecord = DeviceService.Move(pos,CheckBoxIsAbs.IsChecked??true);
                     Helpers.SendCommand(button, msgRecord);
                 }
             }

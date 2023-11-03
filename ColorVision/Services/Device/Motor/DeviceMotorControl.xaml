@@ -153,7 +153,7 @@
                                         </DockPanel>
                                         <DockPanel Margin="0,2">
                                             <TextBlock Text="波特率:" Width="120"/>
-                                            <TextBox Text="{Binding Config.BaudRate}" />
+                                            <hc:ComboBox  x:Name="TextBaudRate" IsEditable="True" SelectedIndex="0" Text="{Binding Config.BaudRate}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
                                         </DockPanel>
                                         <DockPanel Margin="0,2">
                                             <TextBlock Text="forwardparam:" Width="120"/>

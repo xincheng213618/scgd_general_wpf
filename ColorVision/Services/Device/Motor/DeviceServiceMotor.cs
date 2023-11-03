@@ -87,7 +87,7 @@ namespace ColorVision.Services.Device.Motor
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord Move(int nPosition ,int dwTimeOut =5000,bool IsbAbs =true)
+        public MsgRecord Move(int nPosition ,bool IsbAbs =true, int dwTimeOut = 5000)
         {
 
             MsgSend msg = new MsgSend

@@ -29,6 +29,10 @@ namespace ColorVision.Services.Device.Motor
 
             ComboxMotorType.ItemsSource = from e1 in Enum.GetValues(typeof(FOCUS_COMMUN)).Cast<FOCUS_COMMUN>()
                                                     select new KeyValuePair<FOCUS_COMMUN, string>(e1, e1.ToString());
+
+
+            List<string> strings = new List<string>();
+            TextBaudRate.ItemsSource = strings;
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
