@@ -38,9 +38,9 @@
                 <Button  Margin="0,2" Content="返回原点"  Click="GoHome_Click" />
                 <Button Margin="0,2" Content="获取位置"  Click="GetPosition_Click" />
                 <DockPanel Margin="0,2">
-                    <Button Content="MoveDiaphragm"  Click="Move1_Click" />
-                    <TextBlock Text="位置"  />
-                    <TextBox x:Name="TextDiaphragm" Text=""  BorderThickness="0,0,0,1"/>
+                    <Button  DockPanel.Dock="Right" Content="MoveDiaphragm"  Click="Move1_Click" />
+                    <TextBlock Text="位置"  Width="40"  />
+                    <TextBox x:Name="TextDiaphragm" Text=""  BorderThickness="0,0,0,1"  Margin="5,0"/>
                 </DockPanel>
                 <Button Margin="0,2" Content="Close"  Click="Close_Click" />
             </StackPanel>
