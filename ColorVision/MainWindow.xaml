@@ -136,9 +136,9 @@
                     </ItemsPanelTemplate>
                 </StatusBar.ItemsPanel>
                 <StatusBarItem  x:Name="StatusBarItem3">
-                    <DockPanel>
+                    <DockPanel  MouseLeftButtonDown="TextBlock_MouseLeftButtonDown2">
                         <TextBlock Text="当前工程: "/>
-                        <TextBlock Text="{Binding  SoftwareConfig.SolutionConfig.SolutionName}"  MouseLeftButtonDown="TextBlock_MouseLeftButtonDown2"/>
+                        <TextBlock Text="{Binding  SoftwareConfig.SolutionConfig.SolutionName}" />
                     </DockPanel>
                 </StatusBarItem>
                 <StatusBarItem Grid.Column="1" >

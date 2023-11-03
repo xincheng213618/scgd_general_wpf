@@ -156,9 +156,22 @@ namespace ColorVision
                 TimeSpan elapsedTime = DateTime.Now - lastClickTime;
                 if (elapsedTime.TotalMilliseconds <= 300)
                 {
-                    System.Diagnostics.Process.Start("explorer.exe", $"{SolutionControl.GetInstance().SolutionConfig.SolutionFullName}");
+                    //System.Diagnostics.Process.Start("explorer.exe", $"{SolutionControl.GetInstance().SolutionConfig.SolutionFullName}");
+
+
+                    Window window = new Window();
+                    window.Owner = this;
+                    TreeViewControl treeViewControl = new TreeViewControl();
+                    window.Content = treeViewControl;
+                    treeViewControl.OpenSolution(SolutionControl.GetInstance().SolutionConfig.SolutionFullName);
+                    window.Show();
+
+
                 }
                 lastClickTime = DateTime.Now;
+
+
+
             }
             else
             {

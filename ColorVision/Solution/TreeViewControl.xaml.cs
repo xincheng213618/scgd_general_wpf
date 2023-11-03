@@ -67,14 +67,13 @@ namespace ColorVision.Solution
             }
         }
 
-        private bool OpenSolution(string FullName)
+        public bool OpenSolution(string FullName)
         {
             bool sucess = false;
             if (!string.IsNullOrEmpty(FullName))
             {
                 SolutionFullName = FullName;
                 TreeViewInitialized(FullName);
-                SolutionExplorers[0].IsExpanded = true;
                 sucess = true;
             }
             return sucess;

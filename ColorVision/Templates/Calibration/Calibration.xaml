@@ -80,7 +80,7 @@
                         <DockPanel  Margin="0,2">
                             <TextBlock DockPanel.Dock="Left" Text="畸变" Width="80"  />
                             <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalG.Distortion.IsSelected}"   Margin="5,0"/>
-                            <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalG.Distortion..SelectFileCommand}" Width="40"  Margin="5,0"/>
+                            <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalG.Distortion.SelectFileCommand}" Width="40"  Margin="5,0"/>
                             <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding NormalG.Distortion.FilePath}" />
                         </DockPanel>
                     </StackPanel>

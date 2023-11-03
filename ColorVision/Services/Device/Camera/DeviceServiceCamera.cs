@@ -257,7 +257,7 @@ namespace ColorVision.Device.Camera
             return true;
         }
 
-        public MsgRecord GetData(double expTime, double gain, CalibrationType eCalibType = CalibrationType.Empty_Num)
+        public MsgRecord GetData(double expTime, double gain)
         {
             string SerialNumber  = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             var model = ServiceManager.GetInstance().BatchSave(SerialNumber);
@@ -267,20 +267,11 @@ namespace ColorVision.Device.Camera
             {
                 List<double> expTimes = new List<double>();
 
-                foreach (var item in Config.ChannelConfigs)
-                {
-                    if (item.ChannelType == ImageChannelType.Gray_X)
-                        expTimes.Add(Config.ExpTimeR);
-                    if (item.ChannelType == ImageChannelType.Gray_Y)
-                        expTimes.Add(Config.ExpTimeG);
-                    if (item.ChannelType == ImageChannelType.Gray_Z)
-                        expTimes.Add(Config.ExpTimeB);
-                }
 
                 msg = new MsgSend
                 {
                     EventName = "GetData",
-                    Params = new Dictionary<string, object>() { { "nBatchID", model.Id }, { "expTime", expTimes }, { "gain", gain }, { "eCalibType", eCalibType } }
+                    Params = new Dictionary<string, object>() { { "nBatchID", model.Id }, { "expTime", expTimes }, { "gain", gain } }
                 };
             }
             else
@@ -288,12 +279,9 @@ namespace ColorVision.Device.Camera
                 msg = new MsgSend
                 {
                     EventName = "GetData",
-                    Params = new Dictionary<string, object>() { { "nBatchID", model.Id }, { "expTime", expTime }, { "gain", gain }, { "eCalibType", eCalibType } }
+                    Params = new Dictionary<string, object>() { { "nBatchID", model.Id }, { "expTime", expTime }, { "gain", gain } }
                 };
             }
-
-
-
 
 
             return PublishAsyncClient(msg, expTime + 10000);

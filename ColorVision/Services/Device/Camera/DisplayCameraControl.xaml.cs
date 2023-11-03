@@ -201,7 +201,7 @@ namespace ColorVision.Device.Camera
 
                 if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
                 {
-                    MsgRecord msgRecord = Service.GetData(SliderexpTime.Value, SliderGain.Value, param.Color.CalibrationType);
+                    MsgRecord msgRecord = Service.GetData(SliderexpTime.Value, SliderGain.Value);
                     Helpers.SendCommand(msgRecord, msgRecord.MsgRecordState.ToDescription());
                 }
             }
