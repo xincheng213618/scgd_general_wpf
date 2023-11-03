@@ -18,33 +18,34 @@ namespace ColorVision.Device
             Application.Current.MainWindow.Cursor = Cursors.Wait;
             handler.Cancelling += delegate
             {
-                handler.Close();
                 Application.Current.Dispatcher.Invoke(() =>
                 {
+                    handler.Close();
                     Application.Current.MainWindow.Cursor = temp;
                 });
             };
-            MsgRecordStateChangedHandler msgRecordStateChangedHandler = async (e) =>
+            MsgRecordStateChangedHandler msgRecordStateChangedHandler = (e) =>
             {
-                try
+                Application.Current.Dispatcher.Invoke(() =>
                 {
-                    handler?.UpdateMessage(e.ToDescription());
-                    if (e != MsgRecordState.Send)
+                    try
                     {
-                        await Task.Delay(500);
-                        handler?.Close();
+                        handler?.UpdateMessage(e.ToDescription());
+                        if (e != MsgRecordState.Send)
+                        {
+                            handler?.Close();
+                        }
                     }
-                }
-                catch
-                {
-                }
-                finally
-                {
-                    Application.Current.Dispatcher.Invoke(() =>
+                    catch
+                    {
+                    }
+                    finally
                     {
                         Application.Current.MainWindow.Cursor = temp;
-                    });
-                }
+                    }
+                });
+
+
             };
             msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
             return handler;
