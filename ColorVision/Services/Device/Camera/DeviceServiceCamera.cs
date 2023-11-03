@@ -265,24 +265,47 @@ namespace ColorVision.Device.Camera
             MsgSend msg;
             if (Config.IsExpThree)
             {
-                List<double> expTimes = new List<double>();
+                List<Dictionary<string,object>> Param = new List<Dictionary<string,object>>();
 
+
+                foreach (var item in Config.ChannelConfigs)
+                {
+                    Dictionary<string, object> keyValuePairs = new Dictionary<string, object>();
+                    keyValuePairs.Add("eImgChlType", (int)item.ChannelType);
+                    keyValuePairs.Add("nPort", item.Port);
+
+                    if (item.ChannelType == ImageChannelType.Gray_X)
+                        keyValuePairs.Add("dExp", Config.ExpTimeR);
+                    if (item.ChannelType == ImageChannelType.Gray_Y)
+                        keyValuePairs.Add("dExp", Config.ExpTimeG);
+                    if (item.ChannelType == ImageChannelType.Gray_Z)
+                        keyValuePairs.Add("dExp", Config.ExpTimeB);
+
+                    Param.Add(keyValuePairs);
+                }
 
                 msg = new MsgSend
                 {
                     EventName = "GetData",
-                    Params = new Dictionary<string, object>() { { "nBatchID", model.Id }, { "expTime", expTimes }, { "gain", gain } }
+                    Params = new Dictionary<string, object>() { { "nBatchID", model.Id }, { "Param", Param }, { "gain", gain } }
                 };
             }
             else
             {
+
+                List<Dictionary<string, object>> Param = new List<Dictionary<string, object>>();
+                Dictionary<string, object> keyValuePairs = new Dictionary<string, object>();
+                keyValuePairs.Add("eImgChlType", (int)ImageChannelType.Gray_Y);
+                keyValuePairs.Add("nPort", -1);
+                keyValuePairs.Add("dExp", expTime);
+                Param.Add(keyValuePairs);
+
                 msg = new MsgSend
                 {
                     EventName = "GetData",
-                    Params = new Dictionary<string, object>() { { "nBatchID", model.Id }, { "expTime", expTime }, { "gain", gain } }
+                    Params = new Dictionary<string, object>() { { "nBatchID", model.Id }, { "Param", Param }, { "gain", gain } }
                 };
             }
-
 
             return PublishAsyncClient(msg, expTime + 10000);
         }
