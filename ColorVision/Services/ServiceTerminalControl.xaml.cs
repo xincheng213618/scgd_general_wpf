@@ -13,10 +13,8 @@ using ColorVision.Services.Device.CfwPort;
 using ColorVision.Services.Device.Motor;
 using ColorVision.Services.Device.Sensor;
 using cvColorVision;
-using HandyControl.Tools.Extension;
 using Newtonsoft.Json;
 using System;
-using System.Net;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -206,10 +204,6 @@ namespace ColorVision.Services
                         sysResourceModel = saveConfigInfo(deviceConfig, sysResource);
                         if (sysResourceModel != null)
                             serviceTerminal.AddChild(new DeviceMotor(sysResourceModel));
-                        break;
-                    case ServiceType.FocusRing:
-                        break;
-                    case ServiceType.Flowtime:
                         break;
                     default:
                         break;

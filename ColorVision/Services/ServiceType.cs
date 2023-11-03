@@ -12,7 +12,6 @@
         CfwPort =8,
         Calibration =9,
         Motor =10,
-        FocusRing =11,
         Flowtime =101
     }
 }

@@ -62,27 +62,6 @@ namespace ColorVision.Services
                     BaseService = cameraService;
                     RefreshCommand = new RelayCommand(a => cameraService.GetAllDevice());
                     break;
-                case ServiceType.PG:
-                    BaseService = new BaseService<BaseServiceConfig>(Config);
-                    break;
-                case ServiceType.Spectrum:
-                    BaseService = new BaseService<BaseServiceConfig>(Config);
-                    break;
-                case ServiceType.SMU:
-                    BaseService = new BaseService<BaseServiceConfig>(Config);
-                    break;
-                case ServiceType.Sensor:
-                    BaseService = new BaseService<BaseServiceConfig>(Config);
-                    break;
-                case ServiceType.FileServer:
-                    BaseService = new BaseService<BaseServiceConfig>(Config);
-                    break;
-                case ServiceType.Algorithm:
-                    BaseService = new BaseService<BaseServiceConfig>(Config);
-                    break;
-                case ServiceType.Flowtime:
-                    BaseService = new BaseService<BaseServiceConfig>(Config);
-                    break;
                 default:
                     BaseService = new BaseService<BaseServiceConfig>(Config);
                     break;

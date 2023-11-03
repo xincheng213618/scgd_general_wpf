@@ -8,8 +8,7 @@ namespace ColorVision.Services
     {
         public SysDictionaryModel SysDictionaryModel { get; set; }
 
-        public ServiceType ServiceType { get => 
-                (ServiceType)SysDictionaryModel.Value; }
+        public ServiceType ServiceType { get =>  (ServiceType)SysDictionaryModel.Value; }
         public ServiceKind() : base()
         {
         }

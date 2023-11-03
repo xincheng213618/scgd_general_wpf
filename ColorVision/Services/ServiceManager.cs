@@ -12,6 +12,7 @@ using ColorVision.RC;
 using ColorVision.Services.Algorithm;
 using ColorVision.Services.Device.Calibration;
 using ColorVision.Services.Device.CfwPort;
+using ColorVision.Services.Device.FocusRing;
 using ColorVision.Services.Device.Motor;
 using ColorVision.Services.Device.Sensor;
 using ColorVision.User;
@@ -25,6 +26,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
 using System.Linq;
+using System.Security.Cryptography.Xml;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using static cvColorVision.GCSDLL;
@@ -38,13 +40,11 @@ namespace ColorVision.Services
         public static ServiceManager GetInstance() { lock (_locker) { return _instance ??= new ServiceManager(); } }
 
 
-
         public ObservableCollection<ServiceKind> MQTTServices { get; set; }
         public ObservableCollection<BaseChannel> MQTTDevices { get; set; }
 
 
         public SysResourceService ResourceService { get; set; }
-        public SysDictionaryService DictionaryService { get; set; }
 
         public UserConfig UserConfig { get; set; }
 
@@ -56,7 +56,6 @@ namespace ColorVision.Services
         public ServiceManager()
         {
             ResourceService = new SysResourceService();
-            DictionaryService = new SysDictionaryService();
             resultService = new ResultService();
             MQTTServices = new ObservableCollection<ServiceKind>();
             MQTTDevices = new ObservableCollection<BaseChannel>();
@@ -114,8 +113,24 @@ namespace ColorVision.Services
             List<SysResourceModel> Services = ResourceService.GetAllServices(UserConfig.TenantId);
             List<SysResourceModel> devices = ResourceService.GetAllDevices(UserConfig.TenantId);
 
-            foreach (var item in DictionaryService.GetAllServiceType())
+            SysDictionaryService sysDictionaryService = new SysDictionaryService();
+
+            var ServiceTypes = Enum.GetValues(typeof(ServiceType)).Cast<ServiceType>();
+
+            foreach (var item in sysDictionaryService.GetAllServiceType())
             {
+                bool IsserviceType = false;
+                foreach (var serviceType in ServiceTypes)
+                {
+                    if (item.Value == (int)serviceType)
+                    {
+                        IsserviceType = true;
+                        break;
+                    }
+                }
+                if (!IsserviceType)
+                    continue;
+
                 ServiceKind mQTTServicetype = new ServiceKind();
                 mQTTServicetype.Name = item.Name ?? string.Empty;
                 mQTTServicetype.SysDictionaryModel = item;
