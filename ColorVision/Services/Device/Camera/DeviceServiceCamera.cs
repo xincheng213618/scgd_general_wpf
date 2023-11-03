@@ -307,7 +307,7 @@ namespace ColorVision.Device.Camera
                 };
             }
 
-            return PublishAsyncClient(msg, expTime + 10000);
+            return PublishAsyncClient(msg, (Config.IsExpThree? expTime*3 : expTime) + 10000);
         }
 
         public MsgRecord GetAllCameraID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });

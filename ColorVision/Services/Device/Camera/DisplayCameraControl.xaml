@@ -108,7 +108,6 @@
                             <Button Content="自动曝光" Click="AutoExplose_Click" Margin="10,0" />
                             <Button Content="自动聚焦" Click="AutoFocus_Click" Margin="20,0,0,0" />
                         </UniformGrid>
-                        <Button Content="设置相机转轮通道" Click="SetChannel" Margin="0,2"/>
                         
                         <DockPanel Margin="0,2">
                             <TextBlock Text="校正：" />
