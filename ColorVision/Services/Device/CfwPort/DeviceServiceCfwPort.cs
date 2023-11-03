@@ -33,7 +33,7 @@ namespace ColorVision.Services.Device.CfwPort
                     case "SetPort":
                         break;
                     case "GetPort":
-                        Application.Current.Dispatcher.BeginInvoke(new Action(() => MessageBox.Show(Application.Current.MainWindow, $"Port:{msg.Data.nPort}")));
+                        Application.Current.Dispatcher.BeginInvoke(new Action(() => MessageBox.Show(Application.Current.MainWindow, $"Port:{(char)(msg.Data.nPort)}")));
                         break;
                     case "Clode":
                         DeviceStatus = DeviceStatus.Closed;
