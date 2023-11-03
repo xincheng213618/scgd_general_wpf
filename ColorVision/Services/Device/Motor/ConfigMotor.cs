@@ -21,5 +21,10 @@ namespace ColorVision.Services.Device.Motor
         private int _BaudRate = 9600;
 
         public AutoFocusConfig AutoFocusConfig { get; set; } = new AutoFocusConfig();
+
+
+        public int Position { get => _Position;set { _Position = value; NotifyPropertyChanged(); } }
+        private int _Position = 0;
+
     }
 }

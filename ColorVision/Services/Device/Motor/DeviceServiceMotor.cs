@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 using ColorVision.Services.Msg;
 using System.Diagnostics;
 using System.Security.Cryptography;
+using static ScottPlot.Plottable.PopulationPlot;
+using System.Threading;
 
 namespace ColorVision.Services.Device.Motor
 {
@@ -17,7 +19,7 @@ namespace ColorVision.Services.Device.Motor
         public DeviceServiceMotor(ConfigMotor config) : base(config)
         {
             MsgReturnReceived += ProcessingReceived;
-            DeviceStatus = DeviceStatus.UnInit;
+            DeviceStatus = DeviceStatus.Closed;
         }
 
         private void ProcessingReceived(MsgReturn msg)
@@ -30,15 +32,35 @@ namespace ColorVision.Services.Device.Motor
                     case "Open":
                         DeviceStatus = DeviceStatus.Opened;
                         break;
-
                     case "Move":
-
-
+                        break;
+                    case "GetPosition":
+                         Config.Position = msg.Data.nPosition;
+                        break;
+                    case "Close":
+                        DeviceStatus = DeviceStatus.Closed;
+                        break;
+                }
+          
+            }
+            else if (msg.Code == 1)
+            {
+                switch (msg.EventName)
+                {
+                    case "Open":
+                        DeviceStatus = DeviceStatus.Closed;
+                        break;
+                    case "Move":
+                        DeviceStatus = DeviceStatus.Closed;
+                        break;
+                    case "GetPosition":
+                        DeviceStatus = DeviceStatus.Closed;
+                        break;
+                    case "Close":
+                        DeviceStatus = DeviceStatus.Closed;
                         break;
                 }
             }
-
-
         }
 
         public MsgRecord Open()
@@ -53,17 +75,63 @@ namespace ColorVision.Services.Device.Motor
             return PublishAsyncClient(msg);
         }
 
+        public MsgRecord Close()
+        {
 
+            MsgSend msg = new MsgSend
+            {
+                EventName = "Close",
+                Params = new Dictionary<string, object>() {  }
+            };
 
-        public MsgRecord Move()
+            return PublishAsyncClient(msg);
+        }
+
+        public MsgRecord Move(int nPosition ,int dwTimeOut =5000,bool IsbAbs =true)
         {
 
             MsgSend msg = new MsgSend
             {
                 EventName = "Move",
+                Params = new Dictionary<string, object>() {
+                    {"nPosition",nPosition },{"dwTimeOut",dwTimeOut },{ "bAbs", IsbAbs}
+                }
+            };
+            return PublishAsyncClient(msg);
+        }
+        public MsgRecord MoveDiaphragm(int nPosition, int dwTimeOut = 5000, bool IsbAbs = true)
+        {
+
+            MsgSend msg = new MsgSend
+            {
+                EventName = "MoveDiaphragm",
+                Params = new Dictionary<string, object>() {
+                    {"nPosition",nPosition },{"dwTimeOut",dwTimeOut },{ "bAbs", IsbAbs}
+                }
+            };
+            return PublishAsyncClient(msg);
+        }
+
+
+        
+
+        public MsgRecord GoHome()
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "GoHome",
                 Params = new Dictionary<string, object>() { }
             };
+            return PublishAsyncClient(msg);
+        }
 
+        public MsgRecord GetPosition()
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "GetPosition",
+                Params = new Dictionary<string, object>() { }
+            };
             return PublishAsyncClient(msg);
         }
 

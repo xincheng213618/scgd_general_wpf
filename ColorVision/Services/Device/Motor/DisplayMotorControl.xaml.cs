@@ -45,7 +45,52 @@ namespace ColorVision.Services.Device.Motor
         {
             if (sender is Button button)
             {
-                var msgRecord = DeviceService.Move();
+                if (int.TryParse(TextPos.Text ,out int pos))
+                {
+                    var msgRecord = DeviceService.Move(pos);
+                    Helpers.SendCommand(button, msgRecord);
+                }
+            }
+        }
+
+        private void GoHome_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button)
+            {
+                if (int.TryParse(TextPos.Text, out int pos))
+                {
+                    var msgRecord = DeviceService.GoHome();
+                    Helpers.SendCommand(button, msgRecord);
+                }
+            }
+        }
+
+        private void GetPosition_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button)
+            {
+                var msgRecord = DeviceService.GetPosition();
+                Helpers.SendCommand(button, msgRecord);
+            }
+        }
+
+        private void Move1_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button)
+            {
+                if (int.TryParse(TextDiaphragm.Text, out int pos))
+                {
+                    var msgRecord = DeviceService.MoveDiaphragm(pos);
+                    Helpers.SendCommand(button, msgRecord);
+                }
+            }
+        }
+
+        private void Close_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button)
+            {
+                var msgRecord = DeviceService.Close();
                 Helpers.SendCommand(button, msgRecord);
             }
         }
