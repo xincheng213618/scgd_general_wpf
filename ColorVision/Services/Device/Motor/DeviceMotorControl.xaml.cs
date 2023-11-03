@@ -32,6 +32,8 @@ namespace ColorVision.Services.Device.Motor
 
 
             List<string> strings = new List<string>();
+            strings.Add("9600");
+            strings.Add("115200");
             TextBaudRate.ItemsSource = strings;
         }
 
