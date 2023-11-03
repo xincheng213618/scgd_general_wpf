@@ -166,8 +166,6 @@ namespace ColorVision.Services
             }
         }
         public MsgReturnHandler MsgReturnReceived { get; set; }
-        public MsgReturnHandler MsgReturnReceived1 { get; set; }
-
         public virtual string SubscribeTopic { get; set; }
         public virtual string SendTopic { get; set; }
         public virtual string DeviceCode { get; set; }
