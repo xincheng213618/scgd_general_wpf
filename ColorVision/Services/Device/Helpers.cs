@@ -16,38 +16,42 @@ namespace ColorVision.Device
             handler = PendingBox.Show(Application.Current.MainWindow, Msg, true);
             var temp = Application.Current.MainWindow.Cursor;
             Application.Current.MainWindow.Cursor = Cursors.Wait;
-            handler.Cancelling += delegate
+
+            MsgRecordStateChangedHandler msgRecordStateChangedHandler;
+            msgRecordStateChangedHandler = (e) =>
             {
-                Application.Current.Dispatcher.Invoke(() =>
+                try
                 {
-                    handler.Close();
-                    Application.Current.MainWindow.Cursor = temp;
-                });
-            };
-            MsgRecordStateChangedHandler msgRecordStateChangedHandler = (e) =>
-            {
-                Application.Current.Dispatcher.Invoke(() =>
+                    handler?.UpdateMessage(e.ToDescription());
+                    if (e != MsgRecordState.Send)
+                    {
+                        handler?.Close();
+                    }
+                }
+                catch
                 {
-                    try
-                    {
-                        handler?.UpdateMessage(e.ToDescription());
-                        if (e != MsgRecordState.Send)
-                        {
-                            handler?.Close();
-                        }
-                    }
-                    catch
-                    {
-                    }
-                    finally
+                }
+                finally
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
                     {
                         Application.Current.MainWindow.Cursor = temp;
-                    }
-                });
+                    });
+                }
+
 
 
             };
             msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
+            handler.Cancelling += delegate
+            {
+                msgRecord.MsgRecordStateChanged -= msgRecordStateChangedHandler;
+                handler.Close();
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    Application.Current.MainWindow.Cursor = temp;
+                });
+            };
             return handler;
         }
 
@@ -61,7 +65,6 @@ namespace ColorVision.Device
                 button.Content = e.ToDescription();
                 if (e != MsgRecordState.Send)
                 {
-                    await Task.Delay(1000);
                     button.Content = temp;
                 }
             };

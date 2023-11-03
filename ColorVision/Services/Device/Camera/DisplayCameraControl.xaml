@@ -45,14 +45,14 @@
 
         <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="5">
-                <Button x:Name="CamerInitButton" Margin="0,0,0,2" Content="连接" Click="MQTTCamera_Init_Click"/>
+                <Button x:Name="ButtonInit" Margin="0,0,0,2"  Content="连接" Click="MQTTCamera_Init_Click"/>
                 <StackPanel x:Name="StackPanelOpen" Margin="0,5">
                     <DockPanel Margin="0,2" >
                         <TextBlock Text="取图模式：" />
                         <ComboBox  x:Name="ComboxCameraTakeImageMode"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Margin="0,0,0,0"/>
                     </DockPanel>
                     <Button x:Name="CameraVideoSetButton" Visibility="Collapsed" Content="视频模式配置" Click="VideSetting_Click"/>
-                    <Button x:Name="CameraOpenButton" Content="打开" Click="Open_Click" />
+                    <Button x:Name="ButtonOpen" Content="打开" Click="Open_Click" />
 
                     <StackPanel x:Name="StackPanelImage">
                         <DockPanel Margin="0,2">

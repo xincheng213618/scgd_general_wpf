@@ -20,7 +20,6 @@ namespace ColorVision.Device.Camera
     {
         public event MQTTCameraFileHandler FileHandler;
 
-
         public ServiceCamera CameraService { get; set; }
 
         public bool IsOnlie { get => CameraService.DevicesSN.Contains(Config.ID); }
@@ -34,6 +33,7 @@ namespace ColorVision.Device.Camera
             CameraService.Devices.Add(this);
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
             DeviceStatus = DeviceStatus.UnInit;
+            
         }
         private void MQTTCamera_MsgReturnChanged(MsgReturn msg)
         {
@@ -165,19 +165,15 @@ namespace ColorVision.Device.Camera
 
         public CameraType CurrentCameraType { get; set; }
 
-        public bool Init() => Init(Config.CameraType, Config.SNID);
-
-        public bool Init(CameraType CameraType, string CameraID)
+        public MsgRecord Init()
         {
-            CurrentCameraType = CameraType;
-            SnID = CameraID;
             MsgSend msg = new MsgSend
             {
                 EventName = "Init",
-                Params = new Dictionary<string, object>() { { "CameraType", (int)CameraType }, { "SnID", CameraID }, {"CodeID",Config.Code } , { "szCfgName", "" } }
+                Params = new Dictionary<string, object>() { { "CameraType", (int)Config.CameraType }, { "SnID", Config.SNID }, {"CodeID",Config.Code } , { "szCfgName", "" } }
             };
-            PublishAsyncClient(msg);
-            return true;
+            
+            return PublishAsyncClient(msg);
         }
 
         public MsgRecord UnInit()
@@ -247,15 +243,15 @@ namespace ColorVision.Device.Camera
             PublishAsyncClient(msg);
         }
 
-        public bool Open(string CameraID, TakeImageMode TakeImageMode, int ImageBpp)
+        public MsgRecord Open(string CameraID, TakeImageMode TakeImageMode, int ImageBpp)
         {
             MsgSend msg = new MsgSend
             {
                 EventName = "Open",
                 Params = new Dictionary<string, object>() { { "TakeImageMode", (int)TakeImageMode }, { "CameraID", CameraID }, { "Bpp", ImageBpp },{ "remoteIp", Config.VideoConfig.Host },{ "remotePort", Config.VideoConfig.Port } }
             };
-            PublishAsyncClient(msg);
-            return true;
+
+            return PublishAsyncClient(msg);
         }
 
         public MsgRecord GetData(double expTime, double gain)

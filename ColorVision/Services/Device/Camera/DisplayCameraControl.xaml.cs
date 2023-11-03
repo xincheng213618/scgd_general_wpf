@@ -44,7 +44,7 @@ namespace ColorVision.Device.Camera
 
             StackPanelOpen.Visibility = Visibility.Collapsed;
             StackPanelImage.Visibility = Visibility.Collapsed;
-            CameraOpenButton.Visibility = Visibility.Collapsed;
+            ButtonOpen.Visibility = Visibility.Collapsed;
 
             ComboxCameraTakeImageMode.ItemsSource = from e1 in Enum.GetValues(typeof(TakeImageMode)).Cast<TakeImageMode>()
                                                     select new KeyValuePair<TakeImageMode, string>(e1, e1.ToDescription());
@@ -86,43 +86,42 @@ namespace ColorVision.Device.Camera
             };
             View.View.ViewIndex = -1;
 
-
             if (Service.DeviceStatus == DeviceStatus.Init)
             {
                 StackPanelOpen.Visibility = Visibility.Visible;
-                CameraOpenButton.Visibility = Visibility.Visible;
-                CamerInitButton.Content = "断开初始化";
+                ButtonOpen.Visibility = Visibility.Visible;
+                ButtonInit.Visibility = Visibility.Collapsed;
             }
             Service.DeviceStatusChanged += (e) =>
             {
                 switch (e)
                 {
                     case DeviceStatus.Closed:
-                        CameraOpenButton.Visibility = Visibility.Visible;
+                        ButtonOpen.Visibility = Visibility.Visible;
                         StackPanelImage.Visibility = Visibility.Collapsed;
-                        CameraOpenButton.Content = "打开";
+                        ButtonOpen.Content = "打开";
                         break;
                     case DeviceStatus.Closing:
                         break;
                     case DeviceStatus.Opened:
                         StackPanelImage.Visibility = Visibility.Visible;
 
-                        CameraOpenButton.Content = "关闭";
+                        ButtonOpen.Content = "关闭";
                         break;
                     case DeviceStatus.Opening:
                         break;
                     case DeviceStatus.UnInit:
                         StackPanelOpen.Visibility = Visibility.Collapsed;
                         StackPanelImage.Visibility = Visibility.Collapsed;
-                        CameraOpenButton.Visibility = Visibility.Collapsed;
-                        CamerInitButton.Content = "连接";
-                        CameraOpenButton.Content = "打开";
+                        ButtonOpen.Visibility = Visibility.Collapsed;
+                        ButtonInit.Content = "连接";
+                        ButtonOpen.Content = "打开";
                         ViewGridManager.GetInstance().RemoveView(View);
                         break;
                     case DeviceStatus.Init:
                         StackPanelOpen.Visibility = Visibility.Visible;
-                        CameraOpenButton.Visibility = Visibility.Visible;
-                        CamerInitButton.Content = "断开连接";
+                        ButtonOpen.Visibility = Visibility.Visible;
+                        ButtonInit.Content = "断开连接";
 
                         ViewGridManager.GetInstance().AddView(View);
                         if (ViewGridManager.GetInstance().ViewMax > 4 || ViewGridManager.GetInstance().ViewMax == 3)
@@ -144,48 +143,54 @@ namespace ColorVision.Device.Camera
 
         private void MQTTCamera_Init_Click(object sender, RoutedEventArgs e)
         {
-            if (Service.DeviceStatus == DeviceStatus.UnInit)
+            if (sender is Button button)
             {
-                Service.Init();
-                CamerInitButton.Content = "连接中";
+                if (Service.DeviceStatus == DeviceStatus.UnInit)
+                {
+                    var msgRecord = Service.Init();
+                    Helpers.SendCommand(button, msgRecord);
+                }
+                else
+                {
+                    var msgRecord = Service.UnInit();
+                    Helpers.SendCommand(button, msgRecord);
+                }
             }
-            else
-            {
-                Service.UnInit();
-                CamerInitButton.Content = "断开连接中";
-            }
+
         }
 
         private void Open_Click(object sender, RoutedEventArgs e)
         {
-            if(ComboxCameraTakeImageMode.SelectedValue is TakeImageMode takeImageMode)
+            if (sender is Button button)
             {
-                if ((Service.DeviceStatus == DeviceStatus.Init || Service.DeviceStatus == DeviceStatus.Closed))
+                if (ComboxCameraTakeImageMode.SelectedValue is TakeImageMode takeImageMode)
                 {
-                    if (takeImageMode == TakeImageMode.Live)
+                    if ((Service.DeviceStatus == DeviceStatus.Init || Service.DeviceStatus == DeviceStatus.Closed))
                     {
-                        Button4_Click(sender, e);
+                        if (takeImageMode == TakeImageMode.Live)
+                        {
+                            Button4_Click(sender, e);
+                        }
+                        else
+                        {
+                            var msgRecord = Service.Open(Service.Config.ID, takeImageMode, (int)Service.Config.ImageBpp);
+                            Helpers.SendCommand(button, msgRecord);
+                        }
                     }
                     else
                     {
-                        Service.Open(Service.Config.ID, takeImageMode, (int)Service.Config.ImageBpp);
-                        CameraOpenButton.Content = "打开中";
+                        if (takeImageMode == TakeImageMode.Live)
+                        {
+                            Button4_Click(sender, e);
+                        }
+                        else
+                        {
+                            Helpers.SendCommand(button, Service.Close());
+                        }
+                        ButtonOpen.Content = "关闭中";
                     }
-                }
-                else
-                {
-                    if (takeImageMode == TakeImageMode.Live)
-                    {
-                        Button4_Click(sender, e);
-                    }
-                    else
-                    {
-                        Helpers.SendCommand(Service.Close(),"正在关闭相机") ;
-                    }
-                    CameraOpenButton.Content = "关闭中";
                 }
             }
-
         }
 
         private void SendDemo3_Click(object sender, RoutedEventArgs e)

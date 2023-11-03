@@ -81,6 +81,8 @@ namespace ColorVision.Services
         public MQTTControl MQTTControl { get; set; }
 
         public event EventHandler Connected;
+        public event EventHandler DisConnected;
+
         public BaseService()
         {
             MQTTControl = MQTTControl.GetInstance();
@@ -155,6 +157,7 @@ namespace ColorVision.Services
         {
             if (DateTime.Now - LastAliveTime > TimeSpan.FromMilliseconds(HeartbeatTime * 2))
             {
+                DisConnected?.Invoke(sender ,new EventArgs());
                 IsAlive = false;
             }
             else
@@ -180,6 +183,7 @@ namespace ColorVision.Services
 
         public virtual bool IsAlive { get => _IsAlive; set { _IsAlive = value; NotifyPropertyChanged(); } }
         private bool _IsAlive;
+
 
 
         private static Dictionary<string, Timer> timers = new Dictionary<string, Timer>();
