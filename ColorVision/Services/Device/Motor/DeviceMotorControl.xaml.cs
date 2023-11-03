@@ -29,12 +29,10 @@ namespace ColorVision.Services.Device.Motor
 
             ComboxMotorType.ItemsSource = from e1 in Enum.GetValues(typeof(FOCUS_COMMUN)).Cast<FOCUS_COMMUN>()
                                                     select new KeyValuePair<FOCUS_COMMUN, string>(e1, e1.ToString());
-
-
-            List<string> strings = new List<string>();
-            strings.Add("9600");
-            strings.Add("115200");
-            TextBaudRate.ItemsSource = strings;
+            
+            
+            List<int> BaudRates = new List<int> { 115200, 9600, 300, 600, 1200, 2400, 4800, 14400, 19200, 38400, 57600 };
+            TextBaudRate.ItemsSource = BaudRates;
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
