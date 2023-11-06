@@ -227,7 +227,6 @@
                     </Style>
                 </TreeView.ItemContainerStyle>
             </TreeView>
-
         </Border>
         <Grid x:Name="leftGrid" Visibility="Hidden" Background="Transparent" Panel.ZIndex="999" Opacity="0.7" Width="20" Margin="0,38,0,2" HorizontalAlignment="Right" >
             
