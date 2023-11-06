@@ -38,7 +38,7 @@
                 <ControlTemplate TargetType="Button">
                     <Grid x:Name="LayoutRoot" Background="{TemplateBinding Background}" Height="30">
                         <TextBlock x:Name="txt" Text="{TemplateBinding Content}" FontFamily="Segoe MDL2 Assets" FontSize="12" 
-                                   Foreground="{TemplateBinding Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Foreground="{TemplateBinding Foreground}" ToolTip="{TemplateBinding ToolTip}" HorizontalAlignment="Center" VerticalAlignment="Center"
                                    RenderOptions.ClearTypeHint="Auto" TextOptions.TextRenderingMode="Aliased"  TextOptions.TextFormattingMode="Display"/>
                     </Grid>
                     <ControlTemplate.Triggers>
