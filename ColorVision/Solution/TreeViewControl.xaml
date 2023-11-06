@@ -141,7 +141,6 @@
                         <GradientBrush.GradientStops>
                             <GradientStopCollection>
                                 <GradientStop Color="{DynamicResource LightBackgroundColor}" Offset="0.5"/>
-                                <GradientStop Color="{DynamicResource BackgroundColor}" Offset="1.0"/>
                             </GradientStopCollection>
                         </GradientBrush.GradientStops>
                     </LinearGradientBrush>

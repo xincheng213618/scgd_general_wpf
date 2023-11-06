@@ -57,7 +57,7 @@ namespace ColorVision.Solution
                     DirectoryInfo directoryInfo = new DirectoryInfo(fn);
                     foreach (var item in directoryInfo.GetFiles())
                     {
-                        if (item.Extension == ".gprj")
+                        if (item.Extension == ".cvproj")
                         {
                             OpenSolution(item.FullName);
                             break;
@@ -128,7 +128,7 @@ namespace ColorVision.Solution
         }
 
 
-        public ObservableCollection<SolutionExplorer> SolutionExplorers = new ObservableCollection<SolutionExplorer>();
+        public ObservableCollection<SolutionExplorer> SolutionExplorers { get; set; } = new ObservableCollection<SolutionExplorer>();
 
 
         private Point SelectPoint;
@@ -161,7 +161,6 @@ namespace ColorVision.Solution
                 if (solutionFullName != value)
                 {
                     solutionFullName = value;
-                    SolutionDir = Path.GetDirectoryName(solutionFullName);
                 }
             }
         }

@@ -151,19 +151,19 @@ namespace ColorVision
 
         private void TextBlock_MouseLeftButtonDown2(object sender, MouseButtonEventArgs e)
         {
-            if (SolutionCenter.GetInstance().Config.SolutionFullName != null)
+            if (SolutionManager.GetInstance().Config.SolutionFullName != null)
             {
                 TimeSpan elapsedTime = DateTime.Now - lastClickTime;
                 if (elapsedTime.TotalMilliseconds <= 300)
                 {
-                    //System.Diagnostics.Process.Start("explorer.exe", $"{SolutionCenter.GetInstance().Config.SolutionFullName}");
+                    //System.Diagnostics.Process.Start("explorer.exe", $"{SolutionManager.GetInstance().Config.SolutionFullName}");
 
 
                     Window window = new Window();
                     window.Owner = this;
                     TreeViewControl treeViewControl = new TreeViewControl();
                     window.Content = treeViewControl;
-                    treeViewControl.OpenSolution(SolutionCenter.GetInstance().Config.SolutionFullName);
+                    treeViewControl.OpenSolution(SolutionManager.GetInstance().Config.SolutionFullName);
                     window.Show();
 
 
@@ -192,7 +192,7 @@ namespace ColorVision
             openSolutionWindow.Closed += delegate
             {
                 if (Directory.Exists(openSolutionWindow.FullName))
-                    SolutionCenter.GetInstance().CreateSolution(new DirectoryInfo(openSolutionWindow.FullName));
+                    SolutionManager.GetInstance().CreateSolution(new DirectoryInfo(openSolutionWindow.FullName));
             };
             openSolutionWindow.Show();
         }
@@ -205,7 +205,7 @@ namespace ColorVision
                 if (newCreatWindow.IsCreate)
                 {
                     string SolutionDirectoryPath = newCreatWindow.NewCreateViewMode.DirectoryPath + "\\" + newCreatWindow.NewCreateViewMode.Name;
-                    SolutionCenter.GetInstance().OpenSolution(SolutionDirectoryPath);
+                    SolutionManager.GetInstance().OpenSolution(SolutionDirectoryPath);
                 }
             };
             newCreatWindow.ShowDialog();
@@ -244,7 +244,7 @@ namespace ColorVision
             RecentListMenuItem.SubmenuOpened += (s, e) =>
             {
                 var firstMenuItem = RecentListMenuItem.Items[0];
-                foreach (var item in  SolutionCenter.GetInstance().SolutionHistory.RecentFiles)
+                foreach (var item in  SolutionManager.GetInstance().SolutionHistory.RecentFiles)
                 {
                     if (Directory.Exists(item))
                     {
@@ -252,13 +252,13 @@ namespace ColorVision
                         menuItem.Header = item;
                         menuItem.Click += (sender, e) =>
                         {
-                            SolutionCenter.GetInstance().OpenSolution(item);
+                            SolutionManager.GetInstance().OpenSolution(item);
                         };
                         RecentListMenuItem.Items.Add(menuItem);
                     }
                     else
                     {
-                        SolutionCenter.GetInstance().SolutionHistory.RecentFiles.Remove(item);
+                        SolutionManager.GetInstance().SolutionHistory.RecentFiles.Remove(item);
                     }
 
 

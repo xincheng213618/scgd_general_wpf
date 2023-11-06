@@ -10,23 +10,41 @@ using System.Windows;
 
 namespace ColorVision.Solution
 {
+    public class CVSolution
+    {
+        public string ConfigPath { get; set; } = "Config";
+
+        public string CachePath { get; set; } = "Cache";
+
+        public string ImagePath { get; set; } = "Image";
+    }
+
+
+
+    public delegate int SolutionOpenHandler(string FileName);
+
+
     /// <summary>
     /// 工程模块控制中心
     /// </summary>
-    public class SolutionCenter
+    public class SolutionManager
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(SolutionCenter));
+        private static readonly ILog log = LogManager.GetLogger(typeof(SolutionManager));
 
-        private static SolutionCenter _instance;
+        private static SolutionManager _instance;
         private static readonly object _locker = new();
-        public static SolutionCenter GetInstance() { lock (_locker) { return _instance ??= new SolutionCenter(); } }
+        public static SolutionManager GetInstance() { lock (_locker) { return _instance ??= new SolutionManager(); } }
+
+        public event SolutionOpenHandler SolutionOpenEvent;
+
         //工程配置文件
         public SolutionConfig Config { get => SoftwareConfig.SolutionConfig; }
         public SolutionSetting Setting { get => Config.SolutionSetting; }
         public SoftwareConfig SoftwareConfig { get; private set; }
         public RecentFileList SolutionHistory { get; set; } = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
 
-        public SolutionCenter()
+
+        public SolutionManager()
         {
             SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
 
