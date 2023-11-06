@@ -31,7 +31,7 @@ namespace ColorVision
         public PseudoColor(double mindata = 0, double maxdata = 255)
         {
             InitializeComponent();
-            colorMap = new ColorMap("colormap.png");
+            colorMap = new ColorMap();
             this.mindata = mindata;
             this.maxdata = maxdata;
             min_max = (maxdata - min_max) / 255;
@@ -92,7 +92,7 @@ namespace ColorVision
             //    MessageBox.Show("输入的上限与下限之和>=100，请重新输入");
             //    return;
             //}
-            colorMap.buildCustomMap(Int32.Parse(this.textBox.Text), minLua / min_max, maxLua / min_max);
+            colorMap.buildCustomMap(Int32.Parse(this.textBox.Value.ToString()), minLua / min_max, maxLua / min_max);
             //colormapNum = Int32.Parse(this.textBox_level.Name);
             init();
             colorMap.reMap();

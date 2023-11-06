@@ -7,6 +7,7 @@ namespace ColorVision
 {
     public class WindowConfig
     {
+        /// 这里就是放在当前目录下的config文件夹下的config.ini文件，不管是否是理员权限都可以读取
         private static string ConfigPath = Environment.CurrentDirectory + "\\config\\config.ini";
         public static bool IsExist { get => File.Exists(ConfigPath); }
         public static ImageSource? Icon
@@ -41,7 +42,7 @@ namespace ColorVision
             get
             {
                 string Title = NativeMethods.IniFile.ReadStringFromIniFile(ConfigPath, nameof(WindowConfig), nameof(Title), string.Empty);
-                return Title == "" ? null : Title;
+                return string.IsNullOrEmpty(Title) ? null : Title;
             }
         }
     }

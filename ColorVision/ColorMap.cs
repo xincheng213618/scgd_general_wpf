@@ -2,11 +2,44 @@
 using OpenCvSharp;
 using System.Drawing;
 using System.IO;
+using System.Windows.Input;
+using System.Windows.Resources;
+using System.Windows;
 
 namespace ColorVision
 {
+
     public class ColorMap
     {
+
+        public static Mat StreamToMat(Stream stream)
+        {
+            // 将Stream转换为byte数组
+            byte[] bytes = StreamToBytes(stream);
+
+            // 创建Mat对象
+            Mat mat = Mat.FromImageData(bytes);
+
+            return mat;
+        }
+
+        public static byte[] StreamToBytes(Stream stream)
+        {
+            // 创建一个临时byte数组存储stream的数据
+            byte[] bytes = new byte[stream.Length];
+
+            // 将stream的位置重置到开始
+            stream.Position = 0;
+
+            // 将stream的数据读取到byte数组中
+            stream.Read(bytes, 0, bytes.Length);
+
+            return bytes;
+        }
+
+
+
+
 
         private int depth = 28;
         public Mat srcColor { get; set; }
@@ -18,19 +51,17 @@ namespace ColorVision
 
         public double[] stepPer { get; set; }//每一个伪彩色等级占用的像素
 
-        public ColorMap(String fileName)
+        public ColorMap()
         {
-            if (File.Exists(fileName))
-            {
-                srcColor = Cv2.ImRead(fileName, ImreadModes.AnyColor);
-                buildCustomMap(28,0,255);
-                minLut = 0;
-                maxLut = 255;
-            }
-            else
-            {
-                //logger.Error("加载ColorMap失败，请确认当前目录是否存在colormap.png");
-            }
+            StreamResourceInfo stream = Application.GetResourceStream(new Uri($"/ColorVision;component/Assets/Image/pictureBox1.Image.png", UriKind.Relative));
+
+            byte[] bytes = StreamToBytes(stream.Stream);
+
+            // 创建Mat对象
+            srcColor = Mat.FromImageData(bytes);
+            buildCustomMap(28, 0, 255);
+            minLut = 0;
+            maxLut = 255;
         }
         public ColorMap(String fileName,int colorMapNum)
         {
@@ -192,9 +223,9 @@ namespace ColorVision
         public Mat DrawSrcMap()
         {
             Mat cm = new Mat(srcColor.Rows, srcColor.Cols + 150, srcColor.Type(), Scalar.All(255));
-            Mat cmRt = cm[new Rect(0, 0, srcColor.Cols, srcColor.Rows)];
+            Mat cmRt = cm[new OpenCvSharp.Rect(0, 0, srcColor.Cols, srcColor.Rows)];
             srcColor.Clone().CopyTo(cmRt);
-            cmRt = cm[new Rect(srcColor.Cols, 0, 150, srcColor.Rows)];
+            cmRt = cm[new OpenCvSharp.Rect(srcColor.Cols, 0, 150, srcColor.Rows)];
             for (int i = 0; i < colorMapIdx.Length; i++)
             {
                 cmRt.Line(0, colorMapIdx[i], 50, colorMapIdx[i], Scalar.All(0));

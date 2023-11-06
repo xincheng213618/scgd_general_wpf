@@ -48,11 +48,7 @@ namespace WindowEffectTest
 
         private void _window_Deactivated(object? sender, EventArgs e)
         {
-            _window.Background = new SolidColorBrush(
-                   DarkMode ?
-                   Color.FromArgb(255, 32, 32, 23):
-                   Color.FromArgb(255, 242, 242, 242)
-                   );
+            _window.Background = new SolidColorBrush( DarkMode ?  Color.FromArgb(255, 32, 32, 23):  Color.FromArgb(255, 242, 242, 242)   );
         }
         /// <summary>
         /// 获取或设置此窗口模糊特效是否生效的一个状态。
@@ -98,9 +94,7 @@ namespace WindowEffectTest
             Composite(handle, isEnabled);
 
         }
-        /// <summary>
-        /// 在win11下对特定窗口启用模糊特效
-        /// </summary>
+
         public bool EnableBlurin { get; set; }
         private void Composite(IntPtr handle, bool isEnabled)
         {

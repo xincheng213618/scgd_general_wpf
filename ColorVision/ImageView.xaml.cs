@@ -732,7 +732,7 @@ namespace ColorVision
         private void ToggleButton_Click(object sender, RoutedEventArgs e)
         {
             PseudoColor pseudoColor = new PseudoColor();
-            Window window = new Window() {  Owner =Window.GetWindow(this),WindowStartupLocation = WindowStartupLocation.CenterOwner};
+            Window window = new Window() {  Owner =Window.GetWindow(this),WindowStartupLocation = WindowStartupLocation.CenterOwner ,SizeToContent = SizeToContent.WidthAndHeight};
             window.Content = pseudoColor;
             window.Show();
         }
