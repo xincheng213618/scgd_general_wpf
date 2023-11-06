@@ -79,9 +79,9 @@ namespace ColorVision.Device.FileServer
         {
             MsgSend msg = new MsgSend
             {
-                EventName = MQTTFileServerEventEnum.Event_DownloadFile,
+                EventName = MQTTFileServerEventEnum.Event_File_Download,
                 ServiceName = Config.Code,
-                Params = new Dictionary<string,object> { { "FileName", fileName } }
+                Params = new Dictionary<string,object> { { "FileName", fileName }, { "FileExtType", FileExtType.Src } }
             };
             PublishAsyncClient(msg);
         }
@@ -90,8 +90,9 @@ namespace ColorVision.Device.FileServer
         {
             MsgSend msg = new MsgSend
             {
-                EventName = MQTTFileServerEventEnum.Event_GetAllFiles,
-                ServiceName = Config.Code
+                EventName = MQTTFileServerEventEnum.Event_File_List_All,
+                ServiceName = Config.Code,
+                Params = new Dictionary<string, object> { { "FileExtType", FileExtType.Src } }
             };
             PublishAsyncClient(msg);
         }
@@ -100,9 +101,9 @@ namespace ColorVision.Device.FileServer
         {
             MsgSend msg = new MsgSend
             {
-                EventName = MQTTFileServerEventEnum.Event_UploadFile,
+                EventName = MQTTFileServerEventEnum.Event_File_Upload,
                 ServiceName = Config.Code,
-                Params = new Dictionary<string, object> { { "FileName", fileName } }
+                Params = new Dictionary<string, object> { { "FileName", fileName }, { "FileExtType", FileExtType.Src } }
             };
             PublishAsyncClient(msg);
         }

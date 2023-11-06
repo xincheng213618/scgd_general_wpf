@@ -6,6 +6,7 @@ using ColorVision.Services.Msg;
 using ColorVision.Templates.Algorithm;
 using cvColorVision;
 using MQTTMessageLib.Algorithm;
+using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -90,10 +91,10 @@ namespace ColorVision.Services.Algorithm
                         break;
                     case "SaveLicense":
                         break;
-                    case MQTTAlgorithmEventEnum.Event_DownloadFile:
+                    case MQTTFileServerEventEnum.Event_File_Download:
                         break;
-                    case MQTTAlgorithmEventEnum.Event_UploadCIEFile:
-                    case MQTTAlgorithmEventEnum.Event_GetCIEFiles:
+                    case MQTTFileServerEventEnum.Event_File_Upload:
+                    case MQTTFileServerEventEnum.Event_File_List_All:
                         OnAlgorithmEvent?.Invoke(this, new AlgorithmEvent(msg.EventName, msg.SerialNumber, msg.Data));
                         break;
                     case "MTF":
@@ -152,8 +153,9 @@ namespace ColorVision.Services.Algorithm
         {
             MsgSend msg = new MsgSend
             {
-                EventName = MQTTAlgorithmEventEnum.Event_GetCIEFiles,
-                ServiceName = Config.Code
+                EventName = MQTTFileServerEventEnum.Event_File_List_All,
+                ServiceName = Config.Code,
+                Params = new Dictionary<string, object> { { "FileExtType", FileExtType.CIE } }
             };
             PublishAsyncClient(msg);
         }
@@ -361,9 +363,9 @@ namespace ColorVision.Services.Algorithm
         {
             MsgSend msg = new MsgSend
             {
-                EventName = MQTTAlgorithmEventEnum.Event_DownloadFile,
+                EventName = MQTTFileServerEventEnum.Event_File_Download,
                 ServiceName = Config.Code,
-                Params = new Dictionary<string, object> { { "FileName", fileName } }
+                Params = new Dictionary<string, object> { { "FileName", fileName }, { "FileExtType", FileExtType.CIE } }
             };
             PublishAsyncClient(msg);
         }
@@ -372,9 +374,9 @@ namespace ColorVision.Services.Algorithm
         {
             MsgSend msg = new MsgSend
             {
-                EventName = MQTTAlgorithmEventEnum.Event_UploadCIEFile,
+                EventName = MQTTFileServerEventEnum.Event_File_Upload,
                 ServiceName = Config.Code,
-                Params = new Dictionary<string, object> { { "FileName", fileName } }
+                Params = new Dictionary<string, object> { { "FileName", fileName }, { "FileExtType", FileExtType.CIE } }
             };
             PublishAsyncClient(msg);
         }
