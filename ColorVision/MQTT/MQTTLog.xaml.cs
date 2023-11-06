@@ -26,7 +26,7 @@ namespace ColorVision
             TopicListView.ItemsSource = MQTTControl.SubscribeTopic;
             SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
             this.DataContext = GlobalSetting.GetInstance();
-            this.Title += $"  {MQTTControl.MQTTConfig.Host}_{MQTTControl.MQTTConfig.Port}";
+            this.Title += $"  {MQTTControl.Config.Host}_{MQTTControl.Config.Port}";
         }
 
 

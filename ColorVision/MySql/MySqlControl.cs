@@ -19,15 +19,12 @@ namespace ColorVision.MySql
 
         public SoftwareConfig SoftwareConfig { get; set; }
 
-        public MySqlConfig MySqlConfig { get => SoftwareConfig.MySqlConfig; }
+        public MySqlConfig Config { get => SoftwareConfig.MySqlConfig; }
 
 
         public MySqlControl()
         {
             SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
-
-            //这里转移到初始化中执行
-            //Task.Run(() => Connect());
         }
 
         public event EventHandler MySqlConnectChanged;
@@ -35,14 +32,9 @@ namespace ColorVision.MySql
         public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; NotifyPropertyChanged(); } }
         private bool _IsConnect;
 
-        public string ConnectSign { get => _ConnectSign; private set { _ConnectSign = value; NotifyPropertyChanged(); } }
-        private string _ConnectSign = "未连接";
-
-
-
         public Task<bool> Connect()
         {
-            string connStr = GetConnectionString(MySqlConfig);
+            string connStr = GetConnectionString(Config);
             try
             {
                 IsConnect = false;
@@ -53,19 +45,17 @@ namespace ColorVision.MySql
                     MySqlConnectChanged?.Invoke(this, new EventArgs());
                 });
                 IsConnect = true;
-                ConnectSign = "已连接";
                 log.Info($"数据库连接成功:{connStr}");
                 return Task.FromResult(true);
             }
             catch (Exception ex)
             {
                 IsConnect = false;
-                ConnectSign = "未连接";
                 log.Error(ex);
                 return Task.FromResult(false);
             }
         }
-        public string GetConnectionString() => GetConnectionString(MySqlConfig);
+        public string GetConnectionString() => GetConnectionString(Config);
         public static string GetConnectionString(MySqlConfig MySqlConfig,int timeout =3 )
         {
             string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset=utf8;Connect Timeout={timeout}";

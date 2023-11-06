@@ -13,29 +13,29 @@ namespace ColorVision.Solution
     /// <summary>
     /// 工程模块控制中心
     /// </summary>
-    public class SolutionControl
+    public class SolutionCenter
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(SolutionControl));
+        private static readonly ILog log = LogManager.GetLogger(typeof(SolutionCenter));
 
-        private static SolutionControl _instance;
+        private static SolutionCenter _instance;
         private static readonly object _locker = new();
-        public static SolutionControl GetInstance() { lock (_locker) { return _instance ??= new SolutionControl(); } }
+        public static SolutionCenter GetInstance() { lock (_locker) { return _instance ??= new SolutionCenter(); } }
         //工程配置文件
-        public SolutionConfig SolutionConfig { get => SoftwareConfig.SolutionConfig; }
-        public SolutionSetting SolutionSetting { get => SolutionConfig.SolutionSetting; }
+        public SolutionConfig Config { get => SoftwareConfig.SolutionConfig; }
+        public SolutionSetting Setting { get => Config.SolutionSetting; }
         public SoftwareConfig SoftwareConfig { get; private set; }
         public RecentFileList SolutionHistory { get; set; } = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
 
-        public SolutionControl()
+        public SolutionCenter()
         {
             SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
 
-            if (string.IsNullOrWhiteSpace(SolutionConfig.SolutionFullName))
+            if (string.IsNullOrWhiteSpace(Config.SolutionFullName))
                 return;
-            if (!Directory.Exists(SolutionConfig.SolutionFullName))
+            if (!Directory.Exists(Config.SolutionFullName))
             {
-                SolutionConfig.SolutionFullName = string.Empty;
-                SolutionConfig.SolutionName = string.Empty;
+                Config.SolutionFullName = string.Empty;
+                Config.SolutionName = string.Empty;
                 log.Debug("工程文件失效");
                 MessageBox.Show("工程文件不存在，在使用之前请重新创建", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
             }
@@ -43,13 +43,13 @@ namespace ColorVision.Solution
             {
                 try
                 {
-                    if (!Directory.Exists(SolutionConfig.CachePath))
-                        Directory.CreateDirectory(SolutionConfig.CachePath);
+                    if (!Directory.Exists(Config.CachePath))
+                        Directory.CreateDirectory(Config.CachePath);
                 }
                 catch
                 {
-                    if (!Directory.Exists(SolutionConfig.CachePath))
-                        Tool.CreateDirectory(SolutionConfig.CachePath);
+                    if (!Directory.Exists(Config.CachePath))
+                        Tool.CreateDirectory(Config.CachePath);
                 }
             }
 
@@ -61,19 +61,19 @@ namespace ColorVision.Solution
             if (Directory.Exists(SolutionFullPath))
             {
                 DirectoryInfo Info = new DirectoryInfo(SolutionFullPath);
-                SolutionConfig.SolutionName = Info.Name;
-                SolutionConfig.SolutionFullName = Info.FullName;
+                Config.SolutionName = Info.Name;
+                Config.SolutionFullName = Info.FullName;
                 SolutionHistory.InsertFile(Info.FullName);
 
                 try
                 {
-                    if (!Directory.Exists(SolutionConfig.CachePath))
-                        Directory.CreateDirectory(SolutionConfig.CachePath);
+                    if (!Directory.Exists(Config.CachePath))
+                        Directory.CreateDirectory(Config.CachePath);
                 }
                 catch
                 {
-                    if (!Directory.Exists(SolutionConfig.CachePath))
-                        Tool.CreateDirectory(SolutionConfig.CachePath);
+                    if (!Directory.Exists(Config.CachePath))
+                        Tool.CreateDirectory(Config.CachePath);
                 }
                 return true;
             }
@@ -82,18 +82,18 @@ namespace ColorVision.Solution
 
         public void CreateSolution(DirectoryInfo SolutionDirectoryInfo)
         {
-            SolutionConfig.SolutionName = SolutionDirectoryInfo.Name;
-            SolutionConfig.SolutionFullName = SolutionDirectoryInfo.FullName;
+            Config.SolutionName = SolutionDirectoryInfo.Name;
+            Config.SolutionFullName = SolutionDirectoryInfo.FullName;
             SolutionHistory.InsertFile(SolutionDirectoryInfo.FullName);
             try
             {
-                if (!Directory.Exists(SolutionConfig.CachePath))
-                    Directory.CreateDirectory(SolutionConfig.CachePath);
+                if (!Directory.Exists(Config.CachePath))
+                    Directory.CreateDirectory(Config.CachePath);
             }
             catch
             {
-                if (!Directory.Exists(SolutionConfig.CachePath))
-                    Tool.CreateDirectory(SolutionConfig.CachePath);
+                if (!Directory.Exists(Config.CachePath))
+                    Tool.CreateDirectory(Config.CachePath);
             }
 
         }

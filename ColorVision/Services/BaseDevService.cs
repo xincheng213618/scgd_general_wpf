@@ -86,7 +86,7 @@ namespace ColorVision.Services
         public BaseService()
         {
             MQTTControl = MQTTControl.GetInstance();
-            MQTTSetting = MQTTControl.MQTTSetting;
+            MQTTSetting = MQTTControl.Setting;
             MQTTControl.ApplicationMessageReceivedAsync += Processing;
             var timer = new Timer
             {

@@ -26,7 +26,7 @@ namespace ColorVision.Services.Msg
         private void Window_Initialized(object sender, EventArgs e)
         {
             MQTTControl = MQTTControl.GetInstance();
-            MsgRecords = MQTTControl.MQTTSetting.MsgRecords;
+            MsgRecords = MQTTControl.Setting.MsgRecords;
             ListView1.ItemsSource = MsgRecords;
         }
 

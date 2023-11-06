@@ -45,11 +45,14 @@ namespace ColorVision.Themes.Controls
         {
             StyleProperty.OverrideMetadata(typeof(BaseWindow), new FrameworkPropertyMetadata(GetDefautlStyle()));
         }
+        public WindowChrome WindowChrome { get; set; }
         public BaseWindow()
         {
             CommandInitialized();
 
             Closing += (sender, e) => Owner?.Activate();
+            WindowChrome = WindowChrome.GetWindowChrome(this);
+
             this.Loaded += (s, e) =>
             {
                 if (IsBlurEnabled)

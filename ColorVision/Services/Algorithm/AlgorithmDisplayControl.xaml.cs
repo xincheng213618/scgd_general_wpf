@@ -403,7 +403,7 @@ namespace ColorVision.Services.Algorithm
                 List<byte[]> data = client.ReceiveMultipartBytes();
                 if (data.Count == 1)
                 {
-                    string fullFileName = SolutionControl.GetInstance().SolutionConfig.CachePath + "\\" + fileName;
+                    string fullFileName = SolutionCenter.GetInstance().Config.CachePath + "\\" + fileName;
                     //CVCIEFileInfo fileInfo = CVFileUtils.WriteBinaryFile_CVRGB(fullFileName, data[0]);
                     CVFileUtils.WriteBinaryFile(fullFileName, data[0]);
                     fileCache.Add(fileName, fullFileName);
