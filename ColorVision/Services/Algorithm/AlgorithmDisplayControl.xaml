@@ -49,8 +49,7 @@
                                     <ComboBox x:Name="CB_CIEImageFiles"  Style="{StaticResource ComboBox.Small}"  />
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
-                                    <RadioButton x:Name="BatchSelect" GroupName="CIESrc"/>
-                                    <TextBlock Text="批次号："/>
+                                    <RadioButton x:Name="BatchSelect" Content="批次号" GroupName="CIESrc"/>
                                     <TextBox x:Name="BatchCode" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" />
                                 </DockPanel>
                             </StackPanel>

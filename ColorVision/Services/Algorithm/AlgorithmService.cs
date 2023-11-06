@@ -381,7 +381,4 @@ namespace ColorVision.Services.Algorithm
             PublishAsyncClient(msg);
         }
     }
-
-
-
 }

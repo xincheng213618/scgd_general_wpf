@@ -158,7 +158,7 @@ namespace ColorVision.Services
                             ID = TextBox_Code.Text,
                             Name = TextBox_Name.Text,
                             Endpoint = "tcp://127.0.0.1:" + (Math.Abs(new Random().Next()) % 99 + 6500),
-                            FileBasePath = "F:/img",
+                            FileBasePath = "D:/img",
                         };
                         sysResourceModel = saveConfigInfo(deviceConfig, sysResource);
                         if (sysResourceModel != null)
@@ -170,7 +170,9 @@ namespace ColorVision.Services
                             ID = TextBox_Code.Text,
                             Name = TextBox_Name.Text,
                             Endpoint = "tcp://127.0.0.1:" + (Math.Abs(new Random().Next()) % 99 + 6600),
-                            FileBasePath = "F:/img/cvcie",
+                            CIEFileBasePath = "D:/img/cvcie",
+                            RawFileBasePath = "D:/img/raw",
+                            SrcFileBasePath = "D:/img/src",
                         };
                         sysResourceModel = saveConfigInfo(deviceConfig, sysResource);
                         if (sysResourceModel != null)
