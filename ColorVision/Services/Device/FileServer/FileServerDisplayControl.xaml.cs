@@ -36,14 +36,14 @@ namespace ColorVision.Device.FileServer
         {
             switch (arg.EventName)
             {
-                case MQTTFileServerEventEnum.Event_GetAllFiles:
-                    List<string> data = JsonConvert.DeserializeObject<List<string>>(JsonConvert.SerializeObject(arg.Data));
+                case MQTTFileServerEventEnum.Event_File_List_All:
+                    DeviceListAllFilesParam data = JsonConvert.DeserializeObject<DeviceListAllFilesParam>(JsonConvert.SerializeObject(arg.Data));
                     Application.Current.Dispatcher.Invoke(() => {
-                        FilesView.ItemsSource = data;
+                        FilesView.ItemsSource = data.Files;
                         FilesView.SelectedIndex = 0;
                     });
                     break;
-                case MQTTFileServerEventEnum.Event_UploadFile:
+                case MQTTFileServerEventEnum.Event_File_Upload:
                     handler?.Close();
                     break;
                 default:

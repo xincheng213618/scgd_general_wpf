@@ -5,6 +5,7 @@ using ColorVision.Solution;
 using ColorVision.Templates;
 using log4net;
 using MQTTMessageLib.Algorithm;
+using MQTTMessageLib.FileServer;
 using NetMQ;
 using NetMQ.Sockets;
 using Newtonsoft.Json;
@@ -61,11 +62,11 @@ namespace ColorVision.Services.Algorithm
         {
             switch (arg.EventName)
             {
-                case MQTTAlgorithmEventEnum.Event_GetCIEFiles:
-                    List<string> data = JsonConvert.DeserializeObject<List<string>>(JsonConvert.SerializeObject(arg.Data));
+                case MQTTFileServerEventEnum.Event_File_List_All:
+                    DeviceListAllFilesParam data = JsonConvert.DeserializeObject<DeviceListAllFilesParam>(JsonConvert.SerializeObject(arg.Data));
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        CB_CIEImageFiles.ItemsSource = data;
+                        CB_CIEImageFiles.ItemsSource = data.Files;
                         CB_CIEImageFiles.SelectedIndex = 0;
                     });
                     break;
@@ -77,7 +78,7 @@ namespace ColorVision.Services.Algorithm
                     if (poiResp!=null)
                         ShowResult(arg.SerialNumber, poiDbResults, rawDataMsg, poiResp);
                     break;
-                case MQTTAlgorithmEventEnum.Event_UploadCIEFile:
+                case MQTTFileServerEventEnum.Event_File_Upload:
                     handler?.Close();
                     Service.GetCIEFiles();
                     break;
