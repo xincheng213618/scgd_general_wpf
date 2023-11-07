@@ -10,9 +10,6 @@ namespace ColorVision.Device.Camera
 {
     public class DeviceCamera : BaseDevice<ConfigCamera>
     {
-        public ImageSource Icon { get; set; }
-
-
         public DeviceServiceCamera DeviceService { get; set; }
 
         public CameraDisplayControl Control { get; set; }
@@ -34,9 +31,8 @@ namespace ColorVision.Device.Camera
             Control = new CameraDisplayControl(this);
 
             if (Application.Current.TryFindResource("DrawingImageCamera") is DrawingImage  drawingImage)
-            {
                 Icon = drawingImage;
-            }
+
         }
 
 

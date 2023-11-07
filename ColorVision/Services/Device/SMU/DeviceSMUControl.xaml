@@ -31,6 +31,9 @@
                         <Image Source="{StaticResource  DrawingImageEdit}" Margin="-4" />
                         <Button Background="Transparent" BorderThickness="0"  Click="Button_Click_1"/>
                     </Grid>
+                    <Grid  Height="18"   HorizontalAlignment="Left"  Margin="0,0,4,0">
+                        <Image Source="{Binding Icon}"/>
+                    </Grid>
                     <TextBlock Text="{Binding Config.Name}" FontWeight="Bold" FontSize="20"/>
                 </DockPanel>
             </Border>

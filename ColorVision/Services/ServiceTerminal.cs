@@ -74,6 +74,10 @@ namespace ColorVision.Services
                     if (Application.Current.TryFindResource("DrawingImageAlgorithm") is DrawingImage DrawingImageAlgorithm)
                         Icon = DrawingImageAlgorithm;
                     break;
+                case ServiceType.SMU:
+                    if (Application.Current.TryFindResource("SMUDrawingImage") is DrawingImage SMUDrawingImage)
+                        Icon = SMUDrawingImage;
+                    break;
 
                 default:
                     BaseService = new BaseService<BaseServiceConfig>(Config);

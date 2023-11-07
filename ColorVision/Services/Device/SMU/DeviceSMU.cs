@@ -1,6 +1,8 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.MySql.DAO;
+using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace ColorVision.Device.SMU
 {
@@ -15,7 +17,11 @@ namespace ColorVision.Device.SMU
         {
             Service = new SMUService(Config);
             View = new SMUView();
-           
+
+            if (Application.Current.TryFindResource("SMUDrawingImage") is DrawingImage SMUDrawingImage)
+                Icon = SMUDrawingImage;
+
+
         }
         public override UserControl GetDeviceControl() => new DeviceSMUControl(this);
         public override UserControl GetDisplayControl() => new SMUDisplayControl(this);

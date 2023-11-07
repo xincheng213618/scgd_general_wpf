@@ -28,7 +28,7 @@
             <Grid  x:Name="MQTTShowContent" Grid.Row="0" Margin="2">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="50"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <Border Margin="2" Background ="{DynamicResource GlobalBackground}" CornerRadius="5">
                     <StackPanel Margin="5">
@@ -75,26 +75,21 @@
                     </StackPanel>
 
                 </Border>
-                <StackPanel  Grid.Column="1"  Margin="2">
+                <StackPanel  Grid.Column="1" >
                     <UniformGrid Columns="1">
                         <Button  Click="Button_Click_1" Margin="2">
-                            <Image Source="{StaticResource DrawingImageDelete}"/>
+                            <Image Source="{StaticResource DrawingImageDelete}" Height="30"/>
                         </Button>
                         <Button  Grid.Column="2" Click="Button_Click_2"  VerticalAlignment="Stretch" Margin="2" >
-                            <TextBlock Text="添加设备" TextWrapping="Wrap" />
+                            <TextBlock Text="+"  FontFamily="Consolas"  TextWrapping="Wrap"   FontSize="25"/>
                         </Button>
                         <Button  Grid.Column="2"  Click="ReFresh_Click" Command="{Binding RefreshCommand}"  VerticalAlignment="Stretch" Margin="2" >
-                            <Button.Content>
-                                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"   Foreground="{DynamicResource GlobalTextBrush}"/>
-                            </Button.Content>
+                            <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"   Foreground="{DynamicResource GlobalTextBrush}"  FontSize="15" />
                         </Button>
                     </UniformGrid>
-
                 </StackPanel>
-
-
-
             </Grid>
+            
             <Grid  x:Name="MQTTEditContent" Visibility="Collapsed" Margin="5">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>

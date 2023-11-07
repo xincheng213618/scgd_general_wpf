@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace ColorVision.MQTT
 {
@@ -57,6 +58,9 @@ namespace ColorVision.MQTT
     public class BaseDevice<T> : BaseChannel where T :BaseDeviceConfig,new()
     {
         public T Config { get; set; }
+
+        public ImageSource Icon { get; set; }
+
         public override object GetConfig()
         {
             return Config;

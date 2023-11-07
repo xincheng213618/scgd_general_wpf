@@ -106,19 +106,6 @@ namespace ColorVision.Device.PG
         }
 
 
-        public bool Init(PGType pGType, CommunicateType communicateType)
-        {
-            MsgSend msg = new MsgSend
-            {
-                EventName = "Init",
-                Params = new Dictionary<string, object>() { { "ePg_Type", (int)pGType }, { "eCOM_Type", (int)communicateType } }
-
-            };
-            PublishAsyncClient(msg);
-            return true;
-        }
-
-
         public void PGStartPG() => SetParam(new List<ParamFunction>() { new ParamFunction() { Name = PGParam.StartKey } });
         public void PGStopPG() => SetParam(new List<ParamFunction>() { new ParamFunction() { Name = PGParam.StopKey } });
         public void PGReSetPG() => SetParam(new List<ParamFunction>() { new ParamFunction() { Name = PGParam.ReSetKey } });
