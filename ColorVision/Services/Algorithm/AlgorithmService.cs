@@ -315,6 +315,7 @@ namespace ColorVision.Services.Algorithm
             Blob_Threshold_Params.Add("darkRatio", distortionParam.darkRatio);
             Blob_Threshold_Params.Add("contrastRatio", distortionParam.contrastRatio);
             Blob_Threshold_Params.Add("bgRadius", distortionParam.bgRadius);
+            Blob_Threshold_Params.Add("minDistBetweenBlobs", distortionParam.minDistBetweenBlobs);
             Blob_Threshold_Params.Add("filterByArea", distortionParam.filterByArea);
             Blob_Threshold_Params.Add("minArea", distortionParam.minArea);
             Blob_Threshold_Params.Add("maxArea", distortionParam.maxArea);
@@ -340,6 +341,7 @@ namespace ColorVision.Services.Algorithm
             msg.Params.Add("darkRatio", distortionParam.darkRatio);
             msg.Params.Add("contrastRatio", distortionParam.contrastRatio);
             msg.Params.Add("bgRadius", distortionParam.bgRadius);
+            msg.Params.Add("minDistBetweenBlobs", distortionParam.minDistBetweenBlobs);
             msg.Params.Add("filterByArea", distortionParam.filterByArea);
             msg.Params.Add("minArea", distortionParam.minArea);
             msg.Params.Add("maxArea", distortionParam.maxArea);
