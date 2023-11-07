@@ -309,6 +309,7 @@ namespace ColorVision.Services.Algorithm
             Blob_Threshold_Params.Add("filterByColor", distortionParam.filterByColor);
             Blob_Threshold_Params.Add("blobColor", distortionParam.blobColor);
             Blob_Threshold_Params.Add("minThreshold", distortionParam.minThreshold);
+            Blob_Threshold_Params.Add("maxThreshold", distortionParam.maxThreshold);   
             Blob_Threshold_Params.Add("thresholdStep", distortionParam.thresholdStep);
             Blob_Threshold_Params.Add("ifDEBUG", distortionParam.ifDEBUG);
             Blob_Threshold_Params.Add("darkRatio", distortionParam.darkRatio);
@@ -330,11 +331,10 @@ namespace ColorVision.Services.Algorithm
 
             msg.Params.Add("Blob_Threshold_Params", Blob_Threshold_Params);
 
-
-
             msg.Params.Add("filterByColor", distortionParam.filterByColor);
             msg.Params.Add("blobColor", distortionParam.blobColor);
             msg.Params.Add("minThreshold", distortionParam.minThreshold);
+            msg.Params.Add("maxThreshold", distortionParam.maxThreshold);
             msg.Params.Add("thresholdStep", distortionParam.thresholdStep);
             msg.Params.Add("ifDEBUG", distortionParam.ifDEBUG);
             msg.Params.Add("darkRatio", distortionParam.darkRatio);
