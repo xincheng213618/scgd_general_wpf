@@ -17,21 +17,21 @@ namespace ColorVision.Templates.Algorithm
         public double SFR_gamma { get => GetValue(_SFR_gamma); set { SetProperty(ref _SFR_gamma, value); } }
         private double _SFR_gamma = 0.01;
 
-        [Category("SFR"), Description("ROI x")]
+        [Category("SFR"), Description("ROI x"),DisplayName("ROI X")]
 
         public int X { get => GetValue(_X); set { SetProperty(ref _X, value); } }
         private int _X;
-        [Category("SFR"), Description("ROI y")]
+        [Category("SFR"), Description("ROI y"), DisplayName("ROI Y")]
         public int Y { get => GetValue(_Y); set { SetProperty(ref _Y, value); } }
         private int _Y;
-        [Category("SFR"), Description("ROI Width")]
+        [Category("SFR"), Description("ROI Width"), DisplayName("ROI Width")]
         public int Width { get => GetValue(_Width); set { SetProperty(ref _Width, value); } }
         private int _Width = 1000;
-        [Category("SFR"), Description("ROI Height")]
+        [Category("SFR"), Description("ROI Height"), DisplayName("ROI Height")]
         public int Height { get => GetValue(_Height); set { SetProperty(ref _Height, value); } }
         private int _Height = 1000;
 
-        [Category("SFR"), Description("ROI")]
+        [Category("SFR"), Description("ROI") ,Browsable(false)]
         public CRECT ROI { get => new CRECT() { x = X, y = Y, cx = Width, cy = Height }; }
     }
 }
