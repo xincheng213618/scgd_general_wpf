@@ -236,12 +236,6 @@ namespace ColorVision.Templates
         {
             foreach (var item in keyValuePairs)
             {
-                ModMasterModel modMasterModel = modService.GetMasterById(item.ID);
-                if (modMasterModel != null)
-                {
-                    modMasterModel.Name = item.Key;
-                    modService.Save(modMasterModel);
-                }
                 Save2DB(item.Value);
             }
         }
@@ -400,7 +394,7 @@ namespace ColorVision.Templates
 
         private void LoadModParam<T>(ObservableCollection<TemplateModel<T>> ParamModes, string ModeType) where T : ParamBase,new ()
         {
-            DicTemplate.TryAdd(ModeType, AoiParams);
+            DicTemplate.TryAdd(ModeType, ParamModes);
             ParamModes.Clear();
             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
             {

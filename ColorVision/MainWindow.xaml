@@ -46,7 +46,7 @@
                     <Separator/>
                     <MenuItem Header="{x:Static resx:Resource.MenuExit}" InputGestureText="Alt + F4" Click="MenuItem_Exit"/>
                 </MenuItem>
-                <MenuItem Header="{x:Static resx:Resource.MenuSettings}">
+                <MenuItem Header="{x:Static resx:Resource.MenuTemplate}">
                     <MenuItem Header="流程模板设置(_F)" Tag="FlowParam"  Click="MenuItem_Template"/>
                     <MenuItem Header="关注点模板设置(_P)" Tag="FocusParm" Click="MenuItem_Template"/>
                     <MenuItem Header="测量模板设置(_S)" Tag="MeasureParm" Click="MenuItem_Template"/>
@@ -72,6 +72,9 @@
                     <MenuItem Header="设备配置(_D)"  Tag="DeviceParam" Click="MenuItem_Template"/>
                     <MenuItem Header="{x:Static resx:Resource.Sign_in}"  Click="Login_Click"/>
                     <Separator/>
+                    <MenuItem x:Name="MenuLanguage" Header="{x:Static resx:Resource.MenuLanguage}" Initialized="MenuLanguage_Initialized"/>
+                    <MenuItem x:Name="MenuTheme" Header="{x:Static resx:Resource.MenuTheme}" Initialized="MenuTheme_Initialized" Loaded="MenuTheme_Loaded"/>
+
                     <MenuItem Header="{x:Static resx:Resource.MenuOptions}"  Click="MenuItem_Click_2"   InputGestureText="Ctrl + I"  >
                         <MenuItem.Icon >
                             <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>

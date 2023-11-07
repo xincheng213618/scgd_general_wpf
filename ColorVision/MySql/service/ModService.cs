@@ -98,21 +98,21 @@ namespace ColorVision.MySql.Service
             return ret;
         }
 
-        internal int Save(ModMasterModel flowMaster)
+        internal int Save(ModMasterModel modMaster)
         {
             int ret = -1;
-            SysDictionaryModModel mod = sysDicDao.GetByCode(flowMaster.Pcode, flowMaster.TenantId);
+            SysDictionaryModModel mod = sysDicDao.GetByCode(modMaster.Pcode, modMaster.TenantId);
             if(mod != null)
             {
-                flowMaster.Pid = mod.Id;
-                ret = masterFlowDao.Save(flowMaster);
+                modMaster.Pid = mod.Id;
+                ret = masterFlowDao.Save(modMaster);
                 List<ModDetailModel> list = new List<ModDetailModel>();
-                List<SysDictionaryModDetaiModel> sysDic = sysDao.GetAllByPid(flowMaster.Pid);
+                List<SysDictionaryModDetaiModel> sysDic = sysDao.GetAllByPid(modMaster.Pid);
                 foreach (var item in sysDic)
                 {
-                    list.Add(new ModDetailModel(item.Id, flowMaster.Id, item.DefaultValue));
+                    list.Add(new ModDetailModel(item.Id, modMaster.Id, item.DefaultValue));
                 }
-                detailDao.SaveByPid(flowMaster.Id, list);
+                detailDao.SaveByPid(modMaster.Id, list);
             }
             return ret;
         }

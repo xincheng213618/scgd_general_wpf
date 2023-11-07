@@ -8,6 +8,9 @@ using ColorVision.Flow;
 using System.Diagnostics;
 using ColorVision.Services;
 using ColorVision.Solution;
+using System.Linq;
+using System.Globalization;
+using ColorVision.Extension;
 
 namespace ColorVision
 {
@@ -140,6 +143,36 @@ namespace ColorVision
                 new LoginWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
             }
 
+        }
+
+        private void MenuLanguage_Initialized(object sender, EventArgs e)
+        {
+
+        }
+        private void MenuTheme_Loaded(object sender, RoutedEventArgs e)
+        {
+            foreach (var item in MenuTheme.Items)
+            {
+                if (item is MenuItem ThemeItem && ThemeItem.Tag is Theme Theme)
+                    ThemeItem.IsChecked = ThemeManager.Current.CurrentTheme == Theme;
+            }
+
+        }
+
+        private void MenuTheme_Initialized(object sender, EventArgs e)
+        {
+            foreach (var item in Enum.GetValues(typeof(Theme)).Cast<Theme>())
+            {
+                MenuItem ThemeItem = new MenuItem();
+                ThemeItem.Header = Properties.Resource.ResourceManager.GetString(item.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
+                ThemeItem.Click += (s, e) =>
+                {
+                    Application.Current.ApplyTheme(item);
+                };
+                ThemeItem.Tag = item;
+                ThemeItem.IsChecked = ThemeManager.Current.CurrentTheme == item;
+                MenuTheme.Items.Add(ThemeItem);
+            }
         }
     }
 }
