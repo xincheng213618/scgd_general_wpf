@@ -11,7 +11,7 @@
  Target Server Version : 50742
  File Encoding         : 65001
 
- Date: 07/11/2023 11:01:18
+ Date: 07/11/2023 11:55:26
 */
 
 SET NAMES utf8mb4;
@@ -98,8 +98,8 @@ INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (1303, 'EndValue', 1303, '�
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (1304, 'LimitValue', 1304, '限值', 1, NULL, '200.0', 13, '2023-08-18 09:45:26', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (1305, 'Points', 1305, '点数', 0, NULL, '100', 13, '2023-08-18 09:46:37', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3000, 'SFR_gamma', 3000, 'SFR_gamma', 1, NULL, '1.0', 9, '2023-10-10 11:41:33', 1, 0, NULL);
-INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3001, 'x', 3001, 'x', 0, NULL, '0', 9, '2023-10-10 11:41:54', 1, 0, NULL);
-INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3002, 'y', 3002, 'y', 0, NULL, '0', 9, '2023-10-10 11:42:47', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3001, 'X', 3001, 'X', 0, NULL, '0', 9, '2023-11-07 11:55:18', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3002, 'Y', 3002, 'Y', 0, NULL, '0', 9, '2023-11-07 11:55:20', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3003, 'Width', 3003, 'Width', 0, NULL, '1000', 9, '2023-10-10 11:42:52', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3004, 'Height', 3004, 'Height', 0, NULL, '1000', 9, '2023-10-10 11:43:19', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3010, 'Radio', 3010, '计算FOV时中心区亮度的百分比多少认为是暗区', 1, NULL, '0.2', 6, '2023-10-09 11:26:29', 1, 0, NULL);

@@ -261,7 +261,7 @@ namespace ColorVision.Services.Algorithm
                 EventName = "SFR",
                 DeviceCode = Config.Code,
                 SerialNumber = SerialNumber,
-                Params = new Dictionary<string, object>() {{ "nPid", pid }}
+                Params = new Dictionary<string, object>() {{ "nPid", pid }, { "nBatchID", -1 } }
             };
 
             msg.Params.Add("x", sFRParam.ROI.x);

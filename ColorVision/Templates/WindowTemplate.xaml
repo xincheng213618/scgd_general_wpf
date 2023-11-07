@@ -93,9 +93,9 @@
                         <ResourceDictionary Source="/HandyControl;component/Themes/Theme.xaml"/>
                     </ResourceDictionary.MergedDictionaries>
                 </ResourceDictionary>
-            </Grid.Resources>
-            <hc:PropertyGrid x:Name="PropertyGrid1"/>-->
-            <xctk:PropertyGrid   x:Name="PropertyGrid1" />
+            </Grid.Resources>-->
+            <hc:PropertyGrid x:Name="PropertyGrid1"/>
+            <!--<xctk:PropertyGrid   x:Name="PropertyGrid1" />-->
 
 
         </Grid>
