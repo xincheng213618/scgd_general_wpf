@@ -14,7 +14,6 @@ using ColorVision.Extension;
 using ColorVision.Language;
 using System.Collections.Generic;
 using System.Threading;
-using OpenCvSharp;
 
 namespace ColorVision
 {
