@@ -11,6 +11,10 @@ using ColorVision.Solution;
 using System.Linq;
 using System.Globalization;
 using ColorVision.Extension;
+using ColorVision.Language;
+using System.Collections.Generic;
+using System.Threading;
+using OpenCvSharp;
 
 namespace ColorVision
 {
@@ -147,8 +151,30 @@ namespace ColorVision
 
         private void MenuLanguage_Initialized(object sender, EventArgs e)
         {
+            foreach (var item in LanguageManager.Current.Languages)
+            {
+                MenuItem LanguageItem = new MenuItem();
+                LanguageItem.Header = LanguageManager.keyValuePairs.TryGetValue(item, out string value) ? value : item;
+                LanguageItem.Click += (s, e) =>
+                {
+                    LanguageManager.Current.LanguageChange(item);
+                };
+                LanguageItem.Tag = item;
+                LanguageItem.IsChecked = Thread.CurrentThread.CurrentUICulture.Name == item;
+                MenuLanguage.Items.Add(LanguageItem);
+            }
 
         }
+        private void MenuLanguage_Loaded(object sender, RoutedEventArgs e)
+        {
+            foreach (var item in MenuTheme.Items)
+            {
+                if (item is MenuItem LanguageItem && LanguageItem.Tag is string Language)
+                    LanguageItem.IsChecked = Thread.CurrentThread.CurrentUICulture.Name == Language;
+            }
+
+        }
+
         private void MenuTheme_Loaded(object sender, RoutedEventArgs e)
         {
             foreach (var item in MenuTheme.Items)
@@ -174,5 +200,7 @@ namespace ColorVision
                 MenuTheme.Items.Add(ThemeItem);
             }
         }
+
+
     }
 }

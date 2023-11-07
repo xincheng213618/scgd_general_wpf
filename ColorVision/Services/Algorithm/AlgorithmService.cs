@@ -186,9 +186,9 @@ namespace ColorVision.Services.Algorithm
             msg.Params.Add("radio", fOVParam.Radio);
             msg.Params.Add("cameraDegrees", fOVParam.CameraDegrees);
             msg.Params.Add("dFovDist", fOVParam.DFovDist);
-            msg.Params.Add("FovPattern", (int)fOVParam.FovPattern);
-            msg.Params.Add("FovType", (int)fOVParam.FovType);
-            msg.Params.Add("ThresholdValus", (int)fOVParam.ThresholdValus);
+            msg.Params.Add("fovPattern", (int)fOVParam.FovPattern);
+            msg.Params.Add("fovType", (int)fOVParam.FovType);
+            msg.Params.Add("thresholdValus", (int)fOVParam.ThresholdValus);
             msg.Params.Add("x_c", fOVParam.Xc);
             msg.Params.Add("y_c", fOVParam.Yc);
             msg.Params.Add("x_p", fOVParam.Xp);

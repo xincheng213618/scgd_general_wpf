@@ -72,7 +72,7 @@
                     <MenuItem Header="设备配置(_D)"  Tag="DeviceParam" Click="MenuItem_Template"/>
                     <MenuItem Header="{x:Static resx:Resource.Sign_in}"  Click="Login_Click"/>
                     <Separator/>
-                    <MenuItem x:Name="MenuLanguage" Header="{x:Static resx:Resource.MenuLanguage}" Initialized="MenuLanguage_Initialized"/>
+                    <MenuItem x:Name="MenuLanguage" Header="{x:Static resx:Resource.MenuLanguage}" Initialized="MenuLanguage_Initialized" Loaded="MenuLanguage_Loaded"/>
                     <MenuItem x:Name="MenuTheme" Header="{x:Static resx:Resource.MenuTheme}" Initialized="MenuTheme_Initialized" Loaded="MenuTheme_Loaded"/>
 
                     <MenuItem Header="{x:Static resx:Resource.MenuOptions}"  Click="MenuItem_Click_2"   InputGestureText="Ctrl + I"  >
