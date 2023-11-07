@@ -14,8 +14,8 @@ namespace ColorVision.Templates.Algorithm
         }
 
         [Category("SFR"), Description("SFR gamma")]
-        public double SFR_gamma { get => GetValue(_SFR_gamma); set { SetProperty(ref _SFR_gamma, value); } }
-        private double _SFR_gamma = 0.01;
+        public double Gamma { get => GetValue(_Gamma); set { SetProperty(ref _Gamma, value); } }
+        private double _Gamma = 0.01;
 
         [Category("SFR"), Description("ROI x"),DisplayName("ROI X")]
 
