@@ -156,6 +156,8 @@ namespace ColorVision
                 LanguageItem.Header = LanguageManager.keyValuePairs.TryGetValue(item, out string value) ? value : item;
                 LanguageItem.Click += (s, e) =>
                 {
+                    GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting.UICulture = item;
+                    GlobalSetting.GetInstance().SaveSoftwareConfig();
                     LanguageManager.Current.LanguageChange(item);
                 };
                 LanguageItem.Tag = item;
@@ -192,6 +194,8 @@ namespace ColorVision
                 ThemeItem.Header = Properties.Resource.ResourceManager.GetString(item.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
                 ThemeItem.Click += (s, e) =>
                 {
+                    GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting.Theme = item;
+                    GlobalSetting.GetInstance().SaveSoftwareConfig();
                     Application.Current.ApplyTheme(item);
                 };
                 ThemeItem.Tag = item;
