@@ -85,7 +85,7 @@
 
         </GroupBox>
 
-        <Grid Grid.Row="0" Grid.Column="1"  x:Name="GridProperty" Margin="0,15,0,5">
+        <Grid Grid.Row="0" Grid.Column="1"  x:Name="GridProperty" Margin="0,5,0,5">
             <!--<Grid.Resources>
                 <ResourceDictionary>
                     <ResourceDictionary.MergedDictionaries>
@@ -94,7 +94,7 @@
                     </ResourceDictionary.MergedDictionaries>
                 </ResourceDictionary>
             </Grid.Resources>-->
-            <hc:PropertyGrid x:Name="PropertyGrid1"/>
+            <hc:PropertyGrid x:Name="PropertyGrid1"   hc:TipElement.Visibility="Visible"  />
             <!--<xctk:PropertyGrid   x:Name="PropertyGrid1" />-->
 
 
