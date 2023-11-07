@@ -30,8 +30,8 @@
 
             </Border>
         </Grid>
-        <Grid Grid.Row="0">
-            <Menu x:Name="Menu1" Height ="24"  Initialized="Menu_Initialized">
+        <Grid Grid.Row="0"  Height ="27 ">
+            <Menu x:Name="Menu1"  Initialized="Menu_Initialized">
                 <MenuItem x:Name="FileMenuItem" Header="{x:Static resx:Resource.MenuFile}">
                     <MenuItem Header="{x:Static resx:Resource.MenuNew}" Click="MenuItem_ProjectNew_Click" InputGestureText="Ctrl + N">
                         <MenuItem.Icon >
