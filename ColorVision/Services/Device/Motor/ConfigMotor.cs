@@ -24,7 +24,7 @@ namespace ColorVision.Services.Device.Motor
 
 
         public int Position { get => _Position;set { _Position = value; NotifyPropertyChanged(); } }
-        private int _Position = 0;
+        private int _Position;
 
         public int dwTimeOut { get => _dwTimeOut; set { _dwTimeOut = value; NotifyPropertyChanged(); } }
         private int _dwTimeOut = 5000;

@@ -79,7 +79,6 @@ namespace ColorVision.Solution
             return sucess;
         }
 
-        bool IsFirstLoad = true;
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
             this.AllowDrop = true;

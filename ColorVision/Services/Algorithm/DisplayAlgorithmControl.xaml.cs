@@ -1,4 +1,5 @@
-﻿using ColorVision.Device;
+﻿#pragma warning disable CS8604,CS0168
+using ColorVision.Device;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.Solution;

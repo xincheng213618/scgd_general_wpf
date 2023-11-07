@@ -35,8 +35,6 @@ namespace ColorVision.Solution
         private static readonly object _locker = new();
         public static SolutionManager GetInstance() { lock (_locker) { return _instance ??= new SolutionManager(); } }
 
-        public event SolutionOpenHandler SolutionOpenEvent;
-
         //工程配置文件
         public SolutionConfig Config { get => SoftwareConfig.SolutionConfig; }
         public SolutionSetting Setting { get => Config.SolutionSetting; }
