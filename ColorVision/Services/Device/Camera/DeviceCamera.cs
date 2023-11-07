@@ -1,12 +1,18 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.MySql.DAO;
 using ColorVision.Services.Device.Camera;
+using ColorVision.Themes.Controls;
+using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace ColorVision.Device.Camera
 {
     public class DeviceCamera : BaseDevice<ConfigCamera>
     {
+        public ImageSource Icon { get; set; }
+
+
         public DeviceServiceCamera DeviceService { get; set; }
 
         public CameraDisplayControl Control { get; set; }
@@ -26,6 +32,11 @@ namespace ColorVision.Device.Camera
                 View.OpenImage(e);
             };
             Control = new CameraDisplayControl(this);
+
+            if (Application.Current.TryFindResource("DrawingImageCamera") is DrawingImage  drawingImage)
+            {
+                Icon = drawingImage;
+            }
         }
 
 

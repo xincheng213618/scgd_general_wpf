@@ -33,8 +33,11 @@
                 <Border Margin="2" Background ="{DynamicResource GlobalBackground}" CornerRadius="5">
                     <StackPanel Margin="5">
                         <DockPanel Margin="5,2">
+                            <ToggleButton DockPanel.Dock="Right"  Style="{StaticResource ButtonMQTTConnect}"  Height="20" Width="20"  HorizontalAlignment="Right" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
+                            <Grid  Height="18"   HorizontalAlignment="Left"  Margin="0,0,4,0">
+                                <Image Source="{Binding Icon}"/>
+                            </Grid>
                             <TextBlock Text="{Binding Config.Name}" FontWeight="Bold" FontSize="20"/>
-                            <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  Height="20" Width="20"  HorizontalAlignment="Right" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
                         </DockPanel>
                         <GroupBox Header="基本信息" Margin="0,5">
                             <StackPanel Margin="5">

@@ -5,7 +5,9 @@ using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace ColorVision.Services
 {
@@ -26,6 +28,8 @@ namespace ColorVision.Services
         public ServiceType ServiceType { get => (ServiceType)SysResourceModel.Type; }
 
         public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
+
+        public ImageSource Icon { get; set; }
 
         public RelayCommand RefreshCommand { get; set; }
 
@@ -61,7 +65,16 @@ namespace ColorVision.Services
                     ServiceCamera cameraService = new ServiceCamera(Config);
                     BaseService = cameraService;
                     RefreshCommand = new RelayCommand(a => cameraService.GetAllDevice());
+
+                    if (Application.Current.TryFindResource("DrawingImageCamera") is DrawingImage DrawingImageCamera)
+                        Icon = DrawingImageCamera;
+
                     break;
+                case ServiceType.Algorithm:
+                    if (Application.Current.TryFindResource("DrawingImageAlgorithm") is DrawingImage DrawingImageAlgorithm)
+                        Icon = DrawingImageAlgorithm;
+                    break;
+
                 default:
                     BaseService = new BaseService<BaseServiceConfig>(Config);
                     break;

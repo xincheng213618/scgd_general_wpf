@@ -23,11 +23,11 @@ using System.Windows.Controls;
 namespace ColorVision.Services.Algorithm
 {
     /// <summary>
-    /// AlgorithmDisplayControl.xaml 的交互逻辑
+    /// DisplayAlgorithmControl.xaml 的交互逻辑
     /// </summary>
-    public partial class AlgorithmDisplayControl : UserControl
+    public partial class DisplayAlgorithmControl : UserControl
     {
-        private static readonly ILog logger = LogManager.GetLogger(typeof(AlgorithmDisplayControl));
+        private static readonly ILog logger = LogManager.GetLogger(typeof(DisplayAlgorithmControl));
 
         public DeviceAlgorithm Device { get; set; }
 
@@ -42,7 +42,7 @@ namespace ColorVision.Services.Algorithm
         private Dictionary<string, string> fileCache;
 
 
-        public AlgorithmDisplayControl(DeviceAlgorithm device)
+        public DisplayAlgorithmControl(DeviceAlgorithm device)
         {
             Device = device;
             InitializeComponent();
