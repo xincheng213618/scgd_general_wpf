@@ -268,7 +268,7 @@ namespace ColorVision.Services.Algorithm
             msg.Params.Add("y", sFRParam.ROI.y);
             msg.Params.Add("cx", sFRParam.ROI.cx);
             msg.Params.Add("cy", sFRParam.ROI.cy);
-            msg.Params.Add("gamma", sFRParam.SFR_gamma);
+            msg.Params.Add("gamma", sFRParam.Gamma);
 
             msg.Params.Add("file_data", ToJsonFileList(ImageChannelType.Gray_Y, FileName));
             return PublishAsyncClient(msg);
