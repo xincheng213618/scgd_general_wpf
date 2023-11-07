@@ -161,10 +161,8 @@ namespace ColorVision
 
                     Window window = new Window();
                     window.Owner = this;
-                    TreeViewControl treeViewControl = new TreeViewControl();
-                    window.Content = treeViewControl;
-                    treeViewControl.OpenSolution(SolutionManager.GetInstance().Config.SolutionFullName);
-                    window.Show();
+                    SolutionWindow solutionWindow = new SolutionWindow() ;
+                    solutionWindow.Show();
 
 
                 }
