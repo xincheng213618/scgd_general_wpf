@@ -165,7 +165,7 @@ namespace ColorVision.Services
                             serviceTerminal.AddChild(new DeviceFileServer(sysResourceModel));
                         break;
                     case ServiceType.Algorithm:
-                        deviceConfig = new AlgorithmConfig
+                        deviceConfig = new ConfigAlgorithm
                         {
                             ID = TextBox_Code.Text,
                             Name = TextBox_Name.Text,

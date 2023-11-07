@@ -30,7 +30,7 @@ namespace ColorVision.Services.Algorithm
     }
     public delegate void MQTTAlgorithmHandler(object sender, AlgorithmEvent arg);
 
-    public class AlgorithmService : BaseDevService<AlgorithmConfig>
+    public class AlgorithmService : BaseDevService<ConfigAlgorithm>
     {
         public event MQTTAlgorithmHandler OnAlgorithmEvent;
 
@@ -38,7 +38,7 @@ namespace ColorVision.Services.Algorithm
 
         public string DeviceID { get => Config.ID; }
 
-        public AlgorithmService(AlgorithmConfig Config) : base(Config)
+        public AlgorithmService(ConfigAlgorithm Config) : base(Config)
         {
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
             DeviceStatus = DeviceStatus.UnInit;

@@ -60,7 +60,7 @@ namespace ColorVision.Device
         {
             var temp = button.Content;
             button.Content = msgRecord.MsgRecordState.ToDescription();
-            MsgRecordStateChangedHandler msgRecordStateChangedHandler = async (e) =>
+            MsgRecordStateChangedHandler msgRecordStateChangedHandler = (e) =>
             {
                 button.Content = e.ToDescription();
                 if (e != MsgRecordState.Send)

@@ -6,12 +6,10 @@ using System.Windows.Media;
 
 namespace ColorVision.Services.Algorithm
 {
-    public class DeviceAlgorithm : BaseDevice<AlgorithmConfig>
+    public class DeviceAlgorithm : BaseDevice<ConfigAlgorithm>
     {
         public AlgorithmService Service { get; set; }
         public AlgorithmView View { get; set; }
-        public ImageSource Icon { get; set; }
-
 
         public DeviceAlgorithm(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {

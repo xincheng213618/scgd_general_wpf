@@ -2,7 +2,7 @@
 
 namespace ColorVision.Services.Algorithm
 {
-    public class AlgorithmConfig : BaseDeviceConfig, IServiceConfig
+    public class ConfigAlgorithm : BaseDeviceConfig, IServiceConfig
     {
         public string Endpoint { get => _Endpoint; set { _Endpoint = value; NotifyPropertyChanged(); } }
         private string _Endpoint;
