@@ -286,8 +286,8 @@ namespace ColorVision.Services.Algorithm
                 SerialNumber = SerialNumber,
                 Params = new Dictionary<string, object>() {{ "nBatchID", -1 } }
             };
-            msg.Params.Add("cols", ghostParam.Ghost_cols);
-            msg.Params.Add("rows", ghostParam.Ghost_rows);
+            msg.Params.Add("LedNums_X", ghostParam.Ghost_cols);
+            msg.Params.Add("LedNums_Y", ghostParam.Ghost_rows);
 
             msg.Params.Add("radius", ghostParam.Ghost_radius);
             msg.Params.Add("ratioH", ghostParam.Ghost_ratioH);
