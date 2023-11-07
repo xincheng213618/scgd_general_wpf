@@ -189,6 +189,10 @@ namespace ColorVision.Services.Algorithm
             msg.Params.Add("FovPattern", (int)fOVParam.FovPattern);
             msg.Params.Add("FovType", (int)fOVParam.FovType);
             msg.Params.Add("ThresholdValus", (int)fOVParam.ThresholdValus);
+            msg.Params.Add("x_c", fOVParam.Xc);
+            msg.Params.Add("y_c", fOVParam.Yc);
+            msg.Params.Add("x_p", fOVParam.Xp);
+            msg.Params.Add("y_p", fOVParam.Yp);
             msg.Params.Add("file_data", ToJsonFileList(ImageChannelType.Gray_Y, fileName));
             return PublishAsyncClient(msg);
         }

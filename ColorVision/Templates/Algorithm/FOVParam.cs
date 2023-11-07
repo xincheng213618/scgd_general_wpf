@@ -3,6 +3,8 @@ using ColorVision.MySql.DAO;
 using cvColorVision;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace ColorVision.Templates.Algorithm
 {
@@ -33,5 +35,20 @@ namespace ColorVision.Templates.Algorithm
         [Category("FOV"), Description("计算路线(Horizontal-水平；Vertical-垂直；Leaning-斜向)")]
         public FovType FovType { get => GetValue(_FovType); set { SetProperty(ref _FovType, value); } }
         private FovType _FovType = FovType.Horizontal;
+
+
+        [Category("FOV"), Description("FovCircle,Leaning)")]
+        public double Xc { get => GetValue(_Xc); set { SetProperty(ref _Xc, value); } }
+        private double _Xc;
+        [Category("FOV"), Description("FovCircle,Leaning)")]
+        public double Yc { get => GetValue(_y_c); set { SetProperty(ref _y_c, value); } }
+        private double _y_c;
+        [Category("FOV"), Description("FovCircle,Leaning)")]
+        public double Xp { get => GetValue(_Xp); set { SetProperty(ref _Xp, value); } }
+        private double _Xp;
+        [Category("FOV"), Description("FovCircle,Leaning)")]
+        public double Yp { get => GetValue(_Yp); set { SetProperty(ref _Yp, value); } }
+        private double _Yp;
+
     }
 }

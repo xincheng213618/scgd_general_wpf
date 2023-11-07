@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         ShowInTaskbar="False"
         xmlns:base ="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util"
-        Height="400" Width="500" ResizeMode="NoResize" IsBlurEnabled="True" UseLightTheme="True"  Background="Transparent" PreviewKeyDown="BaseWindow_PreviewKeyDown" Initialized="Window_Initialized" >
+        Height="400" Width="500" ResizeMode="NoResize" IsBlurEnabled="True"  Background="Transparent" PreviewKeyDown="BaseWindow_PreviewKeyDown" Initialized="Window_Initialized" >
 
     <Grid  Margin="0,-30,0,0">
         <Grid x:Name="Grid1"  Background="#FFFFFF" Opacity="0.04" >

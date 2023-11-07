@@ -27,7 +27,7 @@ namespace ColorVision.Themes.Controls
     {
         private static Style? GetDefautlStyle()
         {
-            if (Application.Current.TryFindResource(typeof(BaseWindow)) is Style style && style != null)
+            if (Application.Current.TryFindResource(typeof(BaseWindow)) is Style style)
             {
                 return style;
             }
@@ -61,32 +61,22 @@ namespace ColorVision.Themes.Controls
                     IsDragMoveEnabled = true;
                     wac = new(this, false, (c) =>
                     {
-                        //没有可用的模糊特效
                         c.A = 255;
                         Background = new SolidColorBrush(c);
                     });
 
-
                     if (IsWin10) {
-                        //这里逻辑不一样
                         IsDragMoveEnabled = false;
                         this.WindowStyle = WindowStyle.None;
                     }
 
-                    wac.Color = ThemeManager.Current.CurrentUITheme == Theme.Light ? Color.FromArgb(100, 255, 255, 255) : Color.FromArgb(100, 0, 0, 0);
-
+                    wac.Color = ThemeManager.Current.CurrentUITheme == Theme.Light ? Color.FromArgb(200, 255, 255, 255) : Color.FromArgb(180, 0, 0, 0);
                     wac.IsEnabled = true;
                     ThemeChangedHandler themeChangedHandler = (s) => {
 
-                        if (UseLightTheme) {
-                            wac.Color = Color.FromArgb(200, 255, 255, 255);
-                        }
-                        else {
-                            wac.Color = ThemeManager.Current.CurrentUITheme == Theme.Light ? Color.FromArgb(100, 255, 255, 255) : Color.FromArgb(100, 0, 0, 0);
-                        }
+                        wac.Color = ThemeManager.Current.CurrentUITheme == Theme.Light ? Color.FromArgb(200, 255, 255, 255) : Color.FromArgb(180, 0, 0, 0);
                         wac.IsEnabled = true;
                     };
-
                     ThemeManager.Current.CurrentUIThemeChanged += themeChangedHandler;
                     Closing += (s, e) => {
                         ThemeManager.Current.CurrentUIThemeChanged -= themeChangedHandler;
@@ -161,13 +151,6 @@ namespace ColorVision.Themes.Controls
             set => SetValue(ShowIconProperty, value);
         }
 
-        public static readonly DependencyProperty UseLightThemeProperty = DependencyProperty.Register(
-    nameof(UseLightTheme), typeof(bool), typeof(BaseWindow), new PropertyMetadata(false));
-
-        public bool UseLightTheme {
-            get => (bool)GetValue(UseLightThemeProperty);
-            set => SetValue(UseLightThemeProperty, value);
-        }
 
 
         protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)

@@ -59,16 +59,7 @@ namespace ColorVision.Solution
             }
             else
             {
-                try
-                {
-                    if (!Directory.Exists(Config.CachePath))
-                        Directory.CreateDirectory(Config.CachePath);
-                }
-                catch
-                {
-                    if (!Directory.Exists(Config.CachePath))
-                        Tool.CreateDirectory(Config.CachePath);
-                }
+                Tool.CreateDirectoryMax(Config.CachePath);
             }
 
 
@@ -82,17 +73,6 @@ namespace ColorVision.Solution
                 Config.SolutionName = Info.Name;
                 Config.SolutionFullName = Info.FullName;
                 SolutionHistory.InsertFile(Info.FullName);
-
-                try
-                {
-                    if (!Directory.Exists(Config.CachePath))
-                        Directory.CreateDirectory(Config.CachePath);
-                }
-                catch
-                {
-                    if (!Directory.Exists(Config.CachePath))
-                        Tool.CreateDirectory(Config.CachePath);
-                }
                 return true;
             }
             return false;
@@ -103,17 +83,8 @@ namespace ColorVision.Solution
             Config.SolutionName = SolutionDirectoryInfo.Name;
             Config.SolutionFullName = SolutionDirectoryInfo.FullName;
             SolutionHistory.InsertFile(SolutionDirectoryInfo.FullName);
-            try
-            {
-                if (!Directory.Exists(Config.CachePath))
-                    Directory.CreateDirectory(Config.CachePath);
-            }
-            catch
-            {
-                if (!Directory.Exists(Config.CachePath))
-                    Tool.CreateDirectory(Config.CachePath);
-            }
 
+            Tool.CreateDirectory(Config.CachePath);
         }
 
    

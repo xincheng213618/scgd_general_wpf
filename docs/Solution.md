@@ -10,11 +10,15 @@ cvrun: 这个后缀是 "ColorVision Runtime" 的缩写，表示这是一个包�
 
 
 
-
-
 .stn  Flow 流程保存文件
 
 .cvcie  这个后缀是 "ColorVision Catalog of Image Entries" 的缩写 , 用于保存的图像信息
+
+
+
+
+
+
 
 
 

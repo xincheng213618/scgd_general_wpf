@@ -206,6 +206,8 @@ namespace ColorVision
                 {
                     string SolutionDirectoryPath = newCreatWindow.NewCreateViewMode.DirectoryPath + "\\" + newCreatWindow.NewCreateViewMode.Name;
                     SolutionManager.GetInstance().OpenSolution(SolutionDirectoryPath);
+
+
                 }
             };
             newCreatWindow.ShowDialog();
@@ -233,7 +235,7 @@ namespace ColorVision
             Application.Current.MainWindow = this;
             Application.Current.MainWindow.AddHotKeys(new HotKeys("打开工程", new Hotkey(Key.O, ModifierKeys.Control), SolutionOpen));
             Application.Current.MainWindow.AddHotKeys(new HotKeys("新建工程", new Hotkey(Key.N, ModifierKeys.Control), SolutionNewCreat));
-            Application.Current.MainWindow.AddHotKeys(new HotKeys("设置", new Hotkey(Key.I, ModifierKeys.Control), OpenSetting));
+            Application.Current.MainWindow.AddHotKeys(new HotKeys(Properties.Resource.Settings, new Hotkey(Key.I, ModifierKeys.Control), OpenSetting));
             Application.Current.MainWindow.AddHotKeys(new HotKeys(Properties.Resource.About, new Hotkey(Key.F1, ModifierKeys.Control), AboutMsg));
             Application.Current.MainWindow.AddHotKeys(new HotKeys("MsgList", new Hotkey(Key.M, ModifierKeys.Control), MsgList));
 

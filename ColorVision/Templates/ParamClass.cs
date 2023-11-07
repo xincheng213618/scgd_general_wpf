@@ -17,7 +17,7 @@ namespace ColorVision.Templates
 
         public event EventHandler IsEnabledChanged;
 
-        [Category("设置"), DisplayName("是否启用模板"),BrowsableAttribute(false)]
+        [Category("设置"), DisplayName("是否启用模板"), Browsable(false)]
         public bool IsEnable
         {
             get => _IsEnable; set
@@ -30,11 +30,11 @@ namespace ColorVision.Templates
         }
         private bool _IsEnable;
 
-        [Category("设置"), DisplayName("序号"), BrowsableAttribute(false)]
+        [Browsable(false)]
         public int ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
         private int _ID;
 
-        [BrowsableAttribute(false)]
+        [Browsable(false)]
         public string Name { get => _Name; set { _Name = value ; NotifyPropertyChanged(); } }
         private string _Name;
 

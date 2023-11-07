@@ -13,6 +13,21 @@ namespace ColorVision.Util
 {
     public static partial class Tool
     {
+        public static bool CreateDirectoryMax(string folderPath)
+        {
+            try
+            {
+                if (!Directory.Exists(folderPath))
+                    Directory.CreateDirectory(folderPath);
+                return true;
+            }
+            catch
+            {
+                return Tool.CreateDirectory(folderPath);
+            }
+        }
+
+
         public static bool CreateDirectory(string folderPath)
         {
             ProcessStartInfo startInfo = new ProcessStartInfo();
@@ -29,9 +44,9 @@ namespace ColorVision.Util
                 process?.WaitForExit(); // 等待命令完成
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
-                MessageBox.Show("需要管理员权限来创建文件夹.");
+                Debug.WriteLine(ex);
                 return false;
             }
         }
