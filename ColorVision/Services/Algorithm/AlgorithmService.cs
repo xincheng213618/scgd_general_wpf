@@ -304,6 +304,33 @@ namespace ColorVision.Services.Algorithm
                 EventName = "Distortion",
                 Params = new Dictionary<string, object>() { { "nBatchID", -1 } }
             };
+            var Blob_Threshold_Params = new Dictionary<string, object>() { };
+
+            Blob_Threshold_Params.Add("filterByColor", distortionParam.filterByColor);
+            Blob_Threshold_Params.Add("blobColor", distortionParam.blobColor);
+            Blob_Threshold_Params.Add("minThreshold", distortionParam.minThreshold);
+            Blob_Threshold_Params.Add("thresholdStep", distortionParam.thresholdStep);
+            Blob_Threshold_Params.Add("ifDEBUG", distortionParam.ifDEBUG);
+            Blob_Threshold_Params.Add("darkRatio", distortionParam.darkRatio);
+            Blob_Threshold_Params.Add("contrastRatio", distortionParam.contrastRatio);
+            Blob_Threshold_Params.Add("bgRadius", distortionParam.bgRadius);
+            Blob_Threshold_Params.Add("filterByArea", distortionParam.filterByArea);
+            Blob_Threshold_Params.Add("minArea", distortionParam.minArea);
+            Blob_Threshold_Params.Add("maxArea", distortionParam.maxArea);
+            Blob_Threshold_Params.Add("minRepeatability", distortionParam.minRepeatability);
+            Blob_Threshold_Params.Add("filterByCircularity", distortionParam.filterByCircularity);
+            Blob_Threshold_Params.Add("minCircularity", distortionParam.minCircularity);
+            Blob_Threshold_Params.Add("maxCircularity", distortionParam.maxCircularity);
+            Blob_Threshold_Params.Add("filterByConvexity", distortionParam.filterByConvexity);
+            Blob_Threshold_Params.Add("minConvexity", distortionParam.minConvexity);
+            Blob_Threshold_Params.Add("maxConvexity", distortionParam.maxConvexity);
+            Blob_Threshold_Params.Add("filterByInertia", distortionParam.filterByInertia);
+            Blob_Threshold_Params.Add("minInertiaRatio", distortionParam.minInertiaRatio);
+            Blob_Threshold_Params.Add("maxInertiaRatio", distortionParam.maxInertiaRatio);
+
+            msg.Params.Add("Blob_Threshold_Params", Blob_Threshold_Params);
+
+
 
             msg.Params.Add("filterByColor", distortionParam.filterByColor);
             msg.Params.Add("blobColor", distortionParam.blobColor);
@@ -327,8 +354,22 @@ namespace ColorVision.Services.Algorithm
             msg.Params.Add("minInertiaRatio", distortionParam.minInertiaRatio);
             msg.Params.Add("maxInertiaRatio", distortionParam.maxInertiaRatio);
 
+            var ISIZE = new Dictionary<string, object>() {};
+            ISIZE.Add("cx", distortionParam.Width);
+            ISIZE.Add("cy", distortionParam.Height);
+            msg.Params.Add("ISIZE", ISIZE);
+
+
+
             msg.Params.Add("cx", distortionParam.Width);
             msg.Params.Add("cy", distortionParam.Height);
+
+            msg.Params.Add("type", distortionParam.type);
+            msg.Params.Add("sType", distortionParam.sType);
+            msg.Params.Add("lType", distortionParam.lType);
+            msg.Params.Add("dType", distortionParam.dType);
+
+
             msg.Params.Add("file_data", ToJsonFileList(ImageChannelType.Gray_Y, FileName));
 
             return PublishAsyncClient(msg);

@@ -254,20 +254,46 @@ namespace cvColorVision
         public int cx;
         public int cy;
     };
+    /// <summary>
+    /// 角点提取方法
+    /// </summary>
     public enum CornerType //角点提取方法
     {
+        /// <summary>
+        /// 圆点提取
+        /// </summary>
         Circlepoint = 0,    //圆点提取
+        /// <summary>
+        /// 棋盘格角点提取
+        /// </summary>
         Checkerboard = 1,   //棋盘格角点提取
     };
+    /// <summary>
+    /// 斜率计算方法
+    /// </summary>
     public enum SlopeType  //斜率计算方法
     {
+        /// <summary>
+        /// 中心点九点取斜率
+        /// </summary>
         CenterPoint = 0,    //中心点九点取斜率
+        /// <summary>
+        /// 去除方差较大的点后取斜率
+        /// </summary>
         lb_Variance = 1,        //去除方差较大的点后取斜率
     };
-
-    public enum LayoutType //理想点布点方法
+    /// <summary>
+    /// 理想点布点方法
+    /// </summary>
+    public enum LayoutType
     {
+        /// <summary>
+        /// 采用斜率布点
+        /// </summary>
         SlopeIN = 0,    //采用斜率布点
+        /// <summary>
+        /// 不采用斜率布点
+        /// </summary>
         SlopeOUT = 1,   //不采用斜率布点
     };
     public struct ST_BlobThreParams

@@ -11,7 +11,7 @@
  Target Server Version : 50742
  File Encoding         : 65001
 
- Date: 07/11/2023 11:55:26
+ Date: 07/11/2023 14:11:18
 */
 
 SET NAMES utf8mb4;
@@ -149,5 +149,9 @@ INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3061, 'EvaFunc', 3061, 'Eva
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3062, 'dx', 3062, 'dx', 0, NULL, '0', 8, '2023-10-10 10:48:39', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3063, 'dy', 3063, 'dy', 0, NULL, '1', 8, '2023-10-10 10:49:13', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3064, 'ksize', 3064, 'ksize', 0, NULL, '5', 8, '2023-10-10 10:49:14', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3070, 'type', 3070, 'type', 0, NULL, '0', 10, '2023-11-07 14:11:10', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3071, 'sType', 3071, 'sType', 0, NULL, '0', 10, '2023-11-07 14:11:10', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3072, 'lType', 3072, 'lType', 0, NULL, '0', 10, '2023-11-07 14:11:11', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3073, 'dType', 3073, 'dType', 0, NULL, '0', 10, '2023-11-07 14:11:11', 1, 0, NULL);
 
 SET FOREIGN_KEY_CHECKS = 1;
