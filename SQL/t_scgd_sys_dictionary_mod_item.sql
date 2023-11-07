@@ -97,7 +97,7 @@ INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (1302, 'BeginValue', 1302, '
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (1303, 'EndValue', 1303, '结束值', 1, NULL, '5.0', 13, '2023-08-18 09:44:38', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (1304, 'LimitValue', 1304, '限值', 1, NULL, '200.0', 13, '2023-08-18 09:45:26', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (1305, 'Points', 1305, '点数', 0, NULL, '100', 13, '2023-08-18 09:46:37', 1, 0, NULL);
-INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3000, 'SFR_gamma', 3000, 'SFR_gamma', 1, NULL, '1.0', 9, '2023-10-10 11:41:33', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3000, 'Gamma', 3000, 'Gamma', 1, NULL, '1.0', 9, '2023-10-10 11:41:33', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3001, 'X', 3001, 'X', 0, NULL, '0', 9, '2023-11-07 11:55:18', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3002, 'Y', 3002, 'Y', 0, NULL, '0', 9, '2023-11-07 11:55:20', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3003, 'Width', 3003, 'Width', 0, NULL, '1000', 9, '2023-10-10 11:42:52', 1, 0, NULL);
