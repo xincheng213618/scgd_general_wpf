@@ -7,16 +7,33 @@
         mc:Ignorable="d"
         xmlns:SettingUp ="clr-namespace:ColorVision.SettingUp"
         d:DataContext="{d:DesignInstance local:GlobalSetting}"
-        Title="MQTT日志" Height="550" Width="800">
+        Title="MQTT日志" Height="550" Width="800" Background="{StaticResource GlobalBackground}" >
     <Window.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+        </Style>
     </Window.Resources>
-    <Grid Background="#F9F9F9">
+    <Grid >
         <Grid.RowDefinitions>
-            <RowDefinition Height="300"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <DockPanel  Grid.Row="0">
-            <Grid Width="300">
+            <Grid  DockPanel.Dock="Right" Height="300" Width="400   ">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="订阅列表" TextWrapping="WrapWithOverflow"  Width="15"/>
+                <ListView Grid.Column="1"  x:Name="TopicListView" Margin="0" BorderThickness="0"  SelectionChanged="TopicListView_SelectionChanged">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" />
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Grid>
+            <Grid >
                 <StackPanel>
                     <GroupBox Header="设置" Margin="5">
                         <StackPanel Margin="5">
@@ -30,12 +47,11 @@
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
-
-                    <Border  Grid.Row="0"  Background="#F3F3F3" BorderBrush="#EAEAEA" BorderThickness="1" Margin="5" CornerRadius="5">
+                    <Border  Grid.Row="0"  BorderThickness="1" Margin="0" CornerRadius="5">
                         <StackPanel Margin="5">
-                            <DockPanel Margin="5">
+                            <DockPanel Margin="2">
                                 <TextBlock Text="主题:" VerticalAlignment="Center" Width="50"/>
-                                <TextBox x:Name="TextBoxSubscribe"  ToolTip="订阅的主题"  VerticalAlignment="Center" TextWrapping="Wrap" Text="topic1"  BorderThickness="0,0,0,1" />
+                                <TextBox x:Name="TextBoxSubscribe"  ToolTip="订阅的主题"  VerticalAlignment="Center" TextWrapping="Wrap" Text="topic1"  />
                             </DockPanel>
                             <UniformGrid Columns="3">
                                 <Grid/>
@@ -44,53 +60,27 @@
                             </UniformGrid>
                         </StackPanel>
                     </Border>
-                    <Border  Grid.Row="1"  Background="#F3F3F3" BorderBrush="#EAEAEA" BorderThickness="1" Margin="5" CornerRadius="5">
+                    <Border  Grid.Row="1" BorderThickness="1" CornerRadius="5">
                         <StackPanel Orientation="Vertical" Margin="5">
                             <DockPanel Margin="5,2">
                                 <TextBlock Text="主题:" VerticalAlignment="Center" Width="50"/>
-                                <TextBox x:Name="TextBoxSubscribe1" ToolTip="发送的主题" TextWrapping="NoWrap" AcceptsReturn="True" Text="topic1" BorderThickness="0,0,0,1" />
+                                <TextBox x:Name="TextBoxSubscribe1" ToolTip="发送的主题" TextWrapping="NoWrap" AcceptsReturn="True" Text="topic1"  />
                             </DockPanel>
                             <DockPanel Margin="5,2">
                                 <TextBlock Text="发送:" VerticalAlignment="Center" Width="50"/>
-                                <TextBox x:Name="TextBoxSend"  TextWrapping="NoWrap" Height="40" AcceptsReturn="True" Text="topic1" BorderThickness="0,0,0,1" />
+                                <TextBox x:Name="TextBoxSend"  TextWrapping="NoWrap" AcceptsReturn="True" Text="topic1"  />
                             </DockPanel>
                             <CheckBox x:Name="CheckBoxRetained" IsEnabled="False"  HorizontalAlignment="Right" Margin="5,2" Content="消息保留" VerticalAlignment="Center" ToolTip="是否保留"/>
-
-                            <UniformGrid Margin="5" Columns="3">
-                                <Grid/>
-                                <Grid/>
-                                <Button  Content="发送" Click="Send_Click"  Margin="2"  Width="80"/>
-                            </UniformGrid>
+                            <Button  Content="发送" Click="Send_Click" HorizontalAlignment="Right"  Margin="2"  Width="80"/>
                         </StackPanel>
                     </Border>
 
                 </StackPanel>
-
-
-
-
-
             </Grid>
-            <Grid  Margin="15,0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="auto"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Text="订阅列表" TextWrapping="WrapWithOverflow"  Width="15"/>
-                <Border  Grid.Column="1"  Background="#F3F3F3"  BorderBrush="#EAEAEA" BorderThickness="1"  Margin="5" CornerRadius="5">
-                    <ListView x:Name="TopicListView" Margin="5" Background="Transparent"  BorderThickness="0"  SelectionChanged="TopicListView_SelectionChanged">
-                        <ListView.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding}" />
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-                    </ListView>
-                </Border>
 
-            </Grid>
         </DockPanel>
-        <Border  Grid.Row="1" CornerRadius="5" Background="#f5f5f5">
-            <ScrollViewer  >
+        <Border  Grid.Row="1" CornerRadius="5" >
+            <ScrollViewer>
                 <StackPanel x:Name="StackPanelText">
                 </StackPanel>
             </ScrollViewer>

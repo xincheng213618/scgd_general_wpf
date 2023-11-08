@@ -26,31 +26,24 @@
             <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Content="{Binding Config.Name}"  FontSize="15" IsChecked="True" />
         </DockPanel>
         <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
-            <StackPanel   Margin="5" >
-                <Button Margin="0,2" Content="连接"  Click="Open_Click"/>
+            <StackPanel   Margin="2" >
+                <Button x:Name="ButtonSwitch" Margin="0,2" Content="连接"  Click="Open_Click"/>
                 <DockPanel Margin="0,2">
-                    <CheckBox  x:Name="CheckBoxIsAbs" ToolTip="是否绝对位置" />
-
                     <Button  DockPanel.Dock="Right" Content="移动"  Click="Move_Click" />
-                    <TextBlock Text="位置:" Width="40" />
-                    <TextBox x:Name="TextPos" Text=""  BorderThickness="0,0,0,1" Margin="5,0"/>
+                    <CheckBox  x:Name="CheckBoxIsAbs" Content="绝对位置" />
+                    <TextBox x:Name="TextPos" Text="0"  BorderThickness="0,0,0,1" Margin="5,0"/>
                 </DockPanel>
-
                 <DockPanel Margin="0,2">
                     <Button  DockPanel.Dock="Right" Content="MoveDiaphragm"  Click="Move1_Click" />
                     <TextBlock Text="位置"  Width="40"  />
-                    <TextBox x:Name="TextDiaphragm" Text=""  BorderThickness="0,0,0,1"  Margin="5,0"/>
+                    <TextBox x:Name="TextDiaphragm" Text="0"  BorderThickness="0,0,0,1"  Margin="5,0"/>
                 </DockPanel>
                 <Button  Margin="0,2" Content="返回原点"  Click="GoHome_Click" />
-                <Button Margin="0,2" Content="获取位置"  Click="GetPosition_Click" />
                 <DockPanel>
-                    <TextBlock Text="当前位置："/>
-
+                    <Button DockPanel.Dock="Right" Content="获取位置"  Click="GetPosition_Click" />
+                    <TextBlock Text="当前位置：" Width="80"/>
                     <TextBox IsReadOnly="True" Text="{Binding Config.Position}"  Background="Transparent" BorderThickness="0,0,0,0"  Margin="5,0"/>
-
                 </DockPanel>
-
-                <Button Margin="0,2" Content="Close"  Click="Close_Click" />
             </StackPanel>
         </Border>
     </StackPanel>

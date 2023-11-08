@@ -117,5 +117,11 @@ namespace ColorVision.Services.Msg
                 MsgRecords.Remove(msgRecord);
             }
         }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            MsgRecords.Clear();
+            MessageBox.Show("MQTT历史记录清理完毕", "ColorVision");
+        }
     }
 }

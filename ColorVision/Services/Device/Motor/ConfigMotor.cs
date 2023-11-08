@@ -1,6 +1,7 @@
 ﻿using ColorVision.Device;
 using ColorVision.Services.Device.Camera;
 using cvColorVision;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,7 +23,7 @@ namespace ColorVision.Services.Device.Motor
 
         public AutoFocusConfig AutoFocusConfig { get; set; } = new AutoFocusConfig();
 
-
+        [JsonIgnore]
         public int Position { get => _Position;set { _Position = value; NotifyPropertyChanged(); } }
         private int _Position;
 

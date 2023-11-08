@@ -183,8 +183,8 @@ namespace ColorVision.Device.Camera
                 AutoFocus.Add("BaudRate", Config.MotorConfig.BaudRate);
                 Params.Add("AutoFocus", AutoFocus);
             }
-
-            return PublishAsyncClient(msg);
+            ///这里设置1s超时，如果超时则认为初始化失败
+            return PublishAsyncClient(msg,1000);
         }
 
         public MsgRecord UnInit()
@@ -395,6 +395,53 @@ namespace ColorVision.Device.Camera
         public MsgRecord Close()
         {
             MsgSend msg = new MsgSend {  EventName = "Close" };
+            return PublishAsyncClient(msg);
+        }
+
+
+        public MsgRecord Move(int nPosition, bool IsbAbs = true, int dwTimeOut = 5000)
+        {
+
+            MsgSend msg = new MsgSend
+            {
+                EventName = "Move",
+                Params = new Dictionary<string, object>() {
+                    {"nPosition",nPosition },{"dwTimeOut", Config.MotorConfig.DwTimeOut },{ "bAbs", IsbAbs}
+                }
+            };
+            return PublishAsyncClient(msg);
+        }
+        public MsgRecord MoveDiaphragm(double dPosition, int dwTimeOut = 5000)
+        {
+
+            MsgSend msg = new MsgSend
+            {
+                EventName = "MoveDiaphragm",
+                Params = new Dictionary<string, object>() { { "dPosition", dPosition }, { "dwTimeOut", Config.MotorConfig.DwTimeOut } }
+            };
+            return PublishAsyncClient(msg);
+        }
+
+
+
+
+        public MsgRecord GoHome()
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "GoHome",
+                Params = new Dictionary<string, object>() { { "dwTimeOut", Config.MotorConfig.DwTimeOut } }
+            };
+            return PublishAsyncClient(msg);
+        }
+
+        public MsgRecord GetPosition()
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "GetPosition",
+                Params = new Dictionary<string, object>() { { "dwTimeOut", Config.MotorConfig.DwTimeOut } }
+            };
             return PublishAsyncClient(msg);
         }
 

@@ -54,7 +54,7 @@ namespace ColorVision
                     return;
                 }
 
-                TextBox textBox = new TextBox() { BorderThickness = new Thickness(0),Text = resultData_MQTT.ResultMsg,Tag = resultData_MQTT,Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#f5f5f5")) };
+                TextBox textBox = new TextBox() { BorderThickness = new Thickness(0),Text = resultData_MQTT.ResultMsg,Tag = resultData_MQTT};
 
                 if (!string.IsNullOrWhiteSpace(resultData_MQTT.Payload.ToString()))
                 {

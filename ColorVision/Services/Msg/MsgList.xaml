@@ -6,9 +6,21 @@
         xmlns:local="clr-namespace:ColorVision.Services.Msg"
         xmlns:resx="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
-        Title="Msg记录测试窗口(仅供测试)" Height="450" Width="1280" Initialized="Window_Initialized">
+        Title="Msg记录测试窗口(仅供测试)" Height="450" Background="{StaticResource GlobalBackground}" Width="1280" Initialized="Window_Initialized">
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+        </Style>  
+    </Window.Resources>
     <Grid>
-        <ListView  x:Name="ListView1"  Background="White" ScrollViewer.HorizontalScrollBarVisibility="Auto"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <DockPanel>
+            <Button Content="清空数据"  Click="Button_Click"/>
+        </DockPanel>
+        <ListView x:Name="ListView1" Grid.Row="1"   ScrollViewer.HorizontalScrollBarVisibility="Auto"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback">
             <ListView.Resources >
                 <ContextMenu x:Key="ContextMenuItem">
                     <MenuItem Header="模拟发送"  Click="MenuItem_Click" Tag="{Binding .}" />
@@ -28,28 +40,28 @@
                     <GridViewColumn  Header="ServiceName">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:MsgRecord}">
-                                <TextBlock Text="{ Binding  MsgSend.ServiceName,StringFormat=yyyy/MM/dd HH:mm:ss}"/>
+                                <TextBlock Text="{ Binding  MsgSend.ServiceName}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn  Header="EventName">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:MsgRecord}">
-                                <TextBlock Text="{ Binding  MsgSend.EventName,StringFormat=yyyy/MM/dd HH:mm:ss}"/>
+                                <TextBlock Text="{ Binding  MsgSend.EventName}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn  Header="SendTime">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:MsgRecord}">
-                                <TextBlock Text="{ Binding  SendTime,StringFormat=yyyy/MM/dd HH:mm:ss}"/>
+                                <TextBlock Text="{ Binding  SendTime,StringFormat=HH:mm:ss}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn  Header="ReciveTime">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:MsgRecord}">
-                                <TextBlock Text="{ Binding  ReciveTime,StringFormat=yyyy/MM/dd HH:mm:ss}" Visibility="{Binding IsRecive,Converter={StaticResource bool2VisibilityConverter}}"/>
+                                <TextBlock Text="{ Binding  ReciveTime,StringFormat=HH:mm:ss}" Visibility="{Binding IsRecive,Converter={StaticResource bool2VisibilityConverter}}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
@@ -60,7 +72,7 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn  Header="MsgSend">
+                    <GridViewColumn  Header="MsgSend" Width="300">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:MsgRecord}">
                                 <StackPanel PreviewMouseLeftButtonUp="StackPanel_PreviewMouseLeftButtonUp" Tag="{Binding MsgSend}">
@@ -69,7 +81,7 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn  Header="MsgReturn">
+                    <GridViewColumn  Header="MsgReturn" Width="300">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:MsgRecord}" >
                                 <StackPanel PreviewMouseLeftButtonUp="StackPanel_PreviewMouseLeftButtonUp" Tag="{Binding MsgReturn}">

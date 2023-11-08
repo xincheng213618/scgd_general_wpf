@@ -11,6 +11,7 @@ using cvColorVision;
 using ColorVision.Templates;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Device.Camera.Video;
+using System.Collections.ObjectModel;
 
 namespace ColorVision.Device.Camera
 {
@@ -41,20 +42,13 @@ namespace ColorVision.Device.Camera
             ComboxCalibrationTemplate.ItemsSource = TemplateControl.GetInstance().CalibrationParams;
             ComboxCalibrationTemplate.SelectedIndex = 0;
 
-
             StackPanelOpen.Visibility = Visibility.Collapsed;
             StackPanelImage.Visibility = Visibility.Collapsed;
             ButtonOpen.Visibility = Visibility.Collapsed;
 
             ComboxCameraTakeImageMode.ItemsSource = from e1 in Enum.GetValues(typeof(TakeImageMode)).Cast<TakeImageMode>()
                                                     select new KeyValuePair<TakeImageMode, string>(e1, e1.ToDescription());
-
             ComboxCameraTakeImageMode.SelectedValue = Service.Config.TakeImageMode;
-            ComboxCameraTakeImageMode.SelectionChanged += (s, e) =>
-            {
-                CameraVideoSetButton.Visibility = ComboxCameraTakeImageMode.SelectedValue is TakeImageMode mode && mode == TakeImageMode.Live ? Visibility.Visible : Visibility.Collapsed;
-            };
-
 
 
             ViewMaxChangedEvent(ViewGridManager.GetInstance().ViewMax);
@@ -100,13 +94,14 @@ namespace ColorVision.Device.Camera
                         ButtonOpen.Visibility = Visibility.Visible;
                         StackPanelImage.Visibility = Visibility.Collapsed;
                         ButtonOpen.Content = "打开";
+                        TakeImageModePanel.Visibility = Visibility.Visible;
                         break;
                     case DeviceStatus.Closing:
                         break;
                     case DeviceStatus.Opened:
                         StackPanelImage.Visibility = Visibility.Visible;
-
                         ButtonOpen.Content = "关闭";
+                        TakeImageModePanel.Visibility = Visibility.Collapsed;
                         break;
                     case DeviceStatus.Opening:
                         break;
@@ -135,25 +130,29 @@ namespace ColorVision.Device.Camera
                         break;
                 }
             };
-
-
-
         }
 
 
-        private void MQTTCamera_Init_Click(object sender, RoutedEventArgs e)
+
+
+
+        private void CameraInit_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
             {
-                if (Service.DeviceStatus == DeviceStatus.UnInit)
+                if (Service.DeviceStatus == DeviceStatus.UnInit && button.Content.ToString() == "连接")
                 {
                     var msgRecord = Service.Init();
                     Helpers.SendCommand(button, msgRecord);
                 }
-                else
+                else if (Service.DeviceStatus != DeviceStatus.UnInit && button.Content.ToString() == "断开连接")
                 {
                     var msgRecord = Service.UnInit();
                     Helpers.SendCommand(button, msgRecord);
+                }
+                else
+                {
+                    MessageBox.Show(Application.Current.MainWindow, "指令已经发送请稍等", "ColorVision");
                 }
             }
 
@@ -212,45 +211,6 @@ namespace ColorVision.Device.Camera
             }
         }
 
-        private void SendDemo4_Click(object sender, RoutedEventArgs e)
-        {
-            Service.Close();
-        }
-
-        private void CfwPortSetPort_Click(object sender, RoutedEventArgs e)
-        {
-            if (ComboxCfwPortChannel.SelectedIndex > -1)
-            {
-                Service.CfwPortSetPort(0, ComboxCfwPortChannel.SelectedIndex + 0x30, (int)Service.CurrentCameraType);
-            }
-        }
-
-
-        private void CfwPortSet_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                Service.CfwPortSetPort(ComboxCfwPortChannel1.SelectedIndex + 1, ComboxCfwPortChannel2.SelectedIndex + 1, (int)Service.CurrentCameraType);
-            }
-            catch
-            {
-
-            }
-        }
-
-        private void CfwPortReset_Click(object sender, RoutedEventArgs e)
-        {
-            Service.CfwPortSetPort(0, 0x30, (int)Service.CurrentCameraType);
-            ComboxCfwPortChannel.SelectedIndex = 0;
-        }
-
-        private void StackPanelCfwPort_Initialized(object sender, EventArgs e)
-        {
-            for (int i = 0; i < 10; i++)
-                ComboxCfwPortChannel.Items.Add(new ComboBoxItem() { Content = i });
-            ComboxCfwPortChannel.SelectedIndex = 0;
-        }
-
         private void AutoExplose_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
@@ -297,43 +257,6 @@ namespace ColorVision.Device.Camera
         }
 
 
-        private void ButtonCV_Click(object sender, RoutedEventArgs e)
-        {
-            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.custom) | *.custom";
-            openFileDialog.RestoreDirectory = true;
-            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                string filePath = openFileDialog.FileName;
-                View.OpenCVImage(filePath);
-            }
-        }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png,*.tif) | *.jpg; *.jpeg; *.png;*.tif";
-            openFileDialog.RestoreDirectory = true;
-            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                string filePath = openFileDialog.FileName;
-                View.OpenImage(filePath);
-            }
-        }
-
-        private void Save_Click(object sender, RoutedEventArgs e)
-        {
-            //using var saveFileDialog = new System.Windows.Forms.SaveFileDialog();
-            //saveFileDialog.Filter = "Image files (*.tif) | *.tif";
-            //saveFileDialog.DefaultExt = "1.tif";
-            //saveFileDialog.RestoreDirectory = true;
-            //if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            //{
-            //    string filePath = openFileDialog.FileName;
-            //    View.OpenCVImage(filePath);
-            //}
-        }
-
         private void VideSetting_Click(object sender, RoutedEventArgs e)
         {
             new CameraVideoConnect(Service.Config.VideoConfig) { Owner =Application.Current.MainWindow,WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
@@ -346,36 +269,11 @@ namespace ColorVision.Device.Camera
                 MsgRecord msgRecord = Service.AutoFocus();
                 Helpers.SendCommand(button, msgRecord);
             }
-            
-              
-        }
-
-        /// <summary>
-        /// FSR
-        /// </summary>
-        private void FSR_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        /// <summary>
-        /// GetData
-        /// </summary>
-        private void FOV_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        /// <summary>
-        /// 鬼影
-        /// </summary>
-        private void GhostShadow_Click(object sender, RoutedEventArgs e)
-        {
-
         }
 
         private void ComboxCalibrationTemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+
         }
 
 
@@ -397,7 +295,7 @@ namespace ColorVision.Device.Camera
 
         }
 
-        private void SetChannel(object sender, RoutedEventArgs e)
+        private void SetChannel()
         {
             MsgSend msg = new MsgSend
             {
@@ -414,6 +312,103 @@ namespace ColorVision.Device.Camera
         private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
+        }
+
+        TemplateControl TemplateControl { get; set; }
+
+        private void MenuItem_Template(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button)
+            {
+                TemplateControl = TemplateControl.GetInstance();
+                SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
+                WindowTemplate windowTemplate;
+                if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
+                {
+                    MessageBox.Show(Application.Current.MainWindow, "数据库连接失败，请先连接数据库在操作", "ColorVision");
+                    return;
+                }
+                switch (button.Tag?.ToString() ?? string.Empty)
+                {
+                    case "Calibration":
+                        Calibration calibration = new Calibration(TemplateControl.CalibrationParams[0].Value);
+                        windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration) { Title = "校正参数设置" };
+                        TemplateAbb(windowTemplate, TemplateControl.CalibrationParams);
+                        break;
+                    default:
+                        HandyControl.Controls.Growl.Info("开发中");
+                        break;
+                }
+            }
+        }
+        private void TemplateAbb<T>(WindowTemplate windowTemplate, ObservableCollection<TemplateModel<T>> keyValuePairs) where T : ParamBase
+        {
+            windowTemplate.Owner = Window.GetWindow(this);
+            windowTemplate.ListConfigs.Clear();
+            foreach (var item in keyValuePairs)
+            {
+                if (item.Value is PoiParam poiParam)
+                {
+                    item.Tag = $"{poiParam.Width}*{poiParam.Height}{(GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql ? "" : $"_{poiParam.PoiPoints.Count}")}";
+                }
+
+                windowTemplate.ListConfigs.Add(item);
+            }
+            windowTemplate.ShowDialog();
+        }
+
+        private void Move_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button)
+            {
+                if (int.TryParse(TextPos.Text, out int pos))
+                {
+                    var msgRecord = Service.Move(pos, CheckBoxIsAbs.IsChecked ?? true);
+                    Helpers.SendCommand(button, msgRecord);
+                }
+            }
+        }
+
+        private void GoHome_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button)
+            {
+                if (int.TryParse(TextPos.Text, out int pos))
+                {
+                    var msgRecord = Service.GoHome();
+                    Helpers.SendCommand(button, msgRecord);
+                }
+            }
+        }
+
+        private void GetPosition_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button)
+            {
+                var msgRecord = Service.GetPosition();
+                Helpers.SendCommand(button, msgRecord);
+            }
+        }
+
+        private void Move1_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button)
+            {
+                if (double.TryParse(TextDiaphragm.Text, out double pos))
+                {
+                    var msgRecord = Service.MoveDiaphragm(pos);
+                    Helpers.SendCommand(button, msgRecord);
+                }
+            }
+        }
+
+        private void Close_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button)
+            {
+                var msgRecord = Service.Close();
+                Helpers.SendCommand(button, msgRecord);
+            }
         }
     }
 }

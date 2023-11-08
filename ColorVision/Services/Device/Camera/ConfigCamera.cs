@@ -96,6 +96,13 @@ namespace ColorVision.Services.Device.Camera
         private int _BaudRate = 9600;
 
         public AutoFocusConfig AutoFocusConfig { get; set; } = new AutoFocusConfig();
+
+        [JsonIgnore]
+        public int Position { get => _Position; set { _Position = value; NotifyPropertyChanged(); } }
+        private int _Position;
+
+        public int DwTimeOut { get => _dwTimeOut; set { _dwTimeOut = value; NotifyPropertyChanged(); } }
+        private int _dwTimeOut = 5000;
     }
 
     public class ChannelConfig : ViewModelBase

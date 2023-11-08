@@ -29,15 +29,40 @@ namespace ColorVision.Services.Device.Motor
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Device;
+            DeviceService.DeviceStatusChanged += DeviceService_DeviceStatusChanged;
+        }
 
+        private void DeviceService_DeviceStatusChanged(DeviceStatus deviceStatus)
+        {
+            switch (deviceStatus)
+            {
+                case DeviceStatus.Closed:
+                    ButtonSwitch.Content = "连接";
+                    break;
+                case DeviceStatus.Opened:
+                    ButtonSwitch.Content = "关闭";
+                    break;
+            }
         }
 
         private void Open_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
             {
-                var msgRecord = DeviceService.Open();
-                Helpers.SendCommand(button, msgRecord);
+                if (DeviceService.DeviceStatus == DeviceStatus.Closed && button.Content.ToString() == "连接")
+                {
+                    var msgRecord = DeviceService.Open();
+                    Helpers.SendCommand(button, msgRecord);
+                }
+                else if (DeviceService.DeviceStatus == DeviceStatus.Opened && button.Content.ToString() == "关闭")
+                {
+                    var msgRecord = DeviceService.Close();
+                    Helpers.SendCommand(button, msgRecord);
+                }
+                else
+                {
+                    MessageBox.Show(Application.Current.MainWindow,"指令已经发送请稍等","ColorVision");
+                }
             }
         }
 

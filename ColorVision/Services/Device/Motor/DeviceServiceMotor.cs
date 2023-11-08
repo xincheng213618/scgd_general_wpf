@@ -59,6 +59,10 @@ namespace ColorVision.Services.Device.Motor
                     case "Close":
                         DeviceStatus = DeviceStatus.Closed;
                         break;
+                    default:
+                        DeviceStatus = DeviceStatus.Closed;
+                        break;
+
                 }
             }
         }
@@ -72,7 +76,7 @@ namespace ColorVision.Services.Device.Motor
                 Params = new Dictionary<string, object>() { { "CodeID", Config.Code }, { "eFOCUS_COMMUN",(int)Config.eFOCUSCOMMUN },{ "szComName", Config.SzComName }, { "BaudRate", Config.BaudRate } }
             };
 
-            return PublishAsyncClient(msg);
+            return PublishAsyncClient(msg,1000);
         }
 
         public MsgRecord Close()
@@ -84,7 +88,7 @@ namespace ColorVision.Services.Device.Motor
                 Params = new Dictionary<string, object>() {  }
             };
 
-            return PublishAsyncClient(msg);
+            return PublishAsyncClient(msg,1000);
         }
 
         public MsgRecord Move(int nPosition ,bool IsbAbs =true, int dwTimeOut = 5000)

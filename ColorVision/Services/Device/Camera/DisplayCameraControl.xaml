@@ -39,14 +39,13 @@
         </DockPanel>
 
         <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
-            <StackPanel Margin="5">
-                <Button x:Name="ButtonInit" Margin="0,0,0,2"  Content="连接" Click="MQTTCamera_Init_Click"/>
-                <StackPanel x:Name="StackPanelOpen" Margin="0,5">
-                    <DockPanel Margin="0,2" >
-                        <TextBlock Text="取图模式：" />
+            <StackPanel Margin="3">
+                <Button x:Name="ButtonInit" Margin="0,0,0,2"  Content="连接" Click="CameraInit_Click"/>
+                <StackPanel x:Name="StackPanelOpen" Margin="0,2,0,2">
+                    <DockPanel Margin="0,2" x:Name="TakeImageModePanel">
+                        <TextBlock Text="取图模式："  Width="100"/>
                         <ComboBox  x:Name="ComboxCameraTakeImageMode"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Margin="0,0,0,0"/>
                     </DockPanel>
-                    <Button x:Name="CameraVideoSetButton" Visibility="Collapsed" Content="视频模式配置" Click="VideSetting_Click"/>
                     <Button x:Name="ButtonOpen" Content="打开" Click="Open_Click" />
 
                     <StackPanel x:Name="StackPanelImage">
@@ -99,57 +98,44 @@
                                 </hc:PreviewSlider>
                             </DockPanel>
                         </StackPanel>
-                        <UniformGrid Columns="2" Margin="0,2">
-                            <Button Content="自动曝光" Click="AutoExplose_Click" Margin="0,0,20,0" />
-                            <Button Content="自动聚焦" Click="AutoFocus_Click" Margin="20,0,0,0" />
-                        </UniformGrid>
-                        
+                        <Button Content="自动曝光" Margin="0,2" Click="AutoExplose_Click" />
+
+
                         <DockPanel Margin="0,2">
-                            <TextBlock Text="校正：" />
                             <Button  DockPanel.Dock="Right" Content="应用"  HorizontalAlignment="Right" Click="Calibration_Click" />
-                            <ComboBox  x:Name="ComboxCalibrationTemplate" Width="150" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}"  SelectionChanged="ComboxCalibrationTemplate_SelectionChanged" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                            <TextBlock Text="校正：" />
+                            <ComboBox  x:Name="ComboxCalibrationTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                            <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
+                                <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="Calibration"  Click="MenuItem_Template"/>
+                            </Grid>
                         </DockPanel>
+
                         <Button Content="取图" Click="SendDemo3_Click" Margin="0,2"/>
-                    </StackPanel>
-                    <StackPanel  x:Name="StackPanelCfwPort" Initialized="StackPanelCfwPort_Initialized" Visibility="Collapsed">
-                        <GroupBox Header="滤色轮">
-                            <StackPanel >
-                                <ComboBox x:Name="ComboxCfwPortChannel"  Style="{StaticResource ComboBox.Small}"  Margin="0,2,10,2"/>
-                                <Button Content="切换通道" Margin="2" Click="CfwPortSetPort_Click"/>
-                                <Button Content="重置" Margin="2" Click="CfwPortReset_Click" ToolTip="重置滤色轮"/>
-                                <UniformGrid>
-                                    <DockPanel>
-                                        <Label Content="Index:"/>
-                                        <ComboBox x:Name="ComboxCfwPortChannel1"  Style="{StaticResource ComboBox.Small}"  SelectedIndex="0" Margin="0,2,10,2">
-                                            <ComboBoxItem Content="1"/>
-                                            <ComboBoxItem Content="2"/>
-                                            <ComboBoxItem Content="3"/>
-                                            <ComboBoxItem Content="4"/>
-                                            <ComboBoxItem Content="5"/>
-                                            <ComboBoxItem Content="6"/>
-                                            <ComboBoxItem Content="7"/>
-                                            <ComboBoxItem Content="8"/>
-                                            <ComboBoxItem Content="9"/>
-                                        </ComboBox>
-                                    </DockPanel>
-                                    <DockPanel>
-                                        <Label Content="通道:"/>
-                                        <ComboBox x:Name="ComboxCfwPortChannel2"  Style="{StaticResource ComboBox.Small}"  SelectedIndex="0" Margin="0,2,10,2">
-                                            <ComboBoxItem Content="1"/>
-                                            <ComboBoxItem Content="2"/>
-                                            <ComboBoxItem Content="3"/>
-                                            <ComboBoxItem Content="4"/>
-                                            <ComboBoxItem Content="5"/>
-                                            <ComboBoxItem Content="6"/>
-                                            <ComboBoxItem Content="7"/>
-                                            <ComboBoxItem Content="8"/>
-                                            <ComboBoxItem Content="9"/>
-                                        </ComboBox>
-                                    </DockPanel>
-                                    <Button Content="设置"   Margin="2" Click="CfwPortSet_Click" ToolTip="根据通道设置滤色轮"/>
-                                </UniformGrid>
+
+                        <GroupBox Header="电机操作" Visibility="{Binding Config.IsHaveMotor,Converter={StaticResource bool2VisibilityConverter}}">
+                            <StackPanel Margin="2">
+                                <Button Content="自动聚焦" Click="AutoFocus_Click" />
+                                <DockPanel Margin="0,2">
+                                    <Button  DockPanel.Dock="Right" Content="移动"  Click="Move_Click" />
+                                    <CheckBox  x:Name="CheckBoxIsAbs" Content="绝对位置" />
+                                    <TextBox x:Name="TextPos" Text="0"  BorderThickness="0,0,0,1" Margin="5,0"/>
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <Button  DockPanel.Dock="Right" Content="MoveDiaphragm"  Click="Move1_Click" />
+                                    <TextBlock Text="位置"  Width="40"  />
+                                    <TextBox x:Name="TextDiaphragm" Text="0"  BorderThickness="0,0,0,1"  Margin="5,0"/>
+                                </DockPanel>
+                                <Button  Margin="0,2" Content="返回原点"  Click="GoHome_Click" />
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right" Content="获取位置"  Click="GetPosition_Click" />
+                                    <TextBlock Text="当前位置：" Width="80"/>
+                                    <TextBox IsReadOnly="True" Text="{Binding Config.MotorConfig.Position}"  Background="Transparent" BorderThickness="0,0,0,0"  Margin="5,0"/>
+                                </DockPanel>
+
                             </StackPanel>
                         </GroupBox>
+
                     </StackPanel>
                 </StackPanel>
                 <DockPanel Margin="0,2,0,0" >
