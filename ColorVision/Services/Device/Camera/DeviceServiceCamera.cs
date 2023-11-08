@@ -170,9 +170,20 @@ namespace ColorVision.Device.Camera
             MsgSend msg = new MsgSend
             {
                 EventName = "Init",
-                Params = new Dictionary<string, object>() { { "CameraType", (int)Config.CameraType }, { "SnID", Config.SNID }, {"CodeID",Config.Code } , { "szCfgName", "" } }
             };
-            
+            var Params = new Dictionary<string, object>() { { "CameraType", (int)Config.CameraType }, { "SnID", Config.SNID }, { "CodeID", Config.Code }, { "szCfgName", "" } };
+            msg.Params = Params;
+
+            ///如果配置电机，则传入电机的参数
+            if (Config.IsHaveMotor)
+            {
+                var AutoFocus = new Dictionary<string, object>() { };
+                AutoFocus.Add("eFOCUS_COMMUN", Config.MotorConfig.eFOCUSCOMMUN);
+                AutoFocus.Add("szComName", Config.MotorConfig.SzComName);
+                AutoFocus.Add("BaudRate", Config.MotorConfig.BaudRate);
+                Params.Add("AutoFocus", AutoFocus);
+            }
+
             return PublishAsyncClient(msg);
         }
 

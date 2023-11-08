@@ -1,5 +1,6 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.MySql.DAO;
+using ColorVision.Themes;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -18,6 +19,15 @@ namespace ColorVision.Services.Algorithm
 
             if (Application.Current.TryFindResource("DrawingImageAlgorithm") is DrawingImage DrawingImageAlgorithm)
                 Icon = DrawingImageAlgorithm;
+
+            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
+            {
+                if (Application.Current.TryFindResource("DrawingImageAlgorithm") is DrawingImage DrawingImageAlgorithm)
+                    Icon = DrawingImageAlgorithm;
+                View.View.Icon = Icon;
+            };
+            View.View.Title = "算法展示";
+            View.View.Icon = Icon;
         }
 
         public override UserControl GetDeviceControl() => new DeviceAlgorithmControl(this);

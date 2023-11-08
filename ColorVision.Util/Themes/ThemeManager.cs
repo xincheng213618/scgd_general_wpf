@@ -91,14 +91,11 @@ namespace ColorVision.Themes
         private void ApplyActTheme(Application app, Theme theme)
         {
             if (CurrentUITheme == theme) return;
-            CurrentUITheme = theme;
-
             ApplyThemeChanged(app, theme);
         }
 
         public void ApplyThemeChanged(Application app, Theme theme)
         {
-            CurrentUITheme = theme;
             switch (theme)
             {
                 case Theme.Light:
@@ -130,6 +127,7 @@ namespace ColorVision.Themes
                 default:
                     break;
             }
+            CurrentUITheme = theme;
         }
 
 

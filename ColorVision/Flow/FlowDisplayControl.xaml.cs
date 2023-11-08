@@ -7,6 +7,9 @@ using System.Windows.Controls;
 using System.IO;
 using Panuon.WPF.UI;
 using ColorVision.Services;
+using ColorVision.Themes;
+using System.Drawing;
+using System.Windows.Media;
 
 namespace ColorVision.Flow
 {
@@ -15,7 +18,7 @@ namespace ColorVision.Flow
     /// </summary>
     public partial class FlowDisplayControl : UserControl
     {
-        public CVFlowControl flowView { get; set; }
+        public CVFlowView View { get; set; }
 
         public FlowDisplayControl()
         {
@@ -31,8 +34,19 @@ namespace ColorVision.Flow
             FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
 
 
-            flowView = new CVFlowControl();
-            ViewGridManager.GetInstance().AddView(0,flowView);
+            View = new CVFlowView();
+
+            if (Application.Current.TryFindResource("DrawingImageFlow") is DrawingImage DrawingImageAlgorithm)
+                View.View.Icon = DrawingImageAlgorithm;
+
+            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
+            {
+                if (Application.Current.TryFindResource("DrawingImageFlow") is DrawingImage DrawingImageAlgorithm)
+                    View.View.Icon = DrawingImageAlgorithm;
+            };
+            View.View.Title = "流程窗口";
+
+            ViewGridManager.GetInstance().AddView(0,View);
 
             ViewMaxChangedEvent(ViewGridManager.GetInstance().ViewMax);
             ViewGridManager.GetInstance().ViewMaxChangedEvent += ViewMaxChangedEvent;
@@ -47,9 +61,9 @@ namespace ColorVision.Flow
                     KeyValues.Add(new KeyValuePair<string, int>((i + 1).ToString(), i));
                 }
                 ComboxView.ItemsSource = KeyValues;
-                ComboxView.SelectedValue = flowView.View.ViewIndex;
+                ComboxView.SelectedValue = View.View.ViewIndex;
             }
-            flowView.View.ViewIndexChangedEvent += (e1, e2) =>
+            View.View.ViewIndexChangedEvent += (e1, e2) =>
             {
                 ComboxView.SelectedIndex = e2 + 2;
             };
@@ -57,8 +71,8 @@ namespace ColorVision.Flow
             {
                 if (ComboxView.SelectedItem is KeyValuePair<string, int> KeyValue)
                 {
-                    flowView.View.ViewIndex = KeyValue.Value;
-                    ViewGridManager.GetInstance().SetViewIndex(flowView, KeyValue.Value);
+                    View.View.ViewIndex = KeyValue.Value;
+                    ViewGridManager.GetInstance().SetViewIndex(View, KeyValue.Value);
                 }
             };
 
@@ -74,11 +88,11 @@ namespace ColorVision.Flow
                     string fileName = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.GetFullFileName(flowParam.FileName ?? string.Empty);
                     if (File.Exists(fileName))
                     {
-                        if (flowView != null)
+                        if (View != null)
                         {
                             try
                             {
-                                flowView.FlowEngineControl.Load(fileName);
+                                View.FlowEngineControl.Load(fileName);
                             }
                             catch
                             {
@@ -120,10 +134,10 @@ namespace ColorVision.Flow
         {
             if (FlowTemplate.SelectedValue is FlowParam flowParam)
             {
-                string startNode = flowView.FlowEngineControl.GetStartNodeName();
+                string startNode = View.FlowEngineControl.GetStartNodeName();
                 if (!string.IsNullOrWhiteSpace(startNode))
                 {
-                    flowControl = new FlowControl(MQTTControl.GetInstance(), flowView.FlowEngineControl);
+                    flowControl = new FlowControl(MQTTControl.GetInstance(), View.FlowEngineControl);
 
                     handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
                     handler.Cancelling += delegate

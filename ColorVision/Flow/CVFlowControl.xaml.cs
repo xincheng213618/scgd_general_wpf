@@ -7,15 +7,15 @@ using System.Windows.Input;
 namespace ColorVision.Flow
 {
     /// <summary>
-    /// CVFlowControl.xaml 的交互逻辑
+    /// CVFlowView.xaml 的交互逻辑
     /// </summary>
-    public partial class CVFlowControl : UserControl,IView
+    public partial class CVFlowView : UserControl,IView
     {
         private FlowEngineLib.FlowEngineControl flowEngine;
         public FlowEngineLib.FlowEngineControl FlowEngineControl { get { return flowEngine; } }
         public View View { get; set; }
 
-        public CVFlowControl()
+        public CVFlowView()
         {
             flowEngine = new FlowEngineLib.FlowEngineControl(false);
             InitializeComponent();

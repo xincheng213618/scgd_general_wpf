@@ -1,7 +1,9 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.MySql.DAO;
 using ColorVision.Services.Device.Camera;
+using ColorVision.Themes;
 using ColorVision.Themes.Controls;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -32,6 +34,17 @@ namespace ColorVision.Device.Camera
 
             if (Application.Current.TryFindResource("DrawingImageCamera") is DrawingImage  drawingImage)
                 Icon = drawingImage;
+
+            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
+            {
+                if (Application.Current.TryFindResource("DrawingImageCamera") is DrawingImage drawingImage)
+                    Icon = drawingImage;
+                View.View.Icon = Icon;
+            };
+            View.View.Title = "相机视图";
+            View.View.Icon = Icon;
+
+
 
         }
 

@@ -16,7 +16,7 @@ namespace ColorVision.Device.Spectrum
         public DeviceSpectrum DeviceSpectrum { get; set; }
         public SpectrumService SpectrumService { get => DeviceSpectrum.DeviceService; }
 
-        public SpectrumView View { get => DeviceSpectrum.ChartView;}
+        public SpectrumView View { get => DeviceSpectrum.View;}
         public SpectrumDisplayControl(DeviceSpectrum DeviceSpectrum)
         {
             this.DeviceSpectrum = DeviceSpectrum;

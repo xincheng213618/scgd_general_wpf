@@ -1,4 +1,5 @@
 ﻿using ColorVision.MVVM;
+using System.Windows.Media;
 
 namespace ColorVision
 {
@@ -43,5 +44,10 @@ namespace ColorVision
         public int PreViewIndex { get => _PreViewIndex; private set { _PreViewIndex = value;   } }
 
         private int _PreViewIndex = -1;
+
+        public ImageSource Icon { get; set; }
+
+        public string Title { get; set; } = string.Empty;
+
     }
 }

@@ -287,7 +287,7 @@ namespace ColorVision
 
             if (control is IView view)
             {
-                Window window = new Window() { Owner =Application.Current.MainWindow };
+                Window window = new Window() { Owner = Application.Current.MainWindow,Icon = view.View.Icon,Title = view.View.Title};
                 view.View.ViewIndex = -2;
 
                 ViewIndexChangedHandler eventHandler = null;

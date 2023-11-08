@@ -59,7 +59,9 @@ namespace ColorVision.MQTT
     {
         public T Config { get; set; }
 
-        public ImageSource Icon { get; set; }
+        public  ImageSource Icon { get => _Icon; set { _Icon = value; NotifyPropertyChanged(); } }
+        private ImageSource _Icon;
+
 
         public override object GetConfig()
         {
