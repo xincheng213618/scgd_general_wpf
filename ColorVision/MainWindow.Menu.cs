@@ -20,6 +20,11 @@ using ColorVision.RC;
 using ColorVision.RecentFile;
 using ColorVision.Lincense;
 using ColorVision.Services.Msg;
+using ColorVision.Language;
+using ColorVision.Themes;
+using System.Globalization;
+using System.Threading;
+using ColorVision.Extension;
 
 namespace ColorVision
 {
@@ -167,9 +172,6 @@ namespace ColorVision
 
                 }
                 lastClickTime = DateTime.Now;
-
-
-
             }
             else
             {
@@ -342,5 +344,65 @@ namespace ColorVision
             if (!result)
                 Process.Start(result ? "explorer.exe" : "notepad.exe", fileName);
         }
+
+
+
+        private void MenuLanguage_Initialized(object sender, EventArgs e)
+        {
+            foreach (var item in LanguageManager.Current.Languages)
+            {
+                MenuItem LanguageItem = new MenuItem();
+                LanguageItem.Header = LanguageManager.keyValuePairs.TryGetValue(item, out string value) ? value : item;
+                LanguageItem.Click += (s, e) =>
+                {
+                    GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting.UICulture = item;
+                    GlobalSetting.GetInstance().SaveSoftwareConfig();
+                    LanguageManager.Current.LanguageChange(item);
+                };
+                LanguageItem.Tag = item;
+                LanguageItem.IsChecked = Thread.CurrentThread.CurrentUICulture.Name == item;
+                MenuLanguage.Items.Add(LanguageItem);
+            }
+
+        }
+        private void MenuLanguage_Loaded(object sender, RoutedEventArgs e)
+        {
+            foreach (var item in MenuTheme.Items)
+            {
+                if (item is MenuItem LanguageItem && LanguageItem.Tag is string Language)
+                    LanguageItem.IsChecked = Thread.CurrentThread.CurrentUICulture.Name == Language;
+            }
+
+        }
+
+        private void MenuTheme_Loaded(object sender, RoutedEventArgs e)
+        {
+            foreach (var item in MenuTheme.Items)
+            {
+                if (item is MenuItem ThemeItem && ThemeItem.Tag is Theme Theme)
+                    ThemeItem.IsChecked = ThemeManager.Current.CurrentTheme == Theme;
+            }
+
+        }
+
+        private void MenuTheme_Initialized(object sender, EventArgs e)
+        {
+            foreach (var item in Enum.GetValues(typeof(Theme)).Cast<Theme>())
+            {
+                MenuItem ThemeItem = new MenuItem();
+                ThemeItem.Header = Properties.Resource.ResourceManager.GetString(item.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
+                ThemeItem.Click += (s, e) =>
+                {
+                    GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting.Theme = item;
+                    GlobalSetting.GetInstance().SaveSoftwareConfig();
+                    Application.Current.ApplyTheme(item);
+                };
+                ThemeItem.Tag = item;
+                ThemeItem.IsChecked = ThemeManager.Current.CurrentTheme == item;
+                MenuTheme.Items.Add(ThemeItem);
+            }
+        }
+
+
     }
 }

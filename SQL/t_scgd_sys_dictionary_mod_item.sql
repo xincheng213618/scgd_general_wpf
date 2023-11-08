@@ -11,7 +11,7 @@
  Target Server Version : 50742
  File Encoding         : 65001
 
- Date: 07/11/2023 14:11:18
+ Date: 08/11/2023 10:12:01
 */
 
 SET NAMES utf8mb4;
@@ -97,7 +97,7 @@ INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (1302, 'BeginValue', 1302, '
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (1303, 'EndValue', 1303, '结束值', 1, NULL, '5.0', 13, '2023-08-18 09:44:38', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (1304, 'LimitValue', 1304, '限值', 1, NULL, '200.0', 13, '2023-08-18 09:45:26', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (1305, 'Points', 1305, '点数', 0, NULL, '100', 13, '2023-08-18 09:46:37', 1, 0, NULL);
-INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3000, 'Gamma', 3000, 'Gamma', 1, NULL, '1.0', 9, '2023-10-10 11:41:33', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3000, 'Gamma', 3000, 'Gamma', 1, NULL, '1.0', 9, '2023-11-07 15:25:36', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3001, 'X', 3001, 'X', 0, NULL, '0', 9, '2023-11-07 11:55:18', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3002, 'Y', 3002, 'Y', 0, NULL, '0', 9, '2023-11-07 11:55:20', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3003, 'Width', 3003, 'Width', 0, NULL, '1000', 9, '2023-10-10 11:42:52', 1, 0, NULL);
@@ -133,13 +133,13 @@ INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3042, 'maxArea', 3042, '斑
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3043, 'minRepeatability', 3043, '重复次数认定', 0, NULL, '2', 10, '2023-10-09 15:55:39', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3044, 'filterByCircularity', 3044, '形状控制（圆，方)', 0, NULL, NULL, 10, '2023-10-09 15:57:27', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3045, 'minCircularity', 3045, '', 1, NULL, '0.9', 10, '2023-10-09 15:59:29', 1, 0, NULL);
-INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3046, 'maxCircularity', 3046, NULL, 1, NULL, '3.40282346638528859e+38', 10, '2023-10-09 16:04:59', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3046, 'maxCircularity', 3046, NULL, 1, NULL, '3.40282346638528859e+38', 10, '2023-11-08 10:11:50', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3047, 'filterByConvexity', 3047, '形状控制（豁口）', 0, NULL, NULL, 10, '2023-10-09 15:59:23', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3048, 'minConvexity', 3048, NULL, 1, NULL, '0.9', 10, '2023-10-09 16:00:00', 1, 0, NULL);
-INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3049, 'maxConvexity', 3049, NULL, 1, NULL, '3.40282346638528859e+38', 10, '2023-10-09 16:04:29', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3049, 'maxConvexity', 3049, NULL, 1, NULL, '3.40282346638528859e+38', 10, '2023-11-08 10:11:49', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3050, 'filterByInertia', 3050, '形状控制（椭圆度）', 0, NULL, NULL, 10, '2023-10-09 16:00:51', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3051, 'minInertiaRatio', 3051, NULL, 1, NULL, '0.9', 10, '2023-10-09 16:00:51', 1, 0, NULL);
-INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3052, 'maxInertiaRatio', 3052, NULL, 1, NULL, '3.40282346638528859e+38', 10, '2023-10-09 16:04:28', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3052, 'maxInertiaRatio', 3052, NULL, 1, NULL, '3.40282346638528859e+38', 10, '2023-11-08 10:11:48', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3053, 'X', 3053, 'X', 0, NULL, '0', 10, '2023-10-24 15:04:15', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3054, 'Y', 3054, 'Y', 0, NULL, '0', 10, '2023-10-24 15:04:15', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3055, 'Width', 3055, 'cx', 0, NULL, '16', 10, '2023-10-24 15:31:14', 1, 0, NULL);

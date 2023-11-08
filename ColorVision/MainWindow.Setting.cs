@@ -53,7 +53,7 @@ namespace ColorVision
         }
 
 
-
+        private GridLength _columnDefinitionWidth;
         private void OnLeftMainContentShiftOut(object sender, RoutedEventArgs e)
         {
             ButtonShiftOut.Collapse();

@@ -36,11 +36,6 @@
                     <Image Source="{Binding Icon}"/>
                 </Grid>
             </Grid>
-            <TextBlock  FontSize="10" VerticalAlignment="Bottom" Margin="2" Style="{DynamicResource TextBlock1}">
-                <Run Text="{Binding Config.CameraType}"/>
-                <Run Text=","/>
-                <Run Text="{Binding Config.Channel}"/>
-            </TextBlock>
         </DockPanel>
 
         <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
