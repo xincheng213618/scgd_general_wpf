@@ -92,8 +92,8 @@
                                 <GroupBox Header="资源信息" Margin="0,5">
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="0,2" >
-                                            <TextBlock Text="设备名称" Width="120"/>
-                                            <TextBox Text="{Binding Name}"/>
+                                            <TextBlock Text="Code" Width="120"/>
+                                            <TextBox Text="{Binding Config.Code}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,2" >
                                             <TextBlock Text="界面展示名称" Width="120"/>
@@ -109,7 +109,7 @@
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="0,2">
                                             <TextBlock Text="串口:" Width="120"/>
-                                            <TextBox Text="{Binding Config.SzComName}" />
+                                            <hc:ComboBox  x:Name="TextSerial" IsEditable="True" Text="{Binding Config.szComName}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
                                         </DockPanel>
                                         <DockPanel Margin="0,2">
                                             <TextBlock Text="波特率:" Width="120"/>

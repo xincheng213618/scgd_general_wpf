@@ -130,7 +130,7 @@
                                 <GroupBox Header="资源信息" Margin="0,5">
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="0,2" >
-                                            <TextBlock Text="设备名称" Width="120"/>
+                                            <TextBlock Text="Code" Width="120"/>
                                             <TextBox Text="{Binding Name}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,2" >
@@ -152,11 +152,11 @@
                                         </DockPanel>
                                         <DockPanel Margin="0,2">
                                             <TextBlock Text="串口:" Width="120"/>
-                                            <TextBox Text="{Binding Config.szComName}" />
+                                            <hc:ComboBox  x:Name="TextSerial" IsEditable="True" Text="{Binding Config.SzComName}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
                                         </DockPanel>
                                         <DockPanel Margin="0,2">
                                             <TextBlock Text="波特率:" Width="120"/>
-                                            <hc:ComboBox  x:Name="TextBaudRate" IsEditable="True" SelectedIndex="0" Text="{Binding Config.BaudRate}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
+                                            <hc:ComboBox  x:Name="TextBaudRate" IsEditable="True" Text="{Binding Config.BaudRate}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
                                         </DockPanel>
                                         <DockPanel>
                                             <TextBlock Text="Timeout:" Width="120"/>

@@ -25,6 +25,8 @@ namespace ColorVision.Services.Device.CfwPort
         {
             this.DataContext = this.Device;
 
+            List<string> Serials = new List<string> { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8" };
+            TextSerial.ItemsSource = Serials;
             List<int> BaudRates = new List<int> { 115200, 9600, 300, 600, 1200, 2400, 4800, 14400, 19200, 38400, 57600 };
             TextBaudRate.ItemsSource = BaudRates;
         }

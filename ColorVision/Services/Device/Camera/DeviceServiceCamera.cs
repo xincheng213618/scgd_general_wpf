@@ -321,7 +321,7 @@ namespace ColorVision.Device.Camera
                             Name ="CM_InitCOM" ,
                             Params = new Dictionary<string,object>(){
                                 { "eFOCUS_COMMUN", Config.MotorConfig.eFOCUSCOMMUN} ,
-                                { "szComName", Config.MotorConfig.szComName},
+                                { "szComName", Config.MotorConfig.SzComName},
                                 { "BaudRate", Config.MotorConfig.BaudRate}
                             }
                         },

@@ -80,8 +80,8 @@
                                 <GroupBox Header="资源信息" Margin="0,5">
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="0,2" >
-                                            <TextBlock Text="设备名称" Width="120"/>
-                                            <TextBox Text="{Binding Config.Code}"/>
+                                            <TextBlock Text="Code" Width="120"/>
+                                            <TextBox Text="{Binding Name}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,2" >
                                             <TextBlock Text="界面展示名称" Width="120"/>

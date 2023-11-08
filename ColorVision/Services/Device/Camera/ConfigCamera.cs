@@ -77,6 +77,9 @@ namespace ColorVision.Services.Device.Camera
         public ChannelConfig[] ChannelConfigs { get; set; } = new ChannelConfig[3]{
             new ChannelConfig() { Port =0,ChannelType =ImageChannelType.Gray_X }, new ChannelConfig(){Port =1,ChannelType =ImageChannelType.Gray_Y }, new ChannelConfig(){ Port =2,ChannelType =ImageChannelType.Gray_Z}
         };
+        public bool IsHaveMotor { get => _IsHaveMotor; set { _IsHaveMotor = value; NotifyPropertyChanged(); } }
+        private bool _IsHaveMotor;
+
         public MotorConfig MotorConfig { get; set; } = new MotorConfig();
     }
 
@@ -86,7 +89,7 @@ namespace ColorVision.Services.Device.Camera
         public FOCUS_COMMUN eFOCUSCOMMUN { get => _eFOCUSCOMMUN; set { _eFOCUSCOMMUN = value; NotifyPropertyChanged(); } }
         private FOCUS_COMMUN _eFOCUSCOMMUN;
 
-        public string szComName { get => _szComName; set { _szComName = value; NotifyPropertyChanged(); } }
+        public string SzComName { get => _szComName; set { _szComName = value; NotifyPropertyChanged(); } }
         private string _szComName;
 
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; NotifyPropertyChanged(); } }

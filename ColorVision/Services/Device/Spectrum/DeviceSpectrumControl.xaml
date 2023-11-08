@@ -96,7 +96,7 @@
                                 <GroupBox Header="资源信息" Margin="0,5">
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="0,2" >
-                                            <TextBlock Text="设备名称" Width="120"/>
+                                            <TextBlock Text="Code" Width="120"/>
                                             <TextBox Text="{Binding Name}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,2" >

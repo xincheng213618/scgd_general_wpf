@@ -79,8 +79,7 @@ namespace ColorVision.Device.Camera
 
             };
 
-            ComboxMotorType.ItemsSource = from e1 in Enum.GetValues(typeof(FOCUS_COMMUN)).Cast<FOCUS_COMMUN>()
-                                          select new KeyValuePair<FOCUS_COMMUN, string>(e1, e1.ToString());
+
 
             var ImageChannelTypeList = new[]{
                  new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_X, "Channel_R"),
@@ -127,7 +126,15 @@ namespace ColorVision.Device.Camera
                 keyValuePairs[Service.Config.ChannelConfigs[2].ChannelType] = chType3;
             };
 
-            
+
+            ComboxMotorType.ItemsSource = from e1 in Enum.GetValues(typeof(FOCUS_COMMUN)).Cast<FOCUS_COMMUN>()
+                                          select new KeyValuePair<FOCUS_COMMUN, string>(e1, e1.ToString());
+
+            List<int> BaudRates = new List<int> { 115200, 9600, 300, 600, 1200, 2400, 4800, 14400, 19200, 38400, 57600 };
+            TextBaudRate.ItemsSource = BaudRates;
+
+            List<string> Serials = new List<string> { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7" ,"COM8" };
+            TextSerial.ItemsSource = Serials;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
