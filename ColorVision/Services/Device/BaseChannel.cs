@@ -65,7 +65,7 @@ namespace ColorVision.MQTT
         {
             return Config;
         }
-        public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
+        public override string Name { get => Config.Code ; set{ Config.Code = value; NotifyPropertyChanged(); } }
 
         public BaseDevice(SysResourceModel sysResourceModel) : base()
         {

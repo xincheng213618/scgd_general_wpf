@@ -48,9 +48,6 @@ namespace ColorVision.Device
         }
         private BaseObject _Parent;
 
-        public virtual string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
-        private string _Name;
-
         public virtual void AddChild(BaseObject baseObject)
         {
             if (baseObject == null) return;
@@ -63,6 +60,8 @@ namespace ColorVision.Device
             baseObject.Parent = null;
             VisualChildren.Remove(baseObject);
         }
+
+        public virtual string Name { get; set; }
 
         public virtual void Save()
         {

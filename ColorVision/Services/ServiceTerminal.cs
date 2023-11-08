@@ -27,7 +27,7 @@ namespace ColorVision.Services
 
         public ServiceType ServiceType { get => (ServiceType)SysResourceModel.Type; }
 
-        public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
+        public override string Name { get => Config.Code ; set { Config.Code = value; NotifyPropertyChanged(); } }
 
         public ImageSource Icon { get; set; }
 
