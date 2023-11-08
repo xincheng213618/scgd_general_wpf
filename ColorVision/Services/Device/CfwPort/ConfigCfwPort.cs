@@ -9,7 +9,7 @@ namespace ColorVision.Services.Device.CfwPort
 {
     public class ConfigCfwPort: BaseDeviceConfig
     {
-        public string szComName { get => _szComName; set { _szComName = value; NotifyPropertyChanged(); } }
+        public string SzComName { get => _szComName; set { _szComName = value; NotifyPropertyChanged(); } }
         private string _szComName;
 
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; NotifyPropertyChanged(); } }

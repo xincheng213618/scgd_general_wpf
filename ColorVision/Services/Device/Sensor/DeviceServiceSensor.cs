@@ -1,6 +1,7 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.Services;
 using ColorVision.Services.Msg;
+using System.Collections.Generic;
 
 namespace ColorVision.Services.Device.Sensor
 {
@@ -24,6 +25,7 @@ namespace ColorVision.Services.Device.Sensor
             MsgSend msg = new MsgSend
             {
                 EventName = "Init",
+                Params = new Dictionary<string, object> { { "eCOM_Type", Config.CommunicateType } ,{ "szIPAddress",Config.SzIPAddress },{ "nPort",Config.Port} }
             };
             PublishAsyncClient(msg);
         }
@@ -41,6 +43,7 @@ namespace ColorVision.Services.Device.Sensor
             MsgSend msg = new MsgSend
             {
                 EventName = "Open",
+                Params = new Dictionary<string, object> { { "eCOM_Type", Config.CommunicateType }, { "szIPAddress", Config.SzIPAddress }, { "nPort", Config.Port } }
             };
             PublishAsyncClient(msg);
         }

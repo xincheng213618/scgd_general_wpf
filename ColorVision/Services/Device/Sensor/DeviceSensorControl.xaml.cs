@@ -1,5 +1,9 @@
-﻿using ColorVision.Services;
+﻿using ColorVision.Device.PG;
+using ColorVision.Services;
+using cvColorVision;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -11,7 +15,6 @@ namespace ColorVision.Services.Device.Sensor
     public partial class DeviceSensorControl : UserControl
     {
         public DeviceSensor DeviceSensor { get; set; }
-        public ServiceManager ServiceControl { get; set; }
 
         public DeviceSensorControl(DeviceSensor deviceSensor)
         {
@@ -21,8 +24,11 @@ namespace ColorVision.Services.Device.Sensor
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            ServiceControl = ServiceManager.GetInstance();
             this.DataContext = DeviceSensor;
+
+            ComboxSensorType.ItemsSource = from e1 in Enum.GetValues(typeof(CommunicateType)).Cast<CommunicateType>()
+                                          select new KeyValuePair<CommunicateType, string>(e1, e1.ToString()); 
+
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

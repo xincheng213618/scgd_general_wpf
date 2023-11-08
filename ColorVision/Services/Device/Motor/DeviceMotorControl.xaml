@@ -41,7 +41,6 @@
                             <StackPanel >
                                 <GroupBox Header="基本信息" Margin="0,5">
                                     <StackPanel Margin="5">
-
                                         <DockPanel Margin="0,2">
                                             <TextBlock Text="ID" Width="120"/>
                                             <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.ID}"/>

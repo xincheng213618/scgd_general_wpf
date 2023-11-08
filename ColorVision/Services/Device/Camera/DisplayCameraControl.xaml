@@ -100,7 +100,7 @@
                             </DockPanel>
                         </StackPanel>
                         <UniformGrid Columns="2" Margin="0,2">
-                            <Button Content="自动曝光" Click="AutoExplose_Click" Margin="10,0" />
+                            <Button Content="自动曝光" Click="AutoExplose_Click" Margin="0,0,20,0" />
                             <Button Content="自动聚焦" Click="AutoFocus_Click" Margin="20,0,0,0" />
                         </UniformGrid>
                         
