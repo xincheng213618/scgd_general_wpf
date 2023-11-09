@@ -355,9 +355,15 @@ namespace ColorVision
                 LanguageItem.Header = LanguageManager.keyValuePairs.TryGetValue(item, out string value) ? value : item;
                 LanguageItem.Click += (s, e) =>
                 {
+                    string temp = Thread.CurrentThread.CurrentUICulture.Name;
                     GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting.UICulture = item;
                     GlobalSetting.GetInstance().SaveSoftwareConfig();
-                    LanguageManager.Current.LanguageChange(item);
+                    bool sucess = LanguageManager.Current.LanguageChange(item);
+                    if (!sucess)
+                    {
+                        GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting.UICulture = temp;
+                        GlobalSetting.GetInstance().SaveSoftwareConfig();
+                    }
                 };
                 LanguageItem.Tag = item;
                 LanguageItem.IsChecked = Thread.CurrentThread.CurrentUICulture.Name == item;

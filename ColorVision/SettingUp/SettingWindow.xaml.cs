@@ -14,6 +14,7 @@ using ColorVision.Language;
 using System.Globalization;
 using ColorVision.Themes.Controls;
 using ColorVision.RC;
+using System.Threading;
 
 namespace ColorVision.SettingUp
 {
@@ -53,10 +54,19 @@ namespace ColorVision.SettingUp
                                    select new KeyValuePair<string, string>(e1, LanguageManager.keyValuePairs.TryGetValue(e1, out string value) ? value : e1);
             cmlauage.SelectedValuePath = "Key";
             cmlauage.DisplayMemberPath = "Value";
+
+            string temp = Thread.CurrentThread.CurrentUICulture.Name;
+
+
             cmlauage.SelectionChanged += (s, e) =>
             {
                 if (cmlauage.SelectedValue is string str)
-                    LanguageManager.Current.LanguageChange(str);
+                {
+                    if (!LanguageManager.Current.LanguageChange(str))
+                    {
+                        SoftwareConfig.SoftwareSetting.UICulture = temp;
+                    }
+                }
             };
         }
 
