@@ -37,7 +37,6 @@ namespace ColorVision.Device.Camera
 
         public override void Dispose()
         {
-            MsgReturnReceived -= MQTTCamera_MsgReturnChanged;
             CameraService.Devices.Remove(this);
             base.Dispose();
             GC.SuppressFinalize(this);     
