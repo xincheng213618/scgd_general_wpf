@@ -15,7 +15,7 @@
         <Border  BorderThickness="1" BorderBrush="{DynamicResource  BorderBrush}" CornerRadius="5">
             <TabControl Background="Transparent">
                 <TabItem Header="R" Background="Transparent">
-                    <Border Margin="5,0">
+                    <Border Margin="5">
                         <StackPanel>
                             <DockPanel  Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="暗噪声"  Width="80" />
@@ -48,11 +48,17 @@
                                 <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalR.Distortion.SelectFileCommand}" Width="40"  Margin="5,0"/>
                                 <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding NormalR.Distortion.FilePath}" />
                             </DockPanel>
+                            <DockPanel Margin="0,2">
+                                <TextBlock DockPanel.Dock="Left" Text="均匀场R(红)" Width="80"  />
+                                <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalR.Uniformity.IsSelected}"   Margin="5,0"/>
+                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalR.Uniformity.SelectFileCommand}" Width="40"  Margin="5,0"/>
+                                <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding NormalR.Uniformity.FilePath}" />
+                            </DockPanel>
                         </StackPanel>
                     </Border>
                 </TabItem>
                 <TabItem Header="G" Background="Transparent">
-                    <Border Margin="5,0">
+                    <Border Margin="5">
                         <StackPanel>
                             <DockPanel  Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="暗噪声"  Width="80" />
@@ -85,11 +91,18 @@
                                 <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalG.Distortion.SelectFileCommand}" Width="40"  Margin="5,0"/>
                                 <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding NormalG.Distortion.FilePath}" />
                             </DockPanel>
+
+                            <DockPanel Margin="0,2">
+                                <TextBlock DockPanel.Dock="Left" Text="均匀场G(绿)" Width="80" />
+                                <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalG.Uniformity.IsSelected}"   Margin="5,0"/>
+                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalG.Uniformity.SelectFileCommand}" Width="40"  Margin="5,0"/>
+                                <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding NormalG.Uniformity.FilePath}" />
+                            </DockPanel>
                         </StackPanel>
                     </Border>
                 </TabItem>
                 <TabItem Header="B">
-                    <Border Margin="5,0">
+                    <Border Margin="5">
                         <StackPanel>
                             <DockPanel  Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="暗噪声"  Width="80" />
@@ -122,6 +135,13 @@
                                 <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalB.Distortion.SelectFileCommand}" Width="40"  Margin="5,0"/>
                                 <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding NormalB.Distortion.FilePath}" />
                             </DockPanel>
+
+                            <DockPanel  Margin="0,2">
+                                <TextBlock DockPanel.Dock="Left" Text="均匀场B(蓝)" Width="80"  />
+                                <CheckBox VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalB.Uniformity.IsSelected}"   Margin="5,0"/>
+                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalB.Uniformity.SelectFileCommand}" Width="40"  Margin="5,0"/>
+                                <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding NormalB.Uniformity.FilePath}" />
+                            </DockPanel>
                         </StackPanel>
                     </Border>
                 </TabItem>
@@ -131,30 +151,8 @@
        
         
  
-        
-        <GroupBox Header="均匀场校正" >
-            <StackPanel>
-                <DockPanel Margin="0,2">
-                    <TextBlock DockPanel.Dock="Left" Text="R(红)" Width="80"  />
-                    <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalR.Uniformity.IsSelected}"   Margin="5,0"/>
-                    <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalR.Uniformity.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                    <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding NormalR.Uniformity.FilePath}" />
-                </DockPanel>
-                <DockPanel Margin="0,2">
-                    <TextBlock DockPanel.Dock="Left" Text="G(绿)" Width="80" />
-                    <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalG.Uniformity.IsSelected}"   Margin="5,0"/>
-                    <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalG.Uniformity.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                    <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding NormalG.Uniformity.FilePath}" />
-                </DockPanel>
-                <DockPanel  Margin="0,2">
-                    <TextBlock DockPanel.Dock="Left" Text="B(蓝)" Width="80"  />
-                    <CheckBox VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalB.Uniformity.IsSelected}"   Margin="5,0"/>
-                    <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalB.Uniformity.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                    <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding NormalB.Uniformity.FilePath}" />
-                </DockPanel>
-            </StackPanel>
-        </GroupBox>
-        <GroupBox Header="色度校正" >
+      
+        <GroupBox Header="色度校正"  Margin="0,5">
             <StackPanel>
                 <DockPanel  Margin="0,2">
                     <TextBlock DockPanel.Dock="Left" Text="亮度" Width="80"  />
