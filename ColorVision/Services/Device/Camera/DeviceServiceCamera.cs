@@ -145,7 +145,7 @@ namespace ColorVision.Device.Camera
                     case "Open":
                         if (DeviceStatus == DeviceStatus.Init)
                             Application.Current.Dispatcher.BeginInvoke(new Action(() => MessageBox.Show(Application.Current.MainWindow, "许可证异常，请配置相机设备许可证")));
-                        DeviceStatus = DeviceStatus.UnInit;
+                        DeviceStatus = DeviceStatus.Init;
                         break;
                     case "Init":
                         DeviceStatus = DeviceStatus.UnInit;
@@ -326,19 +326,10 @@ namespace ColorVision.Device.Camera
             MsgSend msg = new MsgSend
             {
                 EventName = "AutoFocus",
-                Params = new Dictionary<string, object>() { {
-                    "Func", new List<ParamFunction>() {
-                        new ParamFunction(){ 
-                            Name ="CM_InitCOM" ,
-                            Params = new Dictionary<string,object>(){
-                                { "eFOCUS_COMMUN", Config.MotorConfig.eFOCUSCOMMUN} ,
-                                { "szComName", Config.MotorConfig.SzComName},
-                                { "BaudRate", Config.MotorConfig.BaudRate}
-                            }
-                        },
-                        new ParamFunction()  {
-                            Name ="CM_CalcAutoFocus",
-                            Params = new Dictionary<string,object>(){
+                Params = new Dictionary<string, object>() {   }
+            };
+
+            var tAutoFocusCfg = new Dictionary<string, object>(){
                                 { "forwardparam", Config.MotorConfig.AutoFocusConfig.forwardparam} ,
                                 { "curtailparam", Config.MotorConfig.AutoFocusConfig.curtailparam},
                                 { "curStep", Config.MotorConfig.AutoFocusConfig.curStep},
@@ -347,12 +338,11 @@ namespace ColorVision.Device.Camera
                                 { "maxPosition", Config.MotorConfig.AutoFocusConfig.maxPosition},
                                 { "eEvaFunc", Config.MotorConfig.AutoFocusConfig.eEvaFunc},
                                 { "dMinValue", Config.MotorConfig.AutoFocusConfig.dMinValue}
-                            }
-                        }
-                    }
-                  }
-                }
-            };
+                            };
+
+            var Params = new Dictionary<string, object>() { };
+            Params.Add("tAutoFocusCfg", tAutoFocusCfg);
+            msg.Params.Add("params", Params);
             return PublishAsyncClient(msg);
         }
 

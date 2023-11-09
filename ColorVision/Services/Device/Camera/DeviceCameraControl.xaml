@@ -403,7 +403,8 @@
                                                     </DockPanel>
                                                     <DockPanel Margin="0,2">
                                                         <TextBlock Text="eEvaFunc:" Width="120"/>
-                                                        <TextBox Text="{Binding Config.MotorConfig.AutoFocusConfig.eEvaFunc}" />
+                                                        <hc:ComboBox x:Name="ComboxeEvaFunc"  SelectedValue="{Binding Config.MotorConfig.AutoFocusConfig.eEvaFunc}" SelectedValuePath="Key"  DisplayMemberPath="Value"  Margin="0,0,10,0"/>
+
                                                     </DockPanel>
                                                     <DockPanel Margin="0,2">
                                                         <TextBlock Text="dMinValue:" Width="120"/>

@@ -135,6 +135,10 @@ namespace ColorVision.Device.Camera
 
             List<string> Serials = new List<string> { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7" ,"COM8" };
             TextSerial.ItemsSource = Serials;
+
+            ComboxeEvaFunc.ItemsSource = from e1 in Enum.GetValues(typeof(EvaFunc)).Cast<EvaFunc>()
+                                         select new KeyValuePair<EvaFunc, string>(e1, e1.ToString());
+
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
