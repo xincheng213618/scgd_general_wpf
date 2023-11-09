@@ -48,7 +48,7 @@ namespace ColorVision.MQTT
         }
 
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             GC.SuppressFinalize(this);
         }
@@ -80,7 +80,7 @@ namespace ColorVision.MQTT
                 if (SysResourceModel != null)
                     ServiceManager.GetInstance().ResourceService.DeleteById(SysResourceModel.Id);
                 Parent.RemoveChild(this);
-
+                this.Dispose();
             };
             ContextMenu.Items.Add(menuItem);
 

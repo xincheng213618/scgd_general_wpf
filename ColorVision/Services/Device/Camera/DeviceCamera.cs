@@ -3,6 +3,7 @@ using ColorVision.MySql.DAO;
 using ColorVision.Services.Device.Camera;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
+using System;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -48,7 +49,13 @@ namespace ColorVision.Device.Camera
 
         }
 
-
+        public override void Dispose()
+        {
+            Service.Dispose();
+            DeviceService.Dispose();
+            base.Dispose();
+            GC.SuppressFinalize(this);
+        }
 
 
         public override UserControl GetDeviceControl() => new DeviceCameraControl(this);

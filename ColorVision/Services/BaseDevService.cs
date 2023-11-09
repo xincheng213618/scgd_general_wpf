@@ -236,7 +236,7 @@ namespace ColorVision.Services
             return msgRecord;
         }
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             MQTTControl.ApplicationMessageReceivedAsync -= Processing;
             GC.SuppressFinalize(this);

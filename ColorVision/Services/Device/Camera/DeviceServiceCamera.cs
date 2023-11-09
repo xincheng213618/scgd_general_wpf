@@ -33,8 +33,16 @@ namespace ColorVision.Device.Camera
             CameraService.Devices.Add(this);
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
             DeviceStatus = DeviceStatus.UnInit;
-            
         }
+
+        public override void Dispose()
+        {
+            MsgReturnReceived -= MQTTCamera_MsgReturnChanged;
+            CameraService.Devices.Remove(this);
+            base.Dispose();
+            GC.SuppressFinalize(this);     
+        }
+
         private void MQTTCamera_MsgReturnChanged(MsgReturn msg)
         {
             switch (msg.EventName)
@@ -42,7 +50,6 @@ namespace ColorVision.Device.Camera
                 case "CM_GetAllSnID":
                     return;
             }
-
 
             //信息在这里添加一次过滤，让信息只能在对应的相机上显示,同时如果ID为空的话，就默认是服务端的信息，不进行过滤，这里后续在进行优化
             if (Config.Code!=null && msg.DeviceCode != Config.Code)
