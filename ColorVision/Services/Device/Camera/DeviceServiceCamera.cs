@@ -135,6 +135,9 @@ namespace ColorVision.Device.Camera
                         break;
                     case "MoveDiaphragm":
                         break;
+                    case "AutoFocus":
+                        Config.MotorConfig.Position = msg.Data.nPos;
+                        break;
                     case "GetPosition":
                         Config.MotorConfig.Position = msg.Data.nPosition;
                         break;
@@ -365,7 +368,7 @@ namespace ColorVision.Device.Camera
             var Params = new Dictionary<string, object>() { };
             Params.Add("tAutoFocusCfg", tAutoFocusCfg);
             msg.Params.Add("params", Params);
-            return PublishAsyncClient(msg);
+            return PublishAsyncClient(msg, Config.MotorConfig.AutoFocusConfig.nTimeout);
         }
 
         public MsgRecord GetAutoExpTime()

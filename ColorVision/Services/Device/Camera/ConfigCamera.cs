@@ -77,7 +77,6 @@ namespace ColorVision.Services.Device.Camera
         public CFWPORT CFW { get; set; } = new CFWPORT();
 
 
-
         public bool IsHaveMotor { get => _IsHaveMotor; set { _IsHaveMotor = value; NotifyPropertyChanged(); } }
         private bool _IsHaveMotor;
 
