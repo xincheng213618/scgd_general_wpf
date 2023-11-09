@@ -109,7 +109,7 @@
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="0,2">
                                             <TextBlock Text="串口:" Width="120"/>
-                                            <hc:ComboBox  x:Name="TextSerial" IsEditable="True" Text="{Binding Config.szComName}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
+                                            <hc:ComboBox  x:Name="TextSerial" IsEditable="True" Text="{Binding Config.SzComName}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
                                         </DockPanel>
                                         <DockPanel Margin="0,2">
                                             <TextBlock Text="波特率:" Width="120"/>

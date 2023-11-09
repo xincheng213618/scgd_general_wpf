@@ -16,7 +16,7 @@ namespace ColorVision.Services.Device.Motor
         private FOCUS_COMMUN _eFOCUSCOMMUN;
 
         public string SzComName { get => _szComName; set { _szComName = value; NotifyPropertyChanged(); } }
-        private string _szComName;
+        private string _szComName = "COM1";
 
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; NotifyPropertyChanged(); } }
         private int _BaudRate = 9600;

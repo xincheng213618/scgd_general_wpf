@@ -81,23 +81,22 @@ namespace ColorVision.Device.Camera
                     case "GetAutoExpTime":
                         if (msg.Data != null && msg.Data.result[0].result != null)
                         {
-                            if (Config. IsExpThree)
+                            if (Config.IsExpThree)
                             {
-
                                 for (int i = 0; i < 3; i++)
                                 {
-                                    if (Config.ChannelConfigs[i].ChannelType == ImageChannelType.Gray_X)
+                                    if (Config.CFW.CFW[i].ChannelType == ImageChannelType.Gray_X)
                                     {
                                         Config.ExpTimeR = msg.Data.result[i].result;
                                         Config.SaturationR = msg.Data.result[i].resultSaturation;
                                     }
-                                    if (Config.ChannelConfigs[i].ChannelType == ImageChannelType.Gray_Y)
+                                    if (Config.CFW.CFW[i].ChannelType == ImageChannelType.Gray_Y)
                                     {
                                         Config.ExpTimeG = msg.Data.result[i].result;
                                         Config.SaturationG = msg.Data.result[i].resultSaturation;
                                     }
 
-                                    if (Config.ChannelConfigs[i].ChannelType == ImageChannelType.Gray_Z)
+                                    if (Config.CFW.CFW[i].ChannelType == ImageChannelType.Gray_Z)
                                     {
                                         Config.ExpTimeB = msg.Data.result[i].result;
                                         Config.SaturationB = msg.Data.result[i].resultSaturation;
@@ -183,6 +182,15 @@ namespace ColorVision.Device.Camera
                 AutoFocus.Add("BaudRate", Config.MotorConfig.BaudRate);
                 Params.Add("AutoFocus", AutoFocus);
             }
+
+            if (Config.CFW.IsCOM)
+            {
+                var CFWPORT = new Dictionary<string, object>() { };
+                CFWPORT.Add("szComName", Config.CFW.SzComName);
+                CFWPORT.Add("BaudRate", Config.CFW.BaudRate);
+                Params.Add("CFWPORT", CFWPORT);
+            }
+
             ///这里设置1s超时，如果超时则认为初始化失败
             return PublishAsyncClient(msg,1000);
         }
@@ -276,7 +284,7 @@ namespace ColorVision.Device.Camera
                 List<Dictionary<string,object>> Param = new List<Dictionary<string,object>>();
 
 
-                foreach (var item in Config.ChannelConfigs)
+                foreach (var item in Config.CFW.CFW)
                 {
                     Dictionary<string, object> keyValuePairs = new Dictionary<string, object>();
                     keyValuePairs.Add("eImgChlType", (int)item.ChannelType);
@@ -356,13 +364,13 @@ namespace ColorVision.Device.Camera
                         "SetCfwport", new List<Dictionary<string, object>>()
                         {
                             new Dictionary<string, object>() {
-                                { "nIndex",0},{ "nPort",Config.ChannelConfigs[0].Port},{"eImgChlType",(int)Config.ChannelConfigs[0].ChannelType }
+                                { "nIndex",0},{ "nPort",Config.CFW.CFW[0].Port},{"eImgChlType",(int)Config.CFW.CFW[0].ChannelType }
                             },
                             new Dictionary<string, object>() {
-                                { "nIndex",1},{ "nPort",Config.ChannelConfigs[1].Port},{"eImgChlType",(int)Config.ChannelConfigs[1].ChannelType }
+                                { "nIndex",1},{ "nPort",Config.CFW.CFW[1].Port},{"eImgChlType",(int)Config.CFW.CFW[1].ChannelType }
                             },
                             new Dictionary<string, object>() {
-                                { "nIndex",2},{ "nPort",Config.ChannelConfigs[2].Port},{"eImgChlType",(int)Config.ChannelConfigs[2].ChannelType }
+                                { "nIndex",2},{ "nPort",Config.CFW.CFW[2].Port},{"eImgChlType",(int)Config.CFW.CFW[2].ChannelType }
                             },
                         }
                     }

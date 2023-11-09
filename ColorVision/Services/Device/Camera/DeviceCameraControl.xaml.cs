@@ -99,31 +99,31 @@ namespace ColorVision.Device.Camera
 
             chType1.SelectionChanged += (s, e) =>
             {
-                ComboBox comboBox = keyValuePairs[Service.Config.ChannelConfigs[0].ChannelType];
+                ComboBox comboBox = keyValuePairs[Service.Config.CFW.CFW[0].ChannelType];
                 ImageChannelType lasttemp = keyValuePairs.FirstOrDefault(x => x.Value == chType1).Key;
                 comboBox.SelectedValue = lasttemp;
                 keyValuePairs[lasttemp] = comboBox;
-                keyValuePairs[Service.Config.ChannelConfigs[0].ChannelType] = chType1;
+                keyValuePairs[Service.Config.CFW.CFW[0].ChannelType] = chType1;
 
 
             };
             chType2.SelectionChanged += (s, e) =>
             {
-                ComboBox comboBox = keyValuePairs[Service.Config.ChannelConfigs[1].ChannelType];
+                ComboBox comboBox = keyValuePairs[Service.Config.CFW.CFW[1].ChannelType];
                 ImageChannelType lasttemp = keyValuePairs.FirstOrDefault(x => x.Value == chType2).Key;
                 comboBox.SelectedValue = lasttemp;
 
                 keyValuePairs[lasttemp] = comboBox;
-                keyValuePairs[Service.Config.ChannelConfigs[1].ChannelType] = chType2;
+                keyValuePairs[Service.Config.CFW.CFW[1].ChannelType] = chType2;
             };
             chType3.SelectionChanged += (s, e) =>
             {
-                ComboBox comboBox = keyValuePairs[Service.Config.ChannelConfigs[2].ChannelType];
+                ComboBox comboBox = keyValuePairs[Service.Config.CFW.CFW[2].ChannelType];
                 ImageChannelType lasttemp = keyValuePairs.FirstOrDefault(x => x.Value == chType3).Key;
                 comboBox.SelectedValue = lasttemp;
 
                 keyValuePairs[lasttemp] = comboBox;
-                keyValuePairs[Service.Config.ChannelConfigs[2].ChannelType] = chType3;
+                keyValuePairs[Service.Config.CFW.CFW[2].ChannelType] = chType3;
             };
 
 
@@ -132,9 +132,12 @@ namespace ColorVision.Device.Camera
 
             List<int> BaudRates = new List<int> { 115200, 9600, 300, 600, 1200, 2400, 4800, 14400, 19200, 38400, 57600 };
             TextBaudRate.ItemsSource = BaudRates;
+            TextBaudRate1.ItemsSource = BaudRates;
+
 
             List<string> Serials = new List<string> { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7" ,"COM8" };
             TextSerial.ItemsSource = Serials;
+            TextSerial1.ItemsSource = Serials;
 
             ComboxeEvaFunc.ItemsSource = from e1 in Enum.GetValues(typeof(EvaFunc)).Cast<EvaFunc>()
                                          select new KeyValuePair<EvaFunc, string>(e1, e1.ToString());

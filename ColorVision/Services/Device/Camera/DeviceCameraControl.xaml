@@ -113,46 +113,62 @@
                                                 <TextBlock Text="默认B通道曝光:" Width="120"/>
                                                 <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ExpTimeB}"/>
                                             </DockPanel>
-
-                                        </StackPanel>
-
-                                        <StackPanel  Visibility="{Binding Config.IsChannelThree,Converter={StaticResource bool2VisibilityConverter}}">
-                                            <UniformGrid Columns="3" Rows="1">
-                                                <UniformGrid Columns="1" Rows="2" Margin="0,2">
-                                                    <DockPanel>
-                                                        <TextBlock Text="cfwport"  Width="80"/>
-                                                        <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ChannelConfigs[0].Port}"/>
-                                                    </DockPanel>
-                                                    <DockPanel >
-                                                        <TextBlock Text="chType" Width="80"/>
-                                                        <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ChannelConfigs[0].ChannelTypeString,Mode=OneWay}"/>
-                                                    </DockPanel>
-                                                </UniformGrid>
-                                                <UniformGrid Columns="1" Rows="2" Margin="0,2">
-                                                    <DockPanel>
-                                                        <TextBlock Text="cfwport"  Width="80"/>
-                                                        <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ChannelConfigs[1].Port}"/>
-                                                    </DockPanel>
-                                                    <DockPanel >
-                                                        <TextBlock Text="chType" Width="80"/>
-                                                        <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ChannelConfigs[1].ChannelTypeString,Mode=OneWay}"/>
-                                                    </DockPanel>
-                                                </UniformGrid>
-                                                <UniformGrid Columns="1" Rows="2" Margin="0,2">
-                                                    <DockPanel>
-                                                        <TextBlock Text="cfwport"  Width="80"/>
-                                                        <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ChannelConfigs[2].Port}"/>
-                                                    </DockPanel>
-                                                    <DockPanel >
-                                                        <TextBlock Text="chType" Width="80"/>
-                                                        <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ChannelConfigs[2].ChannelTypeString ,Mode=OneWay}"/>
-                                                    </DockPanel>
-                                                </UniformGrid>
-                                            </UniformGrid>
-
                                         </StackPanel>
                                     </StackPanel>
                                 </GroupBox>
+
+                                <GroupBox Header="滤色轮配置" Margin="0,5" Visibility="{Binding Config.IsChannelThree,Converter={StaticResource bool2VisibilityConverter}}">
+                                    <StackPanel>
+                                        <DockPanel>
+                                            <TextBlock Text="串口发送"  Width="80"/>
+                                            <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CFW.IsCOM}"/>
+                                        </DockPanel>
+                                        <StackPanel Visibility="{Binding Config.CFW.IsCOM,Converter={StaticResource bool2VisibilityConverter}}" >
+                                            <DockPanel>
+                                                <TextBlock Text="串口"  Width="80"/>
+                                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CFW.SzComName}"/>
+                                            </DockPanel>
+                                            <DockPanel>
+                                                <TextBlock Text="波特率"  Width="80"/>
+                                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CFW.BaudRate}"/>
+                                            </DockPanel>
+                                        </StackPanel>
+                                        <UniformGrid Columns="3" Rows="1">
+                                            <UniformGrid Columns="1" Rows="2" Margin="0,2">
+                                                <DockPanel>
+                                                    <TextBlock Text="cfwport"  Width="80"/>
+                                                    <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CFW.CFW[0].Port}"/>
+                                                </DockPanel>
+                                                <DockPanel >
+                                                    <TextBlock Text="chType" Width="80"/>
+                                                    <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CFW.CFW[0].ChannelTypeString,Mode=OneWay}"/>
+                                                </DockPanel>
+                                            </UniformGrid>
+                                            <UniformGrid Columns="1" Rows="2" Margin="0,2">
+                                                <DockPanel>
+                                                    <TextBlock Text="cfwport"  Width="80"/>
+                                                    <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CFW.CFW[1].Port}"/>
+                                                </DockPanel>
+                                                <DockPanel >
+                                                    <TextBlock Text="chType" Width="80"/>
+                                                    <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CFW.CFW[1].ChannelTypeString,Mode=OneWay}"/>
+                                                </DockPanel>
+                                            </UniformGrid>
+                                            <UniformGrid Columns="1" Rows="2" Margin="0,2">
+                                                <DockPanel>
+                                                    <TextBlock Text="cfwport"  Width="80"/>
+                                                    <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CFW.CFW[2].Port}"/>
+                                                </DockPanel>
+                                                <DockPanel >
+                                                    <TextBlock Text="chType" Width="80"/>
+                                                    <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CFW.CFW[2].ChannelTypeString ,Mode=OneWay}"/>
+                                                </DockPanel>
+                                            </UniformGrid>
+                                        </UniformGrid>
+                                    </StackPanel>
+                                </GroupBox>
+
+
                                 <GroupBox Header="自动聚焦配置" Margin="0,5" Visibility="{Binding Config.IsHaveMotor,Converter={StaticResource bool2VisibilityConverter}}">
                                     <StackPanel Margin="5">
                                         <DockPanel>
@@ -320,41 +336,61 @@
                                                     </DockPanel>
                                                 </StackPanel>
 
-                                                <StackPanel  Visibility="{Binding Config.IsChannelThree,Converter={StaticResource bool2VisibilityConverter}}">
-                                                    <UniformGrid Columns="3" Rows="1">
-                                                        <UniformGrid Columns="1" Rows="2" Margin="2">
-                                                            <DockPanel Margin="0,2">
-                                                                <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding Config.ChannelConfigs[0].Port}" Minimum="0"/>
-                                                                <TextBlock Text="cfwport"/>
-                                                            </DockPanel>
-                                                            <DockPanel Margin="0,2">
-                                                                <ComboBox x:Name="chType1" DockPanel.Dock="Right" Width="110" Style="{StaticResource ComboBox.Small}"  SelectedValue="{Binding Config.ChannelConfigs[0].ChannelType}"   SelectedValuePath="Key"  DisplayMemberPath="Value" Text=""/>
-                                                                <TextBlock Text="chType"/>
-                                                            </DockPanel>
-                                                        </UniformGrid>
-                                                        <UniformGrid Columns="1" Rows="2" Margin="2">
-                                                            <DockPanel Margin="0,2">
-                                                                <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding Config.ChannelConfigs[1].Port}" Minimum="0"/>
-                                                                <TextBlock Text="cfwport"/>
-                                                            </DockPanel>
-                                                            <DockPanel Margin="0,2">
-                                                                <ComboBox x:Name="chType2" DockPanel.Dock="Right" Width="110" Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding Config.ChannelConfigs[1].ChannelType}"  SelectedValuePath="Key"  DisplayMemberPath="Value"/>
-                                                                <TextBlock Text="chType"/>
-                                                            </DockPanel>
-                                                        </UniformGrid>
-                                                        <UniformGrid Columns="1" Rows="2" Margin="2">
-                                                            <DockPanel Margin="0,2">
-                                                                <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding Config.ChannelConfigs[2].Port}" Minimum="0"/>
-                                                                <TextBlock Text="cfwport"/>
-                                                            </DockPanel>
-                                                            <DockPanel Margin="0,2">
-                                                                <ComboBox x:Name="chType3" DockPanel.Dock="Right" Width="110" Style="{StaticResource ComboBox.Small}"  SelectedValue="{Binding Config.ChannelConfigs[2].ChannelType}"   SelectedValuePath="Key"  DisplayMemberPath="Value" Text=""/>
-                                                                <TextBlock Text="chType"/>
-                                                            </DockPanel>
-                                                        </UniformGrid>
-                                                    </UniformGrid>
-                                                </StackPanel>
                                             </StackPanel>
+                                        </GroupBox>
+
+
+                                        <GroupBox Header="滤色轮配置" Margin="0,5" Visibility="{Binding Config.IsChannelThree,Converter={StaticResource bool2VisibilityConverter}}">
+                                            <StackPanel Margin="5">
+                                                <DockPanel Margin="0,2">
+                                                    <TextBlock Text="启用串口发送:" Width="120"/>
+                                                    <ui:ToggleSwitch IsChecked="{Binding Config.CFW.IsCOM}"/>
+                                                </DockPanel>
+                                                <StackPanel  Visibility="{Binding Config.CFW.IsCOM,Converter={StaticResource bool2VisibilityConverter}}" >
+                                                    <DockPanel Margin="0,2">
+                                                        <TextBlock Text="串口:" Width="120"/>
+                                                        <hc:ComboBox  x:Name="TextSerial1" IsEditable="True" Text="{Binding Config.CFW.SzComName}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
+                                                    </DockPanel>
+                                                    <DockPanel Margin="0,2">
+                                                        <TextBlock Text="波特率:" Width="120"/>
+                                                        <hc:ComboBox  x:Name="TextBaudRate1" IsEditable="True" Text="{Binding Config.CFW.BaudRate}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
+                                                    </DockPanel>
+                                                </StackPanel>
+
+                                                <UniformGrid Columns="3" Rows="1">
+                                                    <UniformGrid Columns="1" Rows="2" Margin="2">
+                                                        <DockPanel Margin="0,2">
+                                                            <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding Config.CFW.CFW[0].Port}" Minimum="0"/>
+                                                            <TextBlock Text="cfwport"/>
+                                                        </DockPanel>
+                                                        <DockPanel Margin="0,2">
+                                                            <ComboBox x:Name="chType1" DockPanel.Dock="Right" Width="110" Style="{StaticResource ComboBox.Small}"  SelectedValue="{Binding Config.CFW.CFW[0].ChannelType}"   SelectedValuePath="Key"  DisplayMemberPath="Value" Text=""/>
+                                                            <TextBlock Text="chType"/>
+                                                        </DockPanel>
+                                                    </UniformGrid>
+                                                    <UniformGrid Columns="1" Rows="2" Margin="2">
+                                                        <DockPanel Margin="0,2">
+                                                            <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding Config.CFW.CFW[1].Port}" Minimum="0"/>
+                                                            <TextBlock Text="cfwport"/>
+                                                        </DockPanel>
+                                                        <DockPanel Margin="0,2">
+                                                            <ComboBox x:Name="chType2" DockPanel.Dock="Right" Width="110" Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding Config.CFW.CFW[1].ChannelType}"  SelectedValuePath="Key"  DisplayMemberPath="Value"/>
+                                                            <TextBlock Text="chType"/>
+                                                        </DockPanel>
+                                                    </UniformGrid>
+                                                    <UniformGrid Columns="1" Rows="2" Margin="2">
+                                                        <DockPanel Margin="0,2">
+                                                            <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding Config.CFW.CFW[2].Port}" Minimum="0"/>
+                                                            <TextBlock Text="cfwport"/>
+                                                        </DockPanel>
+                                                        <DockPanel Margin="0,2">
+                                                            <ComboBox x:Name="chType3" DockPanel.Dock="Right" Width="110" Style="{StaticResource ComboBox.Small}"  SelectedValue="{Binding Config.CFW.CFW[2].ChannelType}"   SelectedValuePath="Key"  DisplayMemberPath="Value" Text=""/>
+                                                            <TextBlock Text="chType"/>
+                                                        </DockPanel>
+                                                    </UniformGrid>
+                                                </UniformGrid>
+                                            </StackPanel>
+
                                         </GroupBox>
                                         
                                         
@@ -404,7 +440,6 @@
                                                     <DockPanel Margin="0,2">
                                                         <TextBlock Text="eEvaFunc:" Width="120"/>
                                                         <hc:ComboBox x:Name="ComboxeEvaFunc"  SelectedValue="{Binding Config.MotorConfig.AutoFocusConfig.eEvaFunc}" SelectedValuePath="Key"  DisplayMemberPath="Value"  Margin="0,0,10,0"/>
-
                                                     </DockPanel>
                                                     <DockPanel Margin="0,2">
                                                         <TextBlock Text="dMinValue:" Width="120"/>

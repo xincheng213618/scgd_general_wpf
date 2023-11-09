@@ -74,13 +74,30 @@ namespace ColorVision.Services.Device.Camera
         public double SaturationB { get => _SaturationB; set { _SaturationB = value; NotifyPropertyChanged(); } }
         private double _SaturationB = -1;
 
-        public ChannelConfig[] ChannelConfigs { get; set; } = new ChannelConfig[3]{
-            new ChannelConfig() { Port =0,ChannelType =ImageChannelType.Gray_X }, new ChannelConfig(){Port =1,ChannelType =ImageChannelType.Gray_Y }, new ChannelConfig(){ Port =2,ChannelType =ImageChannelType.Gray_Z}
-        };
+        public CFWPORT CFW { get; set; } = new CFWPORT();
+
+
+
         public bool IsHaveMotor { get => _IsHaveMotor; set { _IsHaveMotor = value; NotifyPropertyChanged(); } }
         private bool _IsHaveMotor;
 
         public MotorConfig MotorConfig { get; set; } = new MotorConfig();
+    }
+
+
+    public class CFWPORT : ViewModelBase
+    {
+        public ChannelConfig[] CFW { get; set; } = new ChannelConfig[3]{
+            new ChannelConfig() { Port =0,ChannelType =ImageChannelType.Gray_X }, new ChannelConfig(){Port =1,ChannelType =ImageChannelType.Gray_Y }, new ChannelConfig(){ Port =2,ChannelType =ImageChannelType.Gray_Z}
+        };
+
+        public bool IsCOM { get => _IsCOM; set { _IsCOM = value; NotifyPropertyChanged(); } }
+        private bool _IsCOM;
+
+        public string SzComName { get => _szComName; set { _szComName = value; NotifyPropertyChanged(); } }
+        private string _szComName = "COM1";
+        public int BaudRate { get => _BaudRate; set { _BaudRate = value; NotifyPropertyChanged(); } }
+        private int _BaudRate = 9600;
     }
 
 
@@ -90,7 +107,7 @@ namespace ColorVision.Services.Device.Camera
         private FOCUS_COMMUN _eFOCUSCOMMUN;
 
         public string SzComName { get => _szComName; set { _szComName = value; NotifyPropertyChanged(); } }
-        private string _szComName;
+        private string _szComName = "COM1";
 
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; NotifyPropertyChanged(); } }
         private int _BaudRate = 9600;
