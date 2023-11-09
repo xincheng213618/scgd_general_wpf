@@ -34,6 +34,8 @@ namespace ColorVision.Services.Device.Motor
                         break;
                     case "Move":
                         break;
+                    case "MoveDiaphragm":
+                        break;
                     case "GetPosition":
                          Config.Position = msg.Data.nPosition;
                         break;

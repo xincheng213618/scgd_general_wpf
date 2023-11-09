@@ -131,6 +131,13 @@ namespace ColorVision.Device.Camera
                     case "Calibration":
                         log.Debug($"Calibration:{msg.Data}");
                         break;
+                    case "Move":
+                        break;
+                    case "MoveDiaphragm":
+                        break;
+                    case "GetPosition":
+                        Config.MotorConfig.Position = msg.Data.nPosition;
+                        break;
                     default:
                         Application.Current.Dispatcher.BeginInvoke(new Action(() => MessageBox.Show(Application.Current.MainWindow, $"未定义{msg.EventName}")));
                         break;

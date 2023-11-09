@@ -1,4 +1,5 @@
-﻿using ColorVision.Services;
+﻿using ColorVision.Device.Camera;
+using ColorVision.Services;
 using cvColorVision;
 using System;
 using System.Collections.Generic;
@@ -26,15 +27,37 @@ namespace ColorVision.Services.Device.Motor
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = this.Device;
-
-            ComboxMotorType.ItemsSource = from e1 in Enum.GetValues(typeof(FOCUS_COMMUN)).Cast<FOCUS_COMMUN>()
-                                                    select new KeyValuePair<FOCUS_COMMUN, string>(e1, e1.ToString());
-
-
             List<string> Serials = new List<string> { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8" };
             TextSerial.ItemsSource = Serials;
             List<int> BaudRates = new List<int> { 115200, 9600, 300, 600, 1200, 2400, 4800, 14400, 19200, 38400, 57600 };
             TextBaudRate.ItemsSource = BaudRates;
+
+            ComboxMotorType.ItemsSource = from e1 in Enum.GetValues(typeof(FOCUS_COMMUN)).Cast<FOCUS_COMMUN>()
+                                          select new KeyValuePair<FOCUS_COMMUN, string>(e1, e1.ToString());
+            int index = 0;
+            ComboxMotorType.SelectionChanged += (s, e) =>
+            {
+                if (index++ < 1)
+                    return;
+                switch (Device.Config.eFOCUSCOMMUN)
+                {
+                    case FOCUS_COMMUN.VID_SERIAL:
+                        Device.Config.BaudRate = 115200;
+                        break;
+                    case FOCUS_COMMUN.CANON_SERIAL:
+                        Device.Config.BaudRate = 38400;
+                        break;
+                    case FOCUS_COMMUN.NED_SERIAL:
+                        Device.Config.BaudRate = 115200;
+                        break;
+                    case FOCUS_COMMUN.LONGFOOT_SERIAL:
+                        Device.Config.BaudRate = 115200;
+                        break;
+                    default:
+                        break;
+                }
+            };
+
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
