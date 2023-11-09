@@ -171,6 +171,9 @@ namespace ColorVision.Services.Device.Camera
         public double MinValue { get => _dMinValue; set { _dMinValue = value; NotifyPropertyChanged(); } }
         private double _dMinValue;
 
+        public uint nTimeout { get => _nTimeout; set { _nTimeout = value; NotifyPropertyChanged(); } }
+        private uint _nTimeout =30000;
+
 
     }
 }

@@ -92,6 +92,10 @@
                                                 <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.AutoFocusConfig.EvaFunc}" />
                                             </DockPanel>
                                             <DockPanel>
+                                                <TextBlock Text="超时时间:" Width="120"/>
+                                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.AutoFocusConfig.nTimeout}" />
+                                            </DockPanel>
+                                            <DockPanel>
                                                 <TextBlock Text="电机移动区间下限:" Width="120"/>
                                                 <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.AutoFocusConfig.MinPosition}" />
                                             </DockPanel>
@@ -176,6 +180,10 @@
                                             <DockPanel Margin="0,2">
                                                 <TextBlock Text="评价函数类型:" Width="120"/>
                                                 <hc:ComboBox x:Name="ComboxeEvaFunc"  SelectedValue="{Binding Config.AutoFocusConfig.EvaFunc}" SelectedValuePath="Key"  DisplayMemberPath="Value"  Margin="0,0,10,0"/>
+                                            </DockPanel>
+                                            <DockPanel>
+                                                <TextBlock Text="超时时间:" Width="120"/>
+                                                <TextBox  Text="{Binding Config.AutoFocusConfig.nTimeout}" />
                                             </DockPanel>
                                             <DockPanel Margin="0,2">
                                                 <TextBlock Text="电机移动区间下限:" Width="120"/>

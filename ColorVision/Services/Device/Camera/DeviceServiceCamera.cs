@@ -358,7 +358,8 @@ namespace ColorVision.Device.Camera
                                 { "minPosition", Config.MotorConfig.AutoFocusConfig.MinPosition},
                                 { "maxPosition", Config.MotorConfig.AutoFocusConfig.MaxPosition},
                                 { "eEvaFunc", Config.MotorConfig.AutoFocusConfig.EvaFunc},
-                                { "dMinValue", Config.MotorConfig.AutoFocusConfig.MinValue}
+                                { "dMinValue", Config.MotorConfig.AutoFocusConfig.MinValue},
+                                { "nTimeout",Config.MotorConfig.AutoFocusConfig.nTimeout}
                             };
 
             var Params = new Dictionary<string, object>() { };
