@@ -14,6 +14,10 @@ namespace ColorVision.SettingUp
 
         public string DefaultTimeFormat { get => _DefaultTimeFormat; set { _DefaultTimeFormat = value; NotifyPropertyChanged(); } }
         private string _DefaultTimeFormat = "yyyy/MM/dd HH:mm:ss";
+        
+        public bool IsShowTime { get => _ShowTime; set { _ShowTime = value; NotifyPropertyChanged(); } }
+        private bool _ShowTime;
+
     }
 
 
@@ -36,22 +40,22 @@ namespace ColorVision.SettingUp
 
         public int UpdateSpeed
         {
-            get => Config.UpdateSpeed; set
+            get => Setting.UpdateSpeed; set
             {
-                if (value != Config.UpdateSpeed)
+                if (value != Setting.UpdateSpeed)
                 {
-                    Config.UpdateSpeed = value; NotifyPropertyChanged();
+                    Setting.UpdateSpeed = value; NotifyPropertyChanged();
                     timer?.Dispose();
                     timer = new Timer(TimeRun, null, 0, value);
                 }
             }    
         }
 
-        public PerformancSetting Config { get; set; }
+        public PerformancSetting Setting { get; set; }
 
         public PerformanceControl()
         {
-            Config = GlobalSetting.GetInstance().SoftwareConfig.PerformancSetting;
+            Setting = GlobalSetting.GetInstance().SoftwareConfig.PerformancSetting;
             Task.Run(() => 
             {
                 try
@@ -94,8 +98,15 @@ namespace ColorVision.SettingUp
                 {
 
                 }
+                try
+                {
+                    if (Setting.IsShowTime)
+                        Time = DateTime.Now.ToString(Setting.DefaultTimeFormat);
+                }
+                catch
+                {
 
-                Time = DateTime.Now.ToString(Config.DefaultTimeFormat);
+                }
             }
         }
 

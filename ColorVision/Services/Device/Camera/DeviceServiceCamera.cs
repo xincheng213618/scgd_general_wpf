@@ -351,14 +351,14 @@ namespace ColorVision.Device.Camera
             };
 
             var tAutoFocusCfg = new Dictionary<string, object>(){
-                                { "forwardparam", Config.MotorConfig.AutoFocusConfig.forwardparam} ,
-                                { "curtailparam", Config.MotorConfig.AutoFocusConfig.curtailparam},
-                                { "curStep", Config.MotorConfig.AutoFocusConfig.curStep},
-                                { "stopStep", Config.MotorConfig.AutoFocusConfig.stopStep},
-                                { "minPosition", Config.MotorConfig.AutoFocusConfig.minPosition},
-                                { "maxPosition", Config.MotorConfig.AutoFocusConfig.maxPosition},
-                                { "eEvaFunc", Config.MotorConfig.AutoFocusConfig.eEvaFunc},
-                                { "dMinValue", Config.MotorConfig.AutoFocusConfig.dMinValue}
+                                { "forwardparam", Config.MotorConfig.AutoFocusConfig.Forwardparam} ,
+                                { "curtailparam", Config.MotorConfig.AutoFocusConfig.Curtailparam},
+                                { "curStep", Config.MotorConfig.AutoFocusConfig.CurStep},
+                                { "stopStep", Config.MotorConfig.AutoFocusConfig.StopStep},
+                                { "minPosition", Config.MotorConfig.AutoFocusConfig.MinPosition},
+                                { "maxPosition", Config.MotorConfig.AutoFocusConfig.MaxPosition},
+                                { "eEvaFunc", Config.MotorConfig.AutoFocusConfig.EvaFunc},
+                                { "dMinValue", Config.MotorConfig.AutoFocusConfig.MinValue}
                             };
 
             var Params = new Dictionary<string, object>() { };

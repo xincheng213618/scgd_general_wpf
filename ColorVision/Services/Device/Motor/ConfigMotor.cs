@@ -19,7 +19,7 @@ namespace ColorVision.Services.Device.Motor
         private string _szComName = "COM1";
 
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; NotifyPropertyChanged(); } }
-        private int _BaudRate = 9600;
+        private int _BaudRate = 115200;
 
         public AutoFocusConfig AutoFocusConfig { get; set; } = new AutoFocusConfig();
 

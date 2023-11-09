@@ -80,40 +80,44 @@
                                                 <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.BaudRate}" />
                                             </DockPanel>
                                             <DockPanel>
-                                                <TextBlock Text="Timeout:" Width="120"/>
+                                                <TextBlock Text="超时时间" Width="120"/>
                                                 <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.dwTimeOut}" />
                                             </DockPanel>
+                                        </StackPanel>
+                                    </GroupBox>
+                                    <GroupBox Header="自动聚焦配置">
+                                        <StackPanel Margin="5">
                                             <DockPanel>
-                                                <TextBlock Text="forwardparam:" Width="120"/>
-                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.AutoFocusConfig.forwardparam}" />
+                                                <TextBlock Text="评价函数类型:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.AutoFocusConfig.EvaFunc}" />
                                             </DockPanel>
                                             <DockPanel>
-                                                <TextBlock Text="curtailparam:" Width="120"/>
-                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.AutoFocusConfig.curtailparam}" />
+                                                <TextBlock Text="电机移动区间下限:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.AutoFocusConfig.MinPosition}" />
                                             </DockPanel>
                                             <DockPanel>
-                                                <TextBlock Text="curStep:" Width="120"/>
-                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.AutoFocusConfig.curStep}" />
+                                                <TextBlock Text="电机移动区间上限:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.AutoFocusConfig.MaxPosition}" />
                                             </DockPanel>
                                             <DockPanel>
-                                                <TextBlock Text="stopStep:" Width="120"/>
-                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.AutoFocusConfig.stopStep}" />
+                                                <TextBlock Text="步径摆动范围:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.AutoFocusConfig.Forwardparam}" />
                                             </DockPanel>
                                             <DockPanel>
-                                                <TextBlock Text="minPosition:" Width="120"/>
-                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.AutoFocusConfig.minPosition}" />
+                                                <TextBlock Text="目前使用步径:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.AutoFocusConfig.CurStep}" />
                                             </DockPanel>
                                             <DockPanel>
-                                                <TextBlock Text="maxPosition:" Width="120"/>
-                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.AutoFocusConfig.maxPosition}" />
+                                                <TextBlock Text="步径每次缩诚系数:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.AutoFocusConfig.Curtailparam}" />
                                             </DockPanel>
                                             <DockPanel>
-                                                <TextBlock Text="eEvaFunc:" Width="120"/>
-                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.AutoFocusConfig.eEvaFunc}" />
+                                                <TextBlock Text="停止步径:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.AutoFocusConfig.StopStep}" />
                                             </DockPanel>
                                             <DockPanel>
-                                                <TextBlock Text="dMinValue:" Width="120"/>
-                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.AutoFocusConfig.dMinValue}" />
+                                                <TextBlock Text="最低评价值:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.AutoFocusConfig.MinValue}" />
                                             </DockPanel>
                                         </StackPanel>
                                     </GroupBox>
@@ -161,40 +165,45 @@
                                                 <hc:ComboBox  x:Name="TextBaudRate" IsEditable="True" Text="{Binding Config.BaudRate}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
                                             </DockPanel>
                                             <DockPanel>
-                                                <TextBlock Text="Timeout:" Width="120"/>
+                                                <TextBlock Text="超时时间:" Width="120"/>
                                                 <TextBox Text="{Binding Config.dwTimeOut}" />
                                             </DockPanel>
+                                        </StackPanel>
+                                    </GroupBox>
+
+                                    <GroupBox Header="自动聚焦配置">
+                                        <StackPanel Margin="5">
                                             <DockPanel Margin="0,2">
-                                                <TextBlock Text="forwardparam:" Width="120"/>
-                                                <TextBox Text="{Binding Config.AutoFocusConfig.forwardparam}" />
+                                                <TextBlock Text="评价函数类型:" Width="120"/>
+                                                <hc:ComboBox x:Name="ComboxeEvaFunc"  SelectedValue="{Binding Config.AutoFocusConfig.EvaFunc}" SelectedValuePath="Key"  DisplayMemberPath="Value"  Margin="0,0,10,0"/>
                                             </DockPanel>
                                             <DockPanel Margin="0,2">
-                                                <TextBlock Text="curtailparam:" Width="120"/>
-                                                <TextBox Text="{Binding Config.AutoFocusConfig.curtailparam}" />
+                                                <TextBlock Text="电机移动区间下限:" Width="120"/>
+                                                <TextBox Text="{Binding Config.AutoFocusConfig.MinPosition}" />
                                             </DockPanel>
                                             <DockPanel Margin="0,2">
-                                                <TextBlock Text="curStep:" Width="120"/>
-                                                <TextBox Text="{Binding Config.AutoFocusConfig.curStep}" />
+                                                <TextBlock Text="电机移动区间上限:" Width="120"/>
+                                                <TextBox Text="{Binding Config.AutoFocusConfig.MaxPosition}" />
                                             </DockPanel>
                                             <DockPanel Margin="0,2">
-                                                <TextBlock Text="stopStep:" Width="120"/>
-                                                <TextBox Text="{Binding Config.AutoFocusConfig.stopStep}" />
+                                                <TextBlock Text="步径摆动范围:" Width="120"/>
+                                                <TextBox  Text="{Binding Config.AutoFocusConfig.Forwardparam}" />
                                             </DockPanel>
                                             <DockPanel Margin="0,2">
-                                                <TextBlock Text="minPosition:" Width="120"/>
-                                                <TextBox Text="{Binding Config.AutoFocusConfig.minPosition}" />
+                                                <TextBlock Text="目前使用步径:" Width="120"/>
+                                                <TextBox  Text="{Binding Config.AutoFocusConfig.CurStep}" />
                                             </DockPanel>
                                             <DockPanel Margin="0,2">
-                                                <TextBlock Text="maxPosition:" Width="120"/>
-                                                <TextBox Text="{Binding Config.AutoFocusConfig.maxPosition}" />
+                                                <TextBlock Text="步径每次缩诚系数:" Width="120"/>
+                                                <TextBox Text="{Binding Config.AutoFocusConfig.Curtailparam}" />
                                             </DockPanel>
                                             <DockPanel Margin="0,2">
-                                                <TextBlock Text="eEvaFunc:" Width="120"/>
-                                                <TextBox Text="{Binding Config.AutoFocusConfig.eEvaFunc}" />
+                                                <TextBlock Text="停止步径:" Width="120"/>
+                                                <TextBox Text="{Binding Config.AutoFocusConfig.StopStep}" />
                                             </DockPanel>
                                             <DockPanel Margin="0,2">
-                                                <TextBlock Text="dMinValue:" Width="120"/>
-                                                <TextBox Text="{Binding Config.AutoFocusConfig.dMinValue}" />
+                                                <TextBlock Text="最低评价值:" Width="120"/>
+                                                <TextBox Text="{Binding Config.AutoFocusConfig.MinValue}" />
                                             </DockPanel>
                                         </StackPanel>
                                     </GroupBox>

@@ -265,6 +265,10 @@
                                                 <TextBox  DockPanel.Dock="Right"  Text="{Binding PerformancSetting.DefaultTimeFormat}"  HorizontalContentAlignment="Right" Width="200"/>
                                                 <TextBlock Text="日期格式" />
                                             </DockPanel>
+                                            <DockPanel Margin="5">
+                                                <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding PerformancSetting.IsShowTime}"/>
+                                                <TextBlock Text="显示时间"/>
+                                            </DockPanel>
                                         </StackPanel>
                                     </Border>
                                     <Border  Style="{StaticResource BorderModuleArea}" >
