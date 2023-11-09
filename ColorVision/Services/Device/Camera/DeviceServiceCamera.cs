@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8602  
 
 using ColorVision.MQTT;
+using ColorVision.MVVM;
 using ColorVision.Services;
 using ColorVision.Services.Device.Camera;
 using ColorVision.Services.Msg;
@@ -9,13 +10,17 @@ using cvColorVision;
 using System;
 using System.Collections.Generic;
 using System.Windows;
+using ColorVision.Extension;
 
 namespace ColorVision.Device.Camera
 {
 
     public delegate void MQTTCameraFileHandler(object sender, string? FilePath);
     public delegate void MQTTCameraMsgHandler(object sender, MsgReturn msg);
-    
+
+
+
+
     public class DeviceServiceCamera : BaseDevService<ConfigCamera>
     {
         public event MQTTCameraFileHandler FileHandler;
@@ -63,6 +68,7 @@ namespace ColorVision.Device.Camera
                 {
                     case "Init":
                         DeviceStatus = DeviceStatus.Init;
+                        SetCfg(ConfigType.ExpTime);
                         break;
                     case "UnInit":
                         DeviceStatus = DeviceStatus.UnInit;
@@ -141,6 +147,8 @@ namespace ColorVision.Device.Camera
                     case "GetPosition":
                         Config.MotorConfig.Position = msg.Data.nPosition;
                         break;
+                    case "SetCfg":
+                        break;
                     default:
                         Application.Current.Dispatcher.BeginInvoke(new Action(() => MessageBox.Show(Application.Current.MainWindow, $"未定义{msg.EventName}")));
                         break;
@@ -211,9 +219,42 @@ namespace ColorVision.Device.Camera
             return PublishAsyncClient(msg,1000);
         }
 
+
+
+
         public MsgRecord UnInit()
         {
             MsgSend msg = new MsgSend  {  EventName = "UnInit", };
+            return PublishAsyncClient(msg);
+        }
+
+        public MsgRecord SetCfg(ConfigType configType)
+        {
+            MsgSend msg = new MsgSend { EventName = "SetCfg" };
+
+            var Params = new Dictionary<string,object>();
+            Params.Add("ConfigType", configType);
+            switch (configType)
+            {   
+                case ConfigType.Camera:
+                    Params.Add("jsonCfg", Config.ExpTimeCfg);
+                    break;
+                case ConfigType.ExpTime:
+                    Params.Add("jsonCfg", Config.ExpTimeCfg.ToJsonN());
+                    break;
+                case ConfigType.Calibration:
+                    Params.Add("jsonCfg", Config.ExpTimeCfg);
+                    break;
+                case ConfigType.Channels:
+                    Params.Add("jsonCfg", Config.ExpTimeCfg);
+                    break;
+                case ConfigType.SYSTEM:
+                    Params.Add("jsonCfg", Config.ExpTimeCfg);
+                    break;
+                default:
+                    break;
+            }
+            msg.Params = Params;
             return PublishAsyncClient(msg);
         }
 

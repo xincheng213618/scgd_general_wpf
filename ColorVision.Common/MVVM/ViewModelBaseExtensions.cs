@@ -39,27 +39,5 @@ namespace ColorVision.MVVM
             }
         }
 
-        private static JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions() { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
-
-        public static string ToJson(this ViewModelBase viewModelBase, JsonSerializerOptions? options =null)
-        {
-            return JsonSerializer.Serialize(viewModelBase, options??jsonSerializerOptions);
-        }
-
-        public static bool ToJsonFile(this ViewModelBase viewModelBase, string filePath,JsonSerializerOptions? options = null)
-        {
-            try
-            {
-                string jsonString = JsonSerializer.Serialize(viewModelBase, options??jsonSerializerOptions);
-                File.WriteAllText(filePath, jsonString);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Trace.WriteLine("### [" + ex.Source + "] Exception: " + ex.Message);
-                Trace.WriteLine("### " + ex.StackTrace);
-                return false;
-            }
-        }
     }
 }

@@ -7,45 +7,80 @@ using System.Windows.Media;
 using System.Windows;
 using System.ComponentModel;
 using System.Reflection;
+using ColorVision.MVVM;
+using System.Diagnostics;
+using System.Text.Unicode;
+using Newtonsoft.Json;
+using System.IO;
+
 
 namespace ColorVision.Extension
 {
     /// <summary>
     // 扩展加载，没有特殊标记的丢在这里，反正会自动识别加载
     /// </summary>
-    internal static class Extensions
+    public static class Extensions
     {
+        public static JsonSerializerSettings settings = new JsonSerializerSettings
+        {
+            Formatting = Formatting.Indented
+        };
 
-        internal static bool IsNullOrEmpty(this string str) => string.IsNullOrEmpty(str);
+
+        public static string ToJsonN(this ViewModelBase viewModelBase, JsonSerializerSettings? options = null)
+        {
+            return JsonConvert.SerializeObject(viewModelBase, options ?? settings);
+        }
+
+        public static bool ToJsonNFile(this ViewModelBase viewModelBase, string filePath, JsonSerializerSettings? options = null)
+        {
+            try
+            {
+                string jsonString = JsonConvert.SerializeObject(viewModelBase, options ?? settings);
+                File.WriteAllText(filePath, jsonString);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine("### [" + ex.Source + "] Exception: " + ex.Message);
+                Trace.WriteLine("### " + ex.StackTrace);
+                return false;
+            }
+        }
 
 
-        internal static SolidColorBrush ToBrush(this Color color)
+
+
+        public static bool IsNullOrEmpty(this string str) => string.IsNullOrEmpty(str);
+
+
+        public static SolidColorBrush ToBrush(this Color color)
         {
             var brush = new SolidColorBrush(color);
             brush.Freeze();
             return brush;
         }
 
-        internal static SolidColorBrush ToBrush(this Color? color)
+        public static SolidColorBrush ToBrush(this Color? color)
         {
             if (color == null)
                 return new SolidColorBrush(Colors.Transparent);
             return new SolidColorBrush((Color)color);
         }
 
-        internal static Color ToColor(this string color)
+        public static Color ToColor(this string color)
         {
             return (Color)ColorConverter.ConvertFromString(color);
         }
 
-        internal static Color ToColor(this SolidColorBrush brush)
+        public static Color ToColor(this SolidColorBrush brush)
         {
             if (brush == null)
                 return Colors.Transparent;
             return brush.Color;
         }
 
-        internal static Color ToColor(this Brush brush)
+        public static Color ToColor(this Brush brush)
         {
             if (brush == null)
                 return Colors.Transparent;
@@ -64,7 +99,7 @@ namespace ColorVision.Extension
         /// </summary>
         /// <param name="icon"></param>
         /// <returns></returns>
-        internal static ImageSource ToImageSource(this System.Drawing.Icon icon)
+        public static ImageSource ToImageSource(this System.Drawing.Icon icon)
         {
             ImageSource imageSource = Imaging.CreateBitmapSourceFromHIcon(
                 icon.Handle,
@@ -75,7 +110,7 @@ namespace ColorVision.Extension
         }
 
 
-        internal static string Description(object obj)
+        public static string Description(object obj)
         {
             Type type = obj.GetType();
             MemberInfo[] infos = type.GetMember(obj.ToString() ?? "");
