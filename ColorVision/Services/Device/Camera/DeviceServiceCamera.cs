@@ -38,6 +38,11 @@ namespace ColorVision.Device.Camera
             CameraService.Devices.Add(this);
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
             DeviceStatus = DeviceStatus.UnInit;
+            DisConnected += (s, e) =>
+            {  
+                DeviceStatus = DeviceStatus.UnInit;
+            };
+
         }
 
         public override void Dispose()
@@ -68,6 +73,7 @@ namespace ColorVision.Device.Camera
                 {
                     case "Init":
                         DeviceStatus = DeviceStatus.Init;
+                        SetCfg(ConfigType.Camera);
                         SetCfg(ConfigType.ExpTime);
                         break;
                     case "UnInit":
@@ -97,18 +103,18 @@ namespace ColorVision.Device.Camera
                             {
                                 for (int i = 0; i < 3; i++)
                                 {
-                                    if (Config.CFW.CFW[i].ChannelType == ImageChannelType.Gray_X)
+                                    if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_X)
                                     {
                                         Config.ExpTimeR = msg.Data.result[i].result;
                                         Config.SaturationR = msg.Data.result[i].resultSaturation;
                                     }
-                                    if (Config.CFW.CFW[i].ChannelType == ImageChannelType.Gray_Y)
+                                    if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_Y)
                                     {
                                         Config.ExpTimeG = msg.Data.result[i].result;
                                         Config.SaturationG = msg.Data.result[i].resultSaturation;
                                     }
 
-                                    if (Config.CFW.CFW[i].ChannelType == ImageChannelType.Gray_Z)
+                                    if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_Z)
                                     {
                                         Config.ExpTimeB = msg.Data.result[i].result;
                                         Config.SaturationB = msg.Data.result[i].resultSaturation;
@@ -237,7 +243,7 @@ namespace ColorVision.Device.Camera
             switch (configType)
             {   
                 case ConfigType.Camera:
-                    Params.Add("jsonCfg", Config.ExpTimeCfg);
+                    Params.Add("jsonCfg", Config.CameraCfg.ToJsonN());
                     break;
                 case ConfigType.ExpTime:
                     Params.Add("jsonCfg", Config.ExpTimeCfg.ToJsonN());
@@ -246,7 +252,7 @@ namespace ColorVision.Device.Camera
                     Params.Add("jsonCfg", Config.ExpTimeCfg);
                     break;
                 case ConfigType.Channels:
-                    Params.Add("jsonCfg", Config.ExpTimeCfg);
+                    Params.Add("jsonCfg", Config.CFW.ChannelCfgs.ToJsonN());
                     break;
                 case ConfigType.SYSTEM:
                     Params.Add("jsonCfg", Config.ExpTimeCfg);
@@ -341,17 +347,17 @@ namespace ColorVision.Device.Camera
                 List<Dictionary<string,object>> Param = new List<Dictionary<string,object>>();
 
 
-                foreach (var item in Config.CFW.CFW)
+                foreach (var item in Config.CFW.ChannelCfgs)
                 {
                     Dictionary<string, object> keyValuePairs = new Dictionary<string, object>();
-                    keyValuePairs.Add("eImgChlType", (int)item.ChannelType);
-                    keyValuePairs.Add("nPort", item.Port);
+                    keyValuePairs.Add("eImgChlType", (int)item.Chtype);
+                    keyValuePairs.Add("nPort", item.Cfwport);
 
-                    if (item.ChannelType == ImageChannelType.Gray_X)
+                    if (item.Chtype == ImageChannelType.Gray_X)
                         keyValuePairs.Add("dExp", Config.ExpTimeR);
-                    if (item.ChannelType == ImageChannelType.Gray_Y)
+                    if (item.Chtype == ImageChannelType.Gray_Y)
                         keyValuePairs.Add("dExp", Config.ExpTimeG);
-                    if (item.ChannelType == ImageChannelType.Gray_Z)
+                    if (item.Chtype == ImageChannelType.Gray_Z)
                         keyValuePairs.Add("dExp", Config.ExpTimeB);
 
                     Param.Add(keyValuePairs);
@@ -422,13 +428,13 @@ namespace ColorVision.Device.Camera
                         "SetCfwport", new List<Dictionary<string, object>>()
                         {
                             new Dictionary<string, object>() {
-                                { "nIndex",0},{ "nPort",Config.CFW.CFW[0].Port},{"eImgChlType",(int)Config.CFW.CFW[0].ChannelType }
+                                { "nIndex",0},{ "nPort",Config.CFW.ChannelCfgs[0].Cfwport},{"eImgChlType",(int)Config.CFW.ChannelCfgs[0].Chtype }
                             },
                             new Dictionary<string, object>() {
-                                { "nIndex",1},{ "nPort",Config.CFW.CFW[1].Port},{"eImgChlType",(int)Config.CFW.CFW[1].ChannelType }
+                                { "nIndex",1},{ "nPort",Config.CFW.ChannelCfgs[1].Cfwport},{"eImgChlType",(int)Config.CFW.ChannelCfgs[1].Chtype }
                             },
                             new Dictionary<string, object>() {
-                                { "nIndex",2},{ "nPort",Config.CFW.CFW[2].Port},{"eImgChlType",(int)Config.CFW.CFW[2].ChannelType }
+                                { "nIndex",2},{ "nPort",Config.CFW.ChannelCfgs[2].Cfwport},{"eImgChlType",(int)Config.CFW.ChannelCfgs[2].Chtype }
                             },
                         }
                     }

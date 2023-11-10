@@ -100,31 +100,31 @@ namespace ColorVision.Device.Camera
 
             chType1.SelectionChanged += (s, e) =>
             {
-                ComboBox comboBox = keyValuePairs[Service.Config.CFW.CFW[0].ChannelType];
+                ComboBox comboBox = keyValuePairs[Service.Config.CFW.ChannelCfgs[0].Chtype];
                 ImageChannelType lasttemp = keyValuePairs.FirstOrDefault(x => x.Value == chType1).Key;
                 comboBox.SelectedValue = lasttemp;
                 keyValuePairs[lasttemp] = comboBox;
-                keyValuePairs[Service.Config.CFW.CFW[0].ChannelType] = chType1;
+                keyValuePairs[Service.Config.CFW.ChannelCfgs[0].Chtype] = chType1;
 
 
             };
             chType2.SelectionChanged += (s, e) =>
             {
-                ComboBox comboBox = keyValuePairs[Service.Config.CFW.CFW[1].ChannelType];
+                ComboBox comboBox = keyValuePairs[Service.Config.CFW.ChannelCfgs[1].Chtype];
                 ImageChannelType lasttemp = keyValuePairs.FirstOrDefault(x => x.Value == chType2).Key;
                 comboBox.SelectedValue = lasttemp;
 
                 keyValuePairs[lasttemp] = comboBox;
-                keyValuePairs[Service.Config.CFW.CFW[1].ChannelType] = chType2;
+                keyValuePairs[Service.Config.CFW.ChannelCfgs[1].Chtype] = chType2;
             };
             chType3.SelectionChanged += (s, e) =>
             {
-                ComboBox comboBox = keyValuePairs[Service.Config.CFW.CFW[2].ChannelType];
+                ComboBox comboBox = keyValuePairs[Service.Config.CFW.ChannelCfgs[2].Chtype];
                 ImageChannelType lasttemp = keyValuePairs.FirstOrDefault(x => x.Value == chType3).Key;
                 comboBox.SelectedValue = lasttemp;
 
                 keyValuePairs[lasttemp] = comboBox;
-                keyValuePairs[Service.Config.CFW.CFW[2].ChannelType] = chType3;
+                keyValuePairs[Service.Config.CFW.ChannelCfgs[2].Chtype] = chType3;
             };
 
 
