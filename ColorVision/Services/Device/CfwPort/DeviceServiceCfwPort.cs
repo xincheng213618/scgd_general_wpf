@@ -18,6 +18,10 @@ namespace ColorVision.Services.Device.CfwPort
         {
             MsgReturnReceived += ProcessingReceived;
             DeviceStatus = DeviceStatus.Closed;
+            DisConnected += (s, e) =>
+            {
+                DeviceStatus = DeviceStatus.Closed;
+            };
         }
 
         private void ProcessingReceived(MsgReturn msg)

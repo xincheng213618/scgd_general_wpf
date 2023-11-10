@@ -153,7 +153,7 @@ namespace ColorVision.Services.Device.Camera
         /// </summary>
         [JsonProperty("usbTraffic")]
         public float UsbTraffic { get => _UsbTraffic; set { _UsbTraffic = value; NotifyPropertyChanged(); } }
-        private float _UsbTraffic = 50.0f;
+        private float _UsbTraffic;
 
         /// <summary>
         /// 偏移

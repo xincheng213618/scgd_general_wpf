@@ -38,6 +38,11 @@ namespace ColorVision.Device.Camera
             CameraService.Devices.Add(this);
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
             DeviceStatus = DeviceStatus.UnInit;
+            DisConnected += (s, e) =>
+            {  
+                DeviceStatus = DeviceStatus.UnInit;
+            };
+
         }
 
         public override void Dispose()
