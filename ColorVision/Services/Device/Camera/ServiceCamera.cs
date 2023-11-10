@@ -37,7 +37,6 @@ namespace ColorVision.Device.Camera
 
                         if (msg.Data == null)
                             return;
-
                        JArray SnIDs = msg.Data.SnID;
                         if (SnIDs != null)
                         {
