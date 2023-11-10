@@ -15,73 +15,78 @@
             <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
         </Style>
     </UserControl.Resources>
-    <Grid >
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-        <Grid Grid.Row="1" Margin="5">
-            <StackPanel x:Name="MQTTCreate"   Width="300"  HorizontalAlignment="Left" d:DataContext="{d:DesignInstance local:ServiceManager}" >
-                <DockPanel Margin="0,2" Visibility="Collapsed">
-                    <TextBlock Text="类型" Width="60" />
-                    <ComboBox x:Name="TextBox_Type"  SelectedValuePath="Name" Style="{DynamicResource ComboBox.Small}"  DisplayMemberPath="Name" />
-                </DockPanel>
-                <DockPanel  Margin="0,2">
-                    <TextBlock Text="标识" Width="60"/>
-                    <hc:ComboBox  x:Name="TextBox_Code" IsEditable="True" SelectedIndex="0" Text="" Style="{DynamicResource ComboBox.Small}"  hc:InfoElement.ShowClearButton="True"   />
-                </DockPanel>
-                <DockPanel  Margin="0,2" >
-                    <TextBlock Text="名称" Width="60"/>
-                    <hc:ComboBox  x:Name="TextBox_Name" IsEditable="True" SelectedIndex="0" Text=""  Style="{DynamicResource ComboBox.Small}" hc:InfoElement.ShowClearButton="True" />
-                </DockPanel>
-                <Button  Margin="0,2"  Click="Button_New_Click"   Width="100" Content="添加" HorizontalAlignment="Right" />
-            </StackPanel>
+    <Grid>
+        <Border Background="{StaticResource GlobalBorderBrush1}"  CornerRadius="5"/>
 
-        </Grid>
         <Grid>
-            <ListView  x:Name="ListViewService"  SelectionChanged="ListViewService_SelectionChanged" BorderThickness="0">
-                <ListView.Resources >
-                </ListView.Resources>
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}">
-                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
-                    </Style>
-                </ListView.ItemContainerStyle>
-                <ListView.View >
-                    <GridView>
-                        <GridViewColumn  Header="服务名称">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:ServiceTerminal}">
-                                    <TextBlock Text="{ Binding Name}"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn  Header="发送信道">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:ServiceTerminal}">
-                                    <TextBlock Text="{ Binding  Config.SendTopic}"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn  Header="接收信道">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:ServiceTerminal}">
-                                    <TextBlock Text="{ Binding  Config.SubscribeTopic}"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn  Header="是否存活">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:ServiceTerminal}">
-                                    <TextBlock Text="{ Binding  Config.IsAlive}"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                    </GridView>
-                </ListView.View>
-            </ListView>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="1" Margin="5">
+                <StackPanel x:Name="MQTTCreate"   Width="300"  HorizontalAlignment="Left" d:DataContext="{d:DesignInstance local:ServiceManager}" >
+                    <DockPanel Margin="0,2" Visibility="Collapsed">
+                        <TextBlock Text="类型" Width="60" />
+                        <ComboBox x:Name="TextBox_Type"  SelectedValuePath="Name" Style="{DynamicResource ComboBox.Small}"  DisplayMemberPath="Name" />
+                    </DockPanel>
+                    <DockPanel  Margin="0,2">
+                        <TextBlock Text="标识" Width="60"/>
+                        <hc:ComboBox  x:Name="TextBox_Code" IsEditable="True" SelectedIndex="0" Text="" Style="{DynamicResource ComboBox.Small}"  hc:InfoElement.ShowClearButton="True"   />
+                    </DockPanel>
+                    <DockPanel  Margin="0,2" >
+                        <TextBlock Text="名称" Width="60"/>
+                        <hc:ComboBox  x:Name="TextBox_Name" IsEditable="True" SelectedIndex="0" Text=""  Style="{DynamicResource ComboBox.Small}" hc:InfoElement.ShowClearButton="True" />
+                    </DockPanel>
+                    <Button  Margin="0,2"  Click="Button_New_Click"   Width="100" Content="添加" HorizontalAlignment="Right" />
+                </StackPanel>
+
+            </Grid>
+            <Grid>
+                <ListView  x:Name="ListViewService"  Background="Transparent" SelectionChanged="ListViewService_SelectionChanged" BorderThickness="0">
+                    <ListView.Resources >
+                    </ListView.Resources>
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}">
+                            <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.View >
+                        <GridView>
+                            <GridViewColumn  Header="服务名称">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:ServiceTerminal}">
+                                        <TextBlock Text="{ Binding Name}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="发送信道">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:ServiceTerminal}">
+                                        <TextBlock Text="{ Binding  Config.SendTopic}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="接收信道">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:ServiceTerminal}">
+                                        <TextBlock Text="{ Binding  Config.SubscribeTopic}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="是否存活">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:ServiceTerminal}">
+                                        <TextBlock Text="{ Binding  Config.IsAlive}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+
+            </Grid>
 
         </Grid>
-
     </Grid>
+
 </UserControl>
