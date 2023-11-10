@@ -17,75 +17,57 @@
     </Window.Resources>
     <Grid Margin="5">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="2*"/>
-            <ColumnDefinition Width="3*"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <GroupBox x:Name="TemplateGrid"  Grid.Row="0" Grid.Column="0" Grid.RowSpan="2" Header="模板"  BorderThickness="2" Margin="0,0">
-            <DockPanel Grid.Row="0"  >
-                <Grid DockPanel.Dock="Top" Margin="0,5,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="20*"/>
-                        <ColumnDefinition Width="50*"/>
-                    </Grid.ColumnDefinitions>
-                    <Grid x:Name="GridListHeader1" Grid.Column="0">
-                        <TextBlock  HorizontalAlignment="Left" VerticalAlignment="Center" Text="序号" Margin="10,0,0,0"/>
-                    </Grid>
-                    <GridSplitter Grid.Column="0" Width="2"  Background="AliceBlue"/>
-                    <Grid x:Name="GridListHeader2" Grid.Column="1">
-                        <TextBlock  HorizontalAlignment="Left" VerticalAlignment="Center" Text="{Binding ElementName=TemplateGrid,Path=Header,StringFormat='{}{0}名称'}" Margin="10,0,0,0" />
-                    </Grid>
-                    <Grid x:Name="GridListLen" Grid.Column="0" Grid.ColumnSpan="2" Margin="20,0" />
-                </Grid>
+        <Grid x:Name="TemplateGrid"  Grid.Row="0" Grid.Column="0" Grid.RowSpan="2" Margin="0,0">
+            <Border Background="{DynamicResource  SecondaryRegionBrush}" CornerRadius="5"/>
+            <ListView  x:Name="ListView1" Background="Transparent"  BorderThickness="0"  Style="{DynamicResource ListView.Small}"  Loaded="ListView1_Loaded" DataContext="{Binding ListConfigs}"   ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" PreviewMouseDoubleClick="ListView1_PreviewMouseDoubleClick" SelectionChanged="ListView1_SelectionChanged">
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn  Header="序号" >
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate DataType="{x:Type local:TemplateModelBase}">
+                                    <TextBlock Text="{Binding ID}" />
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
 
-                <ListView  x:Name="ListView1" Loaded="ListView1_Loaded" DataContext="{Binding ListConfigs}"   ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" PreviewMouseDoubleClick="ListView1_PreviewMouseDoubleClick" SelectionChanged="ListView1_SelectionChanged">
-                    <ListView.Resources>
-                        <ResourceDictionary>
-                            <ResourceDictionary.MergedDictionaries>
-                                <ResourceDictionary Source="/ColorVision.Util;component/Themes/ListView.xaml"/>
-                            </ResourceDictionary.MergedDictionaries>
-                        </ResourceDictionary>
-                    </ListView.Resources>
-                    <ListView.View>
-                        <GridView>
-                            <GridViewColumn Width="{Binding ElementName=GridListLen,Path=ActualWidth}" >
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate x:Name="ListConfigDataTemplate" DataType="{x:Type local:TemplateModelBase}">
-                                        <DockPanel Width="{Binding ElementName=GridListLen,Path=ActualWidth}" Margin="0,0,-30,0"  Tag="{Binding .}" >
-                                            <TextBlock DockPanel.Dock="Right"  Text="{ Binding Tag}" FontSize="10" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                                            <Grid Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}">
-                                                <TextBlock Text="{Binding ID}" HorizontalAlignment="Left" />
-                                            </Grid>
-                                            <Grid Width="100">
-                                                <TextBlock Text="{Binding Key}" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter1}}" />
-                                                <TextBox  Text="{Binding Key}" LostFocus="TextBox_LostFocus" GotFocus="TextBox_GotFocus"  PreviewKeyDown="TextBox_PreviewKeyDown" Tag="{Binding .}"   HorizontalAlignment="Left" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter}}"/>
-                                            </Grid>
-                                            <Grid>
-                                                <Image Source="{DynamicResource DrawingImageEdit}" Height="15" Width="15"/>
-                                                <Button Background="Transparent" BorderThickness="0" Click="Button_Click" Height="15" Width="15" Tag="{Binding .}"/>
-                                            </Grid>
+                        <GridViewColumn Header="名称" Width="130">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate DataType="{x:Type local:TemplateModelBase}">
+                                    <DockPanel>
+                                        <TextBlock DockPanel.Dock="Right"  Text="{ Binding Tag}" FontSize="10" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                        <Grid>
+                                            <TextBlock Text="{Binding Key}" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter1}}" />
+                                            <TextBox  Text="{Binding Key}" LostFocus="TextBox_LostFocus" GotFocus="TextBox_GotFocus"  PreviewKeyDown="TextBox_PreviewKeyDown" Tag="{Binding .}"   HorizontalAlignment="Left" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter}}"/>
+                                        </Grid>
+                                    </DockPanel>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="操作">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:TemplateModelBase}">
+                                    <Grid>
+                                        <Image Source="{DynamicResource DrawingImageEdit}" Height="15" Width="15"/>
+                                        <Button Background="Transparent" BorderThickness="0" Click="Button_Click" Height="15" Width="15" Tag="{Binding .}"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
 
+            </ListView>
 
-                                        </DockPanel>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                        </GridView>
-                    </ListView.View>
+        </Grid>
 
-                </ListView>
-
-
-            </DockPanel>
-
-
-
-        </GroupBox>
-
-        <Grid Grid.Row="0" Grid.Column="1"  x:Name="GridProperty" Margin="5,10,0,5">
+        <Grid Grid.Row="0" Grid.Column="1"  x:Name="GridProperty" Margin="5,0,0,5">
             <!--<Grid.Resources>
                 <ResourceDictionary>
                     <ResourceDictionary.MergedDictionaries>
@@ -100,20 +82,20 @@
 
         </Grid>
 
-        <StackPanel x:Name="CreateGrid"  Grid.Column="1" Grid.Row="1" HorizontalAlignment="Center">
+        <StackPanel x:Name="CreateGrid"  Grid.Column="1" Grid.Row="1" HorizontalAlignment="Stretch" Margin="5,0">
             <DockPanel  >
                 <TextBlock Text="模板名称："  Foreground="{DynamicResource GlobalTextBrush}"/>
                 <TextBox x:Name="TextBox1" Margin="3,3,0,3"/>
             </DockPanel>
-            <UniformGrid x:Name="FunctionGrid" Columns="3" Margin="0,8"  Width="345"  HorizontalAlignment="Center">
+            <UniformGrid x:Name="FunctionGrid" Columns="3" Margin="0,8"    HorizontalAlignment="Stretch">
                 <Button Width="80"  Click="Button_New_Click" HorizontalAlignment="Left">
-                    <TextBlock Text="{Binding ElementName=TemplateGrid,Path=Header,StringFormat='新建{0}'}"/>
+                    <TextBlock Text="新建"/>
                 </Button>
                 <Button  Width="80"   Click="Button_Del_Click" >
-                    <TextBlock Text="{Binding ElementName=TemplateGrid,Path=Header,StringFormat='删除{0}'}"/>
+                    <TextBlock Text="删除"/>
                 </Button>
                 <Button  Width="80" HorizontalAlignment="Right"  Click="Button_Save_Click" >
-                    <TextBlock Text="{Binding ElementName=TemplateGrid,Path=Header,StringFormat='保存{0}'}"/>
+                    <TextBlock Text="保存"/>
                 </Button>                
 
             </UniformGrid>

@@ -3,6 +3,7 @@ using ColorVision.Device.Camera;
 using ColorVision.MQTT;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
+using ColorVision.Themes;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Windows;
@@ -68,15 +69,31 @@ namespace ColorVision.Services
 
                     if (Application.Current.TryFindResource("DrawingImageCamera") is DrawingImage DrawingImageCamera)
                         Icon = DrawingImageCamera;
+                    ThemeManager.Current.CurrentUIThemeChanged += (s) =>
+                    {
+                        if (Application.Current.TryFindResource("DrawingImageCamera") is DrawingImage drawingImage)
+                            Icon = drawingImage;
+                    };
+
                     break;
                 case ServiceType.Algorithm:
                     if (Application.Current.TryFindResource("DrawingImageAlgorithm") is DrawingImage DrawingImageAlgorithm)
                         Icon = DrawingImageAlgorithm;
+                    ThemeManager.Current.CurrentUIThemeChanged += (s) =>
+                    {
+                        if (Application.Current.TryFindResource("DrawingImageAlgorithm") is DrawingImage drawingImage)
+                            Icon = drawingImage;
+                    };
                     BaseService = new BaseService<BaseServiceConfig>(Config);
                     break;
                 case ServiceType.SMU:
                     if (Application.Current.TryFindResource("SMUDrawingImage") is DrawingImage SMUDrawingImage)
                         Icon = SMUDrawingImage;
+                    ThemeManager.Current.CurrentUIThemeChanged += (s) =>
+                    {
+                        if (Application.Current.TryFindResource("SMUDrawingImage") is DrawingImage drawingImage)
+                            Icon = drawingImage;
+                    };
                     BaseService = new BaseService<BaseServiceConfig>(Config);
                     break;
 

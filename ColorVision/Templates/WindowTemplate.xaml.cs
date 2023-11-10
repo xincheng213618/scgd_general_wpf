@@ -64,7 +64,6 @@ namespace ColorVision.Templates
             switch (TemplateType)
             {
                 case TemplateType.PoiParam:
-                    TemplateGrid.Header = "点集";
                     this.MinWidth = 390;
                     this.Width = 390;
                     this.Closed += (s, e) =>
@@ -73,7 +72,6 @@ namespace ColorVision.Templates
                     };
                     break;
                 case TemplateType.FlowParam:
-                    TemplateGrid.Header = "流程";
                     Button button = new Button() { Content = "导入流程", Width =80};
                     button.Click += (s, e) =>
                     {
@@ -450,7 +448,7 @@ namespace ColorVision.Templates
             }
             else
             {
-                MessageBox.Show("请先选择" + TemplateGrid.Header, "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                MessageBox.Show("请先选择", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
             }
         }
 
