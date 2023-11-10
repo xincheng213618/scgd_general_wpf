@@ -30,7 +30,9 @@ namespace ColorVision.Services.Device.Calibration
                 switch (msg.EventName)
                 {
                     case "Calibration":
-                        Application.Current.Dispatcher.BeginInvoke(new Action(() => MessageBox.Show(Application.Current.MainWindow, msg.Data)));
+
+                        object obj = msg.Data;
+                        Application.Current.Dispatcher.BeginInvoke(new Action(() => MessageBox.Show(Application.Current.MainWindow, obj.ToString())));
                         break;
                 }
             }

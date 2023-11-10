@@ -75,11 +75,15 @@ namespace ColorVision.Services
         }
         private void Button_New_Click(object sender, RoutedEventArgs e)
         {
-            if (!Util.IsInvalidPath(TextBox_Name.Text, "资源名称") || !Util.IsInvalidPath(TextBox_Code.Text, "资源标识"))
-                return;
-
             if (TextBox_Type.SelectedItem is ServiceTerminal serviceTerminal)
             {
+                ///这里对相机做一个特殊处理
+                if (serviceTerminal.Type != ServiceType.Camera)
+                {
+                    if (!Util.IsInvalidPath(TextBox_Name.Text, "资源名称") || !Util.IsInvalidPath(TextBox_Code.Text, "资源标识"))
+                        return;
+
+
                 if (serviceTerminal.ServicesCodes.Contains(TextBox_Code.Text))
                 {
                     MessageBox.Show("设备标识已存在,不允许重复添加");
