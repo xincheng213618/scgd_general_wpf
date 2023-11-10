@@ -37,13 +37,13 @@
         </Grid>
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="200"/>
+                <ColumnDefinition Width="240"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <TreeView x:Name="TreeView1" Loaded="TreeView1_Loaded" SelectedItemChanged="TreeView1_SelectedItemChanged " Margin="5">
+            <TreeView x:Name="TreeView1" Loaded="TreeView1_Loaded" ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectedItemChanged="TreeView1_SelectedItemChanged " Margin="5,0,5,0">
                 <TreeView.Resources>
                     <HierarchicalDataTemplate DataType="{x:Type local:ServiceKind}" ItemsSource="{Binding VisualChildren}" >
-                        <StackPanel >
+                        <StackPanel >  
                             <TextBlock Text="{Binding Name}"/>
                         </StackPanel>
                     </HierarchicalDataTemplate>
@@ -64,13 +64,8 @@
                 </TreeView.ItemContainerStyle>
 
             </TreeView>
-            <Border CornerRadius="5" Grid.Column="1" Margin="5" >
-                <Grid x:Name="StackPanelShow" >
-                </Grid>
-            </Border>
-
-
-
+            <Grid x:Name="StackPanelShow" Grid.Column="1" Margin="0,0,5,0" >
+            </Grid>
         </Grid>
 
         <Border  Grid.Row="2" Margin="5" >
