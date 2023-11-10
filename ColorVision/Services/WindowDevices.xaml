@@ -23,7 +23,7 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="50"/>
         </Grid.RowDefinitions>
-        <Grid  x:Name="Grid1" d:DataContext="{d:DesignInstance set:UserConfig}">
+        <Grid  x:Name="Grid1">
             <Border>
                 <Grid Margin="10">
                     <TextBlock  HorizontalAlignment="Left" FontSize="15"  VerticalAlignment="Center">
@@ -72,11 +72,9 @@
 
 
         </Grid>
-        
-        <Border  Grid.Row="2">
-            <StackPanel>
-                <Button  Height="40"  Width="300"  Content="{x:Static resx:Resource.OK}" FontSize="18" Margin="5"  Click="Button_Click"/>
-            </StackPanel>
+
+        <Border  Grid.Row="2" Margin="5" >
+            <Button  Height="40"  Content="{x:Static resx:Resource.OK}" FontSize="18"  Click="Button_Click"/>
         </Border>
     </Grid>
 

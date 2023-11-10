@@ -54,7 +54,7 @@
         
         <Border  Grid.Row="1">
             <StackPanel>
-                <Button  Height="40"  Width="300" Content="进入采集窗口" FontSize="18"  Margin="5" Background="#E6E6E6" Click="Button_Click">
+                <Button  Height="40"   Content="进入采集窗口" FontSize="18"  Margin="5" Background="#E6E6E6" Click="Button_Click">
                 </Button>
             </StackPanel>
         </Border>
