@@ -301,9 +301,9 @@ namespace ColorVision.Device.Camera
             {
                 EventName = "SetParam",
                 Params = new Dictionary<string, object>() { { "Func",new List<ParamFunction> (){
-                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 0 }, { "nPort", Service.Config.CFW.CFW[0].Port },{ "eImgChlType", (int)Service.Config.CFW.CFW[0].ChannelType } } },
-                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 1 }, { "nPort", Service.Config.CFW.CFW[1].Port },{ "eImgChlType", (int)Service.Config.CFW.CFW[1].ChannelType } } },
-                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 2 }, { "nPort", Service.Config.CFW.CFW[2].Port },{ "eImgChlType", (int)Service.Config.CFW.CFW[2].ChannelType } } },
+                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 0 }, { "nPort", Service.Config.CFW.ChannelCfgs[0].Cfwport },{ "eImgChlType", (int)Service.Config.CFW.ChannelCfgs[0].Chtype } } },
+                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 1 }, { "nPort", Service.Config.CFW.ChannelCfgs[1].Cfwport },{ "eImgChlType", (int)Service.Config.CFW.ChannelCfgs[1].Chtype } } },
+                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 2 }, { "nPort", Service.Config.CFW.ChannelCfgs[2].Cfwport },{ "eImgChlType", (int)Service.Config.CFW.ChannelCfgs[2].Chtype } } },
                 } } }
             };
             Service.PublishAsyncClient(msg);

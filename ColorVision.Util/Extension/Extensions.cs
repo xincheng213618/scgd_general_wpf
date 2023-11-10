@@ -21,22 +21,22 @@ namespace ColorVision.Extension
     /// </summary>
     public static class Extensions
     {
-        public static JsonSerializerSettings settings = new JsonSerializerSettings
+        public static JsonSerializerSettings settings { get; set; } = new JsonSerializerSettings
         {
             Formatting = Formatting.Indented
         };
 
 
-        public static string ToJsonN(this ViewModelBase viewModelBase, JsonSerializerSettings? options = null)
+        public static string ToJsonN(this object obj, JsonSerializerSettings? options = null)
         {
-            return JsonConvert.SerializeObject(viewModelBase, options ?? settings);
+            return JsonConvert.SerializeObject(obj, options ?? settings);
         }
 
-        public static bool ToJsonNFile(this ViewModelBase viewModelBase, string filePath, JsonSerializerSettings? options = null)
+        public static bool ToJsonNFile(this object obj, string filePath, JsonSerializerSettings? options = null)
         {
             try
             {
-                string jsonString = JsonConvert.SerializeObject(viewModelBase, options ?? settings);
+                string jsonString = JsonConvert.SerializeObject(obj, options ?? settings);
                 File.WriteAllText(filePath, jsonString);
                 return true;
             }

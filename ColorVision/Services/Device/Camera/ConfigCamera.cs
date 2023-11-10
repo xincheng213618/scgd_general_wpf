@@ -5,6 +5,7 @@ using ColorVision.Services.Device.Camera.Video;
 using ColorVision.Device;
 using System;
 using Org.BouncyCastle.Pqc.Crypto.Falcon;
+using System.Windows;
 
 namespace ColorVision.Services.Device.Camera
 {
@@ -78,13 +79,14 @@ namespace ColorVision.Services.Device.Camera
 
         public CFWPORT CFW { get; set; } = new CFWPORT();
 
-
         public bool IsHaveMotor { get => _IsHaveMotor; set { _IsHaveMotor = value; NotifyPropertyChanged(); } }
         private bool _IsHaveMotor;
 
         public MotorConfig MotorConfig { get; set; } = new MotorConfig();
 
         public ExpTimeCfg ExpTimeCfg { get; set; } = new ExpTimeCfg();
+
+        public CameraCfg CameraCfg { get; set; } = new CameraCfg();
     }
     public enum ConfigType
     {
@@ -94,6 +96,114 @@ namespace ColorVision.Services.Device.Camera
         Channels = 3,
         SYSTEM = 4,
     };
+
+    public class CameraCfg : ViewModelBase
+    {
+        /// <summary>
+        /// 不参与计算的区域，上
+        /// </summary>
+        [JsonProperty("ob")]
+        public int Ob { get => _Ob; set { _Ob = value; NotifyPropertyChanged(); } }
+        private int _Ob = 4;
+
+        /// <summary>
+        /// 不参与计算的区域，右
+        /// </summary>
+        [JsonProperty("obR")]
+        public int ObR { get => _ObR; set { _ObR = value; NotifyPropertyChanged(); } }
+        private int _ObR;
+
+        /// <summary>
+        /// 不参与计算的区域，Top
+        /// </summary>
+        [JsonProperty("obT")]
+        public int ObT { get => _ObT; set { _ObT = value; NotifyPropertyChanged(); } }
+        private int _ObT;
+
+        /// <summary>
+        /// 不参与计算的区域，下
+        /// </summary>
+        [JsonProperty("obB")]
+        public int ObB { get => _ObB; set { _ObB = value; NotifyPropertyChanged(); } }
+        private int _ObB;
+
+        /// <summary>
+        /// 不参与计算的区域
+        /// </summary>
+        [JsonIgnore]
+        public Rect OBRect { get => new Rect(Ob, ObR, ObT, ObB); }
+
+
+        /// <summary>
+        /// 温控
+        /// </summary>
+        [JsonProperty("tempCtlChecked")]
+        public bool TempCtlChecked { get => _TempCtlChecked; set { _TempCtlChecked = value; NotifyPropertyChanged(); } }
+        private bool _TempCtlChecked = true;
+
+        /// <summary>
+        /// 目标温度
+        /// </summary>
+        [JsonProperty("targetTemp")]
+        public float TargetTemp { get => _TargetTemp; set { _TargetTemp = value; NotifyPropertyChanged(); } }
+        private float _TargetTemp = -5.0f;
+
+        /// <summary>
+        /// 传输速率
+        /// </summary>
+        [JsonProperty("usbTraffic")]
+        public float UsbTraffic { get => _UsbTraffic; set { _UsbTraffic = value; NotifyPropertyChanged(); } }
+        private float _UsbTraffic = 50.0f;
+
+        /// <summary>
+        /// 偏移
+        /// </summary>
+        [JsonProperty("offset")]
+        public int Offset { get => _Offset; set { _Offset = value; NotifyPropertyChanged(); } }
+        private int _Offset;
+
+
+
+
+        /// <summary>
+        /// 增益
+        /// </summary>
+        [JsonProperty("gain")]
+        public int Gain { get => _Gain; set { _Gain = value; NotifyPropertyChanged(); } }
+        private int _Gain = 10;
+
+        /// <summary>
+        /// OB
+        /// </summary>
+        [JsonIgnore]
+        public Rect ROIRect { get => new Rect(PointX, PointY, Width, Height); }
+
+        /// <summary>
+        /// OB X
+        /// </summary>
+        [JsonProperty("ex")]
+        public int PointX { get => _PointX; set { _PointX = value; NotifyPropertyChanged(); } }
+        private int _PointX;
+        /// <summary>
+        /// OB Y
+        /// </summary>
+        [JsonProperty("ey")]
+        public int PointY { get => _PointY; set { _PointY = value; NotifyPropertyChanged(); } }
+        private int _PointY;
+        /// <summary>
+        /// OB W
+        /// </summary>
+        [JsonProperty("ew")]
+        public int Width { get => _Width; set { _Width = value; NotifyPropertyChanged(); } }
+        private int _Width;
+        /// <summary>
+        /// OB H
+        /// </summary>
+        [JsonProperty("eH")]
+        public int Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
+        private int _Height;
+
+    }
 
     public class ExpTimeCfg: ViewModelBase
     {
@@ -157,8 +267,8 @@ namespace ColorVision.Services.Device.Camera
 
     public class CFWPORT : ViewModelBase
     {
-        public ChannelConfig[] CFW { get; set; } = new ChannelConfig[3]{
-            new ChannelConfig() { Port =0,ChannelType =ImageChannelType.Gray_X }, new ChannelConfig(){Port =1,ChannelType =ImageChannelType.Gray_Y }, new ChannelConfig(){ Port =2,ChannelType =ImageChannelType.Gray_Z}
+        public ChannelCfg[] ChannelCfgs { get; set; } = new ChannelCfg[3]{
+            new ChannelCfg() { Cfwport =0,Chtype =ImageChannelType.Gray_Y }, new ChannelCfg(){Cfwport =1,Chtype =ImageChannelType.Gray_X }, new ChannelCfg(){ Cfwport =2,Chtype =ImageChannelType.Gray_Z}
         };
 
         public bool IsCOM { get => _IsCOM; set { _IsCOM = value; NotifyPropertyChanged(); } }
@@ -192,28 +302,30 @@ namespace ColorVision.Services.Device.Camera
         private int _dwTimeOut = 5000;
     }
 
-    public class ChannelConfig : ViewModelBase
+    public class ChannelCfg : ViewModelBase
     {
-        public int Port { get => _Port; set { _Port = value; NotifyPropertyChanged(); } }
-        private int _Port;
+        [JsonProperty("cfwport")]
+        public int Cfwport { get => _Cfwport; set { _Cfwport = value; NotifyPropertyChanged(); } }
+        private int _Cfwport;
 
-        public ImageChannelType ChannelType { get => _ChannelType; set { if (_ChannelType == value) return; _ChannelType = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ChannelTypeString)); } }
-        private ImageChannelType _ChannelType;
+        [JsonProperty("chtype")]
+        public ImageChannelType Chtype { get => _Chtype; set { if (_Chtype == value) return; _Chtype = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ChannelTypeString)); } }
+        private ImageChannelType _Chtype;
 
-
-        [JsonIgnore]
+        [JsonProperty("title")]
         public string ChannelTypeString
         {
             get
             {
-                return ChannelType switch
+                return Chtype switch
                 {
                     ImageChannelType.Gray_X => "Channel_R",
                     ImageChannelType.Gray_Y => "Channel_G",
                     ImageChannelType.Gray_Z => "Channel_B",
-                    _ => ChannelType.ToString(),
+                    _ => Chtype.ToString(),
                 };
             }
+            set { }
         }
     }
 
