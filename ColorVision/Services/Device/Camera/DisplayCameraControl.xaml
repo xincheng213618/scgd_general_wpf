@@ -113,7 +113,7 @@
 
                         <Button Content="取图" Click="SendDemo3_Click" Margin="0,2"/>
 
-                        <GroupBox Header="电机操作" Visibility="{Binding Config.IsHaveMotor,Converter={StaticResource bool2VisibilityConverter}}">
+                        <GroupBox Header="电机操作" Visibility="{Binding Config.IsHaveMotor,Converter={StaticResource bool2VisibilityConverter1}}">
                             <StackPanel Margin="2">
                                 <Button Content="自动聚焦" Click="AutoFocus_Click" />
                                 <DockPanel Margin="0,2">
