@@ -24,8 +24,8 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Grid x:Name="TemplateGrid"  Grid.Row="0" Grid.Column="0" Grid.RowSpan="2" Margin="0,0">
-            <Border Background="{DynamicResource  SecondaryRegionBrush}" CornerRadius="5"/>
+        <Grid x:Name="TemplateGrid"  Grid.Row="0" Grid.Column="0" Grid.RowSpan="2"  Margin="0,0,0,5" >
+            <Border Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" CornerRadius="5"/>
             <ListView  x:Name="ListView1" Background="Transparent"  BorderThickness="0"  Style="{DynamicResource ListView.Small}"  Loaded="ListView1_Loaded" DataContext="{Binding ListConfigs}"   ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" PreviewMouseDoubleClick="ListView1_PreviewMouseDoubleClick" SelectionChanged="ListView1_SelectionChanged">
                 <ListView.View>
                     <GridView>

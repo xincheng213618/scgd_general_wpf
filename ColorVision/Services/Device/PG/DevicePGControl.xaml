@@ -19,7 +19,7 @@
     </UserControl.Resources>
 
     <Grid>
-        <Border Background="{DynamicResource GlobalBorderBrush1}" CornerRadius="5"/>
+        <Border Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" CornerRadius="5"/>
         <Grid Margin="5">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>

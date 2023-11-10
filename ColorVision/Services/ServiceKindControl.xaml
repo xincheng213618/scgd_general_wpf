@@ -16,7 +16,7 @@
         </Style>
     </UserControl.Resources>
     <Grid>
-        <Border Background="{StaticResource GlobalBorderBrush1}"  CornerRadius="5"/>
+        <Border Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" CornerRadius="5"/>
 
         <Grid>
             <Grid.RowDefinitions>
