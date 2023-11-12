@@ -53,7 +53,7 @@
         </Grid>
 
         <Border   Margin="5" Grid.Row="1">
-            <Button  Height="40"   Content="进入采集窗口" FontSize="22"   Click="Button_Click"/>
+            <Button x:Name="ButtonOK"  Height="40"   Content="进入采集窗口" Background="{StaticResource PrimaryBrush}" Foreground="White"  FontSize="22"   Click="Button_Click"/>
         </Border>
     </Grid>
 

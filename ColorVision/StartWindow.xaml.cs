@@ -10,6 +10,8 @@ using System.Reflection;
 using ColorVision.Services;
 using ColorVision.RC;
 using System.Threading;
+using ColorVision.Themes;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision
 {
@@ -33,6 +35,12 @@ namespace ColorVision
 #else
             labelVersion.Text = $"{(DebugBuild(Assembly.GetExecutingAssembly()) ? " (Debug)" : "")}{(Debugger.IsAttached ? " (调试中) " : "")} {(IntPtr.Size == 4 ? "32" : "64")}位) -  {System.Reflection.Assembly.GetExecutingAssembly().GetName().Version} - Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy/MM/dd}";
 #endif
+
+            ThemeManager.Current.SystemThemeChanged += (e) => {
+                this.Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision;component/Assets/Image/{(e == Theme.Light ? "ColorVision.ico" : "ColorVision1.ico")}"));
+            };
+            if (ThemeManager.Current.SystemTheme == Theme.Dark)
+                this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Assets/Image/ColorVision1.ico"));
 
             MQTTControl.GetInstance();
             MySqlControl.GetInstance();
