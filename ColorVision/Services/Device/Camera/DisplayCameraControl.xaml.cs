@@ -143,12 +143,12 @@ namespace ColorVision.Device.Camera
                 if (Service.DeviceStatus == DeviceStatus.UnInit && button.Content.ToString() == "连接")
                 {
                     var msgRecord = Service.Init();
-                    Helpers.SendCommand(button, msgRecord);
+                    Helpers.SendCommand(button, msgRecord,false);
                 }
                 else if (Service.DeviceStatus != DeviceStatus.UnInit && button.Content.ToString() == "断开连接")
                 {
                     var msgRecord = Service.UnInit();
-                    Helpers.SendCommand(button, msgRecord);
+                    Helpers.SendCommand(button, msgRecord, false);
                 }
                 else
                 {
@@ -173,7 +173,7 @@ namespace ColorVision.Device.Camera
                         else
                         {
                             var msgRecord = Service.Open(Service.Config.ID, takeImageMode, (int)Service.Config.ImageBpp);
-                            Helpers.SendCommand(button, msgRecord);
+                            Helpers.SendCommand(button, msgRecord, false);
                         }
                     }
                     else
@@ -184,7 +184,7 @@ namespace ColorVision.Device.Camera
                         }
                         else
                         {
-                            Helpers.SendCommand(button, Service.Close());
+                            Helpers.SendCommand(button, Service.Close(), false);
                         }
                         ButtonOpen.Content = "关闭中";
                     }

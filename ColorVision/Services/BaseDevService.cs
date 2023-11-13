@@ -184,9 +184,9 @@ namespace ColorVision.Services
 
 
 
-        private static Dictionary<string, Timer> timers = new Dictionary<string, Timer>();
+        private  Dictionary<string, Timer> timers = new Dictionary<string, Timer>();
 
-        private static readonly object _locker = new();
+        private  readonly object _locker = new();
 
         private List<MsgRecord> MsgRecords = new List<MsgRecord>();
 
@@ -228,10 +228,7 @@ namespace ColorVision.Services
             };
             timer.AutoReset = false;
             timer.Enabled = true;
-            lock (_locker)
-            {
-                timers.Add(guid.ToString(), timer);
-            }
+            timers.Add(guid.ToString(), timer);
             timer.Start();
             return msgRecord;
         }

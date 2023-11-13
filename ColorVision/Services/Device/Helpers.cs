@@ -56,19 +56,21 @@ namespace ColorVision.Device
         }
 
 
-        public static void SendCommand(Button button, MsgRecord msgRecord)
+        public static void SendCommand(Button button, MsgRecord msgRecord,bool Reserve = true)
         {
             var temp = button.Content;
             button.Content = msgRecord.MsgRecordState.ToDescription();
-            MsgRecordStateChangedHandler msgRecordStateChangedHandler = (e) =>
+            MsgRecordStateChangedHandler msgRecordStateChangedHandler = async (e) =>
             {
                 button.Content = e.ToDescription();
+                await Task.Delay(100);
                 if (e != MsgRecordState.Send)
                 {
                     button.Content = temp;
                 }
             };
-            msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
+            if (Reserve)
+                msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
         }
 
 
