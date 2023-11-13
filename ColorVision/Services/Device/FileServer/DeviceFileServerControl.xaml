@@ -27,7 +27,7 @@
                 <DockPanel  Margin="10,5">
                     <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  DockPanel.Dock="Right" Width="20"  HorizontalAlignment="Right" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
                     <Grid x:Name="ButtonEdit"  DockPanel.Dock="Right" Width="20" Margin="10,0">
-                        <Image Source="{StaticResource  DrawingImageEdit}" Margin="-4" />
+                        <Image Source="{StaticResource  DrawingImageEdit}" Margin="0" />
                         <Button Background="Transparent" BorderThickness="0"  Click="ButtonEdit_Click"/>
                     </Grid>
                     <TextBlock Text="{Binding Config.Name}" FontWeight="Bold" FontSize="20"/>
