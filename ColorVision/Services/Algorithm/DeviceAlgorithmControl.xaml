@@ -39,30 +39,26 @@
             <Border  Grid.Row="1"  Background="{DynamicResource GlobalBackground}" CornerRadius="5" Margin="0,5,0,0">
                 <Grid x:Name="MQTTShow" Margin="5">
                     <Grid  x:Name="MQTTShowContent">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="50"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Margin="5">
+                        <StackPanel Margin="5,0">
                             <GroupBox Header="基本信息" Margin="0,5">
                                 <StackPanel Margin="5">
-                                    <DockPanel Margin="0,2" >
+                                    <DockPanel>
                                         <TextBlock Text="Token"  Width="120"/>
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.ServiceToken}"/>
                                     </DockPanel>
-                                    <DockPanel Margin="0,2">
+                                    <DockPanel>
                                         <TextBlock Text="CIE文件目录" Width="120"/>
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.CIEFileBasePath}"/>
                                     </DockPanel>
-                                    <DockPanel Margin="0,2">
+                                    <DockPanel>
                                         <TextBlock Text="Raw文件目录" Width="120"/>
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.RawFileBasePath}"/>
                                     </DockPanel>
-                                    <DockPanel Margin="0,2">
+                                    <DockPanel>
                                         <TextBlock Text="Src文件目录" Width="120"/>
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.SrcFileBasePath}"/>
                                     </DockPanel>
-                                    <DockPanel Margin="0,2">
+                                    <DockPanel>
                                         <TextBlock Text="端口地址" Width="120"/>
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.Endpoint}"/>
                                     </DockPanel>
@@ -77,7 +73,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="60"/>
                         </Grid.ColumnDefinitions>
-                        <StackPanel Margin="5" >
+                        <StackPanel Margin="5,0" >
                             <GroupBox Header="资源信息" Margin="0,5">
                                 <StackPanel Margin="5">
                                     <DockPanel Margin="0,2" >

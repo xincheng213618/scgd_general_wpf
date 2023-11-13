@@ -145,7 +145,7 @@ namespace ColorVision.Device.Camera
                     var msgRecord = Service.Init();
                     Helpers.SendCommand(button, msgRecord,false);
                 }
-                else if (Service.DeviceStatus != DeviceStatus.UnInit && button.Content.ToString() == "断开连接")
+                else if (Service.DeviceStatus != DeviceStatus.UnInit || button.Content.ToString() == "断开连接")
                 {
                     var msgRecord = Service.UnInit();
                     Helpers.SendCommand(button, msgRecord, false);

@@ -1,4 +1,5 @@
 ﻿using ColorVision.Device;
+using ColorVision.Extension;
 using ColorVision.MQTT;
 using ColorVision.MVVM;
 using ColorVision.Services.Msg;
@@ -25,8 +26,10 @@ namespace ColorVision.Services
     public class BaseDevService<T> : BaseDevService where T : BaseConfig
     {
         public event DeviceStatusChangedHandler DeviceStatusChanged;
-        public DeviceStatus DeviceStatus { get => _DeviceStatus; set { _DeviceStatus = value; Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value)); NotifyPropertyChanged(); } }
+        public DeviceStatus DeviceStatus { get => _DeviceStatus; set { _DeviceStatus = value; Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value)); NotifyPropertyChanged(); NotifyPropertyChanged(nameof(DeviceStatusString)); } }
         private DeviceStatus _DeviceStatus;
+
+        public string DeviceStatusString { get => DeviceStatus.ToDescription(); set { } }
 
         public T Config { get; set; }
 
