@@ -17,6 +17,8 @@ namespace ColorVision.Device.FileServer
         }
 
         public override UserControl GetDeviceControl() => new DeviceFileServerControl(this);
+        public override UserControl GetDeviceInfo() => new DeviceFileServerControl(this,false);
+
         public override UserControl GetDisplayControl() =>new FileServerDisplayControl(this);
 
     }

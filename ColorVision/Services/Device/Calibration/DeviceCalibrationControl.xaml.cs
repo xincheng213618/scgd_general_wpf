@@ -13,15 +13,18 @@ namespace ColorVision.Services.Device.Calibration
         public DeviceCalibration Device { get; set; }
         public ServiceManager ServiceControl { get; set; }
 
+        public bool IsCanEdit { get; set; }
 
-        public DeviceCalibrationControl(DeviceCalibration deviceCalibration)
+        public DeviceCalibrationControl(DeviceCalibration deviceCalibration, bool isCanEdit = true)
         {
             this.Device = deviceCalibration;
+            IsCanEdit = isCanEdit;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
             this.DataContext = this.Device;
         }
 

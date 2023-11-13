@@ -10,5 +10,7 @@ namespace ColorVision.Device.PG
         public int Port { get; set; }
 
 
+
+
     }
 }

@@ -1,4 +1,5 @@
-﻿using ColorVision.MQTT;
+﻿using ColorVision.Device.Camera;
+using ColorVision.MQTT;
 using ColorVision.MySql.DAO;
 using System.Windows.Controls;
 
@@ -14,6 +15,7 @@ namespace ColorVision.Services.Device.CfwPort
         }
 
         public override UserControl GetDeviceControl() => new DeviceCfwPortControl(this);
+        public override UserControl GetDeviceInfo() => new DeviceCfwPortControl(this, false);
 
         public override UserControl GetDisplayControl() => new DisplayCfwPortControl(this);
 
