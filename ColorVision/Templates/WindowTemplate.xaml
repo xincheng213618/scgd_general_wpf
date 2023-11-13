@@ -15,7 +15,7 @@
     <Window.Resources>
         <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}"/>
     </Window.Resources>
-    <Grid Margin="5">
+    <Grid Margin="0">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
@@ -24,8 +24,8 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Grid x:Name="TemplateGrid"  Grid.Row="0" Grid.Column="0" Grid.RowSpan="2"  Margin="0,0,0,5" >
-            <Border Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" CornerRadius="5"/>
+        <Grid x:Name="TemplateGrid"  Grid.Row="0" Grid.Column="0" Grid.RowSpan="2"  Margin="0,0,0,0" >
+            <Border Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" CornerRadius="0"/>
             <ListView  x:Name="ListView1" Background="Transparent"  BorderThickness="0"  Style="{DynamicResource ListView.Small}"  Loaded="ListView1_Loaded" DataContext="{Binding ListConfigs}"   ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" PreviewMouseDoubleClick="ListView1_PreviewMouseDoubleClick" SelectionChanged="ListView1_SelectionChanged">
                 <ListView.View>
                     <GridView>
@@ -67,7 +67,7 @@
 
         </Grid>
 
-        <Grid Grid.Row="0" Grid.Column="1"  x:Name="GridProperty" Margin="5,0,0,5">
+        <Grid Grid.Row="0" Grid.Column="1"  x:Name="GridProperty" >
             <!--<Grid.Resources>
                 <ResourceDictionary>
                     <ResourceDictionary.MergedDictionaries>
@@ -82,12 +82,12 @@
 
         </Grid>
 
-        <StackPanel x:Name="CreateGrid"  Grid.Column="1" Grid.Row="1" HorizontalAlignment="Stretch" Margin="5,0">
+        <StackPanel x:Name="CreateGrid"  Grid.Column="1" Grid.Row="1" HorizontalAlignment="Stretch" Margin="5">
             <DockPanel  >
                 <TextBlock Text="模板名称："  Foreground="{DynamicResource GlobalTextBrush}"/>
-                <TextBox x:Name="TextBox1" Margin="3,3,0,3"/>
+                <TextBox x:Name="TextBox1"/>
             </DockPanel>
-            <UniformGrid x:Name="FunctionGrid" Columns="3" Margin="0,8"    HorizontalAlignment="Stretch">
+            <UniformGrid x:Name="FunctionGrid" Columns="3" Margin="0,5"    HorizontalAlignment="Stretch">
                 <Button Width="80"  Click="Button_New_Click" HorizontalAlignment="Left">
                     <TextBlock Text="新建"/>
                 </Button>

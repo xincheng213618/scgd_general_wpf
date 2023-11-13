@@ -53,7 +53,7 @@ namespace ColorVision.Templates
             InitializeComponent();
 
             GridProperty.Children.Clear();
-
+            GridProperty.Margin = new Thickness(5,5,5,5);
             UserControl = userControl;
             GridProperty.Children.Add(UserControl);
         }
