@@ -367,6 +367,41 @@
                                         </StackPanel>
                                     </GroupBox>
 
+
+                                    <GroupBox Header="相机配置" Margin="0,5">
+                                        <StackPanel Margin="5">
+                                            <DockPanel Margin="0,2">
+                                                <TextBlock Text="OB区:" Width="120"/>
+                                                <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.CameraCfg.OBRect,Mode=OneWay}"/>
+                                            </DockPanel>
+                                            <DockPanel Margin="0,2">
+                                                <TextBlock Text="ROI区域:" Width="120"/>
+                                                <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.CameraCfg.ROIRect,Mode=OneWay}"/>
+                                            </DockPanel>
+                                            <DockPanel Margin="0,2">
+                                                <TextBlock Text="温控:" Width="120"/>
+                                                <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.CameraCfg.TempCtlChecked}"/>
+                                            </DockPanel>
+                                            <DockPanel Visibility="{Binding Config.CameraCfg.TempCtlChecked,Converter={StaticResource bool2VisibilityConverter}}">
+                                                <TextBlock Text="目标温度:" Width="120"/>
+                                                <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.CameraCfg.TargetTemp}"/>
+                                            </DockPanel>
+                                            <DockPanel Margin="0,2">
+                                                <TextBlock Text="传输速率:" Width="120"/>
+                                                <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.CameraCfg.UsbTraffic}"/>
+                                            </DockPanel>
+                                            <DockPanel Margin="0,2">
+                                                <TextBlock Text="偏移:" Width="120"/>
+                                                <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.CameraCfg.Offset}"/>
+                                            </DockPanel>
+                                            <DockPanel Margin="0,2">
+                                                <TextBlock Text="增益:" Width="120"/>
+                                                <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.CameraCfg.Gain}"/>
+                                            </DockPanel>
+                                        </StackPanel>
+                                    </GroupBox>
+
+
                                     <GroupBox Header="默认参数" Margin="0,5">
                                         <StackPanel Margin="5">
                                             <DockPanel>
