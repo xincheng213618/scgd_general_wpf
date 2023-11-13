@@ -14,11 +14,11 @@ namespace ColorVision.Device.SMU
     public delegate void MQTTSMUScanResultHandler(SMUScanResultData data);
     public delegate void MQTTSMUResultHandler(SMUResultData data);
 
-    public class SMUService : BaseDevService<SMUConfig>
+    public class SMUService : BaseDevService<ConfigSMU>
     {
         public event MQTTSMUScanResultHandler ScanResultEvent;
         public event MQTTSMUResultHandler ResultEvent;
-        public SMUService(SMUConfig sMUConfig) : base(sMUConfig)
+        public SMUService(ConfigSMU sMUConfig) : base(sMUConfig)
         {
             Config = sMUConfig;
 

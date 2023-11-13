@@ -5,7 +5,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Device.PG
 {
-    public class DevicePG : BaseDevice<PGConfig>
+    public class DevicePG : BaseDevice<ConfigPG>
     {
         public PGDevService DeviceService { get; set; }
 

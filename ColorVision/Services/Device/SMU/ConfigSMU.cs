@@ -46,7 +46,7 @@
         public int Number { set; get; }
     }
 
-    public class SMUConfig : BaseDeviceConfig
+    public class ConfigSMU : BaseDeviceConfig
     {
         private bool _IsNet;
         public bool IsNet { get => _IsNet; set { _IsNet = value; NotifyPropertyChanged(); } }

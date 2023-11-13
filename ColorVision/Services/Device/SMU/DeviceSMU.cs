@@ -8,7 +8,7 @@ using System.Windows.Media;
 
 namespace ColorVision.Device.SMU
 {
-    public class DeviceSMU : BaseDevice<SMUConfig>
+    public class DeviceSMU : BaseDevice<ConfigSMU>
     {
         public SMUService Service { get; set; }
 

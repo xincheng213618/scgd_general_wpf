@@ -116,7 +116,7 @@ namespace ColorVision.Services
                         }
                         break;
                     case ServiceType.PG:
-                        PGConfig pGConfig = new PGConfig
+                        ConfigPG pGConfig = new ConfigPG
                         {
                             ID = TextBox_Code.Text,
                             Name = TextBox_Name.Text
@@ -126,7 +126,7 @@ namespace ColorVision.Services
                             serviceTerminal.AddChild(new DevicePG(sysResourceModel));
                         break;
                     case ServiceType.Spectrum:
-                        deviceConfig = new SpectrumConfig
+                        deviceConfig = new ConfigSpectrum
                         {
                             ID = TextBox_Code.Text,
                             Name = TextBox_Name.Text
@@ -136,7 +136,7 @@ namespace ColorVision.Services
                             serviceTerminal.AddChild(new DeviceSpectrum(sysResourceModel));
                         break;
                     case ServiceType.SMU:
-                        deviceConfig = new SMUConfig
+                        deviceConfig = new ConfigSMU
                         {
                             ID = TextBox_Code.Text,
                             Name = TextBox_Name.Text

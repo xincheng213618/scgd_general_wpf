@@ -64,7 +64,7 @@ namespace ColorVision.Device.Spectrum
         public bool BUseAutoShutterDark { get; set; }
     }
 
-    public class SpectrumConfig : BaseDeviceConfig, IServiceConfig
+    public class ConfigSpectrum : BaseDeviceConfig, IServiceConfig
     {
         private int _TimeLimit;
         public int TimeLimit { get => _TimeLimit; set { _TimeLimit = value; NotifyPropertyChanged(); } }
