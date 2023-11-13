@@ -24,7 +24,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <Border  Grid.Row="0" Background="{DynamicResource GlobalBackground}" CornerRadius="5" >
+            <Border  Grid.Row="0" Background="{DynamicResource RegionBrush}" CornerRadius="5" >
                 <DockPanel  Margin="10,5">
                     <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  DockPanel.Dock="Right" Width="20"  HorizontalAlignment="Right" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
                     <Grid x:Name="ButtonEdit"  DockPanel.Dock="Right" Width="20" Margin="10,0">
@@ -34,7 +34,7 @@
                     <TextBlock Text="{Binding Config.Name}" FontWeight="Bold" FontSize="20"/>
                 </DockPanel>
             </Border>
-            <Border  Grid.Row="1"  Background="{DynamicResource GlobalBackground}" CornerRadius="5" Margin="0,5,0,0">
+            <Border  Grid.Row="1"  Background="{DynamicResource RegionBrush}" CornerRadius="5" Margin="0,5,0,0">
                 <Grid x:Name="MQTTShow" Margin="5">
                     <Grid x:Name="MQTTShowContent">
                         <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5" Margin="0,0,5,0">

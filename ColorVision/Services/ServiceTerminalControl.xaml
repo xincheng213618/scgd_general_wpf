@@ -34,7 +34,7 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel >
-                        <Border  Background ="{DynamicResource GlobalBackground}" CornerRadius="5">
+                        <Border  Background ="{DynamicResource RegionBrush}" CornerRadius="5">
                             <StackPanel Margin="5">
                                 <DockPanel Margin="5,0">
                                     <ToggleButton DockPanel.Dock="Right"  Style="{StaticResource ButtonMQTTConnect}"  Height="20" Width="20"  HorizontalAlignment="Right" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
@@ -46,7 +46,7 @@
                             </StackPanel>
                         </Border>
 
-                        <Border  Background ="{DynamicResource GlobalBackground}" CornerRadius="5" Margin="0,5,0,0">
+                        <Border  Background ="{DynamicResource RegionBrush}" CornerRadius="5" Margin="0,5,0,0">
                             <GroupBox Header="基本信息" Margin="5">
                                 <StackPanel Margin="5">
                                     <DockPanel >
