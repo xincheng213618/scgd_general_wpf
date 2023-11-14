@@ -392,11 +392,32 @@ namespace ColorVision.Services.Algorithm
 
         public MsgRecord LedCheck(string FileName, LedCheckParam ledCheckParam)
         {
+            var Params = new Dictionary<string, object>() { { "nBatchID", -1 } };
+
             MsgSend msg = new MsgSend
             {
                 EventName = "LedCheck",
-                Params = new Dictionary<string, object>() {  { "nBatchID", -1 } }
+                Params = Params
             };
+
+            Params.Add("checkChannel", ledCheckParam.CheckChannel);
+            Params.Add("isguding", ledCheckParam.Isguding);
+            Params.Add("gudingrid", ledCheckParam.Gudingrid);
+            Params.Add("lunkuomianji", ledCheckParam.Lunkuomianji);
+            Params.Add("pointNum", ledCheckParam.PointNum);
+            Params.Add("hegexishu", ledCheckParam.Hegexishu);
+            Params.Add("erzhihuapiancha", ledCheckParam.Erzhihuapiancha);
+            Params.Add("binaryCorret", ledCheckParam.BinaryCorret);
+            Params.Add("boundry", ledCheckParam.Boundry);
+            Params.Add("isuseLocalRdPoint", ledCheckParam.IsuseLocalRdPoint);
+            Params.Add("picwid", ledCheckParam.Picwid);
+            Params.Add("pichig", ledCheckParam.Pichig);
+            Params.Add("LengthCheck", ledCheckParam.LengthCheck);
+            Params.Add("LengthRange", ledCheckParam.LengthRange);
+            Params.Add("localRdMark", ledCheckParam.LocalRdMark);
+
+
+
             return PublishAsyncClient(msg);
         }
 
