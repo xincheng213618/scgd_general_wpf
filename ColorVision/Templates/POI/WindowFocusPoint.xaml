@@ -9,6 +9,7 @@
         xmlns:converter="clr-namespace:ColorVision.Draw.Converter;assembly=ColorVision.Util"
         xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util"
         xmlns:draw ="clr-namespace:ColorVision.Draw;assembly=ColorVision.Util"
+         xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         xmlns:resx="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Template:PoiParam}"
@@ -82,7 +83,10 @@
                             <StackPanel Margin="5" Visibility="{Binding ElementName=RadioButtonMode2, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
                                 <Button  Content="导入配置文件" Click="Button_Click_2"  Margin="1"/>
                                 <Button  Content="保存配置文件" Click="Button_Click_3"  Margin="1"/>
-                                <xctk:PropertyGrid  x:Name="PropertyGridAutoFocus"/>
+                                <WindowsFormsHost Height="300" >
+                                    <winf:PropertyGrid  x:Name="PropertyGridAutoFocus" />
+                                </WindowsFormsHost>
+                               
                                 <GroupBox x:Name="GridMark" Header="灯珠像素边长" Margin="5" >
                                     <StackPanel>
                                         <StackPanel  x:Name="StackPanelLedLen"   d:DataContext="{d:DesignInstance Template:DatumArea}" Margin="5">
@@ -349,10 +353,9 @@
                     </GroupBox>
                 </StackPanel>
             </ScrollViewer>
-
-            <xctk:PropertyGrid  Grid.Row="1"  Height="300"  x:Name="PropertyGrid2"  Visibility="Collapsed">
-
-            </xctk:PropertyGrid>
+            <WindowsFormsHost Grid.Row="1"  Height="300" x:Name="PropertyGrid21"  Visibility="Collapsed">
+                <winf:PropertyGrid   x:Name="PropertyGrid2" />
+            </WindowsFormsHost>
         </Grid>
 
         <Grid x:Name="ImageContentGrid" Grid.Column="1"  Background="#c3c3c3">

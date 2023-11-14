@@ -22,6 +22,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Forms.Integration;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -336,12 +337,12 @@ namespace ColorVision.Templates
                 if (DrawingVisualLists.Count ==0)
                 {
                     FocusPointGrid.Visibility = Visibility.Collapsed;
-                    PropertyGrid2.Visibility = Visibility.Collapsed;
+                    PropertyGrid21.Visibility = Visibility.Collapsed;
                 }
                 else
                 {
                     FocusPointGrid.Visibility = Visibility.Visible;
-                    PropertyGrid2.Visibility = Visibility.Visible;
+                    PropertyGrid21.Visibility = Visibility.Visible;
                 }
             };
 
@@ -1555,6 +1556,7 @@ namespace ColorVision.Templates
             if (GridBenckMark != null)
                 GridBenckMark.Visibility = Visibility.Collapsed;
             PropertyGridAutoFocus.SelectedObject = ledCheckCfg;
+            
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
