@@ -110,6 +110,14 @@ namespace ColorVision
                         windowTemplate = new WindowTemplate(TemplateType.DistortionParam) { Title = "Distortion算法设置" };
                         TemplateAbb(windowTemplate, TemplateControl.DistortionParams);
                         break;
+                    case "LedCheckParam":
+                        windowTemplate = new WindowTemplate(TemplateType.LedCheckParam) { Title = "灯珠检测算法设置" };
+                        TemplateAbb(windowTemplate, TemplateControl.LedCheckParams);
+                        break;
+                    case "FocusPointsParam":
+                        windowTemplate = new WindowTemplate(TemplateType.FocusPointsParam) { Title = "FocusPoints算法设置" };
+                        TemplateAbb(windowTemplate, TemplateControl.FocusPointsParams);
+                        break;
                     default:
                         HandyControl.Controls.Growl.Info("开发中");
                         break;

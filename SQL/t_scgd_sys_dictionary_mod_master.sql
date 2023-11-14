@@ -11,7 +11,7 @@
  Target Server Version : 50742
  File Encoding         : 65001
 
- Date: 08/11/2023 10:12:33
+ Date: 14/11/2023 11:39:31
 */
 
 SET NAMES utf8mb4;
@@ -33,7 +33,7 @@ CREATE TABLE `t_scgd_sys_dictionary_mod_master`  (
   `tenant_id` int(11) NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_code`(`code`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 14 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '模块字典主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 16 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '模块字典主表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of t_scgd_sys_dictionary_mod_master
@@ -51,5 +51,7 @@ INSERT INTO `t_scgd_sys_dictionary_mod_master` VALUES (10, 'distortion', '畸变
 INSERT INTO `t_scgd_sys_dictionary_mod_master` VALUES (11, 'flow', '流程', NULL, '2023-07-05 16:37:10', 1, 0, NULL, 0);
 INSERT INTO `t_scgd_sys_dictionary_mod_master` VALUES (12, 'AOI', 'AOI', NULL, '2023-07-06 15:52:12', 1, 0, NULL, 0);
 INSERT INTO `t_scgd_sys_dictionary_mod_master` VALUES (13, 'SMU', '源表', NULL, '2023-08-18 09:40:04', 1, 0, NULL, 0);
+INSERT INTO `t_scgd_sys_dictionary_mod_master` VALUES (14, 'ledcheck', 'LedCheck', NULL, '2023-11-14 11:38:56', 1, 0, NULL, 0);
+INSERT INTO `t_scgd_sys_dictionary_mod_master` VALUES (15, 'focusPoints', 'FocusPoints', NULL, '2023-11-14 11:38:58', 1, 0, NULL, 0);
 
 SET FOREIGN_KEY_CHECKS = 1;

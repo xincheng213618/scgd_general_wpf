@@ -16,6 +16,9 @@ namespace ColorVision.MySql.Service
         public const string POI = "POI";
         public const string Ghost = "ghost";
         public const string Distortion = "distortion";
+        public const string LedCheck = "ledcheck";
+        public const string FocusPoints = "focusPoints";
+
     }
     public class ModService
     {

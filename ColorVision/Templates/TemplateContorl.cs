@@ -56,6 +56,8 @@ namespace ColorVision.Templates
             FOVParams = new ObservableCollection<TemplateModel<FOVParam>>();
             GhostParams = new ObservableCollection<TemplateModel<GhostParam>>();
             DistortionParams = new ObservableCollection<TemplateModel<DistortionParam>>();
+            LedCheckParams = new ObservableCollection<TemplateModel<LedCheckParam>>();
+            FocusPointsParams = new ObservableCollection<TemplateModel<FocusPointsParam>>();
             
 
             GlobalSetting.GetInstance().SoftwareConfig.UseMySqlChanged += (s) =>
@@ -107,6 +109,8 @@ namespace ColorVision.Templates
             LoadModParam(FOVParams, ModMasterType.FOV);
             LoadModParam(GhostParams, ModMasterType.Ghost);
             LoadModParam(DistortionParams, ModMasterType.Distortion);
+            LoadModParam(FocusPointsParams, ModMasterType.FocusPoints);
+            LoadModParam(LedCheckParams, ModMasterType.LedCheck);
         }
 
         /// 这里是初始化模板的封装，因为模板的代码高度统一，所以使用泛型T来设置具体的模板参数。
@@ -217,7 +221,12 @@ namespace ColorVision.Templates
                 case TemplateType.DistortionParam:
                     Save(DistortionParams, ModMasterType.Distortion);
                     break;
-
+                case TemplateType.FocusPointsParam:
+                    Save(FocusPointsParams, ModMasterType.FocusPoints);
+                    break;
+                case TemplateType.LedCheckParam:
+                    Save(LedCheckParams, ModMasterType.LedCheck);
+                    break;
                 default:
                     break;
             }
@@ -307,9 +316,9 @@ namespace ColorVision.Templates
 
         public T? AddParamMode<T>(string code,string Name) where T: ParamBase,new ()
         {
-            ModMasterModel flowMaster = new ModMasterModel(code, Name, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            modService.Save(flowMaster);
-            int pkId = flowMaster.GetPK();
+            ModMasterModel modMaster = new ModMasterModel(code, Name, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            modService.Save(modMaster);
+            int pkId = modMaster.GetPK();
             if (pkId > 0)
             {
                 ModMasterModel modMasterModel = modService.GetMasterById(pkId);
@@ -547,6 +556,10 @@ namespace ColorVision.Templates
         public ObservableCollection<TemplateModel<FOVParam>> FOVParams { get; set; }
         public ObservableCollection<TemplateModel<GhostParam>> GhostParams { get; set; }
         public ObservableCollection<TemplateModel<DistortionParam>> DistortionParams { get; set; }
+
+        public ObservableCollection<TemplateModel<LedCheckParam>> LedCheckParams { get; set; }
+        public ObservableCollection<TemplateModel<FocusPointsParam>> FocusPointsParams { get; set; }
+
 
     }
 }

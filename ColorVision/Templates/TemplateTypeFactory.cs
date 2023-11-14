@@ -20,6 +20,8 @@ namespace ColorVision.Templates
                 ModMasterType.FOV => TemplateType.FOVParam,
                 ModMasterType.Ghost => TemplateType.GhostParam,
                 ModMasterType.Distortion => TemplateType.DistortionParam,
+                ModMasterType.LedCheck => TemplateType.LedCheckParam,
+                ModMasterType.FocusPoints => TemplateType.FocusPointsParam,
                 _ => TemplateType.AoiParam,
             };
         }
@@ -36,6 +38,8 @@ namespace ColorVision.Templates
                 TemplateType.FOVParam => ModMasterType.FOV,
                 TemplateType.GhostParam => ModMasterType.Ghost,
                 TemplateType.DistortionParam => ModMasterType.Distortion,
+                TemplateType.LedCheckParam => ModMasterType.LedCheck,
+                TemplateType.FocusPointsParam => ModMasterType.FocusPoints,
                 _ => string.Empty,
             };
         }
@@ -57,6 +61,8 @@ namespace ColorVision.Templates
                 TemplateType.FOVParam => new FOVParam(),
                 TemplateType.GhostParam => new GhostParam(),
                 TemplateType.DistortionParam => new DistortionParam(),
+                TemplateType.LedCheckParam => new LedCheckParam(),
+                TemplateType.FocusPointsParam => new FocusPointsParam(),
                 _ => new ParamBase(),
             };
         }
@@ -75,6 +81,8 @@ namespace ColorVision.Templates
                 TemplateType.FOVParam => new FOVParam(modMasterModel, modDetailModels),
                 TemplateType.GhostParam => new GhostParam(modMasterModel, modDetailModels),
                 TemplateType.DistortionParam => new DistortionParam(modMasterModel, modDetailModels),
+                TemplateType.LedCheckParam => new LedCheckParam(modMasterModel, modDetailModels),
+                TemplateType.FocusPointsParam => new FocusPointsParam(modMasterModel, modDetailModels),
                 _ => new ParamBase(),
             };
         }
