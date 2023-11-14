@@ -93,7 +93,7 @@ namespace ColorVision.Services.Algorithm
 
         private void Task_Start(DeviceDownloadParam pm_dl)
         {
-            Task_Start(pm_dl.ServerEndpoint, pm_dl.FileName);
+            if (!string.IsNullOrWhiteSpace(pm_dl.ServerEndpoint) && !string.IsNullOrWhiteSpace(pm_dl.FileName)) Task_Start(pm_dl.ServerEndpoint, pm_dl.FileName);
         }
 
         private void Task_Start(string serverEndpoint,string fileName)

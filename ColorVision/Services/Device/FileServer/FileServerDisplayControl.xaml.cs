@@ -1,4 +1,5 @@
-﻿using log4net;
+﻿using ColorVision.Solution;
+using log4net;
 using MQTTMessageLib.FileServer;
 using NetMQ;
 using NetMQ.Sockets;
@@ -7,6 +8,7 @@ using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -46,9 +48,50 @@ namespace ColorVision.Device.FileServer
                 case MQTTFileServerEventEnum.Event_File_Upload:
                     handler?.Close();
                     break;
+                case MQTTFileServerEventEnum.Event_File_Download:
+                    DeviceDownloadParam pm_dl = JsonConvert.DeserializeObject<DeviceDownloadParam>(JsonConvert.SerializeObject(arg.Data));
+                    Task t = new(() => { Task_Start(pm_dl); });
+                    t.Start();
+                    break;
                 default:
                     break;
             }
+        }
+
+        private void Task_Start(DeviceDownloadParam pm_dl)
+        {
+            if(!string.IsNullOrWhiteSpace(pm_dl.ServerEndpoint) && !string.IsNullOrWhiteSpace(pm_dl.FileName)) Task_Start(pm_dl.ServerEndpoint, pm_dl.FileName);
+        }
+
+        private void Task_Start(string serverEndpoint, string fileName)
+        {
+            DealerSocket client = null;
+            try
+            {
+                client = new DealerSocket(serverEndpoint);
+                List<byte[]> data = client.ReceiveMultipartBytes(1);
+                if (data.Count == 1)
+                {
+                    //string fullFileName = SolutionManager.GetInstance().Config.CachePath + "\\" + fileName;
+                    //CVFileUtils.WriteBinaryFile(fullFileName, data[0]);
+                    //fileCache.Add(fileName, fullFileName);
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        //View.OpenImage(fileInfo);
+                        View.OpenImage(data[0]);
+                    });
+                }
+                client?.Close();
+                client?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex);
+                client?.Close();
+                client?.Dispose();
+            }
+
+            handler?.Close();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -92,11 +135,6 @@ namespace ColorVision.Device.FileServer
 
             View.View.ViewIndex = -1;
 
-
-
-
-
-
             Task t = new(() => { DeviceImg.Service.GetAllFiles(); });
             t.Start();
         }
@@ -106,20 +144,13 @@ namespace ColorVision.Device.FileServer
         private void Button_Click_Open(object sender, RoutedEventArgs e)
         {
             doOpen(FilesView.Text);
-        //    Application.Current.Dispatcher.Invoke(() =>
-        //    {
-        //        View.OpenCVCIE(@"F:\img\cvcie\20230322142727_1_src.cvcie");
-        //        View.OpenCVCIE(@"F:\img\cvcie\20230322142727_Y_src.cvcie");
-        //        View.OpenCVCIE(@"F:\img\cvcie\0524MTF-H.cvcie");
-        //        View.OpenCVCIE(@"F:\img\cvcie\ttt.cvcie");
-        //    });
         }
 
         private void doOpen(string fileName)
         {
             DeviceImg.Service.Open(fileName);
-            Task t = new(() => { Task_Start(); });
-            t.Start();
+            //Task t = new(() => { Task_Start(); });
+            //t.Start();
 
             handler = PendingBox.Show(Application.Current.MainWindow, "", "打开图片", true);
             handler.Cancelling += delegate
@@ -128,31 +159,31 @@ namespace ColorVision.Device.FileServer
             };
         }
 
-        private void Task_Start()
-        {
-            DealerSocket client = null;
-            try
-            {
-                client = new DealerSocket(DeviceImg.Config.Endpoint);
-                List<byte[]> data = client.ReceiveMultipartBytes();
-                if (data.Count == 1)
-                {
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        View.OpenImage(data[0]);
-                    });
-                }
-                client?.Close();
-                client?.Dispose();
-            }catch (Exception ex)
-            {
-                logger.Error(ex);
-                client?.Close();
-                client?.Dispose();
-            }
+        //private void Task_Start()
+        //{
+        //    DealerSocket client = null;
+        //    try
+        //    {
+        //        client = new DealerSocket(DeviceImg.Config.Endpoint);
+        //        List<byte[]> data = client.ReceiveMultipartBytes();
+        //        if (data.Count == 1)
+        //        {
+        //            Application.Current.Dispatcher.Invoke(() =>
+        //            {
+        //                View.OpenImage(data[0]);
+        //            });
+        //        }
+        //        client?.Close();
+        //        client?.Dispose();
+        //    }catch (Exception ex)
+        //    {
+        //        logger.Error(ex);
+        //        client?.Close();
+        //        client?.Dispose();
+        //    }
 
-            handler?.Close();
-        }
+        //    handler?.Close();
+        //}
 
         private void Button_Click_Refresh(object sender, RoutedEventArgs e)
         {
