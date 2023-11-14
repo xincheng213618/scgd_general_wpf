@@ -217,6 +217,12 @@ namespace ColorVision.Services.Algorithm
             ComboxDistortionTemplate.ItemsSource = TemplateControl.GetInstance().DistortionParams;
             ComboxDistortionTemplate.SelectedIndex = 0;
 
+            ComboxLedCheckTemplate.ItemsSource = TemplateControl.GetInstance().LedCheckParams;
+            ComboxLedCheckTemplate.SelectedIndex = 0;
+
+            ComboxFocusPointsTemplate.ItemsSource = TemplateControl.GetInstance().FocusPointsParams;
+            ComboxFocusPointsTemplate.SelectedIndex = 0;
+
 
             ViewGridManager.GetInstance().AddView(Device.View);
             ViewMaxChangedEvent(ViewGridManager.GetInstance().ViewMax);
@@ -520,6 +526,14 @@ namespace ColorVision.Services.Algorithm
                         windowTemplate = new WindowTemplate(TemplateType.DistortionParam) { Title = "Distortion算法设置" };
                         TemplateAbb(windowTemplate, TemplateControl.DistortionParams);
                         break;
+                    case "LedCheckParam":
+                        windowTemplate = new WindowTemplate(TemplateType.LedCheckParam) { Title = "灯珠检测算法设置" };
+                        TemplateAbb(windowTemplate, TemplateControl.LedCheckParams);
+                        break;
+                    case "FocusPointsParam":
+                        windowTemplate = new WindowTemplate(TemplateType.FocusPointsParam) { Title = "FocusPoints算法设置" };
+                        TemplateAbb(windowTemplate, TemplateControl.FocusPointsParams);
+                        break;
                     default:
                         HandyControl.Controls.Growl.Info("开发中");
                         break;
@@ -551,6 +565,30 @@ namespace ColorVision.Services.Algorithm
         private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
+        }
+
+        private void FocusPoints_Click(object sender, RoutedEventArgs e)
+        {
+            if (ComboxFocusPointsTemplate.SelectedIndex == -1)
+            {
+                MessageBox.Show(Application.Current.MainWindow, "请先选择FocusPoints模板", "ColorVision");
+                return;
+            }
+
+            var ss = Service.FocusPoints(ImageFile.Text, TemplateControl.GetInstance().FocusPointsParams[ComboxFocusPointsTemplate.SelectedIndex].Value);
+            Helpers.SendCommand(ss, "MTF");
+        }
+
+        private void LedCheck_Click(object sender, RoutedEventArgs e)
+        {
+            if (ComboxLedCheckTemplate.SelectedIndex == -1)
+            {
+                MessageBox.Show(Application.Current.MainWindow, "请先选择灯珠检测模板", "ColorVision");
+                return;
+            }
+
+            var ss = Service.LedCheck(ImageFile.Text, TemplateControl.GetInstance().LedCheckParams[ComboxLedCheckTemplate.SelectedIndex].Value);
+            Helpers.SendCommand(ss, "MTF");
         }
     }
 }

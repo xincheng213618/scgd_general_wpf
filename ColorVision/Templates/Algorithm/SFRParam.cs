@@ -13,7 +13,7 @@ namespace ColorVision.Templates.Algorithm
         {
         }
 
-        [Category("SFR"), Description("SFR gamma")]
+        [Category("SFR"), Description("Gamma")]
         public double Gamma { get => GetValue(_Gamma); set { SetProperty(ref _Gamma, value); } }
         private double _Gamma = 0.01;
 

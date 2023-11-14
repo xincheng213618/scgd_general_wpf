@@ -63,6 +63,9 @@
                     <MenuItem Header="FOV模板设置(_F)"  Tag="FOVParam" Click="MenuItem_Template"/>
                     <MenuItem Header="鬼影模板设置(_H)"  Tag="GhostParam" Click="MenuItem_Template"/>
                     <MenuItem Header="畸变模板设置(_D)"  Tag="DistortionParam" Click="MenuItem_Template"/>
+                    <MenuItem Header="灯珠检测模板设置(_L)"  Tag="LedCheckParam" Click="MenuItem_Template"/>
+                    <MenuItem Header="FoucusPoints模板设置(_P)"  Tag="FocusPointsParam" Click="MenuItem_Template"/>
+
                 </MenuItem>
                 <MenuItem Header="{x:Static resx:Resource.MenuTool}">
                     <MenuItem Header="流程引擎(_F)" Click="MenuItem9_Click"/>

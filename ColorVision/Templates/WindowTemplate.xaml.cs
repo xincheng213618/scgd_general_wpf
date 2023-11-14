@@ -265,6 +265,16 @@ namespace ColorVision.Templates
                     DistortionParam? distortionParam = TemplateControl.AddParamMode<DistortionParam>(TemplateTypeFactory.GetModeTemplateType(TemplateType), TextBox1.Text);
                     if (distortionParam != null) CreateNewTemplate(TemplateControl.DistortionParams, TextBox1.Text, distortionParam);
                     else MessageBox.Show("数据库创建Distortion模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly); break;
+                case TemplateType.FocusPointsParam:
+                    FocusPointsParam? focusPointsParam = TemplateControl.AddParamMode<FocusPointsParam>(TemplateTypeFactory.GetModeTemplateType(TemplateType),TextBox1.Text);
+                    if (focusPointsParam != null) CreateNewTemplate(TemplateControl.FocusPointsParams, TextBox1.Text, focusPointsParam);
+                    else MessageBox.Show("数据库创建FocusPoints模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                    break;
+                case TemplateType.LedCheckParam:
+                    LedCheckParam? ledCheckParam = TemplateControl.AddParamMode<LedCheckParam>(TemplateTypeFactory.GetModeTemplateType(TemplateType), TextBox1.Text);
+                    if (ledCheckParam != null) CreateNewTemplate(TemplateControl.LedCheckParams, TextBox1.Text, ledCheckParam);
+                    else MessageBox.Show("数据库创建灯光检测模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                    break;
                 case TemplateType.PoiParam:
                     PoiParam? poiParam = TemplateControl.AddPoiParam(TextBox1.Text);
                     if (poiParam != null) CreateNewTemplate(TemplateControl.PoiParams, TextBox1.Text, poiParam);
@@ -280,6 +290,7 @@ namespace ColorVision.Templates
                     if (measureParam != null) CreateNewTemplate(TemplateControl.MeasureParams, TextBox1.Text, measureParam);
                     else MessageBox.Show("数据库创建流程模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     break;
+
             }
         }
 
@@ -316,6 +327,12 @@ namespace ColorVision.Templates
                     break;
                 case TemplateType.DistortionParam:
                     CreateNewTemplate(TemplateControl.DistortionParams, TextBox1.Text, new DistortionParam() { });
+                    break;
+                case TemplateType.FocusPointsParam:
+                    CreateNewTemplate(TemplateControl.FocusPointsParams, TextBox1.Text, new FocusPointsParam() { });
+                    break;
+                case TemplateType.LedCheckParam:
+                    CreateNewTemplate(TemplateControl.LedCheckParams, TextBox1.Text, new LedCheckParam() { });
                     break;
                 case TemplateType.PoiParam:
                     CreateNewTemplate(TemplateControl.PoiParams, TextBox1.Text , new PoiParam() { });
@@ -426,6 +443,12 @@ namespace ColorVision.Templates
                             break;
                         case TemplateType.DistortionParam:
                             TemplateDel(TemplateControl.DistortionParams);
+                            break;
+                        case TemplateType.FocusPointsParam:
+                            TemplateDel(TemplateControl.FocusPointsParams);
+                            break;
+                        case TemplateType.LedCheckParam:
+                            TemplateDel(TemplateControl.LedCheckParams);
                             break;
                         case TemplateType.FlowParam:
                             TemplateDel(TemplateControl.FlowParams);

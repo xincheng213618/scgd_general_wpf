@@ -4,8 +4,8 @@ using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.Templates.Algorithm;
 using ColorVision.Util;
+using cvColorVision;
 using cvColorVision.Util;
-using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -56,6 +56,8 @@ namespace ColorVision.Templates
             FOVParams = new ObservableCollection<TemplateModel<FOVParam>>();
             GhostParams = new ObservableCollection<TemplateModel<GhostParam>>();
             DistortionParams = new ObservableCollection<TemplateModel<DistortionParam>>();
+            LedCheckParams = new ObservableCollection<TemplateModel<LedCheckParam>>();
+            FocusPointsParams = new ObservableCollection<TemplateModel<FocusPointsParam>>();
             
 
             GlobalSetting.GetInstance().SoftwareConfig.UseMySqlChanged += (s) =>
@@ -99,6 +101,7 @@ namespace ColorVision.Templates
             DicTemplate.TryAdd("Flow", FlowParams);
             DicTemplate.TryAdd("Calibration", CalibrationParams);
             DicTemplate.TryAdd("LedReuslt", LedReusltParams);
+
             LoadModParam(AoiParams, ModMasterType.Aoi);
             LoadModParam(SMUParams, ModMasterType.SMU);
             LoadModParam(PGParams, ModMasterType.PG);
@@ -107,7 +110,62 @@ namespace ColorVision.Templates
             LoadModParam(FOVParams, ModMasterType.FOV);
             LoadModParam(GhostParams, ModMasterType.Ghost);
             LoadModParam(DistortionParams, ModMasterType.Distortion);
+            LoadModParam(FocusPointsParams, ModMasterType.FocusPoints);
+            LoadModParam(LedCheckParams, ModMasterType.LedCheck);
         }
+        public void LoadParams<T>(ObservableCollection<TemplateModel<T>> TemplateModels) where T : ParamBase, new()
+        {
+            switch (typeof(T))
+            {
+                case Type t when t == typeof(CalibrationParam):
+                    IDefault(FileNameCalibrationParams, new CalibrationParam());
+                    break;
+                case Type t when t == typeof(LedReusltParam):
+                    IDefault(FileNameLedJudgeParams, new LedReusltParam());
+                    break;
+                case Type t when t == typeof(PoiParam):
+                    LoadPoiParam();
+                    break;
+                case Type t when t == typeof(FlowParam):
+                    LoadFlowParam();
+                    break;
+                case Type t when t == typeof(AoiParam):
+                    LoadModParam(AoiParams, ModMasterType.Aoi);
+                    break;
+                case Type t when t == typeof(SMUParam):
+                    LoadModParam(SMUParams, ModMasterType.SMU);
+                    break;
+                case Type t when t == typeof(PGParam):
+                    LoadModParam(PGParams, ModMasterType.PG);
+                    break;
+                case Type t when t == typeof(SFRParam):
+                    LoadModParam(SFRParams, ModMasterType.SFR);
+                    break;
+                case Type t when t == typeof(MTFParam):
+                    LoadModParam(MTFParams, ModMasterType.MTF);
+                    break;
+                case Type t when t == typeof(FOVParam):
+                    LoadModParam(FOVParams, ModMasterType.FOV);
+                    break;
+                case Type t when t == typeof(GhostParam):
+                    LoadModParam(GhostParams, ModMasterType.Ghost);
+                    break;
+                case Type t when t == typeof(DistortionParam):
+                    LoadModParam(DistortionParams, ModMasterType.Distortion);
+                    break;
+                case Type t when t == typeof(FocusPointsParam):
+                    LoadModParam(FocusPointsParams, ModMasterType.FocusPoints);
+                    break;
+                case Type t when t == typeof(LedCheckParam):
+                    LoadModParam(LedCheckParams, ModMasterType.LedCheck);
+                    break;
+                default:
+                    break;
+
+            }
+        }
+
+
 
         /// 这里是初始化模板的封装，因为模板的代码高度统一，所以使用泛型T来设置具体的模板参数。
         /// 最后在给模板的每一个元素加上一个切换的效果，即当某一个模板启用时，关闭其他已经启用的模板；
@@ -217,7 +275,12 @@ namespace ColorVision.Templates
                 case TemplateType.DistortionParam:
                     Save(DistortionParams, ModMasterType.Distortion);
                     break;
-
+                case TemplateType.FocusPointsParam:
+                    Save(FocusPointsParams, ModMasterType.FocusPoints);
+                    break;
+                case TemplateType.LedCheckParam:
+                    Save(LedCheckParams, ModMasterType.LedCheck);
+                    break;
                 default:
                     break;
             }
@@ -307,9 +370,9 @@ namespace ColorVision.Templates
 
         public T? AddParamMode<T>(string code,string Name) where T: ParamBase,new ()
         {
-            ModMasterModel flowMaster = new ModMasterModel(code, Name, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            modService.Save(flowMaster);
-            int pkId = flowMaster.GetPK();
+            ModMasterModel modMaster = new ModMasterModel(code, Name, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            modService.Save(modMaster);
+            int pkId = modMaster.GetPK();
             if (pkId > 0)
             {
                 ModMasterModel modMasterModel = modService.GetMasterById(pkId);
@@ -547,6 +610,10 @@ namespace ColorVision.Templates
         public ObservableCollection<TemplateModel<FOVParam>> FOVParams { get; set; }
         public ObservableCollection<TemplateModel<GhostParam>> GhostParams { get; set; }
         public ObservableCollection<TemplateModel<DistortionParam>> DistortionParams { get; set; }
+
+        public ObservableCollection<TemplateModel<LedCheckParam>> LedCheckParams { get; set; }
+        public ObservableCollection<TemplateModel<FocusPointsParam>> FocusPointsParams { get; set; }
+
 
     }
 }

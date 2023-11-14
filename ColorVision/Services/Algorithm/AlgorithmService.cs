@@ -231,6 +231,9 @@ namespace ColorVision.Services.Algorithm
             return PublishAsyncClient(msg);
         }
 
+
+
+
         private static string ToJsonFileList(ImageChannelType imageChannelType, params string[] FileNames)
         {
             Dictionary<string, object> file_data  =new Dictionary<string, object>();
@@ -377,22 +380,22 @@ namespace ColorVision.Services.Algorithm
 
 
 
-        public MsgRecord FocusPoints(int pid, int Batchid)
+        public MsgRecord FocusPoints(string FileName, FocusPointsParam focusPointsParam)
         {
             MsgSend msg = new MsgSend
             {
                 EventName = "FocusPoints",
-                Params = new Dictionary<string, object>() { { "nPid", pid }, { "nBatchID", Batchid } }
+                Params = new Dictionary<string, object>() { { "nBatchID", -1 },  }
             };
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord LedCheck(int pid, int Batchid)
+        public MsgRecord LedCheck(string FileName, LedCheckParam ledCheckParam)
         {
             MsgSend msg = new MsgSend
             {
                 EventName = "LedCheck",
-                Params = new Dictionary<string, object>() {  { "nPid", pid }, { "nBatchID", Batchid } }
+                Params = new Dictionary<string, object>() {  { "nBatchID", -1 } }
             };
             return PublishAsyncClient(msg);
         }

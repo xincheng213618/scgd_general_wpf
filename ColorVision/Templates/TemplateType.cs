@@ -15,6 +15,8 @@ namespace ColorVision.Templates
         SFRParam,
         FOVParam,
         GhostParam,
-        DistortionParam
+        DistortionParam,
+        LedCheckParam,
+        FocusPointsParam
     }
 }
