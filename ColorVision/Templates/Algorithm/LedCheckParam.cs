@@ -24,22 +24,19 @@ namespace ColorVision.Templates.Algorithm
         [Category("LedCheck"), DisplayName("是否启用固定半径计算"), Description("是否启用固定半径计算 isguding")]
         [JsonProperty("isguding")]
         public int Isguding { get => GetValue(_Isguding); set { SetProperty(ref _Isguding, value); } }
-        private int _Isguding;
+        private int _Isguding =2;
 
         [Category("LedCheck"), DisplayName("灯珠固定半径"), Description("灯珠固定半径 gudingrid")]
         [JsonProperty("gudingrid")]
         public int Gudingrid { get => GetValue(_Gudingrid); set { SetProperty(ref _Gudingrid, value); } }
-        private int _Gudingrid;
+        private int _Gudingrid =15;
 
         [Category("LedCheck"), DisplayName("轮廓最小面积"), Description("轮廓最小面积  lunkuomianji")]
         [JsonProperty("lunkuomianji")]
         public int Lunkuomianji { get => GetValue(_Lunkuomianji); set { SetProperty(ref _Lunkuomianji, value); } }
-        private int _Lunkuomianji;
+        private int _Lunkuomianji =5;
 
-        [Category("LedCheck"), DisplayName("PointNum"), Description("PointNum")]
-        [JsonProperty("pointNum")]
-        public int PointNum { get => GetValue(_PointNum); set { SetProperty(ref _PointNum, value); } }
-        private int _PointNum;
+
 
         [Category("LedCheck"), DisplayName("轮廓范围系数"), Description("轮廓范围系数 hegexishu")]
         [JsonProperty("hegexishu")]
@@ -77,6 +74,10 @@ namespace ColorVision.Templates.Algorithm
         [JsonProperty("pichig")]
         public int Pichig { get => GetValue(_Pichig); set { SetProperty(ref _Pichig, value); } }
         private int _Pichig =24;
+
+        [Browsable(false),]
+        [JsonProperty("pointNum")]
+        public int PointNum { get => _Picwid * Pichig;}
 
         [Category("LedCheck"), Description("LengthCheck")]
         [JsonProperty("LengthCheck")]
