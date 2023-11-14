@@ -83,7 +83,49 @@ namespace ColorVision.Services.Algorithm
                     handler?.Close();
                     Service.GetCIEFiles();
                     break;
+                case MQTTFileServerEventEnum.Event_File_Download:
+                    DeviceDownloadParam pm_dl = JsonConvert.DeserializeObject<DeviceDownloadParam>(JsonConvert.SerializeObject(arg.Data));
+                    Task t = new(() => { Task_Start(pm_dl); });
+                    t.Start();
+                    break;
             }
+        }
+
+        private void Task_Start(DeviceDownloadParam pm_dl)
+        {
+            if (!string.IsNullOrWhiteSpace(pm_dl.ServerEndpoint) && !string.IsNullOrWhiteSpace(pm_dl.FileName)) Task_Start(pm_dl.ServerEndpoint, pm_dl.FileName);
+        }
+
+        private void Task_Start(string serverEndpoint,string fileName)
+        {
+            DealerSocket client = null;
+            try
+            {
+                client = new DealerSocket(serverEndpoint);
+                List<byte[]> data = client.ReceiveMultipartBytes(1);
+                if (data.Count == 1)
+                {
+                    string fullFileName = SolutionManager.GetInstance().Config.CachePath + "\\" + fileName;
+                    //CVCIEFileInfo fileInfo = CVFileUtils.WriteBinaryFile_CVRGB(fullFileName, data[0]);
+                    CVFileUtils.WriteBinaryFile(fullFileName, data[0]);
+                    fileCache.Add(fileName, fullFileName);
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        //View.OpenImage(fileInfo);
+                        View.OpenImage(data[0]);
+                    });
+                }
+                client?.Close();
+                client?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex);
+                client?.Close();
+                client?.Dispose();
+            }
+
+            handler?.Close();
         }
 
         private void ShowResult(string serialNumber, List<POIPointResultModel> poiDbResults, string rawMsg, MQTTPOIGetDataResult response)
@@ -397,42 +439,42 @@ namespace ColorVision.Services.Algorithm
             else
             {
                 Service.Open(fileName);
-                Task t = new(() => { Task_Start(fileName); });
-                t.Start();
+                //Task t = new(() => { Task_Start(fileName); });
+                //t.Start();
             }
         }
 
-        private void Task_Start(string fileName)
-        {
-            DealerSocket client = null;
-            try
-            {
-                client = new DealerSocket(Device.Config.Endpoint);
-                List<byte[]> data = client.ReceiveMultipartBytes();
-                if (data.Count == 1)
-                {
-                    string fullFileName = SolutionManager.GetInstance().Config.CachePath + "\\" + fileName;
-                    //CVCIEFileInfo fileInfo = CVFileUtils.WriteBinaryFile_CVRGB(fullFileName, data[0]);
-                    CVFileUtils.WriteBinaryFile(fullFileName, data[0]);
-                    fileCache.Add(fileName, fullFileName);
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        //View.OpenImage(fileInfo);
-                        View.OpenImage(data[0]);
-                    });
-                }
-                client?.Close();
-                client?.Dispose();
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex);
-                client?.Close();
-                client?.Dispose();
-            }
+        //private void Task_Start(string fileName)
+        //{
+        //    DealerSocket client = null;
+        //    try
+        //    {
+        //        client = new DealerSocket(Device.Config.Endpoint);
+        //        List<byte[]> data = client.ReceiveMultipartBytes();
+        //        if (data.Count == 1)
+        //        {
+        //            string fullFileName = SolutionManager.GetInstance().Config.CachePath + "\\" + fileName;
+        //            //CVCIEFileInfo fileInfo = CVFileUtils.WriteBinaryFile_CVRGB(fullFileName, data[0]);
+        //            CVFileUtils.WriteBinaryFile(fullFileName, data[0]);
+        //            fileCache.Add(fileName, fullFileName);
+        //            Application.Current.Dispatcher.Invoke(() =>
+        //            {
+        //                //View.OpenImage(fileInfo);
+        //                View.OpenImage(data[0]);
+        //            });
+        //        }
+        //        client?.Close();
+        //        client?.Dispose();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        logger.Error(ex);
+        //        client?.Close();
+        //        client?.Dispose();
+        //    }
 
-            handler?.Close();
-        }
+        //    handler?.Close();
+        //}
 
         private void Task_StartUpload(string fileName)
         {

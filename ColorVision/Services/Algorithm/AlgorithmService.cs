@@ -92,7 +92,7 @@ namespace ColorVision.Services.Algorithm
                     case "SaveLicense":
                         break;
                     case MQTTFileServerEventEnum.Event_File_Download:
-                        break;
+                    //    break;
                     case MQTTFileServerEventEnum.Event_File_Upload:
                     case MQTTFileServerEventEnum.Event_File_List_All:
                         OnAlgorithmEvent?.Invoke(this, new AlgorithmEvent(msg.EventName, msg.SerialNumber, msg.Data));
