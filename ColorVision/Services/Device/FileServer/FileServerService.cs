@@ -56,7 +56,7 @@ namespace ColorVision.Device.FileServer
                     MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg);
                     if (json == null)
                         return Task.CompletedTask;
-                    if (json.Code == 0 && json.ServiceName.Equals(Config.Code, StringComparison.Ordinal))
+                    if (json.Code == 0 && json.DeviceCode.Equals(Config.Code, StringComparison.Ordinal))
                     {
                         if (json.EventName.Equals(FileServerEventName.Heartbeat, StringComparison.Ordinal))
                         {
@@ -80,7 +80,6 @@ namespace ColorVision.Device.FileServer
             MsgSend msg = new MsgSend
             {
                 EventName = MQTTFileServerEventEnum.Event_File_Download,
-                ServiceName = Config.Code,
                 Params = new Dictionary<string,object> { { "FileName", fileName }, { "FileExtType", FileExtType.Src } }
             };
             PublishAsyncClient(msg);
@@ -91,7 +90,6 @@ namespace ColorVision.Device.FileServer
             MsgSend msg = new MsgSend
             {
                 EventName = MQTTFileServerEventEnum.Event_File_List_All,
-                ServiceName = Config.Code,
                 Params = new Dictionary<string, object> { { "FileExtType", FileExtType.Src } }
             };
             PublishAsyncClient(msg);
@@ -102,7 +100,6 @@ namespace ColorVision.Device.FileServer
             MsgSend msg = new MsgSend
             {
                 EventName = MQTTFileServerEventEnum.Event_File_Upload,
-                ServiceName = Config.Code,
                 Params = new Dictionary<string, object> { { "FileName", fileName }, { "FileExtType", FileExtType.Src } }
             };
             PublishAsyncClient(msg);
