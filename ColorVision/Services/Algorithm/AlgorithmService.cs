@@ -154,7 +154,6 @@ namespace ColorVision.Services.Algorithm
             MsgSend msg = new MsgSend
             {
                 EventName = MQTTFileServerEventEnum.Event_File_List_All,
-                ServiceName = Config.Code,
                 Params = new Dictionary<string, object> { { "FileExtType", FileExtType.CIE } }
             };
             PublishAsyncClient(msg);
@@ -168,7 +167,6 @@ namespace ColorVision.Services.Algorithm
             MsgSend msg = new MsgSend
             {
                 EventName = "GetData",
-                ServiceName = Config.Code,
                 SerialNumber = sn,
                 Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "TemplateId", pid }, { "TemplateName", tempName }, { "nBatchID", -1 } }
             };
