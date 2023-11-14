@@ -5,6 +5,7 @@ using ColorVision.MySql.DAO;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
@@ -93,13 +94,46 @@ namespace ColorVision.Templates
                 if (parameters.TryGetValue(propertyName,out ModDetailModel modDetailModel))
                 {
                     modDetailModel.ValueB = modDetailModel.ValueA;
-                    modDetailModel.ValueA = value?.ToString();
+                    if (typeof(T) == typeof(double[]) && value is double[] doule)
+                    {
+                        modDetailModel.ValueA = DoubleArrayToString(doule);
+                    }
+                    else
+                    {
+                        modDetailModel.ValueA = value?.ToString();
+                    }
                 }
             }
             NotifyPropertyChanged(propertyName);
             return true;
         }
 
+        public static double[] StringToDoubleArray(string input, char separator = ',')
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return Array.Empty<double>();
+
+            // 分割字符串
+            string[] parts = input.Split(separator, StringSplitOptions.RemoveEmptyEntries);
+            double[] doubles = new double[parts.Length];
+
+            for (int i = 0; i < parts.Length; i++)
+            {
+                // 尝试转换每个部分
+                if (!double.TryParse(parts[i].Trim(), NumberStyles.Any, CultureInfo.InvariantCulture, out doubles[i]))
+                {
+                    return Array.Empty<double>();
+                }
+            }
+
+            return doubles;
+        }
+
+        // 将 double 数组转换为字符串
+        public static string DoubleArrayToString(double[] array, char separator = ',')
+        {
+            return string.Join(separator.ToString(), array.Select(d => d.ToString(CultureInfo.InvariantCulture)));
+        }
 
 
         protected void SetProperty<T>(T value, [CallerMemberName] string propertyName = "")
@@ -148,6 +182,10 @@ namespace ColorVision.Templates
                     {
                         Enum.TryParse(typeof(T), val, out object obj);
                         return (T)obj;
+                    }
+                    else if (typeof(T) == typeof(double[]))
+                    {
+                        return (T)(object)StringToDoubleArray(val);
                     }
                 }
                 return default(T);

@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:ColorVision.Services.Algorithm"
              d:DataContext="{d:DesignInstance local:DeviceAlgorithm}"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized">
+             d:DesignHeight="700" d:DesignWidth="300" Initialized="UserControl_Initialized">
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -81,7 +81,7 @@
 
                         <GroupBox  Header="FOV">
                             <DockPanel Margin="0,2">
-                                <Button  Content="FOV" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="FOV_Click" />
+                                <Button  Content="计算" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="FOV_Click" />
                                 <ComboBox  x:Name="ComboxFOVTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                                 <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                                     <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -92,7 +92,7 @@
 
                         <GroupBox  Header="MTF">
                             <DockPanel Margin="0,2">
-                                <Button  Content="MTF" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="MTF_Click" />
+                                <Button  Content="计算" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="MTF_Click" />
                                 <ComboBox  x:Name="ComboxMTFTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                                 <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                                     <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -103,7 +103,7 @@
 
                         <GroupBox  Header="SFR">
                             <DockPanel Margin="0,2">
-                                <Button  Content="SFR" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="SFR_Clik" />
+                                <Button  Content="计算" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="SFR_Clik" />
                                 <ComboBox  x:Name="ComboxSFRTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                                 <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                                     <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -112,9 +112,9 @@
                             </DockPanel>
                         </GroupBox>
 
-                        <GroupBox  Header="Ghost">
+                        <GroupBox  Header="鬼影">
                             <DockPanel Margin="0,2">
-                                <Button  Content="Ghost" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Ghost_Click" />
+                                <Button  Content="计算" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Ghost_Click" />
                                 <ComboBox  x:Name="ComboxGhostTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                                 <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                                     <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -123,13 +123,33 @@
                             </DockPanel>
                         </GroupBox>
 
-                        <GroupBox  Header="Distortion">
+                        <GroupBox  Header="畸变校正">
                             <DockPanel Margin="0,2">
-                                <Button  Content="Distortion" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Distortion_Click" />
+                                <Button  Content="计算" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Distortion_Click" />
                                 <ComboBox  x:Name="ComboxDistortionTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                                 <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                                     <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
                                     <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="DistortionParam" Click="MenuItem_Template"/>
+                                </Grid>
+                            </DockPanel>
+                        </GroupBox>
+                        <GroupBox  Header="灯珠检测">
+                            <DockPanel Margin="0,2">
+                                <Button  Content="计算" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="LedCheck_Click" />
+                                <ComboBox  x:Name="ComboxLedCheckTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                                    <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="LedCheckParam" Click="MenuItem_Template"/>
+                                </Grid>
+                            </DockPanel>
+                        </GroupBox>
+                        <GroupBox  Header="FocusPoints">
+                            <DockPanel Margin="0,2">
+                                <Button  Content="计算" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="FocusPoints_Click" />
+                                <ComboBox  x:Name="ComboxFocusPointsTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                                    <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="FocusPointsParam" Click="MenuItem_Template"/>
                                 </Grid>
                             </DockPanel>
                         </GroupBox>

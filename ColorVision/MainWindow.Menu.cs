@@ -50,32 +50,39 @@ namespace ColorVision
                 {
                     case "AoiParam":
                         windowTemplate = new WindowTemplate(TemplateType.AoiParam) { Title = "AOI参数设置" };
+                        TemplateControl.LoadParams(TemplateControl.AoiParams);
                         TemplateAbb(windowTemplate, TemplateControl.AoiParams);
                         break;
                     case "Calibration":
                         Calibration calibration = new Calibration(TemplateControl.CalibrationParams[0].Value);
                         windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration) { Title = "校正参数设置" };
+                        TemplateControl.LoadParams(TemplateControl.CalibrationParams);
                         TemplateAbb(windowTemplate, TemplateControl.CalibrationParams);
                         break;
                     case "PGParam":
                         //PG pg = new PG(TemplateControl.PGParams[0].Value);
                         windowTemplate = new WindowTemplate(TemplateType.PGParam) { Title = "PG设置" };
+                        TemplateControl.LoadParams(TemplateControl.PGParams);
                         TemplateAbb(windowTemplate, TemplateControl.PGParams);
                         break;
                     case "LedReusltParams":
                         windowTemplate = new WindowTemplate(TemplateType.LedResult) { Title = "数据判断模板设置" };
+                        TemplateControl.LoadParams(TemplateControl.LedReusltParams);
                         TemplateAbb(windowTemplate, TemplateControl.LedReusltParams);
                         break;
                     case "SMUParam":
                         windowTemplate = new WindowTemplate(TemplateType.SMUParam) { Title = "源表模板设置" };
+                        TemplateControl.LoadParams(TemplateControl.SMUParams);
                         TemplateAbb(windowTemplate, TemplateControl.SMUParams);
                         break;
                     case "FocusParm":
                         windowTemplate = new WindowTemplate(TemplateType.PoiParam) { Title = "关注点设置" };
+                        TemplateControl.LoadParams(TemplateControl.PoiParams);
                         TemplateAbb(windowTemplate, TemplateControl.PoiParams);
                         break;
                     case "FlowParam":
                         windowTemplate = new WindowTemplate(TemplateType.FlowParam) { Title = "流程引擎" };
+                        TemplateControl.LoadParams(TemplateControl.FlowParams);
                         TemplateAbb(windowTemplate, TemplateControl.FlowParams);
                         break;
                     case "ServiceParam":
@@ -92,29 +99,36 @@ namespace ColorVision
                         break;
                     case "MTFParam":
                         windowTemplate = new WindowTemplate(TemplateType.MTFParam) { Title = "MTF算法设置" };
+                        TemplateControl.LoadParams(TemplateControl.MTFParams);
                         TemplateAbb(windowTemplate, TemplateControl.MTFParams);
                         break;
                     case "SFRParam":
                         windowTemplate = new WindowTemplate(TemplateType.SFRParam) { Title = "SFR算法设置" };
+                        TemplateControl.LoadParams(TemplateControl.SFRParams);
                         TemplateAbb(windowTemplate, TemplateControl.SFRParams);
                         break;
                     case "FOVParam":
                         windowTemplate = new WindowTemplate(TemplateType.FOVParam) { Title = "FOV算法设置" };
+                        TemplateControl.LoadParams(TemplateControl.FOVParams);
                         TemplateAbb(windowTemplate, TemplateControl.FOVParams);
                         break;
                     case "GhostParam":
                         windowTemplate = new WindowTemplate(TemplateType.GhostParam) { Title = "Ghost算法设置" };
+                        TemplateControl.LoadParams(TemplateControl.GhostParams);
                         TemplateAbb(windowTemplate, TemplateControl.GhostParams);
                         break;
                     case "DistortionParam":
                         windowTemplate = new WindowTemplate(TemplateType.DistortionParam) { Title = "Distortion算法设置" };
+                        TemplateControl.LoadParams(TemplateControl.DistortionParams);
                         TemplateAbb(windowTemplate, TemplateControl.DistortionParams);
                         break;
                     case "LedCheckParam":
                         windowTemplate = new WindowTemplate(TemplateType.LedCheckParam) { Title = "灯珠检测算法设置" };
+                        TemplateControl.LoadParams(TemplateControl.LedCheckParams);
                         TemplateAbb(windowTemplate, TemplateControl.LedCheckParams);
                         break;
                     case "FocusPointsParam":
+                        TemplateControl.LoadParams(TemplateControl.FocusPointsParams);
                         windowTemplate = new WindowTemplate(TemplateType.FocusPointsParam) { Title = "FocusPoints算法设置" };
                         TemplateAbb(windowTemplate, TemplateControl.FocusPointsParams);
                         break;
