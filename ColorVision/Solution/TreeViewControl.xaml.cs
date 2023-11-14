@@ -21,7 +21,7 @@ namespace ColorVision.Solution
     /// </summary>
     public partial class TreeViewControl : UserControl
     {
-
+        public SolutionManager SolutionManager { get; set; } = SolutionManager.GetInstance();
         public TreeViewControl()
         {
             Window window = Application.Current.MainWindow;
@@ -29,7 +29,11 @@ namespace ColorVision.Solution
                 window.Closing += Window_Closed;
             InitializeComponent();
             IniCommand();
+
+            SolutionManager.SolutionOpened += SolutionManager_SolutionOpened;
         }
+
+
 
         private void TreeViewControl_Drop(object sender, DragEventArgs e)
         {
@@ -67,16 +71,15 @@ namespace ColorVision.Solution
             }
         }
 
+        private int SolutionManager_SolutionOpened(string FileName)
+        {
+            throw new NotImplementedException();
+        }
+
         public bool OpenSolution(string FullName)
         {
-            bool sucess = false;
-            if (!string.IsNullOrEmpty(FullName))
-            {
-                SolutionFullName = FullName;
-                TreeViewInitialized(FullName);
-                sucess = true;
-            }
-            return sucess;
+            TreeViewInitialized(FullName);
+            return true;
         }
 
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
@@ -91,39 +94,6 @@ namespace ColorVision.Solution
 
         private void SolutionTreeView_ContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
-            //if (SolutionTreeView.SelectedItems.Count == 1)
-            //{
-            //    if (SelectedTreeViewItem != null && SelectedTreeViewItem.DataContext is GrifFile VObject)
-            //    {
-            //        SolutionTreeView.ContextMenu = VObject.ContextMenu;
-            //    }
-            //}
-            //if (SolutionTreeView.SelectedItems.Count > 1)
-            //{
-            //    SolutionTreeView.ContextMenu = new ContextMenu();
-            //    MenuItem menuItem = new MenuItem() { Header = "删除(_D)" };
-            //    menuItem.Click +=(s,e) =>
-            //    {
-            //        Dictionary<GrifFile, Action<object>> Actionlist = new Dictionary<GrifFile, Action<object>>();
-            //        foreach (VObject item in SolutionTreeView.SelectedItems)
-            //        {
-            //            if (item is GrifFile VObject)
-            //            {
-            //                Actionlist.Add(VObject, VObject.DeleteCommand.execute);
-            //            }
-            //        }
-
-            //        foreach (var item in Actionlist)
-            //        {
-            //            item.Key.DeleteShowDialog = false;
-            //            item.Value(item.Key);
-            //        }
-            //    };
-            //    SolutionTreeView.ContextMenu.Items.Add(menuItem);
-            //}
-
-
-
         }
 
 
@@ -135,34 +105,6 @@ namespace ColorVision.Solution
         private VObject LastReNameObject;
         private TreeViewItem? SelectedTreeViewItem;
         private TreeViewItem? LastSelectedTreeViewItem;
-
-        private string solutionDir;
-
-        public string SolutionDir
-        {
-            get { return solutionDir; }
-            set
-            {
-                if (value != null && value != solutionDir)
-                {
-                    solutionDir = value;
-                }
-            }
-        }
-
-        private string solutionFullName;
-
-        public string SolutionFullName
-        {
-            get { return solutionFullName; }
-            set
-            {
-                if (solutionFullName != value)
-                {
-                    solutionFullName = value;
-                }
-            }
-        }
 
         private void Window_Closed(object? sender, EventArgs e)
         {
@@ -204,32 +146,13 @@ namespace ColorVision.Solution
                 }
                 if (e.ClickCount == 2)
                 {
-                    //这里因为考虑到和lambda接轨，所以暂时不拆出来，合并类和基类的扩展中
-                    //if (item.DataContext is GrifFile grifFile)
-                    //{
-                    //    grifFile.OpenFileCommand.Execute(grifFile);
-                    //}
-                    //else if (item.DataContext is ProjectFile projectFile1)
-                    //{
-                    //    LambdaControl.Trigger("SolutionpProjectFileOpen", this, projectFile1.FullName);
-                    //}
-                    //if (item.DataContext is SeriesProjectManager seriesProjectManager1)
-                    //{
-                    //    seriesProjectManager1.OpenCommand.Execute(seriesProjectManager1);
-                    //}
+
                 }
             }
             else
             {
                 SelectedTreeViewItem = null;
             }
-
-
-
-            //if (e.RightButton == MouseButtonState.Pressed)   vbv
-            //{
-            //    HitTestResult result = VisualTreeHelper.HitTest(TreeView1, SelectPoint);
-            //}
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -242,9 +165,6 @@ namespace ColorVision.Solution
         {
 
         }
-
-
-
 
         private void TreeViewInitialized(string FilePath, bool init = true)
         {
@@ -289,13 +209,8 @@ namespace ColorVision.Solution
 
         private void Close_Click(object sender, RoutedEventArgs e)
         {
-            SolutionClose();
         }
-        private void SolutionClose()
-        {
 
-
-        }
 
         private unsafe void Button_Click_1(object sender, RoutedEventArgs e)
         {
