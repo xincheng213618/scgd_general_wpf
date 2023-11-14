@@ -131,7 +131,7 @@ namespace ColorVision
                 }
             }
             Views.Remove(control);
-            MainView.Children.Remove(control);
+            MainView?.Children.Remove(control);
         }
 
         public void SetViewIndex(Control control, int viewIndex)

@@ -1,5 +1,6 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.MySql.DAO;
+using ColorVision.Services.Device.Sensor;
 using ColorVision.Themes;
 using System.Windows;
 using System.Windows.Controls;
@@ -7,7 +8,7 @@ using System.Windows.Media;
 
 namespace ColorVision.Device.SMU
 {
-    public class DeviceSMU : BaseDevice<SMUConfig>
+    public class DeviceSMU : BaseDevice<ConfigSMU>
     {
         public SMUService Service { get; set; }
 
@@ -33,6 +34,7 @@ namespace ColorVision.Device.SMU
             View.View.Icon = Icon;
         }
         public override UserControl GetDeviceControl() => new DeviceSMUControl(this);
+        public override UserControl GetDeviceInfo() => new DeviceSMUControl(this, false);
         public override UserControl GetDisplayControl() => new SMUDisplayControl(this);
 
 

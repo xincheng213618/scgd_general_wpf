@@ -83,8 +83,6 @@ namespace ColorVision.Services
                     if (!Util.IsInvalidPath(TextBox_Name.Text, "资源名称") || !Util.IsInvalidPath(TextBox_Code.Text, "资源标识"))
                         return;
                 }
-
-
                 if (serviceTerminal.ServicesCodes.Contains(TextBox_Code.Text))
                 {
                     MessageBox.Show("设备标识已存在,不允许重复添加");
@@ -118,7 +116,7 @@ namespace ColorVision.Services
                         }
                         break;
                     case ServiceType.PG:
-                        PGConfig pGConfig = new PGConfig
+                        ConfigPG pGConfig = new ConfigPG
                         {
                             ID = TextBox_Code.Text,
                             Name = TextBox_Name.Text
@@ -128,7 +126,7 @@ namespace ColorVision.Services
                             serviceTerminal.AddChild(new DevicePG(sysResourceModel));
                         break;
                     case ServiceType.Spectrum:
-                        deviceConfig = new SpectrumConfig
+                        deviceConfig = new ConfigSpectrum
                         {
                             ID = TextBox_Code.Text,
                             Name = TextBox_Name.Text
@@ -138,7 +136,7 @@ namespace ColorVision.Services
                             serviceTerminal.AddChild(new DeviceSpectrum(sysResourceModel));
                         break;
                     case ServiceType.SMU:
-                        deviceConfig = new SMUConfig
+                        deviceConfig = new ConfigSMU
                         {
                             ID = TextBox_Code.Text,
                             Name = TextBox_Name.Text

@@ -15,13 +15,20 @@ namespace ColorVision.Device.Spectrum
         private bool disposedValue;
         private bool disposedObj;
 
-        public DeviceSpectrumControl(DeviceSpectrum mqttDeviceSp)
+        public bool IsCanEdit { get; set; }
+        public DeviceSpectrumControl(DeviceSpectrum mqttDeviceSp, bool isCanEdit = true)
         {
             this.disposedObj = false;
             this.MQTTDeviceSp = mqttDeviceSp;
             SpectrumService = mqttDeviceSp.DeviceService;
             SpectrumService.AutoParamHandlerEvent += Spectrum_AutoParamHandlerEvent;
+            IsCanEdit = isCanEdit;
             InitializeComponent();
+        }
+        private void UserControl_Initialized(object sender, EventArgs e)
+        {
+            ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
+            this.DataContext = this.MQTTDeviceSp;
         }
 
         private void Spectrum_AutoParamHandlerEvent(AutoIntTimeParam colorPara)
@@ -32,10 +39,7 @@ namespace ColorVision.Device.Spectrum
 
 
 
-        private void UserControl_Initialized(object sender, EventArgs e)
-        {
-            this.DataContext = this.MQTTDeviceSp;
-        }
+
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {

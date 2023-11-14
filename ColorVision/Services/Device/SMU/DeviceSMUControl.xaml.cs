@@ -13,15 +13,17 @@ namespace ColorVision.Device.SMU
         public DeviceSMU MQTTDeviceSMU { get; set; }
         public ServiceManager ServiceControl { get; set; }
 
-
-        public DeviceSMUControl(DeviceSMU mqttDeviceSMU)
+        public bool IsCanEdit { get; set; }
+        public DeviceSMUControl(DeviceSMU mqttDeviceSMU, bool isCanEdit = true)
         {
             this.MQTTDeviceSMU = mqttDeviceSMU;
+            IsCanEdit = isCanEdit;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
             this.DataContext = this.MQTTDeviceSMU;
         }
 

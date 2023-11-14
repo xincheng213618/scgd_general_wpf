@@ -31,6 +31,8 @@ namespace ColorVision.Services.Algorithm
         }
 
         public override UserControl GetDeviceControl() => new DeviceAlgorithmControl(this);
+        public override UserControl GetDeviceInfo() => new DeviceAlgorithmControl(this,false);
+
         public override UserControl GetDisplayControl() => new DisplayAlgorithmControl(this);
     }
 }

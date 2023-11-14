@@ -1,5 +1,6 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.MySql.DAO;
+using NPOI.SS.Formula.Functions;
 using System.Windows.Controls;
 
 namespace ColorVision.Services.Device.Calibration
@@ -14,6 +15,8 @@ namespace ColorVision.Services.Device.Calibration
         }
 
         public override UserControl GetDeviceControl() => new DeviceCalibrationControl(this);
+
+        public override UserControl GetDeviceInfo() => new DeviceCalibrationControl(this,false);
 
         public override UserControl GetDisplayControl() => new DisplayCalibrationControl(this);
 

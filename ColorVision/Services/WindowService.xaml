@@ -7,7 +7,7 @@
         xmlns:mqtt="clr-namespace:ColorVision.MQTT"
         xmlns:resx="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
-        Title="WindowService" Height="700" Width="850" Initialized="Window_Initialized" >
+        Title="WindowService" Height="700" Width="850" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized" >
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -15,10 +15,10 @@
         </Grid.RowDefinitions>
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="200"/>
+                <ColumnDefinition Width="220"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <TreeView x:Name="TreeView1" Loaded="TreeView1_Loaded" SelectedItemChanged="TreeView1_SelectedItemChanged " Margin="5">
+            <TreeView x:Name="TreeView1" Loaded="TreeView1_Loaded" ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectedItemChanged="TreeView1_SelectedItemChanged " Margin="5">
                 <TreeView.Resources>
                     <HierarchicalDataTemplate DataType="{x:Type local:ServiceKind}" ItemsSource="{Binding VisualChildren}" >
                         <StackPanel >
@@ -43,7 +43,7 @@
                 </TreeView.ItemContainerStyle>
 
             </TreeView>
-            <Border Background="{DynamicResource GlobalBorderBrush1}" CornerRadius="5" Grid.Column="1" Margin="5">
+            <Border CornerRadius="5" Grid.Column="1" Margin="5">
                 <Grid x:Name="StackPanelShow"  >
 
                 </Grid>
@@ -51,12 +51,9 @@
 
 
         </Grid>
-        
-        <Border  Grid.Row="1">
-            <StackPanel>
-                <Button  Height="40"  Width="300" Content="进入采集窗口" FontSize="18"  Margin="5" Background="#E6E6E6" Click="Button_Click">
-                </Button>
-            </StackPanel>
+
+        <Border   Margin="5" Grid.Row="1">
+            <Button x:Name="ButtonOK"  Height="40"   Content="进入采集窗口" Background="{StaticResource PrimaryBrush}" Foreground="White"  FontSize="22"   Click="Button_Click"/>
         </Border>
     </Grid>
 

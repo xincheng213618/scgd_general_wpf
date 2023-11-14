@@ -1,5 +1,6 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.MySql.DAO;
+using ColorVision.Services.Device.Calibration;
 using ColorVision.Services.Device.Camera;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
@@ -59,6 +60,7 @@ namespace ColorVision.Device.Camera
 
 
         public override UserControl GetDeviceControl() => new DeviceCameraControl(this);
+        public override UserControl GetDeviceInfo() => new DeviceCameraControl(this, false);
 
         public override UserControl GetDisplayControl() => Control;
     }

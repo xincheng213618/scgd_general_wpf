@@ -18,46 +18,46 @@
         </Style>
     </UserControl.Resources>
     <Grid>
-        <Border Background="{DynamicResource GlobalBorderBrush1}" CornerRadius="5"/>
-        
+        <Border Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" CornerRadius="5"/>
+
         <Grid Margin="5">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <Border  Grid.Row="0"  Background="{DynamicResource GlobalBackground}" CornerRadius="5" >
+            <Border  Grid.Row="0"  Background="{DynamicResource RegionBrush}" CornerRadius="5" >
                 <DockPanel  Margin="10,5">
                     <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  DockPanel.Dock="Right" Width="20"  HorizontalAlignment="Right" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
-                    <Grid  DockPanel.Dock="Right" Width="20" Margin="10,0">
-                        <Image Source="{StaticResource  DrawingImageEdit}" Margin="-4" />
+                    <Grid x:Name="ButtonEdit" DockPanel.Dock="Right" Width="20" Margin="10,0">
+                        <Image Source="{StaticResource  DrawingImageEdit}" Margin="0" />
                         <Button Background="Transparent" BorderThickness="0"   Click="Button_Click_1"/>
                     </Grid>
                     <TextBlock Text="{Binding Config.Name}" FontWeight="Bold" FontSize="20"/>
                 </DockPanel>
             </Border>
-            <Grid x:Name="MQTTShow" Grid.Row="1" Background="Transparent" Margin="0,5,0,0">
-                <Grid  x:Name="MQTTShowContent"  Visibility="Collapsed">
-                    <Border Background ="{DynamicResource GlobalBackground}"  CornerRadius="5" >
-                        <StackPanel Margin="5">
+            <Border Grid.Row="1" Background ="{DynamicResource RegionBrush}"  Margin="0,5" CornerRadius="5" >
+                <Grid x:Name="MQTTShow" >
+                    <Grid  x:Name="MQTTShowContent"  Visibility="Visible">
+                        <StackPanel Margin="5,0">
                             <GroupBox Header="基本信息" Margin="0,5">
                                 <StackPanel Margin="5">
-                                    <DockPanel Margin="0,2">
+                                    <DockPanel>
                                         <TextBlock Text="ID" Width="120"/>
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.ID}"/>
                                     </DockPanel>
-                                    <DockPanel Margin="0,2">
+                                    <DockPanel>
                                         <TextBlock Text="发送信道" Width="120"/>
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.SendTopic}"/>
                                     </DockPanel>
-                                    <DockPanel Margin="0,2">
+                                    <DockPanel>
                                         <TextBlock Text="接收信道" Width="120"/>
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.SubscribeTopic}"/>
                                     </DockPanel>
-                                    <DockPanel Margin="0,2" >
+                                    <DockPanel>
                                         <TextBlock Text="心跳时间(ms)"  Width="120"/>
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.HeartbeatTime}"/>
                                     </DockPanel>
-                                    <DockPanel Margin="0,2" >
+                                    <DockPanel>
                                         <TextBlock Text="Token"  Width="120"/>
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.ServiceToken}"/>
                                     </DockPanel>
@@ -81,54 +81,58 @@
                                 </StackPanel>
                             </GroupBox>
                         </StackPanel>
-                    </Border>
-                </Grid>
-                <Grid  x:Name="MQTTEditContent"  Visibility="Visible">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="60"/>
-                    </Grid.ColumnDefinitions>
-                    <Border Background ="{DynamicResource GlobalBackground}"  CornerRadius="5" Margin="0,0,5,0">
-                        <StackPanel Margin="5">
-                            <GroupBox Header="基本信息">
-                                <StackPanel Margin="5">
-                                    <DockPanel Margin="0,2" >
-                                        <TextBlock Text="Code" Width="120"/>
-                                        <TextBox Text="{Binding Name}"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2" >
-                                        <TextBlock Text="界面展示名称" Width="120"/>
-                                        <TextBox Text="{Binding Config.Name}"/>
-                                    </DockPanel>
-                                </StackPanel>
-                            </GroupBox>
 
-                            <GroupBox Header="传感器配置">
-                                <StackPanel Margin="5">
-                                    <DockPanel Margin="0,2">
-                                        <TextBlock Text="电机类型:" Width="120"/>
-                                        <ComboBox x:Name="ComboxSensorType"  SelectedValue="{Binding Config.CommunicateType}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Margin="0,0,0,0"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2">
-                                        <TextBlock Text="SzIPAddress:" Width="120"/>
-                                        <TextBox Text="{Binding Config.SzIPAddress}" />
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2">
-                                        <TextBlock Text="Port:" Width="120"/>
-                                        <TextBox Text="{Binding Config.Port}" />
-                                    </DockPanel>
-                                </StackPanel>
-                            </GroupBox>
-                        </StackPanel>
+                    </Grid>
+                    <Grid  x:Name="MQTTEditContent"  Visibility="Collapsed">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="60"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Background ="{DynamicResource GlobalBackground}"  CornerRadius="5" Margin="0,0,5,0">
+                            <StackPanel Margin="5,0">
+                                <GroupBox Header="基本信息">
+                                    <StackPanel Margin="5">
+                                        <DockPanel>
+                                            <TextBlock Text="Code" Width="120"/>
+                                            <TextBox Text="{Binding Name}"/>
+                                        </DockPanel>
+                                        <DockPanel>
+                                            <TextBlock Text="界面展示名称" Width="120"/>
+                                            <TextBox Text="{Binding Config.Name}"/>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </GroupBox>
 
-                        
-                        
-                        
-                        
-                    </Border>
-                    <Button  Grid.Column="1" Content="{x:Static resx:Resource.Submit}" Click="Button_Click" Command="{Binding SaveCommand}" />
+                                <GroupBox Header="传感器配置">
+                                    <StackPanel Margin="5">
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="电机类型:" Width="120"/>
+                                            <ComboBox x:Name="ComboxSensorType"  SelectedValue="{Binding Config.CommunicateType}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Margin="0,0,0,0"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="SzIPAddress:" Width="120"/>
+                                            <TextBox Text="{Binding Config.SzIPAddress}" />
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="Port:" Width="120"/>
+                                            <TextBox Text="{Binding Config.Port}" />
+                                        </DockPanel>
+                                    </StackPanel>
+                                </GroupBox>
+                            </StackPanel>
+
+
+
+
+
+                        </Border>
+                        <Button  Grid.Column="1" Content="{x:Static resx:Resource.Submit}" Click="Button_Click" Command="{Binding SaveCommand}" />
+                    </Grid>
                 </Grid>
-            </Grid>
+
+            </Border>
+
+
 
         </Grid>
     </Grid>

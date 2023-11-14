@@ -1,4 +1,5 @@
 ﻿using ColorVision.Device;
+using ColorVision.Extension;
 using ColorVision.MQTT;
 using ColorVision.MVVM;
 using ColorVision.Services.Msg;
@@ -25,8 +26,10 @@ namespace ColorVision.Services
     public class BaseDevService<T> : BaseDevService where T : BaseConfig
     {
         public event DeviceStatusChangedHandler DeviceStatusChanged;
-        public DeviceStatus DeviceStatus { get => _DeviceStatus; set { _DeviceStatus = value; Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value)); NotifyPropertyChanged(); } }
+        public DeviceStatus DeviceStatus { get => _DeviceStatus; set { _DeviceStatus = value; Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value)); NotifyPropertyChanged(); NotifyPropertyChanged(nameof(DeviceStatusString)); } }
         private DeviceStatus _DeviceStatus;
+
+        public string DeviceStatusString { get => DeviceStatus.ToDescription(); set { } }
 
         public T Config { get; set; }
 
@@ -184,9 +187,9 @@ namespace ColorVision.Services
 
 
 
-        private static Dictionary<string, Timer> timers = new Dictionary<string, Timer>();
+        private  Dictionary<string, Timer> timers = new Dictionary<string, Timer>();
 
-        private static readonly object _locker = new();
+        private  readonly object _locker = new();
 
         private List<MsgRecord> MsgRecords = new List<MsgRecord>();
 
@@ -228,10 +231,7 @@ namespace ColorVision.Services
             };
             timer.AutoReset = false;
             timer.Enabled = true;
-            lock (_locker)
-            {
-                timers.Add(guid.ToString(), timer);
-            }
+            timers.Add(guid.ToString(), timer);
             timer.Start();
             return msgRecord;
         }

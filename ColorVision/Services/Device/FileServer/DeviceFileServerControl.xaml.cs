@@ -11,14 +11,18 @@ namespace ColorVision.Device.FileServer
     public partial class DeviceFileServerControl : UserControl
     {
         public DeviceFileServer DeviceFileServer { get; set; }
-        public DeviceFileServerControl(DeviceFileServer device)
+
+        public bool IsCanEdit { get; set; }
+        public DeviceFileServerControl(DeviceFileServer device, bool isCanEdit = true)
         {
             DeviceFileServer = device;
+            IsCanEdit = isCanEdit;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
             this.DataContext = DeviceFileServer;
         }
 

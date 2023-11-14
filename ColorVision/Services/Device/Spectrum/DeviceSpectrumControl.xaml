@@ -18,117 +18,114 @@
         </Style>
     </UserControl.Resources>
     <Grid>
-        <Border Background="{DynamicResource GlobalBorderBrush1}" CornerRadius="5"/>
+        <Border Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" CornerRadius="5"/>
         <Grid Margin="5">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <Border  Grid.Row="0" Background="{DynamicResource GlobalBackground}" CornerRadius="5" >
+            <Border  Grid.Row="0" Background="{DynamicResource RegionBrush}" CornerRadius="5" >
                 <DockPanel  Margin="10,5">
                     <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  DockPanel.Dock="Right" Width="20"  HorizontalAlignment="Right" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
                     <Grid x:Name="ButtonEdit"  DockPanel.Dock="Right" Width="20" Margin="10,0">
-                        <Image Source="{StaticResource  DrawingImageEdit}" Margin="-4" />
+                        <Image Source="{StaticResource  DrawingImageEdit}" Margin="0" />
                         <Button Background="Transparent" BorderThickness="0"  Click="Button_Click_1"/>
                     </Grid>
                     <TextBlock Text="{Binding Config.Name}" FontWeight="Bold" FontSize="20"/>
                 </DockPanel>
             </Border>
-            <Border  Grid.Row="1"  Background="{DynamicResource GlobalBackground}" CornerRadius="5" Margin="0,5,0,0">
+            <Border  Grid.Row="1"  Background="{DynamicResource RegionBrush}" CornerRadius="5" Margin="0,5">
                 <Grid x:Name="MQTTShow" Margin="5">
                     <Grid  x:Name="MQTTShowContent">
-                        <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5" Margin="0,0,5,0">
-                            <StackPanel Margin="5">
-                                <GroupBox Header="基本信息" Margin="0,5">
-                                    <StackPanel Margin="5">
-                                        <DockPanel  Margin="0,2">
-                                            <TextBlock Text="设备Code:" Width="120"/>
-                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.Code}"/>
-                                        </DockPanel>
-                                        <DockPanel Margin="0,2">
-                                            <TextBlock Text="光谱仪ID" Width="120"/>
-                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ID}"/>
-                                        </DockPanel>
-                                        <DockPanel Margin="0,2">
-                                            <TextBlock Text="发送信道" Width="120"/>
-                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.SendTopic}"/>
-                                        </DockPanel>
-                                        <DockPanel Margin="0,2">
-                                            <TextBlock Text="接收信道" Width="120"/>
-                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.SubscribeTopic}"/>
-                                        </DockPanel>
-                                        <DockPanel Margin="0,2" >
-                                            <TextBlock Text="心跳时间(ms)"  Width="120"/>
-                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.HeartbeatTime}"/>
-                                        </DockPanel>
-                                        <DockPanel Margin="0,2" >
-                                            <TextBlock Text="Token"  Width="120"/>
-                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.ServiceToken}"/>
-                                        </DockPanel>
-                                    </StackPanel>
-                                </GroupBox>
-                                <GroupBox Header="配置" Margin="0,5">
-                                    <StackPanel Margin="5">
-                                        <DockPanel Margin="0,2">
-                                            <TextBlock Text="自动测试间隔(ms)" Width="120"/>
-                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.AutoTestTime}"/>
-                                        </DockPanel>
-                                        <DockPanel Margin="0,2">
-                                            <TextBlock Text="最大积分时间(ms)" Width="120"/>
-                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.TimeLimit}"/>
-                                        </DockPanel>
-                                        <DockPanel Margin="0,2">
-                                            <TextBlock Text="起始积分时间(ms)" Width="120"/>
-                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.TimeFrom}"/>
-                                        </DockPanel>
-                                    </StackPanel>
-                                </GroupBox>
-                            </StackPanel>
-                        </Border>
+                        <StackPanel Margin="5,0">
+                            <GroupBox Header="基本信息" Margin="0,5">
+                                <StackPanel Margin="5">
+                                    <DockPanel>
+                                        <TextBlock Text="设备Code:" Width="120"/>
+                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.Code}"/>
+                                    </DockPanel>
+                                    <DockPanel>
+                                        <TextBlock Text="光谱仪ID" Width="120"/>
+                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ID}"/>
+                                    </DockPanel>
+                                    <DockPanel>
+                                        <TextBlock Text="发送信道" Width="120"/>
+                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.SendTopic}"/>
+                                    </DockPanel>
+                                    <DockPanel>
+                                        <TextBlock Text="接收信道" Width="120"/>
+                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.SubscribeTopic}"/>
+                                    </DockPanel>
+                                    <DockPanel>
+                                        <TextBlock Text="心跳时间(ms)"  Width="120"/>
+                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.HeartbeatTime}"/>
+                                    </DockPanel>
+                                    <DockPanel>
+                                        <TextBlock Text="Token"  Width="120"/>
+                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.ServiceToken}"/>
+                                    </DockPanel>
+                                </StackPanel>
+                            </GroupBox>
+                            <GroupBox Header="配置" Margin="0,5">
+                                <StackPanel Margin="5">
+                                    <DockPanel>
+                                        <TextBlock Text="自动测试间隔(ms)" Width="120"/>
+                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.AutoTestTime}"/>
+                                    </DockPanel>
+                                    <DockPanel>
+                                        <TextBlock Text="最大积分时间(ms)" Width="120"/>
+                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.TimeLimit}"/>
+                                    </DockPanel>
+                                    <DockPanel>
+                                        <TextBlock Text="起始积分时间(ms)" Width="120"/>
+                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.TimeFrom}"/>
+                                    </DockPanel>
+                                </StackPanel>
+                            </GroupBox>
+                        </StackPanel>
+
                     </Grid>
                     <Grid  x:Name="MQTTEditContent" Visibility="Collapsed">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="60"/>
                         </Grid.ColumnDefinitions>
-                        <Border Background ="{DynamicResource GlobalBackground}"  CornerRadius="5" Margin="0,0,5,0">
-                            <StackPanel Margin="5" >
-                                <GroupBox Header="资源信息" Margin="0,5">
-                                    <StackPanel Margin="5">
-                                        <DockPanel Margin="0,2" >
-                                            <TextBlock Text="Code" Width="120"/>
-                                            <TextBox Text="{Binding Name}"/>
-                                        </DockPanel>
-                                        <DockPanel Margin="0,2" >
-                                            <TextBlock Text="界面展示名称" Width="120"/>
-                                            <TextBox Text="{Binding Config.Name}"/>
-                                        </DockPanel>
-                                        <DockPanel Margin="0,5" >
-                                            <TextBlock Text="心跳时间(ms)"  Width="120"/>
-                                            <TextBox Text="{Binding Config.HeartbeatTime}"/>
-                                        </DockPanel>
-                                    </StackPanel>
-                                </GroupBox>
-                                <GroupBox Header="配置信息" Margin="0,5">
-                                    <StackPanel Margin="5">
-                                        <DockPanel Margin="0,5" >
-                                            <TextBlock Text="自动测试间隔(ms)"  Width="120"/>
-                                            <TextBox Text="{Binding Config.AutoTestTime}"/>
-                                        </DockPanel>
+                        <StackPanel Margin="5,0" >
+                            <GroupBox Header="资源信息" Margin="0,5">
+                                <StackPanel Margin="5">
+                                    <DockPanel Margin="0,2" >
+                                        <TextBlock Text="Code" Width="120"/>
+                                        <TextBox Text="{Binding Name}"/>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,2" >
+                                        <TextBlock Text="界面展示名称" Width="120"/>
+                                        <TextBox Text="{Binding Config.Name}"/>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,5" >
+                                        <TextBlock Text="心跳时间(ms)"  Width="120"/>
+                                        <TextBox Text="{Binding Config.HeartbeatTime}"/>
+                                    </DockPanel>
+                                </StackPanel>
+                            </GroupBox>
+                            <GroupBox Header="配置信息" Margin="0,5">
+                                <StackPanel Margin="5">
+                                    <DockPanel Margin="0,5" >
+                                        <TextBlock Text="自动测试间隔(ms)"  Width="120"/>
+                                        <TextBox Text="{Binding Config.AutoTestTime}"/>
+                                    </DockPanel>
 
-                                        <DockPanel Margin="0,5" >
-                                            <TextBlock Text="最大积分时间(ms)"  Width="120"/>
-                                            <TextBox Text="{Binding Config.TimeLimit}"/>
-                                        </DockPanel>
+                                    <DockPanel Margin="0,5" >
+                                        <TextBlock Text="最大积分时间(ms)"  Width="120"/>
+                                        <TextBox Text="{Binding Config.TimeLimit}"/>
+                                    </DockPanel>
 
-                                        <DockPanel Margin="0,5" >
-                                            <TextBlock Text="起始积分时间(ms)"  Width="120"/>
-                                            <TextBox Text="{Binding Config.TimeFrom}"/>
-                                        </DockPanel>
-                                    </StackPanel>
-                                </GroupBox>
-                            </StackPanel>
-                        </Border>
+                                    <DockPanel Margin="0,5" >
+                                        <TextBlock Text="起始积分时间(ms)"  Width="120"/>
+                                        <TextBox Text="{Binding Config.TimeFrom}"/>
+                                    </DockPanel>
+                                </StackPanel>
+                            </GroupBox>
+                        </StackPanel>
                         <Border Grid.Column="1" Margin="5">
                             <Button  Content="{x:Static resx:Resource.Submit}" Click="Button_Click" Command="{Binding SaveCommand}" />
                         </Border>

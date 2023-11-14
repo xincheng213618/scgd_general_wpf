@@ -16,14 +16,19 @@ namespace ColorVision.Services.Device.Sensor
     {
         public DeviceSensor DeviceSensor { get; set; }
 
-        public DeviceSensorControl(DeviceSensor deviceSensor)
+        public DeviceServiceSensor Service { get => DeviceSensor.DeviceService; }
+
+        public bool IsCanEdit { get; set; }
+        public DeviceSensorControl(DeviceSensor deviceSensor, bool isCanEdit = true)
         {
             DeviceSensor = deviceSensor;
+            IsCanEdit = isCanEdit;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
             this.DataContext = DeviceSensor;
 
             ComboxSensorType.ItemsSource = from e1 in Enum.GetValues(typeof(CommunicateType)).Cast<CommunicateType>()

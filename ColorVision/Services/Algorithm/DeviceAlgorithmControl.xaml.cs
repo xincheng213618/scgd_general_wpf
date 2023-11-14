@@ -10,14 +10,18 @@ namespace ColorVision.Services.Algorithm
     public partial class DeviceAlgorithmControl : UserControl
     {
         public DeviceAlgorithm Device { get; set; }
-        public DeviceAlgorithmControl(DeviceAlgorithm device)
+
+        public bool IsCanEdit { get; set; }
+        public DeviceAlgorithmControl(DeviceAlgorithm device, bool isCanEdit = true)
         {
             this.Device = device;
+            IsCanEdit = isCanEdit;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
             this.DataContext = Device;
         }
 

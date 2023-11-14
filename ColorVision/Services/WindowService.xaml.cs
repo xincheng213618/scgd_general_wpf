@@ -21,6 +21,7 @@ namespace ColorVision.Services
         {
             MQTTServices = ServiceManager.GetInstance().MQTTServices;
             TreeView1.ItemsSource = MQTTServices;
+            ButtonOK.Focus();
         }
 
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)

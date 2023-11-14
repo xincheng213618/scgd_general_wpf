@@ -41,19 +41,18 @@ namespace ColorVision.Solution
         public SoftwareConfig SoftwareConfig { get; private set; }
         public RecentFileList SolutionHistory { get; set; } = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
 
+        public event SolutionOpenHandler SolutionOpened;
 
         public SolutionManager()
         {
             SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
 
-            if (string.IsNullOrWhiteSpace(Config.SolutionFullName))
-                return;
             if (!Directory.Exists(Config.SolutionFullName))
             {
+
+
                 Config.SolutionFullName = string.Empty;
                 Config.SolutionName = string.Empty;
-                log.Debug("工程文件失效");
-                MessageBox.Show("工程文件不存在，在使用之前请重新创建", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
             }
             else
             {
@@ -65,15 +64,25 @@ namespace ColorVision.Solution
 
         public bool OpenSolution(string SolutionFullPath)
         {
+            if (string.IsNullOrWhiteSpace(SolutionFullPath))
+                return false;
+            log.Debug("正在打开工程:" + SolutionFullPath);
+
             if (Directory.Exists(SolutionFullPath))
             {
+                SolutionOpened?.Invoke(SolutionFullPath);
                 DirectoryInfo Info = new DirectoryInfo(SolutionFullPath);
                 Config.SolutionName = Info.Name;
                 Config.SolutionFullName = Info.FullName;
                 SolutionHistory.InsertFile(Info.FullName);
                 return true;
             }
-            return false;
+            else
+            {
+                log.Debug("工程文件失效:" + SolutionFullPath);
+                MessageBox.Show("工程文件不存在，在使用之前请重新创建", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                return false;
+            }
         }
 
         public void CreateSolution(DirectoryInfo SolutionDirectoryInfo)

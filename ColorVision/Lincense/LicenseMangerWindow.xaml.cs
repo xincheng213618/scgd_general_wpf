@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace ColorVision.Lincense
 {
@@ -20,6 +21,7 @@ namespace ColorVision.Lincense
         {
             InitializeComponent();
             IsBlurEnabled = GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting.TransparentWindow && IsBlurEnabled;
+            this.Background = IsBlurEnabled ? this.Background : Brushes.Gray;
         }
 
         public ObservableCollection<LicenseConfig> Licenses { get; set; }

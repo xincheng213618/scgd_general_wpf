@@ -30,6 +30,11 @@ namespace ColorVision.MQTT
             throw new NotImplementedException();
         }
 
+        public virtual UserControl GetDeviceInfo()
+        {
+            throw new NotImplementedException();
+        }
+
         public virtual UserControl GetDisplayControl()
         {
             throw new NotImplementedException();
@@ -88,7 +93,7 @@ namespace ColorVision.MQTT
             PropertyCommand = new RelayCommand((e) =>
             {
                 Window window = new Window() { Width = 400, Height=400 , Title =Properties.Resource.Property};
-                window.Content = GetDeviceControl();
+                window.Content = GetDeviceInfo();
                 window.Owner = Application.Current.MainWindow;
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();

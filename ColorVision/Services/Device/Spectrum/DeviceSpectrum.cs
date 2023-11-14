@@ -1,10 +1,11 @@
-﻿using ColorVision.MQTT;
+﻿using ColorVision.Device.SMU;
+using ColorVision.MQTT;
 using ColorVision.MySql.DAO;
 using System.Windows.Controls;
 
 namespace ColorVision.Device.Spectrum
 {
-    public class DeviceSpectrum : BaseDevice<SpectrumConfig>
+    public class DeviceSpectrum : BaseDevice<ConfigSpectrum>
     {
         public SpectrumService DeviceService { get; set; }
 
@@ -17,7 +18,7 @@ namespace ColorVision.Device.Spectrum
         }
 
         public override UserControl GetDeviceControl() => new DeviceSpectrumControl(this);
-
+        public override UserControl GetDeviceInfo() => new DeviceSpectrumControl(this, false);
         public override UserControl GetDisplayControl() => new SpectrumDisplayControl(this);
 
     }

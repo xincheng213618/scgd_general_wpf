@@ -24,7 +24,7 @@ namespace ColorVision.Services
             MQTTDevices = ServiceManager.GetInstance().LastGenControl ?? ServiceManager.GetInstance().MQTTDevices;
             TreeView1.ItemsSource = MQTTDevices;
             Grid1.DataContext = GlobalSetting.GetInstance().SoftwareConfig.UserConfig;
-
+            ButtonOK.Focus();
         }
 
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)

@@ -1,4 +1,5 @@
-﻿using ColorVision.MQTT;
+﻿using ColorVision.Device.FileServer;
+using ColorVision.MQTT;
 using ColorVision.MySql.DAO;
 using System.Windows.Controls;
 
@@ -14,6 +15,7 @@ namespace ColorVision.Services.Device.Motor
         }
 
         public override UserControl GetDeviceControl() => new DeviceMotorControl(this);
+        public override UserControl GetDeviceInfo() => new DeviceMotorControl(this, false);
 
         public override UserControl GetDisplayControl() => new DisplayMotorControl(this);
 

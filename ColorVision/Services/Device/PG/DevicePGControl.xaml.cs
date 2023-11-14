@@ -13,9 +13,11 @@ namespace ColorVision.Device.PG
         public DevicePG DevicePG { get; set; }
         public ServiceManager ServiceControl { get; set; }
 
-        public DevicePGControl(DevicePG devicePG)
+        public bool IsCanEdit { get; set; }
+        public DevicePGControl(DevicePG devicePG, bool isCanEdit = true)
         {
             DevicePG = devicePG;
+            IsCanEdit = isCanEdit;
             InitializeComponent();
 
             DevicePG.DeviceService.ReLoadCategoryLib();
@@ -33,6 +35,7 @@ namespace ColorVision.Device.PG
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
             ServiceControl = ServiceManager.GetInstance();
             this.DataContext = DevicePG;
 

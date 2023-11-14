@@ -17,7 +17,7 @@ namespace ColorVision.Device.Spectrum
     public delegate void MQTTAutoParamHandler(AutoIntTimeParam colorPara);
     public delegate void MQTTSpectrumHeartbeatHandler(SpectumHeartbeatParam heartbeat);
 
-    public class SpectrumService : BaseDevService<SpectrumConfig>
+    public class SpectrumService : BaseDevService<ConfigSpectrum>
     {
         public event MQTTSpectrumDataHandler DataHandlerEvent;
         public event MQTTAutoParamHandler AutoParamHandlerEvent;
@@ -27,7 +27,7 @@ namespace ColorVision.Device.Spectrum
 
         public Dictionary<string, MsgSend> cmdMap { get; set; }
 
-        public SpectrumService(SpectrumConfig spectrumConfig) : base(spectrumConfig)
+        public SpectrumService(ConfigSpectrum spectrumConfig) : base(spectrumConfig)
         {
             Config = spectrumConfig;
 

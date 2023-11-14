@@ -18,17 +18,20 @@ namespace ColorVision.Device.Camera
 
         public DeviceServiceCamera Service { get => DeviceCamera.DeviceService; }
 
-        public DeviceCameraControl(DeviceCamera mQTTDeviceCamera)
+        public bool IsCanEdit { get; set; }
+        public DeviceCameraControl(DeviceCamera mQTTDeviceCamera,bool isCanEdit =true)
         {
             DeviceCamera = mQTTDeviceCamera;
+            IsCanEdit = isCanEdit;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            CameraID.ItemsSource = DeviceCamera.Service.DevicesSN;
+            ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
 
             this.DataContext = DeviceCamera;
+            CameraID.ItemsSource = DeviceCamera.Service.DevicesSN;
 
             ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()
                                            select new KeyValuePair<CameraType, string>(e1, e1.ToDescription());

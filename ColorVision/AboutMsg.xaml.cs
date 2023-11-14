@@ -20,6 +20,7 @@ namespace ColorVision
         {
             InitializeComponent();
             IsBlurEnabled = GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting.TransparentWindow && IsBlurEnabled;
+            this.Background = IsBlurEnabled ? this.Background : Brushes.Gray;
         }
 
         private void Window_Initialized(object sender, EventArgs e)
