@@ -78,20 +78,24 @@ namespace ColorVision.Templates.Algorithm
         public int Pichig { get => GetValue(_Pichig); set { SetProperty(ref _Pichig, value); } }
         private int _Pichig;
 
-        [Category("LedCheck"), Description("LengthCheck")]
+        [Category("LedCheck"), Description("pichig")]
         [JsonProperty("pichig")]
-        public double[] LengthCheck { get => GetValue(_LengthCheck); set { SetProperty(ref _LengthCheck, value); } }
-        private double[] _LengthCheck;
+        public double[]? LengthCheck { 
+            get => GetValue(_LengthCheck); 
+            set {
+                SetProperty(ref _LengthCheck, value);
+            } }
+        private double[]? _LengthCheck;
 
         [Category("LedCheck"), Description("LengthRange")]
         [JsonProperty("LengthRange")]
-        public double[] LengthRange { get => GetValue(_LengthRange); set { SetProperty(ref _LengthRange, value); } }
-        private double[] _LengthRange;
+        public double[]? LengthRange { get => GetValue(_LengthRange); set { SetProperty(ref _LengthRange, value); } }
+        private double[]? _LengthRange;
 
         [Category("LedCheck"), Description("localRdMark")]
         [JsonProperty("localRdMark")]
-        public double[] LocalRdMark { get => GetValue(_LocalRdMark); set { SetProperty(ref _LocalRdMark, value); } }
-        private double[] _LocalRdMark;
+        public double[]? LocalRdMark { get => GetValue(_LocalRdMark); set { SetProperty(ref _LocalRdMark, value); } }
+        private double[]? _LocalRdMark;
 
     }
 }

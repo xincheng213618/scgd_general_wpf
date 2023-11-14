@@ -94,7 +94,7 @@ namespace ColorVision
                     case "MeasureParm":
                         MeasureParamControl measure = new MeasureParamControl();
                         windowTemplate = new WindowTemplate(TemplateType.MeasureParam, measure) { Title = "测量设置" };
-                        TemplateControl.LoadMeasureParams();
+                        TemplateControl.LoadMeasureParams();  
                         TemplateAbb(windowTemplate, TemplateControl.MeasureParams);
                         break;
                     case "MTFParam":

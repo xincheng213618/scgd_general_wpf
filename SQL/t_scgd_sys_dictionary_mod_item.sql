@@ -5,13 +5,13 @@
  Source Server Type    : MySQL
  Source Server Version : 50742
  Source Host           : 192.168.3.250:3306
- Source Schema         : cv
+ Source Schema         : color_vision
 
  Target Server Type    : MySQL
  Target Server Version : 50742
  File Encoding         : 65001
 
- Date: 08/11/2023 10:12:01
+ Date: 14/11/2023 16:22:25
 */
 
 SET NAMES utf8mb4;
@@ -97,7 +97,7 @@ INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (1302, 'BeginValue', 1302, '
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (1303, 'EndValue', 1303, '结束值', 1, NULL, '5.0', 13, '2023-08-18 09:44:38', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (1304, 'LimitValue', 1304, '限值', 1, NULL, '200.0', 13, '2023-08-18 09:45:26', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (1305, 'Points', 1305, '点数', 0, NULL, '100', 13, '2023-08-18 09:46:37', 1, 0, NULL);
-INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3000, 'Gamma', 3000, 'Gamma', 1, NULL, '1.0', 9, '2023-11-07 15:25:36', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3000, 'Gamma', 3000, 'Gamma', 1, NULL, '1.0', 9, '2023-11-07 15:24:35', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3001, 'X', 3001, 'X', 0, NULL, '0', 9, '2023-11-07 11:55:18', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3002, 'Y', 3002, 'Y', 0, NULL, '0', 9, '2023-11-07 11:55:20', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3003, 'Width', 3003, 'Width', 0, NULL, '1000', 9, '2023-10-10 11:42:52', 1, 0, NULL);
@@ -133,13 +133,13 @@ INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3042, 'maxArea', 3042, '斑
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3043, 'minRepeatability', 3043, '重复次数认定', 0, NULL, '2', 10, '2023-10-09 15:55:39', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3044, 'filterByCircularity', 3044, '形状控制（圆，方)', 0, NULL, NULL, 10, '2023-10-09 15:57:27', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3045, 'minCircularity', 3045, '', 1, NULL, '0.9', 10, '2023-10-09 15:59:29', 1, 0, NULL);
-INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3046, 'maxCircularity', 3046, NULL, 1, NULL, '3.40282346638528859e+38', 10, '2023-11-08 10:11:50', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3046, 'maxCircularity', 3046, NULL, 1, NULL, '3.40282346638528859e+38', 10, '2023-10-09 16:04:59', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3047, 'filterByConvexity', 3047, '形状控制（豁口）', 0, NULL, NULL, 10, '2023-10-09 15:59:23', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3048, 'minConvexity', 3048, NULL, 1, NULL, '0.9', 10, '2023-10-09 16:00:00', 1, 0, NULL);
-INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3049, 'maxConvexity', 3049, NULL, 1, NULL, '3.40282346638528859e+38', 10, '2023-11-08 10:11:49', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3049, 'maxConvexity', 3049, NULL, 1, NULL, '3.40282346638528859e+38', 10, '2023-10-09 16:04:29', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3050, 'filterByInertia', 3050, '形状控制（椭圆度）', 0, NULL, NULL, 10, '2023-10-09 16:00:51', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3051, 'minInertiaRatio', 3051, NULL, 1, NULL, '0.9', 10, '2023-10-09 16:00:51', 1, 0, NULL);
-INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3052, 'maxInertiaRatio', 3052, NULL, 1, NULL, '3.40282346638528859e+38', 10, '2023-11-08 10:11:48', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3052, 'maxInertiaRatio', 3052, NULL, 1, NULL, '3.40282346638528859e+38', 10, '2023-10-09 16:04:28', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3053, 'X', 3053, 'X', 0, NULL, '0', 10, '2023-10-24 15:04:15', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3054, 'Y', 3054, 'Y', 0, NULL, '0', 10, '2023-10-24 15:04:15', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3055, 'Width', 3055, 'cx', 0, NULL, '16', 10, '2023-10-24 15:31:14', 1, 0, NULL);
@@ -153,5 +153,20 @@ INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3070, 'type', 3070, 'type',
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3071, 'sType', 3071, 'sType', 0, NULL, '0', 10, '2023-11-07 14:11:10', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3072, 'lType', 3072, 'lType', 0, NULL, '0', 10, '2023-11-07 14:11:11', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3073, 'dType', 3073, 'dType', 0, NULL, '0', 10, '2023-11-07 14:11:11', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3080, 'CheckChannel', 3080, 'CheckChannel', 0, NULL, '0', 14, '2023-11-14 16:13:12', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3081, 'Isguding', 3081, 'Isguding', 0, NULL, '0', 14, '2023-11-14 16:13:38', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3082, 'Gudingrid', 3082, 'Gudingrid', 0, NULL, '0', 14, '2023-11-14 16:14:24', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3083, 'Lunkuomianji', 3083, 'Lunkuomianji', 0, NULL, '0', 14, '2023-11-14 16:14:24', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3084, 'PointNum', 3084, 'PointNum', 0, NULL, '0', 14, '2023-11-14 16:14:41', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3085, 'Hegexishu', 3085, 'Hegexishu', 1, NULL, '0', 14, '2023-11-14 16:15:56', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3086, 'Erzhihuapiancha', 3086, 'Erzhihuapiancha', 0, NULL, '0', 14, '2023-11-14 16:15:53', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3087, 'BinaryCorret', 3087, 'BinaryCorret', 0, NULL, '0', 14, '2023-11-14 16:16:14', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3088, 'Boundry', 3088, 'Boundry', 0, NULL, '0', 14, '2023-11-14 16:16:34', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3089, 'IsuseLocalRdPoint', 3089, 'IsuseLocalRdPoint', 0, NULL, '0', 14, '2023-11-14 16:17:39', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3090, 'Picwid', 3090, 'Picwid', 0, NULL, '0', 14, '2023-11-14 16:17:36', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3091, 'Pichig', 3091, 'Pichig', 0, NULL, '0', 14, '2023-11-14 16:17:46', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3092, 'LengthCheck', 3092, 'LengthCheck', 5, NULL, NULL, 14, '2023-11-14 16:18:08', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3093, 'LengthRange', 3093, 'LengthRange', 5, NULL, NULL, 14, '2023-11-14 16:20:39', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3094, 'LocalRdMark', 3094, 'LocalRdMark', 5, NULL, NULL, 14, '2023-11-14 16:20:59', 1, 0, NULL);
 
 SET FOREIGN_KEY_CHECKS = 1;
