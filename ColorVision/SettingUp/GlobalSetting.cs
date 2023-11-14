@@ -124,7 +124,19 @@ namespace ColorVision
         private static T? ReadConfig<T>(string fileName)
         {
             if (File.Exists(fileName))
-                return JsonSerializer.Deserialize<T>(File.ReadAllText(fileName), jsonSerializerOptions);
+            {
+                try
+                {
+                    return JsonSerializer.Deserialize<T>(File.ReadAllText(fileName), jsonSerializerOptions);
+                }
+                catch(Exception ex)
+                {
+                    T t = (T)Activator.CreateInstance(typeof(T));
+                    WriteConfig(fileName, t);
+                    return t;
+                }
+            }
+
             else
             {
                 T t = (T)Activator.CreateInstance(typeof(T));
