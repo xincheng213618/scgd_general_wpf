@@ -189,7 +189,8 @@ namespace ColorVision.Device.PG
             {
                 if (Config.Code.Equals(item.Key, System.StringComparison.Ordinal))
                 {
-                    switch (item.Value)
+                    var dev = item.Value;
+                    switch (dev.Status)
                     {
                         case DeviceStatusType.Unknown:
                             heartbeat.DeviceStatus = DeviceStatus.Closed;
