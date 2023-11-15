@@ -77,7 +77,10 @@
                 </ResourceDictionary>
             </Grid.Resources>-->
             <!--<hc:PropertyGrid x:Name="PropertyGrid1"   hc:TipElement.Visibility="Visible"  />-->
-            <xctk:PropertyGrid   x:Name="PropertyGrid1" />
+            <!--<xctk:PropertyGrid   x:Name="PropertyGrid1" />-->
+            <WindowsFormsHost>
+                <winf:PropertyGrid x:Name="PropertyGrid1" />
+            </WindowsFormsHost>
 
 
         </Grid>

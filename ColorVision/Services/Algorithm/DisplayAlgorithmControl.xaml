@@ -37,8 +37,7 @@
         <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel Margin="5" >
                 <GroupBox  Header="关注点">
-
-                    <StackPanel Margin="5" >
+                    <StackPanel Margin="2" >
                         <GroupBox  Header="CIE图像数据区">
                             <StackPanel  Margin="5" >
                                 <DockPanel Margin="0,2">
@@ -68,8 +67,8 @@
                 </GroupBox>
                 <GroupBox  Header="算法服务">
                     <StackPanel  >
-                        <Button Content="算法服务初始化"  HorizontalAlignment="Left" Click="Algorithm_INI" />
-                        <Button Content="数据显示窗口"  HorizontalAlignment="Left" Click="Button_Click" />
+                        <Button Content="算法服务初始化"  HorizontalAlignment="Left" Click="Algorithm_INI" Visibility="Collapsed" />
+                        <Button Content="数据显示窗口"  HorizontalAlignment="Left" Click="Button_Click" Visibility="Collapsed" />
                         <GroupBox  Header="图片文件">
                             <DockPanel Margin="0,2">
                                 <Button  Content="..." DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Open_File" />

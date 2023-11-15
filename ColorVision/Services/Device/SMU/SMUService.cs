@@ -48,11 +48,9 @@ namespace ColorVision.Device.SMU
                         }
                         else if (json.EventName == "SetParam")
                         {
-                            //MessageBox.Show("SetParam");
                         }
                         else if (json.EventName == "Open")
                         {
-                            //MessageBox.Show("Transparent");
                         }
                         else if (json.EventName == "GetData")
                         {
@@ -66,11 +64,9 @@ namespace ColorVision.Device.SMU
                         }
                         else if (json.EventName == "Close")
                         {
-                            //MessageBox.Show("Close");
                         }
                         else if (json.EventName == "Uninit")
                         {
-                            //MessageBox.Show("Uninit");
                         }
                         else if (json.EventName == "Heartbeat" && json.ServiceName.Equals(this.ServiceName, System.StringComparison.Ordinal))
                         {

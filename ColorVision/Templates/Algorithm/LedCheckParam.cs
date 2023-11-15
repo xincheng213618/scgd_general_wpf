@@ -11,87 +11,88 @@ namespace ColorVision.Templates.Algorithm
     public class LedCheckParam : ParamBase
     {
         public LedCheckParam() { }
-        public LedCheckParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name??string.Empty, modDetails)
+        public LedCheckParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
         {
         }
 
-        [Category("LedCheck"), Description("checkChannel")]
+        [Category("LedCheck"), DisplayName("灯珠抓取通道"), Description("灯珠抓取通道 checkChannel")]
         [JsonProperty("checkChannel")]
         public int CheckChannel { get => GetValue(_CheckChannel); set { SetProperty(ref _CheckChannel, value); } }
-        private int _CheckChannel;
+        private int _CheckChannel = 1;
 
 
-        [Category("LedCheck"), Description("isguding")]
+        [Category("LedCheck"), DisplayName("是否启用固定半径计算"), Description("是否启用固定半径计算 isguding")]
         [JsonProperty("isguding")]
         public int Isguding { get => GetValue(_Isguding); set { SetProperty(ref _Isguding, value); } }
-        private int _Isguding;
+        private int _Isguding =2;
 
-        [Category("LedCheck"), Description("gudingrid")]
+        [Category("LedCheck"), DisplayName("灯珠固定半径"), Description("灯珠固定半径 gudingrid")]
         [JsonProperty("gudingrid")]
         public int Gudingrid { get => GetValue(_Gudingrid); set { SetProperty(ref _Gudingrid, value); } }
-        private int _Gudingrid;
+        private int _Gudingrid =15;
 
-        [Category("LedCheck"), Description("lunkuomianji")]
+        [Category("LedCheck"), DisplayName("轮廓最小面积"), Description("轮廓最小面积  lunkuomianji")]
         [JsonProperty("lunkuomianji")]
         public int Lunkuomianji { get => GetValue(_Lunkuomianji); set { SetProperty(ref _Lunkuomianji, value); } }
-        private int _Lunkuomianji;
+        private int _Lunkuomianji =5;
 
-        [Category("LedCheck"), Description("pointNum")]
-        [JsonProperty("pointNum")]
-        public int PointNum { get => GetValue(_PointNum); set { SetProperty(ref _PointNum, value); } }
-        private int _PointNum;
 
-        [Category("LedCheck"), Description("hegexishu")]
+
+        [Category("LedCheck"), DisplayName("轮廓范围系数"), Description("轮廓范围系数 hegexishu")]
         [JsonProperty("hegexishu")]
         public double Hegexishu { get => GetValue(_Hegexishu); set { SetProperty(ref _Hegexishu, value); } }
-        private double _Hegexishu;
+        private double _Hegexishu = 0.3;
 
-        [Category("LedCheck"), Description("erzhihuapiancha")]
+        [Category("LedCheck"), DisplayName("图像二值化补正"), Description("图像二值化补正 erzhihuapiancha")]
         [JsonProperty("erzhihuapiancha")]
         public int Erzhihuapiancha { get => GetValue(_Erzhihuapiancha); set { SetProperty(ref _Erzhihuapiancha, value); } }
-        private int _Erzhihuapiancha;
+        private int _Erzhihuapiancha = -20;
 
-        [Category("LedCheck"), Description("binaryCorret")]
+        [Category("LedCheck"), DisplayName("发光区二值化补正"), Description("发光区二值化补正 binaryCorret")]
         [JsonProperty("binaryCorret")]
         public int BinaryCorret { get => GetValue(_BinaryCorret); set { SetProperty(ref _BinaryCorret, value); } }
-        private int _BinaryCorret;
+        private int _BinaryCorret = -20;
 
 
-        [Category("LedCheck"), Description("boundry")]
+        [Category("LedCheck"), DisplayName("boundry"), Description("boundry")]
         [JsonProperty("boundry")]
         public int Boundry { get => GetValue(_Boundry); set { SetProperty(ref _Boundry, value); } }
-        private int _Boundry;
+        private int _Boundry = 120;
 
 
-        [Category("LedCheck"), Description("isuseLocalRdPoint")]
+        [Category("LedCheck"), DisplayName("是否使用本地点位信息计算"), Description("是否使用本地点位信息计算 isuseLocalRdPoint")]
         [JsonProperty("isuseLocalRdPoint")]
-        public int IsuseLocalRdPoint { get => GetValue(_IsuseLocalRdPoint); set { SetProperty(ref _IsuseLocalRdPoint, value); } }
-        private int _IsuseLocalRdPoint;
+        public bool IsuseLocalRdPoint { get => GetValue(_IsuseLocalRdPoint); set { SetProperty(ref _IsuseLocalRdPoint, value); } }
+        private bool _IsuseLocalRdPoint = false;
 
-        [Category("LedCheck"), Description("picwid")]
+        [Category("LedCheck"), DisplayName("灯珠宽方向数量"), Description("灯珠宽方向数量 picwid")]
         [JsonProperty("picwid")]
         public int Picwid { get => GetValue(_Picwid); set { SetProperty(ref _Picwid, value); } }
-        private int _Picwid;
+        private int _Picwid = 32;
 
-        [Category("LedCheck"), Description("pichig")]
+        [Category("LedCheck"), DisplayName("灯珠高方向数量"), Description("灯珠高方向数量 pichig")]
         [JsonProperty("pichig")]
         public int Pichig { get => GetValue(_Pichig); set { SetProperty(ref _Pichig, value); } }
-        private int _Pichig;
+        private int _Pichig =24;
+
+        [Browsable(false),]
+        [JsonProperty("pointNum")]
+        public int PointNum { get => _Picwid * Pichig;}
 
         [Category("LedCheck"), Description("LengthCheck")]
-        [JsonProperty("pichig")]
-        public double[] LengthCheck { get => GetValue(_LengthCheck); set { SetProperty(ref _LengthCheck, value); } }
-        private double[] _LengthCheck;
+        [JsonProperty("LengthCheck")]
+        public double[]? LengthCheck { get => GetValue(_LengthCheck); set { SetProperty(ref _LengthCheck, value); } }
+        private double[]? _LengthCheck = new double[]{ 10,10,10,10 };
 
         [Category("LedCheck"), Description("LengthRange")]
         [JsonProperty("LengthRange")]
-        public double[] LengthRange { get => GetValue(_LengthRange); set { SetProperty(ref _LengthRange, value); } }
-        private double[] _LengthRange;
+        public double[]? LengthRange { get => GetValue(_LengthRange); set { SetProperty(ref _LengthRange, value); } }
+        private double[]? _LengthRange = new double[] { 10, 10, 10, 10 };
 
         [Category("LedCheck"), Description("localRdMark")]
         [JsonProperty("localRdMark")]
-        public double[] LocalRdMark { get => GetValue(_LocalRdMark); set { SetProperty(ref _LocalRdMark, value); } }
-        private double[] _LocalRdMark;
+        public double[]? LocalRdMark { get => GetValue(_LocalRdMark); set { SetProperty(ref _LocalRdMark, value); } }
+        private double[]? _LocalRdMark = new double[] { 10, 10, 10, 10 };
 
     }
 }

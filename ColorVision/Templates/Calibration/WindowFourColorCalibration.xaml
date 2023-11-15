@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision" 
         xmlns:draw="clr-namespace:ColorVision.Draw;assembly=ColorVision.Util" 
+        xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         mc:Ignorable="d"
         Title="四色标定" Height="450" Width="800" Background="#F0F0F0">
     <Window.Resources>

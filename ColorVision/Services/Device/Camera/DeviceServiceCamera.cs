@@ -125,7 +125,7 @@ namespace ColorVision.Device.Camera
                                              "SaturationG:" + Config.SaturationG.ToString() + Environment.NewLine +
                                              "SaturationB:" + Config.SaturationB.ToString() + Environment.NewLine;
 
-                                Application.Current.Dispatcher.BeginInvoke(new Action(() => MessageBox.Show(Application.Current.MainWindow, Msg) ));
+                                Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, Msg));
                             }
                             else
                             {
@@ -133,7 +133,7 @@ namespace ColorVision.Device.Camera
                                 Config.Saturation = msg.Data.result[0].resultSaturation;
 
                                 string Msg = "Saturation:" + Config.Saturation.ToString();
-                                Application.Current.Dispatcher.BeginInvoke(new Action(() => MessageBox.Show(Application.Current.MainWindow, Msg)));
+                                Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, Msg));
                             }
                         } 
                         break;
@@ -156,7 +156,7 @@ namespace ColorVision.Device.Camera
                     case "SetCfg":
                         break;
                     default:
-                        Application.Current.Dispatcher.BeginInvoke(new Action(() => MessageBox.Show(Application.Current.MainWindow, $"未定义{msg.EventName}")));
+                        Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, $"未定义{msg.EventName}"));
                         break;
                 }
             }
@@ -173,7 +173,7 @@ namespace ColorVision.Device.Camera
                         break;
                     case "Open":
                         if (DeviceStatus == DeviceStatus.Init)
-                            Application.Current.Dispatcher.BeginInvoke(new Action(() => MessageBox.Show(Application.Current.MainWindow, "许可证异常，请配置相机设备许可证")));
+                            Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, "许可证异常，请配置相机设备许可证"));
                         DeviceStatus = DeviceStatus.Init;
                         break;
                     case "Init":

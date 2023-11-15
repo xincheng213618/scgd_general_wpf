@@ -22,6 +22,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Forms.Integration;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -336,12 +337,12 @@ namespace ColorVision.Templates
                 if (DrawingVisualLists.Count ==0)
                 {
                     FocusPointGrid.Visibility = Visibility.Collapsed;
-                    PropertyGrid2.Visibility = Visibility.Collapsed;
+                    PropertyGrid21.Visibility = Visibility.Collapsed;
                 }
                 else
                 {
                     FocusPointGrid.Visibility = Visibility.Visible;
-                    PropertyGrid2.Visibility = Visibility.Visible;
+                    PropertyGrid21.Visibility = Visibility.Visible;
                 }
             };
 
@@ -938,7 +939,7 @@ namespace ColorVision.Templates
                         case RiPointTypes.Circle:
                             if (PoiParam.DatumArea.AreaCircleNum < 1)
                             {
-                                MessageBox.Show("绘制的个数不能小于1", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                                MessageBox.Show("绘制的个数不能小于1", "ColorVision");
                                 return;
                             }
 
@@ -1001,7 +1002,7 @@ namespace ColorVision.Templates
 
                             if (rows < 1 || cols < 1)
                             {
-                                MessageBox.Show("点阵数的行列不能小于1", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                                MessageBox.Show("点阵数的行列不能小于1", "ColorVision");
                                 return;
                             }
                             double Width = PoiParam.DatumArea.AreaRectWidth;
@@ -1146,7 +1147,7 @@ namespace ColorVision.Templates
                     OpenCvSharp.Mat mat;
                     if (ledPicData==null)
                     {
-                        MessageBox.Show("请先载入图片", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                        MessageBox.Show("请先载入图片", "ColorVision");
                         return;
                     }
                     else
@@ -1223,7 +1224,7 @@ namespace ColorVision.Templates
                         }
                         catch (Exception)
                         {
-                            MessageBox.Show("本地点位数据文件读取失败，请检查设置与文件！", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                            MessageBox.Show("本地点位数据文件读取失败，请检查设置与文件！", "ColorVision");
                             return;
                         }
                     }
@@ -1242,7 +1243,7 @@ namespace ColorVision.Templates
                     PoiParam.DatumArea.LedLen4 = Math.Round(LengthResult[3], 2);
                     if (calresult != 3)
                     {
-                        MessageBox.Show("灯珠抓取异常，请检查参数设置", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                        MessageBox.Show("灯珠抓取异常，请检查参数设置", "ColorVision");
                         return;
                     }
 
@@ -1293,7 +1294,7 @@ namespace ColorVision.Templates
                             {
                                 PoiParam.PoiPoints.Add(item);
                             }
-                            MessageBox.Show("导入成功", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                            MessageBox.Show("导入成功", "ColorVision");
                         }   
                     };
                     windowFocusPointAd.ShowDialog();
@@ -1525,7 +1526,7 @@ namespace ColorVision.Templates
                     {
                         WaitControl.Visibility = Visibility.Collapsed;
                     });
-                    MessageBox.Show("保存成功", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                    MessageBox.Show("保存成功", "ColorVision");
                 });
                 thread.Start();
             }
@@ -1533,7 +1534,7 @@ namespace ColorVision.Templates
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("生成关注点", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+            MessageBox.Show("生成关注点", "ColorVision");
         }
 
         private void RadioButtonMode1_Checked(object sender, RoutedEventArgs e)
@@ -1555,6 +1556,7 @@ namespace ColorVision.Templates
             if (GridBenckMark != null)
                 GridBenckMark.Visibility = Visibility.Collapsed;
             PropertyGridAutoFocus.SelectedObject = ledCheckCfg;
+            
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
@@ -1593,7 +1595,7 @@ namespace ColorVision.Templates
                 var Cfg = CfgFile.Load<LedCheckCfg>(filePath);
                 if (Cfg == null)
                 {
-                    MessageBox.Show("读取配置文件失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                    MessageBox.Show("读取配置文件失败", "ColorVision");
                     ledCheckCfg = new LedCheckCfg();
                 }
                 else
@@ -1615,11 +1617,11 @@ namespace ColorVision.Templates
                 bool result=CfgFile.Save(filePath, ledCheckCfg);
                 if (result)
                 {
-                    MessageBox.Show("保存成功", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                    MessageBox.Show("保存成功", "ColorVision");
                 }
                 else
                 {
-                    MessageBox.Show("保存失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                    MessageBox.Show("保存失败", "ColorVision");
                 }
             }
 

@@ -37,13 +37,13 @@ namespace ColorVision.Services.Device.CfwPort
                     case "SetPort":
                         break;
                     case "GetPort":
-                        Application.Current.Dispatcher.BeginInvoke(new Action(() => MessageBox.Show(Application.Current.MainWindow, $"Port:{(char)(msg.Data.nPort)}")));
+                        Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, $"Port:{(char)(msg.Data.nPort)}"));
                         break;
                     case "Clode":
                         DeviceStatus = DeviceStatus.Closed;
                         break;
                     default:
-                        Application.Current.Dispatcher.BeginInvoke(new Action(() => MessageBox.Show(Application.Current.MainWindow, $"未定义{msg.EventName}")));
+                        Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, $"未定义{msg.EventName}"));
                         break;
                 }
             }
@@ -66,7 +66,7 @@ namespace ColorVision.Services.Device.CfwPort
                         DeviceStatus = DeviceStatus.Closed;
                         break;
                     default:
-                        Application.Current.Dispatcher.BeginInvoke(new Action(() => MessageBox.Show(Application.Current.MainWindow, $"未定义{msg.EventName}")));
+                        Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, $"未定义{msg.EventName}"));
                         break;
                 }
 
