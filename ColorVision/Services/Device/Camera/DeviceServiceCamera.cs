@@ -394,10 +394,12 @@ namespace ColorVision.Device.Camera
 
         public MsgRecord AutoFocus()
         {
+            var Params = new Dictionary<string, object>() { };
+
             MsgSend msg = new MsgSend
             {
                 EventName = "AutoFocus",
-                Params = new Dictionary<string, object>() {   }
+                Params = Params
             };
 
             var tAutoFocusCfg = new Dictionary<string, object>(){
@@ -412,9 +414,7 @@ namespace ColorVision.Device.Camera
                                 { "nTimeout",Config.MotorConfig.AutoFocusConfig.nTimeout}
                             };
 
-            var Params = new Dictionary<string, object>() { };
             Params.Add("tAutoFocusCfg", tAutoFocusCfg);
-            msg.Params.Add("params", Params);
             return PublishAsyncClient(msg, Config.MotorConfig.AutoFocusConfig.nTimeout);
         }
 
