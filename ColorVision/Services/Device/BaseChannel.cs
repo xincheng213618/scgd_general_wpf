@@ -1,9 +1,13 @@
 ﻿using ColorVision.Device;
+using ColorVision.Extension;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.Services;
+using ColorVision.Solution;
+using FlowEngineLib;
 using Newtonsoft.Json;
 using System;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -23,6 +27,9 @@ namespace ColorVision.MQTT
         private bool _IsSelected;
 
         public RelayCommand PropertyCommand { get; set; }
+        public RelayCommand ExportCommand { get; set; }
+        public RelayCommand ImportCommand { get; set; }
+
         public SysResourceModel SysResourceModel { get; set; }
 
         public virtual UserControl GetDeviceControl()
@@ -87,8 +94,46 @@ namespace ColorVision.MQTT
                 Parent.RemoveChild(this);
                 this.Dispose();
             };
+
+
             ContextMenu.Items.Add(menuItem);
 
+
+
+            ExportCommand = new RelayCommand((e) => {
+                System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
+                ofd.Filter = "*.config|*.config";
+                ofd.FileName = Config.Name;
+                ofd.RestoreDirectory = true;
+                if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+                Config.ToJsonNFile(ofd.FileName);
+                MessageBox.Show("导出成功", "ColorVision");
+            });
+
+
+            ImportCommand = new RelayCommand((e) => {
+                System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
+                ofd.Filter = "*.config|*.config";
+                ofd.RestoreDirectory = true;
+                ofd.SupportMultiDottedExtensions = false;
+                if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+
+                string data = File.ReadAllText(ofd.FileName);
+                var config = JsonConvert.DeserializeObject<T>(data);
+                if (config != null)
+                {
+                    config.CopyTo(this.Config);
+                    Save();
+                }
+                else
+                    MessageBox.Show("导入异常","ColorVision");
+            });
+
+            MenuItem menuItemExport = new MenuItem() { Header = "导出配置", Command = ExportCommand };
+            ContextMenu.Items.Add(menuItemExport);
+
+            MenuItem menuItemImport = new MenuItem() { Header = "导入配置", Command = ImportCommand };
+            ContextMenu.Items.Add(menuItemImport);
 
             PropertyCommand = new RelayCommand((e) =>
             {
@@ -99,6 +144,8 @@ namespace ColorVision.MQTT
                 window.ShowDialog();
             });
 
+            MenuItem menuItemProperty = new MenuItem() { Header = "属性", Command = PropertyCommand };
+            ContextMenu.Items.Add(menuItemProperty);
 
             if (string.IsNullOrEmpty(SysResourceModel.Value))
             {
