@@ -98,16 +98,15 @@ namespace ColorVision.Services.Algorithm
                         OnAlgorithmEvent?.Invoke(this, new AlgorithmEvent(msg.EventName, msg.SerialNumber, msg.Data));
                         break;
                     case "MTF":
-                        Application.Current.Dispatcher.BeginInvoke(new Action(() => MessageBox.Show(Application.Current.MainWindow, $"{msg.EventName}执行成功", "ColorVision")));
+                        Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, $"{msg.EventName}执行成功", "ColorVision"));
                         break;
                     default:
-                        Application.Current.Dispatcher.BeginInvoke(new Action(() => MessageBox.Show(Application.Current.MainWindow, $"{msg.EventName}执行成功", "ColorVision")));
+                        Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, $"{msg.EventName}执行成功", "ColorVision"));
                         break;
                 }
             }
             else
             {
-                //MessageBox.Show("返回失败" + Environment.NewLine + msg, "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 switch (msg.EventName)
                 {
                     case "GetData":
@@ -382,11 +381,14 @@ namespace ColorVision.Services.Algorithm
 
         public MsgRecord FocusPoints(string FileName, FocusPointsParam focusPointsParam)
         {
+            var Params = new Dictionary<string, object>() { { "nBatchID", -1 } };
+
             MsgSend msg = new MsgSend
             {
                 EventName = "FocusPoints",
-                Params = new Dictionary<string, object>() { { "nBatchID", -1 },  }
+                Params = Params
             };
+            Params.Add("file_data", ToJsonFileList(ImageChannelType.Gray_Y, FileName));
             return PublishAsyncClient(msg);
         }
 
@@ -415,6 +417,7 @@ namespace ColorVision.Services.Algorithm
             Params.Add("LengthCheck", ledCheckParam.LengthCheck);
             Params.Add("LengthRange", ledCheckParam.LengthRange);
             Params.Add("localRdMark", ledCheckParam.LocalRdMark);
+            Params.Add("file_data", ToJsonFileList(ImageChannelType.Gray_Y, FileName));
 
 
 

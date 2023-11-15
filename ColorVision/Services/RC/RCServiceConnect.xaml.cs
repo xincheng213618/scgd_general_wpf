@@ -79,7 +79,7 @@ namespace ColorVision.RC
             Task.Run(() =>
             {
                 bool IsConnect = RCService.GetInstance().TryRegist(rcServiceConfig);
-                MessageBox.Show($"连接{(IsConnect ? "成功" : "失败")}");
+                this.Dispatcher.BeginInvoke(() => MessageBox.Show($"连接{(IsConnect ? "成功" : "失败")}", "ColorVision")); 
             });
         }
 

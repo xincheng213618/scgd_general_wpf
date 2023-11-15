@@ -78,10 +78,13 @@ namespace ColorVision.MQTT
             };
         }
 
-        private async void Button_Click_Test(object sender, RoutedEventArgs e)
+        private void Button_Click_Test(object sender, RoutedEventArgs e)
         {
-            bool IsConnect = await MQTTControl.TestConnect(MQTTConfig);
-            MessageBox.Show($"连接{(IsConnect ? "成功" : "失败")}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+            Task.Run( async () =>
+            {
+                bool IsConnect = await MQTTControl.TestConnect(MQTTConfig);
+                await this.Dispatcher.BeginInvoke(() => MessageBox.Show($"连接{(IsConnect ? "成功" : "失败")}", "ColorVision"));
+            });
 
         }
 

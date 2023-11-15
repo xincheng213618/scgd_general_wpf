@@ -68,8 +68,8 @@
                 </GroupBox>
                 <GroupBox  Header="算法服务">
                     <StackPanel  >
-                        <Button Content="算法服务初始化"  HorizontalAlignment="Left" Click="Algorithm_INI" />
-                        <Button Content="数据显示窗口"  HorizontalAlignment="Left" Click="Button_Click" />
+                        <Button Content="算法服务初始化"  HorizontalAlignment="Left" Click="Algorithm_INI" Visibility="Collapsed" />
+                        <Button Content="数据显示窗口"  HorizontalAlignment="Left" Click="Button_Click" Visibility="Collapsed" />
                         <GroupBox  Header="图片文件">
                             <DockPanel Margin="0,2">
                                 <Button  Content="..." DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Open_File" />

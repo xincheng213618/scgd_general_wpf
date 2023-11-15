@@ -168,7 +168,7 @@ namespace ColorVision
                 }
                 catch(Exception ex)
                 {
-                    MessageBox.Show("窗口创建错误:" +ex.Message);
+                    Dispatcher.BeginInvoke(() => MessageBox.Show("窗口创建错误:" + ex.Message));
                     Environment.Exit(-1);
                 }
             });
