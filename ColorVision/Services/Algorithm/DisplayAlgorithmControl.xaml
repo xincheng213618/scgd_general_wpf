@@ -37,8 +37,7 @@
         <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel Margin="5" >
                 <GroupBox  Header="关注点">
-
-                    <StackPanel Margin="5" >
+                    <StackPanel Margin="2" >
                         <GroupBox  Header="CIE图像数据区">
                             <StackPanel  Margin="5" >
                                 <DockPanel Margin="0,2">
