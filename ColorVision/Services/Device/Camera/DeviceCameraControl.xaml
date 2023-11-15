@@ -28,7 +28,7 @@
             <Border  Grid.Row="0" Background="{DynamicResource RegionBrush}" CornerRadius="5" >
                 <DockPanel  Margin="10,5">
                     <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  DockPanel.Dock="Right" Width="20"  HorizontalAlignment="Right" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
-                    <Grid x:Name="ButtonEdit"  DockPanel.Dock="Right" Width="20" Margin="10,0">
+                    <Grid x:Name="ButtonEdit"  DockPanel.Dock="Right" Width="17" Margin="10,0">
                         <Image Source="{StaticResource  DrawingImageEdit}" Margin="0" />
                         <Button Background="Transparent" BorderThickness="0"  Click="ButtonEdit_Click"/>
                     </Grid>
@@ -75,14 +75,28 @@
                                         </DockPanel>
                                     </StackPanel>
                                 </GroupBox>
-                                <GroupBox Header="相机配置" Margin="0,5">
+                                <GroupBox Header="相机基础配置" Margin="0,5">
                                     <StackPanel Margin="5">
-                                        <DockPanel>
-                                            <TextBlock Text="OB区:" Width="120"/>
-                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CameraCfg.OBRect,Mode=OneWay}"/>
+                                        <DockPanel >
+                                            <Grid Width="120" >
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="OB区"  ToolTip="左上右下的边界"/>
+                                                <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip="原始图像不参与计算的区域"/>
+                                            </Grid>
+                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.CameraCfg.OBRect,Mode=OneWay}"/>
                                         </DockPanel>
-                                        <DockPanel>
-                                            <TextBlock Text="ROI区域:" Width="120"/>
+                                        <DockPanel >
+                                            <Grid Width="120" >
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="ROI区域" ToolTip="ROI出来的矩形" Grid.Column="0"/>
+                                                <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip="直接调节相机输出的ROI,区域越小，计算越快"/>
+                                            </Grid>
                                             <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CameraCfg.ROIRect,Mode=OneWay}"/>
                                         </DockPanel>
                                         <DockPanel>
@@ -370,14 +384,52 @@
 
                                     <GroupBox Header="相机配置" Margin="0,5">
                                         <StackPanel Margin="5">
-                                            <DockPanel Margin="0,2">
-                                                <TextBlock Text="OB区:" Width="120"/>
-                                                <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.CameraCfg.OBRect,Mode=OneWay}"/>
-                                            </DockPanel>
-                                            <DockPanel Margin="0,2">
-                                                <TextBlock Text="ROI区域:" Width="120"/>
-                                                <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.CameraCfg.ROIRect,Mode=OneWay}"/>
-                                            </DockPanel>
+   
+
+                                            <GroupBox Header="OB区域" Margin="0,2">
+                                                <UniformGrid Rows="2" Columns="2" Margin="5">
+                                                    <DockPanel Margin="5,2,10,2" >
+                                                        <TextBlock Text="左:" Width="60"/>
+                                                        <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.CameraCfg.Ob}"/>
+                                                    </DockPanel>
+                                                    <DockPanel Margin="10,2,5,2" >
+                                                        <TextBlock Text="上:" Width="60"/>
+                                                        <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.CameraCfg.ObT}"/>
+                                                    </DockPanel>
+                                                    <DockPanel Margin="5,2,10,2" >
+                                                        <TextBlock Text="右:" Width="60"/>
+                                                        <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.CameraCfg.ObR}"/>
+                                                    </DockPanel>
+                                                    <DockPanel Margin="10,2,5,2" >
+                                                        <TextBlock Text="下:" Width="60"/>
+                                                        <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.CameraCfg.ObB}"/>
+                                                    </DockPanel>
+                                                </UniformGrid>
+                                            </GroupBox>
+
+                                            <GroupBox Header="ROI区域" Margin="0,2">
+                                                <UniformGrid Rows="2" Columns="2" Margin="5">
+                                                    <DockPanel Margin="5,2,10,2" >
+                                                        <TextBlock Text="PointX:" Width="60"/>
+                                                        <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.CameraCfg.PointX}"/>
+                                                    </DockPanel>
+                                                    <DockPanel Margin="10,2,5,2" >
+                                                        <TextBlock Text="PointY:" Width="60"/>
+                                                        <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.CameraCfg.PointY}"/>
+                                                    </DockPanel>
+                                                    <DockPanel Margin="5,2,10,2" >
+                                                        <TextBlock Text="Width:" Width="60"/>
+                                                        <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.CameraCfg.Width}"/>
+                                                    </DockPanel>
+                                                    <DockPanel Margin="10,2,5,2" >
+                                                        <TextBlock Text="Height:" Width="60"/>
+                                                        <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.CameraCfg.Height}"/>
+                                                    </DockPanel>
+                                                </UniformGrid>
+                                            </GroupBox>
+     
+
+
                                             <DockPanel Margin="0,2">
                                                 <TextBlock Text="温控:" Width="120"/>
                                                 <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.CameraCfg.TempCtlChecked}"/>
