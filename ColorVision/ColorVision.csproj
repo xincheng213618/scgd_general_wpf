@@ -48,7 +48,6 @@
     <PackageReference Include="MQTTnet" Version="4.3.1.873" />
     <PackageReference Include="MySql.Data" Version="8.1.0" />
     <PackageReference Include="MySqlConnector" Version="2.2.7" />
-    <PackageReference Include="NetMQ" Version="4.0.1.13" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="NPOI" Version="2.6.2" />
     <PackageReference Include="OpenCvSharp4.Extensions" Version="4.8.0.20230708" />
@@ -64,6 +63,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ColorVision.Net\ColorVision.Net.csproj" />
     <ProjectReference Include="..\ColorVision.Util\ColorVision.Util.csproj" />
     <ProjectReference Include="..\cvColorVision\cvColorVision.csproj" />
   </ItemGroup>

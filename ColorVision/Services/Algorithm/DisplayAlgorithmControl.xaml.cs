@@ -2,22 +2,17 @@
 using ColorVision.Device;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
+using ColorVision.Net;
 using ColorVision.Solution;
 using ColorVision.Templates;
 using log4net;
 using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
-using NetMQ;
-using NetMQ.Sockets;
 using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.IO;
-using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -40,7 +35,7 @@ namespace ColorVision.Services.Algorithm
 
         private ResultService resultService { get; set; }
 
-        private Dictionary<string, string> fileCache;
+        private NetFileUtil netFileUtil;
 
 
         public DisplayAlgorithmControl(DeviceAlgorithm device)
@@ -48,10 +43,24 @@ namespace ColorVision.Services.Algorithm
             Device = device;
             InitializeComponent();
 
+            netFileUtil = new NetFileUtil(SolutionManager.GetInstance().Config.CachePath);
+            netFileUtil.handler += NetFileUtil_handler;
+
             Service.OnAlgorithmEvent += Service_OnAlgorithmEvent;
             View.OnCurSelectionChanged += View_OnCurSelectionChanged;
 
-            fileCache = new Dictionary<string, string>();
+        }
+
+        private void NetFileUtil_handler(object sender, NetFileEvent arg)
+        {
+            if (arg.Code == 0 && arg.FileData != null)
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    View.OpenImage(arg.FileData);
+                });
+            }
+            handler?.Close();
         }
 
         private void View_OnCurSelectionChanged(PoiResult data)
@@ -80,52 +89,22 @@ namespace ColorVision.Services.Algorithm
                         ShowResult(arg.SerialNumber, poiDbResults, rawDataMsg, poiResp);
                     break;
                 case MQTTFileServerEventEnum.Event_File_Upload:
-                    handler?.Close();
-                    Service.GetCIEFiles();
+                    DeviceFileUpdownParam pm_up = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
+                    FileUpload(pm_up);
                     break;
                 case MQTTFileServerEventEnum.Event_File_Download:
-                    DeviceDownloadParam pm_dl = JsonConvert.DeserializeObject<DeviceDownloadParam>(JsonConvert.SerializeObject(arg.Data));
-                    Task t = new(() => { Task_Start(pm_dl); });
-                    t.Start();
+                    DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
+                    FileDownload(pm_dl);
                     break;
             }
         }
-
-        private void Task_Start(DeviceDownloadParam pm_dl)
+        private void FileUpload(DeviceFileUpdownParam pm_up)
         {
-            if (!string.IsNullOrWhiteSpace(pm_dl.ServerEndpoint) && !string.IsNullOrWhiteSpace(pm_dl.FileName)) Task_Start(pm_dl.ServerEndpoint, pm_dl.FileName);
+            if (!string.IsNullOrWhiteSpace(pm_up.ServerEndpoint) && !string.IsNullOrWhiteSpace(pm_up.FileName)) netFileUtil.TaskStartUploadFile(pm_up.ServerEndpoint, pm_up.FileName);
         }
-
-        private void Task_Start(string serverEndpoint,string fileName)
+        private void FileDownload(DeviceFileUpdownParam pm_dl)
         {
-            DealerSocket client = null;
-            try
-            {
-                client = new DealerSocket(serverEndpoint);
-                List<byte[]> data = client.ReceiveMultipartBytes(1);
-                if (data.Count == 1)
-                {
-                    string fullFileName = SolutionManager.GetInstance().Config.CachePath + "\\" + fileName;
-                    //CVCIEFileInfo fileInfo = CVFileUtils.WriteBinaryFile_CVRGB(fullFileName, data[0]);
-                    CVFileUtils.WriteBinaryFile(fullFileName, data[0]);
-                    fileCache.Add(fileName, fullFileName);
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        //View.OpenImage(fileInfo);
-                        View.OpenImage(data[0]);
-                    });
-                }
-                client?.Close();
-                client?.Dispose();
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex);
-                client?.Close();
-                client?.Dispose();
-            }
-
-            handler?.Close();
+            if (!string.IsNullOrWhiteSpace(pm_dl.ServerEndpoint) && !string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.TaskStartDownloadFile(pm_dl.ServerEndpoint, pm_dl.FileName);
         }
 
         private void ShowResult(string serialNumber, List<POIPointResultModel> poiDbResults, string rawMsg, MQTTPOIGetDataResult response)
@@ -395,15 +374,10 @@ namespace ColorVision.Services.Algorithm
             openFileDialog.FilterIndex = 1;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-                Service.UploadCIEFile(System.IO.Path.GetFileName(openFileDialog.FileName));
-
-                Task t = new(() => { Task_StartUpload(openFileDialog.FileName); });
-                t.Start();
-
+                Service.UploadCIEFile(openFileDialog.FileName);
                 handler = PendingBox.Show(Application.Current.MainWindow, "", "上传", true);
                 handler.Cancelling += delegate
                 {
-                    t.Dispose();
                     handler?.Close();
                 };
             }
@@ -421,69 +395,15 @@ namespace ColorVision.Services.Algorithm
 
         private void doOpen(string fileName)
         {
-            if (fileCache.ContainsKey(fileName))
+            string localName = netFileUtil.GetCacheFileFullName(fileName);
+            if (string.IsNullOrEmpty(localName))
             {
-                logger.Info("ReadBinaryFile .....");
-                CVCIEFileInfo fileInfo;
-                //bool ret = CVFileUtils.ReadBinaryFile_CVRGB(fileCache[fileName], out fileInfo);
-                byte[] data = CVFileUtils.ReadBinaryFile(fileCache[fileName]);
-                logger.Info("ReadBinaryFile end");
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    //View.OpenImage(fileInfo);
-                    View.OpenImage(data);
-                });
-                handler?.Close();
-                handler = null;
+                Service.Open(fileName);
             }
             else
             {
-                Service.Open(fileName);
-                //Task t = new(() => { Task_Start(fileName); });
-                //t.Start();
+                netFileUtil.OpenLocalFile(localName);
             }
-        }
-
-        //private void Task_Start(string fileName)
-        //{
-        //    DealerSocket client = null;
-        //    try
-        //    {
-        //        client = new DealerSocket(Device.Config.Endpoint);
-        //        List<byte[]> data = client.ReceiveMultipartBytes();
-        //        if (data.Count == 1)
-        //        {
-        //            string fullFileName = SolutionManager.GetInstance().Config.CachePath + "\\" + fileName;
-        //            //CVCIEFileInfo fileInfo = CVFileUtils.WriteBinaryFile_CVRGB(fullFileName, data[0]);
-        //            CVFileUtils.WriteBinaryFile(fullFileName, data[0]);
-        //            fileCache.Add(fileName, fullFileName);
-        //            Application.Current.Dispatcher.Invoke(() =>
-        //            {
-        //                //View.OpenImage(fileInfo);
-        //                View.OpenImage(data[0]);
-        //            });
-        //        }
-        //        client?.Close();
-        //        client?.Dispose();
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        logger.Error(ex);
-        //        client?.Close();
-        //        client?.Dispose();
-        //    }
-
-        //    handler?.Close();
-        //}
-
-        private void Task_StartUpload(string fileName)
-        {
-            DealerSocket client = new DealerSocket(Device.Config.Endpoint);
-            var message = new List<byte[]>();
-            message.Add(CVFileUtils.ReadBinaryFile(fileName));
-            client.TrySendMultipartBytes(TimeSpan.FromMilliseconds(3000), message);
-            client.Close();
-            client.Dispose();
         }
 
         TemplateControl TemplateControl { get; set; }

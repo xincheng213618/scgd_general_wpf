@@ -1,14 +1,11 @@
-﻿using ColorVision.Solution;
+﻿using ColorVision.Net;
 using log4net;
 using MQTTMessageLib.FileServer;
-using NetMQ;
-using NetMQ.Sockets;
 using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -26,12 +23,29 @@ namespace ColorVision.Device.FileServer
 
         public ImageView View { get => DeviceImg.View; }
 
+        private NetFileUtil netFileUtil;
+
         public FileServerDisplayControl(DeviceFileServer deviceImg)
         {
             DeviceImg = deviceImg;
             InitializeComponent();
 
+            netFileUtil = new NetFileUtil(string.Empty);
+            netFileUtil.handler += NetFileUtil_handler;
+
             DeviceImg.Service.OnImageData += Service_OnImageData;
+        }
+
+        private void NetFileUtil_handler(object sender, NetFileEvent arg)
+        {
+            if (arg.Code == 0 && arg.FileData != null)
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    View.OpenImage(arg.FileData);
+                });
+            }
+            handler?.Close();
         }
 
         private void Service_OnImageData(object sender, FileServerDataEvent arg)
@@ -46,52 +60,26 @@ namespace ColorVision.Device.FileServer
                     });
                     break;
                 case MQTTFileServerEventEnum.Event_File_Upload:
-                    handler?.Close();
+                    DeviceFileUpdownParam pm_up = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
+                    FileUpload(pm_up);
                     break;
                 case MQTTFileServerEventEnum.Event_File_Download:
-                    DeviceDownloadParam pm_dl = JsonConvert.DeserializeObject<DeviceDownloadParam>(JsonConvert.SerializeObject(arg.Data));
-                    Task t = new(() => { Task_Start(pm_dl); });
-                    t.Start();
+                    DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
+                    FileDownload(pm_dl);
                     break;
                 default:
                     break;
             }
         }
 
-        private void Task_Start(DeviceDownloadParam pm_dl)
+        private void FileUpload(DeviceFileUpdownParam pm_up)
         {
-            if(!string.IsNullOrWhiteSpace(pm_dl.ServerEndpoint) && !string.IsNullOrWhiteSpace(pm_dl.FileName)) Task_Start(pm_dl.ServerEndpoint, pm_dl.FileName);
+            if (!string.IsNullOrWhiteSpace(pm_up.ServerEndpoint) && !string.IsNullOrWhiteSpace(pm_up.FileName)) netFileUtil.TaskStartUploadFile(pm_up.ServerEndpoint, pm_up.FileName);
         }
 
-        private void Task_Start(string serverEndpoint, string fileName)
+        private void FileDownload(DeviceFileUpdownParam pm_dl)
         {
-            DealerSocket client = null;
-            try
-            {
-                client = new DealerSocket(serverEndpoint);
-                List<byte[]> data = client.ReceiveMultipartBytes(1);
-                if (data.Count == 1)
-                {
-                    //string fullFileName = SolutionManager.GetInstance().Config.CachePath + "\\" + fileName;
-                    //CVFileUtils.WriteBinaryFile(fullFileName, data[0]);
-                    //fileCache.Add(fileName, fullFileName);
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        //View.OpenImage(fileInfo);
-                        View.OpenImage(data[0]);
-                    });
-                }
-                client?.Close();
-                client?.Dispose();
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex);
-                client?.Close();
-                client?.Dispose();
-            }
-
-            handler?.Close();
+            if(!string.IsNullOrWhiteSpace(pm_dl.ServerEndpoint) && !string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.TaskStartDownloadFile(pm_dl.ServerEndpoint, pm_dl.FileName);
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -149,8 +137,6 @@ namespace ColorVision.Device.FileServer
         private void doOpen(string fileName)
         {
             DeviceImg.Service.Open(fileName);
-            //Task t = new(() => { Task_Start(); });
-            //t.Start();
 
             handler = PendingBox.Show(Application.Current.MainWindow, "", "打开图片", true);
             handler.Cancelling += delegate
@@ -158,32 +144,6 @@ namespace ColorVision.Device.FileServer
                 handler?.Close();
             };
         }
-
-        //private void Task_Start()
-        //{
-        //    DealerSocket client = null;
-        //    try
-        //    {
-        //        client = new DealerSocket(DeviceImg.Config.Endpoint);
-        //        List<byte[]> data = client.ReceiveMultipartBytes();
-        //        if (data.Count == 1)
-        //        {
-        //            Application.Current.Dispatcher.Invoke(() =>
-        //            {
-        //                View.OpenImage(data[0]);
-        //            });
-        //        }
-        //        client?.Close();
-        //        client?.Dispose();
-        //    }catch (Exception ex)
-        //    {
-        //        logger.Error(ex);
-        //        client?.Close();
-        //        client?.Dispose();
-        //    }
-
-        //    handler?.Close();
-        //}
 
         private void Button_Click_Refresh(object sender, RoutedEventArgs e)
         {
@@ -198,14 +158,11 @@ namespace ColorVision.Device.FileServer
             openFileDialog.FilterIndex = 1;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-                DeviceImg.Service.UploadFile(Path.GetFileName(openFileDialog.FileName));
-                Task t = new(() => { Task_StartUpload(openFileDialog.FileName); });
-                t.Start();
-
+               // DeviceImg.Service.UploadFile(Path.GetFileName(openFileDialog.FileName));
+                DeviceImg.Service.UploadFile(openFileDialog.FileName);
                 handler = PendingBox.Show(Application.Current.MainWindow, "", "上传", true);
                 handler.Cancelling += delegate
                 {
-                    t.Dispose();
                     handler?.Close();
                 };
             }
@@ -221,16 +178,6 @@ namespace ColorVision.Device.FileServer
             //读取文件中的内容并保存到字节数组中
             binaryReader.Read(bytes, 0, bytes.Length);
             return bytes;
-        }
-
-        private void Task_StartUpload(string fileName)
-        {
-            DealerSocket client = new DealerSocket(DeviceImg.Config.Endpoint);
-            var message = new List<byte[]>();
-            message.Add(readFile(fileName));
-            client.TrySendMultipartBytes(TimeSpan.FromMilliseconds(3000), message);
-            client.Close();
-            client.Dispose();
         }
     }
 }
