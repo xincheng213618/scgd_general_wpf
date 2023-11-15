@@ -74,6 +74,7 @@ namespace ColorVision.Solution
         private int SolutionManager_SolutionOpened(string FileName)
         {
             //throw new NotImplementedException();
+            return 0;
         }
 
         public bool OpenSolution(string FullName)
