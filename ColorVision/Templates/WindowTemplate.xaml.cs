@@ -158,7 +158,7 @@ namespace ColorVision.Templates
                         if (ListConfigs[listView.SelectedIndex].GetValue() is FlowParam flowParam)
                         {
                             flowParam.Name ??= ListConfigs[listView.SelectedIndex].Key;
-                            new WindowFlowEngine(flowParam) { Owner = Application.Current.MainWindow }.Show();
+                            new WindowFlowEngine(flowParam) { Owner =null }.Show();
                             this.Close();
                         }
                         break;

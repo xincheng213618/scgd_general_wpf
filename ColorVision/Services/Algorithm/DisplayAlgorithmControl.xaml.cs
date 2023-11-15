@@ -496,7 +496,7 @@ namespace ColorVision.Services.Algorithm
             }
 
             var ss = Service.FocusPoints(ImageFile.Text, TemplateControl.GetInstance().FocusPointsParams[ComboxFocusPointsTemplate.SelectedIndex].Value);
-            Helpers.SendCommand(ss, "MTF");
+            Helpers.SendCommand(ss, "FocusPoints");
         }
 
         private void LedCheck_Click(object sender, RoutedEventArgs e)
@@ -508,7 +508,7 @@ namespace ColorVision.Services.Algorithm
             }
 
             var ss = Service.LedCheck(ImageFile.Text, TemplateControl.GetInstance().LedCheckParams[ComboxLedCheckTemplate.SelectedIndex].Value);
-            Helpers.SendCommand(ss, "MTF");
+            Helpers.SendCommand(ss, "正在计算灯珠");
         }
     }
 }

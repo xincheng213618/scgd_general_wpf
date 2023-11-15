@@ -100,31 +100,31 @@ namespace ColorVision.Services.Device.Camera
     public class CameraCfg : ViewModelBase
     {
         /// <summary>
-        /// 不参与计算的区域，上
+        /// 不参与计算的区域，左
         /// </summary>
         [JsonProperty("ob")]
-        public int Ob { get => _Ob; set { _Ob = value; NotifyPropertyChanged(); } }
+        public int Ob { get => _Ob; set { _Ob = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(OBRect)); } }
         private int _Ob = 4;
 
         /// <summary>
         /// 不参与计算的区域，右
         /// </summary>
         [JsonProperty("obR")]
-        public int ObR { get => _ObR; set { _ObR = value; NotifyPropertyChanged(); } }
+        public int ObR { get => _ObR; set { _ObR = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(OBRect)); } }
         private int _ObR;
 
         /// <summary>
         /// 不参与计算的区域，Top
         /// </summary>
         [JsonProperty("obT")]
-        public int ObT { get => _ObT; set { _ObT = value; NotifyPropertyChanged(); } }
+        public int ObT { get => _ObT; set { _ObT = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(OBRect)); } }
         private int _ObT;
 
         /// <summary>
         /// 不参与计算的区域，下
         /// </summary>
         [JsonProperty("obB")]
-        public int ObB { get => _ObB; set { _ObB = value; NotifyPropertyChanged(); } }
+        public int ObB { get => _ObB; set { _ObB = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(OBRect)); } }
         private int _ObB;
 
         /// <summary>
@@ -179,28 +179,28 @@ namespace ColorVision.Services.Device.Camera
         public Rect ROIRect { get => new Rect(PointX, PointY, Width, Height); }
 
         /// <summary>
-        /// OB X
+        /// ROI X
         /// </summary>
         [JsonProperty("ex")]
-        public int PointX { get => _PointX; set { _PointX = value; NotifyPropertyChanged(); } }
+        public int PointX { get => _PointX; set { _PointX = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ROIRect)); } }
         private int _PointX;
         /// <summary>
-        /// OB Y
+        /// ROI Y
         /// </summary>
         [JsonProperty("ey")]
-        public int PointY { get => _PointY; set { _PointY = value; NotifyPropertyChanged(); } }
+        public int PointY { get => _PointY; set { _PointY = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ROIRect)); } }
         private int _PointY;
         /// <summary>
-        /// OB W
+        /// ROI W
         /// </summary>
         [JsonProperty("ew")]
-        public int Width { get => _Width; set { _Width = value; NotifyPropertyChanged(); } }
+        public int Width { get => _Width; set { _Width = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ROIRect)); } }
         private int _Width;
         /// <summary>
-        /// OB H
+        /// ROI H
         /// </summary>
         [JsonProperty("eH")]
-        public int Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
+        public int Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ROIRect)); } }
         private int _Height;
 
     }

@@ -29,13 +29,27 @@ namespace ColorVision.MVVM
             var fields = type.GetRuntimeFields().ToList();
             foreach (var field in fields)
             {
-                field.SetValue(target, field.GetValue(source));
+                try
+                {
+                    field.SetValue(target, field.GetValue(source));
+                }
+                catch
+                {
+
+                }
             }
 
             var properties = type.GetRuntimeProperties().ToList();
             foreach (var property in properties)
             {
-                property.SetValue(target, property.GetValue(source));
+                try
+                {
+                    property.SetValue(target, property.GetValue(source));
+                }
+                catch
+                {
+
+                }
             }
         }
 

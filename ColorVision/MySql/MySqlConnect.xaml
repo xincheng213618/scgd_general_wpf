@@ -8,7 +8,15 @@
         xmlns:hc ="https://handyorg.github.io/handycontrol"
         xmlns:resx="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
-        Title="Mysql连接配置" Background="#F0F0F0" Height="500" Width="400" Initialized="Window_Initialized">
+        Title="Mysql连接配置" Background="{DynamicResource RegionBrush}"  Height="500" Width="400" Initialized="Window_Initialized">
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        </Style>
+    </Window.Resources>
     <Grid>
         <Grid Margin="5">
             <Grid.RowDefinitions>
@@ -21,7 +29,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <Border x:Name="ListViewMySqlBorder" Background="#F9F9F9"  BorderBrush="#EAEAEA" BorderThickness="1" Visibility="Collapsed" Width="170"  Margin="5" CornerRadius="10,10,5,5">
+                <Border x:Name="ListViewMySqlBorder" Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Visibility="Collapsed" Width="170"  Margin="5" CornerRadius="10,10,5,5">
                     <Grid>
                         <ListView x:Name="ListViewMySql"  Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" SelectionChanged="ListView1_SelectionChanged">
                             <ListView.Resources >
@@ -48,7 +56,7 @@
                         </StackPanel>
                     </Grid>
                 </Border>
-                <Border Grid.Column="1"  Background="#F9F9F9"  BorderBrush="#EAEAEA" BorderThickness="1"  Margin="5" CornerRadius="10,10,3,3">
+                <Border Grid.Column="1" Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"  Margin="5" CornerRadius="10,10,3,3">
                     <Grid x:Name="GridMQTT" Margin="5,5,10,5"  d:DataContext="{d:DesignInstance local:MySqlConfig}">
                         <StackPanel>
                             <TextBlock Text="Mysql连接" HorizontalAlignment="Center" Margin="15" FontSize="17"/>

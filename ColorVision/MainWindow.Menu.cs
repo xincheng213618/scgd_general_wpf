@@ -161,7 +161,7 @@ namespace ColorVision
 
         private void MenuItem9_Click(object sender, RoutedEventArgs e)
         {
-            new WindowFlowEngine() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            new WindowFlowEngine() { Owner = null, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
 
 
