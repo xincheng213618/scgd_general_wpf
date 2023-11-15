@@ -10,106 +10,96 @@
         xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:MainWindow}"
-        Title="ColorVision" Height="720" Width="1280"   Initialized="Window_Initialized">
+        Title="ColorVision" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}"   Initialized="Window_Initialized">
     <Grid x:Name="Root">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
-        <Grid x:Name="WaitControl" Grid.Row="0" Grid.RowSpan="3" Panel.ZIndex="9" Visibility="Collapsed">
-            <Grid   Background="Black"  Opacity="0.3"/>
-            <Border   Background="#F9F9F9"  Height="250" Width="250"  CornerRadius="10">
-                <Border Background="#F3F3F3" BorderBrush="#EAEAEA" BorderThickness="1" CornerRadius="5" Margin="5">
-                    <Grid>
-                        <base:ProgressRing  BorderBrush="{DynamicResource GlobalTextBrush}" Margin="30" />
-                        <TextBlock x:Name="WaitControlText" Text="正在计算" HorizontalAlignment="Center" FontSize="16"/>
-                        <ProgressBar x:Name="WaitControlProgressBar" Visibility="Collapsed" BorderThickness="0"  Maximum="100" Minimum="0"  Height="20" Margin="5" VerticalAlignment="Bottom" />
-                    </Grid>
-                </Border>
-
-            </Border>
-        </Grid>
-        <Grid Grid.Row="0"  Height ="27 ">
-            <Menu x:Name="Menu1"  Initialized="Menu_Initialized">
-                <MenuItem x:Name="FileMenuItem" Header="{x:Static resx:Resource.MenuFile}">
-                    <MenuItem Header="{x:Static resx:Resource.MenuNew}" Click="MenuItem_ProjectNew_Click" InputGestureText="Ctrl + N">
-                        <MenuItem.Icon >
-                            <TextBlock Text="&#xE8F4;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                        </MenuItem.Icon>
+        <Border Grid.Row="0"  Height ="27 " BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
+            <Grid>
+                <Menu x:Name="Menu1"  Initialized="Menu_Initialized">
+                    <MenuItem x:Name="FileMenuItem" Header="{x:Static resx:Resource.MenuFile}">
+                        <MenuItem Header="{x:Static resx:Resource.MenuNew}" Click="MenuItem_ProjectNew_Click" InputGestureText="Ctrl + N">
+                            <MenuItem.Icon >
+                                <TextBlock Text="&#xE8F4;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <MenuItem Header="{x:Static resx:Resource.MenuOpen}" Click="MenuItem_ProjectOpen_Click" InputGestureText="Ctrl + O">
+                            <MenuItem.Icon >
+                                <TextBlock Text="&#xE8E5;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <Separator/>
+                        <MenuItem Header="{x:Static resx:Resource.MenuExit}" InputGestureText="Alt + F4" Click="MenuItem_Exit"/>
                     </MenuItem>
-                    <MenuItem Header="{x:Static resx:Resource.MenuOpen}" Click="MenuItem_ProjectOpen_Click" InputGestureText="Ctrl + O">
-                        <MenuItem.Icon >
-                            <TextBlock Text="&#xE8E5;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                        </MenuItem.Icon>
+                    <MenuItem Header="{x:Static resx:Resource.MenuTemplate}">
+                        <MenuItem Header="流程模板设置(_F)" Tag="FlowParam"  Click="MenuItem_Template"/>
+                        <MenuItem Header="关注点模板设置(_P)" Tag="FocusParm" Click="MenuItem_Template"/>
+                        <MenuItem Header="测量模板设置(_S)" Tag="MeasureParm" Click="MenuItem_Template"/>
+                        <Separator/>
+                        <MenuItem Header="校正模板设置(_C)" Tag="Calibration"  Click="MenuItem_Template"/>
+                        <MenuItem Header="数据判断模板设置(_J)" Tag="LedReusltParams"  Click="MenuItem_Template"/>
+                        <Separator/>
+                        <MenuItem Header="PG模板设置(_G)" Tag="PGParam"  Click="MenuItem_Template"/>
+                        <MenuItem Header="源表模板设置(_V)"  Tag="SMUParam" Click="MenuItem_Template"/>
+                        <Separator/>
+                        <MenuItem Header="_AOI参数模板设置" Tag="AoiParam" Click="MenuItem_Template"/>
+                        <MenuItem Header="MTF模板设置(_M)"  Tag="MTFParam" Click="MenuItem_Template"/>
+                        <MenuItem Header="SFR模板设置(_S)"  Tag="SFRParam" Click="MenuItem_Template"/>
+                        <MenuItem Header="FOV模板设置(_F)"  Tag="FOVParam" Click="MenuItem_Template"/>
+                        <MenuItem Header="鬼影模板设置(_H)"  Tag="GhostParam" Click="MenuItem_Template"/>
+                        <MenuItem Header="畸变模板设置(_D)"  Tag="DistortionParam" Click="MenuItem_Template"/>
+                        <MenuItem Header="灯珠检测模板设置(_L)"  Tag="LedCheckParam" Click="MenuItem_Template"/>
+                        <MenuItem Header="FoucusPoints模板设置(_P)"  Tag="FocusPointsParam" Click="MenuItem_Template"/>
+
                     </MenuItem>
-                    <Separator/>
-                    <MenuItem Header="{x:Static resx:Resource.MenuExit}" InputGestureText="Alt + F4" Click="MenuItem_Exit"/>
-                </MenuItem>
-                <MenuItem Header="{x:Static resx:Resource.MenuTemplate}">
-                    <MenuItem Header="流程模板设置(_F)" Tag="FlowParam"  Click="MenuItem_Template"/>
-                    <MenuItem Header="关注点模板设置(_P)" Tag="FocusParm" Click="MenuItem_Template"/>
-                    <MenuItem Header="测量模板设置(_S)" Tag="MeasureParm" Click="MenuItem_Template"/>
-                    <Separator/>
-                    <MenuItem Header="校正模板设置(_C)" Tag="Calibration"  Click="MenuItem_Template"/>
-                    <MenuItem Header="数据判断模板设置(_J)" Tag="LedReusltParams"  Click="MenuItem_Template"/>
-                    <Separator/>
-                    <MenuItem Header="PG模板设置(_G)" Tag="PGParam"  Click="MenuItem_Template"/>
-                    <MenuItem Header="源表模板设置(_V)"  Tag="SMUParam" Click="MenuItem_Template"/>
-                    <Separator/>
-                    <MenuItem Header="_AOI参数模板设置" Tag="AoiParam" Click="MenuItem_Template"/>
-                    <MenuItem Header="MTF模板设置(_M)"  Tag="MTFParam" Click="MenuItem_Template"/>
-                    <MenuItem Header="SFR模板设置(_S)"  Tag="SFRParam" Click="MenuItem_Template"/>
-                    <MenuItem Header="FOV模板设置(_F)"  Tag="FOVParam" Click="MenuItem_Template"/>
-                    <MenuItem Header="鬼影模板设置(_H)"  Tag="GhostParam" Click="MenuItem_Template"/>
-                    <MenuItem Header="畸变模板设置(_D)"  Tag="DistortionParam" Click="MenuItem_Template"/>
-                    <MenuItem Header="灯珠检测模板设置(_L)"  Tag="LedCheckParam" Click="MenuItem_Template"/>
-                    <MenuItem Header="FoucusPoints模板设置(_P)"  Tag="FocusPointsParam" Click="MenuItem_Template"/>
+                    <MenuItem Header="{x:Static resx:Resource.MenuTool}">
+                        <MenuItem Header="流程引擎(_F)" Click="MenuItem9_Click"/>
+                        <MenuItem Header="MQTT日志(_Q)" Click="MenuItem_Click"/>
+                        <MenuItem Header="Msg列表(_L)" Click="MenuItem12_Click"/>
+                        <MenuItem Header="管理员服务配置(_S)"  Tag="ServiceParam" Click="MenuItem_Template"/>
+                        <MenuItem Header="设备配置(_D)"  Tag="DeviceParam" Click="MenuItem_Template"/>
+                        <MenuItem Header="{x:Static resx:Resource.Sign_in}"  Click="Login_Click"/>
+                        <Separator/>
+                        <MenuItem x:Name="MenuLanguage" Header="{x:Static resx:Resource.MenuLanguage}" Initialized="MenuLanguage_Initialized" Loaded="MenuLanguage_Loaded"/>
+                        <MenuItem x:Name="MenuTheme" Header="{x:Static resx:Resource.MenuTheme}" Initialized="MenuTheme_Initialized" Loaded="MenuTheme_Loaded"/>
 
-                </MenuItem>
-                <MenuItem Header="{x:Static resx:Resource.MenuTool}">
-                    <MenuItem Header="流程引擎(_F)" Click="MenuItem9_Click"/>
-                    <MenuItem Header="MQTT日志(_Q)" Click="MenuItem_Click"/>
-                    <MenuItem Header="Msg列表(_L)" Click="MenuItem12_Click"/>
-                    <MenuItem Header="管理员服务配置(_S)"  Tag="ServiceParam" Click="MenuItem_Template"/>
-                    <MenuItem Header="设备配置(_D)"  Tag="DeviceParam" Click="MenuItem_Template"/>
-                    <MenuItem Header="{x:Static resx:Resource.Sign_in}"  Click="Login_Click"/>
-                    <Separator/>
-                    <MenuItem x:Name="MenuLanguage" Header="{x:Static resx:Resource.MenuLanguage}" Initialized="MenuLanguage_Initialized" Loaded="MenuLanguage_Loaded"/>
-                    <MenuItem x:Name="MenuTheme" Header="{x:Static resx:Resource.MenuTheme}" Initialized="MenuTheme_Initialized" Loaded="MenuTheme_Loaded"/>
-
-                    <MenuItem Header="{x:Static resx:Resource.MenuOptions}"  Click="MenuItem_Click_2"   InputGestureText="Ctrl + I"  >
-                        <MenuItem.Icon >
-                            <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                        </MenuItem.Icon>
+                        <MenuItem Header="{x:Static resx:Resource.MenuOptions}"  Click="MenuItem_Click_2"   InputGestureText="Ctrl + I"  >
+                            <MenuItem.Icon >
+                                <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                            </MenuItem.Icon>
+                        </MenuItem>
                     </MenuItem>
-                </MenuItem>
-                <MenuItem  x:Name="MenuStatusBar"  d:DataContext="{d:DesignInstance local:SoftwareConfig}"  Header="{ x:Static resx:Resource.MenuView}">
-                    <MenuItem Header="{x:Static resx:Resource.MenuViewStatusBar}" IsChecked="{Binding SoftwareSetting.IsOpenStatusBar}"  Click="MenuStatusBar_Click" />
-                    <Separator/>
-                    <MenuItem Header="保存窗口布局"  Click="MenuStatusBar_Click" />
-                    <MenuItem Header="应用窗口布局"  Click="MenuStatusBar_Click" />
-                </MenuItem>
+                    <MenuItem  x:Name="MenuStatusBar"  d:DataContext="{d:DesignInstance local:SoftwareConfig}"  Header="{ x:Static resx:Resource.MenuView}">
+                        <MenuItem Header="{x:Static resx:Resource.MenuViewStatusBar}" IsChecked="{Binding SoftwareSetting.IsOpenStatusBar}"  Click="MenuStatusBar_Click" />
+                        <Separator/>
+                        <MenuItem Header="保存窗口布局"  Click="MenuStatusBar_Click" />
+                        <MenuItem Header="应用窗口布局"  Click="MenuStatusBar_Click" />
+                    </MenuItem>
 
-                <MenuItem Header="{x:Static resx:Resource.MenuHelp}">
-                    <MenuItem Header="打开日志(_L)"  Click="Log_Click"/>
-                    <MenuItem Header="打开配置文件(_S)"  Click="Setting_Click"/>
-                    <MenuItem Header="打开日志文件夹(_F)"  Click="LogF_Click"/>
-                    <Separator/>
-                    <MenuItem Header="{x:Static resx:Resource.MenuUpdate}" Click="Update_Click"/>
-                    <MenuItem Header="我的许可证(_R)"  Click="License_Click"/>
-                    <MenuItem Header="{x:Static resx:Resource.MenuAbout}" Click="About_Click"/>
-                </MenuItem>
-            </Menu>
-            <Image Source="{DynamicResource DrawingImageUser}" Width="20" HorizontalAlignment="Right" Margin="0,0,10,0"/>
-            <Button Background="Transparent" BorderThickness="0" Click="Login_Click" Width="20"   HorizontalAlignment="Right" Margin="0,0,10,0"/>
-        </Grid>
+                    <MenuItem Header="{x:Static resx:Resource.MenuHelp}">
+                        <MenuItem Header="打开日志(_L)"  Click="Log_Click"/>
+                        <MenuItem Header="打开配置文件(_S)"  Click="Setting_Click"/>
+                        <MenuItem Header="打开日志文件夹(_F)"  Click="LogF_Click"/>
+                        <Separator/>
+                        <MenuItem Header="{x:Static resx:Resource.MenuUpdate}" Click="Update_Click"/>
+                        <MenuItem Header="我的许可证(_R)"  Click="License_Click"/>
+                        <MenuItem Header="{x:Static resx:Resource.MenuAbout}" Click="About_Click"/>
+                    </MenuItem>
+                </Menu>
+                <Image Source="{DynamicResource DrawingImageUser}" Width="20" HorizontalAlignment="Right" Margin="0,0,10,0"/>
+                <Button Background="Transparent" BorderThickness="0" Click="Login_Click" Width="20"   HorizontalAlignment="Right" Margin="0,0,10,0"/>
+            </Grid>
+        </Border>
+
         <Grid x:Name="ContentGrid" Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition x:Name="ColumnDefinitionLeft" Width="300" MaxWidth="600"/>
                 <ColumnDefinition MinWidth="200"/>
             </Grid.ColumnDefinitions>
-            <Button x:Name="ButtonShiftOut" Panel.ZIndex="100" Click="OnLeftMainContentShiftOut" hc:IconElement.Geometry="{StaticResource LeftGeometry}" Padding="8 8 0 8" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0 0 -16 0" Style="{StaticResource ButtonIconCircular}" />
+            <Button x:Name="ButtonShiftOut" Panel.ZIndex="100" Click="OnLeftMainContentShiftOut" Opacity="0.3" hc:IconElement.Geometry="{StaticResource LeftGeometry}" Padding="8 8 0 8" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0 0 -16 0" Style="{StaticResource ButtonIconCircular}" />
             <Grid Grid.Column="1" x:Name="MainContent">
                 <Grid x:Name="ViewGrid"  Background="LightGray"/>
             </Grid>
@@ -129,8 +119,8 @@
             <GridSplitter Panel.ZIndex="102" x:Name="GridSplitter" Margin="0,26,0,26" Grid.Column="0" HorizontalAlignment="Right" Width="4" Background="Transparent"/>
             <Button Grid.Column="0" x:Name="ButtonShiftIn" Visibility="Collapsed" Click="OnLeftMainContentShiftIn" hc:IconElement.Geometry="{StaticResource RightGeometry}" Padding="8 8 0 8" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-12 0 0 0" Style="{StaticResource ButtonIconCircular}" />
         </Grid>
-        <Grid Grid.Row="2" x:Name="StatusBarGrid" d:DataContext="{d:DesignInstance local:GlobalSetting}" Visibility="{Binding SoftwareConfig.SoftwareSetting.IsOpenStatusBar,Converter={StaticResource bool2VisibilityConverter}}" >
-            <StatusBar Height="35">
+        <Grid Grid.Row="2" Height="35" x:Name="StatusBarGrid" d:DataContext="{d:DesignInstance local:GlobalSetting}" Visibility="{Binding SoftwareConfig.SoftwareSetting.IsOpenStatusBar,Converter={StaticResource bool2VisibilityConverter}}" >
+            <StatusBar BorderThickness="0,1,0,0" >
                 <StatusBar.ItemsPanel>
                     <ItemsPanelTemplate>
                         <Grid>
