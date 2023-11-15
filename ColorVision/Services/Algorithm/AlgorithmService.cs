@@ -401,7 +401,6 @@ namespace ColorVision.Services.Algorithm
                 EventName = "LedCheck",
                 Params = Params
             };
-
             Params.Add("checkChannel", ledCheckParam.CheckChannel);
             Params.Add("isguding", ledCheckParam.Isguding);
             Params.Add("gudingrid", ledCheckParam.Gudingrid);
@@ -418,10 +417,7 @@ namespace ColorVision.Services.Algorithm
             Params.Add("LengthRange", ledCheckParam.LengthRange);
             Params.Add("localRdMark", ledCheckParam.LocalRdMark);
             Params.Add("file_data", ToJsonFileList(ImageChannelType.Gray_Y, FileName));
-
-
-
-            return PublishAsyncClient(msg);
+            return PublishAsyncClient(msg,60000);
         }
 
 
