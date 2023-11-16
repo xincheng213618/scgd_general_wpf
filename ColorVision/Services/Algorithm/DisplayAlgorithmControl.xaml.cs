@@ -82,11 +82,11 @@ namespace ColorVision.Services.Algorithm
                     break;
 
                 case MQTTAlgorithmEventEnum.Event_POI_GetData:
-                    string rawDataMsg = JsonConvert.SerializeObject(arg.Data);
-                    MQTTPOIGetDataResult poiResp = JsonConvert.DeserializeObject<MQTTPOIGetDataResult>(rawDataMsg);
-                    var poiDbResults = resultService.PoiPointSelectByBatchCode(arg.SerialNumber);
-                    if (poiResp!=null)
-                        ShowResult(arg.SerialNumber, poiDbResults, rawDataMsg, poiResp);
+                    ShowResultFromDB(arg.SerialNumber, Convert.ToInt32(arg.Data.MasterId));
+                    //MQTTPOIGetDataResult poiResp = JsonConvert.DeserializeObject<MQTTPOIGetDataResult>(rawDataMsg);
+                    //var poiDbResults = resultService.PoiPointSelectByBatchCode(arg.SerialNumber);
+                    //if (poiResp!=null)
+                    //    ShowResult(arg.SerialNumber, poiDbResults, rawDataMsg, poiResp);
                     break;
                 case MQTTFileServerEventEnum.Event_File_Upload:
                     DeviceFileUpdownParam pm_up = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
@@ -114,73 +114,156 @@ namespace ColorVision.Services.Algorithm
             }
         }
 
-        private void ShowResult(string serialNumber, List<POIPointResultModel> poiDbResults, string rawMsg, MQTTPOIGetDataResult response)
+        private void ShowResultFromDB(string serialNumber, int masterId)
         {
-            Application.Current.Dispatcher.Invoke(() => { _ShowResult(serialNumber, poiDbResults, rawMsg, response); });
+            List<AlgResultMasterModel> resultMaster = null;
+            if (masterId > 0)
+            {
+                resultMaster = new List<AlgResultMasterModel>();
+                AlgResultMasterModel model = resultService.GetAlgResultById(masterId);
+                resultMaster.Add(model);
+            }
+            else
+            {
+                resultMaster = resultService.GetAlgResultBySN(serialNumber);
+            }
+            foreach (AlgResultMasterModel result in resultMaster)
+            {
+                switch (result.ImgFileType)
+                {
+                    case AlgorithmResultType.POI_XY_UV:
+                    case AlgorithmResultType.POI_Y:
+                    case AlgorithmResultType.POI:
+                        LoadResultPOIFromDB(result);
+                        break;
+                }
+            }
         }
 
-        private void _ShowResult(string serialNumber, List<POIPointResultModel> poiDbResults, string rawMsg, MQTTPOIGetDataResult response)
+        private void LoadResultPOIFromDB(AlgResultMasterModel result)
         {
-            switch (response.ResultType)
+            var details = resultService.GetPOIByPid(result.Id);
+            switch (result.ImgFileType)
             {
                 case AlgorithmResultType.POI_XY_UV:
-                    ShowResultCIExyuv(serialNumber, response.POITemplateName, response.POIImgFileName, response.HasRecord, poiDbResults, rawMsg);
+                    var results = BuildPOIResultCIExyuv(details);
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        Device.View.PoiDataDraw(result, results);
+                    });
                     break;
                 case AlgorithmResultType.POI_Y:
-                    ShowResultCIEY(serialNumber, response.POITemplateName, response.POIImgFileName, response.HasRecord, poiDbResults, rawMsg);
+                    var results_y = BuildPOIResultCIEY(details);
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        Device.View.PoiDataDraw(result, results_y);
+                    });
+                    break;
+                case AlgorithmResultType.POI:
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        Device.View.AlgResultDataDraw(result);
+                    });
                     break;
             }
-            //if (!CB_CIEImageFiles.Name.Equals(response.POIImgFileName, StringComparison.Ordinal))
-            //{
-            //    CB_CIEImageFiles.Name = response.POIImgFileName;
-            //    doOpen(response.POIImgFileName);
-            //}
-            handler?.Close();
         }
 
-        private List<POIResultCIEY>? ShowResultCIEY(string serialNumber, string templateName, string POIImgFileName, bool hasRecord, List<POIPointResultModel> poiDbResults, string rawMsg)
+        private List<POIResultCIExyuv> BuildPOIResultCIExyuv(List<POIPointResultModel> details)
         {
-            List<POIResultCIEY> poiResultData = null;
-            if (hasRecord)
+            List<POIResultCIExyuv> results = new List<POIResultCIExyuv>();
+            foreach (POIPointResultModel detail in details)
             {
-                MQTTPOIGetDataCIEYResult response = JsonConvert.DeserializeObject<MQTTPOIGetDataCIEYResult>(rawMsg);
-                if (response!=null)
-                    poiResultData = response.Results;
+                POIResultCIExyuv result = new POIResultCIExyuv(
+                                            new POIPoint((int)detail.PoiId, -1, detail.PoiName, (POIPointTypes)detail.PoiType, (int)detail.PoiX, (int)detail.PoiY, (int)detail.PoiWidth, (int)detail.PoiHeight),
+                                            JsonConvert.DeserializeObject<POIDataCIExyuv>(detail.Value));
+
+                results.Add(result);
             }
-            else
-            {
-                poiResultData = new List<POIResultCIEY>();
-                foreach (var item in poiDbResults)
-                {
-                    poiResultData.Add(new POIResultCIEY(new POIPoint(item.PoiId ?? 0, item.Pid ?? 0, item.PoiName, (POIPointTypes)(item.PoiType ?? 0), item.PoiX ?? 0, item.PoiY ?? 0  , item.PoiWidth ?? 0, item.PoiHeight ?? 0),
-                       JsonConvert.DeserializeObject<POIDataCIEY>(item.Value??string.Empty)));
-                }
-            }
-            if (poiResultData!=null)
-                Device.View.PoiDataDraw(serialNumber, templateName, POIImgFileName, poiResultData);
-            return poiResultData;
+            return results;
         }
 
-        private List<POIResultCIExyuv>? ShowResultCIExyuv(string serialNumber, string templateName, string POIImgFileName, bool hasRecord, List<POIPointResultModel> poiDbResults, string rawMsg)
+        private List<POIResultCIEY> BuildPOIResultCIEY(List<POIPointResultModel> details)
         {
-            List<POIResultCIExyuv> poiResultData = null;
-            if (hasRecord)
+            List<POIResultCIEY> results = new List<POIResultCIEY>();
+            foreach (POIPointResultModel detail in details)
             {
-                poiResultData = JsonConvert.DeserializeObject<MQTTPOIGetDataCIExyuvResult>(rawMsg)?.Results;
+                POIResultCIEY result = new POIResultCIEY(
+                                        new POIPoint((int)detail.PoiId, -1, detail.PoiName, (POIPointTypes)detail.PoiType, (int)detail.PoiX, (int)detail.PoiY, (int)detail.PoiWidth, (int)detail.PoiHeight),
+                                        JsonConvert.DeserializeObject<POIDataCIEY>(detail.Value));
+
+                results.Add(result);
             }
-            else
-            {
-                poiResultData = new List<POIResultCIExyuv>();
-                foreach (var item in poiDbResults)
-                {
-                    poiResultData.Add(new POIResultCIExyuv(new POIPoint(item.PoiId??0, item.Pid ?? 0, item.PoiName, (POIPointTypes)(item.PoiType??0), item.PoiX??0, item.PoiY ?? 0, item.PoiWidth ?? 0, item.PoiHeight ?? 0),
-                       JsonConvert.DeserializeObject<POIDataCIExyuv>(item.Value ?? string.Empty)));
-                }
-            }
-            if (poiResultData!=null)
-                Device.View.PoiDataDraw(serialNumber, templateName, POIImgFileName, poiResultData);
-            return poiResultData;
+
+            return results;
         }
+
+        //private void ShowResult(string serialNumber, List<POIPointResultModel> poiDbResults, string rawMsg, MQTTPOIGetDataResult response)
+        //{
+        //    Application.Current.Dispatcher.Invoke(() => { _ShowResult(serialNumber, poiDbResults, rawMsg, response); });
+        //}
+
+        //private void _ShowResult(string serialNumber, List<POIPointResultModel> poiDbResults, string rawMsg, MQTTPOIGetDataResult response)
+        //{
+        //    switch (response.ResultType)
+        //    {
+        //        case AlgorithmResultType.POI_XY_UV:
+        //            ShowResultCIExyuv(serialNumber, response.POITemplateName, response.POIImgFileName, response.HasRecord, poiDbResults, rawMsg);
+        //            break;
+        //        case AlgorithmResultType.POI_Y:
+        //            ShowResultCIEY(serialNumber, response.POITemplateName, response.POIImgFileName, response.HasRecord, poiDbResults, rawMsg);
+        //            break;
+        //    }
+        //    //if (!CB_CIEImageFiles.Name.Equals(response.POIImgFileName, StringComparison.Ordinal))
+        //    //{
+        //    //    CB_CIEImageFiles.Name = response.POIImgFileName;
+        //    //    doOpen(response.POIImgFileName);
+        //    //}
+        //    handler?.Close();
+        //}
+
+        //private List<POIResultCIEY>? ShowResultCIEY(string serialNumber, string templateName, string POIImgFileName, bool hasRecord, List<POIPointResultModel> poiDbResults, string rawMsg)
+        //{
+        //    List<POIResultCIEY> poiResultData = null;
+        //    if (hasRecord)
+        //    {
+        //        MQTTPOIGetDataCIEYResult response = JsonConvert.DeserializeObject<MQTTPOIGetDataCIEYResult>(rawMsg);
+        //        if (response!=null)
+        //            poiResultData = response.Results;
+        //    }
+        //    else
+        //    {
+        //        poiResultData = new List<POIResultCIEY>();
+        //        foreach (var item in poiDbResults)
+        //        {
+        //            poiResultData.Add(new POIResultCIEY(new POIPoint(item.PoiId ?? 0, item.Pid ?? 0, item.PoiName, (POIPointTypes)(item.PoiType ?? 0), item.PoiX ?? 0, item.PoiY ?? 0  , item.PoiWidth ?? 0, item.PoiHeight ?? 0),
+        //               JsonConvert.DeserializeObject<POIDataCIEY>(item.Value??string.Empty)));
+        //        }
+        //    }
+        //    if (poiResultData!=null)
+        //        Device.View.PoiDataDraw(serialNumber, templateName, POIImgFileName, poiResultData);
+        //    return poiResultData;
+        //}
+
+        //private List<POIResultCIExyuv>? ShowResultCIExyuv(string serialNumber, string templateName, string POIImgFileName, bool hasRecord, List<POIPointResultModel> poiDbResults, string rawMsg)
+        //{
+        //    List<POIResultCIExyuv> poiResultData = null;
+        //    if (hasRecord)
+        //    {
+        //        poiResultData = JsonConvert.DeserializeObject<MQTTPOIGetDataCIExyuvResult>(rawMsg)?.Results;
+        //    }
+        //    else
+        //    {
+        //        poiResultData = new List<POIResultCIExyuv>();
+        //        foreach (var item in poiDbResults)
+        //        {
+        //            poiResultData.Add(new POIResultCIExyuv(new POIPoint(item.PoiId??0, item.Pid ?? 0, item.PoiName, (POIPointTypes)(item.PoiType??0), item.PoiX??0, item.PoiY ?? 0, item.PoiWidth ?? 0, item.PoiHeight ?? 0),
+        //               JsonConvert.DeserializeObject<POIDataCIExyuv>(item.Value ?? string.Empty)));
+        //        }
+        //    }
+        //    if (poiResultData!=null)
+        //        Device.View.PoiDataDraw(serialNumber, templateName, POIImgFileName, poiResultData);
+        //    return poiResultData;
+        //}
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
