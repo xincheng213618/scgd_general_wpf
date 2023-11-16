@@ -1,16 +1,22 @@
-﻿namespace ColorVision.Solution.V.Folder
+﻿using System.Windows.Controls;
+using System.Windows.Media;
+
+namespace ColorVision.Solution.V.Folders
 {
     public class VFolder : VObject
     {
         public IFolder Folder { get; set; }
+        public ContextMenu ContextMenu { get; set; }
 
         public VFolder(IFolder folder)
         {
             Folder = folder;
             Name = folder.Name;
             ToolTip = folder.ToolTip;
-            Icon = folder.Icon;
+            ContextMenu = folder.ContextMenu;
         }
+
+        public override ImageSource Icon {get => Folder.Icon; set { Folder.Icon = value; NotifyPropertyChanged(); } }
 
         public override void Open()
         {

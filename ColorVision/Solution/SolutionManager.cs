@@ -7,6 +7,8 @@ using ColorVision.RecentFile;
 using ColorVision.MySql;
 using log4net;
 using System.Windows;
+using ColorVision.HotKey;
+using System.Windows.Input;
 
 namespace ColorVision.Solution
 {
@@ -36,8 +38,8 @@ namespace ColorVision.Solution
         public static SolutionManager GetInstance() { lock (_locker) { return _instance ??= new SolutionManager(); } }
 
         //工程配置文件
-        public SolutionConfig Config { get => SoftwareConfig.SolutionConfig; }
-        public SolutionSetting Setting { get => Config.SolutionSetting; }
+        public SolutionConfig CurrentSolution { get => SoftwareConfig.SolutionConfig; }
+        public SolutionSetting Setting { get => CurrentSolution.SolutionSetting; }
         public SoftwareConfig SoftwareConfig { get; private set; }
         public RecentFileList SolutionHistory { get; set; } = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
 
@@ -46,20 +48,10 @@ namespace ColorVision.Solution
         public SolutionManager()
         {
             SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
+            Application.Current.MainWindow.AddHotKeys(new HotKeys("打开工程", new Hotkey(Key.O, ModifierKeys.Control), OpenSolutionWindow));
+            Application.Current.MainWindow.AddHotKeys(new HotKeys("新建工程", new Hotkey(Key.N, ModifierKeys.Control), NewCreateWindow));
 
-            if (!Directory.Exists(Config.SolutionFullName))
-            {
-
-
-                Config.SolutionFullName = string.Empty;
-                Config.SolutionName = string.Empty;
-            }
-            else
-            {
-                Tool.CreateDirectoryMax(Config.CachePath);
-            }
-
-
+            OpenSolution(CurrentSolution.SolutionFullName);
         }
 
         public bool OpenSolution(string SolutionFullPath)
@@ -70,30 +62,56 @@ namespace ColorVision.Solution
 
             if (Directory.Exists(SolutionFullPath))
             {
-                SolutionOpened?.Invoke(SolutionFullPath);
                 DirectoryInfo Info = new DirectoryInfo(SolutionFullPath);
-                Config.SolutionName = Info.Name;
-                Config.SolutionFullName = Info.FullName;
+                CurrentSolution.SolutionName = Info.Name;
+                CurrentSolution.SolutionFullName = Info.FullName;
                 SolutionHistory.InsertFile(Info.FullName);
+                SolutionOpened?.Invoke(SolutionFullPath);
                 return true;
             }
             else
             {
-                log.Debug("工程文件失效:" + SolutionFullPath);
-                MessageBox.Show("工程文件不存在，在使用之前请重新创建", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                log.Debug("工程文件打开失败:" + SolutionFullPath);
+                MessageBox.Show("工程文件未创建，在使用之前请重新创建", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 return false;
             }
         }
 
         public void CreateSolution(DirectoryInfo SolutionDirectoryInfo)
         {
-            Config.SolutionName = SolutionDirectoryInfo.Name;
-            Config.SolutionFullName = SolutionDirectoryInfo.FullName;
-            SolutionHistory.InsertFile(SolutionDirectoryInfo.FullName);
+            Tool.CreateDirectory(CurrentSolution.CachePath);
 
-            Tool.CreateDirectory(Config.CachePath);
+            OpenSolution(SolutionDirectoryInfo.FullName);
         }
 
-   
+
+        public void OpenSolutionWindow()
+        {
+            OpenSolutionWindow openSolutionWindow = new OpenSolutionWindow() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            openSolutionWindow.Closed += delegate
+            {
+                if (Directory.Exists(openSolutionWindow.FullName))
+                    OpenSolution(openSolutionWindow.FullName);
+                else
+                    MessageBox.Show("找不到工程");
+            };
+            openSolutionWindow.Show();
+        }
+
+        public void NewCreateWindow()
+        {
+            NewCreateWindow newCreatWindow = new NewCreateWindow() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            newCreatWindow.Closed += delegate
+            {
+                if (newCreatWindow.IsCreate)
+                {
+                    string SolutionDirectoryPath = newCreatWindow.NewCreateViewMode.DirectoryPath + "\\" + newCreatWindow.NewCreateViewMode.Name;
+                    CreateSolution(new DirectoryInfo(SolutionDirectoryPath));
+                    SolutionOpened?.Invoke(SolutionDirectoryPath);
+                }
+            };
+            newCreatWindow.ShowDialog();
+        }
+
     }
 }

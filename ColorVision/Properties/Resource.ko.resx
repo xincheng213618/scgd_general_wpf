@@ -315,4 +315,7 @@
   <data name="MenuTemplate" xml:space="preserve">
     <value>템플릿(T)</value>
   </data>
+  <data name="Open" xml:space="preserve">
+    <value>열려 있는</value>
+  </data>
 </root>

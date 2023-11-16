@@ -1,15 +1,19 @@
-﻿namespace ColorVision.Solution.V.File
+﻿using System.Windows.Controls;
+
+namespace ColorVision.Solution.V.Files
 {
     public class VFile : VObject
     {
         public IFile File { get; set; }
 
+        public ContextMenu ContextMenu { get; set; }
         public VFile(IFile file)
         {
             File = file;
             Name = file.Name;
             ToolTip = file.ToolTip;
             Icon = file.Icon;
+            ContextMenu = file.ContextMenu;
         }
 
         public override void Open()
