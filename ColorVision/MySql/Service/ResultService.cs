@@ -1,4 +1,5 @@
 ﻿using ColorVision.MySql.DAO;
+using System;
 using System.Collections.Generic;
 
 namespace ColorVision.MySql.Service
@@ -8,7 +9,7 @@ namespace ColorVision.MySql.Service
         private SpectumResultDao spectumDao;
         private SMUResultDao smuDao;
         private BatchResultMasterDao batchDao;
-
+        private AlgResultMasterDao algResultMasterDao;
         private POIPointResultDao poiPointResultDao;
 
 
@@ -18,15 +19,13 @@ namespace ColorVision.MySql.Service
             smuDao = new SMUResultDao();
             batchDao = new BatchResultMasterDao();
             poiPointResultDao = new POIPointResultDao();
+            algResultMasterDao = new AlgResultMasterDao();
         }
 
         internal int SpectumDeleteById(int id)
         {
             return spectumDao.DeleteById(id);
         }
-
-        internal List<POIPointResultModel> PoiPointSelectByBatchID(int batchid) => poiPointResultDao.GetAllByBatchid(batchid);
-        internal List<POIPointResultModel> PoiPointSelectByBatchCode(string sn) => poiPointResultDao.selectBySN(sn);
 
         internal List<SpectumResultModel> SpectumSelectBySN(string sn)
         {
@@ -55,6 +54,21 @@ namespace ColorVision.MySql.Service
         internal int BatchUpdateEnd(string bid, int totalTime, string result)
         {
             return batchDao.UpdateEnd(bid, totalTime, result);
+        }
+
+        public List<AlgResultMasterModel>? GetAlgResultBySN(string serialNumber)
+        {
+            return algResultMasterDao.GetAllByBatchCode(serialNumber);
+        }
+
+        public AlgResultMasterModel GetAlgResultById(int id)
+        {
+            return algResultMasterDao.GetByID(id);
+        }
+
+        public List<POIPointResultModel> GetPOIByPid(int pid)
+        {
+            return poiPointResultDao.GetAllByPid(pid);
         }
     }
 }
