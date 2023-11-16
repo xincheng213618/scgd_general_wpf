@@ -1,7 +1,10 @@
 ﻿using ColorVision.Device.Camera;
 using ColorVision.MQTT;
 using ColorVision.MySql.DAO;
+using ColorVision.Themes;
+using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace ColorVision.Services.Device.CfwPort
 {
@@ -12,6 +15,16 @@ namespace ColorVision.Services.Device.CfwPort
         public DeviceCfwPort(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DeviceService = new DeviceServiceCfwPort(Config);
+
+            if (Application.Current.TryFindResource("CfwPortDrawingImage") is DrawingImage drawingImage)
+                Icon = drawingImage;
+
+            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
+            {
+                if (Application.Current.TryFindResource("CfwPortDrawingImage") is DrawingImage drawingImage)
+                    Icon = drawingImage;
+            };
+            
         }
 
         public override UserControl GetDeviceControl() => new DeviceCfwPortControl(this);

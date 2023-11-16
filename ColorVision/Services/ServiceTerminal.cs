@@ -96,6 +96,26 @@ namespace ColorVision.Services
                     };
                     BaseService = new BaseService<BaseServiceConfig>(Config);
                     break;
+                case ServiceType.Motor:
+                    if (Application.Current.TryFindResource("COMDrawingImage") is DrawingImage COMDrawingImage)
+                        Icon = COMDrawingImage;
+                    ThemeManager.Current.CurrentUIThemeChanged += (s) =>
+                    {
+                        if (Application.Current.TryFindResource("COMDrawingImage") is DrawingImage drawingImage)
+                            Icon = drawingImage;
+                    };
+                    BaseService = new BaseService<BaseServiceConfig>(Config);
+                    break;
+                case ServiceType.CfwPort:
+                    if (Application.Current.TryFindResource("CfwPortDrawingImage") is DrawingImage CfwPortDrawingImage)
+                        Icon = CfwPortDrawingImage;
+                    ThemeManager.Current.CurrentUIThemeChanged += (s) =>
+                    {
+                        if (Application.Current.TryFindResource("CfwPortDrawingImage") is DrawingImage drawingImage)
+                            Icon = drawingImage;
+                    };
+                    BaseService = new BaseService<BaseServiceConfig>(Config);
+                    break;
 
                 default:
                     BaseService = new BaseService<BaseServiceConfig>(Config);

@@ -40,9 +40,7 @@
                     </Grid>
 
 
-                    <Grid  Height="18"   HorizontalAlignment="Left"  Margin="0,0,4,0">
-                        <Image Source="{Binding Icon}"/>
-                    </Grid>
+                    <Image Source="{Binding Icon}" Height="18"   HorizontalAlignment="Left"  Margin="0,0,4,0"/>
                     <TextBlock Text="{Binding Config.Name}" FontWeight="Bold" FontSize="20"/>
                 </DockPanel>
             </Border>

@@ -31,6 +31,8 @@ namespace ColorVision.MQTT
         public RelayCommand ImportCommand { get; set; }
         public RelayCommand CopyCommand { get; set; }
 
+        public virtual ImageSource Icon { get; set; }
+
 
         public SysResourceModel SysResourceModel { get; set; }
 
@@ -73,7 +75,7 @@ namespace ColorVision.MQTT
     {
         public T Config { get; set; }
 
-        public  ImageSource Icon { get => _Icon; set { _Icon = value; NotifyPropertyChanged(); } }
+        public override ImageSource Icon { get => _Icon; set { _Icon = value; NotifyPropertyChanged(); } }
         private ImageSource _Icon;
 
 
