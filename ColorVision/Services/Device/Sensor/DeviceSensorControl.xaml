@@ -32,6 +32,11 @@
                         <Image Source="{StaticResource  DrawingImageEdit}" Margin="0" />
                         <Button Background="Transparent" BorderThickness="0"   Click="Button_Click_1"/>
                     </Grid>
+                    <Grid x:Name="ButtonCopy" DockPanel.Dock="Right" Width="25" Margin="0,0,10,0">
+                        <Button  BorderThickness="0" Command="{Binding CopyCommand}">
+                            <Image Source="{StaticResource  DrawingImageCopyTo}" Margin="-8" />
+                        </Button>
+                    </Grid>
                     <TextBlock Text="{Binding Config.Name}" FontWeight="Bold" FontSize="20"/>
                 </DockPanel>
             </Border>
