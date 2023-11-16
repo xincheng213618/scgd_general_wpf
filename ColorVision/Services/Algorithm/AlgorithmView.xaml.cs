@@ -420,52 +420,6 @@ namespace ColorVision.Services.Algorithm
             listView1.ScrollIntoView(listView1.SelectedItem);
         }
 
-
-        ////TODO: 需要新增亮度listview
-        //public void PoiDataDraw(string serialNumber, string templateName, string POIImgFileName, List<POIResultCIEY> poiResultData)
-        //{
-        //    if (!resultDis.ContainsKey(serialNumber))
-        //    {
-        //        PoiResult result = new PoiResult(PoiResults.Count + 1, serialNumber, POIImgFileName, templateName, DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss"), AlgorithmResultType.POI_Y);
-        //        PoiResults.Add(result);
-        //        resultDis[serialNumber] = result;
-        //        foreach (var item in poiResultData)
-        //        {
-        //            try
-        //            {
-        //                PoiResultCIEYData poiResult = new PoiResultCIEYData(item.Point, item.Data);
-        //                result.PoiData.Add(poiResult);
-        //            }
-        //            catch
-        //            {
-
-        //            }
-        //        }
-        //    }
-        //    if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
-        //}
-        //public void PoiDataDraw(string serialNumber, string templateName, string POIImgFileName, List<POIResultCIExyuv> poiResultData)
-        //{
-        //    if (!resultDis.ContainsKey(serialNumber))
-        //    {
-        //        PoiResult result = new PoiResult(PoiResults.Count + 1, serialNumber, POIImgFileName, templateName, DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss"), AlgorithmResultType.POI_XY_UV);
-        //        PoiResults.Add(result);
-        //        resultDis[serialNumber] = result;
-        //        foreach (var item in poiResultData)
-        //        {
-        //            try
-        //            {
-        //                PoiResultCIExyuvData poiResult = new PoiResultCIExyuvData(item.Point, item.Data);
-        //                result.PoiData.Add(poiResult);
-        //            }
-        //            catch
-        //            {
-
-        //            }
-        //        }
-        //    }
-        //    if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
-        //}
         private List<List<string>> ListContents { get; set; } = new List<List<string>>() { };
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
@@ -532,9 +486,7 @@ namespace ColorVision.Services.Algorithm
 
         public void OpenImage(byte[] bytes)
         {
-            logger.Info("OpenImage .....");
             img_view.OpenImage(bytes);
-            logger.Info("OpenImage end");
         }
 
         private void listViewY_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -544,9 +496,7 @@ namespace ColorVision.Services.Algorithm
 
         internal void OpenImage(CVCIEFileInfo fileInfo)
         {
-            logger.Info("OpenImage CVCIEFileInfo .....");
             img_view.OpenImage(fileInfo);
-            logger.Info("OpenImage end");
         }
     }
 }
