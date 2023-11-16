@@ -110,6 +110,8 @@ namespace ColorVision.Services.Algorithm
                 switch (msg.EventName)
                 {
                     case "GetData":
+                        OnAlgorithmEvent?.Invoke(this, new AlgorithmEvent(msg.EventName, msg.SerialNumber, msg.Data));
+                        DeviceStatus = DeviceStatus.Opened;
                         break;
                     case "Close":
                         DeviceStatus = DeviceStatus.UnInit;
@@ -126,6 +128,8 @@ namespace ColorVision.Services.Algorithm
                     case "Calibrations":
                         break;
                     default:
+                        OnAlgorithmEvent?.Invoke(this, new AlgorithmEvent(msg.EventName, msg.SerialNumber, msg.Data));
+                        DeviceStatus = DeviceStatus.Opened;
                         break;
                 }
             }

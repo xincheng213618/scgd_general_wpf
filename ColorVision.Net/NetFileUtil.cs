@@ -1,3 +1,4 @@
+using FileServerPlugin;
 using log4net;
 using NetMQ;
 using NetMQ.Sockets;
@@ -171,6 +172,32 @@ namespace ColorVision.Net
             var data = ReadLocalBinaryFile(fileName);
             if (data == null) handler?.Invoke(this, new NetFileEvent(-1, fileName, data));
             else handler?.Invoke(this, new NetFileEvent(0, fileName, data));
+        }
+
+        public void OpenLocalCIEFile(string fileName)
+        {
+            var data = ReadLocalBinaryCIEFile(fileName);
+            if (data == null) handler?.Invoke(this, new NetFileEvent(-1, fileName, data));
+            else handler?.Invoke(this, new NetFileEvent(0, fileName, data));
+        }
+
+        private byte[]? ReadLocalBinaryCIEFile(string fileName)
+        {
+            return ReadCVImage(fileName);
+        }
+
+        private byte[] ReadCVImage(string fileName)
+        {
+            UInt32 w = 0, h = 0, bpp = 0, channels = 0;
+            byte[] imgdata = null;
+            string srcFileName;
+            float[] exp;
+            if (CVFileUtils.GetFileHeader(fileName, out w, out h, out bpp, out channels, out exp, out srcFileName))
+            {
+                if (System.IO.File.Exists(srcFileName)) return CVFileUtils.ReadBinaryFile(srcFileName);
+            }
+
+            return null;
         }
     }
 

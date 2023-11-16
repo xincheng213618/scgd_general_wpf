@@ -104,7 +104,14 @@ namespace ColorVision.Services.Algorithm
         }
         private void FileDownload(DeviceFileUpdownParam pm_dl)
         {
-            if (!string.IsNullOrWhiteSpace(pm_dl.ServerEndpoint) && !string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.TaskStartDownloadFile(pm_dl.ServerEndpoint, pm_dl.FileName);
+            if (pm_dl.IsLocal)
+            {
+                if (!string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.OpenLocalCIEFile(pm_dl.FileName);
+            }
+            else
+            {
+                if (!string.IsNullOrWhiteSpace(pm_dl.ServerEndpoint) && !string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.TaskStartDownloadFile(pm_dl.ServerEndpoint, pm_dl.FileName);
+            }
         }
 
         private void ShowResult(string serialNumber, List<POIPointResultModel> poiDbResults, string rawMsg, MQTTPOIGetDataResult response)
