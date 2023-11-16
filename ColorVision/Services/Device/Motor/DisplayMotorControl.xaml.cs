@@ -119,5 +119,10 @@ namespace ColorVision.Services.Device.Motor
                 Helpers.SendCommand(button, msgRecord);
             }
         }
+
+        private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
+        }
     }
 }

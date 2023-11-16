@@ -1,7 +1,10 @@
 ﻿using ColorVision.Device.FileServer;
 using ColorVision.MQTT;
 using ColorVision.MySql.DAO;
+using ColorVision.Themes;
+using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace ColorVision.Services.Device.Motor
 {
@@ -12,6 +15,15 @@ namespace ColorVision.Services.Device.Motor
         public DeviceMotor(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DeviceService = new DeviceServiceMotor(Config);
+
+            if (Application.Current.TryFindResource("COMDrawingImage") is DrawingImage drawingImage)
+                Icon = drawingImage;
+
+            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
+            {
+                if (Application.Current.TryFindResource("COMDrawingImage") is DrawingImage drawingImage)
+                    Icon = drawingImage;
+            };
         }
 
         public override UserControl GetDeviceControl() => new DeviceMotorControl(this);

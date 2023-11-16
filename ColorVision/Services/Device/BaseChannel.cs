@@ -29,6 +29,10 @@ namespace ColorVision.MQTT
         public RelayCommand PropertyCommand { get; set; }
         public RelayCommand ExportCommand { get; set; }
         public RelayCommand ImportCommand { get; set; }
+        public RelayCommand CopyCommand { get; set; }
+
+        public virtual ImageSource Icon { get; set; }
+
 
         public SysResourceModel SysResourceModel { get; set; }
 
@@ -71,7 +75,7 @@ namespace ColorVision.MQTT
     {
         public T Config { get; set; }
 
-        public  ImageSource Icon { get => _Icon; set { _Icon = value; NotifyPropertyChanged(); } }
+        public override ImageSource Icon { get => _Icon; set { _Icon = value; NotifyPropertyChanged(); } }
         private ImageSource _Icon;
 
 
@@ -108,6 +112,14 @@ namespace ColorVision.MQTT
                 if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
                 Config.ToJsonNFile(ofd.FileName);
                 MessageBox.Show("导出成功", "ColorVision");
+            });
+
+            CopyCommand = new RelayCommand((e) =>
+            {
+                if (Config!=null)
+                {
+                    ColorVision.NativeMethods.Clipboard.SetText(Config.ToJsonN());
+                }
             });
 
 

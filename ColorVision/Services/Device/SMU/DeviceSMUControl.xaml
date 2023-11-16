@@ -27,9 +27,14 @@
             <Border  Grid.Row="0" Background="{DynamicResource RegionBrush}" CornerRadius="5" >
                 <DockPanel  Margin="10,5">
                     <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  DockPanel.Dock="Right" Width="20"  HorizontalAlignment="Right" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
-                    <Grid x:Name="ButtonEdit"  DockPanel.Dock="Right" Width="17" Margin="10,0">
+                    <Grid x:Name="ButtonEdit"  DockPanel.Dock="Right" Width="17" Margin="0,0,10,0">
                         <Image Source="{StaticResource  DrawingImageEdit}" Margin="0" />
                         <Button Background="Transparent" BorderThickness="0"  Click="Button_Click_1"/>
+                    </Grid>
+                    <Grid x:Name="ButtonCopy" DockPanel.Dock="Right" Width="25" Margin="0,0,10,0">
+                        <Button  BorderThickness="0" Command="{Binding CopyCommand}">
+                            <Image Source="{StaticResource  DrawingImageCopyTo}" Margin="-8" />
+                        </Button>
                     </Grid>
                     <Grid  Height="18"   HorizontalAlignment="Left"  Margin="0,0,4,0">
                         <Image Source="{Binding Icon}"/>
