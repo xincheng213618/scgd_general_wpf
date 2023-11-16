@@ -438,6 +438,27 @@ namespace ColorVision.MySql
             return list;
         }
 
+        public List<T> GetAllByBatchCode(string code)
+        {
+            List<T> list = new List<T>();
+            DataTable d_info = GetTableAllByBatchCode(code);
+            foreach (var item in d_info.AsEnumerable())
+            {
+                T? model = GetModel(item);
+                if (model != null)
+                {
+                    list.Add(model);
+                }
+            }
+            return list;
+        }
+
+        public virtual DataTable GetTableAllByBatchCode(string bcode)
+        {
+            string sql = $"select * from {GetTableName()} where batch_code='{bcode}'" + GetDelSQL(true) + $" order by {PKField}";
+            DataTable d_info = GetData(sql);
+            return d_info;
+        }
 
         public List<T> GetAllByPcode(string pcode)
         {

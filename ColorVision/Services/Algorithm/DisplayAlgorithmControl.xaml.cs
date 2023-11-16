@@ -63,7 +63,7 @@ namespace ColorVision.Services.Algorithm
             handler?.Close();
         }
 
-        private void View_OnCurSelectionChanged(PoiResult data)
+        private void View_OnCurSelectionChanged(AlgorithmResult data)
         {
             doOpen(data.ImgFileName);
         }
@@ -138,6 +138,7 @@ namespace ColorVision.Services.Algorithm
                         break;
                 }
             }
+            handler?.Close();
         }
 
         private void LoadResultPOIFromDB(AlgResultMasterModel result)

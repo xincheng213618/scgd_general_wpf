@@ -27,9 +27,6 @@ namespace ColorVision.MySql.Service
             return spectumDao.DeleteById(id);
         }
 
-        internal List<POIPointResultModel> PoiPointSelectByBatchID(int batchid) => poiPointResultDao.GetAllByBatchid(batchid);
-        internal List<POIPointResultModel> PoiPointSelectByBatchCode(string sn) => poiPointResultDao.selectBySN(sn);
-
         internal List<SpectumResultModel> SpectumSelectBySN(string sn)
         {
             BatchResultMasterModel batch = batchDao.GetByCode(sn);

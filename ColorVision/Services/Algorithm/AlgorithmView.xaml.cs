@@ -223,7 +223,7 @@ namespace ColorVision.Services.Algorithm
     }
 
 
-    public delegate void CurSelectionChanged(PoiResult data);
+    public delegate void CurSelectionChanged(AlgorithmResult data);
 
     /// <summary>
     /// SpectrumView.xaml 的交互逻辑
@@ -480,7 +480,7 @@ namespace ColorVision.Services.Algorithm
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            PoiResult data = listView1.Items[listView1.SelectedIndex] as PoiResult;
+            AlgorithmResult data = listView1.Items[listView1.SelectedIndex] as AlgorithmResult;
             if(data != null)
             {
                 OnCurSelectionChanged?.Invoke(data);
