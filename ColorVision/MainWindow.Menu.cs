@@ -167,18 +167,18 @@ namespace ColorVision
 
         private void MenuItem_ProjectNew_Click(object sender, RoutedEventArgs e)
         {
-            SolutionNewCreat();
+            SolutionManager.GetInstance().NewCreateWindow();
         }
 
         private void MenuItem_ProjectOpen_Click(object sender, RoutedEventArgs e)
         {
-            SolutionOpen();
+            SolutionManager.GetInstance().OpenSolutionWindow();
         }
         private DateTime lastClickTime = DateTime.MinValue;
 
         private void TextBlock_MouseLeftButtonDown2(object sender, MouseButtonEventArgs e)
         {
-            if (SolutionManager.GetInstance().Config.SolutionFullName != null)
+            if (SolutionManager.GetInstance().CurrentSolution.SolutionFullName != null)
             {
                 TimeSpan elapsedTime = DateTime.Now - lastClickTime;
                 if (elapsedTime.TotalMilliseconds <= 300)
@@ -197,7 +197,7 @@ namespace ColorVision
             }
             else
             {
-                SolutionNewCreat();
+                SolutionManager.GetInstance().NewCreateWindow();
             }
 
 
@@ -208,32 +208,7 @@ namespace ColorVision
             OpenSetting();
         }
 
-        private void SolutionOpen()
-        {
-            OpenSolutionWindow openSolutionWindow = new OpenSolutionWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            openSolutionWindow.Closed += delegate
-            {
-                if (Directory.Exists(openSolutionWindow.FullName))
-                    SolutionManager.GetInstance().CreateSolution(new DirectoryInfo(openSolutionWindow.FullName));
-            };
-            openSolutionWindow.Show();
-        }
 
-        private void SolutionNewCreat()
-        {
-            NewCreateWindow newCreatWindow = new NewCreateWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            newCreatWindow.Closed += delegate
-            {
-                if (newCreatWindow.IsCreate)
-                {
-                    string SolutionDirectoryPath = newCreatWindow.NewCreateViewMode.DirectoryPath + "\\" + newCreatWindow.NewCreateViewMode.Name;
-                    SolutionManager.GetInstance().OpenSolution(SolutionDirectoryPath);
-
-
-                }
-            };
-            newCreatWindow.ShowDialog();
-        }
 
 
         private void OpenSetting()
@@ -255,8 +230,6 @@ namespace ColorVision
         private void Menu_Initialized(object sender, EventArgs e)
         {
             Application.Current.MainWindow = this;
-            Application.Current.MainWindow.AddHotKeys(new HotKeys("打开工程", new Hotkey(Key.O, ModifierKeys.Control), SolutionOpen));
-            Application.Current.MainWindow.AddHotKeys(new HotKeys("新建工程", new Hotkey(Key.N, ModifierKeys.Control), SolutionNewCreat));
             Application.Current.MainWindow.AddHotKeys(new HotKeys(Properties.Resource.Settings, new Hotkey(Key.I, ModifierKeys.Control), OpenSetting));
             Application.Current.MainWindow.AddHotKeys(new HotKeys(Properties.Resource.About, new Hotkey(Key.F1, ModifierKeys.Control), AboutMsg));
             Application.Current.MainWindow.AddHotKeys(new HotKeys("MsgList", new Hotkey(Key.M, ModifierKeys.Control), MsgList));

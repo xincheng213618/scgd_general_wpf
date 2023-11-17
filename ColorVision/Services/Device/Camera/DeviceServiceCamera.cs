@@ -166,7 +166,7 @@ namespace ColorVision.Device.Camera
                 {
                     case "GetData":
                         //string SaveFileName = msg.Data.SaveFileName;
-                        //Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(this, SaveFileName));
+                        //Application.CurrentSolution.Dispatcher.Invoke(() => FileHandler?.Invoke(this, SaveFileName));
                         break;
                     case "Close":
                         DeviceStatus = DeviceStatus.UnInit;

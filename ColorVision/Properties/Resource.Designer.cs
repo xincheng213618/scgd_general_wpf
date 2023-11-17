@@ -439,6 +439,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 打开 的本地化字符串。
+        /// </summary>
+        public static string Open {
+            get {
+                return ResourceManager.GetString("Open", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 密码 的本地化字符串。
         /// </summary>
         public static string Password {

@@ -315,4 +315,7 @@
   <data name="MenuTemplate" xml:space="preserve">
     <value>Шаблон(Т)</value>
   </data>
+  <data name="Open" xml:space="preserve">
+    <value>Открыть</value>
+  </data>
 </root>

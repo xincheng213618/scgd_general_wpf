@@ -149,14 +149,14 @@ namespace ColorVision.MQTT
 
             PropertyCommand = new RelayCommand((e) =>
             {
-                Window window = new Window() { Width = 400, Height=400 , Title =Properties.Resource.Property};
+                Window window = new Window() { Width = 400, Height=400 , Title = Properties.Resource.Property};
                 window.Content = GetDeviceInfo();
                 window.Owner = Application.Current.MainWindow;
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
             });
 
-            MenuItem menuItemProperty = new MenuItem() { Header = "属性", Command = PropertyCommand };
+            MenuItem menuItemProperty = new MenuItem() { Header = Properties.Resource.Property, Command = PropertyCommand };
             ContextMenu.Items.Add(menuItemProperty);
 
             if (string.IsNullOrEmpty(SysResourceModel.Value))

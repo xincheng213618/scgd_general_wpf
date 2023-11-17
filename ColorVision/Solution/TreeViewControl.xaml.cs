@@ -27,12 +27,19 @@ namespace ColorVision.Solution
             Window window = Application.Current.MainWindow;
             if (window != null)
                 window.Closing += Window_Closed;
-            InitializeComponent();
-            IniCommand();
 
-            SolutionManager.SolutionOpened += SolutionManager_SolutionOpened;
+            InitializeComponent();
+
         }
 
+        private void UserControl_Initialized(object sender, EventArgs e)
+        {
+            SolutionTreeView.ItemsSource = SolutionExplorers;
+            IniCommand();
+            TreeViewInitialized(SolutionManager.CurrentSolution.SolutionFullName);
+            SolutionManager.SolutionOpened += SolutionManager_SolutionOpened;
+
+        }
 
 
         private void TreeViewControl_Drop(object sender, DragEventArgs e)
@@ -73,6 +80,7 @@ namespace ColorVision.Solution
 
         private int SolutionManager_SolutionOpened(string FileName)
         {
+            TreeViewInitialized(FileName);
             //throw new NotImplementedException();
             return 0;
         }
@@ -106,6 +114,7 @@ namespace ColorVision.Solution
         private VObject LastReNameObject;
         private TreeViewItem? SelectedTreeViewItem;
         private TreeViewItem? LastSelectedTreeViewItem;
+
 
         private void Window_Closed(object? sender, EventArgs e)
         {
@@ -156,23 +165,15 @@ namespace ColorVision.Solution
             }
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private void OpenSolution(object sender, RoutedEventArgs e)
         {
-            OpenSolution();
+            SolutionManager.OpenSolutionWindow();
         }
 
-
-        private void OpenSolution()
+        private void TreeViewInitialized(string FilePath)
         {
-
-        }
-
-        private void TreeViewInitialized(string FilePath, bool init = true)
-        {
-            SolutionTreeView.ItemsSource = SolutionExplorers;
-            if (init)
-                SolutionExplorers.Clear();
-
+            SolutionExplorers.Clear();
+            SolutionExplorers.Add(new SolutionExplorer(FilePath));
         }
 
 
@@ -188,23 +189,13 @@ namespace ColorVision.Solution
         }
 
 
-        private void UserControl_Initialized(object sender, EventArgs e)
+
+
+
+
+        private void SolutionNewCreat(object sender, RoutedEventArgs e)
         {
-
-
-        }
-
-
-
-
-        private void Button_Click_2(object sender, RoutedEventArgs e)
-        {
-            NewCreat();
-        }
-
-        private void NewCreat()
-        {
-
+            SolutionManager.NewCreateWindow();
         }
 
 

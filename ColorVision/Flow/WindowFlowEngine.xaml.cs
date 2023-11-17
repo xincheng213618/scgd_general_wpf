@@ -120,7 +120,7 @@ namespace ColorVision
                         System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
                         ofd.Filter = "*.stn|*.stn";
                         ofd.FileName = FileName;
-                        ofd.InitialDirectory = SolutionManager.GetInstance().Config.SolutionFullName;
+                        ofd.InitialDirectory = SolutionManager.GetInstance().CurrentSolution.SolutionFullName;
                         if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
                         if (FlowParam != null)
                         {
@@ -168,7 +168,7 @@ namespace ColorVision
             else if (!IsSave)
             {
                 FlowParam.FileName = FlowParam.Name + ".stn";
-                FileName = SolutionManager.GetInstance().Config.SolutionFullName + "\\" + FlowParam.Name + ".stn";
+                FileName = SolutionManager.GetInstance().CurrentSolution.SolutionFullName + "\\" + FlowParam.Name + ".stn";
                 SaveFlow(FileName, true);
                 IsSave = true;
             }
@@ -191,7 +191,7 @@ namespace ColorVision
         {
             System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
             ofd.Filter = "*.stn|*.stn";
-            ofd.InitialDirectory = SolutionManager.GetInstance().Config.SolutionFullName;
+            ofd.InitialDirectory = SolutionManager.GetInstance().CurrentSolution.SolutionFullName;
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
             ButtonSave.Visibility = Visibility.Visible;
@@ -199,7 +199,7 @@ namespace ColorVision
         }
         FlowControl flowControl;
 
-        private void OpenFlow(string flowName)
+        public void OpenFlow(string flowName)
         {
             FileName = flowName;
             STNodeEditorMain.Nodes.Clear();
@@ -224,8 +224,10 @@ namespace ColorVision
             {
                 STNodeEditorMain.SaveCanvas(flowName);
             }
-
-            TemplateControl.GetInstance().Save2DB(FlowParam);
+            if (FlowParam != null)
+            {
+                TemplateControl.GetInstance().Save2DB(FlowParam);
+            }
         }
 
         private string GetTopic()
