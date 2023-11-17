@@ -72,14 +72,14 @@ namespace ColorVision.Device.FileServer
             }
         }
 
-        private void FileUpload(DeviceFileUpdownParam pm_up)
+        private void FileUpload(DeviceFileUpdownParam param)
         {
-            if (!string.IsNullOrWhiteSpace(pm_up.ServerEndpoint) && !string.IsNullOrWhiteSpace(pm_up.FileName)) netFileUtil.TaskStartUploadFile(pm_up.ServerEndpoint, pm_up.FileName);
+            if (!string.IsNullOrWhiteSpace(param.FileName)) netFileUtil.TaskStartUploadFile(param.IsLocal, param.ServerEndpoint, param.FileName);
         }
 
-        private void FileDownload(DeviceFileUpdownParam pm_dl)
+        private void FileDownload(DeviceFileUpdownParam param)
         {
-            if(!string.IsNullOrWhiteSpace(pm_dl.ServerEndpoint) && !string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.TaskStartDownloadFile(pm_dl.ServerEndpoint, pm_dl.FileName);
+            if(!string.IsNullOrWhiteSpace(param.FileName)) netFileUtil.TaskStartDownloadFile(param.IsLocal, param.ServerEndpoint, param.FileName);
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)

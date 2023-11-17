@@ -101,7 +101,7 @@ namespace FileServerPlugin
             exp = null;
             srcFileName = null;
             gain = 0;
-            if (fileData[0] == 'C' && fileData[1] == 'V' && fileData[2] == 'C' && fileData[3] == 'I' && fileData[4] == 'E')
+            if (fileData != null && fileData.Length > 5 && fileData[0] == 'C' && fileData[1] == 'V' && fileData[2] == 'C' && fileData[3] == 'I' && fileData[4] == 'E')
             {
                 startIndex += 5;
                 uint ver = BitConverter.ToUInt32(fileData, startIndex);
@@ -158,6 +158,13 @@ namespace FileServerPlugin
             }
 
             return false;
+        }
+
+        public static bool GetParamFromFile(string fileName, out uint w, out uint h, out uint bpp, out uint channels, out float[] exp, out byte[] imgdata, out string srcFileName)
+        {
+            byte[] fileData = ReadBinaryFile(fileName);
+
+            return GetParamFromFile(fileData,out w,out h,out bpp,out channels,out exp,out imgdata, out srcFileName);
         }
         public static byte[] ReadBinaryFile(string fileName)
         {
