@@ -79,7 +79,7 @@ namespace ColorVision.Device.FileServer
 
         private void FileDownload(DeviceFileUpdownParam param)
         {
-            if(!string.IsNullOrWhiteSpace(param.FileName)) netFileUtil.TaskStartDownloadFile(param.IsLocal, param.ServerEndpoint, param.FileName);
+            if (!string.IsNullOrWhiteSpace(param.FileName)) netFileUtil.TaskStartDownloadFile(param.IsLocal, param.ServerEndpoint, param.FileName, false);
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)

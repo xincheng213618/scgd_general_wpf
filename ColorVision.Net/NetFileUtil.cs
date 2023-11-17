@@ -32,23 +32,24 @@ namespace ColorVision.Net
             else return string.Empty;
         }
 
-        public void OpenRemoteFile(string serverEndpoint, string fileName)
+        public void OpenRemoteFile(string serverEndpoint, string fileName, bool isCVCIE)
         {
             string cacheFile = GetCacheFileFullName(fileName);
             if (string.IsNullOrEmpty(cacheFile))
             {
-                TaskStartDownloadFile(false, serverEndpoint, fileName);
+                TaskStartDownloadFile(false, serverEndpoint, fileName, isCVCIE);
             }
             else
             {
-                OpenLocalFile(cacheFile);
+                OpenLocalFile(cacheFile, isCVCIE);
             }
         }
-        public void TaskStartDownloadFile(bool isLocal, string serverEndpoint, string fileName)
+        public void TaskStartDownloadFile(bool isLocal, string serverEndpoint, string fileName, bool isCVCIE)
         {
-            Task t = new(() => { 
-                if (isLocal) OpenLocalFile(fileName);
-                else if(!string.IsNullOrWhiteSpace(serverEndpoint)) DownloadFile(serverEndpoint, fileName); 
+            Task t = new(() =>
+            {
+                if (isLocal) OpenLocalFile(fileName, isCVCIE);
+                else if (!string.IsNullOrWhiteSpace(serverEndpoint)) DownloadFile(serverEndpoint, fileName);
             });
             t.Start();
         }
@@ -170,11 +171,10 @@ namespace ColorVision.Net
             }
         }
 
-        public void OpenLocalFile(string fileName)
+        public void OpenLocalFile(string fileName, bool isCVCIE)
         {
-            string ext = System.IO.Path.GetExtension(fileName);
             byte[]? data = null;
-            if(ext.ToLower().Equals(".cvcie", StringComparison.Ordinal)) data = ReadLocalBinaryCIEFile(fileName);
+            if(isCVCIE) data = ReadLocalBinaryCIEFile(fileName);
             else data = ReadLocalBinaryFile(fileName);
             if (data == null) handler?.Invoke(this, new NetFileEvent(-1, fileName, data));
             else handler?.Invoke(this, new NetFileEvent(0, fileName, data));
