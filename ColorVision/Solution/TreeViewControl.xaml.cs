@@ -167,7 +167,7 @@ namespace ColorVision.Solution
 
         private void OpenSolution(object sender, RoutedEventArgs e)
         {
-            SolutionManager.OpenSolutionWindow();
+            SolutionManager.OpenSolutionWindow(Window.GetWindow(this));
         }
 
         private void TreeViewInitialized(string FilePath)
@@ -195,7 +195,7 @@ namespace ColorVision.Solution
 
         private void SolutionNewCreat(object sender, RoutedEventArgs e)
         {
-            SolutionManager.NewCreateWindow();
+            SolutionManager.NewCreateWindow(Window.GetWindow(this));
         }
 
 

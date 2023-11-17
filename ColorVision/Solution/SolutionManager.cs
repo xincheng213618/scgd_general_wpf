@@ -79,28 +79,33 @@ namespace ColorVision.Solution
 
         public void CreateSolution(DirectoryInfo SolutionDirectoryInfo)
         {
-            Tool.CreateDirectory(CurrentSolution.CachePath);
+            Tool.CreateDirectoryMax(SolutionDirectoryInfo.FullName +"//Cache");
 
             OpenSolution(SolutionDirectoryInfo.FullName);
         }
 
-
-        public void OpenSolutionWindow()
+        public void OpenSolutionWindow() => OpenSolutionWindow(Application.Current.MainWindow);
+        public void OpenSolutionWindow(Window window)
         {
-            OpenSolutionWindow openSolutionWindow = new OpenSolutionWindow() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            OpenSolutionWindow openSolutionWindow = new OpenSolutionWindow() { Owner = window, WindowStartupLocation = WindowStartupLocation.CenterOwner };
             openSolutionWindow.Closed += delegate
             {
-                if (Directory.Exists(openSolutionWindow.FullName))
-                    OpenSolution(openSolutionWindow.FullName);
-                else
-                    MessageBox.Show("找不到工程");
+                if (!string.IsNullOrWhiteSpace(openSolutionWindow.FullName))
+                {
+                    if (Directory.Exists(openSolutionWindow.FullName))
+                        OpenSolution(openSolutionWindow.FullName);
+                    else
+                        MessageBox.Show("找不到工程");
+                }
+
             };
             openSolutionWindow.Show();
         }
+        public void NewCreateWindow() => NewCreateWindow(Application.Current.MainWindow);
 
-        public void NewCreateWindow()
+        public void NewCreateWindow(Window window)
         {
-            NewCreateWindow newCreatWindow = new NewCreateWindow() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            NewCreateWindow newCreatWindow = new NewCreateWindow() { Owner = window, WindowStartupLocation = WindowStartupLocation.CenterOwner };
             newCreatWindow.Closed += delegate
             {
                 if (newCreatWindow.IsCreate)

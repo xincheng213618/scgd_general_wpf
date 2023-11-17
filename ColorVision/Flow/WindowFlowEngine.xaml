@@ -9,6 +9,15 @@
         mc:Ignorable="d"
         PreviewKeyDown="UserControl_PreviewKeyDown"
         Title="流程引擎调试窗口" Height="600" Width="1000" Initialized="Window_Initialized">
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        </Style>
+        <Style TargetType="TextBox" BasedOn="{StaticResource TextBox.Small}"/>
+    </Window.Resources>
     <Grid  x:Name="Grid1">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -26,19 +35,19 @@
                     <Button x:Name="ButtonClear"  Content="清空" Click="Button_Click_Clear"  Width="60" />
                     <Button x:Name="ButtonSave"  Content="保存" Click="Button_Click_Save" Width="60" />
                 </UniformGrid>
-                <Grid  x:Name="OperateGrid" Grid.Column="1"  Visibility="Collapsed">
+                <Grid  x:Name="OperateGrid" Grid.Column="1"   Visibility="Visible">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="200"/>
                     </Grid.ColumnDefinitions>
-                    <UniformGrid Grid.Column="1">
+                    <UniformGrid Grid.Column="2" Columns="3">
                         <Button x:Name="ButtonFlowOpen" Content="开始流程" Click="Button_Click_4" Width="80"/>
                         <Button x:Name="ButtonFlowPause" Content="暂停流程" IsEnabled="False" Visibility="Collapsed" Click="Button_Click_5" Width="80"/>
                         <Button x:Name="ButtonFlowStop" Content="停止流程" Click="Button_Click_Stop" Width="80"/>
                     </UniformGrid>
                     <DockPanel Grid.Column="0"  Width="300" HorizontalAlignment="Right">
-                        <Button Content="生成流水号" Click="Button_Click_3" Width="80"/>
-                        <TextBox  x:Name="TextBoxsn" Margin="5,0" BorderThickness="0,0,0,1"   Text="" Width="250" VerticalAlignment="Center"  />
+                        <Button Content="生成流水号" Click="Button_Click_3" Width="80" />
+                        <TextBox  x:Name="TextBoxsn" BorderThickness="0,0,0,1"   Text="" Width="250" VerticalAlignment="Center"  />
                     </DockPanel>
                 </Grid>
             </Grid>

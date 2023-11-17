@@ -31,10 +31,9 @@ namespace ColorVision
         public WindowFlowEngine(string FileName)
         {
             InitializeComponent();
-            string fileNameFull = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.GetFullFileName(FileName);
-            if (File.Exists(fileNameFull))
+            if (File.Exists(FileName))
             {
-                OpenFlow(fileNameFull);
+                OpenFlow(FileName);
                 ButtonOpen.Visibility = Visibility.Collapsed;   
                 ButtonNew.Visibility = Visibility.Collapsed;
             }
@@ -47,7 +46,7 @@ namespace ColorVision
             }
         }
         FlowParam FlowParam { get; set; }
-        public WindowFlowEngine(FlowParam flowParam) : this(flowParam.FileName?? flowParam.Name)
+        public WindowFlowEngine(FlowParam flowParam) : this(GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.GetFullFileName(flowParam.FileName?? flowParam.Name))
         {
             FlowParam = flowParam;
         }

@@ -20,7 +20,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid x:Name="SoulutionButtonPanel1" Grid.Row="0" Width="300" Background="{DynamicResource GlobalBackgroundBrush}">
-            <UniformGrid  Columns="8"  Margin="1,2,2,2"  VerticalAlignment="Top" >
+            <UniformGrid  Columns="8"  VerticalAlignment="Top" >
                 <Button Click="SolutionNewCreat"   Style="{StaticResource ButtonStyle}"  ToolTip="新建">
                     <Viewbox Margin="5">
                         <Path  Stretch="Fill" Fill="{Binding Path=Foreground,RelativeSource={RelativeSource AncestorType={x:Type Button}}}" Data="M25.0808,10.57023L25.0808,13.27273L27.6842,13.27273L25.0808,10.57023ZM22.06061,17.4545C22.61661,17.4545,23.0673,17.9226,23.0673,18.5L23.0673,20.590899999999998L25.0808,20.590899999999998C25.5912,20.591,26.0208,20.9877,26.0805,21.514L26.0875,21.636400000000002C26.0875,22.2138,25.6368,22.681800000000003,25.0808,22.681800000000003L23.0673,22.681800000000003L23.0673,24.7727C23.0673,25.3027,22.68528,25.7489,22.17839,25.8109L22.06061,25.8182C21.5046,25.8182,21.05387,25.3501,21.05387,24.7727L21.05387,22.681800000000003L19.040399999999998,22.681800000000003C18.53002,22.6817,18.10043,22.2851,18.04072,21.758699999999997L18.03367,21.636400000000002C18.03367,21.058999999999997,18.4844,20.590899999999998,19.040399999999998,20.590899999999998L21.05387,20.590899999999998L21.05387,18.5C21.05394,17.97,21.435940000000002,17.523899999999998,21.942819999999998,17.4619L22.06061,17.4545ZM23.0673,9.090910000000001L16.0202,9.090910000000001C15.4642,9.090910000000001,15.01347,9.55897,15.01347,10.13636L15.01347,26.8636C15.01347,27.441,15.4642,27.9091,16.0202,27.9091L28.101,27.9091C28.657,27.9091,29.1077,27.441,29.1077,26.8636L29.1077,15.36364L24.0741,15.36364C23.5637,15.36357,23.1341,14.96688,23.0744,14.4405L23.0673,14.31818L23.0673,9.090910000000001ZM24.0741,7C24.1174,7,24.159599999999998,7.00313632,24.2009,7.00836359L24.0741,7.0000000934709C24.1589,7.0000472963,24.243499999999997,7.0109321,24.3258,7.0324092L24.356,7.0418182C24.387,7.0510503,24.4176,7.0618664,24.4476,7.0742273L24.474800000000002,7.0867728C24.503,7.099021,24.5306,7.112984,24.557299999999998,7.128591L24.5885,7.147409C24.628,7.172531,24.666,7.200111,24.7023,7.23L24.7848,7.306318L30.8252,13.579049999999999C30.8544,13.609359999999999,30.8826,13.641770000000001,30.9078,13.676269999999999L30.8252,13.579049999999999C30.8846,13.63981,30.936,13.70834,30.9783,13.782910000000001L30.9964,13.81636C31.0114,13.844100000000001,31.0249,13.872720000000001,31.0366,13.902090000000001L31.0477,13.93032C31.0598,13.961680000000001,31.0709,13.99305,31.0799,14.02545L31.088,14.05682C31.096,14.08886,31.1024,14.121310000000001,31.1071,14.15405L31.1111,14.18645C31.1182,14.229320000000001,31.1212,14.27323,31.1212,14.31818L31.1212,26.8636C31.1212,28.5958,29.769,30,28.101,30L16.0202,30C14.35219,30,13,28.5958,13,26.8636L13,10.13636C12.999999819982,8.4042,14.35219,7.000000186942,16.0202,7.000000186942L24.0741,7Z"   >
@@ -105,25 +105,9 @@
                     </Viewbox>
                 </Button>
             </UniformGrid>
-
-            <Border  BorderThickness="0,0,0,2" Margin="0,-2">
-                <Border.BorderBrush>
-                    <LinearGradientBrush  StartPoint="0.0,0.0" EndPoint="1,0">
-                        <GradientBrush.GradientStops>
-                            <GradientStopCollection>
-                                <GradientStop Color="{DynamicResource LightBackgroundColor}" Offset="0.5"/>
-                            </GradientStopCollection>
-                        </GradientBrush.GradientStops>
-                    </LinearGradientBrush>
-                </Border.BorderBrush>
-            </Border>
         </Grid>
 
-        <UniformGrid  x:Name="SoulutionButtonPanel" Grid.Row="0"  Visibility="Hidden"  Columns="8" VerticalAlignment="Top" >
-            <Button Style="{StaticResource ButtonStyle}"  Height="32"/>
-        </UniformGrid>
-        
-
+      
         <Border BorderThickness="0" Grid.Row="1" CornerRadius="4"  Padding="0" >
             <TreeView  	x:Name="SolutionTreeView"  BorderThickness="0">
                 <TreeView.ItemContainerStyle>
@@ -134,10 +118,6 @@
                 </TreeView.ItemContainerStyle>
             </TreeView>
         </Border>
-        <Grid x:Name="leftGrid" Visibility="Hidden" Background="Transparent" Panel.ZIndex="999" Opacity="0.7" Width="20" Margin="0,38,0,2" HorizontalAlignment="Right" >
-            
-        </Grid>
-
     </Grid>
 
 </UserControl>
