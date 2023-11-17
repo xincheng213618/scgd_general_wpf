@@ -59,8 +59,16 @@ namespace ColorVision.Services.Algorithm
                 {
                     View.OpenImage(arg.FileData);
                 });
+                handler?.Close();
             }
-            handler?.Close();
+            else
+            {
+                handler?.Close();
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MessageBox.Show(Application.Current.MainWindow, "文件打开失败", "ColorVision");
+                });
+            }
         }
 
         private void View_OnCurSelectionChanged(AlgorithmResult data)
@@ -94,20 +102,13 @@ namespace ColorVision.Services.Algorithm
                     break;
             }
         }
-        private void FileUpload(DeviceFileUpdownParam pm_up)
+        private void FileUpload(DeviceFileUpdownParam param)
         {
-            if (!string.IsNullOrWhiteSpace(pm_up.ServerEndpoint) && !string.IsNullOrWhiteSpace(pm_up.FileName)) netFileUtil.TaskStartUploadFile(pm_up.ServerEndpoint, pm_up.FileName);
+            if (!string.IsNullOrWhiteSpace(param.FileName)) netFileUtil.TaskStartUploadFile(param.IsLocal, param.ServerEndpoint, param.FileName);
         }
-        private void FileDownload(DeviceFileUpdownParam pm_dl)
+        private void FileDownload(DeviceFileUpdownParam param)
         {
-            if (pm_dl.IsLocal)
-            {
-                if (!string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.OpenLocalCIEFile(pm_dl.FileName);
-            }
-            else
-            {
-                if (!string.IsNullOrWhiteSpace(pm_dl.ServerEndpoint) && !string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.TaskStartDownloadFile(pm_dl.ServerEndpoint, pm_dl.FileName);
-            }
+            if (!string.IsNullOrWhiteSpace(param.FileName)) netFileUtil.TaskStartDownloadFile(param.IsLocal, param.ServerEndpoint, param.FileName);
         }
 
         private void ShowResultFromDB(string serialNumber, int masterId)

@@ -34,24 +34,27 @@ namespace ColorVision.Net
 
         public void OpenRemoteFile(string serverEndpoint, string fileName)
         {
-            string local = GetCacheFileFullName(fileName);
-            if (string.IsNullOrEmpty(local))
+            string cacheFile = GetCacheFileFullName(fileName);
+            if (string.IsNullOrEmpty(cacheFile))
             {
-                TaskStartDownloadFile(serverEndpoint, fileName);
+                TaskStartDownloadFile(false, serverEndpoint, fileName);
             }
             else
             {
-                OpenLocalFile(local);
+                OpenLocalFile(cacheFile);
             }
         }
-        public void TaskStartDownloadFile(string serverEndpoint, string fileName)
+        public void TaskStartDownloadFile(bool isLocal, string serverEndpoint, string fileName)
         {
-            Task t = new(() => { DownloadFile(serverEndpoint, fileName); });
+            Task t = new(() => { 
+                if (isLocal) OpenLocalFile(fileName);
+                else if(!string.IsNullOrWhiteSpace(serverEndpoint)) DownloadFile(serverEndpoint, fileName); 
+            });
             t.Start();
         }
-        public void TaskStartUploadFile(string serverEndpoint, string fileName)
+        public void TaskStartUploadFile(bool isLocal, string serverEndpoint, string fileName)
         {
-            Task t = new(() => { UploadFile(serverEndpoint, fileName); });
+            Task t = new(() => { if (!isLocal && !string.IsNullOrWhiteSpace(serverEndpoint)) UploadFile(serverEndpoint, fileName); });
             t.Start();
         }
         private void DownloadFile(string serverEndpoint, string fileName)
@@ -169,7 +172,10 @@ namespace ColorVision.Net
 
         public void OpenLocalFile(string fileName)
         {
-            var data = ReadLocalBinaryFile(fileName);
+            string ext = System.IO.Path.GetExtension(fileName);
+            byte[]? data = null;
+            if(ext.ToLower().Equals(".cvcie", StringComparison.Ordinal)) data = ReadLocalBinaryCIEFile(fileName);
+            else data = ReadLocalBinaryFile(fileName);
             if (data == null) handler?.Invoke(this, new NetFileEvent(-1, fileName, data));
             else handler?.Invoke(this, new NetFileEvent(0, fileName, data));
         }
@@ -186,15 +192,49 @@ namespace ColorVision.Net
             return ReadCVImage(fileName);
         }
 
-        private byte[] ReadCVImage(string fileName)
+        private byte[]? ReadCVImage(string fileName)
         {
             UInt32 w = 0, h = 0, bpp = 0, channels = 0;
-            byte[] imgdata = null;
             string srcFileName;
+            byte[] imgData = null;
             float[] exp;
-            if (CVFileUtils.GetFileHeader(fileName, out w, out h, out bpp, out channels, out exp, out srcFileName))
+            if (CVFileUtils.GetParamFromFile(fileName, out w, out h, out bpp, out channels, out exp, out imgData, out srcFileName))
             {
-                if (System.IO.File.Exists(srcFileName)) return CVFileUtils.ReadBinaryFile(srcFileName);
+                if (System.IO.File.Exists(srcFileName))
+                {
+                    imgData = CVFileUtils.ReadBinaryFile(srcFileName);
+                    return imgData;
+                }
+                else
+                {
+                    int len = (int)(w * h * (bpp / 8));
+                    if (channels == 3)
+                    {
+                        byte[] data = new byte[len];
+                        Buffer.BlockCopy(imgData, len, data, 0, data.Length);
+                        OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)h, (int)w, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), data);
+                        OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
+                        OpenCvSharp.Mat dst = new OpenCvSharp.Mat();
+                        src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
+                        OpenCvSharp.Cv2.ImWrite(srcFileName, dst);
+                    }
+                    else
+                    {
+                        OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)h, (int)w, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), imgData);
+                        OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
+                        OpenCvSharp.Mat dst = new OpenCvSharp.Mat();
+                        src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
+                        OpenCvSharp.Cv2.ImWrite(srcFileName, dst);
+                    }
+
+                    imgData = ReadLocalBinaryFile(srcFileName);
+                    logger.WarnFormat("CIE src file({0}) is not exist. opencv real build.", srcFileName);
+                    return imgData;
+                }
+            }
+            else
+            {
+                logger.ErrorFormat("CIE file({0}) is not exist.", fileName);
             }
 
             return null;
