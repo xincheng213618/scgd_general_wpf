@@ -55,13 +55,13 @@
                         </GroupBox>
                         <GroupBox  Header="POI">
                             <DockPanel Margin="0,2">
-                            <Button  Content="关注点" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="PoiClick" />
-                            <ComboBox  x:Name="ComboxPoiTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                            <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                                <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="FocusParm" Click="MenuItem_Template"/>
-                            </Grid>
-                        </DockPanel>
+                                <Button  Content="计算" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="PoiClick" />
+                                <ComboBox  x:Name="ComboxPoiTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                                    <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="FocusParm" Click="MenuItem_Template"/>
+                                </Grid>
+                            </DockPanel>
                         </GroupBox>
                     </StackPanel>
                 </GroupBox>

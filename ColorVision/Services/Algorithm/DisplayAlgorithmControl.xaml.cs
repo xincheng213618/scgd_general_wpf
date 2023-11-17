@@ -73,7 +73,7 @@ namespace ColorVision.Services.Algorithm
 
         private void View_OnCurSelectionChanged(AlgorithmResult data)
         {
-            doOpen(data.ImgFileName);
+            doOpen(data.ImgFileName, false);
         }
 
         private void Service_OnAlgorithmEvent(object sender, AlgorithmResponseEvent arg)
@@ -108,7 +108,7 @@ namespace ColorVision.Services.Algorithm
         }
         private void FileDownload(DeviceFileUpdownParam param)
         {
-            if (!string.IsNullOrWhiteSpace(param.FileName)) netFileUtil.TaskStartDownloadFile(param.IsLocal, param.ServerEndpoint, param.FileName);
+            if (!string.IsNullOrWhiteSpace(param.FileName)) netFileUtil.TaskStartDownloadFile(param.IsLocal, param.ServerEndpoint, param.FileName, true);
         }
 
         private void ShowResultFromDB(string serialNumber, int masterId)
@@ -410,19 +410,19 @@ namespace ColorVision.Services.Algorithm
             {
                 handler?.Close();
             };
-            doOpen(CB_CIEImageFiles.Text);
+            doOpen(CB_CIEImageFiles.Text, true);
         }
 
-        private void doOpen(string fileName)
+        private void doOpen(string fileName, bool isCVCIE)
         {
             string localName = netFileUtil.GetCacheFileFullName(fileName);
-            if (string.IsNullOrEmpty(localName))
+            if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
             {
                 Service.Open(fileName);
             }
             else
             {
-                netFileUtil.OpenLocalFile(localName);
+                netFileUtil.OpenLocalFile(localName, isCVCIE);
             }
         }
 
