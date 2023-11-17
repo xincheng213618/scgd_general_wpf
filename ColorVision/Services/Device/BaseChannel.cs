@@ -118,10 +118,9 @@ namespace ColorVision.MQTT
             {
                 if (Config!=null)
                 {
-                    ColorVision.NativeMethods.Clipboard.SetText(Config.ToJsonN());
+                    NativeMethods.Clipboard.SetText(Config.ToJsonN());
                 }
             });
-
 
             ImportCommand = new RelayCommand((e) => {
                 System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();

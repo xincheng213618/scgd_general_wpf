@@ -37,6 +37,7 @@ namespace ColorVision.Device.Spectrum
             MQTTControl = MQTTControl.GetInstance();
             MQTTControl.SubscribeCache(SubscribeTopic);
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
+            cmdMap = new Dictionary<string, MsgSend>();
         }
 
 
