@@ -31,4 +31,30 @@ namespace ColorVision.Draw
             dc.DrawEllipse(Attribute.Brush, Attribute.Pen, Attribute.Center, Attribute.Radius, Attribute.Radius);
         }
     }
+
+
+
+    public class BeingDrawingVisualCircle : DrawingVisualCircle
+    {
+        public BeingDrawingVisualCircle()
+        {
+            Attribute = new CircleAttribute();
+            Attribute.ID = No++;
+            Attribute.Brush = Brushes.Transparent;
+            Attribute.Pen = new Pen(Brushes.Red, 2);
+            Attribute.Center = new Point(50, 50);
+            Attribute.Radius = 30;
+            Attribute.PropertyChanged += (s, e) => { if (AutoAttributeChanged && e.PropertyName != "ID") Render(); };
+        }
+
+
+        public override void Render()
+        {
+            using DrawingContext dc = RenderOpen();
+            dc.DrawEllipse(Attribute.Brush, Attribute.Pen, Attribute.Center, Attribute.Radius, Attribute.Radius);
+            dc.DrawText();
+
+
+        }
+    }
 }

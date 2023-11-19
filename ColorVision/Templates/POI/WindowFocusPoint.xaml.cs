@@ -798,6 +798,7 @@ namespace ColorVision.Templates
                     DrawCircleCache.Attribute.Center = MouseDownP;
                     DrawCircleCache.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
                     drawCanvas.AddVisual(DrawCircleCache);
+
                 }
                 else if (ToolBarTop.DrawRect)
                 {
@@ -806,6 +807,7 @@ namespace ColorVision.Templates
                     DrawingRectangleCache.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
 
                     drawCanvas.AddVisual(DrawingRectangleCache);
+
                 }
                 else if (drawCanvas.GetVisual(MouseDownP) is IDrawingVisual drawingVisual)
                 {
@@ -889,9 +891,8 @@ namespace ColorVision.Templates
                 }
                 else if (ToolBarTop.DrawCircle)
                 {
-                    if (DrawCircleCache.Attribute.Radius == 30)
-                        DrawCircleCache.Render();
-                    
+                    DrawCircleCache.Render();
+
                     PropertyGrid2.SelectedObject = DrawCircleCache.GetAttribute();
 
                     DrawCircleCache.AutoAttributeChanged = true;
@@ -902,10 +903,8 @@ namespace ColorVision.Templates
                 }
                 else if (ToolBarTop.DrawRect)
                 {
-                    if (DrawingRectangleCache.Attribute.Rect.Width == 30 && DrawingRectangleCache.Attribute.Rect.Height == 30)
-                    {
-                        DrawingRectangleCache.Render();
-                    }
+                    DrawingRectangleCache.Render();
+
 
                     PropertyGrid2.SelectedObject = DrawingRectangleCache.GetAttribute();
                     DrawingRectangleCache.AutoAttributeChanged = true;
