@@ -797,6 +797,7 @@ namespace ColorVision.Templates
                     DrawCircleCache.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
                     DrawCircleCache.Attribute.Center = MouseDownP;
                     DrawCircleCache.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
+                    DrawCircleCache.IsDrawing = true;
                     drawCanvas.AddVisual(DrawCircleCache);
 
                 }
@@ -891,6 +892,7 @@ namespace ColorVision.Templates
                 }
                 else if (ToolBarTop.DrawCircle)
                 {
+                    DrawCircleCache.IsDrawing = false;
                     DrawCircleCache.Render();
 
                     PropertyGrid2.SelectedObject = DrawCircleCache.GetAttribute();
