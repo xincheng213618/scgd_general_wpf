@@ -16,6 +16,8 @@ namespace ColorVision.Solution
     /// </summary>
     public class SolutionConfig : ViewModelBase
     {
+        public SolutionConfig() { }
+
         public string SolutionName { get => _SolutionName; set { _SolutionName = value; NotifyPropertyChanged(); } }
         private string _SolutionName;
 

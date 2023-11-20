@@ -37,7 +37,10 @@ namespace ColorVision.Solution
             SolutionTreeView.ItemsSource = SolutionExplorers;
             IniCommand();
             TreeViewInitialized(SolutionManager.CurrentSolution.FullName);
-            SolutionManager.SolutionOpened += SolutionManager_SolutionOpened;
+            SolutionManager.SolutionLoaded += (s,e) =>
+            {
+                TreeViewInitialized(SolutionManager.CurrentSolution.FullName);
+            };
 
         }
 
@@ -78,12 +81,6 @@ namespace ColorVision.Solution
             }
         }
 
-        private int SolutionManager_SolutionOpened(string FileName)
-        {
-            TreeViewInitialized(FileName);
-            //throw new NotImplementedException();
-            return 0;
-        }
 
         public bool OpenSolution(string FullName)
         {

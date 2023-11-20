@@ -91,6 +91,12 @@ namespace ColorVision.Templates
                     return;
                 CSVSave();
             };
+
+            SolutionManager.GetInstance().SolutionInitialized += (s, e) =>
+            {
+                if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+                    LoadFlowParam();
+            };
         }
         private void Init()
         {

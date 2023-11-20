@@ -9,12 +9,10 @@ using log4net;
 using System.Windows;
 using ColorVision.HotKey;
 using System.Windows.Input;
+using System.Security.Cryptography.X509Certificates;
 
 namespace ColorVision.Solution
 {
-    public delegate int SolutionOpenHandler(string FileName);
-
-
     /// <summary>
     /// 工程模块控制中心
     /// </summary>
@@ -32,7 +30,15 @@ namespace ColorVision.Solution
         public SoftwareConfig SoftwareConfig { get; private set; }
         public RecentFileList SolutionHistory { get; set; } = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
 
-        public event SolutionOpenHandler SolutionOpened;
+        /// <summary>
+        /// 工程初始化的时候
+        /// </summary>
+        public event EventHandler SolutionInitialized;
+        /// <summary>
+        /// 工程打开的时候
+        /// </summary>
+        public event EventHandler SolutionLoaded;
+
 
         public SolutionManager()
         {
@@ -55,7 +61,7 @@ namespace ColorVision.Solution
                 CurrentSolution.SolutionName = Info.Name;
                 CurrentSolution.FullName = Info.FullName;
                 SolutionHistory.InsertFile(Info.FullName);
-                SolutionOpened?.Invoke(SolutionFullPath);
+                SolutionLoaded?.Invoke(CurrentSolution,new EventArgs());
                 return true;
             }
             else
@@ -66,11 +72,17 @@ namespace ColorVision.Solution
             }
         }
 
-        public void CreateSolution(DirectoryInfo SolutionDirectoryInfo)
+        public void CreateSolution(DirectoryInfo Info)
         {
-            Tool.CreateDirectoryMax(SolutionDirectoryInfo.FullName +"//Cache");
+            Tool.CreateDirectoryMax(Info.FullName +"//Cache");
+            Tool.CreateDirectoryMax(Info.FullName + "//Config");
+            Tool.CreateDirectoryMax(Info.FullName + "//Image");
+            Tool.CreateDirectoryMax(Info.FullName + "//Flow");
 
-            OpenSolution(SolutionDirectoryInfo.FullName);
+            CurrentSolution.SolutionName = Info.Name;
+            CurrentSolution.FullName = Info.FullName;
+
+            SolutionInitialized.Invoke(CurrentSolution, new EventArgs());
         }
 
         public void OpenSolutionWindow() => OpenSolutionWindow(Application.Current.MainWindow);
@@ -101,7 +113,7 @@ namespace ColorVision.Solution
                 {
                     string SolutionDirectoryPath = newCreatWindow.NewCreateViewMode.DirectoryPath + "\\" + newCreatWindow.NewCreateViewMode.Name;
                     CreateSolution(new DirectoryInfo(SolutionDirectoryPath));
-                    SolutionOpened?.Invoke(SolutionDirectoryPath);
+                    OpenSolution(SolutionDirectoryPath);
                 }
             };
             newCreatWindow.ShowDialog();
