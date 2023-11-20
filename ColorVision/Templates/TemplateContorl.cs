@@ -2,7 +2,9 @@
 using ColorVision.MySql;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
+using ColorVision.Solution;
 using ColorVision.Templates.Algorithm;
+using ColorVision.User;
 using ColorVision.Util;
 using cvColorVision;
 using cvColorVision.Util;
@@ -488,7 +490,7 @@ namespace ColorVision.Templates
             FlowParams.Clear();
             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
             {
-                List<ModMasterModel> flows = modService.GetFlowAll(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                List<ModMasterModel> flows = modService.GetFlowAll(UserCenter.GetInstance().TenantId);
                 foreach (var dbModel in flows)
                 {
                     List<ModDetailModel> flowDetails = modService.GetDetailByPid(dbModel.Id);
@@ -501,7 +503,7 @@ namespace ColorVision.Templates
                         if (res != null)
                         {
                             item.Value.DataBase64 = res.Value ?? string.Empty;
-                            Tool.Base64ToFile(item.Value.DataBase64, GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.SolutionFullName, item.Value.FileName ?? string.Empty);
+                            Tool.Base64ToFile(item.Value.DataBase64, SolutionManager.GetInstance().CurrentSolution.FullName, item.Value.FileName ?? string.Empty);
                         }
                     }
                     FlowParams.Add(item);
@@ -552,7 +554,7 @@ namespace ColorVision.Templates
 
         internal void Save2DB(FlowParam flowParam)
         {
-            string fileName = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.SolutionFullName + "\\" + flowParam.FileName;
+            string fileName = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.FullName + "\\" + flowParam.FileName;
             flowParam.DataBase64 = Tool.FileToBase64(fileName);
             modService.Save(flowParam);
         }

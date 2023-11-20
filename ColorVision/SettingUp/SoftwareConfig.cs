@@ -104,6 +104,9 @@ namespace ColorVision
 
         public SolutionConfig SolutionConfig { get; set; }
 
+        public SolutionSetting SolutionSetting { get; set; } = new SolutionSetting();
+
+
         public RCServiceConfig RcServiceConfig { get; set; }
         public ObservableCollection<RCServiceConfig> RcServiceConfigs { get; set; }
 

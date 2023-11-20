@@ -19,7 +19,7 @@ namespace ColorVision.Solution
         public string SolutionName { get => _SolutionName; set { _SolutionName = value; NotifyPropertyChanged(); } }
         private string _SolutionName;
 
-        public string SolutionFullName 
+        public string FullName 
         { 
             get =>  _SolutionFullName;
             set
@@ -30,14 +30,9 @@ namespace ColorVision.Solution
         }
         private string _SolutionFullName;
 
-        public string CachePath { get => _SolutionFullName + "\\cache"; }
+        public string CachePath { get => _SolutionFullName + "\\Cache"; }
 
-
-        public int SolutionId { get => _SolutionId; set { _SolutionId = value; NotifyPropertyChanged(); } }
-        private int _SolutionId;
-
-        public SolutionSetting SolutionSetting { get; set; } = new SolutionSetting();
-
+        public string ConfigPath { get => _SolutionFullName + "\\Config"; }
 
         public string GetFullFileName(string fileName)
         {
@@ -45,28 +40,4 @@ namespace ColorVision.Solution
             return _SolutionFullName + "\\" + fileName;
         }
     }
-
-
-
-    /// <summary>
-    /// 工程配置
-    /// </summary>
-    public class ProjectConfig : ViewModelBase
-    {
-        public string ProjectName { get => _ProjectName; set { _ProjectName = value; NotifyPropertyChanged(); } }
-        private string _ProjectName;
-
-        public string ProjectFullName { get => _ProjectFullName; set { _ProjectFullName = value; NotifyPropertyChanged(); } }
-        private string _ProjectFullName;
-
-        public string CachePath { get => _ProjectFullName+"\\cache";  } 
-
-
-        public string GetFullFileName(string fileName)
-        {
-            if (string.IsNullOrWhiteSpace(fileName)) return string.Empty;
-            return _ProjectFullName + "\\" + fileName;
-        }
-    }
-
 }

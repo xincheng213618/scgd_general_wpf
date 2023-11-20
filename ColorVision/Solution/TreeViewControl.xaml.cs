@@ -36,7 +36,7 @@ namespace ColorVision.Solution
         {
             SolutionTreeView.ItemsSource = SolutionExplorers;
             IniCommand();
-            TreeViewInitialized(SolutionManager.CurrentSolution.SolutionFullName);
+            TreeViewInitialized(SolutionManager.CurrentSolution.FullName);
             SolutionManager.SolutionOpened += SolutionManager_SolutionOpened;
 
         }

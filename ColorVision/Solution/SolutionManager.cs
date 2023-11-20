@@ -12,17 +12,6 @@ using System.Windows.Input;
 
 namespace ColorVision.Solution
 {
-    public class CVSolution
-    {
-        public string ConfigPath { get; set; } = "Config";
-
-        public string CachePath { get; set; } = "Cache";
-
-        public string ImagePath { get; set; } = "Image";
-    }
-
-
-
     public delegate int SolutionOpenHandler(string FileName);
 
 
@@ -39,7 +28,7 @@ namespace ColorVision.Solution
 
         //工程配置文件
         public SolutionConfig CurrentSolution { get => SoftwareConfig.SolutionConfig; }
-        public SolutionSetting Setting { get => CurrentSolution.SolutionSetting; }
+        public SolutionSetting Setting { get => SoftwareConfig.SolutionSetting; }
         public SoftwareConfig SoftwareConfig { get; private set; }
         public RecentFileList SolutionHistory { get; set; } = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
 
@@ -51,7 +40,7 @@ namespace ColorVision.Solution
             Application.Current.MainWindow.AddHotKeys(new HotKeys("打开工程", new Hotkey(Key.O, ModifierKeys.Control), OpenSolutionWindow));
             Application.Current.MainWindow.AddHotKeys(new HotKeys("新建工程", new Hotkey(Key.N, ModifierKeys.Control), NewCreateWindow));
 
-            OpenSolution(CurrentSolution.SolutionFullName);
+            OpenSolution(CurrentSolution.FullName);
         }
 
         public bool OpenSolution(string SolutionFullPath)
@@ -64,7 +53,7 @@ namespace ColorVision.Solution
             {
                 DirectoryInfo Info = new DirectoryInfo(SolutionFullPath);
                 CurrentSolution.SolutionName = Info.Name;
-                CurrentSolution.SolutionFullName = Info.FullName;
+                CurrentSolution.FullName = Info.FullName;
                 SolutionHistory.InsertFile(Info.FullName);
                 SolutionOpened?.Invoke(SolutionFullPath);
                 return true;

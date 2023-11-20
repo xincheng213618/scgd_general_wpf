@@ -1,4 +1,5 @@
-﻿using ColorVision.Device;
+﻿#pragma warning disable  CS8604,CS8631
+using ColorVision.Device;
 using ColorVision.Extension;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
@@ -107,7 +108,7 @@ namespace ColorVision.MQTT
             ExportCommand = new RelayCommand((e) => {
                 System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
                 ofd.Filter = "*.config|*.config";
-                ofd.FileName = Config.Name;
+                ofd.FileName = Config?.Name;
                 ofd.RestoreDirectory = true;
                 if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
                 Config.ToJsonNFile(ofd.FileName);

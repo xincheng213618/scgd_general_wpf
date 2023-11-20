@@ -185,7 +185,7 @@ namespace ColorVision.Templates
                     }
                     else if (typeof(T) == typeof(double[]))
                     {
-                        return (T)(object)StringToDoubleArray(val);
+                        return (T)(object)StringToDoubleArray(val??string.Empty);
                     }
                 }
                 return default(T);
