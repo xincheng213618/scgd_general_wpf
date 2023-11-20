@@ -75,7 +75,7 @@ namespace ColorVision.Solution
         public void CreateSolution(DirectoryInfo Info)
         {
             Tool.CreateDirectoryMax(Info.FullName +"//Cache");
-            Tool.CreateDirectoryMax(Info.FullName + "//Config");
+            Tool.CreateDirectoryMax(Info.FullName + "//cfg");
             Tool.CreateDirectoryMax(Info.FullName + "//Image");
             Tool.CreateDirectoryMax(Info.FullName + "//Flow");
 

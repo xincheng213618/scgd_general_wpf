@@ -8,9 +8,11 @@ using ColorVision.User;
 using ColorVision.Util;
 using cvColorVision;
 using cvColorVision.Util;
+using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Threading;
 using System.Windows;
@@ -28,9 +30,9 @@ namespace ColorVision.Templates
         private static readonly object _locker = new();
         public static TemplateControl GetInstance() { lock (_locker) { return _instance ??= new TemplateControl(); } }
 
-        private static string FileNameCalibrationParams = "cfg\\CalibrationSetup.cfg";
-        private static string FileNameLedJudgeParams = "cfg\\LedJudgeSetup.cfg";
-        private static string FileNameFlowParms = "cfg\\FlowParmSetup.cfg";
+        private static string FileNameCalibrationParams = "cfg\\CalibrationSetup";
+        private static string FileNameLedJudgeParams = "cfg\\LedJudgeSetup";
+        private static string FileNameFlowParms = "cfg\\FlowParmSetup";
 
         private PoiService poiService = new PoiService();
         private ModService modService = new ModService();
@@ -41,9 +43,6 @@ namespace ColorVision.Templates
 
         public TemplateControl()
         {
-            if (!Directory.Exists(AppDomain.CurrentDomain.BaseDirectory+ "cfg"))
-                Directory.CreateDirectory(AppDomain.CurrentDomain.BaseDirectory + "cfg");
-
             AoiParams = new ObservableCollection<TemplateModel<AoiParam>>();
             CalibrationParams = new ObservableCollection<TemplateModel<CalibrationParam>>();
             PGParams = new ObservableCollection<TemplateModel<PGParam>>();
@@ -95,7 +94,13 @@ namespace ColorVision.Templates
             SolutionManager.GetInstance().SolutionInitialized += (s, e) =>
             {
                 if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+                {
                     LoadFlowParam();
+                }
+                else
+                {
+                    CSVSave();
+                }
             };
         }
         private void Init()
@@ -173,6 +178,21 @@ namespace ColorVision.Templates
             }
         }
 
+        public static T? LoadCFG<T>(string cfgFile)
+        {
+            if (File.Exists(SolutionManager.GetInstance().CurrentSolution.FullName + "\\" + cfgFile))
+            {
+                cfgFile = SolutionManager.GetInstance().CurrentSolution.FullName + "\\" + cfgFile;
+            }
+            else if (File.Exists(AppDomain.CurrentDomain.BaseDirectory + cfgFile))
+            {
+                cfgFile = AppDomain.CurrentDomain.BaseDirectory + cfgFile;
+            }
+
+
+            return CfgFile.Load<T>(cfgFile);
+        }
+
 
 
         /// 这里是初始化模板的封装，因为模板的代码高度统一，所以使用泛型T来设置具体的模板参数。
@@ -182,7 +202,7 @@ namespace ColorVision.Templates
         {
             ObservableCollection<TemplateModel<T >> Params = new ObservableCollection<TemplateModel<T>>();
 
-            Params = CfgFile.Load<ObservableCollection<TemplateModel<T>>>(FileName) ?? new ObservableCollection<TemplateModel<T>>();
+            Params = LoadCFG<ObservableCollection<TemplateModel<T>>>(FileName) ?? new ObservableCollection<TemplateModel<T>>();
             if (Params.Count == 0)
             {
                 Params.Add(new TemplateModel<T>("default", Default));
@@ -222,7 +242,17 @@ namespace ColorVision.Templates
         public void CSVSave()
         {
             foreach (var item in DicTemplate)
-                CfgFile.Save(item.Key, item.Value);
+            {
+                if (Directory.Exists(SolutionManager.GetInstance().CurrentSolution.FullName))
+                {
+                    CfgFile.Save(SolutionManager.GetInstance().CurrentSolution.FullName + "\\cfg\\" + item.Key, item.Value);
+                }
+                else
+                {
+                    CfgFile.Save(item.Key, item.Value);
+
+                }
+            }
         }
 
 
@@ -325,7 +355,14 @@ namespace ColorVision.Templates
 
         private static void SaveDefault<T>(string FileNameParams, ObservableCollection<TemplateModel<T>> t) where T :ParamBase
         {
-            CfgFile.Save(FileNameParams, t);
+            if (Directory.Exists(SolutionManager.GetInstance().CurrentSolution.FullName)) 
+            {
+                CfgFile.Save(SolutionManager.GetInstance().CurrentSolution.FullName +"\\"+ FileNameParams, t);
+            }
+            else
+            {
+                CfgFile.Save(FileNameParams, t);
+            }
         }
 
 
