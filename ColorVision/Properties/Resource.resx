@@ -322,6 +322,6 @@
     <value>名称</value>
   </data>
   <data name="Code" xml:space="preserve">
-    <value>代码</value>
+    <value>标识</value>
   </data>
 </root>

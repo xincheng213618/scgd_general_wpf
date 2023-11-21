@@ -1,4 +1,5 @@
-﻿using ColorVision.MVVM;
+﻿using ColorVision.Device;
+using ColorVision.MVVM;
 using ColorVision.Solution.V.Files;
 using ColorVision.Solution.V.Folders;
 using System.IO;
@@ -22,7 +23,7 @@ namespace ColorVision.Solution.V
             GeneralContextMenu();
 
             
-            GeneralChild();
+            GeneralChild(this,DirectoryInfo);
             this.IsExpanded = true;
         }
 
@@ -39,15 +40,16 @@ namespace ColorVision.Solution.V
             ContextMenu.Items.Add(menuItem);
         }
 
-        public void GeneralChild()
+        public void GeneralChild(VObject vObject,DirectoryInfo directoryInfo)
         {
-            foreach (var item in DirectoryInfo.GetDirectories())
+            foreach (var item in directoryInfo.GetDirectories())
             {
                 BaseFolder folder = new BaseFolder(item);
                 var vFolder = new VFolder(folder);
-                AddChild(vFolder);
+                vObject.AddChild(vFolder);
+                GeneralChild(vFolder, item);
             }
-            foreach (var item in DirectoryInfo.GetFiles())
+            foreach (var item in directoryInfo.GetFiles())
             {
                 IFile file;
                 if (item.Extension ==".stn")
@@ -59,7 +61,7 @@ namespace ColorVision.Solution.V
                     file = new ImageFile(item);
                 }
                 VFile vFile = new VFile(file);
-                AddChild(vFile);
+                vObject.AddChild(vFile);
             }
         }
 

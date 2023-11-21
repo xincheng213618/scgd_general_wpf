@@ -115,7 +115,7 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 代码 的本地化字符串。
+        ///   查找类似 标识 的本地化字符串。
         /// </summary>
         public static string Code {
             get {
