@@ -57,28 +57,28 @@
                     </ListView.ItemContainerStyle>
                     <ListView.View >
                         <GridView>
-                            <GridViewColumn  Header="服务标识" Width="100">
+                            <GridViewColumn  Header="服务标识" Width="105">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ServiceTerminal}">
                                         <TextBlock Text="{ Binding Code}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="服务名称" Width="100">
+                            <GridViewColumn  Header="服务名称" Width="105">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ServiceTerminal}">
                                         <TextBlock Text="{ Binding Name}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="发送信道" Width="150">
+                            <GridViewColumn  Header="发送信道" Width="160">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ServiceTerminal}">
                                         <TextBlock Text="{ Binding  Config.SendTopic}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="接收信道" Width="150" >
+                            <GridViewColumn  Header="接收信道" Width="160" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ServiceTerminal}">
                                         <TextBlock Text="{ Binding  Config.SubscribeTopic}"/>
@@ -89,6 +89,16 @@
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ServiceTerminal}">
                                         <TextBlock Text="{ Binding  Config.IsAlive}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn   Width="60">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate DataType="{x:Type local:ServiceTerminal}">
+                                        <Grid Height="30">
+                                            <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" />
+                                            <Button Background="Transparent"  BorderThickness="0"  Command="{Binding DeleteCommand}"/>
+                                        </Grid>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>

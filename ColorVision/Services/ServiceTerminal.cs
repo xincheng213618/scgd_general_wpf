@@ -128,14 +128,20 @@ namespace ColorVision.Services
             MenuItem menuItem = new MenuItem() { Header = "删除服务" };
             menuItem.Click += (s, e) =>
             {
-                Parent.RemoveChild(this);
-                if (SysResourceModel != null)
-                {
-                    ServiceManager.GetInstance().ResourceService.DeleteById(SysResourceModel.Id);
-                    ServiceManager.GetInstance().ResourceService.DeleteAllByPid(SysResourceModel.Id);
-                }
+                Delete();
             };
             ContextMenu.Items.Add(menuItem);
+        }
+
+        public override void Delete()
+        {
+            base.Delete();
+            Parent.RemoveChild(this);
+            if (SysResourceModel != null)
+            {
+                ServiceManager.GetInstance().ResourceService.DeleteById(SysResourceModel.Id);
+                ServiceManager.GetInstance().ResourceService.DeleteAllByPid(SysResourceModel.Id);
+            }
         }
 
         public ServiceType Type { get => (ServiceType)SysResourceModel.Type; }
