@@ -10,6 +10,7 @@ using System.Windows;
 using ColorVision.HotKey;
 using System.Windows.Input;
 using System.Security.Cryptography.X509Certificates;
+using ColorVision.Extension;
 
 namespace ColorVision.Solution
 {
@@ -77,14 +78,15 @@ namespace ColorVision.Solution
 
         public void CreateSolution(DirectoryInfo Info)
         {
-            Tool.CreateDirectoryMax(Info.FullName +"//Cache");
-            Tool.CreateDirectoryMax(Info.FullName + "//cfg");
-            Tool.CreateDirectoryMax(Info.FullName + "//Image");
-            Tool.CreateDirectoryMax(Info.FullName + "//Flow");
+            Tool.CreateDirectoryMax(Info.FullName +"\\Cache");
+            Tool.CreateDirectoryMax(Info.FullName + "\\Cfg");
+            Tool.CreateDirectoryMax(Info.FullName + "\\Image");
+            Tool.CreateDirectoryMax(Info.FullName + "\\Flow");
 
             CurrentSolution.SolutionName = Info.Name;
             CurrentSolution.FullName = Info.FullName;
 
+            CurrentSolution.ToJsonNFile(Info.FullName + "\\" + Info.Name + ".cvsln");
             SolutionInitialized.Invoke(CurrentSolution, new EventArgs());
         }
 

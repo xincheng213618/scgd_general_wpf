@@ -7,6 +7,13 @@ using System.Windows.Controls;
 
 namespace ColorVision.Solution.V
 {
+    public class CVSolution:ViewModelBase
+    {
+        
+
+    }
+
+
     public class SolutionExplorer: VObject
     {
         public ContextMenu ContextMenu { get; set; }
@@ -21,9 +28,7 @@ namespace ColorVision.Solution.V
             this.Name = DirectoryInfo.Name;
             GeneralRelayCommand();
             GeneralContextMenu();
-
-            
-            GeneralChild(this,DirectoryInfo);
+            GeneralCVSln();
             this.IsExpanded = true;
         }
 
@@ -40,7 +45,20 @@ namespace ColorVision.Solution.V
             ContextMenu.Items.Add(menuItem);
         }
 
-        public void GeneralChild(VObject vObject,DirectoryInfo directoryInfo)
+
+
+        public void GeneralCVSln()
+        {
+            foreach (var item in DirectoryInfo.GetDirectories())
+            {
+                BaseFolder folder = new BaseFolder(item);
+                var vFolder = new VFolder(folder);
+                this.AddChild(vFolder);
+                GeneralChild(vFolder, item);
+            }
+        }
+
+        public static void GeneralChild(VObject vObject,DirectoryInfo directoryInfo)
         {
             foreach (var item in directoryInfo.GetDirectories())
             {
@@ -55,6 +73,10 @@ namespace ColorVision.Solution.V
                 if (item.Extension ==".stn")
                 {
                     file = new FlowFile(item);
+                }
+                else if (item.Extension == ".cvcie")
+                {
+                    file = new CVcieFile(item);
                 }
                 else
                 {
