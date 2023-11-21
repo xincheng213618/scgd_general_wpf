@@ -7,7 +7,7 @@
         xmlns:mqtt="clr-namespace:ColorVision.MQTT"
         xmlns:resx="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
-        Title="WindowService" Height="700" Width="850" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized" >
+        Title="WindowService" Height="700" Width="900" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized" >
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -15,7 +15,7 @@
         </Grid.RowDefinitions>
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="240"/>
+                <ColumnDefinition Width="230"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <TreeView x:Name="TreeView1" Loaded="TreeView1_Loaded" ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectedItemChanged="TreeView1_SelectedItemChanged " Margin="5">
@@ -45,7 +45,7 @@
                 </TreeView.ItemContainerStyle>
 
             </TreeView>
-            <Border CornerRadius="5" Grid.Column="1" Margin="5">
+            <Border CornerRadius="5" Grid.Column="1" Margin="2,5,5,5">
                 <Grid x:Name="StackPanelShow"  >
 
                 </Grid>

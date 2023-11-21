@@ -66,8 +66,11 @@ namespace ColorVision.Solution
             }
             else
             {
+                CurrentSolution.SolutionName = string.Empty ;
+                CurrentSolution.FullName = string.Empty;
+
                 log.Debug("工程文件打开失败:" + SolutionFullPath);
-                MessageBox.Show("工程文件未创建，在使用之前请重新创建", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                MessageBox.Show("工程文件已被删除，在使用之前请重新创建", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 return false;
             }
         }

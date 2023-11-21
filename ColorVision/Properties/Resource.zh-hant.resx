@@ -318,4 +318,10 @@
   <data name="Open" xml:space="preserve">
     <value>打開</value>
   </data>
+  <data name="Name" xml:space="preserve">
+    <value>名称</value>
+  </data>
+  <data name="Code" xml:space="preserve">
+    <value>程式碼</value>
+  </data>
 </root>

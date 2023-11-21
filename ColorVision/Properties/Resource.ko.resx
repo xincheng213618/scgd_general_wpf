@@ -318,4 +318,10 @@
   <data name="Open" xml:space="preserve">
     <value>열려 있는</value>
   </data>
+  <data name="Name" xml:space="preserve">
+    <value>이름</value>
+  </data>
+  <data name="Code" xml:space="preserve">
+    <value>암호</value>
+  </data>
 </root>

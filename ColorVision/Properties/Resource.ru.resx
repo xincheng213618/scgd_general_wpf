@@ -318,4 +318,10 @@
   <data name="Open" xml:space="preserve">
     <value>Открыть</value>
   </data>
+  <data name="Name" xml:space="preserve">
+    <value>Имя</value>
+  </data>
+  <data name="Code" xml:space="preserve">
+    <value>Код</value>
+  </data>
 </root>
