@@ -6,6 +6,7 @@ using System.Windows.Media;
 using ColorVision.MVVM;
 using System.Windows.Controls;
 using System.Windows;
+using System.Threading.Tasks;
 
 namespace ColorVision.Solution.V.Files
 {
@@ -38,8 +39,15 @@ namespace ColorVision.Solution.V.Files
 
         public void Open()
         {
-            bool IsOpen = false;
-            MessageBox.Show(FullName);
+            ImageView imageView = new ImageView();
+            Window window = new Window() { };
+            window.Content = imageView;
+            Task.Run(async () => {
+                await Task.Delay(10);
+                Application.Current.Dispatcher.Invoke(() => { imageView.OpenCVCIE(FileInfo.FullName); });
+            });
+            window.Show();
+
         }
 
 
