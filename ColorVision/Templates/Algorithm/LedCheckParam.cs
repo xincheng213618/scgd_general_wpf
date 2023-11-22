@@ -63,7 +63,7 @@ namespace ColorVision.Templates.Algorithm
         [Category("LedCheck"), DisplayName("是否使用本地点位信息计算"), Description("是否使用本地点位信息计算 isuseLocalRdPoint")]
         [JsonProperty("isuseLocalRdPoint")]
         public bool IsuseLocalRdPoint { get => GetValue(_IsuseLocalRdPoint); set { SetProperty(ref _IsuseLocalRdPoint, value); } }
-        private bool _IsuseLocalRdPoint = false;
+        private bool _IsuseLocalRdPoint;
 
         [Category("LedCheck"), DisplayName("灯珠宽方向数量"), Description("灯珠宽方向数量 picwid")]
         [JsonProperty("picwid")]
@@ -80,12 +80,10 @@ namespace ColorVision.Templates.Algorithm
         public int PointNum { get => _Picwid * Pichig;}
 
         [Category("LedCheck"), Description("LengthCheck")]
-        [JsonProperty("LengthCheck")]
         public double[]? LengthCheck { get => GetValue(_LengthCheck); set { SetProperty(ref _LengthCheck, value); } }
         private double[]? _LengthCheck = new double[]{ 10,10,10,10 };
 
         [Category("LedCheck"), Description("LengthRange")]
-        [JsonProperty("LengthRange")]
         public double[]? LengthRange { get => GetValue(_LengthRange); set { SetProperty(ref _LengthRange, value); } }
         private double[]? _LengthRange = new double[] { 10, 10, 10, 10 };
 

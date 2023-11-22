@@ -115,6 +115,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 标识 的本地化字符串。
+        /// </summary>
+        public static string Code {
+            get {
+                return ResourceManager.GetString("Code", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 注册一个 的本地化字符串。
         /// </summary>
         public static string Create_an_account {
@@ -426,6 +435,15 @@ namespace ColorVision.Properties {
         public static string Minimize {
             get {
                 return ResourceManager.GetString("Minimize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 名称 的本地化字符串。
+        /// </summary>
+        public static string Name {
+            get {
+                return ResourceManager.GetString("Name", resourceCulture);
             }
         }
         

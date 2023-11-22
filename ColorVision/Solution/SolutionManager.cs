@@ -9,23 +9,11 @@ using log4net;
 using System.Windows;
 using ColorVision.HotKey;
 using System.Windows.Input;
+using System.Security.Cryptography.X509Certificates;
+using ColorVision.Extension;
 
 namespace ColorVision.Solution
 {
-    public class CVSolution
-    {
-        public string ConfigPath { get; set; } = "Config";
-
-        public string CachePath { get; set; } = "Cache";
-
-        public string ImagePath { get; set; } = "Image";
-    }
-
-
-
-    public delegate int SolutionOpenHandler(string FileName);
-
-
     /// <summary>
     /// 工程模块控制中心
     /// </summary>
@@ -39,11 +27,19 @@ namespace ColorVision.Solution
 
         //工程配置文件
         public SolutionConfig CurrentSolution { get => SoftwareConfig.SolutionConfig; }
-        public SolutionSetting Setting { get => CurrentSolution.SolutionSetting; }
+        public SolutionSetting Setting { get => SoftwareConfig.SolutionSetting; }
         public SoftwareConfig SoftwareConfig { get; private set; }
         public RecentFileList SolutionHistory { get; set; } = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
 
-        public event SolutionOpenHandler SolutionOpened;
+        /// <summary>
+        /// 工程初始化的时候
+        /// </summary>
+        public event EventHandler SolutionInitialized;
+        /// <summary>
+        /// 工程打开的时候
+        /// </summary>
+        public event EventHandler SolutionLoaded;
+
 
         public SolutionManager()
         {
@@ -51,7 +47,7 @@ namespace ColorVision.Solution
             Application.Current.MainWindow.AddHotKeys(new HotKeys("打开工程", new Hotkey(Key.O, ModifierKeys.Control), OpenSolutionWindow));
             Application.Current.MainWindow.AddHotKeys(new HotKeys("新建工程", new Hotkey(Key.N, ModifierKeys.Control), NewCreateWindow));
 
-            OpenSolution(CurrentSolution.SolutionFullName);
+            OpenSolution(CurrentSolution.FullName);
         }
 
         public bool OpenSolution(string SolutionFullPath)
@@ -64,24 +60,34 @@ namespace ColorVision.Solution
             {
                 DirectoryInfo Info = new DirectoryInfo(SolutionFullPath);
                 CurrentSolution.SolutionName = Info.Name;
-                CurrentSolution.SolutionFullName = Info.FullName;
+                CurrentSolution.FullName = Info.FullName;
                 SolutionHistory.InsertFile(Info.FullName);
-                SolutionOpened?.Invoke(SolutionFullPath);
+                SolutionLoaded?.Invoke(CurrentSolution,new EventArgs());
                 return true;
             }
             else
             {
+                CurrentSolution.SolutionName = string.Empty ;
+                CurrentSolution.FullName = string.Empty;
+
                 log.Debug("工程文件打开失败:" + SolutionFullPath);
-                MessageBox.Show("工程文件未创建，在使用之前请重新创建", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                MessageBox.Show("工程文件已被删除，在使用之前请重新创建", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 return false;
             }
         }
 
-        public void CreateSolution(DirectoryInfo SolutionDirectoryInfo)
+        public void CreateSolution(DirectoryInfo Info)
         {
-            Tool.CreateDirectoryMax(SolutionDirectoryInfo.FullName +"//Cache");
+            Tool.CreateDirectoryMax(Info.FullName +"\\Cache");
+            Tool.CreateDirectoryMax(Info.FullName + "\\Cfg");
+            Tool.CreateDirectoryMax(Info.FullName + "\\Image");
+            Tool.CreateDirectoryMax(Info.FullName + "\\Flow");
 
-            OpenSolution(SolutionDirectoryInfo.FullName);
+            CurrentSolution.SolutionName = Info.Name;
+            CurrentSolution.FullName = Info.FullName;
+
+            CurrentSolution.ToJsonNFile(Info.FullName + "\\" + Info.Name + ".cvsln");
+            SolutionInitialized.Invoke(CurrentSolution, new EventArgs());
         }
 
         public void OpenSolutionWindow() => OpenSolutionWindow(Application.Current.MainWindow);
@@ -112,7 +118,7 @@ namespace ColorVision.Solution
                 {
                     string SolutionDirectoryPath = newCreatWindow.NewCreateViewMode.DirectoryPath + "\\" + newCreatWindow.NewCreateViewMode.Name;
                     CreateSolution(new DirectoryInfo(SolutionDirectoryPath));
-                    SolutionOpened?.Invoke(SolutionDirectoryPath);
+                    OpenSolution(SolutionDirectoryPath);
                 }
             };
             newCreatWindow.ShowDialog();

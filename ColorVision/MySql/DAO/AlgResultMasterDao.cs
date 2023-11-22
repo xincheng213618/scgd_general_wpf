@@ -1,4 +1,5 @@
-﻿using MQTTMessageLib.Algorithm;
+﻿#pragma warning disable CS8601
+using MQTTMessageLib.Algorithm;
 using System;
 using System.Collections.Generic;
 using System.Data;

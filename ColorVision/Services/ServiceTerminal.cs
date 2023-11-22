@@ -28,7 +28,9 @@ namespace ColorVision.Services
 
         public ServiceType ServiceType { get => (ServiceType)SysResourceModel.Type; }
 
-        public override string Name { get => Config.Code ; set { Config.Code = value; NotifyPropertyChanged(); } }
+        public override string Name { get => SysResourceModel.Name??string.Empty ; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
+
+        public string Code { get => SysResourceModel.Code ?? string.Empty; set { SysResourceModel.Code = value; NotifyPropertyChanged(); } }
 
         public ImageSource Icon { get; set; }
 
@@ -126,14 +128,20 @@ namespace ColorVision.Services
             MenuItem menuItem = new MenuItem() { Header = "删除服务" };
             menuItem.Click += (s, e) =>
             {
-                Parent.RemoveChild(this);
-                if (SysResourceModel != null)
-                {
-                    ServiceManager.GetInstance().ResourceService.DeleteById(SysResourceModel.Id);
-                    ServiceManager.GetInstance().ResourceService.DeleteAllByPid(SysResourceModel.Id);
-                }
+                Delete();
             };
             ContextMenu.Items.Add(menuItem);
+        }
+
+        public override void Delete()
+        {
+            base.Delete();
+            Parent.RemoveChild(this);
+            if (SysResourceModel != null)
+            {
+                ServiceManager.GetInstance().ResourceService.DeleteById(SysResourceModel.Id);
+                ServiceManager.GetInstance().ResourceService.DeleteAllByPid(SysResourceModel.Id);
+            }
         }
 
         public ServiceType Type { get => (ServiceType)SysResourceModel.Type; }

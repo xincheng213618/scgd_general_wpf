@@ -1,6 +1,8 @@
 ﻿using ColorVision.MVVM;
+using ColorVision.Services;
 using ColorVision.SettingUp;
 using ColorVision.Util;
+using log4net;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -33,6 +35,7 @@ namespace ColorVision
         private static GlobalSetting _instance;
         private static readonly object _locker = new();
         public static GlobalSetting GetInstance() { lock (_locker) { return _instance ??= new GlobalSetting(); } }
+        internal static readonly ILog log = LogManager.GetLogger(typeof(GlobalSetting));
 
         public GlobalSetting()
         {
@@ -131,6 +134,8 @@ namespace ColorVision
                 }
                 catch(Exception ex)
                 {
+                    log.Warn(ex);
+                    log.Info($"读取配置文件{fileName}失败，正常初始化配置文件");
                     T t = (T)Activator.CreateInstance(typeof(T));
                     WriteConfig(fileName, t);
                     return t;

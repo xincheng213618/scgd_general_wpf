@@ -599,14 +599,12 @@ namespace ColorVision
             }
         }
 
-        //public void OpenCVCIE(string fileName)
-        //{
-        //    //fileInfo.Gain = 1;
-        //    //CVFileUtils.WriteCVCIE(fileName, fileInfo);
-        //    fileName = "F:\\img\\cvcie\\20230322142640_1.cvcie";
-        //    CVCIEFileInfo fileInfo = new CVCIEFileInfo();
-        //    int ret = CVFileUtils.ReadCVCIE(fileName, ref fileInfo); 
-        //}
+        public void OpenCVCIE(string fileName)
+        {
+            CVCIEFileInfo info = new CVCIEFileInfo();
+            int ret = CVFileUtils.ReadCVCIE(fileName,ref info);
+            OpenImage(info);
+        }
 
         public void OpenImage(CVCIEFileInfo fileInfo)
         {

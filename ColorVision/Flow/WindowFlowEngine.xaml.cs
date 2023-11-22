@@ -119,7 +119,7 @@ namespace ColorVision
                         System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
                         ofd.Filter = "*.stn|*.stn";
                         ofd.FileName = FileName;
-                        ofd.InitialDirectory = SolutionManager.GetInstance().CurrentSolution.SolutionFullName;
+                        ofd.InitialDirectory = SolutionManager.GetInstance().CurrentSolution.FullName;
                         if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
                         if (FlowParam != null)
                         {
@@ -167,7 +167,7 @@ namespace ColorVision
             else if (!IsSave)
             {
                 FlowParam.FileName = FlowParam.Name + ".stn";
-                FileName = SolutionManager.GetInstance().CurrentSolution.SolutionFullName + "\\" + FlowParam.Name + ".stn";
+                FileName = SolutionManager.GetInstance().CurrentSolution.FullName + "\\" + FlowParam.Name + ".stn";
                 SaveFlow(FileName, true);
                 IsSave = true;
             }
@@ -190,7 +190,7 @@ namespace ColorVision
         {
             System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
             ofd.Filter = "*.stn|*.stn";
-            ofd.InitialDirectory = SolutionManager.GetInstance().CurrentSolution.SolutionFullName;
+            ofd.InitialDirectory = SolutionManager.GetInstance().CurrentSolution.FullName;
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
             ButtonSave.Visibility = Visibility.Visible;

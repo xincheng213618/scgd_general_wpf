@@ -1,4 +1,6 @@
-﻿using System.Windows.Controls;
+﻿using ColorVision.Solution.V.Files;
+using System.IO;
+using System.Windows.Controls;
 using System.Windows.Media;
 
 namespace ColorVision.Solution.V.Folders

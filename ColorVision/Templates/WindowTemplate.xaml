@@ -41,7 +41,6 @@
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate DataType="{x:Type local:TemplateModelBase}">
                                     <DockPanel>
-                                        <TextBlock DockPanel.Dock="Right"  Text="{ Binding Tag}" FontSize="10" HorizontalAlignment="Left" VerticalAlignment="Center"/>
                                         <Grid>
                                             <TextBlock Text="{Binding Key}" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter1}}" />
                                             <TextBox  Text="{Binding Key}" LostFocus="TextBox_LostFocus" GotFocus="TextBox_GotFocus"  PreviewKeyDown="TextBox_PreviewKeyDown" Tag="{Binding .}"   HorizontalAlignment="Left" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter}}"/>
@@ -50,7 +49,7 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="操作">
+                        <GridViewColumn  Width="100" >
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:TemplateModelBase}">
                                     <Grid>
@@ -68,14 +67,6 @@
         </Grid>
 
         <Grid Grid.Row="0" Grid.Column="1"  x:Name="GridProperty" >
-            <!--<Grid.Resources>
-                <ResourceDictionary>
-                    <ResourceDictionary.MergedDictionaries>
-                        <ResourceDictionary Source="/HandyControl;component/themes/basic/colors/light.xaml"/>
-                        <ResourceDictionary Source="/HandyControl;component/Themes/Theme.xaml"/>
-                    </ResourceDictionary.MergedDictionaries>
-                </ResourceDictionary>
-            </Grid.Resources>-->
             <!--<hc:PropertyGrid x:Name="PropertyGrid1"   hc:TipElement.Visibility="Visible"  />-->
             <!--<xctk:PropertyGrid   x:Name="PropertyGrid1" />-->
             <WindowsFormsHost>
@@ -86,7 +77,7 @@
         </Grid>
 
         <StackPanel x:Name="CreateGrid"  Grid.Column="1" Grid.Row="1" HorizontalAlignment="Stretch" Margin="5">
-            <DockPanel  >
+            <DockPanel Margin="3" >
                 <TextBlock Text="模板名称："  Foreground="{DynamicResource GlobalTextBrush}"/>
                 <TextBox x:Name="TextBox1"/>
             </DockPanel>

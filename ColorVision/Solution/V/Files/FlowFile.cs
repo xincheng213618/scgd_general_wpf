@@ -5,21 +5,18 @@ using System.IO;
 using System.Windows.Media;
 using ColorVision.MVVM;
 using System.Windows.Controls;
-using ColorVision.Templates;
 using System.Windows;
-using System.Threading.Tasks;
 
 namespace ColorVision.Solution.V.Files
 {
-
-
-
-    public class ImageFile : ViewModelBase,IFile
+    public class FlowFile : ViewModelBase, IFile
     {
-        public ImageFile() { }
         public FileInfo FileInfo { get; set; }
         public ContextMenu ContextMenu { get; set; }
-        public ImageFile(FileInfo fileInfo) 
+
+        public string Extension { get => FileInfo.Extension; }
+
+        public FlowFile(FileInfo fileInfo)
         {
             FileInfo = fileInfo;
             Name = FileInfo.Name;
@@ -29,7 +26,7 @@ namespace ColorVision.Solution.V.Files
                 Icon = icon.ToImageSource();
 
             ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resource.Open, Command = new RelayCommand((e) => Open()) });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resource.Open, Command = new RelayCommand((e)=> Open()) });
         }
 
         public string Name { get; set; }
@@ -37,8 +34,24 @@ namespace ColorVision.Solution.V.Files
         public string ToolTip { get; set; }
         public ImageSource Icon { get; set; }
 
-        public string FileSize { get => _FileSize; set { _FileSize = value; NotifyPropertyChanged(); } }
-        private string _FileSize;
+        public string FileSize { get => FileInfo.Length.ToString(); set { NotifyPropertyChanged(); } }
+
+        public void Open()
+        {
+            bool IsOpen = false;
+            foreach (var item in Application.Current.Windows)
+            {
+                if (item is WindowFlowEngine WindowFlowEngine)
+                {
+                    WindowFlowEngine.OpenFlow(FullName);
+                    WindowFlowEngine.Activate();
+                    IsOpen = true;
+                    break;
+                }
+            }
+            if (!IsOpen)
+                new WindowFlowEngine(FullName) { Owner = null }.Show();
+        }
 
 
         public void Copy()
@@ -51,17 +64,7 @@ namespace ColorVision.Solution.V.Files
             throw new System.NotImplementedException();
         }
 
-        public async void Open()
-        {
-            ImageView imageView = new ImageView();
-            Window window = new Window() { };
-            window.Content = imageView;
-            Task.Run( async () => {
-                await Task.Delay(100);
-                Application.Current.Dispatcher.Invoke(() => { imageView.OpenImage(FileInfo.FullName); });
-                 });
-            window.Show();
-        }
+
 
         public void ReName()
         {

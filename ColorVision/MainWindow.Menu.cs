@@ -178,12 +178,12 @@ namespace ColorVision
 
         private void TextBlock_MouseLeftButtonDown2(object sender, MouseButtonEventArgs e)
         {
-            if (SolutionManager.GetInstance().CurrentSolution.SolutionFullName != null)
+            if (SolutionManager.GetInstance().CurrentSolution.FullName != null)
             {
                 TimeSpan elapsedTime = DateTime.Now - lastClickTime;
                 if (elapsedTime.TotalMilliseconds <= 300)
                 {
-                    //System.Diagnostics.Process.Start("explorer.exe", $"{SolutionManager.GetInstance().Setting.SolutionFullName}");
+                    //System.Diagnostics.Process.Start("explorer.exe", $"{SolutionManager.GetInstance().Setting.FullName}");
 
 
                     Window window = new Window();

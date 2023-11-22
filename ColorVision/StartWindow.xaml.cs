@@ -173,6 +173,8 @@ namespace ColorVision
                 }
             });
             await Task.Delay(100);
+            Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}正在加载工程"; });
+            await Task.Delay(200);
             Application.Current.Dispatcher.Invoke(() =>
             {
 

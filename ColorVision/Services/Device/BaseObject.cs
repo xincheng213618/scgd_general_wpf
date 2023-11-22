@@ -28,6 +28,8 @@ namespace ColorVision.Device
     {
 
         public RelayCommand SaveCommand { get; set; }
+        public RelayCommand DeleteCommand { get; set; }
+
         public ContextMenu ContextMenu { get; set; }
         public ObservableCollection<BaseObject> VisualChildren { get; set; }
 
@@ -36,6 +38,8 @@ namespace ColorVision.Device
         {
             VisualChildren = new ObservableCollection<BaseObject>();
             SaveCommand = new RelayCommand(a => Save());
+            DeleteCommand = new RelayCommand(a => Delete());
+
         }
         public BaseObject Parent
         {
@@ -66,6 +70,8 @@ namespace ColorVision.Device
         public virtual void Save()
         {
         }
+
+        public virtual void Delete() { }
 
 
     }

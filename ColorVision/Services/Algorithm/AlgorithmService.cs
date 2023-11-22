@@ -418,9 +418,9 @@ namespace ColorVision.Services.Algorithm
             Params.Add("isuseLocalRdPoint", ledCheckParam.IsuseLocalRdPoint);
             Params.Add("picwid", ledCheckParam.Picwid);
             Params.Add("pichig", ledCheckParam.Pichig);
-            Params.Add("LengthCheck", ledCheckParam.LengthCheck);
-            Params.Add("LengthRange", ledCheckParam.LengthRange);
-            Params.Add("localRdMark", ledCheckParam.LocalRdMark);
+            Params.Add("LengthCheck", ledCheckParam.LengthCheck ?? Array.Empty<double>());
+            Params.Add("LengthRange", ledCheckParam.LengthRange ?? Array.Empty<double>());
+            Params.Add("localRdMark", ledCheckParam.LocalRdMark ?? Array.Empty<double>());
             Params.Add("file_data", ToJsonFileList(ImageChannelType.Gray_Y, FileName));
             return PublishAsyncClient(msg,60000);
         }

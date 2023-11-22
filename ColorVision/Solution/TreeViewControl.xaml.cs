@@ -36,10 +36,14 @@ namespace ColorVision.Solution
         {
             SolutionTreeView.ItemsSource = SolutionExplorers;
             IniCommand();
-            TreeViewInitialized(SolutionManager.CurrentSolution.SolutionFullName);
-            SolutionManager.SolutionOpened += SolutionManager_SolutionOpened;
+            TreeViewInitialized(SolutionManager.CurrentSolution.FullName);
+            SolutionManager.SolutionLoaded += (s,e) =>
+            {
+                TreeViewInitialized(SolutionManager.CurrentSolution.FullName);
+            };
 
         }
+
 
 
         private void TreeViewControl_Drop(object sender, DragEventArgs e)
@@ -78,12 +82,6 @@ namespace ColorVision.Solution
             }
         }
 
-        private int SolutionManager_SolutionOpened(string FileName)
-        {
-            TreeViewInitialized(FileName);
-            //throw new NotImplementedException();
-            return 0;
-        }
 
         public bool OpenSolution(string FullName)
         {
@@ -218,9 +216,6 @@ namespace ColorVision.Solution
         {
             HandyControl.Controls.Growl.Info("此功能在测试中");
         }
-
-
-
     }
 
 

@@ -1,4 +1,5 @@
-﻿using ColorVision.Device;
+﻿#pragma warning disable  CS8604,CS8631
+using ColorVision.Device;
 using ColorVision.Extension;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
@@ -16,6 +17,9 @@ namespace ColorVision.MQTT
 {
     public class BaseChannel : BaseObject, IDisposable
     {
+        public virtual string Code { get; set; }
+
+
         public virtual string SendTopic { get; set; }
         public virtual string SubscribeTopic { get; set; }
         public virtual bool IsAlive { get; set; }
@@ -30,6 +34,7 @@ namespace ColorVision.MQTT
         public RelayCommand ExportCommand { get; set; }
         public RelayCommand ImportCommand { get; set; }
         public RelayCommand CopyCommand { get; set; }
+
 
         public virtual ImageSource Icon { get; set; }
 
@@ -56,7 +61,6 @@ namespace ColorVision.MQTT
             throw new NotImplementedException();
         }
 
-
         //继承Config
         public virtual object GetConfig()
         {
@@ -79,11 +83,10 @@ namespace ColorVision.MQTT
         private ImageSource _Icon;
 
 
-        public override object GetConfig()
-        {
-            return Config;
-        }
-        public override string Name { get => Config.Code ; set{ Config.Code = value; NotifyPropertyChanged(); } }
+        public override object GetConfig() => Config;
+
+        public override string Code { get => SysResourceModel.Code ?? string.Empty; set { SysResourceModel.Code = value; NotifyPropertyChanged(); } }
+        public override string Name { get => SysResourceModel.Name ?? string.Empty; set{ SysResourceModel.Name = value; NotifyPropertyChanged(); } }
 
         public BaseDevice(SysResourceModel sysResourceModel) : base()
         {
@@ -93,10 +96,7 @@ namespace ColorVision.MQTT
             MenuItem menuItem = new MenuItem() { Header = "删除资源" };
             menuItem.Click += (s, e) =>
             {
-                if (SysResourceModel != null)
-                    ServiceManager.GetInstance().ResourceService.DeleteById(SysResourceModel.Id);
-                Parent.RemoveChild(this);
-                this.Dispose();
+                Delete();
             };
 
 
@@ -107,7 +107,7 @@ namespace ColorVision.MQTT
             ExportCommand = new RelayCommand((e) => {
                 System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
                 ofd.Filter = "*.config|*.config";
-                ofd.FileName = Config.Name;
+                ofd.FileName = Config?.Name;
                 ofd.RestoreDirectory = true;
                 if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
                 Config.ToJsonNFile(ofd.FileName);
@@ -174,6 +174,8 @@ namespace ColorVision.MQTT
                 }
             }
             Config.Code = SysResourceModel.Code ?? string.Empty;
+            Config.Name = SysResourceModel.Name ?? string.Empty;
+
         }
 
         public override string SendTopic { get => Config.SendTopic; set { Config.SendTopic = value; NotifyPropertyChanged(); } }
@@ -185,8 +187,19 @@ namespace ColorVision.MQTT
         public override void Save()
         {
             base.Save();
+            SysResourceModel.Code = Config.Code;
+            SysResourceModel.Name = Config.Name;
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
             ServiceManager.GetInstance().ResourceService.Save(SysResourceModel);
+        }
+
+        public override void Delete()
+        {
+            base.Delete();
+            if (SysResourceModel != null)
+                ServiceManager.GetInstance().ResourceService.DeleteById(SysResourceModel.Id);
+            Parent.RemoveChild(this);
+            this.Dispose();
         }
     }
 }
