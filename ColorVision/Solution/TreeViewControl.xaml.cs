@@ -45,6 +45,7 @@ namespace ColorVision.Solution
         }
 
 
+
         private void TreeViewControl_Drop(object sender, DragEventArgs e)
         {
             var b = e.Data.GetDataPresent(DataFormats.FileDrop);
@@ -215,9 +216,6 @@ namespace ColorVision.Solution
         {
             HandyControl.Controls.Growl.Info("此功能在测试中");
         }
-
-
-
     }
 
 

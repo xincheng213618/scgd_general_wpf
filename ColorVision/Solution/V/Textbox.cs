@@ -7,6 +7,10 @@ using System.Windows.Input;
 
 namespace ColorVision.Solution
 {
+
+
+
+
     public partial class TreeViewTextbox : ResourceDictionary
     {
         private void TextBox_LostFocus(object sender, RoutedEventArgs e)

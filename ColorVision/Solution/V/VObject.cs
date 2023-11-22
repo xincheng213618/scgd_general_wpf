@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace ColorVision.Solution.V
@@ -82,6 +83,8 @@ namespace ColorVision.Solution.V
 
         public RelayCommand DeleteCommand { get; set; }
 
+        public RelayCommand OpenCommand { get; set; }
+
         public bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; NotifyPropertyChanged(); } }
         private bool _IsExpanded;
 
@@ -93,6 +96,7 @@ namespace ColorVision.Solution.V
             VisualChildren = new ObservableCollection<VObject>() { };
             VisualChildrenHidden = new ObservableCollection<VObject>() { };
             DeleteCommand = new RelayCommand((s) => Delete(), (s) => { return Parent != null && CanDelete; });
+            OpenCommand = new RelayCommand((s) => Open(), (s) => { return Parent != null; });
         }
 
 
@@ -143,9 +147,14 @@ namespace ColorVision.Solution.V
         public virtual bool CanPaste { get; set; } = true;
         public virtual bool CanCut { get; set; } = true;
 
+
+        public void MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            Open();
+        }
+
         public virtual void Open()
         {
-            throw new NotImplementedException();
         }
 
         public virtual void Copy()

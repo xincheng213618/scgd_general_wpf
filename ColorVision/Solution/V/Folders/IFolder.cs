@@ -71,7 +71,7 @@ namespace ColorVision.Solution.V.Folders
 
         public void Open()
         {
-            throw new System.NotImplementedException();
+            System.Diagnostics.Process.Start("explorer.exe", DirectoryInfo.FullName);
         }
 
         public void ReName()
