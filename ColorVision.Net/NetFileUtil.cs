@@ -211,11 +211,18 @@ namespace ColorVision.Net
                     if (channels == 3)
                     {
                         byte[] data = new byte[len];
+                        OpenCvSharp.Mat dst = new OpenCvSharp.Mat();
+                        //Buffer.BlockCopy(imgData, 0, data, 0, data.Length);
+                        //OpenCvSharp.Mat srcX = new OpenCvSharp.Mat((int)h, (int)w, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), data);
                         Buffer.BlockCopy(imgData, len, data, 0, data.Length);
                         OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)h, (int)w, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), data);
-                        OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
-                        OpenCvSharp.Mat dst = new OpenCvSharp.Mat();
-                        src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
+                        //Buffer.BlockCopy(imgData, len * 2, data, 0, data.Length);
+                        //OpenCvSharp.Mat srcZ = new OpenCvSharp.Mat((int)h, (int)w, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), data);
+                        //OpenCvSharp.Mat[] srcMerge = new OpenCvSharp.Mat[3] { srcX, srcY, srcZ };
+                        //OpenCvSharp.Mat src = new OpenCvSharp.Mat();
+                        //OpenCvSharp.Cv2.Merge(srcMerge, src);
+                        OpenCvSharp.Cv2.Normalize(src, src, 0, 1, OpenCvSharp.NormTypes.MinMax);
+                        src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U, 255);
                         OpenCvSharp.Cv2.ImWrite(srcFileName, dst);
                     }
                     else

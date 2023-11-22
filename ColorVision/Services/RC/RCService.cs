@@ -116,7 +116,7 @@ namespace ColorVision.RC
                                 this.RegStatus = ServiceNodeStatus.Registered;
                                 if (!TryTestRegist)
                                 {
-                                    Token = req.Data;
+                                    Token = req.Data.Token;
                                     StatusChangedEventHandler?.Invoke(this, new RCServiceStatusChangedEvent(ServiceNodeStatus.Registered));
                                     QueryServices();
                                 }
@@ -250,7 +250,7 @@ namespace ColorVision.RC
         {
             if (Token != null)
             {
-                MQTTRCServicesQueryRequest reg = new MQTTRCServicesQueryRequest(NodeName, Token.AccessToken);
+                MQTTRCServicesQueryRequest reg = new MQTTRCServicesQueryRequest(NodeName, null, Token.AccessToken);
                 PublishAsyncClient(RCPublicTopic, JsonConvert.SerializeObject(reg));
             }
         }
