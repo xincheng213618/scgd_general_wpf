@@ -342,7 +342,34 @@ namespace ColorVision.Device.Camera
             var model = ServiceManager.GetInstance().BatchSave(SerialNumber);
 
             MsgSend msg;
-            if (Config.IsExpThree)
+
+            if((!Config.IsExpThree) && (Config.CameraType == CameraType.CV_Q || Config.CameraType ==CameraType.MIL_CL ))
+            {
+                List<Dictionary<string, object>> Param = new List<Dictionary<string, object>>();
+                foreach (var item in Config.CFW.ChannelCfgs)
+                {
+                    Dictionary<string, object> keyValuePairs = new Dictionary<string, object>();
+                    keyValuePairs.Add("eImgChlType", (int)item.Chtype);
+                    keyValuePairs.Add("nPort", item.Cfwport);
+
+                    if (item.Chtype == ImageChannelType.Gray_X)
+                        keyValuePairs.Add("dExp", Config.ExpTime);
+                    if (item.Chtype == ImageChannelType.Gray_Y)
+                        keyValuePairs.Add("dExp", Config.ExpTime);
+                    if (item.Chtype == ImageChannelType.Gray_Z)
+                        keyValuePairs.Add("dExp", Config.ExpTime);
+
+                    Param.Add(keyValuePairs);
+                }
+
+                msg = new MsgSend
+                {
+                    EventName = "GetData",
+                    Params = new Dictionary<string, object>() { { "nBatchID", model.Id }, { "Param", Param }, { "gain", gain } }
+                };
+
+            }
+            else if (Config.IsExpThree)
             {
                 List<Dictionary<string,object>> Param = new List<Dictionary<string,object>>();
 
