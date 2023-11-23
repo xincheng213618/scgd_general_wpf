@@ -31,6 +31,8 @@ namespace cvColorVision
         HK_CXP,
         [Description("LV_MIL_CL")]
         LV_MIL_CL,
+        [Description("CV_MIL_CL")]
+        CV_MIL_CL,
         [Description("MIL_CXP_VIDEO")]
         MIL_CXP_VIDEO,
         [Description("CameraType_Total")]

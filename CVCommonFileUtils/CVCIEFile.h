@@ -54,7 +54,7 @@ EXPORTC MYDLL int STDCALL WriteCVCIE(char* cieFileName, CVCIEFileInfo* fileInfo)
 * 返回值:
 * 0 : 成功
  -1 : 文件头非法
- -2 : 文件版本非法
+   -2 : 文件版本非法
  -999 : 文件不存在
 */
 EXPORTC MYDLL int STDCALL ReadCVCIEHeader(char* cieFileName, CVCIEFileInfo* fileInfo);

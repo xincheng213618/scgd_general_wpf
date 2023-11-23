@@ -60,6 +60,8 @@ namespace ColorVision.Device.Camera
             {
                 ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
                                                   select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
+
+
             };
 
 
@@ -74,6 +76,14 @@ namespace ColorVision.Device.Camera
                                                           select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
                         ComboxCameraChannel.SelectedValue = ImageChannel.One;
                     }
+                    else if (type == CameraType.CV_Q || type == CameraType.CV_MIL_CL)
+                    {
+                        ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
+                                                          where e1 != ImageChannel.One
+                                                          select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
+                        ComboxCameraChannel.SelectedValue = ImageChannel.Three;
+                    }
+
                     else
                     {
                         ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
