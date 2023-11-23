@@ -81,8 +81,9 @@
 
                     <MenuItem Header="{x:Static resx:Resource.MenuHelp}">
                         <MenuItem Header="打开日志(_L)"  Click="Log_Click"/>
-                        <MenuItem Header="打开配置文件(_S)"  Click="Setting_Click"/>
                         <MenuItem Header="打开日志文件夹(_F)"  Click="LogF_Click"/>
+                        <MenuItem Header="打开配置文件(_S)"  Click="Setting_Click"/>
+                        <MenuItem Header="打开配置文件夹(_F)" Click="SettingF_Click"/>
                         <Separator/>
                         <MenuItem Header="{x:Static resx:Resource.MenuUpdate}" Click="Update_Click"/>
                         <MenuItem Header="我的许可证(_R)"  Click="License_Click"/>

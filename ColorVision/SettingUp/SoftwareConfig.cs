@@ -8,6 +8,7 @@ using ColorVision.Templates;
 using ColorVision.User;
 using System;
 using System.Collections.ObjectModel;
+using System.Reflection;
 using System.Text.Json.Serialization;
 
 namespace ColorVision
@@ -46,7 +47,7 @@ namespace ColorVision
         }
 
 
-        public string Version { get; set; } = "1.0";
+        public static string Version { get => System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString() ?? "1.0"; } 
         public bool IsUseMySql { get => _IsUseMySql; set { _IsUseMySql = value; NotifyPropertyChanged(); UseMySqlChanged?.Invoke(value); } }
         private bool _IsUseMySql = true;
 

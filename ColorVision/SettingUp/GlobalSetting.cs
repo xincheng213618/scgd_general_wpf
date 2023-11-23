@@ -6,6 +6,7 @@ using log4net;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -36,10 +37,25 @@ namespace ColorVision
         private static readonly object _locker = new();
         public static GlobalSetting GetInstance() { lock (_locker) { return _instance ??= new GlobalSetting(); } }
         internal static readonly ILog log = LogManager.GetLogger(typeof(GlobalSetting));
+        public string SoftwareConfigFileName { get; set; }
+        public string MQTTMsgRecordsFileName { get; set; }
 
         public GlobalSetting()
         {
-            SoftwareConfigFileName = AppDomain.CurrentDomain.BaseDirectory + GlobalConst.SoftwareConfigFileName;
+            if (Directory.Exists("Config"))
+            {
+                SoftwareConfigFileName = AppDomain.CurrentDomain.BaseDirectory + GlobalConst.SoftwareConfigFileName;
+                MQTTMsgRecordsFileName = GlobalConst.MQTTMsgRecordsFileName;
+            }
+            else
+            {
+                string DirectoryPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\ColorVision\\";
+                if (!Directory.Exists(DirectoryPath))
+                    Directory.CreateDirectory(DirectoryPath);
+                SoftwareConfigFileName = DirectoryPath + GlobalConst.SoftwareConfigFileName;
+                MQTTMsgRecordsFileName = DirectoryPath + GlobalConst.MQTTMsgRecordsFileName;
+            }
+
             SoftwareConfigLazy = new Lazy<SoftwareConfig>(() =>
             {
                 SoftwareConfig config = ReadConfig<SoftwareConfig>(SoftwareConfigFileName);
@@ -61,8 +77,6 @@ namespace ColorVision
                     return new SoftwareConfig();
                 }
             });
-            SoftwareConfig.Version = System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString() ?? "1.0";
-
             AppDomain.CurrentDomain.ProcessExit += (s, e) =>
             {
                 SaveSoftwareConfig();
@@ -80,7 +94,6 @@ namespace ColorVision
         [JsonIgnore]
         public PerformanceControl PerformanceControl { get => PerformanceControlLazy.Value; }
         
-        public string SoftwareConfigFileName { get; set; }
 
         readonly Lazy<SoftwareConfig> SoftwareConfigLazy;
 
@@ -111,7 +124,7 @@ namespace ColorVision
                 item.UserPwd = Cryptography.AESEncrypt(item.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
             }
 
-            WriteConfig(GlobalConst.SoftwareConfigFileName, SoftwareConfig);
+            WriteConfig(SoftwareConfigFileName, SoftwareConfig);
             SoftwareConfig.MySqlConfig.UserPwd = Temp0;
             SoftwareConfig.MQTTConfig.UserPwd = Temp1;
             SoftwareConfig.UserConfig.UserPwd = Temp2;

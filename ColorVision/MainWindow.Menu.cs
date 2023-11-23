@@ -25,6 +25,7 @@ using ColorVision.Themes;
 using System.Globalization;
 using System.Threading;
 using ColorVision.Extension;
+using log4net.Appender;
 
 namespace ColorVision
 {
@@ -310,6 +311,11 @@ namespace ColorVision
             {
                 Process.Start("explorer.exe", $"{Path.GetDirectoryName(fileAppender.File)}");
             }
+        }
+
+        private void SettingF_Click(object sender, RoutedEventArgs e)
+        {
+            Process.Start("explorer.exe", $"{Path.GetDirectoryName(GlobalSetting.GetInstance().SoftwareConfigFileName)}");
         }
         private void Log_Click(object sender, RoutedEventArgs e)
         {

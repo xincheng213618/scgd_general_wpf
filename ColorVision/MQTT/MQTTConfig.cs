@@ -11,13 +11,14 @@ namespace ColorVision.MQTT
     public class MQTTSetting : ViewModelBase
     {
         private static readonly object _locker = new();
+        private  static string MQTTMsgRecordsFileName { get => GlobalSetting.GetInstance().MQTTMsgRecordsFileName; }
         public MQTTSetting()
         {
-            if (File.Exists(GlobalConst.MQTTMsgRecordsFileName))
+            if (File.Exists(MQTTMsgRecordsFileName))
             {
                 try
                 {
-                    MsgRecords = JsonConvert.DeserializeObject<ObservableCollection<MsgRecord>>(File.ReadAllText(GlobalConst.MQTTMsgRecordsFileName)) ?? new ObservableCollection<MsgRecord>();
+                    MsgRecords = JsonConvert.DeserializeObject<ObservableCollection<MsgRecord>>(File.ReadAllText(MQTTMsgRecordsFileName)) ?? new ObservableCollection<MsgRecord>();
                 }
                 catch
                 {
@@ -55,7 +56,7 @@ namespace ColorVision.MQTT
                     Formatting = Formatting.Indented
                 };
                 string jsonString = JsonConvert.SerializeObject(MsgRecords, settings);
-                File.WriteAllText(GlobalConst.MQTTMsgRecordsFileName, jsonString);
+                File.WriteAllText(MQTTMsgRecordsFileName, jsonString);
             };
         }
         /// <summary>
