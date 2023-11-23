@@ -4,7 +4,7 @@
     {
         Camera = 1,
         PG = 2,
-        Spectrum = 3,
+        Spectum = 3,
         SMU = 4,
         Sensor = 5,
         FileServer = 6,

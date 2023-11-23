@@ -125,7 +125,7 @@ namespace ColorVision.Services
                         if (sysResourceModel != null)
                             serviceTerminal.AddChild(new DevicePG(sysResourceModel));
                         break;
-                    case ServiceType.Spectrum:
+                    case ServiceType.Spectum:
                         deviceConfig = new ConfigSpectrum
                         {
                             ID = TextBox_Code.Text,
