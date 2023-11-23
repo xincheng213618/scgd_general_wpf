@@ -16,7 +16,8 @@ namespace ColorVision.Device.Camera
     {
         public DeviceServiceCamera DeviceService { get; set; }
 
-        public CameraDisplayControl Control { get; set; }
+
+        readonly Lazy<CameraDisplayControl> ControlLazy;
 
         public ImageView View { get; set; }
 
@@ -32,8 +33,6 @@ namespace ColorVision.Device.Camera
             {
                 View.OpenImage(e);
             };
-            Control = new CameraDisplayControl(this);
-
             if (Application.Current.TryFindResource("DrawingImageCamera") is DrawingImage  drawingImage)
                 Icon = drawingImage;
 
@@ -45,9 +44,7 @@ namespace ColorVision.Device.Camera
             };
             View.View.Title = "相机视图";
             View.View.Icon = Icon;
-
-
-
+            ControlLazy = new Lazy<CameraDisplayControl>(() => new CameraDisplayControl(this));
         }
 
         public override void Dispose()
@@ -62,6 +59,6 @@ namespace ColorVision.Device.Camera
         public override UserControl GetDeviceControl() => new DeviceCameraControl(this);
         public override UserControl GetDeviceInfo() => new DeviceCameraControl(this, false);
 
-        public override UserControl GetDisplayControl() => Control;
+        public override UserControl GetDisplayControl() => ControlLazy.Value;
     }
 }

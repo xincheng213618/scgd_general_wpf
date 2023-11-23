@@ -150,35 +150,31 @@ namespace ColorVision
                 await Task.Delay(200);
             }
 
-
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                try
-                {
-                    if (!GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting.IsDeFaultOpenService)
-                    {
-                        TextBoxMsg.Text += $"{Environment.NewLine}初始化服务";
-                        new WindowDevices() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-                    }
-                    else
-                    {
-                        TextBoxMsg.Text += $"{Environment.NewLine}自动配置服务中";
-                        ServiceManager.GetInstance().GenContorl();
-                    }
-                }
-                catch(Exception ex)
-                {
-                    Dispatcher.BeginInvoke(() => MessageBox.Show("窗口创建错误:" + ex.Message));
-                    Environment.Exit(-1);
-                }
-            });
             await Task.Delay(100);
             Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}正在加载工程"; });
             await Task.Delay(200);
             Application.Current.Dispatcher.Invoke(() =>
             {
-
+                ServiceManager ServiceManager = ServiceManager.GetInstance();
                 MainWindow mainWindow = new MainWindow();
+                try
+                {
+                    if (!GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting.IsDeFaultOpenService)
+                    {
+                        TextBoxMsg.Text += $"{Environment.NewLine}初始化服务";
+                        new WindowDevices() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                    }
+                    else
+                    {
+                        TextBoxMsg.Text += $"{Environment.NewLine}自动配置服务中";
+                        ServiceManager.GenContorl();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("窗口创建错误:" + ex.Message);
+                    Environment.Exit(-1);
+                }
                 mainWindow.Show();
                 this.Close();
             });

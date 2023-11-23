@@ -71,12 +71,13 @@
 
                     <Border Margin="0,5" Style="{StaticResource BorderModuleArea}">
                         <StackPanel>
-                            <GroupBox Header="模式" Margin="5">
-                                <StackPanel  Margin="5">
-                                    <UniformGrid Columns="3" Margin="5">
-                                        <RadioButton x:Name="RadioButtonMode1" Content="手动布点" IsChecked="True"   Checked="RadioButtonMode1_Checked"/>
-                                        <RadioButton x:Name="RadioButtonMode2" Content="自动布点" Checked="RadioButtonMode2_Checked"/>
-                                        <RadioButton x:Name="RadioButtonMode3" Content="导入布点"  Checked="RadioButtonMode3_Checked"/>
+                            <GroupBox Header="布点模式" Margin="5">
+                                <StackPanel  >
+                                    <UniformGrid Columns="2" >
+                                        <RadioButton x:Name="RadioButtonMode1" Margin="2" HorizontalAlignment="Left" Content="配置参数" IsChecked="True"   Checked="RadioButtonMode1_Checked"/>
+                                        <RadioButton x:Name="RadioButtonMode4" HorizontalAlignment="Left"  Content="图像添加"  Checked="RadioButtonMode4_Checked"/>
+                                        <RadioButton x:Name="RadioButtonMode2" HorizontalAlignment="Left"  Content="自动布点" Checked="RadioButtonMode2_Checked"/>
+                                        <RadioButton x:Name="RadioButtonMode3" HorizontalAlignment="Left"  Content="导入布点"  Checked="RadioButtonMode3_Checked"/>
                                     </UniformGrid>
                                 </StackPanel>
                             </GroupBox>
@@ -372,9 +373,6 @@
                     <ToolBar.Resources>
                         <ResourceDictionary Source="/ColorVision.Util;component/Themes/Icons.xaml"/>
                     </ToolBar.Resources>
-                    <ToggleButton x:Name="ToggleButtonMouse"  IsChecked="{Binding  ShowImageInfo}"  Margin="4,0,1,0">
-                        <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageMouse}"/>
-                    </ToggleButton>
                     <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding Activate}"  Margin="1,0" ToolTip="可以按下Ctrl缩放和移动图像">
                         <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImagedrag}"/>
                     </ToggleButton>

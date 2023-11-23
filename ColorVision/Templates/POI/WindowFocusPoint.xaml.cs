@@ -821,6 +821,11 @@ namespace ColorVision.Templates
                     {
                         if (drawingVisual is DrawingVisual visual)
                             SelectDrawingVisual = visual;
+
+                         if (SelectDrawingVisual is DrawingVisualCircle Circl)
+                        {
+                            Circl.IsDrawing = true;
+                        }     
                     }
                 }
             }
@@ -915,7 +920,15 @@ namespace ColorVision.Templates
 
                 }
                 drawCanvas.ReleaseMouseCapture();
+
+                if (SelectDrawingVisual is DrawingVisualCircle circle)
+                {
+                    circle.IsDrawing = false;
+                    circle.Render();
+                }
                 SelectDrawingVisual = null;
+
+
             }
         }
 
@@ -1673,6 +1686,12 @@ namespace ColorVision.Templates
                     OldWindowStatus.Parent.Children.Add(ImageContentGrid);
                 }
             }
+        }
+
+        private void RadioButtonMode4_Checked(object sender, RoutedEventArgs e)
+        {
+            ToolBarTop.Activate = true;
+            ToolBarTop.DrawCircle = true;
         }
     }
 

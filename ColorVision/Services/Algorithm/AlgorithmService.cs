@@ -291,6 +291,10 @@ namespace ColorVision.Services.Algorithm
                 SerialNumber = SerialNumber,
                 Params = new Dictionary<string, object>() {{ "nBatchID", -1 } }
             };
+            msg.Params.Add("bSQL", 1);
+            msg.Params.Add("MName", "default1");
+
+
             msg.Params.Add("LedNums_X", ghostParam.Ghost_cols);
             msg.Params.Add("LedNums_Y", ghostParam.Ghost_rows);
 
