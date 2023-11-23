@@ -5,7 +5,6 @@
 #include "zlib.h"
 #include <fstream>
 #include <iostream>
-#include <opencv2/opencv.hpp>
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
@@ -59,7 +58,7 @@ int compressToGzip(const char* input, int inputSize, char* output, int outputSiz
 
 
 
-int CVWrite(string path , cv::Mat src, int compression) {
+int CVWrite(char* path , HImage src, int compression) {
     ofstream outFile(path, ios::out | ios::binary);
 
     CustomFileHeader fileHeader;
@@ -72,8 +71,13 @@ int CVWrite(string path , cv::Mat src, int compression) {
     CustomMatFile grifMat;
     grifMat.rows = src.rows;
     grifMat.cols = src.cols;
-    grifMat.type = src.type();
-    grifMat.srcLen = src.total() * src.elemSize();
+    
+    grifMat.type = src.type;
+
+    int channels = ((((src.type) & ((512 - 1) << 3)) >> 3) + 1);
+    int elemSize = (((((src.type) & ((512 - 1) << 3)) >> 3) + 1) * ((0x28442211 >> ((src.type) & ((1 << 3) - 1)) * 4) & 15));
+
+    grifMat.srcLen = static_cast<long long>(src.rows * src.cols * channels * elemSize);
     grifMat.compression = compression;
 
     outFile.write((char*)&grifMat, sizeof(grifMat));
@@ -81,7 +85,7 @@ int CVWrite(string path , cv::Mat src, int compression) {
     if (grifMat.compression == 1) {
 
 
-        const char* istream = (char*)src.data;
+        const char* istream = src.pData;
         uLongf srcLen = (uLongf)grifMat.srcLen;      // +1 for the trailing `\0`
         uLongf destLen = compressBound(srcLen); // this is how you should estimate size 
         char* ostream = (char*)malloc(destLen);
@@ -104,7 +108,7 @@ int CVWrite(string path , cv::Mat src, int compression) {
     }
     else if (grifMat.compression == 0)
     {
-        outFile.write((char*)src.data, grifMat.srcLen);
+        outFile.write((char*)src.pData, grifMat.srcLen);
     }
     outFile.close();
     return 0;
@@ -112,18 +116,17 @@ int CVWrite(string path , cv::Mat src, int compression) {
 }
 
 
-
- cv::Mat CVRead(string path) {
+int CVRead(char* path, HImage hImag) {
     ifstream inFile(path, ios::in | ios::binary); //二进制读方式打开
     if (!inFile) {
-        return cv::Mat::zeros(0, 0, CV_8UC3);
+        return -1;
     }
     CustomFileHeader header;
     inFile.read((char*)&header, sizeof(CustomFileHeader));
     unsigned char expectedName[6] = { 0x43, 0x75, 0x73, 0x74, 0x6f, 0x6d };
     if (memcmp(header.Name, expectedName, sizeof(header.Name))!=0)
     {
-        return cv::Mat::zeros(0, 0, CV_8UC3);
+        return -2;
     }
     inFile.seekg(header.Matoffset, ios::beg);
 
@@ -140,18 +143,25 @@ int CVWrite(string path , cv::Mat src, int compression) {
         uLongf srcLen = (uLongf)grifMat.srcLen;
 
         int des = uncompress((Bytef*)o2stream, &srcLen, (Bytef*)i2stream, destLen2);
-        return cv::Mat(grifMat.rows, grifMat.cols, grifMat.type, o2stream);
+        hImag.cols = grifMat.rows;
+        hImag.cols = grifMat.cols;
+        hImag.type = grifMat.type;
+        hImag.pData = o2stream;
+        return 0;
     }
     else if (grifMat.compression == 0)
     {
         char* data = new char[grifMat.srcLen];
         // Read the pixels from the stringstream
         inFile.read(data, grifMat.srcLen);
-        cv::Mat mat1 = cv::Mat(grifMat.rows, grifMat.cols, grifMat.type, data);
-        (((((grifMat.type) & ((512 - 1) << 3)) >> 3) + 1) * ((0x28442211 >> ((grifMat.type) & ((1 << 3) - 1)) * 4) & 15));
-        return mat1;
+
+        hImag.cols = grifMat.rows;
+        hImag.cols = grifMat.cols;
+        hImag.type = grifMat.type;
+        hImag.pData = data;
+        return 0;
     }
-    return cv::Mat::zeros(0, 0, CV_8UC3);
+    return -1;
 }
 
 
@@ -170,14 +180,3 @@ bool IsCustomFile(string path) {
     return false;
 }
 
-
-void OsWrite(std::string path, cv::Mat src) {
-    ofstream outFile1(path, ios::out | ios::binary);
-    outFile1.write((char*)src.data, src.total() * src.elemSize());
-    outFile1.close();
-}
-void OsWrite1(std::string path, cv::Mat src) {
-    ofstream outFile1(path, ios::out | ios::binary);
-    outFile1 << src;
-    outFile1.close();
-}
