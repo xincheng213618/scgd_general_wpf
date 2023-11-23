@@ -156,6 +156,12 @@ namespace ColorVision
             if (!string.IsNullOrWhiteSpace(DirectoryName) && !Directory.Exists(DirectoryName))
                 Directory.CreateDirectory(DirectoryName);
 
+            if (File.Exists(fileName))
+            {
+                FileInfo fileInfo = new FileInfo(fileName);
+                fileInfo.IsReadOnly = false;
+            }
+
             string jsonString = JsonSerializer.Serialize(t, jsonSerializerOptions);
             File.WriteAllText(fileName, jsonString);
         }

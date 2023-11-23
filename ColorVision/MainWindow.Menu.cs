@@ -148,7 +148,6 @@ namespace ColorVision
                 {
                     item.Tag = $"{poiParam.Width}*{poiParam.Height}{(GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql?"": $"_{poiParam.PoiPoints.Count}")}";
                 }
-
                 windowTemplate.ListConfigs.Add(item);
             }
             windowTemplate.ShowDialog();

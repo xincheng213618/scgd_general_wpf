@@ -50,6 +50,9 @@ namespace ColorVision.Solution
             OpenSolution(CurrentSolution.FullName);
         }
 
+
+
+
         public bool OpenSolution(string SolutionFullPath)
         {
             if (string.IsNullOrWhiteSpace(SolutionFullPath))
