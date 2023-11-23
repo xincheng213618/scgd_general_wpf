@@ -32,23 +32,13 @@ namespace ColorVision.Services.Device.Camera
         [JsonIgnore]
         public bool IsExpThree
         {
-            get
-            {
-                if (Channel == ImageChannel.Three && CameraType == CameraType.CV_Q)
-                    return true;
-                return false;
-            }
+            get => CameraType == CameraType.CV_Q || CameraType == CameraType.CV_MIL_CL;
             set => NotifyPropertyChanged();
         }
         [JsonIgnore]
         public bool IsChannelThree
         {
-            get
-            {
-                if (Channel == ImageChannel.Three)
-                    return true;
-                return false;
-            }
+            get => Channel == ImageChannel.Three;
             set => NotifyPropertyChanged();
         }
 

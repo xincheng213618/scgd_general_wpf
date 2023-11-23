@@ -410,6 +410,17 @@ namespace ColorVision.Device.Camera
                 Helpers.SendCommand(button, msgRecord);
             }
         }
+
+        private void PreviewSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (Service.DeviceStatus == DeviceStatus.Opened)
+            {
+                if (Service.CurrentTakeImageMode == TakeImageMode.Live)
+                {
+                    Service.SetExp();
+                }
+            }
+        }
     }
 }
 

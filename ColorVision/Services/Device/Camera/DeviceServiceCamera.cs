@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Windows;
 using ColorVision.Extension;
+using System.Windows.Media.Media3D;
 
 namespace ColorVision.Device.Camera
 {
@@ -324,9 +325,11 @@ namespace ColorVision.Device.Camera
             };
             PublishAsyncClient(msg);
         }
+        public TakeImageMode CurrentTakeImageMode { get; set; }
 
         public MsgRecord Open(string CameraID, TakeImageMode TakeImageMode, int ImageBpp)
         {
+            CurrentTakeImageMode = TakeImageMode;
             MsgSend msg = new MsgSend
             {
                 EventName = "Open",
@@ -335,6 +338,62 @@ namespace ColorVision.Device.Camera
 
             return PublishAsyncClient(msg);
         }
+
+        public MsgRecord SetExp()
+        {
+            var Params = new Dictionary<string, object>() { };
+
+            MsgSend msg = new MsgSend
+            {
+                EventName = "SetParam",
+                Params = Params
+            };
+
+
+
+            if (Config.IsExpThree)
+            {
+
+                var FunParams = new Dictionary<string, object>() { };
+                FunParams.Add("nIndex",0);
+                FunParams.Add("dExp", Config.ExpTimeR);
+
+                var FunParams1 = new Dictionary<string, object>() { };
+                FunParams1.Add("nIndex", 1);
+                FunParams1.Add("dExp", Config.ExpTimeG);
+
+                var FunParams2 = new Dictionary<string, object>() { };
+                FunParams2.Add("nIndex", 2);
+                FunParams2.Add("dExp", Config.ExpTimeB);
+
+                var FunParamss = new List<Dictionary<string, object>>();
+                FunParamss.Add(FunParams);
+                FunParamss.Add(FunParams1);
+                FunParamss.Add(FunParams2);
+
+                var Func = new List<ParamFunction>();
+                foreach (var item in FunParamss)
+                {
+                    var Fun = new ParamFunction() { Name = "CM_SetExpTimeEx", Params = item };
+                    Func.Add(Fun);
+                }
+                Params.Add("Func", Func);
+            }
+            else
+            {
+
+                var FunParams = new Dictionary<string, object>() { };
+                FunParams.Add("dExp", Config.ExpTime);
+
+                var Fun = new ParamFunction() { Name = "CM_SetExpTime", Params = FunParams };
+                var Func = new List<ParamFunction>();
+                Func.Add(Fun);
+                Params.Add("Func", Func);
+            }
+
+            return PublishAsyncClient(msg);
+        }
+
 
         public MsgRecord GetData(double expTime, double gain)
         {
@@ -390,6 +449,7 @@ namespace ColorVision.Device.Camera
         }
 
         public MsgRecord GetAllCameraID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });
+
 
 
         public MsgRecord AutoFocus()
