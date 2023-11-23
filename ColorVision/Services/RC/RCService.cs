@@ -122,11 +122,18 @@ namespace ColorVision.RC
                                 }
                             }
                             break;
-                        case MQTTNodeServiceEventEnum.Event_ServicesQuery:
+                        case MQTTNodeServiceEventEnum.Event_QueryServices:
                             MQTTRCServicesQueryResponse respQurey = JsonConvert.DeserializeObject<MQTTRCServicesQueryResponse>(Msg);
                             if (respQurey != null)
                             {
                                 UpdateServiceStatus(respQurey.Data);
+                            }
+                            break;
+                        case MQTTNodeServiceEventEnum.Event_QueryServiceStatus:
+                            MQTTRCServiceStatusQueryResponse respStatus = JsonConvert.DeserializeObject<MQTTRCServiceStatusQueryResponse>(Msg);
+                            if (respStatus != null)
+                            {
+                                UpdateServiceStatus(respStatus.Data);
                             }
                             break;
                         case MQTTNodeServiceEventEnum.Event_NotRegist:
@@ -144,6 +151,61 @@ namespace ColorVision.RC
             return Task.CompletedTask;
         }
 
+        private static MQTTNodeServiceStatus GetService(string serviceType, List<MQTTNodeServiceStatus> data)
+        {
+            MQTTNodeServiceStatus result = null;
+            foreach (var item in data)
+            {
+                if (item.ServiceType == serviceType)
+                {
+                    result = item;
+                    break;
+                }
+            }
+
+            return result;
+        }
+
+        public static void UpdateServiceStatus(List<MQTTNodeServiceStatus> data)
+        {
+            foreach (var serviceKind in ServiceManager.GetInstance().MQTTServices)
+            {
+                MQTTNodeServiceStatus ss = GetService(serviceKind.ServiceType.ToString(), data);
+                if(serviceKind.ServiceType.ToString() == ServiceType.Spectum.ToString())
+                {
+                    log.Debug(serviceKind.ServiceType.ToString());
+                }
+                //if (serviceKind.ServiceType.ToString() == ServiceType.Algorithm.ToString())
+                //    continue;
+                //foreach (var item in data)
+                {
+                    if (ss !=null)
+                    {
+                        foreach (var baseObject in serviceKind.VisualChildren)
+                        {
+                            if (baseObject is ServiceTerminal serviceTerminal)
+                            {
+                                foreach (var devNew in ss.DeviceList)
+                                {
+                                    foreach (var dev in serviceTerminal.VisualChildren)
+                                    {
+                                        if (dev is BaseChannel baseChannel && baseChannel.GetConfig() is BaseDeviceConfig baseDeviceConfig)
+                                        {
+                                            if(devNew.Code == baseDeviceConfig.Code)
+                                            {
+                                                baseDeviceConfig.IsAlive = true;
+                                                baseDeviceConfig.LastAliveTime = DateTime.Now;
+                                            }
+                                        }
+                                    }
+                                }
+
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         public static void UpdateServiceStatus(Dictionary<string, List<MQTTNodeService>> data)
         {
@@ -255,6 +317,15 @@ namespace ColorVision.RC
             }
         }
 
+        public void QueryServiceStatus()
+        {
+            if (Token != null)
+            {
+                MQTTRCServiceStatusQueryRequest reg = new MQTTRCServiceStatusQueryRequest(NodeName, null, Token.AccessToken);
+                PublishAsyncClient(RCPublicTopic, JsonConvert.SerializeObject(reg));
+            }
+        }
+
         public void PublishAsyncClient(string topic, string json)
         {
             Task.Run(() => MQTTControl.PublishAsyncClient(topic, json, false));
@@ -271,7 +342,7 @@ namespace ColorVision.RC
 
             PublishAsyncClient(RCHeartbeatTopic, serviceHeartbeat);
 
-            QueryServices();
+            QueryServiceStatus();
         }
 
         private bool DoRegist(RCServiceConfig cfg)
