@@ -69,7 +69,7 @@ int CVWrite(string path , cv::Mat src, int compression) {
     outFile.write((char*)&fileHeader, sizeof(fileHeader));
 
 
-    CustomMatFile grifMat;
+    CustomFile grifMat;
     grifMat.rows = src.rows;
     grifMat.cols = src.cols;
     grifMat.type = src.type();
@@ -127,8 +127,8 @@ int CVWrite(string path , cv::Mat src, int compression) {
     }
     inFile.seekg(header.Matoffset, ios::beg);
 
-    CustomMatFile grifMat;
-    inFile.read((char*)&grifMat, sizeof(CustomMatFile));
+    CustomFile grifMat;
+    inFile.read((char*)&grifMat, sizeof(CustomFile));
     if (grifMat.compression == 1)
     {
         char* i2stream = new char[grifMat.destLen];
@@ -148,7 +148,6 @@ int CVWrite(string path , cv::Mat src, int compression) {
         // Read the pixels from the stringstream
         inFile.read(data, grifMat.srcLen);
         cv::Mat mat1 = cv::Mat(grifMat.rows, grifMat.cols, grifMat.type, data);
-        (((((grifMat.type) & ((512 - 1) << 3)) >> 3) + 1) * ((0x28442211 >> ((grifMat.type) & ((1 << 3) - 1)) * 4) & 15));
         return mat1;
     }
     return cv::Mat::zeros(0, 0, CV_8UC3);

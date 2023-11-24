@@ -4,12 +4,12 @@
 #include <opencv2/opencv.hpp>
 
 #ifdef OPENCV_EXPORTS
-#define OPENCV_API __declspec(dllexport)
+#define COLORVISIONCORE_API __declspec(dllexport)
 #else
 #define OPENCV_API __declspec(dllimport)
 #endif
 
-typedef struct CustomMatFile
+typedef struct CustomFile
 {
     int rows;
     int cols;
@@ -17,7 +17,7 @@ typedef struct CustomMatFile
     int compression; //0,不压缩; 1,Zlib; 2,gz
     long long srcLen; //Mat.data 的长度
     long long destLen; //无压缩时，destLen =0;
-}CustomMatFile;
+}CustomFile;
 
 typedef struct  CustomFileHeader
 {
@@ -27,10 +27,10 @@ typedef struct  CustomFileHeader
 }CustomFileHeader;
 
 
-extern "C" OPENCV_API int CVWrite(std::string path, cv::Mat src, int compression = 0);
-extern OPENCV_API cv::Mat CVRead(std::string FileName);
-extern "C" OPENCV_API void OsWrite(std::string path, cv::Mat src);
-extern "C" OPENCV_API void OsWrite1(std::string path, cv::Mat src);
+extern "C" COLORVISIONCORE_API int CVWrite(std::string path, cv::Mat src, int compression = 0);
+extern COLORVISIONCORE_API cv::Mat CVRead(std::string FileName);
+extern "C" COLORVISIONCORE_API void OsWrite(std::string path, cv::Mat src);
+extern "C" COLORVISIONCORE_API void OsWrite1(std::string path, cv::Mat src);
 
 
 

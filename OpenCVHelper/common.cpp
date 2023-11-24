@@ -6,17 +6,17 @@
 InitialFrame initialFrame = NULL;
 UpdateFrame updateFrame = NULL;
 
-OPENCV_API void SetInitialFrame(InitialFrame fn)
+COLORVISIONCORE_API void SetInitialFrame(InitialFrame fn)
 {
 	initialFrame = fn;
 }
 
-OPENCV_API void SetUpdateFrame(UpdateFrame fn)
+COLORVISIONCORE_API void SetUpdateFrame(UpdateFrame fn)
 {
 	updateFrame = fn;
 }
 
-OPENCV_API int ReadCVFile(char* FilePath)
+COLORVISIONCORE_API int ReadCVFile(char* FilePath)
 {
 	cv::Mat mat = CVRead(FilePath);
 	if (!mat.empty()) {
@@ -46,7 +46,7 @@ std::string UTF8ToGB(const char* str)
 }
 
 
-OPENCV_API int ReadVideoTest(char* FilePath)
+COLORVISIONCORE_API int ReadVideoTest(char* FilePath)
 {
 	cv::Mat frame;
 	cv::VideoCapture cap = cv::VideoCapture("D:\\1.mp4");

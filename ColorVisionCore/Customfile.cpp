@@ -58,7 +58,7 @@ int compressToGzip(const char* input, int inputSize, char* output, int outputSiz
 
 
 
-int CVWrite(char* path , HImage src, int compression) {
+int CVWrite(const char* path , HImage src, int compression) {
     ofstream outFile(path, ios::out | ios::binary);
 
     CustomFileHeader fileHeader;
@@ -68,25 +68,21 @@ int CVWrite(char* path , HImage src, int compression) {
     outFile.write((char*)&fileHeader, sizeof(fileHeader));
 
 
-    CustomMatFile grifMat;
-    grifMat.rows = src.rows;
-    grifMat.cols = src.cols;
-    
-    grifMat.type = src.type;
+    CustomFile img;
+    img.rows = src.rows;
+    img.cols = src.cols; 
+    img.channels = src.channels;
+    img.depth = src.depth;
+    img.srcLen = src.rows * src.cols * src.elemSize();
+    img.compression = compression;
 
-    int channels = ((((src.type) & ((512 - 1) << 3)) >> 3) + 1);
-    int elemSize = (((((src.type) & ((512 - 1) << 3)) >> 3) + 1) * ((0x28442211 >> ((src.type) & ((1 << 3) - 1)) * 4) & 15));
+    outFile.write((char*)&img, sizeof(img));
 
-    grifMat.srcLen = static_cast<long long>(src.rows * src.cols * channels * elemSize);
-    grifMat.compression = compression;
-
-    outFile.write((char*)&grifMat, sizeof(grifMat));
-
-    if (grifMat.compression == 1) {
+    if (img.compression == 1) {
 
 
         const char* istream = src.pData;
-        uLongf srcLen = (uLongf)grifMat.srcLen;      // +1 for the trailing `\0`
+        uLongf srcLen = (uLongf)img.srcLen;      // +1 for the trailing `\0`
         uLongf destLen = compressBound(srcLen); // this is how you should estimate size 
         char* ostream = (char*)malloc(destLen);
         int res = compress((Bytef*)ostream, &destLen, (Bytef*)istream, srcLen);
@@ -103,12 +99,12 @@ int CVWrite(char* path , HImage src, int compression) {
 
         //int b = compressToGzip(istream, srcLen, ostream1, destLen1);
 
-        grifMat.destLen = destLen;
-        outFile.write(ostream, grifMat.destLen);
+        img.destLen = destLen;
+        outFile.write(ostream, img.destLen);
     }
-    else if (grifMat.compression == 0)
+    else if (img.compression == 0)
     {
-        outFile.write((char*)src.pData, grifMat.srcLen);
+        outFile.write((char*)src.pData, img.srcLen);
     }
     outFile.close();
     return 0;
@@ -116,7 +112,7 @@ int CVWrite(char* path , HImage src, int compression) {
 }
 
 
-int CVRead(char* path, HImage hImag) {
+int CVRead(const char* path, HImage* hImag) {
     ifstream inFile(path, ios::in | ios::binary); //二进制读方式打开
     if (!inFile) {
         return -1;
@@ -130,35 +126,37 @@ int CVRead(char* path, HImage hImag) {
     }
     inFile.seekg(header.Matoffset, ios::beg);
 
-    CustomMatFile grifMat;
-    inFile.read((char*)&grifMat, sizeof(CustomMatFile));
-    if (grifMat.compression == 1)
+    CustomFile img;
+    inFile.read((char*)&img, sizeof(CustomFile));
+    if (img.compression == 1)
     {
-        char* i2stream = new char[grifMat.destLen];
+        char* i2stream = new char[img.destLen];
         // Read the pixels from the stringstream
-        inFile.read(i2stream, grifMat.destLen);
+        inFile.read(i2stream, img.destLen);
 
-        char* o2stream = (char*)malloc(grifMat.srcLen);
-        uLongf destLen2 = (uLongf)grifMat.destLen;
-        uLongf srcLen = (uLongf)grifMat.srcLen;
+        char* o2stream = (char*)malloc(img.srcLen);
+        uLongf destLen2 = (uLongf)img.destLen;
+        uLongf srcLen = (uLongf)img.srcLen;
 
         int des = uncompress((Bytef*)o2stream, &srcLen, (Bytef*)i2stream, destLen2);
-        hImag.cols = grifMat.rows;
-        hImag.cols = grifMat.cols;
-        hImag.type = grifMat.type;
-        hImag.pData = o2stream;
+        hImag->rows = img.rows;
+        hImag->cols = img.cols;
+        hImag->channels = img.channels;
+        hImag->depth = img.depth;
+        hImag->pData = o2stream;
         return 0;
     }
-    else if (grifMat.compression == 0)
+    else if (img.compression == 0)
     {
-        char* data = new char[grifMat.srcLen];
+        char* data = new char[img.srcLen];
         // Read the pixels from the stringstream
-        inFile.read(data, grifMat.srcLen);
+        inFile.read(data, img.srcLen);
 
-        hImag.cols = grifMat.rows;
-        hImag.cols = grifMat.cols;
-        hImag.type = grifMat.type;
-        hImag.pData = data;
+        hImag->rows = img.rows;
+        hImag->cols = img.cols;
+        hImag->channels = img.channels;
+        hImag->depth = img.depth;
+        hImag->pData = data;
         return 0;
     }
     return -1;

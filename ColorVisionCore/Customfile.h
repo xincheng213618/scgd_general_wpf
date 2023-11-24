@@ -1,28 +1,32 @@
 #pragma once
 
 #ifdef COLORVISIONCORE_EXPORTS
-#define OPENCV_API __declspec(dllexport)
+#define COLORVISIONCORE_API __declspec(dllexport)
 #else
-#define OPENCV_API __declspec(dllimport)
+#define COLORVISIONCORE_API __declspec(dllimport)
 #endif
 
-struct HImage
+typedef struct HImage
 {
     int rows;
     int cols;
-    int type;
+    int channels;
+    int depth; //Bpp
+    int type()  const { return (((depth) & ((1 << 3) - 1)) + (((channels) - 1) << 3)); }
+    int elemSize() const { return  ((((((((depth) & ((1 << 3) - 1)) + (((channels)-1) << 3))) & ((512 - 1) << 3)) >> 3) + 1) * ((0x28442211 >> (((((depth) & ((1 << 3) - 1)) + (((channels)-1) << 3))) & ((1 << 3) - 1)) * 4) & 15)); }
     char* pData;
-};
+}HImage;
 
-typedef struct CustomMatFile
+typedef struct CustomFile
 {
     int rows;
     int cols;
-    int type;
+    int channels;
+    int depth;
     int compression; //0,不压缩; 1,Zlib; 2,gz
     long long srcLen; //Mat.data 的长度
     long long destLen; //无压缩时，destLen =0;
-}CustomMatFile;
+}CustomFile;
 
 typedef struct  CustomFileHeader
 {
@@ -33,10 +37,8 @@ typedef struct  CustomFileHeader
 
 
 
-
-
-extern "C" OPENCV_API int CVWrite(char* path, HImage src, int compression = 0);
-extern "C" OPENCV_API int CVRead(char* FileName, HImage src);
+extern "C" COLORVISIONCORE_API int CVWrite(const char* path, HImage src, int compression = 0);
+extern "C" COLORVISIONCORE_API int CVRead(const char* FileName, HImage* src);
 
 
 
