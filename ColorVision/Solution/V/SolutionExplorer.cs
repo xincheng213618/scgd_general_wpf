@@ -1,8 +1,13 @@
 ﻿using ColorVision.Device;
 using ColorVision.MVVM;
+using ColorVision.MySql.DAO;
+using ColorVision.Services.Algorithm;
 using ColorVision.Solution.V.Files;
 using ColorVision.Solution.V.Folders;
+using cvColorVision;
 using Org.BouncyCastle.Asn1.X509;
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Windows.Controls;
 
@@ -50,6 +55,29 @@ namespace ColorVision.Solution.V
 
         public void GeneralCVSln()
         {
+            HistoryFolder historyFolder = new HistoryFolder("历史记录");
+            var vhistoryFolder = new VFolder(historyFolder);
+            this.AddChild(vhistoryFolder);
+
+            List<string> strings = new List<string>() { "MTF", "SFR", "畸变", "灯光检测", "鬼影", "关注点" };
+            foreach (var item in strings)
+            {
+                HistoryFolder historyFolder1 = new HistoryFolder(item);
+                var vhistoryFolder1 = new VFolder(historyFolder1);
+                vhistoryFolder.AddChild(vhistoryFolder1);
+
+                AlgorithmMTFResult AlgorithmMTFResult = new AlgorithmMTFResult();
+                var results = AlgorithmMTFResult.GetAll();
+                foreach (var result in results)
+                {
+                    HistoryFolder historyresult = new HistoryFolder(new MTFResult(result).Batch.Name);
+                    var vhistoryFolder2 = new VFolder(historyresult);
+                    vhistoryFolder1.AddChild(vhistoryFolder2);
+                }
+                results.Clear();
+
+            }
+
             foreach (var item in DirectoryInfo.GetDirectories())
             {
                 BaseFolder folder = new BaseFolder(item);
@@ -58,9 +86,9 @@ namespace ColorVision.Solution.V
                 GeneralChild(vFolder, item);
             }
 
-            HistoryFolder historyFolder = new HistoryFolder("13124123");
-            var vFolder1 = new VFolder(historyFolder);
-            this.AddChild(vFolder1);
+
+
+
         }
 
         public static void GeneralChild(VObject vObject,DirectoryInfo directoryInfo)
