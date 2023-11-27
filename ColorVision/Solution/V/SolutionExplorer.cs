@@ -2,6 +2,7 @@
 using ColorVision.MVVM;
 using ColorVision.Solution.V.Files;
 using ColorVision.Solution.V.Folders;
+using Org.BouncyCastle.Asn1.X509;
 using System.IO;
 using System.Windows.Controls;
 
@@ -56,6 +57,10 @@ namespace ColorVision.Solution.V
                 this.AddChild(vFolder);
                 GeneralChild(vFolder, item);
             }
+
+            HistoryFolder historyFolder = new HistoryFolder("13124123");
+            var vFolder1 = new VFolder(historyFolder);
+            this.AddChild(vFolder1);
         }
 
         public static void GeneralChild(VObject vObject,DirectoryInfo directoryInfo)
