@@ -76,7 +76,7 @@ namespace ColorVision.Device.Camera
                                                           select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
                         ComboxCameraChannel.SelectedValue = ImageChannel.One;
                     }
-                    else if (type == CameraType.CV_Q || type == CameraType.CV_MIL_CL)
+                    else if (type == CameraType.CV_Q || type == CameraType.BV_Q || type == CameraType.BV_H)
                     {
                         ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
                                                           where e1 != ImageChannel.One
