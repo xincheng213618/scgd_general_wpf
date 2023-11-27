@@ -38,17 +38,21 @@ namespace ColorVision.Solution
             SolutionTreeView.ItemsSource = SolutionExplorers;
             IniCommand();
 
-            Task.Run(() => { Run(); });
+            Task.Run(async () => { RunAsync(); });
         }
 
-        public void Run()
+        public async Task RunAsync()
         {
-            SolutionManager = new SolutionManager();
-            TreeViewInitialized(SolutionManager.CurrentSolution.FullName);
-            SolutionManager.SolutionLoaded += (s, e) =>
+            await Task.Delay(100);
+            Application.Current.Dispatcher.Invoke(() =>
             {
+                SolutionManager = SolutionManager.GetInstance();
                 TreeViewInitialized(SolutionManager.CurrentSolution.FullName);
-            };
+                SolutionManager.SolutionLoaded += (s, e) =>
+                {
+                    TreeViewInitialized(SolutionManager.CurrentSolution.FullName);
+                };
+            });
         }
 
 

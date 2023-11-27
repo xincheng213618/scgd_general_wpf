@@ -109,18 +109,16 @@
                     <TranslateTransform />
                 </UIElement.RenderTransform>
                 <TabControl Style="{StaticResource TabControlBaseStyle}" TabStripPlacement="Bottom" >
-                    <TabItem Header="采集">
+                    <TabItem Header="采集" Width="150">
                         <ScrollViewer x:Name="ScrollViewerDisplay" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" >
                             <StackPanel x:Name="SPDisplay" >
-                                <Viewbox Width="{Binding ElementName=LeftMainContent,Path=ActualWidth}" >
-                                    <StackPanel x:Name="StackPanelMQTT" Width="300" Initialized="StackPanelMQTT_Initialized" >
-                                    </StackPanel>
-                                </Viewbox>
+                                <StackPanel x:Name="StackPanelMQTT" Initialized="StackPanelMQTT_Initialized" >
+                                </StackPanel>
                             </StackPanel>
                         </ScrollViewer>
 
                     </TabItem>
-                    <TabItem Header="工程">
+                    <TabItem Header="工程" Width="150">
                         <Solution:TreeViewControl  />
                     </TabItem>
                 </TabControl>

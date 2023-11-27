@@ -14,12 +14,12 @@
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </UserControl.Resources>
-    <Grid Width="300">
+    <Grid >
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <Grid x:Name="SoulutionButtonPanel1" Grid.Row="0" Width="300" Background="{DynamicResource GlobalBackgroundBrush}">
+        <Grid x:Name="SoulutionButtonPanel1" Grid.Row="0" Background="{DynamicResource GlobalBackgroundBrush}">
             <UniformGrid  Columns="8"  VerticalAlignment="Top" >
                 <Button Click="SolutionNewCreat"   Style="{StaticResource ButtonStyle}"  ToolTip="新建">
                     <Viewbox Margin="5">

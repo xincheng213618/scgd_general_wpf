@@ -155,8 +155,8 @@ namespace ColorVision
             await Task.Delay(200);
             Application.Current.Dispatcher.Invoke(() =>
             {
-                ServiceManager ServiceManager = ServiceManager.GetInstance();
                 MainWindow mainWindow = new MainWindow();
+                ServiceManager ServiceManager = ServiceManager.GetInstance();
                 try
                 {
                     if (!GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting.IsDeFaultOpenService)
