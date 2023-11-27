@@ -21,27 +21,34 @@ namespace ColorVision.Solution
     /// </summary>
     public partial class TreeViewControl : UserControl
     {
-        public SolutionManager SolutionManager { get; set; } = SolutionManager.GetInstance();
+        public SolutionManager SolutionManager { get; set; }
         public TreeViewControl()
+        {
+            InitializeComponent();
+        }
+        public ObservableCollection<SolutionExplorer> SolutionExplorers { get; set; }
+
+
+        private void UserControl_Initialized(object sender, EventArgs e)
         {
             Window window = Application.Current.MainWindow;
             if (window != null)
                 window.Closing += Window_Closed;
-
-            InitializeComponent();
-
-        }
-
-        private void UserControl_Initialized(object sender, EventArgs e)
-        {
+            SolutionExplorers = new ObservableCollection<SolutionExplorer>();
             SolutionTreeView.ItemsSource = SolutionExplorers;
             IniCommand();
+
+            Task.Run(() => { Run(); });
+        }
+
+        public void Run()
+        {
+            SolutionManager = new SolutionManager();
             TreeViewInitialized(SolutionManager.CurrentSolution.FullName);
-            SolutionManager.SolutionLoaded += (s,e) =>
+            SolutionManager.SolutionLoaded += (s, e) =>
             {
                 TreeViewInitialized(SolutionManager.CurrentSolution.FullName);
             };
-
         }
 
 
@@ -104,7 +111,6 @@ namespace ColorVision.Solution
         }
 
 
-        public ObservableCollection<SolutionExplorer> SolutionExplorers { get; set; } = new ObservableCollection<SolutionExplorer>();
 
 
         private Point SelectPoint;
@@ -170,8 +176,11 @@ namespace ColorVision.Solution
 
         private void TreeViewInitialized(string FilePath)
         {
-            SolutionExplorers.Clear();
-            SolutionExplorers.Add(new SolutionExplorer(FilePath));
+            if (FilePath != null)
+            {
+                SolutionExplorers.Clear();
+                SolutionExplorers.Add(new SolutionExplorer(FilePath));
+            }
         }
 
 

@@ -145,4 +145,5 @@ namespace ColorVision.Solution
 
         #endregion
     }
+
 }
