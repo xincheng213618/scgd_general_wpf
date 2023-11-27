@@ -1,4 +1,4 @@
-﻿<Window x:Class="ColorVision.MainWindow"
+﻿<Window xmlns:Solution="clr-namespace:ColorVision.Solution"  x:Class="ColorVision.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -108,14 +108,22 @@
                 <UIElement.RenderTransform>
                     <TranslateTransform />
                 </UIElement.RenderTransform>
-                <ScrollViewer x:Name="ScrollViewerDisplay" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" >
-                    <StackPanel x:Name="SPDisplay" >
-                        <Viewbox Width="{Binding ElementName=LeftMainContent,Path=ActualWidth}" >
-                            <StackPanel x:Name="StackPanelMQTT" Width="300" Initialized="StackPanelMQTT_Initialized" >
+                <TabControl Style="{StaticResource TabControlBaseStyle}" >
+                    <TabItem Header="Display">
+                        <ScrollViewer x:Name="ScrollViewerDisplay" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" >
+                            <StackPanel x:Name="SPDisplay" >
+                                <Viewbox Width="{Binding ElementName=LeftMainContent,Path=ActualWidth}" >
+                                    <StackPanel x:Name="StackPanelMQTT" Width="300" Initialized="StackPanelMQTT_Initialized" >
+                                    </StackPanel>
+                                </Viewbox>
                             </StackPanel>
-                        </Viewbox>
-                    </StackPanel>
-                </ScrollViewer>
+                        </ScrollViewer>
+
+                    </TabItem>
+                    <TabItem Header="工程">
+                        <Solution:TreeViewControl />
+                    </TabItem>
+                </TabControl>
             </Grid>
             <GridSplitter Panel.ZIndex="102" x:Name="GridSplitter" Margin="0,26,0,26" Grid.Column="0" HorizontalAlignment="Right" Width="4" Background="Transparent"/>
             <Button Grid.Column="0" x:Name="ButtonShiftIn" Visibility="Collapsed" Click="OnLeftMainContentShiftIn" hc:IconElement.Geometry="{StaticResource RightGeometry}" Padding="8 8 0 8" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-12 0 0 0" Style="{StaticResource ButtonIconCircular}" />

@@ -110,7 +110,7 @@
                                             <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CameraCfg.TempCtlChecked}"/>
                                         </DockPanel>
                                         <DockPanel Visibility="{Binding Config.CameraCfg.TempCtlChecked,Converter={StaticResource bool2VisibilityConverter}}">
-                                            <TextBlock Text="目标温度:" Width="120"/>
+                                            <TextBlock Text="相机设定的目标温度:" Width="120"/>
                                             <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CameraCfg.TargetTemp}"/>
                                         </DockPanel>
                                         <DockPanel>
