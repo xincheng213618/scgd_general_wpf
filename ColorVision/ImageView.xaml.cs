@@ -595,7 +595,6 @@ namespace ColorVision
             if (filePath != null && File.Exists(filePath))
             {
                 ToolBar1.Visibility = Visibility.Visible;
-
             }
         }
 
