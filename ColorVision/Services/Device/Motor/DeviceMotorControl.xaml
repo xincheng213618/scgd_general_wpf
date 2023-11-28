@@ -53,7 +53,7 @@
             </Grid>
             <Border  Grid.Row="1"  Background="{DynamicResource RegionBrush}" CornerRadius="5" Margin="0,5,0,0">
                 <Grid x:Name="MQTTShow">
-                    <Grid x:Name="MQTTShowContent">
+                    <Grid x:Name="MQTTShowContent" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter1}}">
                         <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                             <StackPanel Margin="5,0" >
                                 <GroupBox Header="基本信息" Margin="0,5">
@@ -145,7 +145,7 @@
                         </ScrollViewer>
 
                     </Grid>
-                    <Grid  x:Name="MQTTEditContent" Visibility="Collapsed">
+                    <Grid  x:Name="MQTTEditContent" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter}}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="60"/>

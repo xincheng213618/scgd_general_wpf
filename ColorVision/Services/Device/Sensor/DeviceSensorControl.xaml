@@ -101,7 +101,7 @@
                         </StackPanel>
 
                     </Grid>
-                    <Grid  x:Name="MQTTEditContent"  Visibility="Collapsed">
+                    <Grid  x:Name="MQTTEditContent" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter}}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="60"/>

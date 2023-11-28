@@ -54,7 +54,7 @@
 
             <Border  Grid.Row="1"  Background="{DynamicResource RegionBrush}" CornerRadius="5" Margin="0,5,0,0">
                 <Grid x:Name="MQTTShow" >
-                    <Grid x:Name="MQTTShowContent">
+                    <Grid x:Name="MQTTShowContent" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter1}}">
                         <StackPanel  Margin="5,0">
                             <GroupBox Header="基本信息" Margin="0,5">
                                 <StackPanel Margin="5">
@@ -98,7 +98,7 @@
                             </GroupBox>
                         </StackPanel>
                     </Grid>
-                    <Grid  x:Name="MQTTEditContent" Visibility="Collapsed">
+                    <Grid  x:Name="MQTTEditContent" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter}}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="60"/>
