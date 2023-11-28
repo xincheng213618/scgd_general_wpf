@@ -78,5 +78,12 @@ namespace ColorVision.Device.Spectrum
             ButtonEdit.Visibility = Visibility.Visible;
             if (SpectrumService != null) SpectrumService.SetParam(MQTTDeviceSp.Config.TimeLimit, MQTTDeviceSp.Config.TimeFrom);
         }
+
+        private void ButtonEdit_Click(object sender, RoutedEventArgs e)
+        {
+            ButtonEdit.Visibility = Visibility.Collapsed;
+            MQTTShowContent.Visibility = Visibility.Collapsed;
+            MQTTEditContent.Visibility = Visibility.Visible;
+        }
     }
 }

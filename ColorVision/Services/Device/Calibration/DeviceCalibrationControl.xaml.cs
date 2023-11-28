@@ -28,14 +28,10 @@ namespace ColorVision.Services.Device.Calibration
             this.DataContext = this.Device;
         }
 
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            MQTTShowContent.Visibility = Visibility.Collapsed;
-            MQTTEditContent.Visibility = Visibility.Visible;
-        }
 
         private void Button_Click_Submit(object sender, RoutedEventArgs e)
         {
+            ButtonEdit.Visibility = Visibility.Visible;
             MQTTEditContent.Visibility = Visibility.Collapsed;
             MQTTShowContent.Visibility = Visibility.Visible;
         }
@@ -46,6 +42,11 @@ namespace ColorVision.Services.Device.Calibration
             GC.SuppressFinalize(this);
         }
 
-
+        private void ButtonEdit_Click(object sender, RoutedEventArgs e)
+        {
+            ButtonEdit.Visibility = Visibility.Collapsed;
+            MQTTShowContent.Visibility = Visibility.Collapsed;
+            MQTTEditContent.Visibility = Visibility.Visible;
+        }
     }
 }

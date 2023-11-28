@@ -38,15 +38,17 @@ namespace ColorVision.Services.Device.Sensor
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            ButtonEdit.Visibility = Visibility.Visible;
             MQTTEditContent.Visibility = Visibility.Collapsed;
             MQTTShowContent.Visibility = Visibility.Visible;
         }
 
-        private void Button_Click_1(object sender, RoutedEventArgs e)
+
+        private void ButtonEdit_Click(object sender, RoutedEventArgs e)
         {
+            ButtonEdit.Visibility = Visibility.Collapsed;
             MQTTShowContent.Visibility = Visibility.Collapsed;
             MQTTEditContent.Visibility = Visibility.Visible;
-
         }
     }
 }

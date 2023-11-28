@@ -62,13 +62,6 @@ namespace ColorVision.Services.Device.Motor
                         break;
                 }
             };
-
-        }
-
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            MQTTShowContent.Visibility = Visibility.Collapsed;
-            MQTTEditContent.Visibility = Visibility.Visible;
         }
 
         public void Dispose()
@@ -78,8 +71,16 @@ namespace ColorVision.Services.Device.Motor
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            ButtonEdit.Visibility = Visibility.Visible;
             MQTTEditContent.Visibility = Visibility.Collapsed;
             MQTTShowContent.Visibility = Visibility.Visible;
+        }
+
+        private void ButtonEdit_Click(object sender, RoutedEventArgs e)
+        {
+            ButtonEdit.Visibility = Visibility.Collapsed;
+            MQTTEditContent.Visibility = Visibility.Visible;
+            MQTTShowContent.Visibility = Visibility.Collapsed;
         }
     }
 }
