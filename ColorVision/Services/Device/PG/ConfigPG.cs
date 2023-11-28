@@ -1,4 +1,5 @@
 ﻿using ColorVision.Services;
+using ColorVision.Services.Device;
 
 namespace ColorVision.Device.PG
 {

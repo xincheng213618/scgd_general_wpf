@@ -3,7 +3,7 @@ using ColorVision.Services;
 using Newtonsoft.Json;
 using System;
 
-namespace ColorVision.Device
+namespace ColorVision.Services.Device
 {
     public class BaseConfig: ViewModelBase, IServiceConfig, IHeartbeat
     {

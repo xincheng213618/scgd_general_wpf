@@ -1,8 +1,7 @@
 ﻿#pragma warning disable CS8602  
 
-using ColorVision.MQTT;
-using ColorVision.MVVM;
 using ColorVision.Services;
+using ColorVision.Services.Device;
 using ColorVision.Services.Device.Camera;
 using ColorVision.Services.Msg;
 using ColorVision.Templates;

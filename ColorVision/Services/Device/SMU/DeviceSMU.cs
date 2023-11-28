@@ -1,6 +1,5 @@
-﻿using ColorVision.MQTT;
-using ColorVision.MySql.DAO;
-using ColorVision.Services.Device.Sensor;
+﻿using ColorVision.MySql.DAO;
+using ColorVision.Services.Device;
 using ColorVision.Themes;
 using System.Windows;
 using System.Windows.Controls;

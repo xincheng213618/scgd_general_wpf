@@ -14,12 +14,13 @@ namespace ColorVision
 {
     public static partial class GlobalConst
     {
-        public const string SoftwareConfigFileName = "Config\\SoftwareConfig.json";
+        public const string ConfigFileName = "Config\\SoftwareConfig.json";
         public const string MQTTMsgRecordsFileName = "Config\\MsgRecords.json";
 
-        public const string SoftwareConfigAESKey = "ColorVision";
-        public const string SoftwareConfigAESVector = "ColorVision";
+        public const string ConfigAESKey = "ColorVision";
+        public const string ConfigAESVector = "ColorVision";
 
+        public const string ConfigPath = "Config";
 
         public const string AutoRunRegPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
         public const string AutoRunName = "ColorVisionAutoRun";
@@ -42,9 +43,9 @@ namespace ColorVision
 
         public GlobalSetting()
         {
-            if (Directory.Exists("Config"))
+            if (Directory.Exists(GlobalConst.ConfigPath))
             {
-                SoftwareConfigFileName = AppDomain.CurrentDomain.BaseDirectory + GlobalConst.SoftwareConfigFileName;
+                SoftwareConfigFileName = AppDomain.CurrentDomain.BaseDirectory + GlobalConst.ConfigFileName;
                 MQTTMsgRecordsFileName = GlobalConst.MQTTMsgRecordsFileName;
             }
             else
@@ -52,7 +53,7 @@ namespace ColorVision
                 string DirectoryPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\ColorVision\\";
                 if (!Directory.Exists(DirectoryPath))
                     Directory.CreateDirectory(DirectoryPath);
-                SoftwareConfigFileName = DirectoryPath + GlobalConst.SoftwareConfigFileName;
+                SoftwareConfigFileName = DirectoryPath + GlobalConst.ConfigFileName;
                 MQTTMsgRecordsFileName = DirectoryPath + GlobalConst.MQTTMsgRecordsFileName;
             }
 
@@ -61,13 +62,13 @@ namespace ColorVision
                 SoftwareConfig config = ReadConfig<SoftwareConfig>(SoftwareConfigFileName);
                 if (config != null)
                 {
-                    config.MySqlConfig.UserPwd = Cryptography.AESDecrypt(config.MySqlConfig.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
-                    config.MQTTConfig.UserPwd = Cryptography.AESDecrypt(config.MQTTConfig.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
-                    config.UserConfig.UserPwd = Cryptography.AESDecrypt(config.UserConfig.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
+                    config.MySqlConfig.UserPwd = Cryptography.AESDecrypt(config.MySqlConfig.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
+                    config.MQTTConfig.UserPwd = Cryptography.AESDecrypt(config.MQTTConfig.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
+                    config.UserConfig.UserPwd = Cryptography.AESDecrypt(config.UserConfig.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
                     foreach (var item in config.MySqlConfigs)
-                        item.UserPwd = Cryptography.AESDecrypt(item.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
+                        item.UserPwd = Cryptography.AESDecrypt(item.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
                     foreach (var item in config.MQTTConfigs)
-                        item.UserPwd = Cryptography.AESDecrypt(item.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
+                        item.UserPwd = Cryptography.AESDecrypt(item.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
 
 
                     return config;
@@ -106,22 +107,22 @@ namespace ColorVision
             string Temp1 = SoftwareConfig.MQTTConfig.UserPwd;
             string Temp2 = SoftwareConfig.UserConfig.UserPwd;
 
-            SoftwareConfig.MySqlConfig.UserPwd = Cryptography.AESEncrypt(SoftwareConfig.MySqlConfig.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
-            SoftwareConfig.MQTTConfig.UserPwd = Cryptography.AESEncrypt(SoftwareConfig.MQTTConfig.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
-            SoftwareConfig.UserConfig.UserPwd = Cryptography.AESEncrypt(SoftwareConfig.UserConfig.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
+            SoftwareConfig.MySqlConfig.UserPwd = Cryptography.AESEncrypt(SoftwareConfig.MySqlConfig.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
+            SoftwareConfig.MQTTConfig.UserPwd = Cryptography.AESEncrypt(SoftwareConfig.MQTTConfig.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
+            SoftwareConfig.UserConfig.UserPwd = Cryptography.AESEncrypt(SoftwareConfig.UserConfig.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
 
             List<string> MySqlConfigsPwd = new List<string>();
             foreach (var item in SoftwareConfig.MySqlConfigs)
             {
                 MySqlConfigsPwd.Add(item.UserPwd);
-                item.UserPwd = Cryptography.AESEncrypt(item.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
+                item.UserPwd = Cryptography.AESEncrypt(item.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
             }
 
             List<string> MQTTConfigsPwd = new List<string>();
             foreach (var item in SoftwareConfig.MQTTConfigs)
             {
                 MQTTConfigsPwd.Add(item.UserPwd);
-                item.UserPwd = Cryptography.AESEncrypt(item.UserPwd, GlobalConst.SoftwareConfigAESKey, GlobalConst.SoftwareConfigAESVector);
+                item.UserPwd = Cryptography.AESEncrypt(item.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
             }
 
             WriteConfig(SoftwareConfigFileName, SoftwareConfig);

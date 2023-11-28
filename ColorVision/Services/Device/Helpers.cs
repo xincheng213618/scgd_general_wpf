@@ -6,7 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using ColorVision.Services.Msg;
 
-namespace ColorVision.Device
+namespace ColorVision.Services.Device
 {
     internal static class Helpers
     {

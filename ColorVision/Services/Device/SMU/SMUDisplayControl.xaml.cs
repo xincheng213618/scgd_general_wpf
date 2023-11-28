@@ -1,4 +1,5 @@
-﻿using ColorVision.Templates;
+﻿using ColorVision.Services.Device;
+using ColorVision.Templates;
 using System;
 using System.Collections.Generic;
 using System.IO;

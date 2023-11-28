@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Services"
-             xmlns:mqtt="clr-namespace:ColorVision.MQTT"
+             xmlns:mqtt="clr-namespace:ColorVision.Services.Device"
              xmlns:resx="clr-namespace:ColorVision.Properties"
              xmlns:hc ="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d" 

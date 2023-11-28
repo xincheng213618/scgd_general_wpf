@@ -1,4 +1,6 @@
-﻿namespace ColorVision.Device.SMU
+﻿using ColorVision.Services.Device;
+
+namespace ColorVision.Device.SMU
 {
     public class SMUResultData
     {

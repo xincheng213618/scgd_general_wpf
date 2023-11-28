@@ -3,6 +3,7 @@ using ColorVision.Device.Camera;
 using ColorVision.MQTT;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
+using ColorVision.Services.Device;
 using ColorVision.Themes;
 using Newtonsoft.Json;
 using System.Collections.Generic;

@@ -1,5 +1,6 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.MySql.DAO;
+using ColorVision.Services.Device;
 using System.Windows.Controls;
 
 namespace ColorVision.Device.FileServer
