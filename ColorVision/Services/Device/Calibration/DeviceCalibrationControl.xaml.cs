@@ -27,26 +27,10 @@ namespace ColorVision.Services.Device.Calibration
             ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
             this.DataContext = this.Device;
         }
-
-
-        private void Button_Click_Submit(object sender, RoutedEventArgs e)
-        {
-            ButtonEdit.Visibility = Visibility.Visible;
-            MQTTEditContent.Visibility = Visibility.Collapsed;
-            MQTTShowContent.Visibility = Visibility.Visible;
-        }
-
-
         public void Dispose()
         {
             GC.SuppressFinalize(this);
         }
 
-        private void ButtonEdit_Click(object sender, RoutedEventArgs e)
-        {
-            ButtonEdit.Visibility = Visibility.Collapsed;
-            MQTTShowContent.Visibility = Visibility.Collapsed;
-            MQTTEditContent.Visibility = Visibility.Visible;
-        }
     }
 }

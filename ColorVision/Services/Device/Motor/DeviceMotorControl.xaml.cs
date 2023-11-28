@@ -69,18 +69,5 @@ namespace ColorVision.Services.Device.Motor
             GC.SuppressFinalize(this);
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            ButtonEdit.Visibility = Visibility.Visible;
-            MQTTEditContent.Visibility = Visibility.Collapsed;
-            MQTTShowContent.Visibility = Visibility.Visible;
-        }
-
-        private void ButtonEdit_Click(object sender, RoutedEventArgs e)
-        {
-            ButtonEdit.Visibility = Visibility.Collapsed;
-            MQTTEditContent.Visibility = Visibility.Visible;
-            MQTTShowContent.Visibility = Visibility.Collapsed;
-        }
     }
 }

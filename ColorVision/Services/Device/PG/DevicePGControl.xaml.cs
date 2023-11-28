@@ -54,23 +54,5 @@ namespace ColorVision.Device.PG
             TextBlockPGIP.Text = "IP地址";
             TextBlockPGPort.Text = "端口";
         }
-
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            ButtonEdit.Visibility = Visibility.Visible;
-            MQTTEditContent.Visibility = Visibility.Collapsed;
-            MQTTShowContent.Visibility = Visibility.Visible;
-
-            DevicePG.Config.Category = pgCategory.Text;
-        }
-
-
-        private void ButtonEdit_Click(object sender, RoutedEventArgs e)
-        {
-            ButtonEdit.Visibility = Visibility.Collapsed;
-            MQTTShowContent.Visibility = Visibility.Collapsed;
-            MQTTEditContent.Visibility = Visibility.Visible;
-        }
     }
 }

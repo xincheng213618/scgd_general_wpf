@@ -34,8 +34,11 @@ namespace ColorVision.Services.Device
         public RelayCommand ExportCommand { get; set; }
         public RelayCommand ImportCommand { get; set; }
         public RelayCommand CopyCommand { get; set; }
-
         public RelayCommand ResetCommand { get; set; }
+
+        public RelayCommand EditCommand { get; set; }
+        public bool IsEditMode { get => _IsEditMode; set { _IsEditMode = value; NotifyPropertyChanged(); } }
+        private bool _IsEditMode;
 
 
 
@@ -130,6 +133,11 @@ namespace ColorVision.Services.Device
                     Config = new T();
             });
 
+            EditCommand = new RelayCommand(a =>
+            {
+                IsEditMode = true;
+            });
+
             ImportCommand = new RelayCommand(a => {
                 System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
                 ofd.Filter = "*.config|*.config";
@@ -199,6 +207,7 @@ namespace ColorVision.Services.Device
             SysResourceModel.Name = Config.Name;
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
             ServiceManager.GetInstance().ResourceService.Save(SysResourceModel);
+            IsEditMode = false;
         }
 
         public override void Delete()

@@ -40,9 +40,9 @@
                 </Border>
                 <Border Grid.Column="1"  Background="{DynamicResource RegionBrush}" CornerRadius="5"  Margin="5,0,0,0">
                     <DockPanel Margin="10,0">
-                        <Grid x:Name="ButtonEdit" Width="25"  Margin="0,0,10,0">
+                        <Grid x:Name="ButtonEdit" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter1}}" Width="25"  Margin="0,0,10,0">
                             <Image Source="{StaticResource  DrawingImageEdit}" Width="17" Margin="0" />
-                            <Button Background="Transparent" BorderThickness="0"  Click="ButtonEdit_Click"/>
+                            <Button Background="Transparent" BorderThickness="0" Command="{Binding EditCommand}"/>
                         </Grid>
                         <Grid x:Name="ButtonCopy" Width="25" Margin="0,0,0,0">
                             <TextBlock  Text="&#xF413;"  FontFamily="Segoe MDL2 Assets" FontSize="20" HorizontalAlignment="Center"/>
@@ -233,7 +233,7 @@
                             </StackPanel>
                         </ScrollViewer>
                         <Border Grid.Column="1" Margin="5">
-                            <Button  Content="{x:Static resx:Resource.Submit}" Click="Button_Click" Command="{Binding SaveCommand}" />
+                            <Button  Content="{x:Static resx:Resource.Submit}" Command="{Binding SaveCommand}" />
                         </Border>
                     </Grid>
                 </Grid>

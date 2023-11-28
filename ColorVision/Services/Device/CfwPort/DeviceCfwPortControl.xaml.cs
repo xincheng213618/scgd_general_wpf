@@ -34,18 +34,6 @@ namespace ColorVision.Services.Device.CfwPort
             TextBaudRate.ItemsSource = BaudRates;
         }
 
-        private void ButtonEdit_Click(object sender, RoutedEventArgs e)
-        {
-            ButtonEdit.Visibility = Visibility.Collapsed;
-            MQTTShowContent.Visibility = Visibility.Collapsed;
-            MQTTEditContent.Visibility = Visibility.Visible;
-        }
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            MQTTEditContent.Visibility = Visibility.Collapsed;
-            MQTTShowContent.Visibility = Visibility.Visible;
-        }
-
         public void Dispose()
         {
             GC.SuppressFinalize(this);
