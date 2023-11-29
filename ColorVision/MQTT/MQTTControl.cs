@@ -197,6 +197,8 @@ namespace ColorVision.MQTT
 
         public async Task PublishAsyncClient(string topic, string msg, bool retained)
         {
+            if (MQTTClient ==null)
+                return;
             MqttApplicationMessageBuilder mqttApplicationMessageBuilder = new MqttApplicationMessageBuilder();
             mqttApplicationMessageBuilder.WithTopic(topic)          // 主题
                                         .WithPayload(msg)           // 信息
@@ -212,6 +214,7 @@ namespace ColorVision.MQTT
             {
                 MQTTMsgChanged?.Invoke(new MQMsg(-1,$"{DateTime.Now:HH:mm:ss.fff} MQTTClient未开启连接",topic, msg));
             }
+            return;
         }
     }
 
