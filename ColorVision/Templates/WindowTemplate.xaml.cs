@@ -229,7 +229,7 @@ namespace ColorVision.Templates
                     CreateNewTemplate(TemplateControl.LedReusltParams, TextBox1.Text, new LedReusltParam());
                     break;
                 case TemplateType.AoiParam:
-                    AoiParam? aoiParam = TemplateControl.AddParamMode<AoiParam>(TemplateTypeFactory.GetModeTemplateType(TemplateType), TextBox1.Text);
+                    AOIParam? aoiParam = TemplateControl.AddParamMode<AOIParam>(TemplateTypeFactory.GetModeTemplateType(TemplateType), TextBox1.Text);
                     if (aoiParam != null) CreateNewTemplate(TemplateControl.AoiParams, TextBox1.Text, aoiParam);
                     else MessageBox.Show("数据库创建AOI模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     break;
@@ -299,7 +299,7 @@ namespace ColorVision.Templates
             switch (TemplateType)
             {
                 case TemplateType.AoiParam:
-                    CreateNewTemplate(TemplateControl.AoiParams, TextBox1.Text, new AoiParam());
+                    CreateNewTemplate(TemplateControl.AoiParams, TextBox1.Text, new AOIParam());
                     break;
                 case TemplateType.Calibration:
                     CreateNewTemplate(TemplateControl.CalibrationParams, TextBox1.Text, new CalibrationParam());

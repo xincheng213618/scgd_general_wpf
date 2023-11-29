@@ -6,9 +6,9 @@ using System.ComponentModel;
 
 namespace ColorVision.Templates
 {
-    public class AoiParam: ParamBase
+    public class AOIParam: ParamBase
     {
-        public AoiParam() 
+        public AOIParam() 
         {
             this.FilterByArea = true;
             this.MaxArea = 6000;
@@ -29,7 +29,7 @@ namespace ColorVision.Templates
         }
 
 
-        public AoiParam(ModMasterModel modMaster, List<ModDetailModel> aoiDetail) : base(modMaster.Id, modMaster.Name ?? string.Empty, aoiDetail)
+        public AOIParam(ModMasterModel modMaster, List<ModDetailModel> aoiDetail) : base(modMaster.Id, modMaster.Name ?? string.Empty, aoiDetail)
         {
 
         }

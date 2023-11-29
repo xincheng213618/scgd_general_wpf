@@ -11,10 +11,12 @@ namespace ColorVision.Templates
     public class FlowParam : ParamBase
     {
         public const string FileNameKey = "filename";
-        public FlowParam() {
+        public FlowParam()
+        {
         }
         public FlowParam(ModMasterModel dbModel, List<ModDetailModel> flowDetail) : base(dbModel.Id, dbModel.Name??string.Empty, flowDetail)
         {
+
         }
 
 

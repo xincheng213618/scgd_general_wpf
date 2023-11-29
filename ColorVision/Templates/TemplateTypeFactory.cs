@@ -48,7 +48,7 @@ namespace ColorVision.Templates
         {
             return windowTemplateType switch
             {
-                TemplateType.AoiParam => new AoiParam(),
+                TemplateType.AoiParam => new AOIParam(),
                 TemplateType.Calibration => new CalibrationParam(),
                 TemplateType.PGParam => new PGParam(),
                 TemplateType.LedResult => new LedReusltParam(),
@@ -70,7 +70,7 @@ namespace ColorVision.Templates
         {
             return windowTemplateType switch
             {
-                TemplateType.AoiParam => new AoiParam(modMasterModel, modDetailModels),
+                TemplateType.AoiParam => new AOIParam(modMasterModel, modDetailModels),
                 TemplateType.Calibration => new CalibrationParam(modMasterModel, modDetailModels),
                 TemplateType.PGParam => new PGParam(modMasterModel, modDetailModels),
                 TemplateType.LedResult => new LedReusltParam(modMasterModel, modDetailModels),

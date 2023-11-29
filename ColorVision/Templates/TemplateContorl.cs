@@ -43,7 +43,7 @@ namespace ColorVision.Templates
 
         public TemplateControl()
         {
-            AoiParams = new ObservableCollection<TemplateModel<AoiParam>>();
+            AoiParams = new ObservableCollection<TemplateModel<AOIParam>>();
             CalibrationParams = new ObservableCollection<TemplateModel<CalibrationParam>>();
             PGParams = new ObservableCollection<TemplateModel<PGParam>>();
             LedReusltParams = new ObservableCollection<TemplateModel<LedReusltParam>>();
@@ -142,7 +142,7 @@ namespace ColorVision.Templates
                 case Type t when t == typeof(FlowParam):
                     LoadFlowParam();
                     break;
-                case Type t when t == typeof(AoiParam):
+                case Type t when t == typeof(AOIParam):
                     LoadModParam(AoiParams, ModMasterType.Aoi);
                     break;
                 case Type t when t == typeof(SMUParam):
@@ -643,7 +643,7 @@ namespace ColorVision.Templates
         }
 
         public ObservableCollection<TemplateModel<MeasureParam>> MeasureParams { get; set; }
-        public ObservableCollection<TemplateModel<AoiParam>> AoiParams { get; set; }
+        public ObservableCollection<TemplateModel<AOIParam>> AoiParams { get; set; }
         public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; } 
         public ObservableCollection<TemplateModel<PGParam>> PGParams { get; set; }
         public ObservableCollection<TemplateModel<SMUParam>> SMUParams { get; set; }
