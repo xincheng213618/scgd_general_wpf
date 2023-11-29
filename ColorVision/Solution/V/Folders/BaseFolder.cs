@@ -30,8 +30,7 @@ namespace ColorVision.Solution.V.Folders
 
         public void GeneralRelayCommand()
         {
-            OpenExplorer = new RelayCommand(a =>
-            System.Diagnostics.Process.Start("explorer.exe", DirectoryInfo.FullName));
+            OpenExplorer = new RelayCommand(a =>  System.Diagnostics.Process.Start("explorer.exe", DirectoryInfo.FullName));
         }
 
         public void GeneralContextMenu()

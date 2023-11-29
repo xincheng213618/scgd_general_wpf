@@ -88,6 +88,7 @@ namespace ColorVision.Solution.V.Files
                 Icon = icon.ToImageSource();
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resource.Open, Command = new RelayCommand(a => Open()) });
+            ContextMenu.Items.Add(new MenuItem() { Header = "属性", Command = new RelayCommand(a => FileProperties.ShowFileProperties(FullName)) });
         }
 
         public string Name { get; set; }

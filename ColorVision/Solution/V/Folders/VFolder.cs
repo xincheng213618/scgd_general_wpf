@@ -8,14 +8,19 @@ namespace ColorVision.Solution.V.Folders
     public class VFolder : VObject
     {
         public IFolder Folder { get; set; }
-        public ContextMenu ContextMenu { get; set; }
 
         public VFolder(IFolder folder)
         {
             Folder = folder;
             Name = folder.Name;
             ToolTip = folder.ToolTip;
-            ContextMenu = folder.ContextMenu;
+
+            ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resource.Open, Command = OpenCommand });
+            //foreach (var item in folder.ContextMenu.Items)
+            //{
+            //    ContextMenu.Items.Add(item);
+            //}          
         }
 
         public override ImageSource Icon {get => Folder.Icon; set { Folder.Icon = value; NotifyPropertyChanged(); } }

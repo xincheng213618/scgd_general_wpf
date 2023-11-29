@@ -24,6 +24,7 @@ namespace ColorVision.Solution.V.Folders
                 if (Application.Current.TryFindResource("HistoryDrawingImage") is DrawingImage drawingImage)
                     Icon = drawingImage;
             };
+            ContextMenu= new ContextMenu();
         }
 
 

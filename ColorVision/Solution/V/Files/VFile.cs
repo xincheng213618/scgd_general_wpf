@@ -6,7 +6,6 @@ namespace ColorVision.Solution.V.Files
     {
         public IFile File { get; set; }
 
-        public ContextMenu ContextMenu { get; set; }
         public VFile(IFile file)
         {
             File = file;
