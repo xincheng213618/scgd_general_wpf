@@ -24,7 +24,6 @@ using System.Windows.Shapes;
 namespace ColorVision.Services.Algorithm
 {
 
-
     public static class MySQLHelper
     {
         private static BatchResultMasterDao BatchResultMasterDao { get; set; } = new BatchResultMasterDao();
@@ -35,13 +34,10 @@ namespace ColorVision.Services.Algorithm
         private static MeasureImgResultDao MeasureImgResultDao { get; set;  } = new MeasureImgResultDao();
 
         public static MeasureImgResultModel? GetMeasureResultImg(int id) => id >= 0 ? MeasureImgResultDao.GetByID(id) : null;
-
-
     }
 
     public class FOVResult : ViewModelBase
     {
-
         public AlgorithmFovResultModel Model { get; set; }
         public FOVResult(AlgorithmFovResultModel algorithmFovResultModel)
         {
@@ -76,9 +72,6 @@ namespace ColorVision.Services.Algorithm
 
     public class SFRResult : ViewModelBase
     {
-
-
-
         public AlgorithmSfrResultModel Model { get; set; }
 
         public SFRResult(AlgorithmSfrResultModel model)
@@ -182,7 +175,7 @@ namespace ColorVision.Services.Algorithm
 
         public void FOV()
         {
-            AlgorithmFovResult algorithmFovResult = new AlgorithmFovResult();
+            AlgorithmFOVResult algorithmFovResult = new AlgorithmFOVResult();
 
             var algorithmFovResults = algorithmFovResult.GetAll();
             FOVResults.Clear();
@@ -230,7 +223,7 @@ namespace ColorVision.Services.Algorithm
 
         public void SFR()
         {
-            AlgorithmSfrResult AlgorithmMTFResult = new AlgorithmSfrResult();
+            AlgorithmSFRResult AlgorithmMTFResult = new AlgorithmSFRResult();
             var results = AlgorithmMTFResult.GetAll();
             SFRResults.Clear();
             foreach (var item in results)

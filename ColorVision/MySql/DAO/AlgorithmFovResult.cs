@@ -18,9 +18,9 @@ namespace ColorVision.MySql.DAO
     }
 
 
-    public class AlgorithmFovResult : BaseDaoMaster<AlgorithmFovResultModel>
+    public class AlgorithmFOVResult : BaseDaoMaster<AlgorithmFovResultModel>
     {
-        public AlgorithmFovResult() : base(string.Empty, "t_scgd_algorithm_fov_result", "id", false)
+        public AlgorithmFOVResult() : base(string.Empty, "t_scgd_algorithm_fov_result", "id", false)
         {
         }
         public override DataTable CreateColumns(DataTable dInfo)

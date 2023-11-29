@@ -17,9 +17,9 @@ namespace ColorVision.MySql.DAO
     }
 
 
-    public class AlgorithmSfrResult : BaseDaoMaster<AlgorithmSfrResultModel>
+    public class AlgorithmSFRResult : BaseDaoMaster<AlgorithmSfrResultModel>
     {
-        public AlgorithmSfrResult() : base(string.Empty, "t_scgd_algorithm_sfr_result", "id", false)
+        public AlgorithmSFRResult() : base(string.Empty, "t_scgd_algorithm_sfr_result", "id", false)
         {
         }
         public override DataTable CreateColumns(DataTable dInfo)
