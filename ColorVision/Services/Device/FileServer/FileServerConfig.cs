@@ -1,4 +1,6 @@
-﻿namespace ColorVision.Device.FileServer
+﻿using ColorVision.Services.Device;
+
+namespace ColorVision.Device.FileServer
 {
     public class FileServerConfig : BaseDeviceConfig
     {

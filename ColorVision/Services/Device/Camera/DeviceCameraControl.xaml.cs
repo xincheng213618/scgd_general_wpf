@@ -1,6 +1,6 @@
 ﻿using ColorVision.Extension;
+using ColorVision.Services.Device;
 using cvColorVision;
-using FlowEngineLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,7 +28,7 @@ namespace ColorVision.Device.Camera
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
+            if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
 
             this.DataContext = DeviceCamera;
             CameraID.ItemsSource = DeviceCamera.Service.DevicesSN;
@@ -180,35 +180,5 @@ namespace ColorVision.Device.Camera
             };
 
         }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            MQTTEditContent.Visibility = Visibility.Collapsed;
-            MQTTShowContent.Visibility = Visibility.Visible;
-            ButtonEdit.Visibility = Visibility.Visible;
-        }
-
-        private void ButtonEdit_Click(object sender, RoutedEventArgs e)
-        {
-            MQTTShowContent.Visibility = Visibility.Collapsed;
-            MQTTEditContent.Visibility = Visibility.Visible;
-            ButtonEdit.Visibility = Visibility.Collapsed;
-        }
-
-        private void Button_Click_2(object sender, RoutedEventArgs e)
-        {
-            if (Service.DeviceStatus == DeviceStatus.UnInit)
-            {
-                Service.Init();
-            }
-            else
-            {
-                Service.UnInit();
-            }
-
-
-        }
-
-
     }
 }

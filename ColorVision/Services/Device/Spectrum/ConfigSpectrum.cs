@@ -1,4 +1,5 @@
 ﻿using ColorVision.Services;
+using ColorVision.Services.Device;
 using Newtonsoft.Json;
 using static cvColorVision.GCSDLL;
 

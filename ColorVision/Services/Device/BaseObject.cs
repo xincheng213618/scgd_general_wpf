@@ -5,7 +5,7 @@ using ColorVision.Services;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
-namespace ColorVision.Device
+namespace ColorVision.Services.Device
 {
     public static class BaseObjectExtensions
     {

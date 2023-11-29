@@ -2,7 +2,7 @@
 using Newtonsoft.Json.Converters;
 using System.ComponentModel;
 
-namespace ColorVision.Device
+namespace ColorVision.Services.Device
 {
     public delegate void DeviceStatusChangedHandler(DeviceStatus deviceStatus);
 

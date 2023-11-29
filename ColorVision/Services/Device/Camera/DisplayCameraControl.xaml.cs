@@ -12,6 +12,7 @@ using ColorVision.Templates;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Device.Camera.Video;
 using System.Collections.ObjectModel;
+using ColorVision.Services.Device;
 
 namespace ColorVision.Device.Camera
 {

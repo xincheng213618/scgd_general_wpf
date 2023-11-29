@@ -24,24 +24,37 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <Border  Grid.Row="0" Background="{DynamicResource RegionBrush}" CornerRadius="5" >
-                <DockPanel  Margin="10,5">
-                    <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  DockPanel.Dock="Right" Width="20"  HorizontalAlignment="Right" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
-                    <Grid x:Name="ButtonEdit"  DockPanel.Dock="Right" Width="17" Margin="0,0,10,0">
-                        <Image Source="{StaticResource  DrawingImageEdit}" Margin="0" />
-                        <Button Background="Transparent" BorderThickness="0"  Click="Button_Click_1"/>
-                    </Grid>
-                    <Grid x:Name="ButtonCopy" DockPanel.Dock="Right" Width="25" Margin="0,0,10,0">
-                        <Button  BorderThickness="0" Command="{Binding CopyCommand}">
-                            <Image Source="{StaticResource  DrawingImageCopyTo}" Margin="-8" />
-                        </Button>
-                    </Grid>
-                    <TextBlock Text="{Binding Config.Name}" FontWeight="Bold" FontSize="20"/>
-                </DockPanel>
-            </Border>
+            <Grid x:Name="DeviceHeaderGrid" Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Border  Grid.Row="0" Background="{DynamicResource RegionBrush}" CornerRadius="5" >
+                    <DockPanel  Margin="10,5">
+                        <ToggleButton Style="{StaticResource ButtonMQTTConnect}" DockPanel.Dock="Right" Width="20" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}"/>
+                        <Grid  Height="18"   HorizontalAlignment="Left"  Margin="0,0,4,0">
+                            <Image Source="{Binding Icon}"/>
+                        </Grid>
+                        <TextBlock Text="{Binding Config.Name}" FontWeight="Bold" FontSize="20"/>
+                    </DockPanel>
+                </Border>
+                <Border Grid.Column="1"  Background="{DynamicResource RegionBrush}" CornerRadius="5"  Margin="5,0,0,0">
+                    <DockPanel Margin="10,0">
+                        <Grid x:Name="ButtonEdit" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter1}}" Width="25"  Margin="0,0,10,0">
+                            <Image Source="{StaticResource  DrawingImageEdit}" Width="17" Margin="0" />
+                            <Button Background="Transparent" BorderThickness="0" Command="{Binding EditCommand}"/>
+                        </Grid>
+                        <Grid x:Name="ButtonCopy" Width="25" Margin="0,0,0,0">
+                            <TextBlock  Text="&#xF413;"  FontFamily="Segoe MDL2 Assets" FontSize="20" HorizontalAlignment="Center"/>
+                            <Button  Background="Transparent"  BorderThickness="0" Command="{Binding CopyCommand}"/>
+                        </Grid>
+                    </DockPanel>
+                </Border>
+            </Grid>
+
             <Border  Grid.Row="1"  Background="{DynamicResource RegionBrush}" CornerRadius="5" Margin="0,5">
                 <Grid x:Name="MQTTShow" Margin="5">
-                    <Grid  x:Name="MQTTShowContent">
+                    <Grid  x:Name="MQTTShowContent" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter1}}">
                         <StackPanel Margin="5,0">
                             <GroupBox Header="基本信息" Margin="0,5">
                                 <StackPanel Margin="5">
@@ -90,7 +103,7 @@
                         </StackPanel>
 
                     </Grid>
-                    <Grid  x:Name="MQTTEditContent" Visibility="Collapsed">
+                    <Grid  x:Name="MQTTEditContent" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter}}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="60"/>

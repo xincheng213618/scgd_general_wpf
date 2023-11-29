@@ -24,28 +24,13 @@ namespace ColorVision.Services.Device.Calibration
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
+            if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
             this.DataContext = this.Device;
         }
-
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            MQTTShowContent.Visibility = Visibility.Collapsed;
-            MQTTEditContent.Visibility = Visibility.Visible;
-        }
-
-        private void Button_Click_Submit(object sender, RoutedEventArgs e)
-        {
-            MQTTEditContent.Visibility = Visibility.Collapsed;
-            MQTTShowContent.Visibility = Visibility.Visible;
-        }
-
-
         public void Dispose()
         {
             GC.SuppressFinalize(this);
         }
-
 
     }
 }

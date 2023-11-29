@@ -27,7 +27,7 @@ namespace ColorVision.Services.Device.Motor
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
+            if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
             this.DataContext = this.Device;
             List<string> Serials = new List<string> { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8" };
             TextSerial.ItemsSource = Serials;
@@ -62,13 +62,6 @@ namespace ColorVision.Services.Device.Motor
                         break;
                 }
             };
-
-        }
-
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            MQTTShowContent.Visibility = Visibility.Collapsed;
-            MQTTEditContent.Visibility = Visibility.Visible;
         }
 
         public void Dispose()
@@ -76,10 +69,5 @@ namespace ColorVision.Services.Device.Motor
             GC.SuppressFinalize(this);
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            MQTTEditContent.Visibility = Visibility.Collapsed;
-            MQTTShowContent.Visibility = Visibility.Visible;
-        }
     }
 }

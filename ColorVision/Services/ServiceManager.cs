@@ -9,6 +9,7 @@ using ColorVision.MySql;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.Services.Algorithm;
+using ColorVision.Services.Device;
 using ColorVision.Services.Device.Calibration;
 using ColorVision.Services.Device.CfwPort;
 using ColorVision.Services.Device.Motor;

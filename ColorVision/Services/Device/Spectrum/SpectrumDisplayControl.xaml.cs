@@ -1,4 +1,5 @@
-﻿using cvColorVision;
+﻿using ColorVision.Services.Device;
+using cvColorVision;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;

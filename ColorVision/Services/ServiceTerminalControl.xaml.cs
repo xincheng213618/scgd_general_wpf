@@ -7,6 +7,7 @@ using ColorVision.Device.Spectrum;
 using ColorVision.MQTT;
 using ColorVision.MySql.DAO;
 using ColorVision.Services.Algorithm;
+using ColorVision.Services.Device;
 using ColorVision.Services.Device.Calibration;
 using ColorVision.Services.Device.Camera;
 using ColorVision.Services.Device.CfwPort;

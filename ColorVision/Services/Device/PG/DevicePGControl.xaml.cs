@@ -35,7 +35,7 @@ namespace ColorVision.Device.PG
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
+            if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
             ServiceControl = ServiceManager.GetInstance();
             this.DataContext = DevicePG;
 
@@ -53,22 +53,6 @@ namespace ColorVision.Device.PG
         {
             TextBlockPGIP.Text = "IP地址";
             TextBlockPGPort.Text = "端口";
-        }
-
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            MQTTEditContent.Visibility = Visibility.Collapsed;
-            MQTTShowContent.Visibility = Visibility.Visible;
-
-            DevicePG.Config.Category = pgCategory.Text;
-        }
-
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            MQTTShowContent.Visibility = Visibility.Collapsed;
-            MQTTEditContent.Visibility = Visibility.Visible;
-
         }
     }
 }

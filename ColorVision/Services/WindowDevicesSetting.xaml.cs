@@ -5,7 +5,7 @@ using System;
 using System.Windows.Documents;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
-using ColorVision.MQTT;
+using ColorVision.Services.Device;
 
 namespace ColorVision.Services
 {

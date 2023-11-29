@@ -47,14 +47,16 @@ namespace ColorVision
                 this.Width = SoftwareSetting.Width;
                 this.WindowState = (WindowState)SoftwareSetting.WindowState;
             }
-            this.Closed += (s, e) =>
+            this.SizeChanged +=(s, e) =>
             {
-
-                SoftwareSetting.Top = this.Top;
-                SoftwareSetting.Left = this.Left;
-                SoftwareSetting.Height = this.Height;
-                SoftwareSetting.Width = this.Width;
-                SoftwareSetting.WindowState = (int)this.WindowState;
+                if (SoftwareSetting.IsRestoreWindow)
+                {
+                    SoftwareSetting.Top = this.Top;
+                    SoftwareSetting.Left = this.Left;
+                    SoftwareSetting.Height = this.Height;
+                    SoftwareSetting.Width = this.Width;
+                    SoftwareSetting.WindowState = (int)this.WindowState;
+                }
             };
         }
 

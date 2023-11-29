@@ -27,7 +27,7 @@ namespace ColorVision.Device.Spectrum
         }
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
+            if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
             this.DataContext = this.MQTTDeviceSp;
         }
 
@@ -73,9 +73,6 @@ namespace ColorVision.Device.Spectrum
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            MQTTEditContent.Visibility = Visibility.Collapsed;
-            MQTTShowContent.Visibility = Visibility.Visible;
-            ButtonEdit.Visibility = Visibility.Visible;
             if (SpectrumService != null) SpectrumService.SetParam(MQTTDeviceSp.Config.TimeLimit, MQTTDeviceSp.Config.TimeFrom);
         }
     }

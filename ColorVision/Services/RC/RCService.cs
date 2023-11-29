@@ -2,6 +2,7 @@
 using ColorVision.MQTT;
 using ColorVision.MySql;
 using ColorVision.Services;
+using ColorVision.Services.Device;
 using log4net;
 using MQTTMessageLib;
 using MQTTMessageLib.RC;

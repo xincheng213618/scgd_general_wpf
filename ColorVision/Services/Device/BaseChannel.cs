@@ -13,7 +13,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.MQTT
+namespace ColorVision.Services.Device
 {
     public class BaseChannel : BaseObject, IDisposable
     {
@@ -34,6 +34,12 @@ namespace ColorVision.MQTT
         public RelayCommand ExportCommand { get; set; }
         public RelayCommand ImportCommand { get; set; }
         public RelayCommand CopyCommand { get; set; }
+        public RelayCommand ResetCommand { get; set; }
+
+        public RelayCommand EditCommand { get; set; }
+        public bool IsEditMode { get => _IsEditMode; set { _IsEditMode = value; NotifyPropertyChanged(); } }
+        private bool _IsEditMode;
+
 
 
         public virtual ImageSource Icon { get; set; }
@@ -104,25 +110,35 @@ namespace ColorVision.MQTT
 
 
 
-            ExportCommand = new RelayCommand((e) => {
+            ExportCommand = new RelayCommand(a => {
                 System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
                 ofd.Filter = "*.config|*.config";
                 ofd.FileName = Config?.Name;
                 ofd.RestoreDirectory = true;
                 if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
                 Config.ToJsonNFile(ofd.FileName);
-                MessageBox.Show("导出成功", "ColorVision");
+                MessageBox.Show("导出成功", "ColorVision"); 
             });
 
-            CopyCommand = new RelayCommand((e) =>
-            {
+            CopyCommand = new RelayCommand(a => {
                 if (Config!=null)
                 {
                     NativeMethods.Clipboard.SetText(Config.ToJsonN());
+                    MessageBox.Show("复制成功", "ColorVision");
                 }
             });
+            ResetCommand = new RelayCommand(a => {
+                MessageBoxResult result = MessageBox.Show("确定要重置吗？", "ColorVision", MessageBoxButton.OKCancel);
+                if (result == MessageBoxResult.OK)
+                    Config = new T();
+            });
 
-            ImportCommand = new RelayCommand((e) => {
+            EditCommand = new RelayCommand(a =>
+            {
+                IsEditMode = true;
+            });
+
+            ImportCommand = new RelayCommand(a => {
                 System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
                 ofd.Filter = "*.config|*.config";
                 ofd.RestoreDirectory = true;
@@ -191,6 +207,7 @@ namespace ColorVision.MQTT
             SysResourceModel.Name = Config.Name;
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
             ServiceManager.GetInstance().ResourceService.Save(SysResourceModel);
+            IsEditMode = false;
         }
 
         public override void Delete()

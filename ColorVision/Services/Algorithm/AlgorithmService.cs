@@ -1,6 +1,6 @@
 ﻿#pragma warning disable CS8602  
 
-using ColorVision.Device;
+using ColorVision.Services.Device;
 using ColorVision.Services.Msg;
 using ColorVision.Templates.Algorithm;
 using cvColorVision;

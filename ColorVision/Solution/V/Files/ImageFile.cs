@@ -56,12 +56,16 @@ namespace ColorVision.Solution.V.Files
             ImageView imageView = new ImageView();
             Window window = new Window() { };
             window.Content = imageView;
-            Task.Run( async () => {
-                await Task.Delay(100);
-                Application.Current.Dispatcher.Invoke(() => { imageView.OpenImage(FileInfo.FullName); });
-                 });
+            _ = RunAsync(imageView);
             window.Show();
         }
+        public async Task<Task> RunAsync(ImageView imageView)
+        {
+            await Task.Delay(100);
+            imageView.OpenImage(FileInfo.FullName); 
+            return Task.CompletedTask;
+        }
+
 
         public void ReName()
         {

@@ -25,7 +25,7 @@ namespace ColorVision.Services.Device.CfwPort
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
+            if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
 
             this.DataContext = this.Device;
             List<string> Serials = new List<string> { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8" };
@@ -34,21 +34,11 @@ namespace ColorVision.Services.Device.CfwPort
             TextBaudRate.ItemsSource = BaudRates;
         }
 
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            MQTTShowContent.Visibility = Visibility.Collapsed;
-            MQTTEditContent.Visibility = Visibility.Visible;
-        }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            MQTTEditContent.Visibility = Visibility.Collapsed;
-            MQTTShowContent.Visibility = Visibility.Visible;
-        }
-
         public void Dispose()
         {
             GC.SuppressFinalize(this);
         }
+
+
     }
 }

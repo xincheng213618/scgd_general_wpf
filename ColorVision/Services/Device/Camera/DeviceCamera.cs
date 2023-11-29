@@ -1,5 +1,5 @@
-﻿using ColorVision.MQTT;
-using ColorVision.MySql.DAO;
+﻿using ColorVision.MySql.DAO;
+using ColorVision.Services.Device;
 using ColorVision.Services.Device.Calibration;
 using ColorVision.Services.Device.Camera;
 using ColorVision.Themes;

@@ -1,4 +1,4 @@
-﻿using ColorVision.Device;
+﻿using ColorVision.Services.Device;
 using ColorVision.Extension;
 using ColorVision.MQTT;
 using ColorVision.MVVM;
