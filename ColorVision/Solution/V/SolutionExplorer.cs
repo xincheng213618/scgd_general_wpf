@@ -180,7 +180,7 @@ namespace ColorVision.Solution.V
                 }
                 else
                 {
-                    file = new ImageFile(item);
+                    file = new CommonFile(item);
                 }
                 VFile vFile = new VFile(file);
                 vObject.AddChild(vFile);

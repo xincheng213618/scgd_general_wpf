@@ -50,8 +50,7 @@ namespace ColorVision.Solution
             OpenSolution(CurrentSolution.FullName);
         }
 
-
-
+        public DirectoryInfo SolutionDirectory { get; private set; }
 
         public bool OpenSolution(string SolutionFullPath)
         {
@@ -61,10 +60,10 @@ namespace ColorVision.Solution
 
             if (Directory.Exists(SolutionFullPath))
             {
-                DirectoryInfo Info = new DirectoryInfo(SolutionFullPath);
-                CurrentSolution.SolutionName = Info.Name;
-                CurrentSolution.FullName = Info.FullName;
-                SolutionHistory.InsertFile(Info.FullName);
+                SolutionDirectory = new DirectoryInfo(SolutionFullPath);
+                CurrentSolution.SolutionName = SolutionDirectory.Name;
+                CurrentSolution.FullName = SolutionDirectory.FullName;
+                SolutionHistory.InsertFile(SolutionDirectory.FullName);
                 SolutionLoaded?.Invoke(CurrentSolution,new EventArgs());
                 return true;
             }

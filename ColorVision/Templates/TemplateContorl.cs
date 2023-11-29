@@ -30,9 +30,9 @@ namespace ColorVision.Templates
         private static readonly object _locker = new();
         public static TemplateControl GetInstance() { lock (_locker) { return _instance ??= new TemplateControl(); } }
 
-        private static string FileNameCalibrationParams = "cfg\\CalibrationSetup";
-        private static string FileNameLedJudgeParams = "cfg\\LedJudgeSetup";
-        private static string FileNameFlowParms = "cfg\\FlowParmSetup";
+        private static string FileNameCalibrationParams = "CalibrationSetup";
+        private static string FileNameLedJudgeParams = "LedJudgeSetup";
+        private static string FileNameFlowParms = "FlowParmSetup";
 
         private PoiService poiService = new PoiService();
         private ModService modService = new ModService();
@@ -40,6 +40,9 @@ namespace ColorVision.Templates
         private SysResourceService resourceService = new SysResourceService();
         private SysDictionaryService dictionaryService = new SysDictionaryService();
         private MeasureService measureService = new MeasureService();
+
+        public string TemplatePath { get; set; }
+
 
         public TemplateControl()
         {
@@ -63,7 +66,7 @@ namespace ColorVision.Templates
 
             GlobalSetting.GetInstance().SoftwareConfig.UseMySqlChanged += (s) =>
             {
-                if (!GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+                if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
                     CSVSave();
 
                 Thread  thread  = new Thread(async () =>
@@ -80,6 +83,7 @@ namespace ColorVision.Templates
 
             };
 
+            TemplatePath = SolutionManager.GetInstance().SolutionDirectory.FullName;
             Init();
 
 
@@ -93,6 +97,7 @@ namespace ColorVision.Templates
 
             SolutionManager.GetInstance().SolutionInitialized += (s, e) =>
             {
+                TemplatePath = SolutionManager.GetInstance().SolutionDirectory.FullName;
                 if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
                 {
                     LoadFlowParam();
@@ -178,19 +183,9 @@ namespace ColorVision.Templates
             }
         }
 
-        public static T? LoadCFG<T>(string cfgFile)
+        public T? LoadCFG<T>(string cfgFile)
         {
-            if (File.Exists(SolutionManager.GetInstance().CurrentSolution.FullName + "\\" + cfgFile))
-            {
-                cfgFile = SolutionManager.GetInstance().CurrentSolution.FullName + "\\" + cfgFile;
-            }
-            else if (File.Exists(AppDomain.CurrentDomain.BaseDirectory + cfgFile))
-            {
-                cfgFile = AppDomain.CurrentDomain.BaseDirectory + cfgFile;
-            }
-
-
-            return CfgFile.Load<T>(cfgFile);
+            return CfgFile.Load<T>(TemplatePath + "\\CFG\\"+ cfgFile + ".cfg");
         }
 
 
@@ -198,7 +193,7 @@ namespace ColorVision.Templates
         /// 这里是初始化模板的封装，因为模板的代码高度统一，所以使用泛型T来设置具体的模板参数。
         /// 最后在给模板的每一个元素加上一个切换的效果，即当某一个模板启用时，关闭其他已经启用的模板；
         /// 同一类型，只能存在一个启用的模板
-        private static ObservableCollection<TemplateModel<T>> IDefault<T>(string FileName ,T Default) where T : ParamBase
+        private  ObservableCollection<TemplateModel<T>> IDefault<T>(string FileName ,T Default) where T : ParamBase
         {
             ObservableCollection<TemplateModel<T >> Params = new ObservableCollection<TemplateModel<T>>();
 
@@ -237,6 +232,7 @@ namespace ColorVision.Templates
             return Params;
         }
 
+
         private Dictionary<string, object> DicTemplate = new Dictionary<string, object>();
 
         public void CSVSave()
@@ -245,7 +241,7 @@ namespace ColorVision.Templates
             {
                 if (Directory.Exists(SolutionManager.GetInstance().CurrentSolution.FullName))
                 {
-                    CfgFile.Save(SolutionManager.GetInstance().CurrentSolution.FullName + "\\cfg\\" + item.Key, item.Value);
+                    CfgFile.Save(SolutionManager.GetInstance().CurrentSolution.FullName + "\\CFG\\" + item.Key +".cfg", item.Value);
                 }
                 else
                 {
@@ -283,7 +279,7 @@ namespace ColorVision.Templates
                         }
                     }
                     else
-                        SaveDefault($"cfg\\{ModMasterType.POI}.cfg", PoiParams);
+                        SaveDefault($"{ModMasterType.POI}", PoiParams);
 
                     break;
                 case TemplateType.FlowParam:
@@ -329,7 +325,7 @@ namespace ColorVision.Templates
             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
                 Save2DB(t);
             else 
-                SaveDefault($"cfg\\{code}.cfg", t);
+                SaveDefault(code, t);
         }
 
 
@@ -353,16 +349,9 @@ namespace ColorVision.Templates
         }
 
 
-        private static void SaveDefault<T>(string FileNameParams, ObservableCollection<TemplateModel<T>> t) where T :ParamBase
+        private  void SaveDefault<T>(string FileNameParams, ObservableCollection<TemplateModel<T>> t) where T :ParamBase
         {
-            if (Directory.Exists(SolutionManager.GetInstance().CurrentSolution.FullName)) 
-            {
-                CfgFile.Save(SolutionManager.GetInstance().CurrentSolution.FullName +"\\"+ FileNameParams, t);
-            }
-            else
-            {
-                CfgFile.Save(FileNameParams, t);
-            }
+            CfgFile.Save(TemplatePath + "\\CFG\\" + FileNameParams + ".cfg", t);
         }
 
 
@@ -382,7 +371,7 @@ namespace ColorVision.Templates
             {
                 PoiParams.Clear();
                 if (PoiParams.Count == 0)
-                    PoiParams = IDefault($"cfg\\{ModMasterType.POI}.cfg", new PoiParam());
+                    PoiParams = IDefault($"{ModMasterType.POI}.cfg", new PoiParam());
             }
 
             return PoiParams;
@@ -521,7 +510,7 @@ namespace ColorVision.Templates
             }
             else
             {
-                var keyValuePairs = IDefault($"cfg\\{ModeType}.cfg", new T());
+                var keyValuePairs = IDefault(ModeType, new T());
                 foreach (var item in keyValuePairs)
                     ParamModes.Add(item);
             }

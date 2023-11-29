@@ -85,6 +85,8 @@ namespace ColorVision.Solution.V
 
         public RelayCommand OpenCommand { get; set; }
 
+        public RelayCommand AttributesCommand { get; set; }
+
         public bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; NotifyPropertyChanged(); } }
         private bool _IsExpanded;
 
