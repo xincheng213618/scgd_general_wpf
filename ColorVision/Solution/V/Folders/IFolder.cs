@@ -9,7 +9,6 @@ namespace ColorVision.Solution.V.Folders
         string Name { get; set; }
         string ToolTip { get; set; }
         ImageSource Icon { get; set; }
-
         ContextMenu ContextMenu { get; set; }
 
         void Open();

@@ -46,7 +46,7 @@ namespace ColorVision
             }
         }
         FlowParam FlowParam { get; set; }
-        public WindowFlowEngine(FlowParam flowParam) : this(GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.GetFullFileName(flowParam.FileName?? flowParam.Name))
+        public WindowFlowEngine(FlowParam flowParam) : this(SolutionManager.GetInstance().CurrentSolution.FullName + "\\Flow\\" + flowParam.FileName)
         {
             FlowParam = flowParam;
         }

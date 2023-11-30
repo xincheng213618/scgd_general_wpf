@@ -40,7 +40,7 @@ namespace ColorVision.Solution
 
             _=RunAsync();
         }
-
+        
         public async Task<Task> RunAsync()
         {
             await Task.Delay(100);
@@ -53,7 +53,10 @@ namespace ColorVision.Solution
             return Task.CompletedTask;
         }
 
-
+        private void Refresh_Click(object sender, RoutedEventArgs e)
+        {
+            SolutionExplorers[0].Refresh();
+        }
 
         private void TreeViewControl_Drop(object sender, DragEventArgs e)
         {
@@ -227,6 +230,8 @@ namespace ColorVision.Solution
         {
             HandyControl.Controls.Growl.Info("此功能在测试中");
         }
+
+
     }
 
 

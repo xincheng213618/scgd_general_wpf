@@ -1,0 +1,27 @@
+﻿<Window x:Class="ColorVision.Templates.CalibrationUpload"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.Templates"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        mc:Ignorable="d"
+        Title="CalibrationUpload" Height="450" Width="800" DragEnter="Window_DragEnter" DragOver="UIElement_OnDragOver" AllowDrop="True" Drop="UIElement_OnDrop">
+    <Grid>
+        <StackPanel>
+            <DockPanel>
+                <TextBlock Text="校正类型"/>
+                <hc:ComboBox  x:Name="CobCalibration" IsEditable="True" Text=""  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
+            </DockPanel>
+            <DockPanel>
+                <TextBlock Text="校正文件"/>
+                <Button Content="选择文件" DockPanel.Dock="Right" Click="Button_Click" />
+                <hc:TextBox x:Name="TxtCalibrationFile" IsReadOnly="True" Margin="0,0,10,0" />
+            </DockPanel>
+            <DockPanel>
+                <Button Content="上传"/>
+            </DockPanel>
+        </StackPanel>
+
+    </Grid>
+</Window>

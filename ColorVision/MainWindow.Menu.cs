@@ -133,6 +133,10 @@ namespace ColorVision
                         windowTemplate = new WindowTemplate(TemplateType.FocusPointsParam) { Title = "FocusPoints算法设置" };
                         TemplateAbb(windowTemplate, TemplateControl.FocusPointsParams);
                         break;
+                    case "CalibrationUpload":
+                        CalibrationUpload calibrationUpload = new CalibrationUpload();
+                        calibrationUpload.ShowDialog();
+                        break;
                     default:
                         HandyControl.Controls.Growl.Info("开发中");
                         break;

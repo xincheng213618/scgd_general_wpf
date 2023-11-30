@@ -95,7 +95,7 @@ namespace ColorVision.Templates
                 CSVSave();
             };
 
-            SolutionManager.GetInstance().SolutionInitialized += (s, e) =>
+            SolutionManager.GetInstance().SolutionLoaded += (s, e) =>
             {
                 TemplatePath = SolutionManager.GetInstance().SolutionDirectory.FullName;
                 if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)

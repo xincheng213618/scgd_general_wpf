@@ -10,6 +10,7 @@ using ColorVision.Services;
 using ColorVision.Themes;
 using System.Drawing;
 using System.Windows.Media;
+using ColorVision.Solution;
 
 namespace ColorVision.Flow
 {
@@ -85,7 +86,7 @@ namespace ColorVision.Flow
             {
                 if (FlowTemplate.SelectedValue is FlowParam flowParam)
                 {
-                    string fileName = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.GetFullFileName(flowParam.FileName ?? string.Empty);
+                    string fileName = SolutionManager.GetInstance().CurrentSolution.FullName + "\\Flow\\" + flowParam.FileName;
                     if (File.Exists(fileName))
                     {
                         if (View != null)

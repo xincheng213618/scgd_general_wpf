@@ -23,7 +23,6 @@ namespace ColorVision.Solution.V
 
     public class SolutionExplorer: VObject
     {
-        public ContextMenu ContextMenu { get; set; }
         public DirectoryInfo DirectoryInfo { get; set; }
 
         public RelayCommand OpenExplorer { get; set; }
@@ -37,6 +36,11 @@ namespace ColorVision.Solution.V
             GeneralContextMenu();
             GeneralCVSln();
             this.IsExpanded = true;
+        }
+        public void Refresh()
+        {
+            this.VisualChildren.Clear();
+            GeneralCVSln();
         }
 
         public void GeneralRelayCommand()
@@ -152,10 +156,6 @@ namespace ColorVision.Solution.V
                 this.AddChild(vFolder);
                 GeneralChild(vFolder, item);
             }
-
-
-
-
         }
 
         public static void GeneralChild(VObject vObject,DirectoryInfo directoryInfo)

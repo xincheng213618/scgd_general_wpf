@@ -44,7 +44,7 @@ namespace ColorVision.Services.Algorithm
             Device = device;
             InitializeComponent();
 
-            netFileUtil = new NetFileUtil(SolutionManager.GetInstance().CurrentSolution.CachePath);
+            netFileUtil = new NetFileUtil(SolutionManager.GetInstance().CurrentSolution + "\\Cache");
             netFileUtil.handler += NetFileUtil_handler;
 
             Service.OnAlgorithmEvent += Service_OnAlgorithmEvent;

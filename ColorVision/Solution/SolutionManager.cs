@@ -34,7 +34,7 @@ namespace ColorVision.Solution
         /// <summary>
         /// 工程初始化的时候
         /// </summary>
-        public event EventHandler SolutionInitialized;
+        public event EventHandler SolutionCreated;
         /// <summary>
         /// 工程打开的时候
         /// </summary>
@@ -54,28 +54,21 @@ namespace ColorVision.Solution
 
         public bool OpenSolution(string SolutionFullPath)
         {
-            if (string.IsNullOrWhiteSpace(SolutionFullPath))
-                return false;
             log.Debug("正在打开工程:" + SolutionFullPath);
 
-            if (Directory.Exists(SolutionFullPath))
+            if (!Directory.Exists(SolutionFullPath))
             {
-                SolutionDirectory = new DirectoryInfo(SolutionFullPath);
-                CurrentSolution.SolutionName = SolutionDirectory.Name;
-                CurrentSolution.FullName = SolutionDirectory.FullName;
-                SolutionHistory.InsertFile(SolutionDirectory.FullName);
-                SolutionLoaded?.Invoke(CurrentSolution,new EventArgs());
-                return true;
+                string DefaultPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ColorVision\\默认工程";
+                if (!Directory.Exists(DefaultPath))
+                    Directory.CreateDirectory(DefaultPath);
+                CreateSolution(new DirectoryInfo(DefaultPath));
+                SolutionFullPath = DefaultPath;
             }
-            else
-            {
-                CurrentSolution.SolutionName = string.Empty ;
-                CurrentSolution.FullName = string.Empty;
-
-                log.Debug("工程文件打开失败:" + SolutionFullPath);
-                MessageBox.Show("工程文件已被删除，在使用之前请重新创建", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                return false;
-            }
+            CurrentSolution.FullName = SolutionFullPath;
+            SolutionDirectory = new DirectoryInfo(CurrentSolution.FullName);
+            SolutionHistory.InsertFile(SolutionDirectory.FullName);
+            SolutionLoaded?.Invoke(CurrentSolution, new EventArgs());
+            return true;
         }
 
         public void CreateSolution(DirectoryInfo Info)
@@ -85,11 +78,10 @@ namespace ColorVision.Solution
             Tool.CreateDirectoryMax(Info.FullName + "\\Image");
             Tool.CreateDirectoryMax(Info.FullName + "\\Flow");
 
-            CurrentSolution.SolutionName = Info.Name;
             CurrentSolution.FullName = Info.FullName;
 
             CurrentSolution.ToJsonNFile(Info.FullName + "\\" + Info.Name + ".cvsln");
-            SolutionInitialized.Invoke(CurrentSolution, new EventArgs());
+            SolutionCreated?.Invoke(CurrentSolution, new EventArgs());
         }
 
         public void OpenSolutionWindow() => OpenSolutionWindow(Application.Current.MainWindow);

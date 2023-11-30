@@ -16,11 +16,6 @@ namespace ColorVision.Solution
     /// </summary>
     public class SolutionConfig : ViewModelBase
     {
-        public SolutionConfig() { }
-
-        public string SolutionName { get => _SolutionName; set { _SolutionName = value; NotifyPropertyChanged(); } }
-        private string _SolutionName;
-
         public string FullName 
         { 
             get =>  _SolutionFullName;
@@ -31,15 +26,5 @@ namespace ColorVision.Solution
             }
         }
         private string _SolutionFullName;
-
-        public string CachePath { get => _SolutionFullName + "\\Cache"; }
-
-        public string ConfigPath { get => _SolutionFullName + "\\Config"; }
-
-        public string GetFullFileName(string fileName)
-        {
-            if (string.IsNullOrWhiteSpace(fileName)) return string.Empty;
-            return _SolutionFullName + "\\" + fileName;
-        }
     }
 }
