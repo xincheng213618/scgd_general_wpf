@@ -335,7 +335,10 @@ namespace ColorVision.RC
         public void KeepLive(int heartbeatTime)
         {
             if (Token == null)
+            {
+                ReRegist();
                 return;
+            }
 
             List<DeviceHeartbeat> deviceStatues = new List<DeviceHeartbeat>();
             deviceStatues.Add(new DeviceHeartbeat(DevcieName, DeviceStatusType.Opened));
