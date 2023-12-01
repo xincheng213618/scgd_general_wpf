@@ -8,81 +8,31 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Windows.Input;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 
 namespace ColorVision.Templates
 {
-    public class ParamBase:ViewModelBase
+    public class ModelBase : ViewModelBase
     {
-        public static int No { get; set; }
-
-        public event EventHandler IsEnabledChanged;
-
-        [Category("设置"), DisplayName("是否启用模板"), Browsable(false)]
-        public bool IsEnable
-        {
-            get => _IsEnable; set
-            {
-                if (IsEnable == value) return;
-                _IsEnable = value;
-                if (value == true) IsEnabledChanged?.Invoke(this, new EventArgs());
-                NotifyPropertyChanged();
-            }
-        }
-        private bool _IsEnable;
-
-        [Browsable(false)]
-        public int ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
-        private int _ID;
-
-        [Browsable(false)]
-        public string Name { get => _Name; set { _Name = value ; NotifyPropertyChanged(); } }
-        private string _Name;
-
-
-
         private Dictionary<string, ModDetailModel> parameters;
 
-        public ParamBase()
+        public ModelBase(List<ModDetailModel> detail)
         {
-            this.ID = No++;
-            this.parameters = new Dictionary<string, ModDetailModel>();
-        }
-
-
-        public ParamBase(int id,string  name,List<ModDetailModel> detail)
-        {
-            this.ID = id;
-            this.Name = name;
-            this.parameters = new Dictionary<string, ModDetailModel>();
+            parameters = new Dictionary<string, ModDetailModel>();
             if (detail != null)
             {
                 foreach (var flowDetailModel in detail)
                 {
-                    AddParameter(flowDetailModel.Symbol ?? "", flowDetailModel);
+                    if (flowDetailModel.Symbol != null && !parameters.ContainsKey(flowDetailModel.Symbol))
+                    {
+                        parameters.Add(flowDetailModel.Symbol, flowDetailModel);
+                    }
                 }
             }
         }
-        public void AddParameter(string key, ModDetailModel value)
-        {
-            if (!parameters.ContainsKey(key))
-                parameters.Add(key, value);
-        }
 
-        public ModDetailModel? GetParameter(string key)
-        {
-            if (parameters.TryGetValue(key,out ModDetailModel modDetailModel))
-            {
-                return modDetailModel;
-            }
-            else
-            {
-                return null;
-            }
-        }
-        internal void GetDetail(List<ModDetailModel> list)
-        {
-            list.AddRange(parameters.Values.ToList());
-        }
+
 
         protected override bool SetProperty<T>(ref T storage, T value, [CallerMemberName] string propertyName = "")
         {
@@ -90,7 +40,7 @@ namespace ColorVision.Templates
 
             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
             {
-                if (parameters.TryGetValue(propertyName,out ModDetailModel modDetailModel))
+                if (parameters.TryGetValue(propertyName, out ModDetailModel modDetailModel))
                 {
                     modDetailModel.ValueB = modDetailModel.ValueA;
                     if (typeof(T) == typeof(double[]) && value is double[] doule)
@@ -184,7 +134,7 @@ namespace ColorVision.Templates
                     }
                     else if (typeof(T) == typeof(double[]))
                     {
-                        return (T)(object)StringToDoubleArray(val??string.Empty);
+                        return (T)(object)StringToDoubleArray(val ?? string.Empty);
                     }
                 }
                 return default(T);
@@ -192,6 +142,71 @@ namespace ColorVision.Templates
             }
             return storage;
         }
+
+
+        public ModDetailModel? GetParameter(string key)
+        {
+            if (parameters.TryGetValue(key, out ModDetailModel modDetailModel))
+            {
+                return modDetailModel;
+            }
+            else
+            {
+                return null;
+            }
+        }
+        internal void GetDetail(List<ModDetailModel> list)
+        {
+            list.AddRange(parameters.Values.ToList());
+        }
+
+
+    }
+
+    public class ParamBase: ModelBase
+    {
+        public static int No { get; set; }
+
+        public event EventHandler IsEnabledChanged;
+
+        [Category("设置"), DisplayName("是否启用模板"), Browsable(false)]
+        public bool IsEnable
+        {
+            get => _IsEnable; set
+            {
+                if (IsEnable == value) return;
+                _IsEnable = value;
+                if (value == true) IsEnabledChanged?.Invoke(this, new EventArgs());
+                NotifyPropertyChanged();
+            }
+        }
+        private bool _IsEnable;
+
+        [Browsable(false)]
+        public int ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
+        private int _ID;
+
+        [Browsable(false)]
+        public string Name { get => _Name; set { _Name = value ; NotifyPropertyChanged(); } }
+        private string _Name;
+
+
+
+        private Dictionary<string, ModDetailModel> parameters;
+
+        public ParamBase() : base(new List<ModDetailModel>())
+        {
+            this.ID = No++;
+        }
+
+
+        public ParamBase(int id,string  name,List<ModDetailModel> detail):base (detail)
+        {
+            this.ID = id;
+            this.Name = name;
+        }
+
+
 
     }
 }

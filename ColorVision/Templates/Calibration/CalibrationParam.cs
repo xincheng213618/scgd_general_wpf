@@ -3,15 +3,16 @@ using ColorVision.MySql.DAO;
 using cvColorVision;
 using System;
 using System.Collections.Generic;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 
 namespace ColorVision.Templates
 {
 
-    public class CalibrationBase : ViewModelBase
+    public class CalibrationBase : ModelBase
     {
 
         public RelayCommand SelectFileCommand { get; set; }
-        public CalibrationBase()
+        public CalibrationBase(List<ModDetailModel> detail,string propertyName = "") :base(detail)
         {
             SelectFileCommand = new RelayCommand((s) =>
             {
@@ -24,11 +25,14 @@ namespace ColorVision.Templates
                     FilePath = dialog.FileName;
                 }
             });
+            this.propertyName = propertyName;
         }
+
+        private string propertyName = string.Empty;
 
         public string FileName { get; set; } 
 
-        public string FilePath { get => _FilePath; set { _FilePath = value; NotifyPropertyChanged(); } }
+        public string FilePath { get {  if (string.IsNullOrWhiteSpace(propertyName)) return GetValue(_FilePath); else return GetValue(_FilePath, propertyName); } set { if (string.IsNullOrWhiteSpace(propertyName)) SetProperty(value); else SetProperty(value, propertyName);} }
         private string _FilePath;
 
         public bool IsSelected { get => _IsSelected; set { if (value == _IsSelected) return; _IsSelected = value; NotifyPropertyChanged(); } }
@@ -37,7 +41,7 @@ namespace ColorVision.Templates
 
     public class CalibrationNormal
     {
-        public CalibrationNormal()
+        public CalibrationNormal(List<ModDetailModel> detail,string Type)
         {
             DarkNoiseList = new List<string>() { "111", "222" };
             DefectPointList = new List<string>() { "111", "222" };
@@ -45,22 +49,28 @@ namespace ColorVision.Templates
             UniformityList = new List<string>() { "111", "222" };
             DistortionList = new List<string>() { "111", "222" };
             ColorShiftList = new List<string>() { "111", "222" };
+
+
+            DarkNoise = new CalibrationBase(detail, nameof(DarkNoise) +Type);
+            DefectPoint = new CalibrationBase(detail, nameof(DefectPoint) + Type);
+            DSNU = new CalibrationBase(detail, nameof(DSNU) + Type);
+            Uniformity = new CalibrationBase(detail, nameof(Uniformity) + Type);
+            Distortion = new CalibrationBase(detail, nameof(Distortion) + Type);
+            ColorShift = new CalibrationBase(detail, nameof(ColorShift) + Type);
         }
 
-
-
         public List<string> DarkNoiseList { get; set; }
-        public CalibrationBase DarkNoise { get; set; } = new CalibrationBase();
+        public CalibrationBase DarkNoise { get; set; } 
         public List<string> DefectPointList { get; set; }
-        public CalibrationBase DefectPoint { get; set; } = new CalibrationBase();
+        public CalibrationBase DefectPoint { get; set; } 
         public List<string> DSNUList { get; set; }
-        public CalibrationBase DSNU { get; set; } = new CalibrationBase();
+        public CalibrationBase DSNU { get; set; }
         public List<string> UniformityList { get; set; }
-        public CalibrationBase Uniformity { get; set; } = new CalibrationBase();
+        public CalibrationBase Uniformity { get; set; }
         public List<string> DistortionList { get; set; }
-        public CalibrationBase Distortion { get; set; } = new CalibrationBase();
+        public CalibrationBase Distortion { get; set; }
         public List<string> ColorShiftList { get; set; }
-        public CalibrationBase ColorShift { get; set; } = new CalibrationBase();
+        public CalibrationBase ColorShift { get; set; }
 
         public Dictionary<string,object> ToDictionary()
         {
@@ -84,8 +94,13 @@ namespace ColorVision.Templates
     public class CalibrationColor
     {
 
-        public CalibrationColor()
+        public CalibrationColor(List<ModDetailModel> detail)
         {
+            Luminance = new CalibrationBase(detail,nameof(Luminance));
+            LumOneColor = new CalibrationBase(detail, nameof(LumOneColor));
+            LumFourColor = new CalibrationBase(detail, nameof(LumFourColor));
+            LumMultiColor = new CalibrationBase(detail, nameof(LumMultiColor));
+
             Luminance.PropertyChanged += (s, e) => 
             {
                 if (Luminance.IsSelected)
@@ -127,6 +142,8 @@ namespace ColorVision.Templates
             LumOneColorList = new List<string>() { "111", "222" };
             LumFourColorList = new List<string>() { "111", "222" };
             LumMultiColorList = new List<string>() { "111", "222" };
+
+
         }
 
         public CalibrationType CalibrationType
@@ -146,37 +163,40 @@ namespace ColorVision.Templates
             }
         }
         public List<string> LuminanceList { get; set; }
-        public CalibrationBase Luminance { get; set; } = new CalibrationBase();
+        public CalibrationBase Luminance { get; set; } 
         public List<string> LumOneColorList { get; set; }
-        public CalibrationBase LumOneColor { get; set; } = new CalibrationBase();
+        public CalibrationBase LumOneColor { get; set; }
 
         public List<string> LumFourColorList { get; set; }
-        public CalibrationBase LumFourColor { get; set; } = new CalibrationBase();
+        public CalibrationBase LumFourColor { get; set; }
 
         public List<string> LumMultiColorList { get; set; }
-        public CalibrationBase LumMultiColor { get; set; } = new CalibrationBase();
+        public CalibrationBase LumMultiColor { get; set; }
     }
 
     public class CalibrationParam: ParamBase
     {
-        public CalibrationNormal NormalR { get; set; } = new CalibrationNormal();
+        public CalibrationNormal NormalR { get; set; } 
 
-        public CalibrationNormal NormalG { get; set; } = new CalibrationNormal();
+        public CalibrationNormal NormalG { get; set; }
 
-        public CalibrationNormal NormalB { get; set; } = new CalibrationNormal();
+        public CalibrationNormal NormalB { get; set; }
 
-        public CalibrationColor Color { get; set; } = new CalibrationColor();
-
+        public CalibrationColor Color { get; set; }
         public CalibrationParam() 
         {
+            NormalR = new CalibrationNormal(new List<ModDetailModel>(),"R");
+            NormalG = new CalibrationNormal(new List<ModDetailModel>(),"G");
+            NormalB = new CalibrationNormal(new List<ModDetailModel>(),"B");
+            Color = new CalibrationColor(new List<ModDetailModel>());
 
         }
         public CalibrationParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name??string.Empty, modDetails)
         {
-            foreach (var item in modDetails)
-            {
-                
-            }   
+            NormalR = new CalibrationNormal(modDetails,"R");
+            NormalG = new CalibrationNormal(modDetails,"G");
+            NormalB = new CalibrationNormal(modDetails,"B");
+            Color = new CalibrationColor(modDetails);
         }
     }
 

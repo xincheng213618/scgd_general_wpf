@@ -61,35 +61,35 @@
                             <DockPanel  Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="暗噪声"  Width="80" />
                                 <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding  NormalG.DarkNoise.IsSelected}"   Margin="5,0"/>
-                                <hc:ComboBox Text="{Binding NormalR.DarkNoise.FilePath}"  ItemsSource="{Binding NormalR.DarkNoiseList}"/>
+                                <hc:ComboBox Text="{Binding NormalG.DarkNoise.FilePath}"  ItemsSource="{Binding NormalG.DarkNoiseList}"/>
                             </DockPanel>
                             <DockPanel  Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="DSNU" Width="80"  />
                                 <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalG.DSNU.IsSelected}"   Margin="5,0"/>
-                                <hc:ComboBox Text="{Binding NormalR.DSNU.FilePath}"  ItemsSource="{Binding NormalR.DSNUList}"/>
+                                <hc:ComboBox Text="{Binding NormalG.DSNU.FilePath}"  ItemsSource="{Binding NormalG.DSNUList}"/>
 
                             </DockPanel>
                             <DockPanel  Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="缺陷点" Width="80"  />
                                 <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalG.DefectPoint.IsSelected}"   Margin="5,0"/>
-                                <hc:ComboBox Text="{Binding NormalR.DefectPoint.FilePath}"  ItemsSource="{Binding NormalR.DefectPointList}"/>
+                                <hc:ComboBox Text="{Binding NormalG.DefectPoint.FilePath}"  ItemsSource="{Binding NormalG.DefectPointList}"/>
                             </DockPanel>
 
                             <DockPanel  Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="ColorShift" Width="80"  />
                                 <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalG.ColorShift.IsSelected}"   Margin="5,0"/>
-                                <hc:ComboBox Text="{Binding NormalR.ColorShift.FilePath}"  ItemsSource="{Binding NormalR.ColorShiftList}"/>
+                                <hc:ComboBox Text="{Binding NormalG.ColorShift.FilePath}"  ItemsSource="{Binding NormalG.ColorShiftList}"/>
                             </DockPanel>
                             <DockPanel  Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="畸变" Width="80"  />
                                 <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalG.Distortion.IsSelected}"   Margin="5,0"/>
-                                <hc:ComboBox Text="{Binding NormalR.Distortion.FilePath}"  ItemsSource="{Binding NormalR.DistortionList}"/>
+                                <hc:ComboBox Text="{Binding NormalG.Distortion.FilePath}"  ItemsSource="{Binding NormalG.DistortionList}"/>
                             </DockPanel>
 
                             <DockPanel Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="均匀场G(绿)" Width="80" />
                                 <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalG.Uniformity.IsSelected}"   Margin="5,0"/>
-                                <hc:ComboBox Text="{Binding NormalR.Uniformity.FilePath}"  ItemsSource="{Binding NormalR.UniformityList}"/>
+                                <hc:ComboBox Text="{Binding NormalG.Uniformity.FilePath}"  ItemsSource="{Binding NormalG.UniformityList}"/>
                             </DockPanel>
                         </StackPanel>
                     </Border>
@@ -100,34 +100,34 @@
                             <DockPanel  Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="暗噪声"  Width="80" />
                                 <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding  NormalB.DarkNoise.IsSelected}"   Margin="5,0"/>
-                                <hc:ComboBox Text="{Binding NormalR.DarkNoise.FilePath}"  ItemsSource="{Binding NormalR.DarkNoiseList}"/>
+                                <hc:ComboBox Text="{Binding NormalB.DarkNoise.FilePath}"  ItemsSource="{Binding NormalB.DarkNoiseList}"/>
                             </DockPanel>
                             <DockPanel  Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="DSNU" Width="80"  />
                                 <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalB.DSNU.IsSelected}"   Margin="5,0"/>
-                                <hc:ComboBox Text="{Binding NormalR.DSNU.FilePath}"  ItemsSource="{Binding NormalR.DSNUList}"/>
+                                <hc:ComboBox Text="{Binding NormalB.DSNU.FilePath}"  ItemsSource="{Binding NormalB.DSNUList}"/>
                             </DockPanel>
                             <DockPanel  Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="缺陷点" Width="80"  />
                                 <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalB.DefectPoint.IsSelected}"   Margin="5,0"/>
-                                <hc:ComboBox Text="{Binding NormalR.DefectPoint.FilePath}"  ItemsSource="{Binding NormalR.DefectPointList}"/>
+                                <hc:ComboBox Text="{Binding NormalB.DefectPoint.FilePath}"  ItemsSource="{Binding NormalB.DefectPointList}"/>
                             </DockPanel>
 
                             <DockPanel  Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="ColorShift" Width="80"  />
                                 <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalB.ColorShift.IsSelected}"   Margin="5,0"/>
-                                <hc:ComboBox Text="{Binding NormalR.ColorShift.FilePath}"  ItemsSource="{Binding NormalR.ColorShiftList}"/>
+                                <hc:ComboBox Text="{Binding NormalB.ColorShift.FilePath}"  ItemsSource="{Binding NormalB.ColorShiftList}"/>
                             </DockPanel>
                             <DockPanel  Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="畸变" Width="80"  />
                                 <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalB.Distortion.IsSelected}"   Margin="5,0"/>
-                                <hc:ComboBox Text="{Binding NormalR.Distortion.FilePath}"  ItemsSource="{Binding NormalR.DistortionList}"/>
+                                <hc:ComboBox Text="{Binding NormalB.Distortion.FilePath}"  ItemsSource="{Binding NormalB.DistortionList}"/>
                             </DockPanel>
 
                             <DockPanel  Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="均匀场B(蓝)" Width="80"  />
                                 <CheckBox VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalB.Uniformity.IsSelected}"   Margin="5,0"/>
-                                <hc:ComboBox Text="{Binding NormalR.Uniformity.FilePath}"  ItemsSource="{Binding NormalR.UniformityList}"/>
+                                <hc:ComboBox Text="{Binding NormalB.Uniformity.FilePath}"  ItemsSource="{Binding NormalB.UniformityList}"/>
                             </DockPanel>
                         </StackPanel>
                     </Border>
