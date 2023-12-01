@@ -1,9 +1,11 @@
 using FileServerPlugin;
 using log4net;
+using MQTTMessageLib.FileServer;
 using NetMQ;
 using NetMQ.Sockets;
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace ColorVision.Net
@@ -32,23 +34,23 @@ namespace ColorVision.Net
             else return string.Empty;
         }
 
-        public void OpenRemoteFile(string serverEndpoint, string fileName, bool isCVCIE)
+        public void OpenRemoteFile(string serverEndpoint, string fileName, FileExtType extType)
         {
             string cacheFile = GetCacheFileFullName(fileName);
             if (string.IsNullOrEmpty(cacheFile))
             {
-                TaskStartDownloadFile(false, serverEndpoint, fileName, isCVCIE);
+                TaskStartDownloadFile(false, serverEndpoint, fileName, extType);
             }
             else
             {
-                OpenLocalFile(cacheFile, isCVCIE);
+                OpenLocalFile(cacheFile, extType);
             }
         }
-        public void TaskStartDownloadFile(bool isLocal, string serverEndpoint, string fileName, bool isCVCIE)
+        public void TaskStartDownloadFile(bool isLocal, string serverEndpoint, string fileName, FileExtType extType)
         {
             Task t = new(() =>
             {
-                if (isLocal) OpenLocalFile(fileName, isCVCIE);
+                if (isLocal) OpenLocalFile(fileName, extType);
                 else if (!string.IsNullOrWhiteSpace(serverEndpoint)) DownloadFile(serverEndpoint, fileName);
             });
             t.Start();
@@ -89,7 +91,8 @@ namespace ColorVision.Net
             }
             finally
             {
-                handler?.Invoke(this, new NetFileEvent(code, fileName, bytes));
+                CVCIEFileInfo fileInfo = new CVCIEFileInfo() { data = bytes,};
+                handler?.Invoke(this, new NetFileEvent(code, fileName, fileInfo));
             }
         }
 
@@ -97,11 +100,11 @@ namespace ColorVision.Net
         {
             DealerSocket client = null;
             var message = new List<byte[]>();
-            byte[]? bytes = ReadLocalBinaryFile(fileName);
+            CVCIEFileInfo fileData = ReadLocalBinaryFile(fileName);
             int code = -1;
-            if (bytes != null)
+            if (fileData.data != null)
             {
-                message.Add(bytes);
+                message.Add(fileData.data);
                 try
                 {
                     client = new DealerSocket(serverEndpoint);
@@ -128,24 +131,32 @@ namespace ColorVision.Net
         }
 
 
-        public static byte[]? ReadLocalBinaryFile(string path)
+        public static CVCIEFileInfo ReadLocalBinaryFile(string path)
         {
+            CVCIEFileInfo result = new CVCIEFileInfo();
             if (System.IO.File.Exists(path))
             {
                 System.IO.FileStream fileStream = new System.IO.FileStream(path, System.IO.FileMode.Open, System.IO.FileAccess.Read);
                 System.IO.BinaryReader binaryReader = new System.IO.BinaryReader(fileStream);
                 //获取文件长度
                 long length = fileStream.Length;
-                byte[] bytes = new byte[length];
-                //读取文件中的内容并保存到字节数组中
-                binaryReader.Read(bytes, 0, bytes.Length);
-                return bytes;
+                if(length > 0)
+                {
+                    result.data = new byte[length];
+                    //读取文件中的内容并保存到字节数组中
+                    binaryReader.Read(result.data, 0, result.data.Length);
+                    result.fileType = FileExtType.Src;
+                }
+                else
+                {
+                    logger.WarnFormat("File {0} Length is 0.", path);
+                }
             }
             else
             {
                 logger.ErrorFormat("File {0} is not exist.", path);
             }
-            return null;
+            return result;
         }
 
         public static void WriteLocalBinaryFile(string fileName, byte[] data)
@@ -171,39 +182,82 @@ namespace ColorVision.Net
             }
         }
 
-        public void OpenLocalFile(string fileName, bool isCVCIE)
+        public void OpenLocalFile(string fileName, FileExtType extType)
         {
-            byte[]? data = null;
-            if(isCVCIE) data = ReadLocalBinaryCIEFile(fileName);
+            CVCIEFileInfo data = default;
+            if(extType == FileExtType.CIE) data = ReadLocalBinaryCIEFile(fileName);
+            else if(extType == FileExtType.Raw) data = ReadLocalBinaryRawFile(fileName);
             else data = ReadLocalBinaryFile(fileName);
-            if (data == null) handler?.Invoke(this, new NetFileEvent(-1, fileName, data));
-            else handler?.Invoke(this, new NetFileEvent(0, fileName, data));
+            int code = 0;
+            if (data.data == null) code = -1;
+            handler?.Invoke(this, new NetFileEvent(code, fileName, data));
+        }
+
+        private CVCIEFileInfo ReadLocalBinaryRawFile(string fileName)
+        {
+            return ReadCVImageRaw(fileName);
         }
 
         public void OpenLocalCIEFile(string fileName)
         {
             var data = ReadLocalBinaryCIEFile(fileName);
-            if (data == null) handler?.Invoke(this, new NetFileEvent(-1, fileName, data));
-            else handler?.Invoke(this, new NetFileEvent(0, fileName, data));
+            int code = 0;
+            if (data.data == null) code = -1;
+            handler?.Invoke(this, new NetFileEvent(code, fileName, data));
         }
 
-        private byte[]? ReadLocalBinaryCIEFile(string fileName)
+        private CVCIEFileInfo ReadLocalBinaryCIEFile(string fileName)
         {
             return ReadCVImage(fileName);
         }
 
-        private byte[]? ReadCVImage(string fileName)
+        private CVCIEFileInfo ReadCVImageRaw(string fileName)
         {
             UInt32 w = 0, h = 0, bpp = 0, channels = 0;
             string srcFileName;
             byte[] imgData = null;
             float[] exp;
+            CVCIEFileInfo result = new CVCIEFileInfo();
+            if (CVFileUtils.GetParamFromFile(fileName, out w, out h, out bpp, out channels, out exp, out imgData, out srcFileName))
+            {
+                int Depth = CVFileUtils.GetMatDepth((int)bpp);
+
+                OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)h, (int)w, OpenCvSharp.MatType.MakeType(Depth, (int)channels), imgData);
+                OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
+                OpenCvSharp.Mat dst = new OpenCvSharp.Mat();
+                src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
+                int len = (int)(w * h);
+                result.data = new byte[len];
+                Marshal.Copy(dst.Data, result.data, 0, len);
+                logger.DebugFormat("Raw src file({0}) convert rgb.", fileName);
+                result.fileType = FileExtType.Raw;
+                result.width = (int)w;
+                result.height = (int)h;
+                result.bpp = 8;
+                result.channels = (int)channels;
+            }
+            else
+            {
+                logger.ErrorFormat("Raw file({0}) is not exist.", fileName);
+            }
+
+            return result;
+        }
+
+        private CVCIEFileInfo ReadCVImage(string fileName)
+        {
+            UInt32 w = 0, h = 0, bpp = 0, channels = 0;
+            string srcFileName;
+            byte[] imgData = null;
+            float[] exp;
+            CVCIEFileInfo result = new CVCIEFileInfo();
             if (CVFileUtils.GetParamFromFile(fileName, out w, out h, out bpp, out channels, out exp, out imgData, out srcFileName))
             {
                 if (System.IO.File.Exists(srcFileName))
                 {
-                    imgData = CVFileUtils.ReadBinaryFile(srcFileName);
-                    return imgData;
+                    result.data = CVFileUtils.ReadBinaryFile(srcFileName);
+                    result.fileType = FileExtType.Src;
+                    return result;
                 }
                 else
                 {
@@ -234,9 +288,8 @@ namespace ColorVision.Net
                         OpenCvSharp.Cv2.ImWrite(srcFileName, dst);
                     }
 
-                    imgData = ReadLocalBinaryFile(srcFileName);
+                    result = ReadLocalBinaryFile(srcFileName);
                     logger.WarnFormat("CIE src file({0}) is not exist. opencv real build.", srcFileName);
-                    return imgData;
                 }
             }
             else
@@ -244,7 +297,7 @@ namespace ColorVision.Net
                 logger.ErrorFormat("CIE file({0}) is not exist.", fileName);
             }
 
-            return null;
+            return result;
         }
     }
 
@@ -252,15 +305,15 @@ namespace ColorVision.Net
     {
         public int Code { get; set; }
         public string FileName { get; set; }
-        public byte[]? FileData { get; set; }
-        public NetFileEvent(int code, string fileName, byte[]? bytes)
+        public CVCIEFileInfo FileData { get; set; }
+        public NetFileEvent(int code, string fileName, CVCIEFileInfo fileData)
         {
             this.Code = code;
             this.FileName = fileName;
-            this.FileData = bytes;
+            this.FileData = fileData;
         }
 
-        public NetFileEvent(int code, string fileName) : this(code, fileName, null)
+        public NetFileEvent(int code, string fileName) : this(code, fileName, default)
         {
         }
     }

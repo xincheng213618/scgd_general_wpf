@@ -1,9 +1,11 @@
 ﻿#pragma warning disable CS8602  
 
-using ColorVision.Device.SMU;
 using ColorVision.Lincense;
 using ColorVision.Services;
+using ColorVision.Services.Device;
+using ColorVision.Extension;
 using ColorVision.Services.Msg;
+using MQTTMessageLib.Camera;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -14,6 +16,13 @@ namespace ColorVision.Device.Camera
 {
     public class ServiceCamera : BaseService<BaseServiceConfig>
     {
+        public event MessageRecvHandler OnMessageRecved;
+        public event DeviceStatusChangedHandler DeviceStatusChanged;
+
+        public DeviceStatus DeviceStatus { get => _DeviceStatus; set { _DeviceStatus = value; Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value)); NotifyPropertyChanged(); NotifyPropertyChanged(nameof(DeviceStatusString)); } }
+        private DeviceStatus _DeviceStatus;
+
+        public string DeviceStatusString { get => DeviceStatus.ToDescription(); set { } }
         public ServiceCamera(BaseServiceConfig Config) :base(Config)
         {
             Devices = new List<DeviceServiceCamera>();
@@ -25,8 +34,6 @@ namespace ColorVision.Device.Camera
             MsgReturnReceived += (msg) => Application.Current.Dispatcher.Invoke(()=> MQTTCamera_MsgReturnChanged(msg));
         }
 
-
-
         private void MQTTCamera_MsgReturnChanged(MsgReturn msg)
         {
             switch (msg.EventName)
@@ -37,7 +44,7 @@ namespace ColorVision.Device.Camera
 
                         if (msg.Data == null)
                             return;
-                       JArray SnIDs = msg.Data.SnID;
+                        JArray SnIDs = msg.Data.SnID;
                         if (SnIDs != null)
                         {
                             DevicesSN = new ObservableCollection<string>();
@@ -62,7 +69,7 @@ namespace ColorVision.Device.Camera
 
                             if (DevicesSNMD5.ContainsKey(SnIDs[i].ToString()))
                             {
-                                DevicesSNMD5[SnIDs[i].ToString()]= MD5IDs[i].ToString();
+                                DevicesSNMD5[SnIDs[i].ToString()] = MD5IDs[i].ToString();
 
                             }
                             else
@@ -81,15 +88,29 @@ namespace ColorVision.Device.Camera
 
                     return;
             }
+
+            if (msg.Code == 0)
+            {
+                switch (msg.EventName)
+                {
+                    case MQTTCameraEventEnum.Event_Open:
+                        break;
+                    case MQTTCameraEventEnum.Event_Close:
+                        break;
+                    case MQTTCameraEventEnum.Event_GetData:
+                        OnMessageRecved?.Invoke(this, new MessageRecvEventArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
+                        DeviceStatus = DeviceStatus.Opened;
+                        break;
+                    default:
+                        OnMessageRecved?.Invoke(this, new MessageRecvEventArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
+                        DeviceStatus = DeviceStatus.Opened;
+                        break;
+                }
+            }
         }
         public void GetAllDevice()
         {
             PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });
         }
-
-
     }
-
-
-
 }

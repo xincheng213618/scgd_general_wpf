@@ -12,7 +12,7 @@ namespace ColorVision.MySql.Service
         private BatchResultMasterDao batchDao;
         private AlgResultMasterDao algResultMasterDao;
         private POIPointResultDao poiPointResultDao;
-
+        private MeasureImgResultDao measureImgResultDao;
 
         public ResultService()
         {
@@ -21,6 +21,7 @@ namespace ColorVision.MySql.Service
             batchDao = new BatchResultMasterDao();
             poiPointResultDao = new POIPointResultDao();
             algResultMasterDao = new AlgResultMasterDao();
+            measureImgResultDao = new MeasureImgResultDao();
         }
 
         internal int SpectumDeleteById(int id)
@@ -70,6 +71,15 @@ namespace ColorVision.MySql.Service
         public List<POIPointResultModel> GetPOIByPid(int pid)
         {
             return poiPointResultDao.GetAllByPid(pid);
+        }
+        public MeasureImgResultModel GetCameraImgResultById(int id)
+        {
+            return measureImgResultDao.GetByID(id);
+        }
+
+        public List<MeasureImgResultModel>? GetCameraImgResultBySN(string serialNumber)
+        {
+            return measureImgResultDao.GetAllByBatchCode(serialNumber);
         }
     }
 }

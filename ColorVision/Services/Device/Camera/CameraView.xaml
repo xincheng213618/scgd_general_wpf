@@ -1,0 +1,43 @@
+﻿<UserControl x:Class="ColorVision.Services.Device.Camera.CameraView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ColorVision.Services.Device.Camera"
+             xmlns:cv="clr-namespace:ColorVision"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800" Initialized="UserControl_Initialized">
+    <Grid x:Name="MainGrid">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <cv:ImageView Grid.Row="0" x:Name="img_view"></cv:ImageView>
+        <Grid x:Name="Grid1" Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="38"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <ToolBar Grid.Row="0" Loaded="ToolBar_Loaded"  Background ="#EEF4F9" ToolBarTray.IsLocked="True">
+            <ToggleButton x:Name="toggle1" Click="Button_Click_ShowResultGrid" Margin="2,0,0,0" >
+                <Image Stretch="Uniform" Source="{DynamicResource DrawingImageList}" >
+                    <Image.RenderTransform>
+                        <RotateTransform Angle="90" CenterX="8" CenterY="8"/>
+                    </Image.RenderTransform>
+                </Image>
+            </ToggleButton>
+            <ToggleButton  x:Name="toggle2" Click="Button_Click_ShowRightGrid" Margin="2,0,0,0" >
+                <Image Stretch="Uniform"  Source="{DynamicResource DrawingImageList}" >
+                </Image>
+            </ToggleButton>
+            <Button Click="Button_Click_Export" Margin="2,0,0,0" >
+                <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSave}" />
+            </Button>
+            <Button Click="Button_Click_Clear" Margin="2,0,0,0"  >
+                <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" />
+            </Button>
+        </ToolBar>
+            <ListView Height="250" Grid.Row="1" x:Name="listView1" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" />
+        </Grid>
+    </Grid>
+</UserControl>

@@ -13,6 +13,17 @@ using ColorVision.Services.Msg;
 using ColorVision.Services.Device.Camera.Video;
 using System.Collections.ObjectModel;
 using ColorVision.Services.Device;
+using ColorVision.Services.Device.Camera;
+using ColorVision.Net;
+using ColorVision.Solution;
+using Panuon.WPF.UI;
+using MQTTMessageLib.Camera;
+using MySqlX.XDevAPI.Common;
+using ColorVision.MySql.DAO;
+using ColorVision.MySql.Service;
+using MQTTMessageLib.Algorithm;
+using MQTTMessageLib.FileServer;
+using Newtonsoft.Json;
 
 namespace ColorVision.Device.Camera
 {
@@ -26,14 +37,109 @@ namespace ColorVision.Device.Camera
 
         public DeviceCamera Device { get; set; }
 
-        public ImageView View { get; set; }
+        public CameraView View { get; set; }
 
+        private NetFileUtil netFileUtil;
+        private IPendingHandler? handler { get; set; }
+
+        private ResultService resultService { get; set; }
 
         public CameraDisplayControl(DeviceCamera device)
         {
             Device = device;
             View = Device.View;
             InitializeComponent();
+
+            netFileUtil = new NetFileUtil(SolutionManager.GetInstance().CurrentSolution.CachePath);
+            netFileUtil.handler += NetFileUtil_handler;
+
+            Service.CameraService.OnMessageRecved += CameraService_OnMessageRecved; ;
+            View.OnCurSelectionChanged += View_OnCurSelectionChanged;
+        }
+
+        private void View_OnCurSelectionChanged(CameraImgResult data)
+        {
+            doOpen(data.ImgFileName, FileExtType.Raw);
+        }
+
+        private void doOpen(string fileName, FileExtType extType)
+        {
+            string localName = netFileUtil.GetCacheFileFullName(fileName);
+            if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
+            {
+                Service.DownloadFile(fileName, extType);
+            }
+            else
+            {
+                netFileUtil.OpenLocalFile(localName, extType);
+            }
+        }
+
+        private void CameraService_OnMessageRecved(object sender, Services.MessageRecvEventArgs arg)
+        {
+            switch (arg.EventName)
+            {
+                case MQTTCameraEventEnum.Event_GetData:
+                    ShowResultFromDB(arg.SerialNumber, Convert.ToInt32(arg.Data.MasterId));
+                    break;
+                case MQTTFileServerEventEnum.Event_File_Download:
+                    DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
+                    FileDownload(pm_dl);
+                    break;
+            }
+        }
+
+        private void FileDownload(DeviceFileUpdownParam param)
+        {
+            if (!string.IsNullOrWhiteSpace(param.FileName)) netFileUtil.TaskStartDownloadFile(param.IsLocal, param.ServerEndpoint, param.FileName, FileExtType.Raw);
+        }
+
+        private void ShowResultFromDB(string serialNumber, int masterId)
+        {
+            List<MeasureImgResultModel> resultMaster = null;
+            if (masterId > 0)
+            {
+                resultMaster = new List<MeasureImgResultModel>();
+                MeasureImgResultModel model = resultService.GetCameraImgResultById(masterId);
+                resultMaster.Add(model);
+            }
+            else
+            {
+                resultMaster = resultService.GetCameraImgResultBySN(serialNumber);
+            }
+            foreach (MeasureImgResultModel result in resultMaster)
+            {
+                ShowResult(result);
+            }
+            handler?.Close();
+        }
+
+        private void ShowResult(MeasureImgResultModel result)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                Device.View.ShowResult(result);
+            });
+        }
+
+        private void NetFileUtil_handler(object sender, NetFileEvent arg)
+        {
+            if (arg.Code == 0 && arg.FileData.data != null)
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    View.OpenImage(arg.FileData);
+                });
+                handler?.Close();
+            }
+            else
+            {
+                handler?.Close();
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MessageBox.Show(Application.Current.MainWindow, "文件打开失败", "ColorVision");
+                });
+            }
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -131,11 +237,9 @@ namespace ColorVision.Device.Camera
                         break;
                 }
             };
+
+            resultService = new ResultService();
         }
-
-
-
-
 
         private void CameraInit_Click(object sender, RoutedEventArgs e)
         {
@@ -246,14 +350,14 @@ namespace ColorVision.Device.Camera
 
         public void CameraVideoFrameReceived(System.Drawing.Bitmap bmp)
         {
-            if (View.ImageShow.Source is WriteableBitmap bitmap)
+            if (View.img_view.ImageShow.Source is WriteableBitmap bitmap)
             {
                 ImageUtil.BitmapCopyToWriteableBitmap(bmp, bitmap, new System.Drawing.Rectangle(0, 0, bmp.Width, bmp.Height), 0, 0, bmp.PixelFormat);
             }
             else
             {
                 WriteableBitmap writeableBitmap = ImageUtil.BitmapToWriteableBitmap(bmp);
-                View.ImageShow.Source = writeableBitmap;
+                View.img_view.ImageShow.Source = writeableBitmap;
             }
         }
 
