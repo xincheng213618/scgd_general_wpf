@@ -12,6 +12,7 @@
         <Style  TargetType="TextBox" BasedOn="{StaticResource TextBox.Small}"/>
         <Style TargetType="hc:ComboBox" BasedOn="{StaticResource ComboBox.Small}">
             <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="IsEditable" Value="True"/>
         </Style>
     </UserControl.Resources>
     <StackPanel Margin="0">
