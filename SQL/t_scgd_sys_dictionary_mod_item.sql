@@ -11,7 +11,7 @@
  Target Server Version : 50742
  File Encoding         : 65001
 
- Date: 14/11/2023 17:47:05
+ Date: 01/12/2023 16:24:27
 */
 
 SET NAMES utf8mb4;
@@ -54,18 +54,28 @@ INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (110, 'ex', 110, 'x', 0, NUL
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (111, 'ey', 111, 'y', 0, NULL, '0', 1, '2023-06-27 17:36:43', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (112, 'ew', 112, 'width', 0, NULL, '0', 1, '2023-06-27 17:36:44', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (113, 'eh', 113, 'height', 0, NULL, '0', 1, '2023-06-27 17:36:45', 1, 0, NULL);
-INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (201, 'darknoise', 201, '暗噪声', 3, NULL, NULL, 2, '2023-06-27 11:25:58', 1, 0, NULL);
-INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (202, 'dsnu', 202, 'DSNU', 3, NULL, NULL, 2, '2023-06-27 11:25:55', 1, 0, NULL);
-INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (203, 'distortion', 203, '畸变', 3, NULL, NULL, 2, '2023-06-27 11:25:51', 1, 0, NULL);
-INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (204, 'defect_wpoint', 204, '缺陷点(亮)', 3, NULL, NULL, 2, '2023-06-27 11:25:47', 1, 0, NULL);
-INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (205, 'defect_bpoint', 205, '缺陷点(暗)', 3, NULL, NULL, 2, '2023-06-27 11:25:44', 1, 0, NULL);
-INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (206, 'luminance', 206, '亮度', 3, NULL, NULL, 2, '2023-06-27 11:26:11', 1, 0, NULL);
-INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (207, 'colorone', 207, '单色', 3, NULL, NULL, 2, '2023-06-27 11:26:17', 1, 0, NULL);
-INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (208, 'colorfour', 208, '四色', 3, NULL, NULL, 2, '2023-06-27 11:26:25', 1, 0, NULL);
-INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (209, 'colormulti', 209, '多色', 3, NULL, NULL, 2, '2023-06-27 11:26:32', 1, 0, NULL);
-INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (210, 'uniformity_y', 210, '均匀场Y(绿)', 3, NULL, NULL, 2, '2023-06-27 11:26:47', 1, 0, NULL);
-INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (211, 'uniformity_x', 211, '均匀场X(红)', 3, NULL, NULL, 2, '2023-06-27 11:26:45', 1, 0, NULL);
-INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (212, 'uniformity_z', 212, '均匀场Z(蓝)', 3, NULL, NULL, 2, '2023-06-27 16:19:12', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (206, 'Luminance', 206, '亮度', 3, NULL, NULL, 2, '2023-12-01 15:39:38', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (207, 'LumOneColor', 207, '单色', 3, NULL, NULL, 2, '2023-12-01 15:39:42', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (208, 'LumFourColor', 208, '四色', 3, NULL, NULL, 2, '2023-12-01 15:39:45', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (209, 'LumMultiColor', 209, '多色', 3, NULL, NULL, 2, '2023-12-01 15:39:47', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (210, 'UniformityR', 210, '均匀场X(红)', 3, NULL, NULL, 2, '2023-12-01 16:19:07', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (211, 'UniformityG', 211, '均匀场Y(绿)', 3, NULL, NULL, 2, '2023-12-01 16:19:11', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (212, 'UniformityB', 212, '均匀场Z(蓝)', 3, NULL, NULL, 2, '2023-12-01 16:19:14', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (213, 'DistortionR', 213, '畸变X(红)', 3, NULL, NULL, 2, '2023-12-01 16:18:58', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (214, 'DistortionG', 214, '畸变Y(绿)', 3, NULL, NULL, 2, '2023-12-01 16:19:01', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (215, 'DistortionB', 215, '畸变Z(蓝)', 3, NULL, NULL, 2, '2023-12-01 16:19:04', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (216, 'ColorShiftR', 216, '色偏X(红)', 3, NULL, NULL, 2, '2023-12-01 16:18:40', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (217, 'ColorShiftG', 217, '色偏Y(绿)', 3, NULL, NULL, 2, '2023-12-01 16:18:50', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (218, 'ColorShiftB', 218, '色偏Z(蓝)', 3, NULL, NULL, 2, '2023-12-01 16:18:54', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (219, 'DarkNoiseR', 219, 'DarkNoiseR', 3, NULL, NULL, 2, '2023-12-01 15:40:53', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (220, 'DarkNoiseG', 220, 'DarkNoiseG', 3, NULL, NULL, 2, '2023-12-01 15:40:53', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (221, 'DarkNoiseB', 221, 'DarkNoiseB', 3, NULL, NULL, 2, '2023-12-01 15:40:53', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (222, 'DefectPointR', 222, 'DefectPointR', 3, NULL, NULL, 2, '2023-12-01 15:40:53', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (223, 'DefectPointG', 223, 'DefectPointG', 3, NULL, NULL, 2, '2023-12-01 15:40:53', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (224, 'DefectPointB', 224, 'DefectPointB', 3, NULL, NULL, 2, '2023-12-01 15:40:53', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (225, 'DSNUR', 225, 'DSNUR', 3, NULL, NULL, 2, '2023-12-01 15:40:53', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (226, 'DSNUG', 225, 'DSNUG', 3, NULL, NULL, 2, '2023-12-01 15:40:53', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (227, 'DSNUB', 227, 'DSNUB', 3, NULL, NULL, 2, '2023-12-01 15:40:53', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (301, 'CM_StartPG', 301, '开始', 3, NULL, 'start\\r', 3, '2023-08-28 15:37:50', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (302, 'CM_StopPG', 302, '停止', 3, NULL, 'stop\\r', 3, '2023-08-28 15:39:06', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (303, 'CM_ReSetPG', 303, '重置', 3, NULL, 'reset\\r', 3, '2023-08-28 15:39:14', 1, 0, NULL);
@@ -135,7 +145,7 @@ INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3044, 'filterByCircularity'
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3045, 'minCircularity', 3045, '', 1, NULL, '0.9', 10, '2023-10-09 15:59:29', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3046, 'maxCircularity', 3046, NULL, 1, NULL, '3.40282346638528859e+38', 10, '2023-10-09 16:04:59', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3047, 'filterByConvexity', 3047, '形状控制（豁口）', 0, NULL, NULL, 10, '2023-10-09 15:59:23', 1, 0, NULL);
-INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3048, 'minConvexity', 3048, NULL, 1, NULL, '0.9', 10, '2023-10-09 16:00:00', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3048, 'minConvexity ', 3048, NULL, 1, NULL, '0.9', 10, '2023-11-22 18:06:52', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3049, 'maxConvexity', 3049, NULL, 1, NULL, '3.40282346638528859e+38', 10, '2023-10-09 16:04:29', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3050, 'filterByInertia', 3050, '形状控制（椭圆度）', 0, NULL, NULL, 10, '2023-10-09 16:00:51', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3051, 'minInertiaRatio', 3051, NULL, 1, NULL, '0.9', 10, '2023-10-09 16:00:51', 1, 0, NULL);
@@ -162,7 +172,7 @@ INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3085, 'Hegexishu', 3085, '�
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3086, 'Erzhihuapiancha', 3086, '图像二值化补正', 0, NULL, '-20', 14, '2023-11-14 17:44:26', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3087, 'BinaryCorret', 3087, '发光区二值化补正', 0, NULL, '-20', 14, '2023-11-14 17:45:02', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3088, 'Boundry', 3088, 'Boundry', 0, NULL, '120', 14, '2023-11-14 17:45:04', 1, 0, NULL);
-INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3089, 'IsuseLocalRdPoint', 3089, 'IsuseLocalRdPoint', 0, NULL, 'false', 14, '2023-11-14 17:35:04', 1, 0, NULL);
+INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3089, 'IsuseLocalRdPoint', 3089, 'IsuseLocalRdPoint', 2, NULL, 'false', 14, '2023-11-22 16:24:02', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3090, 'Picwid', 3090, 'Picwid', 0, NULL, '24', 14, '2023-11-14 17:45:06', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3091, 'Pichig', 3091, 'Pichig', 0, NULL, '32', 14, '2023-11-14 17:45:08', 1, 0, NULL);
 INSERT INTO `t_scgd_sys_dictionary_mod_item` VALUES (3092, 'LengthCheck', 3092, 'LengthCheck', 5, NULL, '10,10,10,10', 14, '2023-11-14 17:46:49', 1, 0, NULL);

@@ -5,13 +5,13 @@
  Source Server Type    : MySQL
  Source Server Version : 50742
  Source Host           : 192.168.3.250:3306
- Source Schema         : color_vision
+ Source Schema         : cv
 
  Target Server Type    : MySQL
  Target Server Version : 50742
  File Encoding         : 65001
 
- Date: 14/11/2023 11:39:31
+ Date: 01/12/2023 16:24:18
 */
 
 SET NAMES utf8mb4;
@@ -33,13 +33,13 @@ CREATE TABLE `t_scgd_sys_dictionary_mod_master`  (
   `tenant_id` int(11) NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_code`(`code`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 16 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '模块字典主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 17 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '模块字典主表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of t_scgd_sys_dictionary_mod_master
 -- ----------------------------
 INSERT INTO `t_scgd_sys_dictionary_mod_master` VALUES (1, 'camera', '相机', NULL, '2023-07-05 16:38:09', 1, 0, NULL, 0);
-INSERT INTO `t_scgd_sys_dictionary_mod_master` VALUES (2, 'calibration', '校正', NULL, '2023-07-05 10:33:38', 1, 0, NULL, 0);
+INSERT INTO `t_scgd_sys_dictionary_mod_master` VALUES (2, 'Calibration', '校正', NULL, '2023-12-01 15:56:41', 1, 0, NULL, 0);
 INSERT INTO `t_scgd_sys_dictionary_mod_master` VALUES (3, 'pg', 'PG', NULL, '2023-07-05 10:33:38', 1, 0, NULL, 0);
 INSERT INTO `t_scgd_sys_dictionary_mod_master` VALUES (4, 'auto_exp_time', '自动曝光', NULL, '2023-07-05 10:33:39', 1, 0, NULL, 0);
 INSERT INTO `t_scgd_sys_dictionary_mod_master` VALUES (5, 'centre_line', '中心线', NULL, '2023-07-05 10:33:39', 1, 0, NULL, 0);
