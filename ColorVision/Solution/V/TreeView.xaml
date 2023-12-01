@@ -10,6 +10,7 @@
     <Style x:Key="ButtonStyle" TargetType="{x:Type Button}">
         <Setter Property="OverridesDefaultStyle"  Value="true" />
         <Setter Property="Height" Value="25"/>
+        <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Margin" Value="2"/>
         <Setter Property="BorderThickness" Value="0"/>

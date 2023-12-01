@@ -22,8 +22,10 @@
                 <Button Content="鬼影" Click="Button_Click"  Tag="Ghost"/>
                 <Button Content="畸变" Click="Button_Click"  Tag="Distortion"/>
             </UniformGrid>
+            <Button  x:Name="button" Click="button_Click_1"/>
 
-            <ListView  x:Name="ListView1"  ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" Grid.Row="1"/>
+
+            <ListView  x:Name="ListView1"  ScrollViewer.HorizontalScrollBarVisibility="Auto"  ScrollViewer.VerticalScrollBarVisibility="Auto" Grid.Row="1"/>
         </Grid>
 
     </Grid>

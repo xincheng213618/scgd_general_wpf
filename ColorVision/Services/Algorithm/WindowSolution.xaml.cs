@@ -8,6 +8,7 @@ using ScottPlot;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Security.Cryptography.Xml;
 using System.Text;
@@ -85,6 +86,7 @@ namespace ColorVision.Services.Algorithm
 
             Batch = MySQLHelper.GetBatch(model.BatchId);
             IMG = MySQLHelper.GetMeasureResultImg(model.ImgId);
+
         }
 
         public float[] Pdfrequency { get; set; }
@@ -170,6 +172,7 @@ namespace ColorVision.Services.Algorithm
 
         private void Window_Initialized(object sender, EventArgs e)
         {
+
         }
 
 
@@ -332,6 +335,11 @@ namespace ColorVision.Services.Algorithm
                         break;
                 }
             }
+        }
+
+        private void button_Click_1(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }
