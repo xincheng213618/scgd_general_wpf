@@ -104,14 +104,15 @@
             </Grid.ColumnDefinitions>
             <Button x:Name="ButtonShiftOut" Panel.ZIndex="100" Click="OnLeftMainContentShiftOut" Opacity="0.3" hc:IconElement.Geometry="{StaticResource LeftGeometry}" Padding="8 8 0 8" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0 0 -16 0" Style="{StaticResource ButtonIconCircular}" />
             <Grid Grid.Column="1" x:Name="MainContent">
-                <Grid x:Name="ViewGrid"  Background="LightGray"/>
+                <Grid x:Name="ViewGrid" Background="LightGray"/>
+                <Grid x:Name="SolutionGrid" Background="LightGray" Visibility="{Binding ElementName=SolutionTab,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter}}"/>
             </Grid>
             <Grid Grid.Row="0" Panel.ZIndex="101" Background="{DynamicResource GlobalBackground}" Margin="-1,0,0,0" x:Name="LeftMainContent" d:DataContext="{d:DesignInstance local:SoftwareConfig}"  Visibility="{Binding SoftwareSetting.IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" >
                 <UIElement.RenderTransform>
                     <TranslateTransform />
                 </UIElement.RenderTransform>
                 <TabControl Style="{StaticResource TabControlBaseStyle}" TabStripPlacement="Bottom" >
-                    <TabItem Header="采集" Width="150">
+                    <TabItem x:Name="ViewTab" Header="采集" Width="150" >
                         <ScrollViewer x:Name="ScrollViewerDisplay" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" >
                             <StackPanel x:Name="SPDisplay" >
                                 <StackPanel x:Name="StackPanelMQTT" Initialized="StackPanelMQTT_Initialized" >
@@ -120,7 +121,7 @@
                         </ScrollViewer>
 
                     </TabItem>
-                    <TabItem Header="工程" Width="150">
+                    <TabItem x:Name="SolutionTab" Header="工程" Width="150" >
                         <Solution:TreeViewControl  />
                     </TabItem>
                 </TabControl>
@@ -140,11 +141,9 @@
                         </Grid>
                     </ItemsPanelTemplate>
                 </StatusBar.ItemsPanel>
-                <StatusBarItem  x:Name="StatusBarItem3" Content="{Binding  SoftwareConfig.SolutionConfig.SolutionName}"   MouseLeftButtonDown="TextBlock_MouseLeftButtonDown2">
-                </StatusBarItem>
-                <StatusBarItem Grid.Column="1" >
+                <StatusBarItem Grid.Column="1"  >
                     <DockPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0">
+                        <StackPanel Orientation="Horizontal" Margin="0" Visibility="{Binding ElementName=ViewTab,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter}}">
                             <Button  Height="15" BorderThickness="0" Background="Transparent" Click="ViewGrid_Click" Tag="1">
                                 <Image Source="{DynamicResource DrawingImageSingleWindow}" Margin="-5" />
                             </Button>

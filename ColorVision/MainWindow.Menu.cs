@@ -180,32 +180,6 @@ namespace ColorVision
         }
         private DateTime lastClickTime = DateTime.MinValue;
 
-        private void TextBlock_MouseLeftButtonDown2(object sender, MouseButtonEventArgs e)
-        {
-            if (SolutionManager.GetInstance().CurrentSolution.FullName != null)
-            {
-                TimeSpan elapsedTime = DateTime.Now - lastClickTime;
-                if (elapsedTime.TotalMilliseconds <= 300)
-                {
-                    //System.Diagnostics.Process.Start("explorer.exe", $"{SolutionManager.GetInstance().Setting.FullName}");
-
-
-                    Window window = new Window();
-                    window.Owner = this;
-                    SolutionWindow solutionWindow = new SolutionWindow() ;
-                    solutionWindow.Show();
-
-
-                }
-                lastClickTime = DateTime.Now;
-            }
-            else
-            {
-                SolutionManager.GetInstance().NewCreateWindow();
-            }
-
-
-        }
 
         private void MenuItem_Click_2(object sender, RoutedEventArgs e)
         {

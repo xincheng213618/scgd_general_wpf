@@ -9,25 +9,25 @@ namespace ColorVision.Services.Device
     [JsonConverter(typeof(StringEnumConverter))]
     public enum DeviceStatus
     {
-        [Description("未知")]
+        [Description("Unknown")]
         Unknown = -1,
-        [Description("已关闭")]
+        [Description("Closed")]
         Closed = 0,
-        [Description("正在关闭")]
+        [Description("Closing")]
         Closing = 1,
-        [Description("已打开")]
+        [Description("Opened")]
         Opened = 2,
-        [Description("正在打开")]
+        [Description("Opening")]
         Opening = 3,
-        [Description("忙碌")]
+        [Description("Busy")]
         Busy = 4,
-        [Description("空闲")]
+        [Description("Free")]
         Free = 5,
-        [Description("未连接")]
+        [Description("UnInit")]
         UnInit,
-        [Description("已连接")]
+        [Description("Init")]
         Init,
-        [Description("未连接")]
+        [Description("UnConnected")]
         UnConnected
     }
 

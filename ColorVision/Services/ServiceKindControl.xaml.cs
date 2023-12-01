@@ -25,7 +25,7 @@ namespace ColorVision.Services
         {
             ServiceControl = ServiceManager.GetInstance();
             this.DataContext = ServiceKind;
-            TextBox_Type.ItemsSource = ServiceControl.MQTTServices;
+            TextBox_Type.ItemsSource = ServiceControl.Services;
             TextBox_Type.SelectedItem = ServiceKind;
 
             if (ServiceKind.VisualChildren.Count == 0)

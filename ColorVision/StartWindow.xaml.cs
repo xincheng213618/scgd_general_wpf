@@ -167,7 +167,7 @@ namespace ColorVision
                     else
                     {
                         TextBoxMsg.Text += $"{Environment.NewLine}自动配置服务中";
-                        ServiceManager.GenContorl();
+                        ServiceManager.GenDeviceDisplayControl();
                     }
                 }
                 catch (Exception ex)

@@ -20,7 +20,7 @@ namespace ColorVision.Services
         public ObservableCollection<ServiceKind> MQTTServices { get; set; }
         private void Window_Initialized(object sender, EventArgs e)
         {
-            MQTTServices = ServiceManager.GetInstance().MQTTServices;
+            MQTTServices = ServiceManager.GetInstance().Services;
             TreeView1.ItemsSource = MQTTServices;
             ButtonOK.Focus();
         }
@@ -37,7 +37,7 @@ namespace ColorVision.Services
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            ServiceManager.GetInstance().GenContorl();
+            ServiceManager.GetInstance().GenDeviceDisplayControl();
             this.Close();
         }
 

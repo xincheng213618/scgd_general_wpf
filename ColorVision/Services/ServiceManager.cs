@@ -33,8 +33,8 @@ namespace ColorVision.Services
         public static ServiceManager GetInstance() { lock (_locker) { return _instance ??= new ServiceManager(); } }
 
 
-        public ObservableCollection<ServiceKind> MQTTServices { get; set; }
-        public ObservableCollection<BaseChannel> MQTTDevices { get; set; }
+        public ObservableCollection<ServiceKind> Services { get; set; }
+        public ObservableCollection<BaseChannel> Devices { get; set; }
 
 
         public SysResourceService ResourceService { get; set; }
@@ -50,8 +50,8 @@ namespace ColorVision.Services
         {
             ResourceService = new SysResourceService();
             resultService = new ResultService();
-            MQTTServices = new ObservableCollection<ServiceKind>();
-            MQTTDevices = new ObservableCollection<BaseChannel>();
+            Services = new ObservableCollection<ServiceKind>();
+            Devices = new ObservableCollection<BaseChannel>();
             svrDevices = new Dictionary<string, List<BaseService>>();
 
             UserConfig = GlobalSetting.GetInstance().SoftwareConfig.UserConfig;
@@ -77,15 +77,18 @@ namespace ColorVision.Services
             }
         }
 
-        public void GenContorl()
+        /// <summary>
+        /// 生成显示空间
+        /// </summary>
+        public void GenDeviceDisplayControl()
         {
             LastGenControl = new ObservableCollection<BaseChannel>();
             StackPanel.Children.Clear();
-            foreach (var mQTTServiceKind in MQTTServices)
+            foreach (var serviceKind in Services)
             {
-                foreach (var mQTTService in mQTTServiceKind.VisualChildren)
+                foreach (var service in serviceKind.VisualChildren)
                 {
-                    foreach (var item in mQTTService.VisualChildren)
+                    foreach (var item in service.VisualChildren)  
                     {
                         if (item is BaseChannel device)
                         {
@@ -95,12 +98,12 @@ namespace ColorVision.Services
                     }
                 }
             }
-            LastGenControl = MQTTDevices;
+            LastGenControl = Devices;
         }
         public void Reload()
         {
-            MQTTServices.Clear();
-            MQTTDevices.Clear();
+            this.Services.Clear();
+            Devices.Clear();
             LastGenControl?.Clear();
             svrDevices?.Clear();
             List<SysResourceModel> Services = ResourceService.GetAllServices(UserConfig.TenantId);
@@ -152,62 +155,62 @@ namespace ColorVision.Services
                                             DeviceCamera deviceCamera = new DeviceCamera(device, cameraService);
                                             svrObj = deviceCamera.DeviceService;
                                             mQTTService.AddChild(deviceCamera);
-                                            MQTTDevices.Add(deviceCamera);
+                                            Devices.Add(deviceCamera);
                                         }
                                         break;
                                     case ServiceType.PG:
                                         DevicePG devicePG = new DevicePG(device);
                                         svrObj = devicePG.DeviceService;
                                         mQTTService.AddChild(devicePG);
-                                        MQTTDevices.Add(devicePG);
+                                        Devices.Add(devicePG);
                                         break;
                                     case ServiceType.Spectum:
                                         DeviceSpectrum deviceSpectrum = new DeviceSpectrum(device);
                                         svrObj = deviceSpectrum.DeviceService;
                                         mQTTService.AddChild(deviceSpectrum);
-                                        MQTTDevices.Add(deviceSpectrum);
+                                        Devices.Add(deviceSpectrum);
                                         break;
                                     case ServiceType.SMU:
                                         DeviceSMU deviceSMU = new DeviceSMU(device);
                                         svrObj = deviceSMU.Service;
                                         mQTTService.AddChild(deviceSMU);
-                                        MQTTDevices.Add(deviceSMU);
+                                        Devices.Add(deviceSMU);
                                         break;
                                     case ServiceType.Sensor:
                                         DeviceSensor device1 = new DeviceSensor(device);
                                         svrObj = device1.DeviceService;
                                         mQTTService.AddChild(device1);
-                                        MQTTDevices.Add(device1);
+                                        Devices.Add(device1);
                                         break;
                                     case ServiceType.FileServer:
                                         DeviceFileServer img = new DeviceFileServer(device);
                                         svrObj = img.Service;
                                         mQTTService.AddChild(img);
-                                        MQTTDevices.Add(img);
+                                        Devices.Add(img);
                                         break;
                                     case ServiceType.Algorithm:
                                         DeviceAlgorithm alg = new DeviceAlgorithm(device);
                                         svrObj = alg.Service;
                                         mQTTService.AddChild(alg);
-                                        MQTTDevices.Add(alg);
+                                        Devices.Add(alg);
                                         break;
                                     case ServiceType.Calibration:
                                         DeviceCalibration deviceCalibration = new DeviceCalibration(device);
                                         svrObj = deviceCalibration.DeviceService;
                                         mQTTService.AddChild(deviceCalibration);
-                                        MQTTDevices.Add(deviceCalibration);
+                                        Devices.Add(deviceCalibration);
                                         break;
                                     case ServiceType.CfwPort:
                                         DeviceCfwPort deviceCfwPort = new DeviceCfwPort(device);
                                         svrObj = deviceCfwPort.DeviceService;
                                         mQTTService.AddChild(deviceCfwPort);
-                                        MQTTDevices.Add(deviceCfwPort);
+                                        Devices.Add(deviceCfwPort);
                                         break;
                                     case ServiceType.Motor:
                                         DeviceMotor deviceMotor = new DeviceMotor(device);
                                         svrObj = deviceMotor.DeviceService;
                                         mQTTService.AddChild(deviceMotor);
-                                        MQTTDevices.Add(deviceMotor);
+                                        Devices.Add(deviceMotor);
                                         break;
                                     default:
                                         break;
@@ -223,7 +226,7 @@ namespace ColorVision.Services
                         mQTTServicetype.AddChild(mQTTService);
                     }
                 }
-                MQTTServices.Add(mQTTServicetype);
+                this.Services.Add(mQTTServicetype);
             }
 
         }

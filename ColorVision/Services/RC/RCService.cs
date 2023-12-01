@@ -169,7 +169,7 @@ namespace ColorVision.RC
 
         public static void UpdateServiceStatus(List<MQTTNodeServiceStatus> data)
         {
-            foreach (var serviceKind in ServiceManager.GetInstance().MQTTServices)
+            foreach (var serviceKind in ServiceManager.GetInstance().Services)
             {
                 MQTTNodeServiceStatus ss = GetService(serviceKind.ServiceType.ToString(), data);
                 if(serviceKind.ServiceType.ToString() == ServiceType.Spectum.ToString())
@@ -210,7 +210,7 @@ namespace ColorVision.RC
 
         public static void UpdateServiceStatus(Dictionary<string, List<MQTTNodeService>> data)
         {
-            foreach (var serviceKind in ServiceManager.GetInstance().MQTTServices)
+            foreach (var serviceKind in ServiceManager.GetInstance().Services)
             {
                 if (serviceKind.ServiceType.ToString() == ServiceType.Algorithm.ToString())
                     continue;
