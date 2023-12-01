@@ -165,7 +165,6 @@ namespace ColorVision.Templates
 
         public CalibrationNormal NormalB { get; set; } = new CalibrationNormal();
 
-
         public CalibrationColor Color { get; set; } = new CalibrationColor();
 
         public CalibrationParam() 
@@ -174,7 +173,10 @@ namespace ColorVision.Templates
         }
         public CalibrationParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name??string.Empty, modDetails)
         {
-
+            foreach (var item in modDetails)
+            {
+                
+            }   
         }
     }
 
