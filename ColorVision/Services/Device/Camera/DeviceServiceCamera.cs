@@ -94,7 +94,6 @@ namespace ColorVision.Device.Camera
                             Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(this, SaveFileName));
                         }
                         catch { }
-
                         break;
                     case "GetAutoExpTime":
                         if (msg.Data != null && msg.Data.result[0].result != null)

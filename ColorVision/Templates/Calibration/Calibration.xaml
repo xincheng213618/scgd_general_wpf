@@ -4,14 +4,17 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Templates"
+             xmlns:hc="https://handyorg.github.io/handycontrol"
              d:DataContext="{d:DesignInstance Type=local:CalibrationParam}"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="400">
     <UserControl.Resources>
-        <Style  TargetType="TextBox" BasedOn="{StaticResource TextBox.Small}"/> 
+        <Style  TargetType="TextBox" BasedOn="{StaticResource TextBox.Small}"/>
+        <Style TargetType="hc:ComboBox" BasedOn="{StaticResource ComboBox.Small}">
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
     </UserControl.Resources>
     <StackPanel Margin="0">
-
         <Border  BorderThickness="1" BorderBrush="{DynamicResource  BorderBrush}" CornerRadius="5">
             <TabControl Background="Transparent">
                 <TabItem Header="R" Background="Transparent">
@@ -20,39 +23,33 @@
                             <DockPanel  Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="暗噪声"  Width="80" />
                                 <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding  NormalR.DarkNoise.IsSelected}"   Margin="5,0"/>
-                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalR.DarkNoise.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                                <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding NormalR.DarkNoise.FilePath}" />
+                                <hc:ComboBox  Text="{Binding  NormalR.DarkNoise.FilePath}"  ItemsSource="{Binding NormalR.DarkNoiseList}"/>
                             </DockPanel>
                             <DockPanel  Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="DSNU" Width="80"  />
                                 <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalR.DSNU.IsSelected}"   Margin="5,0"/>
-                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalR.DSNU.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                                <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding NormalR.DSNU.FilePath}" />
+                                <hc:ComboBox  Text="{Binding  NormalR.DSNU.FilePath}"  ItemsSource="{Binding NormalR.DSNUList}"/>
                             </DockPanel>
                             <DockPanel  Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="缺陷点" Width="80"  />
                                 <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalR.DefectPoint.IsSelected}"   Margin="5,0"/>
-                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalR.DefectPoint.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                                <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding NormalR.DefectPoint.FilePath}" />
+                                <hc:ComboBox  Text="{Binding  NormalR.DefectPoint.FilePath}"  ItemsSource="{Binding NormalR.DefectPointList}"/>
                             </DockPanel>
 
                             <DockPanel  Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="ColorShift" Width="80"  />
                                 <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalR.ColorShift.IsSelected}"   Margin="5,0"/>
-                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalR.ColorShift.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                                <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding NormalR.ColorShift.FilePath}" />
+                                <hc:ComboBox Text="{Binding  NormalR.ColorShift.FilePath}"  ItemsSource="{Binding NormalR.ColorShiftList}"/>
                             </DockPanel>
                             <DockPanel  Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="畸变" Width="80"  />
                                 <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalR.Distortion.IsSelected}"   Margin="5,0"/>
-                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalR.Distortion.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                                <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding NormalR.Distortion.FilePath}" />
+                                <hc:ComboBox Text="{Binding  NormalR.Distortion.FilePath}"  ItemsSource="{Binding NormalR.DistortionList}"/>
                             </DockPanel>
                             <DockPanel Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="均匀场R(红)" Width="80"  />
                                 <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalR.Uniformity.IsSelected}"   Margin="5,0"/>
-                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalR.Uniformity.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                                <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding NormalR.Uniformity.FilePath}" />
+                                <hc:ComboBox Text="{Binding NormalR.Uniformity.FilePath}"  ItemsSource="{Binding NormalR.UniformityList}"/>
                             </DockPanel>
                         </StackPanel>
                     </Border>
@@ -63,40 +60,35 @@
                             <DockPanel  Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="暗噪声"  Width="80" />
                                 <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding  NormalG.DarkNoise.IsSelected}"   Margin="5,0"/>
-                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalG.DarkNoise.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                                <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding NormalG.DarkNoise.FilePath}" />
+                                <hc:ComboBox Text="{Binding NormalR.DarkNoise.FilePath}"  ItemsSource="{Binding NormalR.DarkNoiseList}"/>
                             </DockPanel>
                             <DockPanel  Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="DSNU" Width="80"  />
                                 <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalG.DSNU.IsSelected}"   Margin="5,0"/>
-                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalG.DSNU.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                                <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding NormalG.DSNU.FilePath}" />
+                                <hc:ComboBox Text="{Binding NormalR.DSNU.FilePath}"  ItemsSource="{Binding NormalR.DSNUList}"/>
+
                             </DockPanel>
                             <DockPanel  Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="缺陷点" Width="80"  />
                                 <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalG.DefectPoint.IsSelected}"   Margin="5,0"/>
-                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalG.DefectPoint.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                                <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding NormalG.DefectPoint.FilePath}" />
+                                <hc:ComboBox Text="{Binding NormalR.DefectPoint.FilePath}"  ItemsSource="{Binding NormalR.DefectPointList}"/>
                             </DockPanel>
 
                             <DockPanel  Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="ColorShift" Width="80"  />
                                 <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalG.ColorShift.IsSelected}"   Margin="5,0"/>
-                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalG.ColorShift.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                                <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding NormalG.ColorShift.FilePath}" />
+                                <hc:ComboBox Text="{Binding NormalR.ColorShift.FilePath}"  ItemsSource="{Binding NormalR.ColorShiftList}"/>
                             </DockPanel>
                             <DockPanel  Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="畸变" Width="80"  />
                                 <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalG.Distortion.IsSelected}"   Margin="5,0"/>
-                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalG.Distortion.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                                <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding NormalG.Distortion.FilePath}" />
+                                <hc:ComboBox Text="{Binding NormalR.Distortion.FilePath}"  ItemsSource="{Binding NormalR.DistortionList}"/>
                             </DockPanel>
 
                             <DockPanel Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="均匀场G(绿)" Width="80" />
                                 <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalG.Uniformity.IsSelected}"   Margin="5,0"/>
-                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalG.Uniformity.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                                <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding NormalG.Uniformity.FilePath}" />
+                                <hc:ComboBox Text="{Binding NormalR.Uniformity.FilePath}"  ItemsSource="{Binding NormalR.UniformityList}"/>
                             </DockPanel>
                         </StackPanel>
                     </Border>
@@ -107,40 +99,34 @@
                             <DockPanel  Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="暗噪声"  Width="80" />
                                 <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding  NormalB.DarkNoise.IsSelected}"   Margin="5,0"/>
-                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalB.DarkNoise.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                                <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding NormalB.DarkNoise.FilePath}" />
+                                <hc:ComboBox Text="{Binding NormalR.DarkNoise.FilePath}"  ItemsSource="{Binding NormalR.DarkNoiseList}"/>
                             </DockPanel>
                             <DockPanel  Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="DSNU" Width="80"  />
                                 <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalB.DSNU.IsSelected}"   Margin="5,0"/>
-                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalB.DSNU.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                                <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding NormalB.DSNU.FilePath}" />
+                                <hc:ComboBox Text="{Binding NormalR.DSNU.FilePath}"  ItemsSource="{Binding NormalR.DSNUList}"/>
                             </DockPanel>
                             <DockPanel  Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="缺陷点" Width="80"  />
                                 <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalB.DefectPoint.IsSelected}"   Margin="5,0"/>
-                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalB.DefectPoint.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                                <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding NormalB.DefectPoint.FilePath}" />
+                                <hc:ComboBox Text="{Binding NormalR.DefectPoint.FilePath}"  ItemsSource="{Binding NormalR.DefectPointList}"/>
                             </DockPanel>
 
                             <DockPanel  Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="ColorShift" Width="80"  />
                                 <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalB.ColorShift.IsSelected}"   Margin="5,0"/>
-                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalB.ColorShift.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                                <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"  Text="{Binding NormalB.ColorShift.FilePath}" />
+                                <hc:ComboBox Text="{Binding NormalR.ColorShift.FilePath}"  ItemsSource="{Binding NormalR.ColorShiftList}"/>
                             </DockPanel>
                             <DockPanel  Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="畸变" Width="80"  />
                                 <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalB.Distortion.IsSelected}"   Margin="5,0"/>
-                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalB.Distortion.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                                <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding NormalB.Distortion.FilePath}" />
+                                <hc:ComboBox Text="{Binding NormalR.Distortion.FilePath}"  ItemsSource="{Binding NormalR.DistortionList}"/>
                             </DockPanel>
 
                             <DockPanel  Margin="0,2">
                                 <TextBlock DockPanel.Dock="Left" Text="均匀场B(蓝)" Width="80"  />
                                 <CheckBox VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalB.Uniformity.IsSelected}"   Margin="5,0"/>
-                                <Button DockPanel.Dock="Right" Content="..."  Command="{Binding NormalB.Uniformity.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                                <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding NormalB.Uniformity.FilePath}" />
+                                <hc:ComboBox Text="{Binding NormalR.Uniformity.FilePath}"  ItemsSource="{Binding NormalR.UniformityList}"/>
                             </DockPanel>
                         </StackPanel>
                     </Border>
@@ -148,38 +134,33 @@
             </TabControl>
 
         </Border>
-       
-        
- 
-      
+
+
+
+
         <GroupBox Header="色度校正"  Margin="0,5">
             <StackPanel>
                 <DockPanel  Margin="0,2">
                     <TextBlock DockPanel.Dock="Left" Text="亮度" Width="80"  />
                     <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding Color.Luminance.IsSelected}"   Margin="5,0"/>
-                    <Button DockPanel.Dock="Right" Content="..."  Command="{Binding Color.Luminance.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                    <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding Color.Luminance.FilePath}" />
+                    <hc:ComboBox Text="{Binding Color.Luminance.FilePath}"  ItemsSource="{Binding  Color.LumFourColorList}"/>
                 </DockPanel>
                 <DockPanel  Margin="0,2">
                     <TextBlock DockPanel.Dock="Left" Text="单色" Width="80"  />
                     <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding Color.LumOneColor.IsSelected}"   Margin="5,0"/>
-                    <Button DockPanel.Dock="Right" Content="..."  Command="{Binding Color.LumOneColor.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                    <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding Color.LumOneColor.FilePath}" />
+                    <hc:ComboBox Text="{Binding Color.LumOneColor.FilePath}"  ItemsSource="{Binding  Color.LumOneColorList}"/>
                 </DockPanel>
                 <DockPanel  Margin="0,2">
                     <TextBlock DockPanel.Dock="Left" Text="四色" Width="80"  />
                     <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding Color.LumFourColor.IsSelected}"   Margin="5,0"/>
-                    <Button DockPanel.Dock="Right" Content="..."  Command="{Binding Color.LumFourColor.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                    <TextBox BorderThickness="0,0,0,1" PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding Color.LumFourColor.FilePath}" />
+                    <hc:ComboBox Text="{Binding Color.LumFourColor.FilePath}"  ItemsSource="{Binding  Color.LumFourColorList}"/>
                 </DockPanel>
                 <DockPanel  Margin="0,2">
                     <TextBlock DockPanel.Dock="Left" Text="多色" Width="80"  />
                     <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding Color.LumMultiColor.IsSelected}"   Margin="5,0"/>
-                    <Button DockPanel.Dock="Right" Content="..."  Command="{Binding Color.LumMultiColor.SelectFileCommand}" Width="40"  Margin="5,0"/>
-                    <TextBox BorderThickness="0,0,0,1"  PreviewKeyDown="TextBox_PreviewKeyDown"   Text="{Binding Color.LumMultiColor.FilePath}" />
+                    <hc:ComboBox Text="{Binding Color.LumMultiColor.FilePath}"  ItemsSource="{Binding  Color.LumMultiColorList}"/>
                 </DockPanel>
             </StackPanel>
         </GroupBox>
     </StackPanel>
-
 </UserControl>

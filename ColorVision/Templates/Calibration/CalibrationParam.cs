@@ -25,6 +25,7 @@ namespace ColorVision.Templates
                 }
             });
         }
+
         public string FileName { get; set; } 
 
         public string FilePath { get => _FilePath; set { _FilePath = value; NotifyPropertyChanged(); } }
@@ -36,15 +37,29 @@ namespace ColorVision.Templates
 
     public class CalibrationNormal
     {
+        public CalibrationNormal()
+        {
+            DarkNoiseList = new List<string>() { "111", "222" };
+            DefectPointList = new List<string>() { "111", "222" };
+            DSNUList = new List<string>() { "111", "222" };
+            UniformityList = new List<string>() { "111", "222" };
+            DistortionList = new List<string>() { "111", "222" };
+            ColorShiftList = new List<string>() { "111", "222" };
+        }
+
+
+
+        public List<string> DarkNoiseList { get; set; }
         public CalibrationBase DarkNoise { get; set; } = new CalibrationBase();
-
+        public List<string> DefectPointList { get; set; }
         public CalibrationBase DefectPoint { get; set; } = new CalibrationBase();
-
+        public List<string> DSNUList { get; set; }
         public CalibrationBase DSNU { get; set; } = new CalibrationBase();
-
+        public List<string> UniformityList { get; set; }
         public CalibrationBase Uniformity { get; set; } = new CalibrationBase();
-
+        public List<string> DistortionList { get; set; }
         public CalibrationBase Distortion { get; set; } = new CalibrationBase();
+        public List<string> ColorShiftList { get; set; }
         public CalibrationBase ColorShift { get; set; } = new CalibrationBase();
 
         public Dictionary<string,object> ToDictionary()
@@ -107,6 +122,11 @@ namespace ColorVision.Templates
                     LumOneColor.IsSelected = false;
                 }
             };
+
+            LuminanceList = new List<string>() { "111", "222" };
+            LumOneColorList = new List<string>() { "111", "222" };
+            LumFourColorList = new List<string>() { "111", "222" };
+            LumMultiColorList = new List<string>() { "111", "222" };
         }
 
         public CalibrationType CalibrationType
@@ -125,18 +145,26 @@ namespace ColorVision.Templates
                     return CalibrationType.Empty_Num;
             }
         }
-
+        public List<string> LuminanceList { get; set; }
         public CalibrationBase Luminance { get; set; } = new CalibrationBase();
+        public List<string> LumOneColorList { get; set; }
         public CalibrationBase LumOneColor { get; set; } = new CalibrationBase();
+
+        public List<string> LumFourColorList { get; set; }
         public CalibrationBase LumFourColor { get; set; } = new CalibrationBase();
+
+        public List<string> LumMultiColorList { get; set; }
         public CalibrationBase LumMultiColor { get; set; } = new CalibrationBase();
     }
 
     public class CalibrationParam: ParamBase
     {
         public CalibrationNormal NormalR { get; set; } = new CalibrationNormal();
+
         public CalibrationNormal NormalG { get; set; } = new CalibrationNormal();
+
         public CalibrationNormal NormalB { get; set; } = new CalibrationNormal();
+
 
         public CalibrationColor Color { get; set; } = new CalibrationColor();
 
@@ -146,6 +174,7 @@ namespace ColorVision.Templates
         }
         public CalibrationParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name??string.Empty, modDetails)
         {
+
         }
     }
 
