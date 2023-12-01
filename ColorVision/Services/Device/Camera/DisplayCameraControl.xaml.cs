@@ -50,7 +50,7 @@ namespace ColorVision.Device.Camera
             View = Device.View;
             InitializeComponent();
 
-            netFileUtil = new NetFileUtil(SolutionManager.GetInstance().CurrentSolution.CachePath);
+            netFileUtil = new NetFileUtil(SolutionManager.GetInstance().CurrentSolution.FullName+"\\Cache");
             netFileUtil.handler += NetFileUtil_handler;
 
             Service.CameraService.OnMessageRecved += CameraService_OnMessageRecved; ;
