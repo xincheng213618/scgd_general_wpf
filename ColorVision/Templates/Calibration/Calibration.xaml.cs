@@ -16,7 +16,7 @@ namespace ColorVision.Templates
             this.CalibrationParam = new CalibrationParam();
             this.DataContext = CalibrationParam;
         }
-        public Calibration(CalibrationParam calibrationParam)
+        public Calibration(CalibrationParam? calibrationParam)
         {
             InitializeComponent();
             this.CalibrationParam = calibrationParam;

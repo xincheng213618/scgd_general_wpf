@@ -18,6 +18,7 @@ namespace ColorVision.MySql.Service
         public const string Distortion = "distortion";
         public const string LedCheck = "ledcheck";
         public const string FocusPoints = "focusPoints";
+        public const string Calibration = "Calibration";
 
     }
     public class ModService

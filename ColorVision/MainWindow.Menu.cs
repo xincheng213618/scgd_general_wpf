@@ -55,7 +55,7 @@ namespace ColorVision
                         TemplateAbb(windowTemplate, TemplateControl.AoiParams);
                         break;
                     case "Calibration":
-                        Calibration calibration = new Calibration(TemplateControl.CalibrationParams[0].Value);
+                        Calibration calibration = TemplateControl.CalibrationParams.Count==0?new Calibration(null):new Calibration(TemplateControl.CalibrationParams[0].Value);
                         windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration) { Title = "校正参数设置" };
                         TemplateControl.LoadParams(TemplateControl.CalibrationParams);
                         TemplateAbb(windowTemplate, TemplateControl.CalibrationParams);

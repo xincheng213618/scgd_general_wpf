@@ -110,16 +110,16 @@ namespace ColorVision.Templates
         }
         private void Init()
         {
-            CalibrationParams = IDefault(FileNameCalibrationParams, new CalibrationParam());
             LedReusltParams = IDefault(FileNameLedJudgeParams, new LedReusltParam());
             LoadPoiParam();
             LoadFlowParam();
 
             DicTemplate.TryAdd("Poi", PoiParams);
             DicTemplate.TryAdd("Flow", FlowParams);
-            DicTemplate.TryAdd("Calibration", CalibrationParams);
             DicTemplate.TryAdd("LedReuslt", LedReusltParams);
 
+
+            LoadModParam(CalibrationParams, ModMasterType.Calibration);
             LoadModParam(AoiParams, ModMasterType.Aoi);
             LoadModParam(SMUParams, ModMasterType.SMU);
             LoadModParam(PGParams, ModMasterType.PG);
@@ -136,7 +136,7 @@ namespace ColorVision.Templates
             switch (typeof(T))
             {
                 case Type t when t == typeof(CalibrationParam):
-                    IDefault(FileNameCalibrationParams, new CalibrationParam());
+                    LoadModParam(CalibrationParams, ModMasterType.Calibration);
                     break;
                 case Type t when t == typeof(LedReusltParam):
                     IDefault(FileNameLedJudgeParams, new LedReusltParam());
@@ -257,7 +257,7 @@ namespace ColorVision.Templates
             switch (windowTemplateType)
             {
                 case TemplateType.Calibration:
-                    SaveDefault(FileNameCalibrationParams, CalibrationParams);
+                    Save(CalibrationParams, ModMasterType.Calibration);
                     break;
                 case TemplateType.LedResult:
                     SaveDefault(FileNameLedJudgeParams, LedReusltParams);

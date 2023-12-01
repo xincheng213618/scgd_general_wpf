@@ -22,6 +22,7 @@ namespace ColorVision.Templates
                 ModMasterType.Distortion => TemplateType.DistortionParam,
                 ModMasterType.LedCheck => TemplateType.LedCheckParam,
                 ModMasterType.FocusPoints => TemplateType.FocusPointsParam,
+                ModMasterType.Calibration => TemplateType.Calibration,
                 _ => TemplateType.AoiParam,
             };
         }
@@ -40,6 +41,7 @@ namespace ColorVision.Templates
                 TemplateType.DistortionParam => ModMasterType.Distortion,
                 TemplateType.LedCheckParam => ModMasterType.LedCheck,
                 TemplateType.FocusPointsParam => ModMasterType.FocusPoints,
+                TemplateType.Calibration => ModMasterType.Calibration,
                 _ => string.Empty,
             };
         }
