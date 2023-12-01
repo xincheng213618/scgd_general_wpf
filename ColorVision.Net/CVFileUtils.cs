@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CA1806,CA1833,CA1401,CA2101,CA1838,CS8603
+using MQTTMessageLib.FileServer;
 using System;
 using System.IO;
 
@@ -19,6 +20,7 @@ namespace FileServerPlugin
     }
     public struct CVCIEFileInfo
     {
+        public FileExtType fileType;
         public int width;
         public int height;
         public int bpp;
@@ -109,11 +111,14 @@ namespace FileServerPlugin
                 if (ver == 1)
                 {
                     int fileNameLen = BitConverter.ToInt32(fileData, startIndex);
-                    byte[] fileNameBytes = new byte[fileNameLen];
                     startIndex += 4;
-                    Buffer.BlockCopy(fileData, startIndex, fileNameBytes, 0, fileNameLen);
-                    startIndex += fileNameLen;
-                    srcFileName = encoding.GetString(fileNameBytes);
+                    if (fileNameLen > 0)
+                    {
+                        byte[] fileNameBytes = new byte[fileNameLen];
+                        Buffer.BlockCopy(fileData, startIndex, fileNameBytes, 0, fileNameLen);
+                        startIndex += fileNameLen;
+                        srcFileName = encoding.GetString(fileNameBytes);
+                    }
                     gain = BitConverter.ToUInt32(fileData, startIndex);
                     startIndex += 4;
                     channels = BitConverter.ToUInt32(fileData, startIndex);
@@ -189,6 +194,28 @@ namespace FileServerPlugin
             {
                 writer.Write(data);
             }
+        }
+
+        public static int GetMatDepth(int bpp)
+        {
+            int depth = 0;
+            switch (bpp)
+            {
+                case 8:
+                    depth = 0;
+                    break;
+                case 16:
+                    depth = 2;
+                    break;
+                case 32:
+                    depth = 5;
+                    break;
+                case 64:
+                    depth = 6;
+                    break;
+            }
+
+            return depth;
         }
     }
 }

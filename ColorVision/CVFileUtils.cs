@@ -7,6 +7,7 @@ using System.Windows.Media.Media3D;
 
 namespace ColorVision
 {
+    /*
     public struct C_CVCIEFileInfo
     {
         public int Width { get; set; }
@@ -265,6 +266,28 @@ namespace ColorVision
             return false;
         }
 
+        public static int GetMatDepth(int bpp)
+        {
+            int depth = 0;
+            switch (bpp)
+            {
+                case 8:
+                    depth = 0;
+                    break;
+                case 16:
+                    depth = 2;
+                    break;
+                case 32:
+                    depth = 5;
+                    break;
+                case 64:
+                    depth = 6;
+                    break;
+            }
+
+            return depth;
+        }
+
         public static CVCIEFileInfo WriteBinaryFile_CVRGB(string fullFileName, byte[] bytes)
         {
             CVCIEFileInfo fileInfo = new CVCIEFileInfo();
@@ -355,4 +378,5 @@ namespace ColorVision
             }
         }
     }
+    */
 }

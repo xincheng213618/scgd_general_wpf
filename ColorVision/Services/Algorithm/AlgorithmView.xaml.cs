@@ -1,6 +1,7 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
+using FileServerPlugin;
 using HandyControl.Tools.Extension;
 using log4net;
 using log4net.Repository.Hierarchy;

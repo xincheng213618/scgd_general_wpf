@@ -4,6 +4,7 @@ using ColorVision.Draw.Ruler;
 using ColorVision.MVVM;
 using ColorVision.Services.Algorithm;
 using ColorVision.Util;
+using FileServerPlugin;
 using log4net;
 using log4net.Repository.Hierarchy;
 using MQTTMessageLib.Algorithm;
@@ -600,16 +601,30 @@ namespace ColorVision
 
         public void OpenCVCIE(string fileName)
         {
-            CVCIEFileInfo info = new CVCIEFileInfo();
-            int ret = CVFileUtils.ReadCVCIE(fileName,ref info);
-            OpenImage(info);
+            //CVCIEFileInfo info = new CVCIEFileInfo();
+            //int ret = CVFileUtils.ReadCVCIE(fileName,ref info);
+            //OpenImage(info);
         }
 
         public void OpenImage(CVCIEFileInfo fileInfo)
         {
-            ShowImage(fileInfo);
+            if (fileInfo.fileType == MQTTMessageLib.FileServer.FileExtType.Src) OpenImage(fileInfo.data);
+            else if(fileInfo.fileType == MQTTMessageLib.FileServer.FileExtType.Raw)
+            {
+                ShowImage(fileInfo);
+            }
         }
 
+        private void ShowImage(CVCIEFileInfo fileInfo)
+        {
+            logger.Info("OpenImage .....");
+            int Depth = CVFileUtils.GetMatDepth(fileInfo.bpp);
+
+            OpenCvSharp.Mat src = new OpenCvSharp.Mat(fileInfo.height, fileInfo.width, OpenCvSharp.MatType.MakeType(Depth, fileInfo.channels), fileInfo.data);
+            SetImageSource(src.ToBitmapSource());
+        }
+
+        /*
         private void ShowImage(CVCIEFileInfo fileInfo)
         {
             PixelFormat format = fileInfo.Channels switch
@@ -634,6 +649,7 @@ namespace ColorVision
                 logger.Info("OpenImage end");
             });
         }
+        */
 
         public void OpenImage(byte[] data)
         {

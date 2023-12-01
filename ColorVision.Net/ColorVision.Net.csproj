@@ -14,4 +14,10 @@
     <PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.8.0.20230708" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="MQTTMessageLib">
+      <HintPath>..\DLL\MQTTMessageLib.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>
