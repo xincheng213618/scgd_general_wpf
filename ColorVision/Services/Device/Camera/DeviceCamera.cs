@@ -19,7 +19,7 @@ namespace ColorVision.Device.Camera
 
         readonly Lazy<CameraDisplayControl> ControlLazy;
 
-        public ImageView View { get; set; }
+        public CameraView View { get; set; }
 
         public ServiceCamera Service { get; set; }
 
@@ -28,10 +28,10 @@ namespace ColorVision.Device.Camera
         {
             Service = cameraService;
             DeviceService = new DeviceServiceCamera(Config, Service);
-            View = new ImageView();
+            View = new CameraView();
             DeviceService.FileHandler += (s, e) =>
             {
-                View.OpenImage(e);
+                //View.View.(e);
             };
             if (Application.Current.TryFindResource("DrawingImageCamera") is DrawingImage  drawingImage)
                 Icon = drawingImage;

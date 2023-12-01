@@ -17,19 +17,34 @@ using System.Windows;
 
 namespace ColorVision.Services
 {
+    public class MessageRecvEventArgs
+    {
+        public int ResultCode { get; set; }
+        public string EventName { get; set; }
+        public string SerialNumber { get; set; }
+        public dynamic Data { get; set; }
 
+        public MessageRecvEventArgs(string eventName, string serialNumber, int resultCode, dynamic Data)
+        {
+            this.ResultCode = resultCode;
+            this.EventName = eventName;
+            this.SerialNumber = serialNumber;
+            this.Data = Data;
+        }
+    }
+    public delegate void MessageRecvHandler(object sender, MessageRecvEventArgs arg);
     public class BaseDevService : BaseService
     {
-
     }
 
     public class BaseDevService<T> : BaseDevService where T : BaseConfig
     {
         public event DeviceStatusChangedHandler DeviceStatusChanged;
+
         public DeviceStatus DeviceStatus { get => _DeviceStatus; set { _DeviceStatus = value; Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value)); NotifyPropertyChanged(); NotifyPropertyChanged(nameof(DeviceStatusString)); } }
         private DeviceStatus _DeviceStatus;
 
-        public string DeviceStatusString { get => DeviceStatus.ToDescription(); set { } }
+        public string DeviceStatusString { get => _DeviceStatus.ToDescription(); set { } }
 
         public T Config { get; set; }
 

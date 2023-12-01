@@ -14,30 +14,14 @@ using System.Windows;
 
 namespace ColorVision.Services.Algorithm
 {
-    public class AlgorithmResponseEvent
-    {
-        public int ResultCode { get; set; }
-        public string EventName { get; set; }
-        public string SerialNumber { get; set; }
-        public dynamic Data { get; set; }
-
-        public AlgorithmResponseEvent(string eventName, string serialNumber, int resultCode, dynamic Data)
-        {
-            this.ResultCode = resultCode;
-            this.EventName = eventName;
-            this.SerialNumber = serialNumber;
-            this.Data = Data;
-        }
-    }
-    public delegate void MQTTAlgorithmHandler(object sender, AlgorithmResponseEvent arg);
-
     public class AlgorithmService : BaseDevService<ConfigAlgorithm>
     {
-        public event MQTTAlgorithmHandler OnAlgorithmEvent;
-
         public static Dictionary<string, ObservableCollection<string>> ServicesDevices { get; set; } = new Dictionary<string, ObservableCollection<string>>();
 
         public string DeviceID { get => Config.ID; }
+
+        public event MessageRecvHandler OnMessageRecved;
+
 
         public AlgorithmService(ConfigAlgorithm Config) : base(Config)
         {
@@ -87,7 +71,7 @@ namespace ColorVision.Services.Algorithm
                         DeviceStatus = DeviceStatus.Opened;
                         break;
                     case MQTTAlgorithmEventEnum.Event_POI_GetData:
-                        OnAlgorithmEvent?.Invoke(this, new AlgorithmResponseEvent(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
+                        OnMessageRecved?.Invoke(this, new MessageRecvEventArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         DeviceStatus = DeviceStatus.Opened;
                         break;
                     case "SaveLicense":
@@ -96,7 +80,7 @@ namespace ColorVision.Services.Algorithm
                     //    break;
                     case MQTTFileServerEventEnum.Event_File_Upload:
                     case MQTTFileServerEventEnum.Event_File_List_All:
-                        OnAlgorithmEvent?.Invoke(this, new AlgorithmResponseEvent(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
+                        OnMessageRecved?.Invoke(this, new MessageRecvEventArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         break;
                     case "MTF":
                         Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, $"{msg.EventName}执行成功", "ColorVision"));
@@ -111,7 +95,7 @@ namespace ColorVision.Services.Algorithm
                 switch (msg.EventName)
                 {
                     case "GetData":
-                        OnAlgorithmEvent?.Invoke(this, new AlgorithmResponseEvent(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
+                        OnMessageRecved?.Invoke(this, new MessageRecvEventArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         DeviceStatus = DeviceStatus.Opened;
                         break;
                     case "Close":
@@ -129,7 +113,7 @@ namespace ColorVision.Services.Algorithm
                     case "Calibrations":
                         break;
                     default:
-                        OnAlgorithmEvent?.Invoke(this, new AlgorithmResponseEvent(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
+                        OnMessageRecved?.Invoke(this, new MessageRecvEventArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         DeviceStatus = DeviceStatus.Opened;
                         break;
                 }

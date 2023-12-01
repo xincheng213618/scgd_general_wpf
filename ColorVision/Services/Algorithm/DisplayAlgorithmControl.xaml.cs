@@ -47,14 +47,14 @@ namespace ColorVision.Services.Algorithm
             netFileUtil = new NetFileUtil(SolutionManager.GetInstance().CurrentSolution.CachePath);
             netFileUtil.handler += NetFileUtil_handler;
 
-            Service.OnAlgorithmEvent += Service_OnAlgorithmEvent;
+            Service.OnMessageRecved += Service_OnAlgorithmEvent;
             View.OnCurSelectionChanged += View_OnCurSelectionChanged;
 
         }
 
         private void NetFileUtil_handler(object sender, NetFileEvent arg)
         {
-            if (arg.Code == 0 && arg.FileData != null)
+            if (arg.Code == 0 && arg.FileData.data != null)
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
@@ -74,10 +74,10 @@ namespace ColorVision.Services.Algorithm
 
         private void View_OnCurSelectionChanged(AlgorithmResult data)
         {
-            doOpen(data.ImgFileName, false);
+            doOpen(data.ImgFileName, FileExtType.Src);
         }
 
-        private void Service_OnAlgorithmEvent(object sender, AlgorithmResponseEvent arg)
+        private void Service_OnAlgorithmEvent(object sender, MessageRecvEventArgs arg)
         {
             switch (arg.EventName)
             {
@@ -109,7 +109,7 @@ namespace ColorVision.Services.Algorithm
         }
         private void FileDownload(DeviceFileUpdownParam param)
         {
-            if (!string.IsNullOrWhiteSpace(param.FileName)) netFileUtil.TaskStartDownloadFile(param.IsLocal, param.ServerEndpoint, param.FileName, true);
+            if (!string.IsNullOrWhiteSpace(param.FileName)) netFileUtil.TaskStartDownloadFile(param.IsLocal, param.ServerEndpoint, param.FileName, FileExtType.CIE);
         }
 
         private void ShowResultFromDB(string serialNumber, int masterId)
@@ -132,14 +132,14 @@ namespace ColorVision.Services.Algorithm
                     case AlgorithmResultType.POI_XY_UV:
                     case AlgorithmResultType.POI_Y:
                     case AlgorithmResultType.POI:
-                        LoadResultPOIFromDB(result);
+                        ShowResultPOIFromDB(result);
                         break;
                 }
             }
             handler?.Close();
         }
 
-        private void LoadResultPOIFromDB(AlgResultMasterModel result)
+        private void ShowResultPOIFromDB(AlgResultMasterModel result)
         {
             var details = resultService.GetPOIByPid(result.Id);
             switch (result.ImgFileType)
@@ -411,10 +411,10 @@ namespace ColorVision.Services.Algorithm
             {
                 handler?.Close();
             };
-            doOpen(CB_CIEImageFiles.Text, true);
+            doOpen(CB_CIEImageFiles.Text, FileExtType.CIE);
         }
 
-        private void doOpen(string fileName, bool isCVCIE)
+        private void doOpen(string fileName, FileExtType extType)
         {
             string localName = netFileUtil.GetCacheFileFullName(fileName);
             if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
@@ -423,7 +423,7 @@ namespace ColorVision.Services.Algorithm
             }
             else
             {
-                netFileUtil.OpenLocalFile(localName, isCVCIE);
+                netFileUtil.OpenLocalFile(localName, extType);
             }
         }
 

@@ -2,9 +2,6 @@
 using cvColorVision;
 using ColorVision.MVVM;
 using ColorVision.Services.Device.Camera.Video;
-using ColorVision.Device;
-using System;
-using Org.BouncyCastle.Pqc.Crypto.Falcon;
 using System.Windows;
 
 namespace ColorVision.Services.Device.Camera
@@ -14,6 +11,8 @@ namespace ColorVision.Services.Device.Camera
     /// </summary>
     public class ConfigCamera : BaseDeviceConfig
     {
+        public string CameraID { get => _CameraID; set { _CameraID = value; NotifyPropertyChanged(); } }
+        private string _CameraID;
         public CameraType CameraType { get => _CameraType; set { _CameraType = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsExpThree)); } }
         private CameraType _CameraType;
 
@@ -77,6 +76,7 @@ namespace ColorVision.Services.Device.Camera
         public ExpTimeCfg ExpTimeCfg { get; set; } = new ExpTimeCfg();
 
         public CameraCfg CameraCfg { get; set; } = new CameraCfg();
+        public FileServerCfg FileServerCfg { get; set; } = new FileServerCfg();
     }
     public enum ConfigType
     {
@@ -86,6 +86,27 @@ namespace ColorVision.Services.Device.Camera
         Channels = 3,
         SYSTEM = 4,
     };
+
+    public class FileServerCfg : ViewModelBase
+    {
+        /// <summary>
+        /// 色/亮度图像
+        /// </summary>
+        public string CIEFileBasePath { get; set; }
+        /// <summary>
+        /// 相机原始图像
+        /// </summary>
+        public string RawFileBasePath { get; set; }
+        /// <summary>
+        /// 校正后tif图像
+        /// </summary>
+        public string SrcFileBasePath { get; set; }
+        /// <summary>
+        /// 端口地址
+        /// </summary>
+        public string Endpoint { get; set; }
+
+    }
 
     public class CameraCfg : ViewModelBase
     {

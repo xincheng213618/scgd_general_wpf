@@ -38,7 +38,7 @@ namespace ColorVision.Device.FileServer
 
         private void NetFileUtil_handler(object sender, NetFileEvent arg)
         {
-            if (arg.Code == 0 && arg.FileData != null)
+            if (arg.Code == 0 && arg.FileData.data != null)
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
@@ -79,7 +79,7 @@ namespace ColorVision.Device.FileServer
 
         private void FileDownload(DeviceFileUpdownParam param)
         {
-            if (!string.IsNullOrWhiteSpace(param.FileName)) netFileUtil.TaskStartDownloadFile(param.IsLocal, param.ServerEndpoint, param.FileName, false);
+            if (!string.IsNullOrWhiteSpace(param.FileName)) netFileUtil.TaskStartDownloadFile(param.IsLocal, param.ServerEndpoint, param.FileName, FileExtType.Src);
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)

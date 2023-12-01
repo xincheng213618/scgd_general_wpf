@@ -8,6 +8,13 @@ namespace ColorVision.MySql.DAO
     {
 
         public int BatchId { get; set; }
+        public string? BatchCode { get; set; }
+        public string? ReqParams { get; set; }
+        public string? RawFile { get; set; }
+        public string? ImgFrameInfo { get; set; }
+        public int ResultCode { get; set; }
+        public int TotalTime { get; set; }
+        public string? ResultDesc { get; set; }
 
         public string? FileData { get; set; }
 
@@ -19,18 +26,8 @@ namespace ColorVision.MySql.DAO
 
     public class MeasureImgResultDao : BaseDaoMaster<MeasureImgResultModel>
     {
-        public MeasureImgResultDao() : base(string.Empty, "t_scgd_measure_result_img", "id", false)
+        public MeasureImgResultDao() : base("v_scgd_measure_result_img", "t_scgd_measure_result_img", "id", false)
         {
-        }
-
-        public override DataTable CreateColumns(DataTable dInfo)
-        {
-            dInfo.Columns.Add(new DataColumn("id", typeof(int)));
-            dInfo.Columns.Add(new DataColumn("batch_id", typeof(int)));
-            dInfo.Columns.Add(new DataColumn("file_data", typeof(string)));
-            dInfo.Columns.Add(new DataColumn("device_code", typeof(string)));
-            dInfo.Columns.Add(new DataColumn("create_date", typeof(DateTime)));
-            return dInfo;
         }
 
         public override MeasureImgResultModel GetModel(DataRow item)
@@ -39,25 +36,19 @@ namespace ColorVision.MySql.DAO
             {
                 Id = item.Field<int>("id"),
                 BatchId = item.Field<int?>("batch_id")??-1,
-                FileData = item.Field<string?>("file_data"),
-                DeviceCode = item.Field<string?>("device_code"),
+                BatchCode = item.Field<string>("batch_code"),
+                RawFile = item.Field<string>("raw_file"),
+                FileData = item.Field<string>("file_data"),
+                ResultCode = item.Field<int>("result_code"),
+                TotalTime = item.Field<int>("total_time"),
+                ResultDesc = item.Field<string>("result"),
+                ReqParams = item.Field<string>("params"),
+                ImgFrameInfo = item.Field<string>("file_data"),
+                DeviceCode = item.Field<string>("device_code"),
                 CreateDate = item.Field<DateTime?>("create_date"),
             };
 
             return model;
-        }
-
-        public override DataRow Model2Row(MeasureImgResultModel item, DataRow row)
-        {
-            if (item != null)
-            {
-                if (item.Id > 0) row["id"] = item.Id;
-                row["batch_id"] = item.BatchId;
-                row["file_data"] = item.FileData;
-                row["device_code"] = item.DeviceCode;
-                row["create_date"] = item.CreateDate;
-            }
-            return row;
         }
     }
 }

@@ -66,7 +66,7 @@
                                         </DockPanel>
                                         <DockPanel>
                                             <TextBlock Text="相机ID:" Width="120"/>
-                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ID}"/>
+                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CameraID}"/>
                                         </DockPanel>
                                         <DockPanel>
                                             <TextBlock Text="相机类型:" Width="120"/>
@@ -344,6 +344,26 @@
                                         </DockPanel>
                                     </StackPanel>
                                 </GroupBox>
+                                <GroupBox Header="图像文件服务配置" Margin="0,5">
+                                    <StackPanel Margin="5">
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="色亮度路径:" Width="120"/>
+                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.FileServerCfg.CIEFileBasePath}" />
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="相机原路径:" Width="120"/>
+                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.FileServerCfg.RawFileBasePath}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="校正后路径:" Width="120"/>
+                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.FileServerCfg.SrcFileBasePath}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,5">
+                                            <TextBlock  Text="端口地址:" Width="120"/>
+                                            <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.FileServerCfg.Endpoint}"/>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </GroupBox>
                             </StackPanel>
                         </ScrollViewer>
                     </Grid>
@@ -375,7 +395,7 @@
                                         <StackPanel Margin="5">
                                             <DockPanel Margin="0,2">
                                                 <TextBlock Text="相机ID" Width="120"/>
-                                                <hc:ComboBox  x:Name="CameraID" IsEditable="True" SelectedIndex="0" Text="{Binding Config.ID}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
+                                                <hc:ComboBox  x:Name="CameraID" IsEditable="True" SelectedIndex="0" Text="{Binding Config.CameraID}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
                                             </DockPanel>
                                             <DockPanel Margin="0,2">
                                                 <TextBlock Text="相机类型" Width="120"/>
@@ -694,6 +714,27 @@
                                             <DockPanel Margin="0,2">
                                                 <TextBlock Text="串流指定端口:" Width="120"/>
                                                 <TextBox Text="{Binding Config.VideoConfig.Port}"/>
+                                            </DockPanel>
+                                        </StackPanel>
+                                    </GroupBox>
+
+                                    <GroupBox Header="图像文件服务配置" Margin="0,5">
+                                        <StackPanel Margin="5">
+                                            <DockPanel Margin="0,2">
+                                                <TextBlock Text="色亮度路径:" Width="120"/>
+                                                <TextBox Text="{Binding Config.FileServerCfg.CIEFileBasePath}" />
+                                            </DockPanel>
+                                            <DockPanel Margin="0,2">
+                                                <TextBlock Text="相机原路径:" Width="120"/>
+                                                <TextBox Text="{Binding Config.FileServerCfg.RawFileBasePath}"/>
+                                            </DockPanel>
+                                            <DockPanel Margin="0,2">
+                                                <TextBlock Text="校正后路径:" Width="120"/>
+                                                <TextBox Text="{Binding Config.FileServerCfg.SrcFileBasePath}"/>
+                                            </DockPanel>
+                                            <DockPanel Margin="0,2">
+                                                <TextBlock Text="端口地址:" Width="120"/>
+                                                <TextBox Text="{Binding Config.FileServerCfg.Endpoint}"/>
                                             </DockPanel>
                                         </StackPanel>
                                     </GroupBox>

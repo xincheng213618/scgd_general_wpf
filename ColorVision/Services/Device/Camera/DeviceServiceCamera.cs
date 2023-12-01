@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Windows;
 using ColorVision.Extension;
 using System.Windows.Media.Media3D;
+using MQTTMessageLib.FileServer;
 
 namespace ColorVision.Device.Camera
 {
@@ -37,11 +38,11 @@ namespace ColorVision.Device.Camera
             CameraService = cameraService;
             CameraService.Devices.Add(this);
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
-            DeviceStatus = DeviceStatus.UnInit;
-            DisConnected += (s, e) =>
-            {  
-                DeviceStatus = DeviceStatus.UnInit;
-            };
+            DeviceStatus = DeviceStatus.Init;
+            //DisConnected += (s, e) =>
+            //{  
+            //    DeviceStatus = DeviceStatus.UnInit;
+            //};
 
         }
 
@@ -156,7 +157,7 @@ namespace ColorVision.Device.Camera
                     case "SetCfg":
                         break;
                     default:
-                        Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, $"未定义{msg.EventName}"));
+                        //Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, $"未定义{msg.EventName}"));
                         break;
                 }
             }
@@ -393,15 +394,28 @@ namespace ColorVision.Device.Camera
             return PublishAsyncClient(msg);
         }
 
-
         public MsgRecord GetData(double expTime, double gain)
         {
-            string SerialNumber  = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            string SerialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            var model = ServiceManager.GetInstance().BatchSave(SerialNumber);
+
+            MsgSend msg;
+            msg = new MsgSend
+            {
+                EventName = "GetData",
+                SerialNumber = SerialNumber,
+                Params = new Dictionary<string, object>() { { "ExpTime", new double[] { expTime } }, { "gain", gain } }
+            };
+            return PublishAsyncClient(msg, (Config.IsExpThree ? expTime * 3 : expTime) + 10000);
+        }
+        public MsgRecord GetData_Old(double expTime, double gain)
+        {
+            string SerialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             var model = ServiceManager.GetInstance().BatchSave(SerialNumber);
 
             MsgSend msg;
 
-            if((!Config.IsExpThree) && (Config.CameraType == CameraType.CV_Q || Config.CameraType ==CameraType.MIL_CL ))
+            if ((!Config.IsExpThree) && (Config.CameraType == CameraType.CV_Q || Config.CameraType == CameraType.MIL_CL))
             {
                 List<Dictionary<string, object>> Param = new List<Dictionary<string, object>>();
                 foreach (var item in Config.CFW.ChannelCfgs)
@@ -593,8 +607,15 @@ namespace ColorVision.Device.Camera
             return PublishAsyncClient(msg);
         }
 
+        public void DownloadFile(string fileName, FileExtType extType)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = MQTTFileServerEventEnum.Event_File_Download,
+                ServiceName = Config.Code,
+                Params = new Dictionary<string, object> { { "FileName", fileName }, { "FileExtType", extType } }
+            };
+            PublishAsyncClient(msg);
+        }
     }
-
-
-
 }
