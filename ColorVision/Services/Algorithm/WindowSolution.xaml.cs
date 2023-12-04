@@ -1,6 +1,7 @@
 ﻿using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
+using ColorVision.Services.Algorithm.MySql;
 using ColorVision.Services.Msg;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;

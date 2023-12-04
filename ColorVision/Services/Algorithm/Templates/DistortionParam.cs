@@ -1,12 +1,13 @@
 ﻿#pragma warning disable CA1707,CA1822
 using ColorVision.MySql.DAO;
+using ColorVision.Templates;
 using cvColorVision;
 using System.Collections.Generic;
 using System.ComponentModel;
 
-namespace ColorVision.Templates.Algorithm
+namespace ColorVision.Services.Algorithm.Templates
 {
-    public class DistortionParam:ParamBase
+    public class DistortionParam : ParamBase
     {
         public DistortionParam() { }
         public DistortionParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
@@ -16,15 +17,11 @@ namespace ColorVision.Templates.Algorithm
         [Category("大小"), Description("宽度"), DisplayName("宽度")]
         public int Width { get => GetValue(_Width); set { SetProperty(ref _Width, value); } }
         private int _Width = 16;
-        [Category("大小"), Description("高度"),DisplayName("高度")]
+        [Category("大小"), Description("高度"), DisplayName("高度")]
         public int Height { get => GetValue(_Height); set { SetProperty(ref _Height, value); } }
         private int _Height = 16;
 
-
-
-
-
-        [Category("Blob_Threshold_Params"), DisplayName("是否使用颜色过滤"),Description("是否使用颜色过滤")]
+        [Category("Blob_Threshold_Params"), DisplayName("是否使用颜色过滤"), Description("是否使用颜色过滤")]
         public bool filterByColor { get => GetValue(_filterByColor); set { SetProperty(ref _filterByColor, value); } }
         private bool _filterByColor = true;
 
@@ -34,15 +31,15 @@ namespace ColorVision.Templates.Algorithm
 
         [Category("阈值"), Description("阈值每次间隔值")]
         public float minThreshold { get => GetValue(_minThreshold); set { SetProperty(ref _minThreshold, value); } }
-        private float _minThreshold =10;
+        private float _minThreshold = 10;
 
         [Category("阈值"), Description("斑点最小灰度")]
         public float thresholdStep { get => GetValue(_thresholdStep); set { SetProperty(ref _thresholdStep, value); } }
-        private float _thresholdStep =10;
+        private float _thresholdStep = 10;
 
         [Category("阈值"), Description("斑点最大灰度")]
         public float maxThreshold { get => GetValue(_maxThreshold); set { SetProperty(ref _maxThreshold, value); } }
-        private float _maxThreshold =220;
+        private float _maxThreshold = 220;
 
         [Category("阈值"), Description("斑点间隔距离")]
         public float minDistBetweenBlobs { get => GetValue(_minDistBetweenBlobs); set { SetProperty(ref _minDistBetweenBlobs, value); } }
@@ -55,25 +52,25 @@ namespace ColorVision.Templates.Algorithm
 
         [Category("Blob_Threshold_Params"), Description("暗斑比例")]
         public float darkRatio { get => GetValue(_darkRatio); set { SetProperty(ref _darkRatio, value); } }
-        private float _darkRatio =0.01f;
+        private float _darkRatio = 0.01f;
 
         [Category("Blob_Threshold_Params"), Description("对比度比例")]
         public float contrastRatio { get => GetValue(_contrastRatio); set { SetProperty(ref _contrastRatio, value); } }
-        private float _contrastRatio =0.1f;
+        private float _contrastRatio = 0.1f;
 
         [Category("Blob_Threshold_Params"), Description("背景半径")]
         public int bgRadius { get => GetValue(_bgRadius); set { SetProperty(ref _bgRadius, value); } }
-        private int _bgRadius =31;
+        private int _bgRadius = 31;
 
 
 
         [Category("面积"), Description("是否使用面积过滤")]
         public bool filterByArea { get => GetValue(_filterByArea); set { SetProperty(ref _filterByArea, value); } }
-        private bool _filterByArea =true;
+        private bool _filterByArea = true;
 
         [Category("面积"), Description("斑点最小面积值")]
         public float minArea { get => GetValue(_minArea); set { SetProperty(ref _minArea, value); } }
-        private float _minArea =200;
+        private float _minArea = 200;
 
 
         [Category("面积"), Description("斑点最大面积值")]
@@ -82,7 +79,7 @@ namespace ColorVision.Templates.Algorithm
 
         [Category("Blob_Threshold_Params"), Description("重复次数认定")]
         public int minRepeatability { get => GetValue(_minRepeatability); set { SetProperty(ref _minRepeatability, value); } }
-        private int _minRepeatability =2;
+        private int _minRepeatability = 2;
 
         [Category("形状圆控制"), Description("形状控制（圆，方(")]
         public bool filterByCircularity { get => GetValue(_filterByCircularity); set { SetProperty(ref _filterByCircularity, value); } }
@@ -90,7 +87,7 @@ namespace ColorVision.Templates.Algorithm
 
         [Category("形状圆控制")]
         public float minCircularity { get => GetValue(_minCircularity); set { SetProperty(ref _minCircularity, value); } }
-        private float _minCircularity =0.9f;
+        private float _minCircularity = 0.9f;
 
         [Category("形状圆控制")]
         public float maxCircularity { get => GetValue(_maxCircularity); set { SetProperty(ref _maxCircularity, value); } }
@@ -107,11 +104,11 @@ namespace ColorVision.Templates.Algorithm
 
         [Category("形状豁口控制"), Description("形状控制（豁口）")]
         public float maxConvexity { get => GetValue(_maxConvexity); set { SetProperty(ref _maxConvexity, value); } }
-        private float _maxConvexity =1e37f;
+        private float _maxConvexity = 1e37f;
 
         [Category("形状椭圆控制"), Description("形状控制（椭圆度）")]
         public bool filterByInertia { get => GetValue(_filterByInertia); set { SetProperty(ref _filterByInertia, value); } }
-        private bool _filterByInertia ;
+        private bool _filterByInertia;
 
         [Category("形状椭圆控制")]
         public float minInertiaRatio { get => GetValue(_minInertiaRatio); set { SetProperty(ref _minInertiaRatio, value); } }
@@ -119,21 +116,21 @@ namespace ColorVision.Templates.Algorithm
 
         [Category("形状椭圆控制")]
         public float maxInertiaRatio { get => GetValue(_maxInertiaRatio); set { SetProperty(ref _maxInertiaRatio, value); } }
-        private float _maxInertiaRatio =1e37f;
+        private float _maxInertiaRatio = 1e37f;
 
-        [Category("全局"), DisplayName("角点提取方法"),Description("角点提取方法")]
+        [Category("全局"), DisplayName("角点提取方法"), Description("角点提取方法")]
         public CornerType type { get => GetValue(_type); set { SetProperty(ref _type, value); } }
         private CornerType _type = CornerType.Circlepoint;
-       
-        [Category("全局"),DisplayName("斜率计算方法"),Description("斜率计算方法")]
+
+        [Category("全局"), DisplayName("斜率计算方法"), Description("斜率计算方法")]
         public SlopeType sType { get => GetValue(_sType); set { SetProperty(ref _sType, value); } }
         private SlopeType _sType = SlopeType.lb_Variance;
-        
-        [Category("全局"),DisplayName("理想点布点方法"),Description("理想点布点方法")]
+
+        [Category("全局"), DisplayName("理想点布点方法"), Description("理想点布点方法")]
         public LayoutType lType { get => GetValue(_lType); set { SetProperty(ref _lType, value); } }
         private LayoutType _lType = LayoutType.SlopeOUT;
-       
-        [Category("全局"),DisplayName("光学畸变的检测方法"),Description("TV畸变H,V方向与光学畸变的检测方法")]
+
+        [Category("全局"), DisplayName("光学畸变的检测方法"), Description("TV畸变H,V方向与光学畸变的检测方法")]
         public DistortionType dType { get => GetValue(_dType); set { SetProperty(ref _dType, value); } }
         private DistortionType _dType = DistortionType.TVDistV;
 

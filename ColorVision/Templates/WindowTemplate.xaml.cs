@@ -1,7 +1,7 @@
 ﻿using ColorVision.Extension;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
-using ColorVision.Templates.Algorithm;
+using ColorVision.Services.Algorithm.Templates;
 using ColorVision.Util;
 using Org.BouncyCastle.Bcpg.OpenPgp;
 using System;
@@ -16,7 +16,7 @@ using System.Windows.Input;
 namespace ColorVision.Templates
 {
 
-    
+
 
 
 

@@ -5,8 +5,9 @@ using cvColorVision;
 using System.Collections.Generic;
 using System.ComponentModel;
 using Newtonsoft.Json;
+using ColorVision.Templates;
 
-namespace ColorVision.Templates.Algorithm
+namespace ColorVision.Services.Algorithm.Templates
 {
     public class LedCheckParam : ParamBase
     {
@@ -24,17 +25,17 @@ namespace ColorVision.Templates.Algorithm
         [Category("LedCheck"), DisplayName("是否启用固定半径计算"), Description("是否启用固定半径计算 isguding")]
         [JsonProperty("isguding")]
         public int Isguding { get => GetValue(_Isguding); set { SetProperty(ref _Isguding, value); } }
-        private int _Isguding =2;
+        private int _Isguding = 2;
 
         [Category("LedCheck"), DisplayName("灯珠固定半径"), Description("灯珠固定半径 gudingrid")]
         [JsonProperty("gudingrid")]
         public int Gudingrid { get => GetValue(_Gudingrid); set { SetProperty(ref _Gudingrid, value); } }
-        private int _Gudingrid =15;
+        private int _Gudingrid = 15;
 
         [Category("LedCheck"), DisplayName("轮廓最小面积"), Description("轮廓最小面积  lunkuomianji")]
         [JsonProperty("lunkuomianji")]
         public int Lunkuomianji { get => GetValue(_Lunkuomianji); set { SetProperty(ref _Lunkuomianji, value); } }
-        private int _Lunkuomianji =5;
+        private int _Lunkuomianji = 5;
 
 
 
@@ -72,16 +73,16 @@ namespace ColorVision.Templates.Algorithm
 
         [Category("LedCheck"), DisplayName("灯珠高方向数量"), Description("灯珠高方向数量 pichig")]
         [JsonProperty("pichig")]
-        public int Pichig { get => GetValue(_Pichig); set { SetProperty(ref _Pichig, value);  NotifyPropertyChanged(nameof(PointNum)); } }
-        private int _Pichig =24;
+        public int Pichig { get => GetValue(_Pichig); set { SetProperty(ref _Pichig, value); NotifyPropertyChanged(nameof(PointNum)); } }
+        private int _Pichig = 24;
 
         [Browsable(false),]
         [JsonProperty("pointNum")]
-        public int PointNum { get => _Picwid * Pichig;}
+        public int PointNum { get => _Picwid * Pichig; }
 
         [Category("LedCheck"), Description("LengthCheck")]
         public double[]? LengthCheck { get => GetValue(_LengthCheck); set { SetProperty(ref _LengthCheck, value); } }
-        private double[]? _LengthCheck = new double[]{ 10,10,10,10 };
+        private double[]? _LengthCheck = new double[] { 10, 10, 10, 10 };
 
         [Category("LedCheck"), Description("LengthRange")]
         public double[]? LengthRange { get => GetValue(_LengthRange); set { SetProperty(ref _LengthRange, value); } }

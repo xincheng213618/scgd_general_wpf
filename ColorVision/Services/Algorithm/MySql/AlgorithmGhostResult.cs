@@ -1,6 +1,7 @@
 ﻿using System.Data;
+using ColorVision.MySql;
 
-namespace ColorVision.MySql.DAO
+namespace ColorVision.Services.Algorithm.MySql
 {
     public class AlgorithmGhostResultModel : PKModel
     {
@@ -19,7 +20,7 @@ namespace ColorVision.MySql.DAO
         public string? SingleGhostPixelNum { get; set; }
         public string? GhostPixelX { get; set; }
         public string? GhostPixelY { get; set; }
-        public bool Result { get; set; }    
+        public bool Result { get; set; }
     }
 
 

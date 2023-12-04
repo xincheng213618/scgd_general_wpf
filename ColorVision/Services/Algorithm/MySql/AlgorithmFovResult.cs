@@ -1,6 +1,7 @@
 ﻿using System.Data;
+using ColorVision.MySql;
 
-namespace ColorVision.MySql.DAO
+namespace ColorVision.Services.Algorithm.MySql
 {
     public class AlgorithmFovResultModel : PKModel
     {
@@ -14,7 +15,7 @@ namespace ColorVision.MySql.DAO
 
         public double FovDegrees { get; set; }
 
-        public bool Result { get; set; }    
+        public bool Result { get; set; }
     }
 
 
@@ -52,7 +53,7 @@ namespace ColorVision.MySql.DAO
                 Coordinates3 = item.Field<float?>("coordinates3") ?? 0,
                 Coordinates4 = item.Field<float?>("coordinates4") ?? 0,
                 FovDegrees = item.Field<double?>("fovDegrees") ?? 0,
-                Result = item.Field<bool?>("ret")??false,
+                Result = item.Field<bool?>("ret") ?? false,
             };
             return model;
         }

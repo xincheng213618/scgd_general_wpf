@@ -1,10 +1,11 @@
 ﻿using System.Data;
+using ColorVision.MySql;
 
-namespace ColorVision.MySql.DAO
+namespace ColorVision.Services.Algorithm.MySql
 {
     public class AlgorithmLedCheckResultModel : PKModel
-    { 
-    
+    {
+
         public int BatchId { get; set; }
 
         public int ImgId { get; set; }
@@ -17,7 +18,7 @@ namespace ColorVision.MySql.DAO
         public string? PointY { get; set; }
 
         public string? LengthResult { get; set; }
-        public bool Result { get; set; }    
+        public bool Result { get; set; }
     }
 
 

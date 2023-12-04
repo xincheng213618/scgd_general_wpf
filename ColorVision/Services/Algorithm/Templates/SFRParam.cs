@@ -1,10 +1,11 @@
 ﻿#pragma warning disable CA1707
 using ColorVision.MySql.DAO;
+using ColorVision.Templates;
 using cvColorVision;
 using System.Collections.Generic;
 using System.ComponentModel;
 
-namespace ColorVision.Templates.Algorithm
+namespace ColorVision.Services.Algorithm.Templates
 {
     public class SFRParam : ParamBase
     {
@@ -17,7 +18,7 @@ namespace ColorVision.Templates.Algorithm
         public double Gamma { get => GetValue(_Gamma); set { SetProperty(ref _Gamma, value); } }
         private double _Gamma = 0.01;
 
-        [Category("SFR"), Description("ROI x"),DisplayName("ROI X")]
+        [Category("SFR"), Description("ROI x"), DisplayName("ROI X")]
 
         public int X { get => GetValue(_X); set { SetProperty(ref _X, value); } }
         private int _X;
@@ -31,7 +32,7 @@ namespace ColorVision.Templates.Algorithm
         public int Height { get => GetValue(_Height); set { SetProperty(ref _Height, value); } }
         private int _Height = 1000;
 
-        [Category("SFR"), Description("ROI") ,Browsable(false)]
+        [Category("SFR"), Description("ROI"), Browsable(false)]
         public CRECT ROI { get => new CRECT() { x = X, y = Y, cx = Width, cy = Height }; }
     }
 }

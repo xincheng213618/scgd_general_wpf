@@ -1,7 +1,7 @@
 ﻿using ColorVision.Device;
 using ColorVision.MVVM;
-using ColorVision.MySql.DAO;
 using ColorVision.Services.Algorithm;
+using ColorVision.Services.Algorithm.MySql;
 using ColorVision.Solution.V.Files;
 using ColorVision.Solution.V.Folders;
 using cvColorVision;

@@ -1,6 +1,7 @@
 ﻿using System.Data;
+using ColorVision.MySql;
 
-namespace ColorVision.MySql.DAO
+namespace ColorVision.Services.Algorithm.MySql
 {
     public class AlgorithmDistortionResultModel : PKModel
     {
@@ -18,7 +19,7 @@ namespace ColorVision.MySql.DAO
         public double PointY { get; set; }
         public double MaxErrorRatio { get; set; }
         public double T { get; set; }
-        public bool Result { get; set; }    
+        public bool Result { get; set; }
     }
 
     public class AlgorithmDistortionResult : BaseDaoMaster<AlgorithmDistortionResultModel>
@@ -49,7 +50,7 @@ namespace ColorVision.MySql.DAO
             AlgorithmDistortionResultModel model = new AlgorithmDistortionResultModel
             {
                 Id = item.Field<int>("id"),
-                BatchId = item.Field<int?>("batch_id")??-1,
+                BatchId = item.Field<int?>("batch_id") ?? -1,
                 ImgId = item.Field<int?>("img_id") ?? -1,
                 Value = item.Field<string?>("value"),
                 FinalPointsX = item.Field<string?>("finalPointsX"),

@@ -1,6 +1,7 @@
 ﻿using System.Data;
+using ColorVision.MySql;
 
-namespace ColorVision.MySql.DAO
+namespace ColorVision.Services.Algorithm.MySql
 {
     public class AlgorithmMTFResultModel : PKModel
     {
@@ -9,7 +10,7 @@ namespace ColorVision.MySql.DAO
         public int ImgId { get; set; }
         public double? Value { get; set; }
 
-        public bool Result { get; set; }    
+        public bool Result { get; set; }
     }
 
 

@@ -1,25 +1,23 @@
 ﻿using System.Data;
+using ColorVision.MySql;
 
-namespace ColorVision.MySql.DAO
+namespace ColorVision.Services.Algorithm.MySql
 {
-    public class AlgorithmSfrResultModel : PKModel
+    public class AlgorithmFocusPointsResultModel : PKModel
     {
         public int BatchId { get; set; }
 
         public int ImgId { get; set; }
         public string? Value { get; set; }
-
-        public string? Pdfrequency { get; set; }
-
-        public string? PdomainSamplingData { get; set; }
-
-        public bool Result { get; set; }    
+        public string? ImgPointsX { get; set; }
+        public string? ImgPointsY { get; set; }
+        public bool Result { get; set; }
     }
 
 
-    public class AlgorithmSFRResult : BaseDaoMaster<AlgorithmSfrResultModel>
+    public class AlgorithmFocusPointsResult : BaseDaoMaster<AlgorithmFocusPointsResultModel>
     {
-        public AlgorithmSFRResult() : base(string.Empty, "t_scgd_algorithm_sfr_result", "id", false)
+        public AlgorithmFocusPointsResult() : base(string.Empty, "t_scgd_algorithm_focusPoints_result", "id", false)
         {
         }
         public override DataTable CreateColumns(DataTable dInfo)
@@ -28,29 +26,29 @@ namespace ColorVision.MySql.DAO
             dInfo.Columns.Add("batch_id", typeof(int));
             dInfo.Columns.Add("img_id", typeof(int));
             dInfo.Columns.Add("value", typeof(string));
-            dInfo.Columns.Add("pdfrequency", typeof(string));
-            dInfo.Columns.Add("pdomainSamplingData", typeof(string));
+            dInfo.Columns.Add("imgPoints_x", typeof(string));
+            dInfo.Columns.Add("imgPoints_y", typeof(string));
             dInfo.Columns.Add("ret", typeof(bool));
             return dInfo;
         }
 
 
-        public override AlgorithmSfrResultModel GetModel(DataRow item)
+        public override AlgorithmFocusPointsResultModel GetModel(DataRow item)
         {
-            AlgorithmSfrResultModel model = new AlgorithmSfrResultModel
+            AlgorithmFocusPointsResultModel model = new AlgorithmFocusPointsResultModel
             {
                 Id = item.Field<int>("id"),
                 BatchId = item.Field<int>("batch_id"),
                 ImgId = item.Field<int>("img_id"),
                 Value = item.Field<string>("value"),
-                Pdfrequency = item.Field<string>("pdfrequency"),
-                PdomainSamplingData = item.Field<string>("pdomainSamplingData"),
+                ImgPointsX = item.Field<string>("imgPoints_x"),
+                ImgPointsY = item.Field<string>("imgPoints_y"),
                 Result = item.Field<bool>("ret"),
             };
             return model;
         }
 
-        public override DataRow Model2Row(AlgorithmSfrResultModel item, DataRow row)
+        public override DataRow Model2Row(AlgorithmFocusPointsResultModel item, DataRow row)
         {
             if (item != null)
             {
@@ -58,8 +56,8 @@ namespace ColorVision.MySql.DAO
                 row["batch_id"] = item.BatchId;
                 row["img_id"] = item.ImgId;
                 row["value"] = item.Value;
-                row["pdfrequency"] = item.Pdfrequency;
-                row["pdomainSamplingData"] = item.PdomainSamplingData;
+                row["imgPoints_x"] = item.ImgPointsX;
+                row["imgPoints_y"] = item.ImgPointsY;
                 row["ret"] = item.Result;
             }
             return row;

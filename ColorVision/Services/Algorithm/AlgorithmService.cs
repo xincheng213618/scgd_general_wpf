@@ -1,8 +1,8 @@
 ﻿#pragma warning disable CS8602  
 
+using ColorVision.Services.Algorithm.Templates;
 using ColorVision.Services.Device;
 using ColorVision.Services.Msg;
-using ColorVision.Templates.Algorithm;
 using cvColorVision;
 using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
