@@ -1,5 +1,6 @@
 ﻿using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
+using ColorVision.MySql.Service;
 using ColorVision.Services.Algorithm.MySql;
 
 namespace ColorVision.Services.Algorithm.Result

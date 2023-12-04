@@ -1,6 +1,6 @@
 ﻿using ColorVision.MySql.DAO;
 
-namespace ColorVision.Services.Algorithm.Result
+namespace ColorVision.MySql.Service
 {
     public static class MySQLHelper
     {
