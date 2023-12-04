@@ -19,8 +19,8 @@ namespace ColorVision.Services.Algorithm.Result
 
 
 
-            Batch = MySQLHelper.GetBatch(model.BatchId);
-            IMG = MySQLHelper.GetMeasureResultImg(model.ImgId);
+            Batch = ImageHelper.GetBatch(model.BatchId);
+            IMG = ImageHelper.GetMeasureResultImg(model.ImgId);
 
         }
 

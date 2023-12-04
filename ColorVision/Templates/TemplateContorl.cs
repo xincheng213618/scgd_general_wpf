@@ -6,6 +6,7 @@ using ColorVision.MySql.Service;
 using ColorVision.Services.Algorithm.Templates;
 using ColorVision.Services.Device.PG.Templates;
 using ColorVision.Solution;
+using ColorVision.Templates.POI.MySql;
 using ColorVision.User;
 using ColorVision.Util;
 using cvColorVision;
@@ -397,7 +398,6 @@ namespace ColorVision.Templates
         internal void LoadPoiDetailFromDB(PoiParam poiParam)
         {
             poiParam.PoiPoints.Clear();
-
 
             List<PoiDetailModel> poiDetail = poiService.GetDetailByPid(poiParam.ID);
             foreach (var dbModel in poiDetail)

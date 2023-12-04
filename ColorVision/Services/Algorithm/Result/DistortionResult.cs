@@ -12,8 +12,8 @@ namespace ColorVision.Services.Algorithm.Result
         public DistortionResult(AlgorithmDistortionResultModel model)
         {
             Model = model;
-            Batch = MySQLHelper.GetBatch(model.BatchId);
-            IMG = MySQLHelper.GetMeasureResultImg(model.ImgId);
+            Batch = ImageHelper.GetBatch(model.BatchId);
+            IMG = ImageHelper.GetMeasureResultImg(model.ImgId);
         }
 
         public float[] Pdfrequency { get; set; }

@@ -13,8 +13,8 @@ namespace ColorVision.Services.Algorithm.Result
         {
             Model = model;
 
-            Batch = MySQLHelper.GetBatch(model.BatchId);
-            IMG = MySQLHelper.GetMeasureResultImg(model.ImgId);
+            Batch = ImageHelper.GetBatch(model.BatchId);
+            IMG = ImageHelper.GetMeasureResultImg(model.ImgId);
         }
 
         public BatchResultMasterModel? Batch { get; set; }

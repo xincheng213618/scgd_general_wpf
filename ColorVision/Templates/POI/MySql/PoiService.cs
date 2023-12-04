@@ -1,8 +1,6 @@
-﻿using ColorVision.MySql.DAO;
-using ColorVision.Templates;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
-namespace ColorVision.MySql.Service
+namespace ColorVision.Templates.POI.MySql
 {
     public class PoiService
     {
@@ -23,6 +21,8 @@ namespace ColorVision.MySql.Service
         {
             poiMaster.Save(master);
         }
+
+
         public void Save(PoiParam poiParam)
         {
             PoiMasterModel poiMasterModel = new PoiMasterModel(poiParam);
@@ -50,7 +50,7 @@ namespace ColorVision.MySql.Service
 
         internal int MasterDeleteById(int id)
         {
-           return poiMaster.DeleteById(id);
+            return poiMaster.DeleteById(id);
         }
     }
 }

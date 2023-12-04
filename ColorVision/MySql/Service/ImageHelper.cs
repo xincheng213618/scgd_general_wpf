@@ -2,7 +2,7 @@
 
 namespace ColorVision.MySql.Service
 {
-    public static class MySQLHelper
+    public static class ImageHelper
     {
         private static BatchResultMasterDao BatchResultMasterDao { get; set; } = new BatchResultMasterDao();
 

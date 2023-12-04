@@ -1,7 +1,7 @@
-﻿using ColorVision.Templates;
+﻿using ColorVision.MySql;
 using System.Data;
 
-namespace ColorVision.MySql.DAO
+namespace ColorVision.Templates.POI.MySql
 {
     public class PoiDetailModel : PKModel
     {
