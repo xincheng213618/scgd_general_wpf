@@ -1,4 +1,5 @@
 ﻿using ColorVision.Extension;
+using ColorVision.Flow.Templates;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.Services.Algorithm.Templates;

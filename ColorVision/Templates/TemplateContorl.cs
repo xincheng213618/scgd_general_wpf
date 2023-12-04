@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8604
+using ColorVision.Flow.Templates;
 using ColorVision.MySql;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
@@ -343,6 +344,8 @@ namespace ColorVision.Templates
         {
             modService.Save(value);
         }
+
+
         public void Save2DB(PoiParam poiParam)
         {
             poiService.Save(poiParam);
@@ -376,6 +379,8 @@ namespace ColorVision.Templates
 
             return PoiParams;
         }
+
+
 
         internal PoiParam? AddPoiParam(string text)
         {
@@ -417,9 +422,6 @@ namespace ColorVision.Templates
             return null;
 
         }
-
-
-
         internal FlowParam? AddFlowParam(string text)
         {
             ModMasterModel flowMaster = new ModMasterModel(ModMasterType.Flow, text, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
@@ -527,7 +529,7 @@ namespace ColorVision.Templates
                 {
                     List<ModDetailModel> flowDetails = modService.GetDetailByPid(dbModel.Id);
                     var item = new TemplateModel<FlowParam>(dbModel.Name ?? "default", new FlowParam(dbModel, flowDetails));
-                    ModDetailModel fn = item.Value.GetParameter(FlowParam.FileNameKey);
+                    ModDetailModel fn = item.Value.GetParameter(FlowParam.propertyName);
                     if (fn != null)
                     {
                         string code = fn.GetValueMD5();

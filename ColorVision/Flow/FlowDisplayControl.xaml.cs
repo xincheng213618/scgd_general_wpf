@@ -11,6 +11,7 @@ using ColorVision.Themes;
 using System.Drawing;
 using System.Windows.Media;
 using ColorVision.Solution;
+using ColorVision.Flow.Templates;
 
 namespace ColorVision.Flow
 {

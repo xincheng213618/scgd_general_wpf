@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using ColorVision.Flow.Templates;
 using ColorVision.MySql.DAO;
 using ColorVision.Templates;
 
@@ -126,7 +127,7 @@ namespace ColorVision.MySql.Service
             List<ModDetailModel> list = new List<ModDetailModel>();
             flowParam.GetDetail(list);
             detailDao.UpdateByPid(flowParam.ID,list);
-            ModDetailModel fn = flowParam.GetParameter(FlowParam.FileNameKey);
+            ModDetailModel fn = flowParam.GetParameter(FlowParam.propertyName);
             if (fn == null)
             {
                 return;

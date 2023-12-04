@@ -1,4 +1,5 @@
 ﻿using ColorVision.Flow;
+using ColorVision.Flow.Templates;
 using ColorVision.MQTT;
 using ColorVision.Solution;
 using ColorVision.Templates;
