@@ -484,7 +484,7 @@ namespace ColorVision.Services.Algorithm
         private void TemplateAbb<T>(WindowTemplate windowTemplate, ObservableCollection<TemplateModel<T>> keyValuePairs) where T : ParamBase
         {
             windowTemplate.Owner = Window.GetWindow(this);
-            windowTemplate.ListConfigs.Clear();
+            windowTemplate.TemplateModelBases.Clear();
             foreach (var item in keyValuePairs)
             {
                 if (item.Value is PoiParam poiParam)
@@ -492,7 +492,7 @@ namespace ColorVision.Services.Algorithm
                     item.Tag = $"{poiParam.Width}*{poiParam.Height}{(GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql ? "" : $"_{poiParam.PoiPoints.Count}")}";
                 }
 
-                windowTemplate.ListConfigs.Add(item);
+                windowTemplate.TemplateModelBases.Add(item);
             }
             windowTemplate.ShowDialog();
         }

@@ -61,7 +61,6 @@ namespace ColorVision
                         TemplateAbb(windowTemplate, TemplateControl.CalibrationParams);
                         break;
                     case "PGParam":
-                        //PG pg = new PG(TemplateControl.PGParams[0].Value);
                         windowTemplate = new WindowTemplate(TemplateType.PGParam) { Title = "PG设置" };
                         TemplateControl.LoadParams(TemplateControl.PGParams);
                         TemplateAbb(windowTemplate, TemplateControl.PGParams);
@@ -146,14 +145,14 @@ namespace ColorVision
         private void TemplateAbb<T>(WindowTemplate windowTemplate, ObservableCollection<TemplateModel<T>> keyValuePairs) where T: ParamBase
         {
             windowTemplate.Owner = this;
-            windowTemplate.ListConfigs.Clear();
+            windowTemplate.TemplateModelBases.Clear();
             foreach (var item in keyValuePairs)
             {
                 if (item.Value is PoiParam poiParam)
                 {
                     item.Tag = $"{poiParam.Width}*{poiParam.Height}{(GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql?"": $"_{poiParam.PoiPoints.Count}")}";
                 }
-                windowTemplate.ListConfigs.Add(item);
+                windowTemplate.TemplateModelBases.Add(item);
             }
             windowTemplate.ShowDialog();
         }

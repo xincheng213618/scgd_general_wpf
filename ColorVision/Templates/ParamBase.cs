@@ -32,8 +32,6 @@ namespace ColorVision.Templates
             }
         }
 
-
-
         protected override bool SetProperty<T>(ref T storage, T value, [CallerMemberName] string propertyName = "")
         {
             storage = value;

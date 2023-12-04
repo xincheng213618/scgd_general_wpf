@@ -7,25 +7,6 @@ namespace ColorVision.Templates
 {
     public class TemplateTypeFactory 
     { 
-        public static TemplateType GetWindowTemplateType(string code)
-        {
-            return code switch
-            {
-                ModMasterType.Aoi => TemplateType.AoiParam,
-                ModMasterType.PG => TemplateType.PGParam,
-                ModMasterType.SMU => TemplateType.SMUParam,
-                ModMasterType.MTF => TemplateType.MTFParam,
-                ModMasterType.SFR => TemplateType.SFRParam,
-                ModMasterType.FOV => TemplateType.FOVParam,
-                ModMasterType.Ghost => TemplateType.GhostParam,
-                ModMasterType.Distortion => TemplateType.DistortionParam,
-                ModMasterType.LedCheck => TemplateType.LedCheckParam,
-                ModMasterType.FocusPoints => TemplateType.FocusPointsParam,
-                ModMasterType.Calibration => TemplateType.Calibration,
-                _ => TemplateType.AoiParam,
-            };
-        }
-
         public static string GetModeTemplateType(TemplateType windowTemplateType)
         {
             return windowTemplateType switch

@@ -24,6 +24,10 @@ namespace ColorVision.Templates
     {
         TemplateType TemplateType { get; set; }
         TemplateControl TemplateControl { get;set; }
+
+        public ObservableCollection<TemplateModelBase> TemplateModelBases { get; set; } = new ObservableCollection<TemplateModelBase>();
+
+
         public WindowTemplate(TemplateType windowTemplateType)
         {
             TemplateType = windowTemplateType;
@@ -128,10 +132,9 @@ namespace ColorVision.Templates
 
         }
 
-        public ObservableCollection<TemplateModelBase> ListConfigs { get; set; } = new ObservableCollection<TemplateModelBase>();
         private void Window_Initialized(object sender, EventArgs e)
         {
-            ListView1.ItemsSource = ListConfigs;
+            ListView1.ItemsSource = TemplateModelBases;
         }
 
 
@@ -142,21 +145,21 @@ namespace ColorVision.Templates
                 switch (TemplateType)
                 {
                     case TemplateType.PoiParam:
-                        if (ListConfigs[listView.SelectedIndex].GetValue() is PoiParam poiParam)
+                        if (TemplateModelBases[listView.SelectedIndex].GetValue() is PoiParam poiParam)
                         {
                             var WindowFocusPoint = new WindowFocusPoint(poiParam) { Owner = this };
                             WindowFocusPoint.Closed += async (s, e) =>
                             {
                                 await Task.Delay(30);
-                                ListConfigs[listView.SelectedIndex].Tag = $"{poiParam.Width}*{poiParam.Height}{(GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql ? "" : $"_{poiParam.PoiPoints.Count}")}";
+                                TemplateModelBases[listView.SelectedIndex].Tag = $"{poiParam.Width}*{poiParam.Height}{(GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql ? "" : $"_{poiParam.PoiPoints.Count}")}";
                             };
                             WindowFocusPoint.Show();
                         }
                         break;
                     case TemplateType.FlowParam:
-                        if (ListConfigs[listView.SelectedIndex].GetValue() is FlowParam flowParam)
+                        if (TemplateModelBases[listView.SelectedIndex].GetValue() is FlowParam flowParam)
                         {
-                            flowParam.Name ??= ListConfigs[listView.SelectedIndex].Key;
+                            flowParam.Name ??= TemplateModelBases[listView.SelectedIndex].Key;
                             new WindowFlowEngine(flowParam) { Owner =null }.Show();
                             this.Close();
                         }
@@ -174,14 +177,14 @@ namespace ColorVision.Templates
                 switch (TemplateType)
                 {
                     case TemplateType.Calibration:
-                        if (UserControl is Calibration calibration && ListConfigs[listView.SelectedIndex].GetValue() is CalibrationParam calibrationParam)
+                        if (UserControl is Calibration calibration && TemplateModelBases[listView.SelectedIndex].GetValue() is CalibrationParam calibrationParam)
                         {
                             calibration.DataContext = calibrationParam;
                             calibration.CalibrationParam = calibrationParam;
                         }
                         break;
                     case TemplateType.MeasureParam:
-                        if (UserControl is MeasureParamControl mpc && ListConfigs[listView.SelectedIndex].GetValue() is MeasureParam mp)
+                        if (UserControl is MeasureParamControl mpc && TemplateModelBases[listView.SelectedIndex].GetValue() is MeasureParam mp)
                         {
                             mpc.MasterID = mp.ID;
                             List<MeasureDetailModel> des = TemplateControl.LoadMeasureDetail(mp.ID);
@@ -196,7 +199,7 @@ namespace ColorVision.Templates
                         }
                         break;
                     default:
-                        PropertyGrid1.SelectedObject = ListConfigs[listView.SelectedIndex].GetValue();
+                        PropertyGrid1.SelectedObject = TemplateModelBases[listView.SelectedIndex].GetValue();
                         break;
                 }
             }
@@ -204,7 +207,7 @@ namespace ColorVision.Templates
         public string NewCreateFileName(string FileName)
         {
             List<string> Names = new List<string>();
-            foreach (var item in ListConfigs)
+            foreach (var item in TemplateModelBases)
             {
                 Names.Add(item.Key);
             }
@@ -391,8 +394,8 @@ namespace ColorVision.Templates
         {
             keyValuePairs.Add(new TemplateModel<T>(Name, t));
             TemplateModel<T> config = new TemplateModel<T> {Value = t, Key = Name, };
-            ListConfigs.Add(config);
-            ListView1.SelectedIndex = ListConfigs.Count - 1;
+            TemplateModelBases.Add(config);
+            ListView1.SelectedIndex = TemplateModelBases.Count - 1;
             ListView1.ScrollIntoView(config);
         }
 
@@ -458,8 +461,8 @@ namespace ColorVision.Templates
                             break;
                     }
 
-                    ListConfigs.RemoveAt(ListView1.SelectedIndex);
-                    ListView1.SelectedIndex = ListConfigs.Count - 1;
+                    TemplateModelBases.RemoveAt(ListView1.SelectedIndex);
+                    ListView1.SelectedIndex = TemplateModelBases.Count - 1;
                     if (ListView1.SelectedIndex < 0)
                     {
                         if (UserControl is MeasureParamControl mpc)
