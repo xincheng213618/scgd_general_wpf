@@ -36,7 +36,7 @@ namespace ColorVision.MySql
         /// 账号
         /// </summary>
         public string UserName { get => _UserName; set { _UserName = value; NotifyPropertyChanged(); } }
-        private string _UserName = string.Empty;
+        private string _UserName = "root";
 
         /// <summary>
         /// 密码

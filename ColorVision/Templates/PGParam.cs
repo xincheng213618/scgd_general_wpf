@@ -15,6 +15,7 @@ namespace ColorVision.Templates
         {
 
         }
+
         public const string StartKey = "CM_StartPG";
         public const string StopKey = "CM_StopPG";
         public const string ReSetKey = "CM_ReSetPG";

@@ -3,6 +3,7 @@ using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.Templates.Algorithm;
 using ColorVision.Util;
+using Org.BouncyCastle.Bcpg.OpenPgp;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -14,6 +15,12 @@ using System.Windows.Input;
 
 namespace ColorVision.Templates
 {
+
+    
+
+
+
+
     /// <summary>
     /// WindowTemplate.xaml 的交互逻辑
     /// </summary>

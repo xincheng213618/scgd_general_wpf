@@ -8,6 +8,16 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Util.Helper
 {
+
+    public static class YamlHelper
+    { 
+
+    }
+
+
+
+
+
     public static class JsonHelper
     {
 

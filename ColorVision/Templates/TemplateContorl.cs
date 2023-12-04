@@ -30,7 +30,6 @@ namespace ColorVision.Templates
         private static readonly object _locker = new();
         public static TemplateControl GetInstance() { lock (_locker) { return _instance ??= new TemplateControl(); } }
 
-        private static string FileNameCalibrationParams = "CalibrationSetup";
         private static string FileNameLedJudgeParams = "LedJudgeSetup";
         private static string FileNameFlowParms = "FlowParmSetup";
 
@@ -649,5 +648,30 @@ namespace ColorVision.Templates
         public ObservableCollection<TemplateModel<FocusPointsParam>> FocusPointsParams { get; set; }
 
 
+
+        public TemplateViewBase<FocusPointsParam> FocusPointsParams1 { get; set; }
+    }
+    public class TemplateViewBase<T>: TemplateViewBase where T : ParamBase, new()
+    {
+        public ObservableCollection<TemplateModel<T>> Params { get; set; }
+
+
+
+    }
+
+
+
+    public class TemplateViewBase
+    {
+        public virtual void Save()
+        {
+        }
+        public virtual void Create()
+        {
+        }
+        public virtual void Open()
+        {
+
+        }
     }
 }
