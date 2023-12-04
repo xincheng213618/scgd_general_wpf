@@ -1,13 +1,8 @@
-﻿using ColorVision.Device;
-using ColorVision.MVVM;
-using ColorVision.Services.Algorithm;
+﻿using ColorVision.MVVM;
 using ColorVision.Services.Algorithm.MySql;
+using ColorVision.Services.Algorithm.Result;
 using ColorVision.Solution.V.Files;
 using ColorVision.Solution.V.Folders;
-using cvColorVision;
-using MySqlX.XDevAPI.Relational;
-using Org.BouncyCastle.Asn1.X509;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows.Controls;
