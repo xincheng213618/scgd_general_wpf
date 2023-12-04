@@ -129,7 +129,6 @@ namespace ColorVision.Templates
                     break;
             }
             base.ShowDialog();
-
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -167,8 +166,6 @@ namespace ColorVision.Templates
                 }
             }
         }
-
-        //这里追加逻辑，如果是打开一个新的窗口，则原有的选中取消
 
         private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -293,7 +290,6 @@ namespace ColorVision.Templates
                     if (measureParam != null) CreateNewTemplate(TemplateControl.MeasureParams, TextBox1.Text, measureParam);
                     else MessageBox.Show("数据库创建流程模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     break;
-
             }
         }
 
@@ -346,8 +342,6 @@ namespace ColorVision.Templates
             }
         }
 
-
-
         private void Button_Save_Click(object sender, RoutedEventArgs e)
         {
             TemplateSave();
@@ -363,6 +357,7 @@ namespace ColorVision.Templates
         {
             TemplateDel();
         }
+
         public void TemplateSave()
         {
             TemplateControl.Save(TemplateType);
@@ -530,7 +525,7 @@ namespace ColorVision.Templates
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button && button.Tag is TemplateModelBase templateModelBase)
+            if (sender is Button button && button.Tag is TemplateModelBase templateModelBase)  
             {
                 templateModelBase.IsEditMode = true;
             }
