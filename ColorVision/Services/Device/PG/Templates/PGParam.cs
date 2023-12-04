@@ -1,9 +1,10 @@
 ﻿#pragma warning disable CS8603  
 
 using ColorVision.MySql.DAO;
+using ColorVision.Templates;
 using System.Collections.Generic;
 
-namespace ColorVision.Templates
+namespace ColorVision.Services.Device.PG.Templates
 {
     public class PGParam : ParamBase
     {
@@ -19,7 +20,7 @@ namespace ColorVision.Templates
         public const string StartKey = "CM_StartPG";
         public const string StopKey = "CM_StopPG";
         public const string ReSetKey = "CM_ReSetPG";
-        public const string SwitchUpKey = "CM_SwitchUpPG";  
+        public const string SwitchUpKey = "CM_SwitchUpPG";
         public const string SwitchDownKey = "CM_SwitchDownPG";
         public const string SwitchFrameKey = "CM_SwitchFramePG";
         public const string CustomKey = "CM_CustomCmd";
@@ -69,7 +70,7 @@ namespace ColorVision.Templates
 
         public Dictionary<string, string> ConvertToMap()
         {
-            Dictionary<string, string> result= new Dictionary<string, string>();
+            Dictionary<string, string> result = new Dictionary<string, string>();
             result.Add(StartKey, StartPG);
             result.Add(StopKey, StopPG);
             result.Add(ReSetKey, ReSetPG);

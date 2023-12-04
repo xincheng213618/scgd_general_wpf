@@ -2,6 +2,7 @@
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.Services.Algorithm.Templates;
+using ColorVision.Services.Device.PG.Templates;
 using ColorVision.Util;
 using Org.BouncyCastle.Bcpg.OpenPgp;
 using System;
@@ -15,12 +16,6 @@ using System.Windows.Input;
 
 namespace ColorVision.Templates
 {
-
-
-
-
-
-
     /// <summary>
     /// WindowTemplate.xaml 的交互逻辑
     /// </summary>
@@ -49,9 +44,9 @@ namespace ColorVision.Templates
                 default:
                     break;
             }
-
-
         }
+
+
         public UserControl  UserControl { get; set; }
         public WindowTemplate(TemplateType windowTemplateType,UserControl userControl)
         {
@@ -115,8 +110,7 @@ namespace ColorVision.Templates
                         ofd.Title = "导出流程";
                         ofd.FileName = TemplateControl.FlowParams[ListView1.SelectedIndex].Key;
                         if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-
-                        SaveAsFile(ofd.FileName,TemplateControl.FlowParams[ListView1.SelectedIndex].Value);
+                        Tool.Base64ToFile(TemplateControl.FlowParams[ListView1.SelectedIndex].Value.DataBase64, ofd.FileName);
                     };
                     FunctionGrid.Children.Insert(3, button1);
 
@@ -132,10 +126,7 @@ namespace ColorVision.Templates
             base.ShowDialog();
 
         }
-        private static void SaveAsFile(string sFileName,  FlowParam flow)
-        {
-            Tool.Base64ToFile(flow.DataBase64, sFileName);
-        }
+
         public ObservableCollection<TemplateModelBase> ListConfigs { get; set; } = new ObservableCollection<TemplateModelBase>();
         private void Window_Initialized(object sender, EventArgs e)
         {

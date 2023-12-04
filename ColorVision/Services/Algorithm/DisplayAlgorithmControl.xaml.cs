@@ -217,7 +217,7 @@ namespace ColorVision.Services.Algorithm
             ComboxDistortionTemplate.ItemsSource = TemplateControl.GetInstance().DistortionParams;
             ComboxDistortionTemplate.SelectedIndex = 0;
 
-            ComboxLedCheckTemplate.ItemsSource = TemplateControl.GetInstance().LedCheckParams;
+            ComboxLedCheckTemplate.ItemsSource = TemplateControl.GetInstance().LedCheckParams;  
             ComboxLedCheckTemplate.SelectedIndex = 0;
 
             ComboxFocusPointsTemplate.ItemsSource = TemplateControl.GetInstance().FocusPointsParams;
