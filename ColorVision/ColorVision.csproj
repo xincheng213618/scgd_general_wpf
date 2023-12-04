@@ -54,7 +54,6 @@
     <PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.8.0.20230708" />
     <PackageReference Include="ScottPlot.WPF" Version="4.1.67" />
     <PackageReference Include="System.IO.Ports" Version="7.0.0" />
-    <PackageReference Include="YamlDotNet" Version="13.7.1" />
   </ItemGroup>
 
   <ItemGroup>

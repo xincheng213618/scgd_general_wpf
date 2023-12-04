@@ -31,7 +31,7 @@ namespace ColorVision.Services.Device.Camera
         [JsonIgnore]
         public bool IsExpThree
         {
-            get => CameraType == CameraType.CV_Q || CameraType == CameraType.CV_MIL_CL;
+            get =>  TakeImageMode != TakeImageMode.Live && (CameraType == CameraType.CV_Q || CameraType == CameraType.CV_MIL_CL);
             set => NotifyPropertyChanged();
         }
         [JsonIgnore]
