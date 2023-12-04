@@ -650,29 +650,5 @@ namespace ColorVision.Templates
 
 
 
-        public TemplateViewBase<FocusPointsParam> FocusPointsParams1 { get; set; }
-    }
-    public class TemplateViewBase<T>: TemplateViewBase where T : ParamBase, new()
-    {
-        public ObservableCollection<TemplateModel<T>> Params { get; set; }
-
-
-
-    }
-
-
-
-    public class TemplateViewBase
-    {
-        public virtual void Save()
-        {
-        }
-        public virtual void Create()
-        {
-        }
-        public virtual void Open()
-        {
-
-        }
     }
 }
