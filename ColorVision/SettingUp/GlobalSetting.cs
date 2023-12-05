@@ -72,7 +72,10 @@ namespace ColorVision
                     foreach (var item in config.MQTTConfigs)
                         item.UserPwd = Cryptography.AESDecrypt(item.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
 
-
+                    if (config.VideoConfig.Port == 0)
+                    {
+                        config.VideoConfig.Port = Math.Abs(new Random().Next()) % 999 + 19000;
+                    }
                     return config;
                 }
                 else
