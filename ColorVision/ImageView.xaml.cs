@@ -599,12 +599,6 @@ namespace ColorVision
             }
         }
 
-        public void OpenCVCIE(string fileName)
-        {
-            //CVCIEFileInfo info = new CVCIEFileInfo();
-            //int ret = CVFileUtils.ReadCVCIE(fileName,ref info);
-            //OpenImage(info);
-        }
 
         public void OpenImage(CVCIEFileInfo fileInfo)
         {

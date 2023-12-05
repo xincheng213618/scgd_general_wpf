@@ -39,14 +39,14 @@ namespace ColorVision.Solution.V.Files
 
         public void Open()
         {
-            ImageView imageView = new ImageView();
-            Window window = new Window() { };
-            window.Content = imageView;
-            Task.Run(async () => {
-                await Task.Delay(10);
-                Application.Current.Dispatcher.Invoke(() => { imageView.OpenCVCIE(FileInfo.FullName); });
-            });
-            window.Show();
+            //ImageView imageView = new ImageView();
+            //Window window = new Window() { };
+            //window.Content = imageView;
+            ////Task.Run(async () => {
+            ////    await Task.Delay(10);
+            ////    Application.Current.Dispatcher.Invoke(() => { imageView.OpenCVCIE(FileInfo.FullName); });
+            ////});
+            //window.Show();
 
         }
 

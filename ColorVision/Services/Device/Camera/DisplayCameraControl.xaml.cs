@@ -447,19 +447,6 @@ namespace ColorVision.Device.Camera
                 }
             }
         }
-        private void TemplateAbb<T>(WindowTemplate windowTemplate, ObservableCollection<TemplateModel<T>> keyValuePairs) where T : ParamBase
-        {
-            windowTemplate.TemplateModelBases.Clear();
-            foreach (var item in keyValuePairs)
-            {
-                if (item.Value is PoiParam poiParam)
-                {
-                    item.Tag = $"{poiParam.Width}*{poiParam.Height}{(GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql ? "" : $"_{poiParam.PoiPoints.Count}")}";
-                }
-
-                windowTemplate.TemplateModelBases.Add(item);
-            }
-        }
 
         private void Move_Click(object sender, RoutedEventArgs e)
         {
