@@ -12,6 +12,7 @@ using System.Windows;
 using ColorVision.Extension;
 using System.Windows.Media.Media3D;
 using MQTTMessageLib.FileServer;
+using MQTTMessageLib.Camera;
 
 namespace ColorVision.Device.Camera
 {
@@ -85,7 +86,8 @@ namespace ColorVision.Device.Camera
                     case "Close":
                         DeviceStatus = DeviceStatus.Closed;
                         break;
-                    case "Open":
+                    case MQTTCameraEventEnum.Event_Open:
+                    case MQTTCameraEventEnum.Event_OpenLive:
                         DeviceStatus = DeviceStatus.Opened;
                         break;
                     case "GetData":
@@ -315,12 +317,14 @@ namespace ColorVision.Device.Camera
             return PublishAsyncClient(msg);
         }
 
-        public void OpenVideo()
+        public void OpenVideo(string host, int port,double expTime)
         {
+            CurrentTakeImageMode = TakeImageMode.Live;
+
             MsgSend msg = new MsgSend
             {
-                EventName = "OpenVideo",
-                Params = new Dictionary<string, object>() { }
+                EventName = "OpenLive",
+                Params = new Dictionary<string, object>() { { "RemoteIp", host }, { "RemotePort", port }, { "ExpTime", expTime } }
             };
             PublishAsyncClient(msg);
         }

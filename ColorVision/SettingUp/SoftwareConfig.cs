@@ -44,6 +44,8 @@ namespace ColorVision
             RcServiceConfig = new RCServiceConfig();
             RcServiceConfigs = new ObservableCollection<RCServiceConfig>();
             RcServiceControlLazy = new Lazy<RCService>(() => RCService.GetInstance());
+
+            VideoConfig = new LocalVideoConfig();
         }
 
 
@@ -66,6 +68,7 @@ namespace ColorVision
 
 
         public SoftwareSetting SoftwareSetting { get; set; }
+        public LocalVideoConfig VideoConfig { get; set; }
 
 
         [JsonIgnore]

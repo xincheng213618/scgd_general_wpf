@@ -325,18 +325,21 @@ namespace ColorVision.Device.Camera
             }
         }
 
-        public CameraVideoControl1 CameraVideoControl { get; set; }
+        public CameraVideoControl CameraVideoControl { get; set; }
 
         private void Button4_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
             {
-                CameraVideoControl??= new CameraVideoControl1();
+                CameraVideoControl??= new CameraVideoControl();
                 if (Service.DeviceStatus == DeviceStatus.Init|| Service.DeviceStatus == DeviceStatus.Closed)
                 {
                     button.Content = "正在获取推流";
-                    CameraVideoControl.Open(Service.Config.VideoConfig.Host, Service.Config.VideoConfig.Port);
-                    Service.Open(Service.Config.ID, TakeImageMode.Live, (int)Service.Config.ImageBpp);
+                    string host = GlobalSetting.GetInstance().SoftwareConfig.VideoConfig.Host;
+                    int port = GlobalSetting.GetInstance().SoftwareConfig.VideoConfig.Port;
+                    CameraVideoControl.Open(host, port);
+                    //Service.Open(Service.Config.ID, TakeImageMode.Live, (int)Service.Config.ImageBpp);
+                    Service.OpenVideo(host, port, Service.Config.ExpTime);
                     CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
                     CameraVideoControl.CameraVideoFrameReceived += CameraVideoFrameReceived;
                 }
