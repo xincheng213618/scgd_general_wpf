@@ -27,13 +27,12 @@ namespace ColorVision.Templates
 
         public ObservableCollection<TemplateModelBase> TemplateModelBases { get; set; } = new ObservableCollection<TemplateModelBase>();
 
-
-        public WindowTemplate(TemplateType windowTemplateType)
+        public WindowTemplate(TemplateType windowTemplateType, bool IsReLoad = true)
         {
             TemplateType = windowTemplateType;
             TemplateControl = TemplateControl.GetInstance();
+            Load(windowTemplateType, IsReLoad);
             InitializeComponent();
-
             switch (TemplateType)
             {
                 case TemplateType.FlowParam:
@@ -51,14 +50,113 @@ namespace ColorVision.Templates
             }
         }
 
+        public void Load(TemplateType windowTemplateType,bool IsReLoad = true)
+        {
+            switch (TemplateType)
+            {
+                case TemplateType.FlowParam:
+                    if (IsReLoad) 
+                        TemplateControl.LoadParams(TemplateControl.FlowParams);
+                    TemplateModelBases = TemplateControl.GetTemplateModelBases(TemplateControl.FlowParams);
+                    Title = "流程引擎";
+                    break;
+                case TemplateType.MeasureParam:
+                    if (IsReLoad) 
+                        TemplateControl.LoadParams(TemplateControl.MeasureParams);
+                    TemplateModelBases = TemplateControl.GetTemplateModelBases(TemplateControl.MeasureParams);
+                    Title = "测量设置";
+                    break;
+                case TemplateType.Calibration:
+                    if (IsReLoad) 
+                        TemplateControl.LoadParams(TemplateControl.CalibrationParams);
+                    TemplateModelBases = TemplateControl.GetTemplateModelBases(TemplateControl.CalibrationParams);
+                    Title = "校正参数设置";
+                    break;
+                case TemplateType.LedResult:
+                    if (IsReLoad) 
+                        TemplateControl.LoadParams(TemplateControl.LedReusltParams);
+                    TemplateModelBases = TemplateControl.GetTemplateModelBases(TemplateControl.LedReusltParams);
+                    Title = "数据判断模板设置";
+                    break;
+                case TemplateType.AoiParam:
+                    if (IsReLoad)
+                        TemplateControl.LoadParams(TemplateControl.AoiParams);
+                    TemplateModelBases = TemplateControl.GetTemplateModelBases(TemplateControl.AoiParams);
+                    Title = "AOI参数设置";
+                    break;
+                case TemplateType.PGParam:
+                    if (IsReLoad)
+                        TemplateControl.LoadParams(TemplateControl.PGParams);
+                    TemplateModelBases = TemplateControl.GetTemplateModelBases(TemplateControl.PGParams);
+                    Title = "PG参数设置";
+                    break;
+                case TemplateType.SMUParam:
+                    if (IsReLoad)
+                        TemplateControl.LoadParams(TemplateControl.SMUParams);
+                    TemplateModelBases = TemplateControl.GetTemplateModelBases(TemplateControl.SMUParams);
+                    Title = "源表模板设置";
+                    break;
+                case TemplateType.PoiParam:
+                    if (IsReLoad)
+                        TemplateControl.LoadParams(TemplateControl.PoiParams);
+                    TemplateModelBases = TemplateControl.GetTemplateModelBases(TemplateControl.PoiParams);
+                    Title = "关注点设置";
+                    break;
+                case TemplateType.MTFParam:
+                    if (IsReLoad)
+                        TemplateControl.LoadParams(TemplateControl.MTFParams);
+                    TemplateModelBases = TemplateControl.GetTemplateModelBases(TemplateControl.MTFParams);
+                    Title = "MTF算法设置";
+                    break;
+                case TemplateType.SFRParam:
+                    if (IsReLoad)
+                        TemplateControl.LoadParams(TemplateControl.SFRParams);
+                    TemplateModelBases = TemplateControl.GetTemplateModelBases(TemplateControl.SFRParams);
+                    Title = "SFR算法设置";
+                    break;
+                case TemplateType.FOVParam:
+                    if (IsReLoad)
+                        TemplateControl.LoadParams(TemplateControl.FOVParams);
+                    TemplateModelBases = TemplateControl.GetTemplateModelBases(TemplateControl.FOVParams);
+                    Title = "FOV算法设置";
+                    break;
+                case TemplateType.GhostParam:
+                    if (IsReLoad)
+                        TemplateControl.LoadParams(TemplateControl.GhostParams);
+                    TemplateModelBases = TemplateControl.GetTemplateModelBases(TemplateControl.GhostParams);
+                    Title = "鬼影算法设置";
+                    break;
+                case TemplateType.DistortionParam:
+                    if (IsReLoad)
+                        TemplateControl.LoadParams(TemplateControl.DistortionParams);
+                    TemplateModelBases = TemplateControl.GetTemplateModelBases(TemplateControl.DistortionParams);
+                    Title = "畸变算法设置";
+                    break;
+                case TemplateType.LedCheckParam:
+                    if (IsReLoad)
+                        TemplateControl.LoadParams(TemplateControl.LedCheckParams);
+                    TemplateModelBases = TemplateControl.GetTemplateModelBases(TemplateControl.LedCheckParams);
+                    Title = "灯光检测算法设置";
+                    break;
+                case TemplateType.FocusPointsParam:
+                    if (IsReLoad)
+                        TemplateControl.LoadParams(TemplateControl.FocusPointsParams);
+                    TemplateModelBases = TemplateControl.GetTemplateModelBases(TemplateControl.FocusPointsParams);
+                    Title = "FocusPoints算法设置";
+                    break;
+                default:
+                    break;
+            }
+        }
+
 
         public UserControl  UserControl { get; set; }
-        public WindowTemplate(TemplateType windowTemplateType,UserControl userControl)
+        public WindowTemplate(TemplateType windowTemplateType,UserControl userControl,bool IsReLoad = true)
         {
             TemplateType = windowTemplateType;
             TemplateControl = TemplateControl.GetInstance();
+            Load(windowTemplateType, IsReLoad);
             InitializeComponent();
-
             GridProperty.Children.Clear();
             GridProperty.Margin = new Thickness(5,5,5,5);
             UserControl = userControl;

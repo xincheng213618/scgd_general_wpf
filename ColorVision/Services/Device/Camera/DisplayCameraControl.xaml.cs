@@ -437,8 +437,9 @@ namespace ColorVision.Device.Camera
                 {
                     case "Calibration":
                         Calibration calibration = new Calibration(TemplateControl.CalibrationParams[0].Value);
-                        windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration) { Title = "校正参数设置" };
-                        TemplateAbb(windowTemplate, TemplateControl.CalibrationParams);
+                        windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration,false);
+                        windowTemplate.Owner = Window.GetWindow(this);
+                        windowTemplate.ShowDialog();
                         break;
                     default:
                         HandyControl.Controls.Growl.Info("开发中");
@@ -448,7 +449,6 @@ namespace ColorVision.Device.Camera
         }
         private void TemplateAbb<T>(WindowTemplate windowTemplate, ObservableCollection<TemplateModel<T>> keyValuePairs) where T : ParamBase
         {
-            windowTemplate.Owner = Window.GetWindow(this);
             windowTemplate.TemplateModelBases.Clear();
             foreach (var item in keyValuePairs)
             {
@@ -459,7 +459,6 @@ namespace ColorVision.Device.Camera
 
                 windowTemplate.TemplateModelBases.Add(item);
             }
-            windowTemplate.ShowDialog();
         }
 
         private void Move_Click(object sender, RoutedEventArgs e)
