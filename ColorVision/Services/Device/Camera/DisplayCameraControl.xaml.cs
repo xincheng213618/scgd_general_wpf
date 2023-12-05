@@ -24,6 +24,7 @@ using ColorVision.MySql.Service;
 using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
+using System.Windows.Threading;
 
 namespace ColorVision.Device.Camera
 {
@@ -55,6 +56,11 @@ namespace ColorVision.Device.Camera
 
             Service.CameraService.OnMessageRecved += CameraService_OnMessageRecved; ;
             View.OnCurSelectionChanged += View_OnCurSelectionChanged;
+
+
+            _timer = new DispatcherTimer();
+            _timer.Interval = TimeSpan.FromMilliseconds(500); // 设置延时时间，这里是500毫秒
+            _timer.Tick += Timer_Tick; // 设置Tick事件处理程序
         }
 
         private void View_OnCurSelectionChanged(CameraImgResult data)
@@ -495,7 +501,6 @@ namespace ColorVision.Device.Camera
                 }
             }
         }
-
         private void Close_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
@@ -504,6 +509,15 @@ namespace ColorVision.Device.Camera
                 Helpers.SendCommand(button, msgRecord);
             }
         }
+        private DispatcherTimer _timer;
+
+        private void Timer_Tick(object sender, EventArgs e)
+        {
+            _timer.Stop();
+            Service.SetExp();
+
+
+        }
 
         private void PreviewSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
@@ -511,9 +525,18 @@ namespace ColorVision.Device.Camera
             {
                 if (Service.CurrentTakeImageMode == TakeImageMode.Live)
                 {
-                    Service.SetExp();
+                    _timer.Stop();
+                    _timer.Start();
                 }
             }
+        }
+
+
+
+
+        private void SliderexpTime_MouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+
         }
     }
 }
