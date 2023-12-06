@@ -3,6 +3,7 @@ using ColorVision.Flow.Templates;
 using ColorVision.MQTT;
 using ColorVision.Solution;
 using ColorVision.Templates;
+using ColorVision.Util;
 using FlowEngineLib;
 using FlowEngineLib.Start;
 using Newtonsoft.Json;
@@ -20,7 +21,6 @@ namespace ColorVision
     /// </summary>
     public partial class WindowFlowEngine : Window
     {
-        public bool IsSave { get; set; } = true;
 
         public WindowFlowEngine()
         {
@@ -43,11 +43,10 @@ namespace ColorVision
                 this.FileName = FileName;
                 ButtonOpen.Visibility = Visibility.Collapsed;
                 ButtonNew.Visibility = Visibility.Collapsed;
-                IsSave = false;
             }
         }
         FlowParam FlowParam { get; set; }
-        public WindowFlowEngine(FlowParam flowParam) : this(SolutionManager.GetInstance().CurrentSolution.FullName + "\\Flow\\" + flowParam.FileName)
+        public WindowFlowEngine(FlowParam flowParam) : this(SolutionManager.GetInstance().CurrentSolution.FullName + "\\Flow\\" + flowParam.Name +".stn")
         {
             FlowParam = flowParam;
         }
@@ -107,33 +106,6 @@ namespace ColorVision
                 }
             };
             TextBoxsn.Text = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            this.Closed +=(s,e)=>
-            {
-                if (IsSave)
-                {
-                    SaveFlow(FileName);
-                }
-                else
-                {
-                    if (MessageBox.Show("您是否保存流程", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-                    {
-                        System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
-                        ofd.Filter = "*.stn|*.stn";
-                        ofd.FileName = FileName;
-                        ofd.InitialDirectory = SolutionManager.GetInstance().CurrentSolution.FullName;
-                        if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                        if (FlowParam != null)
-                        {
-                            FlowParam.FileName = ofd.FileName;
-                        }
-                        SaveFlow(ofd.FileName, true);
-                    }
-                    else
-                    {
-                        
-                    }
-                }
-            };
         }
 
         private string startNodeName;
@@ -160,22 +132,7 @@ namespace ColorVision
 
         private void Button_Click_Save(object sender, RoutedEventArgs e)
         {
-            if (File.Exists(FileName))
-            {
-                IsSave = true;
-                SaveFlow(FileName);
-            }
-            else if (!IsSave)
-            {
-                FlowParam.FileName = FlowParam.Name + ".stn";
-                FileName = SolutionManager.GetInstance().CurrentSolution.FullName + "\\" + FlowParam.Name + ".stn";
-                SaveFlow(FileName, true);
-                IsSave = true;
-            }
-            else
-            {
-                MessageBox.Show("请先创建流程", "ColorVision",MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-            }
+            SaveFlow(FileName);
         }
         private void Button_Click_Clear(object sender, RoutedEventArgs e)
         {
@@ -219,16 +176,16 @@ namespace ColorVision
 
         private void SaveFlow(string flowName,bool IsForceSave =false)
         {
+            STNodeEditorMain.SaveCanvas(flowName);
 
-            if (File.Exists(flowName)|| IsForceSave)
-            {
-                STNodeEditorMain.SaveCanvas(flowName);
-            }
             if (FlowParam != null)
             {
-                FlowParam.FileName = flowName;
+                FlowParam.FileName = Path.GetFileName(flowName);
+                FlowParam.DataBase64 = Tool.FileToBase64(flowName);
                 TemplateControl.GetInstance().Save2DB(FlowParam);
             }
+
+            MessageBox.Show("保存成功");
         }
 
         private string GetTopic()
