@@ -323,7 +323,7 @@ namespace ColorVision.Templates
 
                     break;
                 case TemplateType.FlowParam:
-                    SaveDefault(FileNameFlowParms, FlowParams);
+                    Save(FlowParams, ModMasterType.Flow);
                     break;
                 case TemplateType.AoiParam:
                     Save(AoiParams, ModMasterType.Aoi);

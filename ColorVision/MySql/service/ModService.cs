@@ -2,6 +2,7 @@
 using ColorVision.Flow.Templates;
 using ColorVision.MySql.DAO;
 using ColorVision.Templates;
+using ColorVision.Templates.POI.MySql;
 
 namespace ColorVision.MySql.Service
 {
@@ -80,7 +81,7 @@ namespace ColorVision.MySql.Service
 
         internal ModMasterModel? GetMasterById(int pkId)
         {
-            return masterFlowDao.GetByID(pkId);
+            return masterModDao.GetByID(pkId);
         }
 
         internal int MasterDeleteById(int id)
@@ -159,9 +160,15 @@ namespace ColorVision.MySql.Service
 
         internal void Save(ParamBase value)
         {
+            ModMasterModel modMasterModel = GetMasterById(value.ID);
+            modMasterModel.Name = value.Name;
+            ModMasterDao modMasterDao = new ModMasterDao(modMasterModel.Pcode);
+            modMasterDao.Save(modMasterModel);
             List<ModDetailModel> list = new List<ModDetailModel>();
             value.GetDetail(list);
             detailDao.UpdateByPid(value.ID, list);
+
+
         }
     }
 }

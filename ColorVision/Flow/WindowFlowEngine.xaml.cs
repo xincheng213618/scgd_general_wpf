@@ -111,7 +111,7 @@ namespace ColorVision
             {
                 if (IsSave)
                 {
-                    //SaveFlow(FileName);
+                    SaveFlow(FileName);
                 }
                 else
                 {
@@ -226,6 +226,7 @@ namespace ColorVision
             }
             if (FlowParam != null)
             {
+                FlowParam.FileName = flowName;
                 TemplateControl.GetInstance().Save2DB(FlowParam);
             }
         }
@@ -252,7 +253,6 @@ namespace ColorVision
                     await MQTTControl.GetInstance().PublishAsyncClient(GetTopic(), JsonConvert.SerializeObject(baseEvent), false);
                     
                     button.Content = "停止流程";
-                    ButtonFlowPause.IsEnabled = true;
                     ButtonFlowPause.Visibility = Visibility.Visible;
                     ButtonFlowPause.Content = "暂停流程";
                 }
@@ -261,7 +261,6 @@ namespace ColorVision
                     CVBaseDataFlow baseEvent = new CVBaseDataFlow(svrName, "Stop", TextBoxsn.Text);
                     await MQTTControl.GetInstance().PublishAsyncClient(GetTopic(), JsonConvert.SerializeObject(baseEvent), false);
                     button.Content = "开始流程";
-                    ButtonFlowPause.IsEnabled = false;
                     ButtonFlowPause.Visibility = Visibility.Collapsed;
 
                 }
