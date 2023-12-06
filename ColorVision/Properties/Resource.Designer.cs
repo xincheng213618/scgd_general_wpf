@@ -439,6 +439,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 调制传递函数 的本地化字符串。
+        /// </summary>
+        public static string MTFToolTip {
+            get {
+                return ResourceManager.GetString("MTFToolTip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 名称 的本地化字符串。
         /// </summary>
         public static string Name {

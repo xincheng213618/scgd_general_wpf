@@ -324,4 +324,7 @@
   <data name="Code" xml:space="preserve">
     <value>Code</value>
   </data>
+  <data name="MTFToolTip" xml:space="preserve">
+    <value>Modulation Transfer Function</value>
+  </data>
 </root>
