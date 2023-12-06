@@ -17,7 +17,11 @@ namespace ColorVision.Device.Camera
         public DeviceServiceCamera DeviceService { get; set; }
 
 
-        readonly Lazy<CameraDisplayControl> ControlLazy;
+        readonly Lazy<CameraDisplayControl> CameraDisplayControlLazy;
+        readonly Lazy<EditCamera> EditCameraLazy;
+
+        public CameraDisplayControl CameraDisplayControl { get; set; }
+        public EditCamera EditCamera { get; set; }
 
         public CameraView View { get; set; }
 
@@ -44,7 +48,9 @@ namespace ColorVision.Device.Camera
             };
             View.View.Title = "相机视图";
             View.View.Icon = Icon;
-            ControlLazy = new Lazy<CameraDisplayControl>(() => new CameraDisplayControl(this));
+
+            CameraDisplayControlLazy = new Lazy<CameraDisplayControl>(() => CameraDisplayControl??new CameraDisplayControl(this));
+            EditCameraLazy =new Lazy<EditCamera>(()=>EditCamera??new EditCamera(this));
         }
 
         public override void Dispose()
@@ -59,6 +65,8 @@ namespace ColorVision.Device.Camera
         public override UserControl GetDeviceControl() => new DeviceCameraControl(this);
         public override UserControl GetDeviceInfo() => new DeviceCameraControl(this, false);
 
-        public override UserControl GetDisplayControl() => ControlLazy.Value;
+        public override UserControl GetDisplayControl() => CameraDisplayControlLazy.Value;
+        public override UserControl GetEditControl() => EditCameraLazy.Value;
+
     }
 }
