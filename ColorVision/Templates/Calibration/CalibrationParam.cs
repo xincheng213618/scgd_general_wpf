@@ -1,9 +1,9 @@
-﻿using ColorVision.MVVM;
+﻿#pragma warning disable CS8603,CS0649
+using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using cvColorVision;
 using System;
 using System.Collections.Generic;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 
 namespace ColorVision.Templates
 {

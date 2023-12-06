@@ -57,7 +57,7 @@ namespace ColorVision
                         windowTemplate.ShowDialog();
                         break;
                     case "Calibration":
-                        Calibration calibration = TemplateControl.CalibrationParams.Count==0?new Calibration(null):new Calibration(TemplateControl.CalibrationParams[0].Value);
+                        Calibration calibration = TemplateControl.CalibrationParams.Count==0?new Calibration():new Calibration(TemplateControl.CalibrationParams[0].Value);
                         windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration);
                         windowTemplate.Owner = GetWindow(this);
                         windowTemplate.ShowDialog();

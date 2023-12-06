@@ -76,7 +76,7 @@ namespace ColorVision.Services.Algorithm
             doOpen(data.ImgFileName, FileExtType.Src);
         }
 
-        private void Service_OnAlgorithmEvent(object sender, MessageRecvEventArgs arg)
+        private void Service_OnAlgorithmEvent(object sender, MessageRecvArgs arg)
         {
             switch (arg.EventName)
             {

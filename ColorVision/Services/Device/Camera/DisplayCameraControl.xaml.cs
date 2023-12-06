@@ -81,7 +81,7 @@ namespace ColorVision.Device.Camera
             }
         }
 
-        private void CameraService_OnMessageRecved(object sender, Services.MessageRecvEventArgs arg)
+        private void CameraService_OnMessageRecved(object sender, Services.MessageRecvArgs arg)
         {
             switch (arg.EventName)
             {
@@ -113,10 +113,14 @@ namespace ColorVision.Device.Camera
             {
                 resultMaster = resultService.GetCameraImgResultBySN(serialNumber);
             }
-            foreach (MeasureImgResultModel result in resultMaster)
+            if (resultMaster != null)
             {
-                ShowResult(result);
+                foreach (MeasureImgResultModel result in resultMaster)
+                {
+                    ShowResult(result);
+                }
             }
+
             handler?.Close();
         }
 
@@ -511,7 +515,7 @@ namespace ColorVision.Device.Camera
         }
         private DispatcherTimer _timer;
 
-        private void Timer_Tick(object sender, EventArgs e)
+        private void Timer_Tick(object? sender, EventArgs e)
         {
             _timer.Stop();
             Service.SetExp();

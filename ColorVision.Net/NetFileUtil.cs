@@ -1,3 +1,4 @@
+#pragma warning disable CS8601,CA1822
 using FileServerPlugin;
 using log4net;
 using MQTTMessageLib.FileServer;

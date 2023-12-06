@@ -71,7 +71,7 @@ namespace ColorVision.Services.Algorithm
                         DeviceStatus = DeviceStatus.Opened;
                         break;
                     case MQTTAlgorithmEventEnum.Event_POI_GetData:
-                        OnMessageRecved?.Invoke(this, new MessageRecvEventArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
+                        OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         DeviceStatus = DeviceStatus.Opened;
                         break;
                     case "SaveLicense":
@@ -80,7 +80,7 @@ namespace ColorVision.Services.Algorithm
                     //    break;
                     case MQTTFileServerEventEnum.Event_File_Upload:
                     case MQTTFileServerEventEnum.Event_File_List_All:
-                        OnMessageRecved?.Invoke(this, new MessageRecvEventArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
+                        OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         break;
                     case "MTF":
                         Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, $"{msg.EventName}执行成功", "ColorVision"));
@@ -95,7 +95,7 @@ namespace ColorVision.Services.Algorithm
                 switch (msg.EventName)
                 {
                     case "GetData":
-                        OnMessageRecved?.Invoke(this, new MessageRecvEventArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
+                        OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         DeviceStatus = DeviceStatus.Opened;
                         break;
                     case "Close":
@@ -113,7 +113,7 @@ namespace ColorVision.Services.Algorithm
                     case "Calibrations":
                         break;
                     default:
-                        OnMessageRecved?.Invoke(this, new MessageRecvEventArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
+                        OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         DeviceStatus = DeviceStatus.Opened;
                         break;
                 }

@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8603  
+﻿#pragma warning disable CS8603,CS0169
 
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
@@ -187,7 +187,6 @@ namespace ColorVision.Templates
         [Browsable(false)]
         public string Name { get => _Name; set { _Name = value ; NotifyPropertyChanged(); } }
         private string _Name;
-
 
 
         private Dictionary<string, ModDetailModel> parameters;

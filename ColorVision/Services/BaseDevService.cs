@@ -17,14 +17,14 @@ using System.Windows;
 
 namespace ColorVision.Services
 {
-    public class MessageRecvEventArgs
+    public class MessageRecvArgs
     {
         public int ResultCode { get; set; }
         public string EventName { get; set; }
         public string SerialNumber { get; set; }
         public dynamic Data { get; set; }
 
-        public MessageRecvEventArgs(string eventName, string serialNumber, int resultCode, dynamic Data)
+        public MessageRecvArgs(string eventName, string serialNumber, int resultCode, dynamic Data)
         {
             this.ResultCode = resultCode;
             this.EventName = eventName;
@@ -32,7 +32,7 @@ namespace ColorVision.Services
             this.Data = Data;
         }
     }
-    public delegate void MessageRecvHandler(object sender, MessageRecvEventArgs arg);
+    public delegate void MessageRecvHandler(object sender, MessageRecvArgs arg);
     public class BaseDevService : BaseService
     {
     }
