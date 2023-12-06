@@ -620,8 +620,7 @@ namespace ColorVision.Templates
 
         internal void Save2DB(FlowParam flowParam)
         {
-            string fileName = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.FullName + "\\" + flowParam.FileName;
-            flowParam.DataBase64 = Tool.FileToBase64(fileName);
+            flowParam.DataBase64 = Tool.FileToBase64(flowParam.FileName);
             modService.Save(flowParam);
         }
 
