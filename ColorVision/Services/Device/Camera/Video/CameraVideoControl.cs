@@ -34,7 +34,7 @@ namespace ColorVision.Device.Camera.Video
         private int headLen;
 
         bool OpenVideo;
-        public bool Open(string Host,int Port)
+        public int Open(string Host,int Port)
         {
             try
             {
@@ -44,55 +44,60 @@ namespace ColorVision.Device.Camera.Video
                 }
                 IPAddress locateIp = IPAddress.Parse(Host);
                 IPEndPoint locatePoint = new IPEndPoint(locateIp, Port);
+
                 UdpClient = new UdpClient(locatePoint);
                 OpenVideo = true;
                 headLen = 4;
                 packets = new Dictionary<int, List<byte[]>>();
-
-                Task.Run(() =>
-                {
-                    while (OpenVideo)
-                    {
-                        try
-                        {
-                            if (UdpClient != null)
-                            {
-                                IPEndPoint remotePoint = new IPEndPoint(IPAddress.Parse("1.1.1.1"), 1);
-                                var received = UdpClient.Receive(ref remotePoint);
-                                if (received.Length > 0)
-                                {
-                                    var bytes = AddPacket(received);
-                                    if (bytes != null)
-                                    {
-                                        var bmp = Decoder.Decode(bytes, bytes.Length);
-                                        if (bmp != null)
-                                        {
-                                            Application.Current.Dispatcher.Invoke(() =>
-                                            {
-                                                CameraVideoFrameReceived?.Invoke(bmp);
-                                            });
-                                            bmp.Dispose();
-                                        }
-                                    }
-                                }
-                            }
-                            Task.Delay(1);
-                        }
-                        catch
-                        {
-                            OpenVideo = false;
-                        }
-
-                    }
-                });
-                return true;
+                var ep = UdpClient.Client.LocalEndPoint as IPEndPoint;
+                return ep.Port;
             }
             catch (Exception ex)
             {
                 OpenVideo = false;
                 log.Error(ex);
-                return false;
+                return -1;
             }
+        }
+
+        public void Start()
+        {
+            Task.Run(() =>
+            {
+                while (OpenVideo)
+                {
+                    try
+                    {
+                        if (UdpClient != null)
+                        {
+                            IPEndPoint remotePoint = new IPEndPoint(IPAddress.Parse("1.1.1.1"), 1);
+                            var received = UdpClient.Receive(ref remotePoint);
+                            if (received.Length > 0)
+                            {
+                                var bytes = AddPacket(received);
+                                if (bytes != null)
+                                {
+                                    var bmp = Decoder.Decode(bytes, bytes.Length);
+                                    if (bmp != null)
+                                    {
+                                        Application.Current.Dispatcher.Invoke(() =>
+                                        {
+                                            CameraVideoFrameReceived?.Invoke(bmp);
+                                        });
+                                        bmp.Dispose();
+                                    }
+                                }
+                            }
+                        }
+                        Task.Delay(1);
+                    }
+                    catch
+                    {
+                        OpenVideo = false;
+                    }
+
+                }
+            });
         }
 
 

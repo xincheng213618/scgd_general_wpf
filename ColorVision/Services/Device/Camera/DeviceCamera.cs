@@ -1,11 +1,8 @@
 ﻿using ColorVision.MySql.DAO;
 using ColorVision.Services.Device;
-using ColorVision.Services.Device.Calibration;
 using ColorVision.Services.Device.Camera;
 using ColorVision.Themes;
-using ColorVision.Themes.Controls;
 using System;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -22,6 +19,18 @@ namespace ColorVision.Device.Camera
         public CameraView View { get; set; }
 
         public ServiceCamera Service { get; set; }
+
+        public cvColorVision.TakeImageMode cameraMode { get => _cameraMode; set { _cameraMode = value; IsVideo = value == cvColorVision.TakeImageMode.Live; } }
+        private cvColorVision.TakeImageMode _cameraMode;
+        public bool IsVideo
+        {
+            get => _isVideo;
+            set
+            {
+                _isVideo = value; NotifyPropertyChanged();
+            }
+        }
+        private bool _isVideo;
 
 
         public DeviceCamera(SysResourceModel sysResourceModel, ServiceCamera cameraService) : base(sysResourceModel)
