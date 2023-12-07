@@ -397,7 +397,7 @@ namespace ColorVision.Device.Camera
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord GetData(double expTime, double gain)
+        public MsgRecord GetData(double expTime)
         {
             string SerialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             var model = ServiceManager.GetInstance().BatchSave(SerialNumber);
@@ -407,7 +407,7 @@ namespace ColorVision.Device.Camera
             {
                 EventName = "GetData",
                 SerialNumber = SerialNumber,
-                Params = new Dictionary<string, object>() { { "ExpTime", new double[] { expTime } }, { "gain", gain } }
+                Params = new Dictionary<string, object>() { { "ExpTime", new double[] { expTime } }}
             };
             return PublishAsyncClient(msg, (Config.IsExpThree ? expTime * 3 : expTime) + 10000);
         }
