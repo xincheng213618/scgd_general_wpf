@@ -1,4 +1,5 @@
-﻿using ColorVision.Device;
+﻿#pragma warning disable CS8603
+using ColorVision.Device;
 using ColorVision.MQTT;
 using ColorVision.MySql;
 using ColorVision.Services;

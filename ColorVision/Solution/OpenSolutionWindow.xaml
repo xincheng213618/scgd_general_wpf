@@ -44,7 +44,7 @@
                                             <TextBlock  Text="{Binding Name}" TextTrimming = "CharacterEllipsis" FontWeight="Bold" VerticalAlignment="Top"/>
                                             <TextBlock Text="{Binding FullName }" TextTrimming = "CharacterEllipsis" VerticalAlignment="Bottom"/>
                                             <TextBlock Text="{Binding CreationTime}" TextTrimming = "CharacterEllipsis" VerticalAlignment="Top" HorizontalAlignment="Right"/>
-                                            <Button HorizontalAlignment="Right" VerticalAlignment="Bottom" Content="&#xE8BB;" FontFamily="Segoe MDL2 Assets" Background="Transparent" Click="Button_Click_1" Visibility="{Binding ElementName=border1,Path=IsMouseOver,Converter={StaticResource bool2VisibilityConverter}}" Tag="{Binding .}" />
+                                            <Button HorizontalAlignment="Right" VerticalAlignment="Bottom" Content="&#xE8BB;" FontFamily="Segoe MDL2 Assets" Background="Transparent" Click="Button_Click_1" Visibility="Visible" Tag="{Binding .}" />
                                         </Grid>
                                     </Grid>
                                 </Border>

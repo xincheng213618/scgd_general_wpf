@@ -23,6 +23,36 @@ using System.Windows.Forms.Design;
 
 namespace ColorVision.Templates
 {
+
+    public class PoiControl
+    {
+        private static PoiControl _instance;
+        private static readonly object _locker = new();
+        public static PoiControl GetInstance() { lock (_locker) { return _instance ??= new PoiControl(); } }
+        public ObservableCollection<TemplateModel<PoiParam>> PoiParams { get; set; }
+
+        public PoiControl()
+        {
+
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    }
+
+
     /// <summary>
     /// 模板管理
     /// </summary>
@@ -35,6 +65,8 @@ namespace ColorVision.Templates
 
         private static string FileNameLedJudgeParams = "LedJudgeSetup";
         private static string FileNameFlowParms = "FlowParmSetup";
+
+
 
         private PoiService poiService = new PoiService();
         private ModService modService = new ModService();
@@ -55,6 +87,9 @@ namespace ColorVision.Templates
             SMUParams = new ObservableCollection<TemplateModel<SMUParam>>();
             FlowParams = new ObservableCollection<TemplateModel<FlowParam>>();
             PoiParams = new ObservableCollection<TemplateModel<PoiParam>>();
+            PoiParam.Params = PoiParams;
+
+
             MeasureParams = new ObservableCollection<TemplateModel<MeasureParam>>();
 
             MTFParams = new ObservableCollection<TemplateModel<MTFParam>>();
@@ -179,6 +214,9 @@ namespace ColorVision.Templates
                 case Type t when t == typeof(LedCheckParam):
                     LoadModParam(LedCheckParams, ModMasterType.LedCheck);
                     break;
+                case Type t when t == typeof(MeasureParam):
+                    LoadMeasureParams();
+                    break;
                 default:
                     break;
 
@@ -285,7 +323,7 @@ namespace ColorVision.Templates
 
                     break;
                 case TemplateType.FlowParam:
-                    SaveDefault(FileNameFlowParms, FlowParams);
+                    Save(FlowParams, ModMasterType.Flow);
                     break;
                 case TemplateType.AoiParam:
                     Save(AoiParams, ModMasterType.Aoi);
@@ -381,24 +419,25 @@ namespace ColorVision.Templates
             return PoiParams;
         }
 
-
-
-        internal PoiParam? AddPoiParam(string text)
+        public PoiParam? AddPoiParam(string TemplateName)
         {
-            PoiMasterModel poiMaster = new PoiMasterModel(text, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            PoiMasterModel poiMaster = new PoiMasterModel(TemplateName, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
             poiService.Save(poiMaster);
+
             int pkId = poiMaster.GetPK();
             if (pkId > 0)
             {
-                return LoadPoiParamById(pkId);
+                PoiMasterModel Service = poiService.GetMasterById(pkId);
+                if (Service != null) return new PoiParam(Service);
+                else return null;
             }
             return null;
         }
 
+
         internal void LoadPoiDetailFromDB(PoiParam poiParam)
         {
             poiParam.PoiPoints.Clear();
-
             List<PoiDetailModel> poiDetail = poiService.GetDetailByPid(poiParam.ID);
             foreach (var dbModel in poiDetail)
             {
@@ -481,13 +520,6 @@ namespace ColorVision.Templates
         {
             SysResourceModel model = resourceService.GetMasterById(pkId);
             if (model != null) return new ResourceParam(model);
-            else return null;
-        }
-
-        internal PoiParam? LoadPoiParamById(int pkId)
-        {
-            PoiMasterModel poiMaster = poiService.GetMasterById(pkId);
-            if (poiMaster != null) return new PoiParam(poiMaster);
             else return null;
         }
 
@@ -588,8 +620,6 @@ namespace ColorVision.Templates
 
         internal void Save2DB(FlowParam flowParam)
         {
-            string fileName = GlobalSetting.GetInstance().SoftwareConfig.SolutionConfig.FullName + "\\" + flowParam.FileName;
-            flowParam.DataBase64 = Tool.FileToBase64(fileName);
             modService.Save(flowParam);
         }
 
@@ -650,7 +680,14 @@ namespace ColorVision.Templates
         public ObservableCollection<TemplateModel<LedCheckParam>> LedCheckParams { get; set; }
         public ObservableCollection<TemplateModel<FocusPointsParam>> FocusPointsParams { get; set; }
 
-
-
+        public static ObservableCollection<TemplateModelBase> GetTemplateModelBases<T>(ObservableCollection<TemplateModel<T>> templateModels) where T:ParamBase
+        {
+            ObservableCollection<TemplateModelBase> templateModelBases = new ObservableCollection<TemplateModelBase>();
+            foreach (var item in templateModels)
+            {
+                templateModelBases.Add(item);
+            }
+            return templateModelBases;
+        }
     }
 }

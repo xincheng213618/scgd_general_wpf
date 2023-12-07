@@ -376,8 +376,10 @@ namespace ColorVision.Templates
                 WaitControlProgressBar.Visibility = Visibility.Visible;
                 WaitControlProgressBar.Value = 0;
                 await Task.Delay(100);
+
                 if(SoftwareConfig.IsUseMySql)
                     TemplateControl.GetInstance().LoadPoiDetailFromDB(PoiParam);
+
                 WaitControlProgressBar.Value = 10;
 
                 if (PoiParam.PoiPoints.Count > 500)

@@ -39,8 +39,7 @@ namespace ColorVision.Templates
             {
                 var sarr = e.Data.GetData(DataFormats.FileDrop);
                 var a = sarr as string[];
-                var fn = a.First();
-                TxtCalibrationFile.Text = a.First();
+                TxtCalibrationFile.Text = a?.First();
             }
         }
 

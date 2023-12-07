@@ -324,4 +324,7 @@
   <data name="Code" xml:space="preserve">
     <value>标识</value>
   </data>
+  <data name="MTFToolTip" xml:space="preserve">
+    <value>调制传递函数</value>
+  </data>
 </root>

@@ -62,6 +62,11 @@ namespace ColorVision.Services.Device
             throw new NotImplementedException();
         }
 
+        public virtual UserControl GetEditControl()
+        {
+            throw new NotImplementedException();
+        }
+
         public virtual View GetView()
         {
             throw new NotImplementedException();

@@ -78,10 +78,11 @@
 
 
 
-                        <GroupBox  Header="FOV">
+                        <GroupBox  Header="FOV" ToolTip="Field of view">
                             <DockPanel Margin="0,2">
                                 <Button  Content="计算" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="FOV_Click" />
                                 <ComboBox  x:Name="ComboxFOVTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip="视场角的大小决定了光学仪器的视野范围"/>
                                 <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                                     <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
                                     <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="FOVParam" Click="MenuItem_Template"/>
@@ -89,10 +90,11 @@
                             </DockPanel>
                         </GroupBox>
 
-                        <GroupBox  Header="MTF">
+                        <GroupBox  Header="MTF" ToolTip="Modulation Transfer Function">
                             <DockPanel Margin="0,2">
                                 <Button  Content="计算" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="MTF_Click" />
                                 <ComboBox  x:Name="ComboxMTFTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip="MTF的值表示成像系统对特定空间频率的细节进行调制或传递的效率"/>
                                 <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                                     <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
                                     <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="MTFParam" Click="MenuItem_Template"/>
@@ -100,10 +102,11 @@
                             </DockPanel>
                         </GroupBox>
 
-                        <GroupBox  Header="SFR">
+                        <GroupBox  Header="SFR" ToolTip="计算空间频率响应">
                             <DockPanel Margin="0,2">
                                 <Button  Content="计算" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="SFR_Clik" />
                                 <ComboBox  x:Name="ComboxSFRTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip="成像系统对输入图像中的空间频率成分的响应强度"/>
                                 <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                                     <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
                                     <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="SFRParam" Click="MenuItem_Template"/>
@@ -111,6 +114,19 @@
                             </DockPanel>
                         </GroupBox>
 
+
+
+                        <GroupBox  Header="畸变">
+                            <DockPanel Margin="0,2">
+                                <Button  Content="计算" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Distortion_Click" />
+                                <ComboBox  x:Name="ComboxDistortionTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip="在成像过程中对物体形状的不准确再现"/>
+                                <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                                    <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="DistortionParam" Click="MenuItem_Template"/>
+                                </Grid>
+                            </DockPanel>
+                        </GroupBox>
                         <GroupBox  Header="鬼影">
                             <DockPanel Margin="0,2">
                                 <Button  Content="计算" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Ghost_Click" />
@@ -122,16 +138,6 @@
                             </DockPanel>
                         </GroupBox>
 
-                        <GroupBox  Header="畸变校正">
-                            <DockPanel Margin="0,2">
-                                <Button  Content="计算" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Distortion_Click" />
-                                <ComboBox  x:Name="ComboxDistortionTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                                <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                                    <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="DistortionParam" Click="MenuItem_Template"/>
-                                </Grid>
-                            </DockPanel>
-                        </GroupBox>
                         <GroupBox  Header="灯珠检测">
                             <DockPanel Margin="0,2">
                                 <Button  Content="计算" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="LedCheck_Click" />
@@ -142,7 +148,7 @@
                                 </Grid>
                             </DockPanel>
                         </GroupBox>
-                        <GroupBox  Header="FocusPoints">
+                        <GroupBox  Header="发光区检测">
                             <DockPanel Margin="0,2">
                                 <Button  Content="计算" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="FocusPoints_Click" />
                                 <ComboBox  x:Name="ComboxFocusPointsTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />

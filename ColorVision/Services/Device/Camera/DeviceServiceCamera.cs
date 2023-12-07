@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8602  
+﻿#pragma warning disable CS8602,CA1707
 
 using ColorVision.Services;
 using ColorVision.Services.Device;

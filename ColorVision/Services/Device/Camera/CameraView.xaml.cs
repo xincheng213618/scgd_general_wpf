@@ -1,4 +1,5 @@
-﻿using ColorVision.MVVM;
+﻿#pragma warning disable CS8604,CS8629
+using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.Services.Algorithm;
 using FileServerPlugin;
@@ -154,8 +155,8 @@ namespace ColorVision.Services.Device.Camera
         public void ShowResult(MeasureImgResultModel model)
         {
             string key = model.Id.ToString();
-            string serialNumber = model.BatchCode;
-            string imgFileName = model.RawFile;
+            string serialNumber = model.BatchCode ?? string.Empty;
+            string imgFileName = model.RawFile ?? string.Empty;
             int resultCode = model.ResultCode;
             string resultDesc = model.ResultDesc;
             string reqParams = model.ReqParams;

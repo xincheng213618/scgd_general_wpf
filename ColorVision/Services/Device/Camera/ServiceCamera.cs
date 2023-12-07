@@ -98,11 +98,11 @@ namespace ColorVision.Device.Camera
                     case MQTTCameraEventEnum.Event_Close:
                         break;
                     case MQTTCameraEventEnum.Event_GetData:
-                        OnMessageRecved?.Invoke(this, new MessageRecvEventArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
+                        OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         DeviceStatus = DeviceStatus.Opened;
                         break;
                     default:
-                        OnMessageRecved?.Invoke(this, new MessageRecvEventArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
+                        OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         DeviceStatus = DeviceStatus.Opened;
                         break;
                 }

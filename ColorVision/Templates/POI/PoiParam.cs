@@ -1,6 +1,7 @@
 ﻿using ColorVision.Templates.POI.MySql;
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace ColorVision.Templates
 {
@@ -9,6 +10,8 @@ namespace ColorVision.Templates
     /// </summary>
     public class PoiParam : ParamBase
     {
+        public static ObservableCollection<TemplateModel<PoiParam>> Params { get; set; }
+
         public PoiParam()
         {
             this.ID = No++;

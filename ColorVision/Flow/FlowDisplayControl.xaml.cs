@@ -144,10 +144,10 @@ namespace ColorVision.Flow
                     handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
                     handler.Cancelling += delegate
                     {
-                        if (flowControl != null)
+                        Application.Current.Dispatcher.Invoke(() =>
                         {
-                            flowControl.Stop();
-                        }
+                            flowControl?.Stop();
+                        });
                         handler?.Close();
                     };
 
@@ -157,7 +157,10 @@ namespace ColorVision.Flow
                         {
                             try
                             {
-                                handler?.UpdateMessage("TTL: " + msg.Params.TTL.ToString());
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    handler?.UpdateMessage("TTL: " + msg.Params.TTL.ToString());
+                                });
                             }
                             catch 
                             {
@@ -172,17 +175,18 @@ namespace ColorVision.Flow
                 }
                 else
                 {
-                    MessageBox.Show(Application.Current.MainWindow, "流程模板为空，不能运行！！！");
+                    MessageBox.Show(Application.Current.MainWindow, "找不到完整流程，运行失败");
                 }
             }
         }
 
         private void Button_FlowStop_Click(object sender, RoutedEventArgs e)
         {
-            if (flowControl != null)
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                flowControl.Stop();
-            }
+                flowControl?.Stop();
+            });
+            handler?.Close();
         }
 
         private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)

@@ -237,6 +237,7 @@ namespace ColorVision.MySql
             return BulkInsertAsync(d_info);
         }
 
+        //如果检索代码看到了这里，应该是数据库的local_infile没有启用，这里设置即可  SET GLOBAL local_infile=1;
         public int BulkInsertAsync(DataTable dataTable)
         {
             int count = -1;

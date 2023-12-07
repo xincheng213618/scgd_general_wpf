@@ -13,7 +13,6 @@ using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -77,7 +76,7 @@ namespace ColorVision.Services.Algorithm
             doOpen(data.ImgFileName, FileExtType.Src);
         }
 
-        private void Service_OnAlgorithmEvent(object sender, MessageRecvEventArgs arg)
+        private void Service_OnAlgorithmEvent(object sender, MessageRecvArgs arg)
         {
             switch (arg.EventName)
             {
@@ -443,58 +442,51 @@ namespace ColorVision.Services.Algorithm
                 }
                 switch (button.Tag?.ToString() ?? string.Empty)
                 {
-                    case "FocusParm":
-                        windowTemplate = new WindowTemplate(TemplateType.PoiParam) { Title = "关注点设置" };
-                        TemplateAbb(windowTemplate, TemplateControl.PoiParams);
-                        break;
+
                     case "MTFParam":
-                        windowTemplate = new WindowTemplate(TemplateType.MTFParam) { Title = "MTF算法设置" };
-                        TemplateAbb(windowTemplate, TemplateControl.MTFParams);
+                        windowTemplate = new WindowTemplate(TemplateType.MTFParam, false);
+                        windowTemplate.Owner = Window.GetWindow(this);
+                        windowTemplate.ShowDialog();
                         break;
                     case "SFRParam":
-                        windowTemplate = new WindowTemplate(TemplateType.SFRParam) { Title = "SFR算法设置" };
-                        TemplateAbb(windowTemplate, TemplateControl.SFRParams);
+                        windowTemplate = new WindowTemplate(TemplateType.SFRParam, false);
+                        windowTemplate.Owner = Window.GetWindow(this);
+                        windowTemplate.ShowDialog();
                         break;
                     case "FOVParam":
-                        windowTemplate = new WindowTemplate(TemplateType.FOVParam) { Title = "FOV算法设置" };
-                        TemplateAbb(windowTemplate, TemplateControl.FOVParams);
+                        windowTemplate = new WindowTemplate(TemplateType.FOVParam, false);
+                        windowTemplate.Owner = Window.GetWindow(this);
+                        windowTemplate.ShowDialog();
                         break;
                     case "GhostParam":
-                        windowTemplate = new WindowTemplate(TemplateType.GhostParam) { Title = "Ghost算法设置" };
-                        TemplateAbb(windowTemplate, TemplateControl.GhostParams);
+                        windowTemplate = new WindowTemplate(TemplateType.GhostParam, false);
+                        windowTemplate.Owner = Window.GetWindow(this);
+                        windowTemplate.ShowDialog();
                         break;
                     case "DistortionParam":
-                        windowTemplate = new WindowTemplate(TemplateType.DistortionParam) { Title = "Distortion算法设置" };
-                        TemplateAbb(windowTemplate, TemplateControl.DistortionParams);
+                        windowTemplate = new WindowTemplate(TemplateType.DistortionParam, false);
+                        windowTemplate.Owner = Window.GetWindow(this);
+                        windowTemplate.ShowDialog();
                         break;
                     case "LedCheckParam":
-                        windowTemplate = new WindowTemplate(TemplateType.LedCheckParam) { Title = "灯珠检测算法设置" };
-                        TemplateAbb(windowTemplate, TemplateControl.LedCheckParams);
+                        windowTemplate = new WindowTemplate(TemplateType.LedCheckParam, false);
+                        windowTemplate.Owner = Window.GetWindow(this);
+                        windowTemplate.ShowDialog();
                         break;
                     case "FocusPointsParam":
-                        windowTemplate = new WindowTemplate(TemplateType.FocusPointsParam) { Title = "FocusPoints算法设置" };
-                        TemplateAbb(windowTemplate, TemplateControl.FocusPointsParams);
+                        windowTemplate = new WindowTemplate(TemplateType.FocusPointsParam,false);
+                        windowTemplate.Owner = Window.GetWindow(this);
+                        windowTemplate.ShowDialog();
+                        break;
+                    case "CalibrationUpload":
+                        CalibrationUpload calibrationUpload = new CalibrationUpload();
+                        calibrationUpload.ShowDialog();
                         break;
                     default:
                         HandyControl.Controls.Growl.Info("开发中");
                         break;
                 }
             }
-        }
-        private void TemplateAbb<T>(WindowTemplate windowTemplate, ObservableCollection<TemplateModel<T>> keyValuePairs) where T : ParamBase
-        {
-            windowTemplate.Owner = Window.GetWindow(this);
-            windowTemplate.TemplateModelBases.Clear();
-            foreach (var item in keyValuePairs)
-            {
-                if (item.Value is PoiParam poiParam)
-                {
-                    item.Tag = $"{poiParam.Width}*{poiParam.Height}{(GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql ? "" : $"_{poiParam.PoiPoints.Count}")}";
-                }
-
-                windowTemplate.TemplateModelBases.Add(item);
-            }
-            windowTemplate.ShowDialog();
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

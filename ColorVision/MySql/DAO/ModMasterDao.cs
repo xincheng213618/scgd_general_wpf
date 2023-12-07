@@ -58,6 +58,7 @@ namespace ColorVision.MySql.DAO
                 IsDelete = item.Field<bool?>("is_delete"),
                 Remark = item.Field<string?>("remark"),
                 Pcode = item.Field<string>("pcode"),
+                Pid = item.Field<int>("pid"),
             };
 
             return model;

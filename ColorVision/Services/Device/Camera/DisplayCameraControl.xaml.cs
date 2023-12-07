@@ -26,6 +26,7 @@ using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
 using ColorVision.Device.FileServer;
 using log4net;
+using System.Windows.Threading;
 
 namespace ColorVision.Device.Camera
 {
@@ -58,6 +59,11 @@ namespace ColorVision.Device.Camera
 
             Service.CameraService.OnMessageRecved += CameraService_OnMessageRecved; ;
             View.OnCurSelectionChanged += View_OnCurSelectionChanged;
+
+
+            _timer = new DispatcherTimer();
+            _timer.Interval = TimeSpan.FromMilliseconds(500); // 设置延时时间，这里是500毫秒
+            _timer.Tick += Timer_Tick; // 设置Tick事件处理程序
         }
 
         private void View_OnCurSelectionChanged(CameraImgResult data)
@@ -78,7 +84,7 @@ namespace ColorVision.Device.Camera
             }
         }
 
-        private void CameraService_OnMessageRecved(object sender, Services.MessageRecvEventArgs arg)
+        private void CameraService_OnMessageRecved(object sender, Services.MessageRecvArgs arg)
         {
             switch (arg.EventName)
             {
@@ -110,10 +116,14 @@ namespace ColorVision.Device.Camera
             {
                 resultMaster = resultService.GetCameraImgResultBySN(serialNumber);
             }
-            foreach (MeasureImgResultModel result in resultMaster)
+            if (resultMaster != null)
             {
-                ShowResult(result);
+                foreach (MeasureImgResultModel result in resultMaster)
+                {
+                    ShowResult(result);
+                }
             }
+
             handler?.Close();
         }
 
@@ -460,29 +470,15 @@ namespace ColorVision.Device.Camera
                 {
                     case "Calibration":
                         Calibration calibration = new Calibration(TemplateControl.CalibrationParams[0].Value);
-                        windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration) { Title = "校正参数设置" };
-                        TemplateAbb(windowTemplate, TemplateControl.CalibrationParams);
+                        windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration,false);
+                        windowTemplate.Owner = Window.GetWindow(this);
+                        windowTemplate.ShowDialog();
                         break;
                     default:
                         HandyControl.Controls.Growl.Info("开发中");
                         break;
                 }
             }
-        }
-        private void TemplateAbb<T>(WindowTemplate windowTemplate, ObservableCollection<TemplateModel<T>> keyValuePairs) where T : ParamBase
-        {
-            windowTemplate.Owner = Window.GetWindow(this);
-            windowTemplate.TemplateModelBases.Clear();
-            foreach (var item in keyValuePairs)
-            {
-                if (item.Value is PoiParam poiParam)
-                {
-                    item.Tag = $"{poiParam.Width}*{poiParam.Height}{(GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql ? "" : $"_{poiParam.PoiPoints.Count}")}";
-                }
-
-                windowTemplate.TemplateModelBases.Add(item);
-            }
-            windowTemplate.ShowDialog();
         }
 
         private void Move_Click(object sender, RoutedEventArgs e)
@@ -529,7 +525,6 @@ namespace ColorVision.Device.Camera
                 }
             }
         }
-
         private void Close_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
@@ -538,6 +533,15 @@ namespace ColorVision.Device.Camera
                 Helpers.SendCommand(button, msgRecord);
             }
         }
+        private DispatcherTimer _timer;
+
+        private void Timer_Tick(object? sender, EventArgs e)
+        {
+            _timer.Stop();
+            Service.SetExp();
+
+
+        }
 
         private void PreviewSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
@@ -545,9 +549,18 @@ namespace ColorVision.Device.Camera
             {
                 if (Service.CurrentTakeImageMode == TakeImageMode.Live)
                 {
-                    Service.SetExp();
+                    _timer.Stop();
+                    _timer.Start();
                 }
             }
+        }
+
+
+
+
+        private void SliderexpTime_MouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+
         }
     }
 }

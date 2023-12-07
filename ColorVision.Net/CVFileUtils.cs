@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1806,CA1833,CA1401,CA2101,CA1838,CS8603
+﻿#pragma warning disable CA1806,CA1833,CA1401,CA2101,CA1838,CS8603,CA1051,CA1707,CS8625
 using MQTTMessageLib.FileServer;
 using System;
 using System.IO;

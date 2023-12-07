@@ -49,11 +49,10 @@
                         <MenuItem Header="MTF模板设置(_M)"  Tag="MTFParam" Click="MenuItem_Template"/>
                         <MenuItem Header="SFR模板设置(_S)"  Tag="SFRParam" Click="MenuItem_Template"/>
                         <MenuItem Header="FOV模板设置(_F)"  Tag="FOVParam" Click="MenuItem_Template"/>
-                        <MenuItem Header="鬼影模板设置(_H)"  Tag="GhostParam" Click="MenuItem_Template"/>
                         <MenuItem Header="畸变模板设置(_D)"  Tag="DistortionParam" Click="MenuItem_Template"/>
+                        <MenuItem Header="鬼影模板设置(_H)"  Tag="GhostParam" Click="MenuItem_Template"/>
                         <MenuItem Header="灯珠检测模板设置(_L)"  Tag="LedCheckParam" Click="MenuItem_Template"/>
-                        <MenuItem Header="FoucusPoints模板设置(_P)"  Tag="FocusPointsParam" Click="MenuItem_Template"/>
-
+                        <MenuItem Header="发光区检测模板设置(_P)"  Tag="FocusPointsParam" Click="MenuItem_Template"/>
                     </MenuItem>
                     <MenuItem Header="{x:Static resx:Resource.MenuTool}">
                         <MenuItem Header="流程引擎(_F)" Click="MenuItem9_Click"/>
@@ -80,7 +79,9 @@
                         <MenuItem Header="保存窗口布局"  Click="MenuStatusBar_Click" />
                         <MenuItem Header="应用窗口布局"  Click="MenuStatusBar_Click" />
                     </MenuItem>
-
+                    <MenuItem Header="Test">
+                        <MenuItem Header="折线图"  Click="Test_Click" />
+                    </MenuItem>
                     <MenuItem Header="{x:Static resx:Resource.MenuHelp}">
                         <MenuItem Header="打开日志(_L)"  Click="Log_Click"/>
                         <MenuItem Header="打开日志文件夹(_F)"  Click="LogF_Click"/>
