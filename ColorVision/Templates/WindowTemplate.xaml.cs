@@ -511,7 +511,7 @@ namespace ColorVision.Templates
                             TemplateDel(TemplateControl.AoiParams);
                             break;
                         case TemplateType.Calibration:
-                            TemplateControl.CalibrationParams.RemoveAt(ListView1.SelectedIndex);
+                            TemplateDel(TemplateControl.CalibrationParams);
                             break;
                         case TemplateType.PGParam:
                             TemplateDel(TemplateControl.PGParams);
