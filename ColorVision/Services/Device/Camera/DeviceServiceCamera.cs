@@ -407,7 +407,7 @@ namespace ColorVision.Device.Camera
             {
                 EventName = "GetData",
                 SerialNumber = SerialNumber,
-                Params = new Dictionary<string, object>() { { "ExpTime", new double[] { expTime } }}
+                Params = new Dictionary<string, object>() { { "ExpTime", new double[] { expTime } }, { "gain", Config.CameraCfg.Gain } }
             };
             return PublishAsyncClient(msg, (Config.IsExpThree ? expTime * 3 : expTime) + 10000);
         }
