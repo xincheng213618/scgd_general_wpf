@@ -211,7 +211,7 @@ namespace ColorVision.Services.Device.Camera
         /// <summary>
         /// ROI H
         /// </summary>
-        [JsonProperty("eH")]
+        [JsonProperty("eh")]
         public int Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ROIRect)); } }
         private int _Height;
 
