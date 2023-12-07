@@ -3,6 +3,7 @@ using ColorVision.Services.Algorithm.Result;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -200,5 +201,56 @@ namespace ColorVision.Services.Algorithm
             }
         }
 
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            var sortedItems = FOVResults.OrderByDescending(f => f.Model.Id).ToList();
+
+            FOVResults.Clear();
+
+            // Add the sorted items back into the original ObservableCollection
+            foreach (var item in sortedItems)
+            {
+                FOVResults.Add(item);
+            }
+        }
+
+        private void Button_Click_2(object sender, RoutedEventArgs e)
+        {
+            var sortedItems = FOVResults.OrderBy(f => f.Model.Id).ToList();
+
+            FOVResults.Clear();
+
+            // Add the sorted items back into the original ObservableCollection
+            foreach (var item in sortedItems)
+            {
+                FOVResults.Add(item);
+            }
+        }
+
+        private void Button_Click_3(object sender, RoutedEventArgs e)
+        {
+            var sortedItems = FOVResults.OrderByDescending(f => f.Batch?.Name).ToList();
+
+            FOVResults.Clear();
+
+            // Add the sorted items back into the original ObservableCollection
+            foreach (var item in sortedItems)
+            {
+                FOVResults.Add(item);
+            }
+        }
+
+        private void Button_Click_4(object sender, RoutedEventArgs e)
+        {
+            var sortedItems = FOVResults.OrderBy(f => f.Batch?.Name).ToList();
+
+            FOVResults.Clear();
+
+            // Add the sorted items back into the original ObservableCollection
+            foreach (var item in sortedItems)
+            {
+                FOVResults.Add(item);
+            }
+        }
     }
 }
