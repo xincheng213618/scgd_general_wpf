@@ -99,7 +99,7 @@ namespace ColorVision.Device.Camera
                         catch { }
                         break;
                     case "GetAutoExpTime":
-                        if (msg.Data != null && msg.Data.result[0].result != null)
+                        if (msg.Data != null && msg.Data[0].result != null)
                         {
                             if (Config.IsExpThree)
                             {
@@ -107,19 +107,19 @@ namespace ColorVision.Device.Camera
                                 {
                                     if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_X)
                                     {
-                                        Config.ExpTimeR = msg.Data.result[i].result;
-                                        Config.SaturationR = msg.Data.result[i].resultSaturation;
+                                        Config.ExpTimeR = msg.Data[i].result;
+                                        Config.SaturationR = msg.Data[i].resultSaturation;
                                     }
                                     if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_Y)
                                     {
-                                        Config.ExpTimeG = msg.Data.result[i].result;
-                                        Config.SaturationG = msg.Data.result[i].resultSaturation;
+                                        Config.ExpTimeG = msg.Data[i].result;
+                                        Config.SaturationG = msg.Data[i].resultSaturation;
                                     }
 
                                     if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_Z)
                                     {
-                                        Config.ExpTimeB = msg.Data.result[i].result;
-                                        Config.SaturationB = msg.Data.result[i].resultSaturation;
+                                        Config.ExpTimeB = msg.Data[i].result;
+                                        Config.SaturationB = msg.Data[i].resultSaturation;
                                     }
                                 }
 
@@ -131,8 +131,8 @@ namespace ColorVision.Device.Camera
                             }
                             else
                             {
-                                Config.ExpTime = msg.Data.result[0].result;
-                                Config.Saturation = msg.Data.result[0].resultSaturation;
+                                Config.ExpTime = msg.Data[0].result;
+                                Config.Saturation = msg.Data[0].resultSaturation;
 
                                 string Msg = "Saturation:" + Config.Saturation.ToString();
                                 Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, Msg));
@@ -526,22 +526,6 @@ namespace ColorVision.Device.Camera
             MsgSend msg = new MsgSend
             {
                 EventName = "GetAutoExpTime",
-                Params = new Dictionary<string, object>() {
-                    {
-                        "SetCfwport", new List<Dictionary<string, object>>()
-                        {
-                            new Dictionary<string, object>() {
-                                { "nIndex",0},{ "nPort",Config.CFW.ChannelCfgs[0].Cfwport},{"eImgChlType",(int)Config.CFW.ChannelCfgs[0].Chtype }
-                            },
-                            new Dictionary<string, object>() {
-                                { "nIndex",1},{ "nPort",Config.CFW.ChannelCfgs[1].Cfwport},{"eImgChlType",(int)Config.CFW.ChannelCfgs[1].Chtype }
-                            },
-                            new Dictionary<string, object>() {
-                                { "nIndex",2},{ "nPort",Config.CFW.ChannelCfgs[2].Cfwport},{"eImgChlType",(int)Config.CFW.ChannelCfgs[2].Chtype }
-                            },
-                        }
-                    }
-                }
             };
             return PublishAsyncClient(msg);
         }

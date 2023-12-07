@@ -24,6 +24,8 @@ using ColorVision.MySql.Service;
 using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
+using ColorVision.Device.FileServer;
+using log4net;
 using System.Windows.Threading;
 
 namespace ColorVision.Device.Camera
@@ -34,6 +36,7 @@ namespace ColorVision.Device.Camera
     /// </summary>
     public partial class CameraDisplayControl : UserControl
     {
+        private static readonly ILog logger = LogManager.GetLogger(typeof(CameraDisplayControl));
         public DeviceServiceCamera Service { get => Device.DeviceService; }
 
         public DeviceCamera Device { get; set; }
@@ -279,6 +282,7 @@ namespace ColorVision.Device.Camera
             {
                 if (ComboxCameraTakeImageMode.SelectedValue is TakeImageMode takeImageMode)
                 {
+                    Device.cameraMode = takeImageMode;
                     if ((Service.DeviceStatus == DeviceStatus.Init || Service.DeviceStatus == DeviceStatus.Closed))
                     {
                         if (takeImageMode == TakeImageMode.Live)
@@ -347,11 +351,19 @@ namespace ColorVision.Device.Camera
                     button.Content = "正在获取推流";
                     string host = GlobalSetting.GetInstance().SoftwareConfig.VideoConfig.Host;
                     int port = GlobalSetting.GetInstance().SoftwareConfig.VideoConfig.Port;
-                    CameraVideoControl.Open(host, port);
+                    port = CameraVideoControl.Open(host, port);
+                    if(port > 0)
+                    {
+                        CameraVideoControl.Start();
+                        Service.OpenVideo(host, port, Service.Config.ExpTime);
+                        CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
+                        CameraVideoControl.CameraVideoFrameReceived += CameraVideoFrameReceived;
+                    }
+                    else
+                    {
+                        logger.ErrorFormat("Local socket open failed.{0}:{1}", host, GlobalSetting.GetInstance().SoftwareConfig.VideoConfig.Port);
+                    }
                     //Service.Open(Service.Config.ID, TakeImageMode.Live, (int)Service.Config.ImageBpp);
-                    Service.OpenVideo(host, port, Service.Config.ExpTime);
-                    CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
-                    CameraVideoControl.CameraVideoFrameReceived += CameraVideoFrameReceived;
                 }
                 else
                 {
@@ -365,7 +377,15 @@ namespace ColorVision.Device.Camera
         {
             if (View.img_view.ImageShow.Source is WriteableBitmap bitmap)
             {
-                ImageUtil.BitmapCopyToWriteableBitmap(bmp, bitmap, new System.Drawing.Rectangle(0, 0, bmp.Width, bmp.Height), 0, 0, bmp.PixelFormat);
+                if(bitmap.Width!= bmp.Width)
+                {
+                    WriteableBitmap writeableBitmap = ImageUtil.BitmapToWriteableBitmap(bmp);
+                    View.img_view.ImageShow.Source = writeableBitmap;
+                }
+                else
+                {
+                    ImageUtil.BitmapCopyToWriteableBitmap(bmp, bitmap, new System.Drawing.Rectangle(0, 0, bmp.Width, bmp.Height), 0, 0, bmp.PixelFormat);
+                }
             }
             else
             {
