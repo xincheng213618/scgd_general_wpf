@@ -179,10 +179,6 @@
                     <GroupBox Header="自动曝光参数配置" Margin="0,5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2">
-                                <TextBlock Text="autoExpFlag"  Width="80"/>
-                                <ui:ToggleSwitch IsChecked="{Binding Config.ExpTimeCfg.AutoExpFlag}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
                                 <TextBlock Text="自动曝光"  Width="80"/>
                                 <TextBox  Text="{Binding Config.ExpTimeCfg.AutoExpTimeBegin}"/>
                             </DockPanel>
