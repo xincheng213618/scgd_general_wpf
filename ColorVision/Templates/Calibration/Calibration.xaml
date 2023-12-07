@@ -45,13 +45,12 @@
                     <hc:ComboBox Text="{Binding  NormalR.Distortion.FilePath}"  ItemsSource="{Binding NormalR.DistortionList}"/>
                 </DockPanel>
                 <DockPanel Margin="0,2">
-                    <TextBlock DockPanel.Dock="Left" Text="均匀场R(红)" Width="80"  />
+                    <TextBlock DockPanel.Dock="Left" Text="均匀场" Width="80"  />
                     <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding NormalR.Uniformity.IsSelected}"   Margin="5,0"/>
                     <hc:ComboBox Text="{Binding NormalR.Uniformity.FilePath}"  ItemsSource="{Binding NormalR.UniformityList}"/>
                 </DockPanel>
             </StackPanel>
         </Border>
-
 
         <GroupBox Header="色度校正"  Margin="0,5">
             <StackPanel>

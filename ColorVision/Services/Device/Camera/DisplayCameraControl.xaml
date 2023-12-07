@@ -47,17 +47,7 @@
                         <ComboBox  x:Name="ComboxCameraTakeImageMode"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Margin="0,0,0,0"/>
                     </DockPanel>
                     <Button x:Name="ButtonOpen" Content="打开" Click="Open_Click" />
-
                     <StackPanel x:Name="StackPanelImage">
-                        <DockPanel Margin="0,2">
-                            <TextBlock  Text="增益" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0" />
-                            <TextBox  DockPanel.Dock="Right" Text="{Binding ElementName=SliderGain,Path=Value}"  Width="50"/>
-                            <hc:PreviewSlider x:Name="SliderGain"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="{Binding Config.Gain}" Maximum="100">
-                                <hc:PreviewSlider.PreviewContent>
-                                    <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0"/>
-                                </hc:PreviewSlider.PreviewContent>
-                            </hc:PreviewSlider>
-                        </DockPanel>
                         <StackPanel Visibility="{Binding Config.IsExpThree,Converter={StaticResource bool2VisibilityConverter1}}">
                             <DockPanel Margin="0,2">
                                 <TextBlock  Text="曝光" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0" />

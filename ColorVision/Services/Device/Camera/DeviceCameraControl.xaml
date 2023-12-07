@@ -152,10 +152,6 @@
                                             <TextBlock Text="图像通道:" Width="120"/>
                                             <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.Channel}"/>
                                         </DockPanel>
-                                        <DockPanel>
-                                            <TextBlock Text="默认增益:" Width="120"/>
-                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.Gain}"/>
-                                        </DockPanel>
                                         <StackPanel Visibility="{Binding Config.IsExpThree,Converter={StaticResource bool2VisibilityConverter1}}">
                                             <DockPanel>
                                                 <TextBlock Text="默认曝光:" Width="120"/>

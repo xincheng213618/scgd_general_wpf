@@ -132,15 +132,6 @@
 
                     <GroupBox Header="默认参数" Margin="0,5">
                         <StackPanel Margin="5">
-                            <DockPanel>
-                                <TextBlock  Text="默认增益" Width="120" />
-                                <TextBox DockPanel.Dock="Right" Text="{Binding Config.Gain}"  Width="50"/>
-                                <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" Value="{Binding Config.Gain}" Maximum="100"  >
-                                    <hc:PreviewSlider.PreviewContent>
-                                        <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0.00"/>
-                                    </hc:PreviewSlider.PreviewContent>
-                                </hc:PreviewSlider>
-                            </DockPanel>
                             <StackPanel Margin="0.2" Visibility="{Binding Config.IsExpThree,Converter={StaticResource bool2VisibilityConverter1}}">
                                 <DockPanel  >
                                     <TextBlock  Text="默认曝光" Width="120" />
