@@ -13,6 +13,7 @@ namespace ColorVision.Services.Algorithm
         public DeviceAlgorithm Device { get; set; }
 
         public bool IsCanEdit { get; set; }
+
         public DeviceAlgorithmControl(DeviceAlgorithm device, bool isCanEdit = true)
         {
             this.Device = device;
