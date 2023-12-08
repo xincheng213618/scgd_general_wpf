@@ -88,10 +88,7 @@ namespace ColorVision.Templates
             FlowParams = new ObservableCollection<TemplateModel<FlowParam>>();
             PoiParams = new ObservableCollection<TemplateModel<PoiParam>>();
             PoiParam.Params = PoiParams;
-
-
             MeasureParams = new ObservableCollection<TemplateModel<MeasureParam>>();
-
             MTFParams = new ObservableCollection<TemplateModel<MTFParam>>();
             SFRParams = new ObservableCollection<TemplateModel<SFRParam>>();
             FOVParams = new ObservableCollection<TemplateModel<FOVParam>>();
@@ -147,26 +144,20 @@ namespace ColorVision.Templates
         }
         private void Init()
         {
-            LedReusltParams = IDefault(FileNameLedJudgeParams, new LedReusltParam());
-            LoadPoiParam();
-            LoadFlowParam();
-
-            DicTemplate.TryAdd("Poi", PoiParams);
-            DicTemplate.TryAdd("Flow", FlowParams);
-            DicTemplate.TryAdd("LedReuslt", LedReusltParams);
-
-
-            LoadModParam(CalibrationParams, ModMasterType.Calibration);
-            LoadModParam(AoiParams, ModMasterType.Aoi);
-            LoadModParam(SMUParams, ModMasterType.SMU);
-            LoadModParam(PGParams, ModMasterType.PG);
-            LoadModParam(SFRParams, ModMasterType.SFR);
-            LoadModParam(MTFParams, ModMasterType.MTF);
-            LoadModParam(FOVParams, ModMasterType.FOV);
-            LoadModParam(GhostParams, ModMasterType.Ghost);
-            LoadModParam(DistortionParams, ModMasterType.Distortion);
-            LoadModParam(FocusPointsParams, ModMasterType.FocusPoints);
-            LoadModParam(LedCheckParams, ModMasterType.LedCheck);
+            LoadParams(LedReusltParams);
+            LoadParams(PoiParams);
+            LoadParams(FlowParams);
+            LoadParams(CalibrationParams);
+            LoadParams(AoiParams);
+            LoadParams(SMUParams);
+            LoadParams(PGParams);
+            LoadParams(SFRParams);
+            LoadParams(MTFParams);
+            LoadParams(FOVParams);
+            LoadParams(GhostParams);
+            LoadParams(DistortionParams);
+            LoadParams(FocusPointsParams);
+            LoadParams(LedCheckParams);
         }
         public void LoadParams<T>(ObservableCollection<TemplateModel<T>> TemplateModels) where T : ParamBase, new()
         {
@@ -178,12 +169,15 @@ namespace ColorVision.Templates
                     break;
                 case Type t when t == typeof(LedReusltParam):
                     IDefault(FileNameLedJudgeParams, new LedReusltParam());
+                    DicTemplate.TryAdd("LedReuslt", LedReusltParams);
                     break;
                 case Type t when t == typeof(PoiParam):
                     LoadPoiParam();
+                    DicTemplate.TryAdd("Poi", PoiParams);
                     break;
                 case Type t when t == typeof(FlowParam):
                     LoadFlowParam();
+                    DicTemplate.TryAdd("Flow", FlowParams);
                     break;
                 case Type t when t == typeof(AOIParam):
                     LoadModParam(AoiParams, ModMasterType.Aoi);
