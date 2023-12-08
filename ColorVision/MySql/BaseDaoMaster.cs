@@ -346,6 +346,16 @@ namespace ColorVision.MySql
             return d_info;
         }
 
+        public DataTable GetTableAllByType(int type)
+        {
+            string sql = $"select * from {GetTableName()} where type={type}" + GetDelSQL(true);
+            DataTable d_info = GetData(sql);
+            return d_info;
+        }
+
+
+
+
         public List<T> GetAll()
         {
             List<T> list = new List<T>();

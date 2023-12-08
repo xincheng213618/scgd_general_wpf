@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using NPOI.SS.Formula.Functions;
 
 namespace ColorVision.MySql.DAO
 {
@@ -38,6 +39,7 @@ namespace ColorVision.MySql.DAO
     }
     public class SysResourceDao : BaseDaoMaster<SysResourceModel>
     {
+
         public SysResourceDao() : base("v_scgd_sys_resource", "t_scgd_sys_resource", "id", true)
         {
         }
@@ -90,6 +92,22 @@ namespace ColorVision.MySql.DAO
         {
             List<SysResourceModel> list = new List<SysResourceModel>();
             DataTable d_info = GetTablePidIsNullByPPcodeAndTenantId(tenantId);
+            foreach (var item in d_info.AsEnumerable())
+            {
+                SysResourceModel? model = GetModel(item);
+                if (model != null)
+                {
+                    list.Add(model);
+                }
+            }
+            return list;
+        }
+
+
+        internal List<SysResourceModel> GetAllType(int type)
+        {
+            List<SysResourceModel> list = new List<SysResourceModel>();
+            DataTable d_info = GetTableAllByType(type);
             foreach (var item in d_info.AsEnumerable())
             {
                 SysResourceModel? model = GetModel(item);

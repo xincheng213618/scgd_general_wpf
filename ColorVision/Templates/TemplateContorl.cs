@@ -173,6 +173,7 @@ namespace ColorVision.Templates
             switch (typeof(T))
             {
                 case Type t when t == typeof(CalibrationParam):
+                    CalibrationRsourceService.GetInstance().Refresh();
                     LoadModParam(CalibrationParams, ModMasterType.Calibration);
                     break;
                 case Type t when t == typeof(LedReusltParam):
