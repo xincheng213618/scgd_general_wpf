@@ -410,7 +410,7 @@ namespace ColorVision.Device.Camera
                 Params = new Dictionary<string, object>() { { "ExpTime", new double[] { expTime } }, { "gain", Config.CameraCfg.Gain } }
             };
             return PublishAsyncClient(msg, (Config.IsExpThree ? expTime * 3 : expTime) + 10000);
-        }
+        }  
         public MsgRecord GetData_Old(double expTime, double gain)
         {
             string SerialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");

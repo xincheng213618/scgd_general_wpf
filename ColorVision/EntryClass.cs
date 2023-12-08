@@ -12,6 +12,9 @@ using System.Runtime.InteropServices;
 
 namespace ColorVision
 {
+    /// <summary>
+    /// Main函数的解析，在程序之中，为了不影响APP，独立出来了一个类
+    /// </summary>
     public partial class App
     {
         private static Mutex mutex;

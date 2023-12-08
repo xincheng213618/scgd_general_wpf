@@ -10,7 +10,7 @@
     <Grid>
         <lvc:CartesianChart x:Name="Chart1"  ZoomMode="X" />
         <StackPanel>
-            <Button Click="Button_Click"/>
+            <Button Content="添加数据" Click="Button_Click"/>
         </StackPanel>
     </Grid>
 </Window>

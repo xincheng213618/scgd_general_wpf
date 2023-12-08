@@ -39,13 +39,13 @@ namespace ColorVision
                         {
 
                             string result = new string(chars, 0, size);
-                            MessageBox.Show(Application.Current.MainWindow, result, "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                            MessageBox.Show(result, "ColorVision");
                             GlobalDeleteAtom((short)wParam);
                         }
                     }
                     catch (Exception ex) 
                     { 
-                        MessageBox.Show(Application.Current.MainWindow, ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                        MessageBox.Show(ex.Message, "ColorVision");
                     }
                 }
                 return IntPtr.Zero;
