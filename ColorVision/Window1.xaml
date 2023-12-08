@@ -5,38 +5,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision"
         xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
+        xmlns:media ="clr-namespace:ColorVision.Media;assembly=ColorVision.Util"
         mc:Ignorable="d"
         Title="Window1" Height="450" Width="800" Initialized="Window_Initialized">
 
     <Grid Background="#060606">
-        <lvc:CartesianChart x:Name="Chart1"  ZoomMode="X"  Visibility="Collapsed"/>
-
-        <Border Background="BlueViolet"  BorderThickness="4" Height="100" Width="100"   CornerRadius="10">
-            <Border.BorderBrush>
-                <LinearGradientBrush EndPoint="0.0,0" StartPoint="1,1" Opacity="0.8">
-                    <LinearGradientBrush.RelativeTransform>
-                        <RotateTransform x:Name="GradientRotateTransform" Angle="0" CenterX="0.5" CenterY="0.5"/>
-                    </LinearGradientBrush.RelativeTransform>
-                    <GradientStop Color="Yellow" Offset="0"/>
-                    <GradientStop Color="Blue" Offset="1"  x:Name="GradientStop1"/>
-                </LinearGradientBrush>
-            </Border.BorderBrush>
-            <Border.Triggers>
-                <EventTrigger RoutedEvent="Loaded">
-                    <BeginStoryboard  >
-                        <BeginStoryboard.Storyboard>
-                            <Storyboard>
-                                <DoubleAnimation Storyboard.TargetName="GradientRotateTransform"
-                             Storyboard.TargetProperty="Angle"
-                             From="0" To="360" Duration="0:0:1"
-                             RepeatBehavior="Forever"/>
-                            </Storyboard>
-                        </BeginStoryboard.Storyboard>
-
-                    </BeginStoryboard>
-                </EventTrigger>
-            </Border.Triggers>
-        </Border>
+        <lvc:CartesianChart x:Name="Chart1"  ZoomMode="X" />
 
         <StackPanel>
             <Button Content="添加数据" Click="Button_Click"/>

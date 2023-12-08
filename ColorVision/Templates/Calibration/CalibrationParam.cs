@@ -85,7 +85,7 @@ namespace ColorVision.Templates
 
     public class CalibrationBase : ModelBase
     {
-
+         
         public RelayCommand SelectFileCommand { get; set; }
         public CalibrationBase(List<ModDetailModel> detail,string propertyName = "") :base(detail)
         {

@@ -149,5 +149,15 @@ namespace ColorVision
         {
 
         }
+
+        private void CloseButton_MouseLeave(object sender, MouseEventArgs e)
+        {
+            this.Cursor = Cursors.Arrow;
+        }
+
+        private void CloseButton_MouseEnter(object sender, MouseEventArgs e)
+        {
+            this.Cursor = Cursors.Hand;
+        }
     }
 }

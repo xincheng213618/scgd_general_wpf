@@ -7,6 +7,7 @@
         mc:Ignorable="d"
         ShowInTaskbar="False"
         xmlns:base ="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util"
+                xmlns:media="clr-namespace:ColorVision.Media;assembly=ColorVision.Util"
         Height="400" Width="500" ResizeMode="NoResize" IsBlurEnabled="True"  Background="Transparent" PreviewKeyDown="BaseWindow_PreviewKeyDown" Initialized="Window_Initialized" >
     <base:BaseWindow.Resources>
         <Style TargetType="{x:Type TextBlock}">
@@ -27,22 +28,68 @@
                 <Image x:Name="ImageLogo" Source="Assets/Image/ColorVision.png" Width="200" Margin="20" PreviewMouseDown="Image_PreviewMouseDown">
                 </Image>
                 <TextBlock Margin="5,15,5,30"  FontWeight="Bold" Text="视彩（上海）光电技术有限公司是一家专注于光学视觉检测的高科技公司" HorizontalAlignment="Center"/>
-                <Button  x:Name="CloseButton" Content="{x:Static resx:Resource.OK}" FocusVisualStyle="{x:Null}" FontWeight="Bold" Click="Button_Click_1"  HorizontalAlignment="Center"  Padding="15,3">
-                    <Button.Template>
-                        <ControlTemplate  TargetType="Button">
-                            <Border x:Name="border"  Background="#33DDDDDD"  BorderBrush="#99FED823" BorderThickness="2" CornerRadius="3">
-                                <ContentPresenter x:Name="contentPresenter" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                <Button  x:Name="CloseButton" Background="Transparent"  BorderThickness="0"  MouseLeave="CloseButton_MouseLeave"  MouseEnter="CloseButton_MouseEnter" Click="Button_Click_1"  HorizontalAlignment="Center" >
+                    <Button.Content>
+                        <Viewbox Width="200">
+                            <Border Background="Transparent"   BorderThickness="4" Height="80" Width="400"   CornerRadius="10">
+                                <Border.BorderBrush>
+                                    <LinearGradientBrush EndPoint="0.0,0" StartPoint="1,1" Opacity="0.8">
+                                        <LinearGradientBrush.RelativeTransform>
+                                            <RotateTransform x:Name="GradientRotateTransform" Angle="0" CenterX="0.5" CenterY="0.5"/>
+                                        </LinearGradientBrush.RelativeTransform>
+                                        <GradientStop Color="#3684F1" Offset="0"  />
+                                        <GradientStop Color="#FBDBB8" Offset="0.45" x:Name="GradientStop1"/>
+                                        <GradientStop Color="#FBDBB8" Offset="0.55"  x:Name="GradientStop2"/>
+                                        <GradientStop Color="#3684F1" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Border.BorderBrush>
+                                <Border.Triggers>
+                                    <EventTrigger RoutedEvent="Loaded">
+                                        <BeginStoryboard  >
+                                            <BeginStoryboard.Storyboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetName="GradientRotateTransform"
+                             Storyboard.TargetProperty="Angle"
+                             From="0" To="360" Duration="0:0:1"
+                             RepeatBehavior="Forever"/>
+                                                    <DoubleAnimation Storyboard.TargetName="GradientStop1"
+                             Storyboard.TargetProperty="Offset"
+                             From="0.6" To="0.1" Duration="0:0:2"
+                             RepeatBehavior="Forever" AutoReverse="True"/>
+                                                    <DoubleAnimation Storyboard.TargetName="GradientStop2"
+                             Storyboard.TargetProperty="Offset"
+                             From="0.4" To="0.9" Duration="0:0:1"
+                             RepeatBehavior="Forever" AutoReverse="True"/>
+                                                </Storyboard>
+                                            </BeginStoryboard.Storyboard>
+
+                                        </BeginStoryboard>
+                                    </EventTrigger>
+                                </Border.Triggers>
+                                <StackPanel Orientation="Horizontal"  HorizontalAlignment="Center" >
+                                    <media:TextShape Text="COLOR"  FontSize="50" VerticalAlignment="Center" Fill="{StaticResource GlobalTextBrush}" StrokeThickness="2">
+                                        <media:TextShape.Stroke>
+                                            <LinearGradientBrush EndPoint="0.0,0" StartPoint="1,1" Opacity="0.8">
+                                                <LinearGradientBrush.RelativeTransform>
+                                                    <RotateTransform x:Name="GradientRotateTransform2" Angle="0" CenterX="0.5" CenterY="0.5"/>
+                                                </LinearGradientBrush.RelativeTransform>
+                                                <GradientStop Color="Red" Offset="0.0"/>
+                                                <GradientStop Color="Orange" Offset="0.142"/>
+                                                <GradientStop Color="Yellow" Offset="0.285"/>
+                                                <GradientStop Color="Green" Offset="0.428"/>
+                                                <GradientStop Color="Blue" Offset="0.571"/>
+                                                <GradientStop Color="Indigo" Offset="0.714"/>
+                                                <GradientStop Color="Violet" Offset="0.857"/>
+                                            </LinearGradientBrush>
+                                        </media:TextShape.Stroke>
+                                    </media:TextShape>
+                                    <TextBlock Text=" VISION" FontSize="50" VerticalAlignment="Center" />
+
+                                </StackPanel>
                             </Border>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsMouseOver" Value="true">
-                                    <Setter TargetName="border" Property="Background" Value="#BEE6FD" />
-                                </Trigger>
-                                <Trigger Property="IsPressed" Value="true">
-                                    <Setter TargetName="border" Property="Background" Value="#94E5F6" />
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Button.Template>
+                        </Viewbox>
+                    </Button.Content>
+                   
                 </Button>
             </StackPanel>
 
@@ -52,6 +99,8 @@
                 <TextBlock VerticalAlignment="Center" TextAlignment="Center" Text="CopyRight © 2023-2024 ColorVision All Rigths Reserved"/>
                 <TextBlock VerticalAlignment="Center" TextAlignment="Center" Text="服务协议"/>
             </StackPanel>
+
+
 
         </Grid>
 
