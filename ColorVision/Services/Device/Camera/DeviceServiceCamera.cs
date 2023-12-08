@@ -309,9 +309,7 @@ namespace ColorVision.Device.Camera
 
             List<Dictionary<string, object>> List = new List<Dictionary<string, object>>
             {
-                item.NormalR.ToDictionary(),
-                item.NormalG.ToDictionary(),
-                item.NormalB.ToDictionary()
+                item.Normal.ToDictionary(),
             };
             Params.Add("List", List);
             return PublishAsyncClient(msg);

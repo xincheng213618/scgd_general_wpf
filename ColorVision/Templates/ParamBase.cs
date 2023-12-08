@@ -113,7 +113,8 @@ namespace ColorVision.Templates
                     else if (typeof(T) == typeof(bool))
                     {
                         if (string.IsNullOrEmpty(val)) val = "False";
-                        return (T)(object)bool.Parse(val);
+                        bool result1 = bool.TryParse(val, out bool result);
+                        return (T)(object)(result && result1);
                     }
                     else if (typeof(T) == typeof(float))
                     {

@@ -83,9 +83,7 @@ namespace ColorVision.Services.Device.Calibration
 
             List<Dictionary<string, object>> List = new List<Dictionary<string, object>>
             {
-                item.NormalR.ToDictionary(),
-                item.NormalG.ToDictionary(),
-                item.NormalB.ToDictionary()
+                item.Normal.ToDictionary(),
             };
 
             List[0].Add("EXPOSURE", R);

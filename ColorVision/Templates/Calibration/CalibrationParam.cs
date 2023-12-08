@@ -51,7 +51,7 @@ namespace ColorVision.Templates
             var resouces= resourceDao.GetAllType((int)resouceType);
             foreach (var item in resouces)
             {
-                strings.Add(item.Name);
+                strings.Add(item.Name??string.Empty);
             }
         }
 
@@ -107,10 +107,10 @@ namespace ColorVision.Templates
 
         public string FileName { get; set; } 
 
-        public string FilePath { get {  if (string.IsNullOrWhiteSpace(propertyName)) return GetValue(_FilePath); else return GetValue(_FilePath, propertyName); } set { if (string.IsNullOrWhiteSpace(propertyName)) SetProperty(value); else SetProperty(value, propertyName);} }
+        public string FilePath { get {  if (string.IsNullOrWhiteSpace(propertyName)) return GetValue(_FilePath); else return GetValue(_FilePath, propertyName); } set { if (string.IsNullOrWhiteSpace(propertyName)) SetProperty(ref _FilePath, value); else SetProperty(ref _FilePath,value, propertyName);} }
         private string _FilePath;
 
-        public bool IsSelected { get => _IsSelected; set { if (value == _IsSelected) return; _IsSelected = value; NotifyPropertyChanged(); } }
+        public bool IsSelected { get { if (string.IsNullOrWhiteSpace(propertyName + "IsSelected")) return GetValue(_IsSelected); else return GetValue(_IsSelected, propertyName + "IsSelected"); } set { if (string.IsNullOrWhiteSpace(propertyName + "IsSelected")) SetProperty(ref _IsSelected, value); else SetProperty(ref _IsSelected,value, propertyName + "IsSelected"); } }
         private bool _IsSelected;
     }
 
@@ -249,25 +249,16 @@ namespace ColorVision.Templates
 
     public class CalibrationParam: ParamBase
     {
-        public CalibrationNormal NormalR { get; set; } 
-
-        public CalibrationNormal NormalG { get; set; }
-
-        public CalibrationNormal NormalB { get; set; }
-
+        public CalibrationNormal Normal { get; set; } 
         public CalibrationColor Color { get; set; }
         public CalibrationParam() 
         {
-            NormalR = new CalibrationNormal(new List<ModDetailModel>(),"R");
-            NormalG = new CalibrationNormal(new List<ModDetailModel>(),"G");
-            NormalB = new CalibrationNormal(new List<ModDetailModel>(),"B");
+            Normal = new CalibrationNormal(new List<ModDetailModel>(),"");
             Color = new CalibrationColor(new List<ModDetailModel>());
         }
         public CalibrationParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name??string.Empty, modDetails)
         {
-            NormalR = new CalibrationNormal(modDetails,"R");
-            NormalG = new CalibrationNormal(modDetails,"G");
-            NormalB = new CalibrationNormal(modDetails,"B");
+            Normal = new CalibrationNormal(modDetails,"");
             Color = new CalibrationColor(modDetails);
         }
     }
