@@ -13,6 +13,7 @@ using ColorVision.Extension;
 using System.Windows.Media.Media3D;
 using MQTTMessageLib.FileServer;
 using MQTTMessageLib.Camera;
+using MQTTMessageLib;
 
 namespace ColorVision.Device.Camera
 {
@@ -397,18 +398,20 @@ namespace ColorVision.Device.Camera
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord GetData(double expTime)
+        public MsgRecord GetData(double expTime, CalibrationParam param)
         {
             string SerialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             var model = ServiceManager.GetInstance().BatchSave(SerialNumber);
-
+            var Params = new Dictionary<string, object>() { };
             MsgSend msg;
             msg = new MsgSend
             {
                 EventName = "GetData",
                 SerialNumber = SerialNumber,
-                Params = new Dictionary<string, object>() { { "ExpTime", new double[] { expTime } }}
+                Params = Params
             };
+            Params.Add("ExpTime", new double[] { expTime });
+            Params.Add("Calibration", new CVTemplateParam() { ID = param.ID, Name = param.Name });
             return PublishAsyncClient(msg, (Config.IsExpThree ? expTime * 3 : expTime) + 10000);
         }
         public MsgRecord GetData_Old(double expTime, double gain)
