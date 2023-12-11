@@ -8,7 +8,7 @@
         mc:Ignorable="d"
         Title="CalibrationUpload" Height="450" Width="800" DragEnter="Window_DragEnter" DragOver="UIElement_OnDragOver" AllowDrop="True" Drop="UIElement_OnDrop">
     <Grid>
-        <StackPanel>
+        <StackPanel Margin="5">
             <DockPanel>
                 <TextBlock Text="校正类型"/>
                 <hc:ComboBox  x:Name="CobCalibration" IsEditable="True" Text=""  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />

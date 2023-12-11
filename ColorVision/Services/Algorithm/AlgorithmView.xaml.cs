@@ -20,6 +20,7 @@ using System.Windows.Input;
 
 namespace ColorVision.Services.Algorithm
 {
+
     public class PoiResult : ViewModelBase
     {
         private int _Id;

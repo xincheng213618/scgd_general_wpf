@@ -7,9 +7,9 @@
         xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
         xmlns:media ="clr-namespace:ColorVision.Media;assembly=ColorVision.Util"
         mc:Ignorable="d"
-        Title="Window1" Height="450" Width="800" Initialized="Window_Initialized">
+        Title="Window1" Height="450" Width="800" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
 
-    <Grid Background="#060606">
+    <Grid >
         <lvc:CartesianChart x:Name="Chart1"  ZoomMode="X" />
 
         <StackPanel>

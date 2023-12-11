@@ -17,19 +17,17 @@
             </Grid.RowDefinitions>
 
             <StackPanel Orientation="Horizontal">
-                <Button Content="POI" Click="Button_Click"  Tag="POI"/>
                 <Button Content="MTF" Click="Button_Click"  Tag="MTF"/>
                 <Button Content="SFR" Click="Button_Click"  Tag="SFR"/>
                 <Button Content="Fov" Click="Button_Click"  Tag="Fov"/>
                 <Button Content="鬼影" Click="Button_Click"  Tag="Ghost"/>
                 <Button Content="畸变" Click="Button_Click"  Tag="Distortion"/>
             </StackPanel>
-            <StackPanel Orientation="Horizontal" Grid.Row="1">
+            <StackPanel x:Name="StackPanelSort"  Orientation="Horizontal" Grid.Row="1">
                 <Button Content="按照序号正序" Click="Button_Click_1" />
                 <Button Content="按照序号倒序" Click="Button_Click_2" />
                 <Button Content="按照批次号倒序" Click="Button_Click_3" />
                 <Button Content="按照批次号正序" Click="Button_Click_4" />
-
             </StackPanel>
 
             <ListView  x:Name="ListView1"  ScrollViewer.HorizontalScrollBarVisibility="Auto"  ScrollViewer.VerticalScrollBarVisibility="Auto" Grid.Row="2"/>
