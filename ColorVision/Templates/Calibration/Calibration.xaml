@@ -56,7 +56,7 @@
                 <DockPanel  Margin="0,2">
                     <TextBlock DockPanel.Dock="Left" Text="亮度" Width="80"  />
                     <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding Color.Luminance.IsSelected}"   Margin="5,0"/>
-                    <hc:ComboBox Text="{Binding Color.Luminance.FilePath}"  ItemsSource="{Binding  Color.LumFourColorList}"/>
+                    <hc:ComboBox Text="{Binding Color.Luminance.FilePath}"  ItemsSource="{Binding  Color.LuminanceList}"/>
                 </DockPanel>
                 <DockPanel  Margin="0,2">
                     <TextBlock DockPanel.Dock="Left" Text="单色" Width="80"  />

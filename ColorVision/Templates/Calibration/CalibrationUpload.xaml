@@ -6,20 +6,24 @@
         xmlns:local="clr-namespace:ColorVision.Templates"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
-        Title="CalibrationUpload" Height="450" Width="800" DragEnter="Window_DragEnter" DragOver="UIElement_OnDragOver" AllowDrop="True" Drop="UIElement_OnDrop">
+        Title="CalibrationUpload" Height="450" Width="800" DragEnter="Window_DragEnter" DragOver="UIElement_OnDragOver" AllowDrop="True" Drop="UIElement_OnDrop" Initialized="Window_Initialized" >
     <Grid>
         <StackPanel Margin="5">
-            <DockPanel>
-                <TextBlock Text="校正类型"/>
+            <DockPanel  Margin='2'>
+                <TextBlock Text="校正类型" MinWidth="100"/>
                 <hc:ComboBox  x:Name="CobCalibration" IsEditable="True" Text=""  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
             </DockPanel>
-            <DockPanel>
-                <TextBlock Text="校正文件"/>
+            <DockPanel Margin='2'>
+                <TextBlock Text="校正文件" MinWidth="100"/>
                 <Button Content="选择文件" DockPanel.Dock="Right" Click="Button_Click" />
                 <hc:TextBox x:Name="TxtCalibrationFile" IsReadOnly="True" Margin="0,0,10,0" />
             </DockPanel>
+            <DockPanel Margin='2'>
+                <TextBlock Text="校正文件" MinWidth="100"/>
+                <hc:TextBox x:Name="TxtCalibrationFileName"  Margin="0,0,10,0" />
+            </DockPanel>
             <DockPanel>
-                <Button Content="上传"/>
+                <Button Content="上传"  Click="Button_Click_1"/>
             </DockPanel>
         </StackPanel>
 

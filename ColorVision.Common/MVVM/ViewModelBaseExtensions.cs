@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Unicode;
+using System.Xml.Linq;
 using static System.Windows.Forms.Design.AxImporter;
 
 namespace ColorVision.MVVM
@@ -22,6 +23,18 @@ namespace ColorVision.MVVM
             source.CopyTo(target);
             return target;
         }
+
+        public static T DeepCopy<T>(this T source) where T : ViewModelBase, new()
+        {
+            using (var ms = new System.IO.MemoryStream())
+            {
+                var formatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+                formatter.Serialize(ms, source);
+                ms.Position = 0;
+                return (T)formatter.Deserialize(ms);
+            }
+        }
+
         //复制一个新的对象
         public static void CopyTo<T>(this T source, T target) where T:ViewModelBase
         {

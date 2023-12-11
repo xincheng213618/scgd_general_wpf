@@ -12,6 +12,11 @@ using System.Windows.Media;
 using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using ColorVision.Flow.Templates;
+using ColorVision.MVVM;
+using ColorVision.MySql.DAO;
+using cvColorVision;
+using NPOI.SS.Formula.Functions;
 
 namespace ColorVision.Templates
 {
@@ -20,6 +25,7 @@ namespace ColorVision.Templates
     /// </summary>
     public partial class CalibrationUpload : Window
     {
+
         public CalibrationUpload()
         {
             InitializeComponent();
@@ -29,8 +35,12 @@ namespace ColorVision.Templates
                 e.Handled = true;
             };
         }
+        private void Window_Initialized(object sender, EventArgs e)
+        {
+            CobCalibration.ItemsSource = Enum.GetValues(typeof(CalibrationType)).Cast<CalibrationType>();
+            CobCalibration.SelectedIndex = 0;
 
-
+        }
         private void UIElement_OnDrop(object sender, DragEventArgs e)
         {
             var b = e.Data.GetDataPresent(DataFormats.FileDrop);
@@ -52,12 +62,39 @@ namespace ColorVision.Templates
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog();
 
+            openFileDialog.Filter = "All files (*.*)|*.*";
+            openFileDialog.Multiselect = false;
+
+            bool? result = openFileDialog.ShowDialog();
+            if (result == true)
+            {
+                TxtCalibrationFile.Text = openFileDialog.FileName;
+                TxtCalibrationFileName.Text = openFileDialog.SafeFileName;
+            }
         }
 
         private void Window_DragEnter(object sender, DragEventArgs e)
         {
             e.Effects = DragDropEffects.Copy;
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            SysResourceModel sysResourceModel = new SysResourceModel();
+            sysResourceModel.Name = TxtCalibrationFileName.Text;
+            sysResourceModel.Value = TxtCalibrationFile.Text;
+            sysResourceModel.Type = 11;
+
+            if (CobCalibration.SelectedValue is CalibrationType CalibrationType)
+            {
+                sysResourceModel.Type = (int)CalibrationRsourceService.GetInstance().CalibrationType2ResouceType(CalibrationType);
+            }
+            
+            int ret = CalibrationRsourceService.GetInstance().Save(sysResourceModel);
+            if (ret == 1)
+                MessageBox.Show("上传成功");
         }
     }
 }
