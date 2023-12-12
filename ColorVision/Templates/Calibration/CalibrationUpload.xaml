@@ -6,8 +6,9 @@
         xmlns:local="clr-namespace:ColorVision.Templates"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
-        Title="CalibrationUpload" Height="450" Width="800" DragEnter="Window_DragEnter" DragOver="UIElement_OnDragOver" AllowDrop="True" Drop="UIElement_OnDrop" Initialized="Window_Initialized" >
+        Title="CalibrationUpload" Height="450" Width="800"  DragEnter="Window_DragEnter" DragOver="UIElement_OnDragOver" AllowDrop="True" Drop="UIElement_OnDrop" Initialized="Window_Initialized" >
     <Grid>
+        <Image Source="/Assets/Image/uploadbg.avif"  Stretch="UniformToFill"/>
         <StackPanel Margin="5">
             <DockPanel  Margin='2'>
                 <TextBlock Text="校正类型" MinWidth="100"/>

@@ -160,10 +160,12 @@ namespace ColorVision.MySql.Service
 
         internal void Save(ParamBase value)
         {
-            ModMasterModel modMasterModel = GetMasterById(value.ID);
-            modMasterModel.Name = value.Name;
-            ModMasterDao modMasterDao = new ModMasterDao(modMasterModel.Pcode);
-            modMasterDao.Save(modMasterModel);
+            if (GetMasterById(value.ID) is ModMasterModel modMasterModel)
+            {
+                modMasterModel.Name = value.Name;
+                ModMasterDao modMasterDao = new ModMasterDao(modMasterModel.Pcode);
+                modMasterDao.Save(modMasterModel);
+            }
             List<ModDetailModel> list = new List<ModDetailModel>();
             value.GetDetail(list);
             detailDao.UpdateByPid(value.ID, list);
