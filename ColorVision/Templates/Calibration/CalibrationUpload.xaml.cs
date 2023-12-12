@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,7 +12,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using ColorVision.Flow.Templates;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
@@ -33,6 +33,11 @@ namespace ColorVision.Templates
             {
                 e.Effects = DragDropEffects.Scroll;
                 e.Handled = true;
+                UploadRec.Stroke = Brushes.Blue;
+            };
+            this.DragLeave += (s, e) =>
+            {
+                UploadRec.Stroke = Brushes.Gray;
             };
         }
         private void Window_Initialized(object sender, EventArgs e)
@@ -43,6 +48,7 @@ namespace ColorVision.Templates
         }
         private void UIElement_OnDrop(object sender, DragEventArgs e)
         {
+            UploadRec.Stroke = Brushes.Gray;
             var b = e.Data.GetDataPresent(DataFormats.FileDrop);
 
             if (b)
@@ -50,6 +56,7 @@ namespace ColorVision.Templates
                 var sarr = e.Data.GetData(DataFormats.FileDrop);
                 var a = sarr as string[];
                 TxtCalibrationFile.Text = a?.First();
+                TxtCalibrationFileName.Text = Path.GetFileName(a?.First());
             }
         }
 
