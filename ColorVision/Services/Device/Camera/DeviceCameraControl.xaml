@@ -109,7 +109,7 @@
                                                     <ColumnDefinition Width="Auto"/>
                                                     <ColumnDefinition Width="*"/>
                                                 </Grid.ColumnDefinitions>
-                                                <TextBlock Text="ROI区域" ToolTip="ROI出来的矩形" Grid.Column="0"/>
+                                                <TextBlock Text="ROI区域" ToolTip="矩形ROI" Grid.Column="0"/>
                                                 <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip="直接调节相机输出的ROI,区域越小，计算越快"/>
                                             </Grid>
                                             <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CameraCfg.ROIRect,Mode=OneWay}"/>

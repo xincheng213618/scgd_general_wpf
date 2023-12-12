@@ -44,7 +44,6 @@ int main()
 	//end = std::chrono::high_resolution_clock::now();
 	//duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 	//std::cout << "原生写 执行时间: " << duration.count() / 1000.0 << " 毫秒" << std::endl;
-
 	//start = std::chrono::high_resolution_clock::now();
 
 	HImage hImage = ToHImage(test1);

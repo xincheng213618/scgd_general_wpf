@@ -78,7 +78,7 @@ namespace ColorVision.Device.Camera
             {
                 Service.DownloadFile(fileName, extType);
             }
-            else
+            else  
             {
                 netFileUtil.OpenLocalFile(localName, extType);
             }
