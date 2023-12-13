@@ -57,7 +57,7 @@ namespace ColorVision.Device.Camera
             netFileUtil = new NetFileUtil(SolutionManager.GetInstance().CurrentSolution.FullName+"\\Cache");
             netFileUtil.handler += NetFileUtil_handler;
 
-            Service.CameraService.OnMessageRecved += CameraService_OnMessageRecved; ;
+            Service.OnMessageRecved += CameraService_OnMessageRecved;
             View.OnCurSelectionChanged += View_OnCurSelectionChanged;
 
 
@@ -68,7 +68,20 @@ namespace ColorVision.Device.Camera
 
         private void View_OnCurSelectionChanged(CameraImgResult data)
         {
-            doOpen(data.ImgFileName, FileExtType.Raw);
+            if (data.ResultCode == 0)
+            {
+                switch (data.FileType)
+                {
+                    case CameraFileType.SrcFile:
+                        doOpen(data.ImgFileName, FileExtType.Raw);
+                        break;
+                    case CameraFileType.CIEFile:
+                        doOpen(data.ImgFileName, FileExtType.CIE);
+                        break;
+                    default:
+                        break;
+                }
+            }
         }
 
         private void doOpen(string fileName, FileExtType extType)
@@ -100,7 +113,12 @@ namespace ColorVision.Device.Camera
 
         private void FileDownload(DeviceFileUpdownParam param)
         {
-            if (!string.IsNullOrWhiteSpace(param.FileName)) netFileUtil.TaskStartDownloadFile(param.IsLocal, param.ServerEndpoint, param.FileName, FileExtType.Raw);
+            if (!string.IsNullOrWhiteSpace(param.FileName))
+            {
+                FileExtType extType = FileExtType.Raw;
+                if (param.FileName.EndsWith("cvcie")) extType = FileExtType.CIE;
+                netFileUtil.TaskStartDownloadFile(param.IsLocal, param.ServerEndpoint, param.FileName, extType);
+            }
         }
 
         private void ShowResultFromDB(string serialNumber, int masterId)
@@ -324,7 +342,10 @@ namespace ColorVision.Device.Camera
 
                 if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
                 {
-                    MsgRecord msgRecord = Service.GetData(SliderexpTime.Value, param);
+                    double[] expTime = null;
+                    if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
+                    else expTime = new double[] { Device.Config.ExpTime };
+                    MsgRecord msgRecord = Service.GetData(expTime, param);
                     Helpers.SendCommand(msgRecord, msgRecord.MsgRecordState.ToDescription());
                 }
             }

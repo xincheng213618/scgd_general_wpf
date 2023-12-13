@@ -6,6 +6,7 @@ using FileServerPlugin;
 using HandyControl.Data;
 using log4net;
 using MQTTMessageLib.Algorithm;
+using MQTTMessageLib.Camera;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -164,7 +165,7 @@ namespace ColorVision.Services.Device.Camera
             long totalTime = model.TotalTime;
             if (!resultDis.ContainsKey(key))
             {
-                CameraImgResult result = new CameraImgResult(Results.Count + 1, serialNumber, imgFileName, DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss"), reqParams, imgFrameInfo, resultCode, resultDesc, totalTime);
+                CameraImgResult result = new CameraImgResult(Results.Count + 1, serialNumber, imgFileName, DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss"), reqParams, imgFrameInfo, (CameraFileType)model.FileType, resultCode, resultDesc, totalTime);
                 Results.Add(result);
                 resultDis[key] = result;
                 RefreshResultListView();
@@ -187,6 +188,7 @@ namespace ColorVision.Services.Device.Camera
         private string _ImgFileName;
         private string _Params;
         private string _ImgFrameInfo;
+        private CameraFileType _FileType;
         private string _RecvTime;
         private int _resultCode;
         private long _totalTime;
@@ -195,6 +197,7 @@ namespace ColorVision.Services.Device.Camera
         public int Id { get { return _Id; } set { _Id = value; NotifyPropertyChanged(); } }
         public string SerialNumber { get { return _SerialNumber; } set { _SerialNumber = value; NotifyPropertyChanged(); } }
         public string ImgFileName { get { return _ImgFileName; } set { _ImgFileName = value; NotifyPropertyChanged(); } }
+        public CameraFileType FileType { get { return _FileType; } set { _FileType = value; NotifyPropertyChanged(); } }
         public string ReqParams { get { return _Params; } set { _Params = value; NotifyPropertyChanged(); } }
         public string ImgFrameInfo { get { return _ImgFrameInfo; } set { _ImgFrameInfo = value; NotifyPropertyChanged(); } }
         public string RecvTime { get { return _RecvTime; } set { _RecvTime = value; NotifyPropertyChanged(); } }
@@ -219,13 +222,14 @@ namespace ColorVision.Services.Device.Camera
         {
         }
 
-        public CameraImgResult(int id, string serialNumber, string imgFileName, string recvTime, string reqParams, string imgFrameInfo, int? resultCode, string resultDesc, long totalTime = 0) : this()
+        public CameraImgResult(int id, string serialNumber, string imgFileName, string recvTime, string reqParams, string imgFrameInfo, CameraFileType fileType, int? resultCode, string resultDesc, long totalTime = 0) : this()
         {
             _Id = id;
             _SerialNumber = serialNumber;
             _ImgFileName = imgFileName;
             _Params = reqParams;
             _ImgFrameInfo = imgFrameInfo;
+            _FileType = fileType;
             _RecvTime = recvTime;
             _resultCode = (int)resultCode;
             _totalTime = totalTime;

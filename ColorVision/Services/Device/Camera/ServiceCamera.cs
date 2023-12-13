@@ -5,7 +5,6 @@ using ColorVision.Services;
 using ColorVision.Services.Device;
 using ColorVision.Extension;
 using ColorVision.Services.Msg;
-using MQTTMessageLib.Camera;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -16,7 +15,6 @@ namespace ColorVision.Device.Camera
 {
     public class ServiceCamera : BaseService<BaseServiceConfig>
     {
-        public event MessageRecvHandler OnMessageRecved;
         public event DeviceStatusChangedHandler DeviceStatusChanged;
 
         public DeviceStatus DeviceStatus { get => _DeviceStatus; set { _DeviceStatus = value; Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value)); NotifyPropertyChanged(); NotifyPropertyChanged(nameof(DeviceStatusString)); } }
@@ -91,21 +89,7 @@ namespace ColorVision.Device.Camera
 
             if (msg.Code == 0)
             {
-                switch (msg.EventName)
-                {
-                    case MQTTCameraEventEnum.Event_Open:
-                        break;
-                    case MQTTCameraEventEnum.Event_Close:
-                        break;
-                    case MQTTCameraEventEnum.Event_GetData:
-                        OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
-                        DeviceStatus = DeviceStatus.Opened;
-                        break;
-                    default:
-                        OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
-                        DeviceStatus = DeviceStatus.Opened;
-                        break;
-                }
+
             }
         }
         public void GetAllDevice()

@@ -227,7 +227,7 @@ namespace ColorVision.Net
                 OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
                 OpenCvSharp.Mat dst = new OpenCvSharp.Mat();
                 src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
-                int len = (int)(w * h);
+                int len = (int)(w * h* channels);
                 result.data = new byte[len];
                 Marshal.Copy(dst.Data, result.data, 0, len);
                 logger.DebugFormat("Raw src file({0}) convert rgb.", fileName);
@@ -236,6 +236,7 @@ namespace ColorVision.Net
                 result.height = (int)h;
                 result.bpp = 8;
                 result.channels = (int)channels;
+                result.depth = dst.Depth();
             }
             else
             {
@@ -256,9 +257,15 @@ namespace ColorVision.Net
             {
                 if (System.IO.File.Exists(srcFileName))
                 {
-                    result.data = CVFileUtils.ReadBinaryFile(srcFileName);
-                    result.fileType = FileExtType.Src;
-                    return result;
+                    if (srcFileName.EndsWith("cvraw")){
+                        return ReadCVImageRaw(srcFileName);
+                    }
+                    else
+                    {
+                        result.data = CVFileUtils.ReadBinaryFile(srcFileName);
+                        result.fileType = FileExtType.Src;
+                        return result;
+                    }
                 }
                 else
                 {

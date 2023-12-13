@@ -612,7 +612,7 @@ namespace ColorVision
         private void ShowImage(CVCIEFileInfo fileInfo)
         {
             logger.Info("OpenImage .....");
-            int Depth = CVFileUtils.GetMatDepth(fileInfo.bpp);
+            int Depth = fileInfo.depth;
 
             OpenCvSharp.Mat src = new OpenCvSharp.Mat(fileInfo.height, fileInfo.width, OpenCvSharp.MatType.MakeType(Depth, fileInfo.channels), fileInfo.data);
             SetImageSource(src.ToBitmapSource());

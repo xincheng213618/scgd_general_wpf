@@ -10,23 +10,17 @@ using System;
 using System.Collections.Generic;
 using System.Windows;
 using ColorVision.Extension;
-using System.Windows.Media.Media3D;
 using MQTTMessageLib.FileServer;
 using MQTTMessageLib.Camera;
 using MQTTMessageLib;
 
 namespace ColorVision.Device.Camera
 {
-
-    public delegate void MQTTCameraFileHandler(object sender, string? FilePath);
     public delegate void MQTTCameraMsgHandler(object sender, MsgReturn msg);
-
-
-
 
     public class DeviceServiceCamera : BaseDevService<ConfigCamera>
     {
-        public event MQTTCameraFileHandler FileHandler;
+        public event MessageRecvHandler OnMessageRecved;
 
         public ServiceCamera CameraService { get; set; }
 
@@ -62,13 +56,11 @@ namespace ColorVision.Device.Camera
                 case "CM_GetAllSnID":
                     return;
             }
-
             //信息在这里添加一次过滤，让信息只能在对应的相机上显示,同时如果ID为空的话，就默认是服务端的信息，不进行过滤，这里后续在进行优化
             if (Config.Code!=null && msg.DeviceCode != Config.Code)
             {
                 return;
             }
-
             if (msg.Code == 0)
             {
 
@@ -91,14 +83,19 @@ namespace ColorVision.Device.Camera
                     case MQTTCameraEventEnum.Event_OpenLive:
                         DeviceStatus = DeviceStatus.Opened;
                         break;
-                    case "GetData":
-                        try
-                        {
-                            string SaveFileName = msg.Data.list[0].filename;
-                            Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(this, SaveFileName));
-                        }
-                        catch { }
+                    case MQTTCameraEventEnum.Event_GetData:
+                        OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
+                        DeviceStatus = DeviceStatus.Opened;
                         break;
+
+                    //case "GetData":
+                    //    try
+                    //    {
+                    //        string SaveFileName = msg.Data.list[0].filename;
+                    //        Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(this, SaveFileName));
+                    //    }
+                    //    catch { }
+                    //    break;
                     case "GetAutoExpTime":
                         if (msg.Data != null && msg.Data[0].result != null)
                         {
@@ -159,7 +156,7 @@ namespace ColorVision.Device.Camera
                     case "SetCfg":
                         break;
                     default:
-                        //Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, $"未定义{msg.EventName}"));
+                        OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         break;
                 }
             }
@@ -167,17 +164,13 @@ namespace ColorVision.Device.Camera
             {
                 switch (msg.EventName)
                 {
-                    case "GetData":
-                        //string SaveFileName = msg.Data.SaveFileName;
-                        //Application.CurrentSolution.Dispatcher.Invoke(() => FileHandler?.Invoke(this, SaveFileName));
-                        break;
                     case "Close":
                         DeviceStatus = DeviceStatus.UnInit;
                         break;
                     case "Open":
                         if (DeviceStatus == DeviceStatus.Init)
                             Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, "许可证异常，请配置相机设备许可证"));
-                        DeviceStatus = DeviceStatus.Init;
+                        DeviceStatus = DeviceStatus.Opened;
                         break;
                     case "Init":
                         DeviceStatus = DeviceStatus.UnInit;
@@ -185,10 +178,8 @@ namespace ColorVision.Device.Camera
                     case "UnInit":
                         DeviceStatus = DeviceStatus.UnInit;
                         break;
-                    case "Calibrations":
-                        break;
                     default:
-                        //DeviceStatus = DeviceStatus.UnInit;
+                        OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         break;
                 }
             }
@@ -396,9 +387,9 @@ namespace ColorVision.Device.Camera
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord GetData(double expTime, CalibrationParam param)
+        public MsgRecord GetData(double[] expTime, CalibrationParam param)
         {
-            string SerialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            string SerialNumber = Config.Code+"_"+ DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             var model = ServiceManager.GetInstance().BatchSave(SerialNumber);
             var Params = new Dictionary<string, object>() { };
             MsgSend msg;
@@ -408,9 +399,11 @@ namespace ColorVision.Device.Camera
                 SerialNumber = SerialNumber,
                 Params = Params
             };
-            Params.Add("ExpTime", new double[] { expTime });
+            Params.Add("ExpTime", expTime);
             Params.Add("Calibration", new CVTemplateParam() { ID = param.ID, Name = param.Name });
-            return PublishAsyncClient(msg, (Config.IsExpThree ? expTime * 3 : expTime) + 10000);
+            double timeout = 0;
+            for (int i = 0; i < expTime.Length; i++) timeout += expTime[i];
+            return PublishAsyncClient(msg, timeout + 10000);
         }  
         public MsgRecord GetData_Old(double expTime, double gain)
         {
@@ -493,8 +486,6 @@ namespace ColorVision.Device.Camera
         }
 
         public MsgRecord GetAllCameraID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });
-
-
 
         public MsgRecord AutoFocus()
         {

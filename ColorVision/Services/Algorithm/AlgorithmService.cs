@@ -4,6 +4,7 @@ using ColorVision.Services.Algorithm.Templates;
 using ColorVision.Services.Device;
 using ColorVision.Services.Msg;
 using cvColorVision;
+using MQTTMessageLib;
 using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
@@ -152,11 +153,15 @@ namespace ColorVision.Services.Algorithm
             string sn = null;
             if(string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
+
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "nBatchID", -1 } };
+            Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
+
             MsgSend msg = new MsgSend
             {
                 EventName = "GetData",
                 SerialNumber = sn,
-                Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "TemplateId", pid }, { "TemplateName", tempName }, { "nBatchID", -1 } }
+                Params = Params
             };
             return PublishAsyncClient(msg);
         }
