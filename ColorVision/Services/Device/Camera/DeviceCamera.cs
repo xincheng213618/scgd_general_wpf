@@ -42,10 +42,6 @@ namespace ColorVision.Device.Camera
             Service = cameraService;
             DeviceService = new DeviceServiceCamera(Config, Service);
             View = new CameraView();
-            DeviceService.FileHandler += (s, e) =>
-            {
-                //View.View.(e);
-            };
             if (Application.Current.TryFindResource("DrawingImageCamera") is DrawingImage  drawingImage)
                 Icon = drawingImage;
 

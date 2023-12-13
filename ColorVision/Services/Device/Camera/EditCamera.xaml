@@ -361,6 +361,10 @@
                                 <TextBox Text="{Binding Config.FileServerCfg.SrcFileBasePath}"/>
                             </DockPanel>
                             <DockPanel Margin="0,2">
+                                <TextBlock Text="校正文件路径:" Width="120"/>
+                                <TextBox Text="{Binding Config.FileServerCfg.CalibrationFileBasePath}"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,2">
                                 <TextBlock Text="端口地址:" Width="120"/>
                                 <TextBox Text="{Binding Config.FileServerCfg.Endpoint}"/>
                             </DockPanel>

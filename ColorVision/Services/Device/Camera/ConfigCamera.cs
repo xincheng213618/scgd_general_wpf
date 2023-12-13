@@ -102,6 +102,10 @@ namespace ColorVision.Services.Device.Camera
         /// </summary>
         public string SrcFileBasePath { get; set; }
         /// <summary>
+        /// 校正文件路径
+        /// </summary>
+        public string CalibrationFileBasePath { get; set; }
+        /// <summary>
         /// 端口地址
         /// </summary>
         public string Endpoint { get; set; }

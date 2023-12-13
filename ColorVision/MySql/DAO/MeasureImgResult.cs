@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
+﻿using System.Data;
 
 namespace ColorVision.MySql.DAO
 {
@@ -12,6 +10,7 @@ namespace ColorVision.MySql.DAO
         public string? ReqParams { get; set; }
         public string? RawFile { get; set; }
         public string? ImgFrameInfo { get; set; }
+        public sbyte? FileType { get; set; }
         public int ResultCode { get; set; }
         public int TotalTime { get; set; }
         public string? ResultDesc { get; set; }
@@ -20,7 +19,7 @@ namespace ColorVision.MySql.DAO
 
         public string? DeviceCode { get; set; }
 
-        public DateTime? CreateDate { get; set; } = DateTime.Now;
+        public System.DateTime? CreateDate { get; set; } = System.DateTime.Now;
     }
 
 
@@ -38,6 +37,7 @@ namespace ColorVision.MySql.DAO
                 BatchId = item.Field<int?>("batch_id")??-1,
                 BatchCode = item.Field<string>("batch_code"),
                 RawFile = item.Field<string>("raw_file"),
+                FileType = item.Field<sbyte>("file_type"),
                 FileData = item.Field<string>("file_data"),
                 ResultCode = item.Field<int>("result_code"),
                 TotalTime = item.Field<int>("total_time"),
@@ -45,7 +45,7 @@ namespace ColorVision.MySql.DAO
                 ReqParams = item.Field<string>("params"),
                 ImgFrameInfo = item.Field<string>("file_data"),
                 DeviceCode = item.Field<string>("device_code"),
-                CreateDate = item.Field<DateTime?>("create_date"),
+                CreateDate = item.Field<System.DateTime?>("create_date"),
             };
 
             return model;
