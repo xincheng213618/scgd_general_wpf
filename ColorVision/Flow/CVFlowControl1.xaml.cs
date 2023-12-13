@@ -9,10 +9,10 @@ namespace ColorVision.Flow
     /// <summary>
     /// CVFlowView.xaml 的交互逻辑
     /// </summary>
-    public partial class CVFlowView1 : UserControl,IView
+    public partial class CVFlowView1 : UserControl,IView, IFlowView
     {
         private FlowEngineLib.FlowEngineControl flowEngine;
-        public FlowEngineLib.FlowEngineControl FlowEngineControl { get { return flowEngine; } }
+        public FlowEngineLib.FlowEngineControl FlowEngineControl { get { return flowEngine; } set { flowEngine = value; } }
         public View View { get; set; }
 
         public CVFlowView1()

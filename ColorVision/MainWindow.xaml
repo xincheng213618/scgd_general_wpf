@@ -79,9 +79,6 @@
                         <MenuItem Header="保存窗口布局"  Click="MenuStatusBar_Click" />
                         <MenuItem Header="应用窗口布局"  Click="MenuStatusBar_Click" />
                     </MenuItem>
-                    <MenuItem Header="Test">
-                        <MenuItem Header="折线图"  Click="Test_Click" />
-                    </MenuItem>
                     <MenuItem Header="{x:Static resx:Resource.MenuHelp}">
                         <MenuItem Header="打开日志(_L)"  Click="Log_Click"/>
                         <MenuItem Header="打开日志文件夹(_F)"  Click="LogF_Click"/>

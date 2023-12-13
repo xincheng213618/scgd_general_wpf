@@ -6,13 +6,21 @@ using System.Windows.Input;
 
 namespace ColorVision.Flow
 {
+
+    public interface IFlowView
+    {
+        public View View { get; set; }
+        public FlowEngineLib.FlowEngineControl FlowEngineControl { get; set; }
+    }
+
+
     /// <summary>
     /// CVFlowView.xaml 的交互逻辑
     /// </summary>
-    public partial class CVFlowView : UserControl,IView
+    public partial class CVFlowView : UserControl,IView, IFlowView
     {
         private FlowEngineLib.FlowEngineControl flowEngine;
-        public FlowEngineLib.FlowEngineControl FlowEngineControl { get { return flowEngine; } }
+        public FlowEngineLib.FlowEngineControl FlowEngineControl { get { return flowEngine; }  set { flowEngine = value; } }
         public View View { get; set; }
 
         public CVFlowView()

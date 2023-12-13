@@ -12,6 +12,7 @@ using System.Drawing;
 using System.Windows.Media;
 using ColorVision.Solution;
 using ColorVision.Flow.Templates;
+using Xceed.Wpf.Toolkit.Zoombox;
 
 namespace ColorVision.Flow
 {
@@ -20,7 +21,7 @@ namespace ColorVision.Flow
     /// </summary>
     public partial class FlowDisplayControl : UserControl
     {
-        public CVFlowView View { get; set; }
+        public IFlowView View { get; set; }
 
         public FlowDisplayControl()
         {
@@ -35,8 +36,17 @@ namespace ColorVision.Flow
             MQTTConfig mQTTConfig = GlobalSetting.SoftwareConfig.MQTTConfig;
             FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
 
+            using System.Drawing.Graphics graphics = System.Drawing.Graphics.FromHwnd(IntPtr.Zero);
+            bool result = graphics.DpiX > 96;
+            if (result)
+            {
+                View = new CVFlowView1();
+            }
+            else
+            {
+                View = new CVFlowView();
 
-            View = new CVFlowView();
+            }
 
             if (Application.Current.TryFindResource("DrawingImageFlow") is DrawingImage DrawingImageAlgorithm)
                 View.View.Icon = DrawingImageAlgorithm;
@@ -47,36 +57,39 @@ namespace ColorVision.Flow
                     View.View.Icon = DrawingImageAlgorithm;
             };
             View.View.Title = "流程窗口";
-
-            ViewGridManager.GetInstance().AddView(0,View);
-
-            ViewMaxChangedEvent(ViewGridManager.GetInstance().ViewMax);
-            ViewGridManager.GetInstance().ViewMaxChangedEvent += ViewMaxChangedEvent;
-
-            void ViewMaxChangedEvent(int max)
+            if (View is UserControl control)
             {
-                List<KeyValuePair<string, int>> KeyValues = new List<KeyValuePair<string, int>>();
-                KeyValues.Add(new KeyValuePair<string, int>(Properties.Resource.WindowSingle, -2));
-                KeyValues.Add(new KeyValuePair<string, int>(Properties.Resource.WindowHidden, -1));
-                for (int i = 0; i < max; i++)
+                ViewGridManager.GetInstance().AddView(0, control);
+
+                ViewMaxChangedEvent(ViewGridManager.GetInstance().ViewMax);
+                ViewGridManager.GetInstance().ViewMaxChangedEvent += ViewMaxChangedEvent;
+
+                void ViewMaxChangedEvent(int max)
                 {
-                    KeyValues.Add(new KeyValuePair<string, int>((i + 1).ToString(), i));
+                    List<KeyValuePair<string, int>> KeyValues = new List<KeyValuePair<string, int>>();
+                    KeyValues.Add(new KeyValuePair<string, int>(Properties.Resource.WindowSingle, -2));
+                    KeyValues.Add(new KeyValuePair<string, int>(Properties.Resource.WindowHidden, -1));
+                    for (int i = 0; i < max; i++)
+                    {
+                        KeyValues.Add(new KeyValuePair<string, int>((i + 1).ToString(), i));
+                    }
+                    ComboxView.ItemsSource = KeyValues;
+                    ComboxView.SelectedValue = View.View.ViewIndex;
                 }
-                ComboxView.ItemsSource = KeyValues;
-                ComboxView.SelectedValue = View.View.ViewIndex;
+                View.View.ViewIndexChangedEvent += (e1, e2) =>
+                {
+                    ComboxView.SelectedIndex = e2 + 2;
+                };
+                ComboxView.SelectionChanged += (s, e) =>
+                {
+                    if (ComboxView.SelectedItem is KeyValuePair<string, int> KeyValue)
+                    {
+                        View.View.ViewIndex = KeyValue.Value;
+                        ViewGridManager.GetInstance().SetViewIndex(control, KeyValue.Value);
+                    }
+                };
             }
-            View.View.ViewIndexChangedEvent += (e1, e2) =>
-            {
-                ComboxView.SelectedIndex = e2 + 2;
-            };
-            ComboxView.SelectionChanged += (s, e) =>
-            {
-                if (ComboxView.SelectedItem is KeyValuePair<string, int> KeyValue)
-                {
-                    View.View.ViewIndex = KeyValue.Value;
-                    ViewGridManager.GetInstance().SetViewIndex(View, KeyValue.Value);
-                }
-            };
+
 
 
 
