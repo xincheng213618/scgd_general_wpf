@@ -42,8 +42,14 @@
             <StackPanel Margin="3">
                 <Button x:Name="ButtonInit" Margin="0,0,0,2"  Content="连接" Click="CameraInit_Click"/>
                 <StackPanel x:Name="StackPanelOpen" Margin="0,2,0,2">
-                    <Button x:Name="ButtonVideo" Content="视频模式"  Click="Video_Click"/>
-                    <DockPanel Margin="0,2">
+                    <DockPanel x:Name="ButtonOpen">
+                        <Button  DockPanel.Dock="Right" Grid.Column="1" Margin="5,0,0,0" Content="视频模式"  Click="Video_Click"/>
+                        <Button  Grid.Column="0" Content="打开"  Click="Open_Click" />
+                    </DockPanel>
+                    <Button x:Name="ButtonClose" Margin="0,2" Grid.Column="0" Content="关闭"  Visibility="Collapsed" Click="Open_Click" />
+
+
+                    <DockPanel Margin="0,2" Visibility="{Binding DeviceService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter}}">
                         <TextBlock  Text="曝光" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0" />
                         <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTime}"  Width="50"/>
                         <hc:PreviewSlider TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTime}" Minimum="1" Maximum="6000">
@@ -52,10 +58,7 @@
                             </hc:PreviewSlider.PreviewContent>
                         </hc:PreviewSlider>
                     </DockPanel>
-
-
-
-                    <Button x:Name="ButtonOpen" Content="打开" Click="Open_Click" />
+                    
                     <StackPanel x:Name="StackPanelImage">
                         <StackPanel Visibility="{Binding Config.IsExpThree,Converter={StaticResource bool2VisibilityConverter1}}">
                             <DockPanel Margin="0,2">
@@ -101,18 +104,18 @@
                         <StackPanel Margin="0,2" Visibility="{Binding IsVideo,Converter={StaticResource bool2VisibilityConverter1}}">
                             <Button Content="自动曝光" Margin="0,2" Click="AutoExplose_Click" />
 
-                            <DockPanel Margin="0,2">
-                                <Button  DockPanel.Dock="Right" Content="应用"  HorizontalAlignment="Right" Click="Calibration_Click" />
-                                <TextBlock Text="校正：" />
-                                <ComboBox x:Name="ComboxCalibrationTemplate" Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                                <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
-                                    <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="Calibration"  Click="MenuItem_Template"/>
-                                </Grid>
-                            </DockPanel>
+                    <DockPanel Margin="0,2">
+                        <Button  DockPanel.Dock="Right" Content="应用"  HorizontalAlignment="Right" Click="Calibration_Click" />
+                        <TextBlock Text="校正：" />
+                        <ComboBox x:Name="ComboxCalibrationTemplate" Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                        <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
+                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="Calibration"  Click="MenuItem_Template"/>
+                        </Grid>
+                    </DockPanel>
 
 
-                            <Button Content="取图" Click="SendDemo3_Click" Margin="0,2"/>
+                        <Button Content="取图" Click="SendDemo3_Click" Margin="0,2"/>
                         </StackPanel>
                         <GroupBox Header="电机操作" Visibility="{Binding Config.IsHaveMotor,Converter={StaticResource bool2VisibilityConverter}}">
                             <StackPanel Margin="2">

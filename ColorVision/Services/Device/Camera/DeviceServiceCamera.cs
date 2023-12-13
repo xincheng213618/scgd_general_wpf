@@ -224,6 +224,7 @@ namespace ColorVision.Device.Camera
 
         public MsgRecord UnInit()
         {
+            IsVideoOpen = false;
             MsgSend msg = new MsgSend  {  EventName = "UnInit", };
             return PublishAsyncClient(msg);
         }
@@ -306,10 +307,13 @@ namespace ColorVision.Device.Camera
             Params.Add("List", List);
             return PublishAsyncClient(msg);
         }
+        private bool _IsVideoOpen ;
+        public bool IsVideoOpen { get => _IsVideoOpen; set { _IsVideoOpen = value;NotifyPropertyChanged(); } }
 
         public void OpenVideo(string host, int port,double expTime)
         {
             CurrentTakeImageMode = TakeImageMode.Live;
+            IsVideoOpen = true;
             MsgSend msg = new MsgSend
             {
                 EventName = "OpenLive",
@@ -534,6 +538,7 @@ namespace ColorVision.Device.Camera
 
         public MsgRecord Close()
         {
+            IsVideoOpen = false;
             MsgSend msg = new MsgSend {  EventName = "Close" };
             return PublishAsyncClient(msg);
         }

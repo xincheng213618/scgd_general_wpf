@@ -227,13 +227,17 @@ namespace ColorVision.Device.Camera
                     case DeviceStatus.Closed:
                         ButtonOpen.Visibility = Visibility.Visible;
                         StackPanelImage.Visibility = Visibility.Collapsed;
-                        ButtonOpen.Content = "打开";
+                        ButtonClose.Visibility = Visibility.Collapsed;
                         break;
                     case DeviceStatus.Closing:
                         break;
                     case DeviceStatus.Opened:
-                        StackPanelImage.Visibility = Visibility.Visible;
-                        ButtonOpen.Content = "关闭";
+                        ButtonOpen.Visibility = Visibility.Collapsed;
+                        ButtonClose.Visibility = Visibility.Visible;
+                        if (!Service.IsVideoOpen)
+                        {
+                            StackPanelImage.Visibility = Visibility.Visible;
+                        }
                         break;
                     case DeviceStatus.Opening:
                         break;
@@ -241,15 +245,14 @@ namespace ColorVision.Device.Camera
                         StackPanelOpen.Visibility = Visibility.Collapsed;
                         StackPanelImage.Visibility = Visibility.Collapsed;
                         ButtonOpen.Visibility = Visibility.Collapsed;
+                        ButtonClose.Visibility = Visibility.Collapsed;
                         ButtonInit.Content = "连接";
-                        ButtonOpen.Content = "打开";
                         ViewGridManager.GetInstance().RemoveView(View);
                         break;
                     case DeviceStatus.Init:
                         StackPanelOpen.Visibility = Visibility.Visible;
-                        ButtonOpen.Visibility = Visibility.Visible;
+                        ButtonOpen.Visibility = Visibility.Collapsed;
                         ButtonInit.Content = "断开连接";
-
                         ViewGridManager.GetInstance().AddView(View);
                         if (ViewGridManager.GetInstance().ViewMax > 4 || ViewGridManager.GetInstance().ViewMax == 3)
                         {
@@ -292,9 +295,14 @@ namespace ColorVision.Device.Camera
         {
             if (sender is Button button)
             {
-                if ((Service.DeviceStatus == DeviceStatus.Init || Service.DeviceStatus == DeviceStatus.Closed))
+                if (Service.DeviceStatus == DeviceStatus.Init || Service.DeviceStatus == DeviceStatus.Closed)
                 {
                     var msgRecord = Service.Open(Service.Config.ID, Device.Config.TakeImageMode, (int)Service.Config.ImageBpp);
+                    Helpers.SendCommand(button, msgRecord, false);
+                }
+                else
+                {
+                    var msgRecord = Service.Close();
                     Helpers.SendCommand(button, msgRecord, false);
                 }
             }
@@ -333,16 +341,14 @@ namespace ColorVision.Device.Camera
 
         public CameraVideoControl CameraVideoControl { get; set; }
 
-        bool IsVideo { get; set; }
         private void Video_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
             {
                 CameraVideoControl??= new CameraVideoControl();
-                if (!IsVideo)
+                if (!Service.IsVideoOpen)
                 {
                     Service.CurrentTakeImageMode = TakeImageMode.Live;
-                    button.Content = "正在获取推流";
                     string host = GlobalSetting.GetInstance().SoftwareConfig.VideoConfig.Host;
                     int port = GlobalSetting.GetInstance().SoftwareConfig.VideoConfig.Port;
                     port = CameraVideoControl.Open(host, port);
@@ -352,7 +358,7 @@ namespace ColorVision.Device.Camera
                         Service.OpenVideo(host, port, Service.Config.ExpTime);
                         CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
                         CameraVideoControl.CameraVideoFrameReceived += CameraVideoFrameReceived;
-                        IsVideo = true;
+                        StackPanelImage.Visibility = Visibility.Collapsed;
                     }
                     else
                     {
@@ -362,7 +368,7 @@ namespace ColorVision.Device.Camera
                 }
                 else
                 {
-                    IsVideo = false;
+                    StackPanelImage.Visibility = Visibility.Visible;
                     Service.Close();
                     CameraVideoControl.Close();
                 }
@@ -390,11 +396,6 @@ namespace ColorVision.Device.Camera
             }
         }
 
-
-        private void VideSetting_Click(object sender, RoutedEventArgs e)
-        {
-            new CameraVideoConnect(Service.Config.VideoConfig) { Owner =Application.Current.MainWindow,WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
 
         private void AutoFocus_Click(object sender, RoutedEventArgs e)
         {
@@ -424,10 +425,6 @@ namespace ColorVision.Device.Camera
             }
         }
 
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-
-        }
 
         private void SetChannel()
         {
