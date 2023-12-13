@@ -295,16 +295,7 @@ namespace ColorVision.Device.Camera
         {
             if (sender is Button button)
             {
-                if (Service.DeviceStatus == DeviceStatus.Init || Service.DeviceStatus == DeviceStatus.Closed)
-                {
-                    var msgRecord = Service.Open(Service.Config.ID, Device.Config.TakeImageMode, (int)Service.Config.ImageBpp);
-                    Helpers.SendCommand(button, msgRecord, false);
-                }
-                else
-                {
-                    var msgRecord = Service.Close();
-                    Helpers.SendCommand(button, msgRecord, false);
-                }
+                var msgRecord = Service.Open(Service.Config.ID, Device.Config.TakeImageMode, (int)Service.Config.ImageBpp);
             }
         }
 
@@ -343,34 +334,25 @@ namespace ColorVision.Device.Camera
 
         private void Video_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button)
+            CameraVideoControl ??= new CameraVideoControl();
+            if (!Service.IsVideoOpen)
             {
-                CameraVideoControl??= new CameraVideoControl();
-                if (!Service.IsVideoOpen)
+                Service.CurrentTakeImageMode = TakeImageMode.Live;
+                string host = GlobalSetting.GetInstance().SoftwareConfig.VideoConfig.Host;
+                int port = GlobalSetting.GetInstance().SoftwareConfig.VideoConfig.Port;
+                port = CameraVideoControl.Open(host, port);
+                if (port > 0)
                 {
-                    Service.CurrentTakeImageMode = TakeImageMode.Live;
-                    string host = GlobalSetting.GetInstance().SoftwareConfig.VideoConfig.Host;
-                    int port = GlobalSetting.GetInstance().SoftwareConfig.VideoConfig.Port;
-                    port = CameraVideoControl.Open(host, port);
-                    if(port > 0)
-                    {
-                        CameraVideoControl.Start();
-                        Service.OpenVideo(host, port, Service.Config.ExpTime);
-                        CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
-                        CameraVideoControl.CameraVideoFrameReceived += CameraVideoFrameReceived;
-                        StackPanelImage.Visibility = Visibility.Collapsed;
-                    }
-                    else
-                    {
-                        MessageBox.Show("视频模式下，本地端口打开失败");
-                        logger.ErrorFormat("Local socket open failed.{0}:{1}", host, GlobalSetting.GetInstance().SoftwareConfig.VideoConfig.Port);
-                    }
+                    CameraVideoControl.Start();
+                    Service.OpenVideo(host, port, Service.Config.ExpTime);
+                    CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
+                    CameraVideoControl.CameraVideoFrameReceived += CameraVideoFrameReceived;
+                    StackPanelImage.Visibility = Visibility.Collapsed;
                 }
                 else
                 {
-                    StackPanelImage.Visibility = Visibility.Visible;
-                    Service.Close();
-                    CameraVideoControl.Close();
+                    MessageBox.Show("视频模式下，本地端口打开失败");
+                    logger.ErrorFormat("Local socket open failed.{0}:{1}", host, GlobalSetting.GetInstance().SoftwareConfig.VideoConfig.Port);
                 }
             }
         }
@@ -405,12 +387,6 @@ namespace ColorVision.Device.Camera
                 Helpers.SendCommand(button, msgRecord);
             }
         }
-
-        private void ComboxCalibrationTemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-
-        }
-
 
         private void Calibration_Click(object sender, RoutedEventArgs e)
         {
@@ -520,10 +496,15 @@ namespace ColorVision.Device.Camera
         }
         private void Close_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button)
+            if (Service.IsVideoOpen)
             {
-                var msgRecord = Service.Close();
-                Helpers.SendCommand(button, msgRecord);
+                StackPanelImage.Visibility = Visibility.Visible;
+                Service.Close();
+                CameraVideoControl.Close();
+            }
+            else
+            {
+                Service.Close();
             }
         }
         private DispatcherTimer _timer;

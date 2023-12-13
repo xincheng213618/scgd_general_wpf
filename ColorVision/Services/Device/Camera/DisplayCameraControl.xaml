@@ -46,7 +46,7 @@
                         <Button  DockPanel.Dock="Right" Grid.Column="1" Margin="5,0,0,0" Content="视频模式"  Click="Video_Click"/>
                         <Button  Grid.Column="0" Content="打开"  Click="Open_Click" />
                     </DockPanel>
-                    <Button x:Name="ButtonClose" Margin="0,2" Grid.Column="0" Content="关闭"  Visibility="Collapsed" Click="Open_Click" />
+                    <Button x:Name="ButtonClose" Margin="0,2" Grid.Column="0" Content="关闭"  Visibility="Collapsed" Click="Close_Click" />
 
 
                     <DockPanel Margin="0,2" Visibility="{Binding DeviceService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter}}">

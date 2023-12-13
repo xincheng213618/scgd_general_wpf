@@ -345,11 +345,8 @@ namespace ColorVision.Device.Camera
                 Params = Params
             };
 
-
-
-            if (Config.IsExpThree)
+            if (Config.IsExpThree&&!IsVideoOpen)
             {
-
                 var FunParams = new Dictionary<string, object>() { };
                 FunParams.Add("nIndex",0);
                 FunParams.Add("dExp", Config.ExpTimeR);
