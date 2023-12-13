@@ -120,22 +120,29 @@
                 </Grid>
 
             </Grid>
-            <GroupBox x:Name="MQTTCreate" Header="配置设备" Grid.Row="2" Visibility="Collapsed">
-                <StackPanel x:Name="MQTTCreateStackPanel"  Grid.Column="1" Grid.Row="1" Margin="5">
-                    <DockPanel Margin="5" Visibility="Collapsed" >
-                        <TextBlock Text="类型" Width="60"/>
-                        <ComboBox x:Name="TextBox_Type" SelectedValuePath="Name"  DisplayMemberPath="Name" />
-                    </DockPanel>
-                    <DockPanel Margin="5" >
-                        <TextBlock Text="标识" Width="60"/>
-                        <hc:ComboBox  x:Name="TextBox_Code" IsEditable="True" SelectedIndex="0" Text=""  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
-                    </DockPanel>
-                    <DockPanel Margin="5" >
-                        <TextBlock Text="名称" Width="60"/>
-                        <hc:ComboBox  x:Name="TextBox_Name" IsEditable="True" SelectedIndex="0" Text=""  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
-                    </DockPanel>
-                    <Button   Click="Button_New_Click" Content="添加" />
-                </StackPanel>
+            <GroupBox x:Name="MQTTCreate" Header="配置设备" Grid.Row="2" Visibility="Visible">
+                <Grid Margin="5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Button  Grid.Column="1"  Click="Button_New_Click" Margin="5" Content="添加" />
+                    <StackPanel x:Name="MQTTCreateStackPanel"  Margin="0,5" >
+                        <DockPanel Margin="2" Visibility="Collapsed" >
+                            <TextBlock Text="类型" MinWidth="30"/>
+                            <ComboBox x:Name="TextBox_Type" SelectedValuePath="Name"  DisplayMemberPath="Name" />
+                        </DockPanel>
+                        <DockPanel Margin="2" >
+                            <TextBlock Text="标识" MinWidth="30"/>
+                            <hc:ComboBox  x:Name="TextBox_Code" IsEditable="True" SelectedIndex="0" Text=""  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
+                        </DockPanel>
+                        <DockPanel Margin="2" >
+                            <TextBlock Text="名称" Width="30"/>
+                            <hc:ComboBox  x:Name="TextBox_Name" IsEditable="True" SelectedIndex="0" Text=""  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
+                        </DockPanel>
+                    </StackPanel>
+                </Grid>
+
             </GroupBox>
 
             <ListView  x:Name="ListViewService" Background="Transparent" BorderThickness="0" SelectionChanged="ListViewService_SelectionChanged" Grid.Row="1">

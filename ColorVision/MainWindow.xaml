@@ -10,7 +10,7 @@
         xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:MainWindow}"
-        Title="ColorVision" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}"   Initialized="Window_Initialized">
+        Title="ColorVision" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid x:Name="Root">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
@@ -79,9 +79,6 @@
                         <MenuItem Header="保存窗口布局"  Click="MenuStatusBar_Click" />
                         <MenuItem Header="应用窗口布局"  Click="MenuStatusBar_Click" />
                     </MenuItem>
-                    <MenuItem Header="Test">
-                        <MenuItem Header="折线图"  Click="Test_Click" />
-                    </MenuItem>
                     <MenuItem Header="{x:Static resx:Resource.MenuHelp}">
                         <MenuItem Header="打开日志(_L)"  Click="Log_Click"/>
                         <MenuItem Header="打开日志文件夹(_F)"  Click="LogF_Click"/>
@@ -107,6 +104,7 @@
             <Grid Grid.Column="1" x:Name="MainContent">
                 <Grid x:Name="ViewGrid" Background="LightGray"/>
                 <Grid x:Name="SolutionGrid" Background="LightGray" Visibility="{Binding ElementName=SolutionTab,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter}}"/>
+
             </Grid>
             <Grid Grid.Row="0" Panel.ZIndex="101" Background="{DynamicResource GlobalBackground}" Margin="-1,0,0,0" x:Name="LeftMainContent" d:DataContext="{d:DesignInstance local:SoftwareConfig}"  Visibility="{Binding SoftwareSetting.IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" >
                 <UIElement.RenderTransform>

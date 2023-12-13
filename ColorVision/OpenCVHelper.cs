@@ -28,8 +28,6 @@ namespace ColorVision
         public byte[] pData;
     }
 
-
-
     public static class OpenCVHelper
     {
 

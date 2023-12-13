@@ -46,6 +46,17 @@ namespace ColorVision.Solution
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            var dialog = new System.Windows.Forms.FolderBrowserDialog();
+            dialog.Description = "请选择文件夹";
+            dialog.ShowNewFolderButton = true; // 允许用户创建新文件夹
+
+            // 显示对话框
+            System.Windows.Forms.DialogResult result = dialog.ShowDialog();
+
+            // 处理对话框返回的结果
+            if (result == System.Windows.Forms.DialogResult.OK)
+            { 
+            }
             this.Close();
         }
 
@@ -55,7 +66,7 @@ namespace ColorVision.Solution
 
         }
 
-        private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void ListView1_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (sender is ListView listView)
             {
@@ -64,9 +75,12 @@ namespace ColorVision.Solution
                     FullName = SolutionInfos[listView.SelectedIndex].FullName;
                     this.Close();
                 }
-
-
             }
+        }
+
+        private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
@@ -118,6 +132,11 @@ namespace ColorVision.Solution
                     }
                 }
             }
+        }
+
+        private void Delete(object sender, RoutedEventArgs e)
+        {
+            
         }
     }
 

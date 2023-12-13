@@ -6,26 +6,52 @@
         xmlns:local="clr-namespace:ColorVision.Templates"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
-        Title="CalibrationUpload" Height="450" Width="800" DragEnter="Window_DragEnter" DragOver="UIElement_OnDragOver" AllowDrop="True" Drop="UIElement_OnDrop" Initialized="Window_Initialized" >
+        Title="CalibrationUpload" Height="450" Width="800"  DragEnter="Window_DragEnter" DragOver="UIElement_OnDragOver" AllowDrop="True" Drop="UIElement_OnDrop" Initialized="Window_Initialized" >
     <Grid>
+        <Image Source="/Assets/Image/uploadbg.avif"  Stretch="UniformToFill"/>
         <StackPanel Margin="5">
+            <DockPanel  Margin='2'>
+                <TextBlock Text="相机设备" MinWidth="100"/>
+                <hc:ComboBox IsEditable="True" Text=""  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
+            </DockPanel>
             <DockPanel  Margin='2'>
                 <TextBlock Text="校正类型" MinWidth="100"/>
                 <hc:ComboBox  x:Name="CobCalibration" IsEditable="True" Text=""  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
             </DockPanel>
-            <DockPanel Margin='2'>
-                <TextBlock Text="校正文件" MinWidth="100"/>
-                <Button Content="选择文件" DockPanel.Dock="Right" Click="Button_Click" />
-                <hc:TextBox x:Name="TxtCalibrationFile" IsReadOnly="True" Margin="0,0,10,0" />
-            </DockPanel>
-            <DockPanel Margin='2'>
-                <TextBlock Text="校正文件" MinWidth="100"/>
-                <hc:TextBox x:Name="TxtCalibrationFileName"  Margin="0,0,10,0" />
-            </DockPanel>
-            <DockPanel>
-                <Button Content="上传"  Click="Button_Click_1"/>
-            </DockPanel>
+
+
+
         </StackPanel>
 
+        <Border  Background="White" Height="200" CornerRadius="5" VerticalAlignment="Center" Margin="30">
+            <Border Background="#FAFAFA"  CornerRadius="5" Margin="10"  >
+                <Grid>
+                    <Rectangle x:Name="UploadRec" Stroke="#D9D9D9" StrokeDashArray="2,2" RadiusX="5" RadiusY="5" StrokeThickness="1">
+                        <Rectangle.Fill>
+                            <SolidColorBrush Color="#FAFAFA"/>
+                        </Rectangle.Fill>
+                    </Rectangle>
+
+                    <StackPanel Margin="10">
+                        <DockPanel Margin="2">
+                            <Button Content="选择文件" DockPanel.Dock="Right" Click="Button_Click" />
+                            <hc:TextBox x:Name="TxtCalibrationFile" IsReadOnly="True" Margin="0,0,10,0" />
+                        </DockPanel>
+                        <DockPanel Margin='2'>
+                            <hc:TextBox x:Name="TxtCalibrationFileName"  Margin="0,0,10,0"  Foreground="White"/>
+                        </DockPanel>
+                    </StackPanel>
+
+                </Grid>
+
+
+
+            </Border>
+
+        </Border>
+
+        <DockPanel Margin="0,5"  HorizontalAlignment="Center" VerticalAlignment="Bottom"> 
+            <Button Content="上传"  Click="Button_Click_1"/>
+        </DockPanel>
     </Grid>
 </Window>

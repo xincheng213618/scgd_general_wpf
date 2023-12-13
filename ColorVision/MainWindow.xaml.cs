@@ -92,6 +92,18 @@ namespace ColorVision
             ViewGridManager.GetInstance().SetViewNum(1);
             this.Closed += (s, e) => { Environment.Exit(-1); };
             Debug.WriteLine("启动成功");
+            
+            
+            
+            #if (DEBUG == true)
+            MenuItem menuItem = new MenuItem() { Header = "测试" };
+            MenuItem menuItem1 = new MenuItem() { Header = "折线图" };
+            menuItem1.Click += Test_Click;
+            menuItem.Items.Add(menuItem1);
+            Menu1.Items.Add(menuItem);
+            #endif
+
+
         }
 
         private void MenuStatusBar_Click(object sender, RoutedEventArgs e)

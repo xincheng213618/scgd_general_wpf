@@ -26,13 +26,13 @@ namespace ColorVision.MVVM
 
         public static T DeepCopy<T>(this T source) where T : ViewModelBase, new()
         {
-            using (var ms = new System.IO.MemoryStream())
-            {
-                var formatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
-                formatter.Serialize(ms, source);
-                ms.Position = 0;
-                return (T)formatter.Deserialize(ms);
-            }
+            #pragma warning disable SYSLIB0011
+            using var ms = new System.IO.MemoryStream();
+            var formatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+            formatter.Serialize(ms, source);
+            ms.Position = 0;
+            return (T)formatter.Deserialize(ms);
+            #pragma warning restore SYSLIB0011
         }
 
         //复制一个新的对象

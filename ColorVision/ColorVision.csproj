@@ -39,6 +39,8 @@
     <None Remove="Assets\Image\connect.png" />
     <None Remove="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
     <None Remove="Assets\Image\pictureBox1.Image.png" />
+    <None Remove="Assets\Image\uploadbg.avif" />
+    <None Remove="Templates\Calibration\uploadbg.avif" />
   </ItemGroup>  
 
   <ItemGroup>
@@ -132,6 +134,8 @@
     <Resource Include="Assets\Image\connect.png" />
     <Resource Include="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
     <Resource Include="Assets\Image\pictureBox1.Image.png" />
+    <Resource Include="Assets\Image\uploadbg.avif" />
+    <Resource Include="Templates\Calibration\uploadbg.avif" />
   </ItemGroup>
 
 </Project>

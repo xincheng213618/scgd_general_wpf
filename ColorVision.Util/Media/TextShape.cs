@@ -18,10 +18,10 @@ namespace ColorVision.Media
 
         protected sealed override Geometry DefiningGeometry => _textGeometry ?? Geometry.Empty;
 
-        protected override Size MeasureOverride(Size availableSize)
+        protected override Size MeasureOverride(Size constraint)
         {
             RealizeGeometry();
-            return new Size(Math.Min(availableSize.Width, _width), Math.Min(availableSize.Height, _height));
+            return new Size(Math.Min(constraint.Width, _width), Math.Min(constraint.Height, _height));
         }
 
         private void RealizeGeometry()

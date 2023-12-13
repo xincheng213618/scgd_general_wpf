@@ -4,6 +4,7 @@ using cvColorVision;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -24,6 +25,12 @@ namespace ColorVision.Device.Camera
             DeviceCamera = mQTTDeviceCamera;
             IsCanEdit = isCanEdit;
             InitializeComponent();
+            this.Loaded += DeviceCameraControl_Loaded;
+        }
+
+        private void DeviceCameraControl_Loaded(object sender, RoutedEventArgs e)
+        {
+            DeviceCamera.IsEditMode = false;
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)

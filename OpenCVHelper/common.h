@@ -12,8 +12,3 @@ typedef int(__cdecl* UpdateFrame)(void*, int, int);
 
 extern "C" COLORVISIONCORE_API void SetInitialFrame(InitialFrame fn);
 extern "C" COLORVISIONCORE_API void SetUpdateFrame(UpdateFrame fn);
-
-extern "C" COLORVISIONCORE_API int ReadCVFile(char* FilePath);
-
-extern "C" COLORVISIONCORE_API int ReadVideoTest(char* FilePath);
-

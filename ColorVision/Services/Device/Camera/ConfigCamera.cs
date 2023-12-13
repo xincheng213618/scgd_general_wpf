@@ -42,7 +42,6 @@ namespace ColorVision.Services.Device.Camera
             set => NotifyPropertyChanged();
         }
 
-
         public double ExpTime { get => _ExpTime; set { _ExpTime = value; NotifyPropertyChanged(); } }
         private double _ExpTime = 10;
         public double ExpTimeR { get => _ExpTimeR; set { _ExpTimeR = value; NotifyPropertyChanged(); } }
