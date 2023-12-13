@@ -498,7 +498,6 @@ namespace ColorVision.Device.Camera
         {
             if (Service.IsVideoOpen)
             {
-                StackPanelImage.Visibility = Visibility.Visible;
                 Service.Close();
                 CameraVideoControl.Close();
             }
