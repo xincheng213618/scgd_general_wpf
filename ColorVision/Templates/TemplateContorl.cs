@@ -166,6 +166,7 @@ namespace ColorVision.Templates
                 case Type t when t == typeof(CalibrationParam):
                     CalibrationRsourceService.GetInstance().Refresh();
                     LoadModParam(CalibrationParams, ModMasterType.Calibration);
+                    CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam()) {});
                     break;
                 case Type t when t == typeof(LedReusltParam):
                     IDefault(FileNameLedJudgeParams, new LedReusltParam());

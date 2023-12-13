@@ -319,7 +319,6 @@ namespace ColorVision.Device.Camera
         public void OpenVideo(string host, int port,double expTime)
         {
             CurrentTakeImageMode = TakeImageMode.Live;
-
             MsgSend msg = new MsgSend
             {
                 EventName = "OpenLive",

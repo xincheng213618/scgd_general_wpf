@@ -45,7 +45,7 @@ namespace ColorVision.Templates
         [JsonIgnore]
         public override string Key
         { 
-            get =>   Value.Name;
+            get =>  Value.Name;
             set { Value.Name = value;  NotifyPropertyChanged(); 
             } 
         }

@@ -166,10 +166,6 @@ namespace ColorVision.Device.Camera
             StackPanelImage.Visibility = Visibility.Collapsed;
             ButtonOpen.Visibility = Visibility.Collapsed;
 
-            ComboxCameraTakeImageMode.ItemsSource = from e1 in Enum.GetValues(typeof(TakeImageMode)).Cast<TakeImageMode>()
-                                                    select new KeyValuePair<TakeImageMode, string>(e1, e1.ToDescription());
-            ComboxCameraTakeImageMode.SelectedValue = Service.Config.TakeImageMode;
-
 
             ViewMaxChangedEvent(ViewGridManager.GetInstance().ViewMax);
             ViewGridManager.GetInstance().ViewMaxChangedEvent += ViewMaxChangedEvent;
@@ -214,14 +210,12 @@ namespace ColorVision.Device.Camera
                         ButtonOpen.Visibility = Visibility.Visible;
                         StackPanelImage.Visibility = Visibility.Collapsed;
                         ButtonOpen.Content = "打开";
-                        TakeImageModePanel.Visibility = Visibility.Visible;
                         break;
                     case DeviceStatus.Closing:
                         break;
                     case DeviceStatus.Opened:
                         StackPanelImage.Visibility = Visibility.Visible;
                         ButtonOpen.Content = "关闭";
-                        TakeImageModePanel.Visibility = Visibility.Collapsed;
                         break;
                     case DeviceStatus.Opening:
                         break;
@@ -280,33 +274,10 @@ namespace ColorVision.Device.Camera
         {
             if (sender is Button button)
             {
-                if (ComboxCameraTakeImageMode.SelectedValue is TakeImageMode takeImageMode)
+                if ((Service.DeviceStatus == DeviceStatus.Init || Service.DeviceStatus == DeviceStatus.Closed))
                 {
-                    Device.cameraMode = takeImageMode;
-                    if ((Service.DeviceStatus == DeviceStatus.Init || Service.DeviceStatus == DeviceStatus.Closed))
-                    {
-                        if (takeImageMode == TakeImageMode.Live)
-                        {
-                            Button4_Click(sender, e);
-                        }
-                        else
-                        {
-                            var msgRecord = Service.Open(Service.Config.ID, takeImageMode, (int)Service.Config.ImageBpp);
-                            Helpers.SendCommand(button, msgRecord, false);
-                        }
-                    }
-                    else
-                    {
-                        if (takeImageMode == TakeImageMode.Live)
-                        {
-                            Button4_Click(sender, e);
-                        }
-                        else
-                        {
-                            Helpers.SendCommand(button, Service.Close(), false);
-                        }
-                        ButtonOpen.Content = "关闭中";
-                    }
+                    var msgRecord = Service.Open(Service.Config.ID, Device.Config.TakeImageMode, (int)Service.Config.ImageBpp);
+                    Helpers.SendCommand(button, msgRecord, false);
                 }
             }
         }
@@ -341,13 +312,15 @@ namespace ColorVision.Device.Camera
 
         public CameraVideoControl CameraVideoControl { get; set; }
 
-        private void Button4_Click(object sender, RoutedEventArgs e)
+        bool IsVideo { get; set; }
+        private void Video_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
             {
                 CameraVideoControl??= new CameraVideoControl();
-                if (Service.DeviceStatus == DeviceStatus.Init|| Service.DeviceStatus == DeviceStatus.Closed)
+                if (!IsVideo)
                 {
+                    Service.CurrentTakeImageMode = TakeImageMode.Live;
                     button.Content = "正在获取推流";
                     string host = GlobalSetting.GetInstance().SoftwareConfig.VideoConfig.Host;
                     int port = GlobalSetting.GetInstance().SoftwareConfig.VideoConfig.Port;
@@ -358,15 +331,17 @@ namespace ColorVision.Device.Camera
                         Service.OpenVideo(host, port, Service.Config.ExpTime);
                         CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
                         CameraVideoControl.CameraVideoFrameReceived += CameraVideoFrameReceived;
+                        IsVideo = true;
                     }
                     else
                     {
+                        MessageBox.Show("视频模式下，本地端口打开失败");
                         logger.ErrorFormat("Local socket open failed.{0}:{1}", host, GlobalSetting.GetInstance().SoftwareConfig.VideoConfig.Port);
                     }
-                    //Service.Open(Service.Config.ID, TakeImageMode.Live, (int)Service.Config.ImageBpp);
                 }
                 else
                 {
+                    IsVideo = false;
                     Service.Close();
                     CameraVideoControl.Close();
                 }
@@ -545,13 +520,10 @@ namespace ColorVision.Device.Camera
 
         private void PreviewSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            if (Service.DeviceStatus == DeviceStatus.Opened)
+            if (Service.CurrentTakeImageMode == TakeImageMode.Live)
             {
-                if (Service.CurrentTakeImageMode == TakeImageMode.Live)
-                {
-                    _timer.Stop();
-                    _timer.Start();
-                }
+                _timer.Stop();
+                _timer.Start();
             }
         }
 
