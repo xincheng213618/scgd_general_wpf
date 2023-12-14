@@ -77,6 +77,8 @@ namespace ColorVision.Services.Device.Camera
 
         public CameraCfg CameraCfg { get; set; } = new CameraCfg();
         public FileServerCfg FileServerCfg { get; set; } = new FileServerCfg();
+
+        public bool IsSaveSrcPic { get; set; }
     }
     public enum ConfigType
     {

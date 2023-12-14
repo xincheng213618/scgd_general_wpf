@@ -77,7 +77,7 @@ namespace ColorVision.Services.Device.Camera
             };
 
             GridView gridView = new GridView();
-            List<string> headers = new List<string> { "序号", "批次号", "参数", "图像数据文件", "图像信息", "测量时间", "用时(毫秒)", "结果", "描述" };
+            List<string> headers = new List<string> { "序号", "批次号", "参数", "图像数据文件", "图像信息", "测量时间", "用时(时:分:秒.毫秒)", "结果", "描述" };
             List<string> bdheaders = new List<string> { "Id", "SerialNumber", "ReqParams", "ImgFileName", "ImgFrameInfo", "RecvTime", "TotalTime", "Result", "ResultDesc" };
             for (int i = 0; i < headers.Count; i++)
             {
@@ -213,7 +213,7 @@ namespace ColorVision.Services.Device.Camera
         {
             get
             {
-                return string.Format("{0}", _totalTime);
+                return string.Format("{0}", new TimeSpan(0,0,0,0,(int)_totalTime).ToString().TrimEnd('0'));
             }
         }
         public int ResultCode { get { return _resultCode; } set { _resultCode = value; NotifyPropertyChanged(); } }

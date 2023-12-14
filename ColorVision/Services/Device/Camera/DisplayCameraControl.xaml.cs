@@ -392,12 +392,14 @@ namespace ColorVision.Device.Camera
         {
             if (sender is Button button)
             {
-                if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
-                {
-                    MsgRecord msgRecord = Service.Calibration(param);
-                    Helpers.SendCommand(button, msgRecord);
+                //if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
+                //{
+                //    MsgRecord msgRecord = Service.Calibration(param);
+                //    Helpers.SendCommand(button, msgRecord);
 
-                }
+                //}
+
+                Service.UploadCalibrationFile("E:\\work\\cv\\scgd\\scgd_general\\cvCameraTCL_Modify_new\\WindowsFormsTest\\bin\\Release\\cfg\\mura.cfg",38);
             }
         }
 
