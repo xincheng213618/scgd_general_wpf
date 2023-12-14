@@ -1,10 +1,4 @@
-﻿using ColorVision.Extension;
-using ColorVision.Services.Device;
-using cvColorVision;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
+﻿using System;
 using System.Windows;
 using System.Windows.Controls;
 

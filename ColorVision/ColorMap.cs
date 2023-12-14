@@ -2,7 +2,6 @@
 using OpenCvSharp;
 using System.Drawing;
 using System.IO;
-using System.Windows.Input;
 using System.Windows.Resources;
 using System.Windows;
 

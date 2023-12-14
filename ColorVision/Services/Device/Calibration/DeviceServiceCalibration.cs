@@ -1,16 +1,7 @@
-﻿using ColorVision.Device.Camera;
-using ColorVision.Device;
-using ColorVision.Services.Device.Camera;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using ColorVision.Services.Msg;
-using System.Diagnostics;
 using ColorVision.Templates;
-using System.Windows.Documents;
-using System.ServiceModel.Channels;
 using System.Windows;
 
 namespace ColorVision.Services.Device.Calibration

@@ -8,12 +8,6 @@ using ColorVision.Flow;
 using System.Diagnostics;
 using ColorVision.Services;
 using ColorVision.Solution;
-using System.Linq;
-using System.Globalization;
-using ColorVision.Extension;
-using ColorVision.Language;
-using System.Collections.Generic;
-using System.Threading;
 
 namespace ColorVision
 {

@@ -1,5 +1,4 @@
-﻿using ColorVision.MQTT;
-using ColorVision.Services.Device;
+﻿using ColorVision.Services.Device;
 using System;
 using System.Collections.ObjectModel;
 using System.Windows;

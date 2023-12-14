@@ -1,5 +1,4 @@
 ﻿using ColorVision.MVVM;
-using ColorVision.Services;
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;

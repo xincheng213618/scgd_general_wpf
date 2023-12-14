@@ -4,8 +4,6 @@ using ColorVision.Templates;
 using cvColorVision;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace ColorVision.Services.Algorithm.Templates
 {

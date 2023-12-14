@@ -1,7 +1,5 @@
 ﻿#pragma warning disable CS8604
-using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
-using System.Collections.Generic;
 
 namespace ColorVision.Templates
 {

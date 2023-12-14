@@ -2,9 +2,7 @@
 
 using ColorVision.MySql.DAO;
 using ColorVision.Templates;
-using cvColorVision;
 using System.Collections.Generic;
-using System.ComponentModel;
 
 namespace ColorVision.Services.Algorithm.Templates
 {

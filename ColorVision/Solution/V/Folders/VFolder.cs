@@ -1,8 +1,5 @@
-﻿using ColorVision.Solution.V.Files;
-using System.IO;
-using System.Windows.Controls;
+﻿using System.Windows.Controls;
 using System.Windows.Media;
-using Wpf.Ui.Appearance;
 
 namespace ColorVision.Solution.V.Folders
 {

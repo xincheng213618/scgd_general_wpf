@@ -28,7 +28,6 @@ namespace ColorVision
                     UserName =account,
                     PerMissionMode = PerMissionMode.Administrator,
                 };
-
                 new WindowService() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show(); ;
                 return true;
             }
@@ -41,8 +40,6 @@ namespace ColorVision
                     UserName = account,
                     PerMissionMode = PerMissionMode.User,
                 };
-
-
 
                 new WindowDevices() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show(); ;
                 return true;
@@ -73,7 +70,8 @@ namespace ColorVision
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (PermissionsControl.Current.Login(Account1.Text, PasswordBox1.Password))
+            Administrator administrator = new Administrator();
+            if (administrator.CheckDatabase(Account1.Text, PasswordBox1.Password))
             {
                 this.Close();
             }

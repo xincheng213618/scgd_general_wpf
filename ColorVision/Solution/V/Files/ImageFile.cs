@@ -5,7 +5,6 @@ using System.IO;
 using System.Windows.Media;
 using ColorVision.MVVM;
 using System.Windows.Controls;
-using ColorVision.Templates;
 using System.Windows;
 using System.Threading.Tasks;
 using System.Diagnostics;

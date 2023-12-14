@@ -1,16 +1,11 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.MySql;
-using ColorVision.NativeMethods;
 using ColorVision.RC;
 using ColorVision.Services;
 using ColorVision.Themes;
 using log4net;
 using log4net.Config;
 using System;
-using System.CodeDom.Compiler;
-using System.Diagnostics;
-using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;

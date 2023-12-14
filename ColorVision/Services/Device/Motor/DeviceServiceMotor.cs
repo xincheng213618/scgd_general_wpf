@@ -1,16 +1,5 @@
-﻿using ColorVision.Device.Camera;
-using ColorVision.Device;
-using ColorVision.Services.Device.Camera;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using ColorVision.Services.Msg;
-using System.Diagnostics;
-using System.Security.Cryptography;
-using static ScottPlot.Plottable.PopulationPlot;
-using System.Threading;
 
 namespace ColorVision.Services.Device.Motor
 {

@@ -1,6 +1,4 @@
-﻿using ColorVision.Device.Camera;
-using ColorVision.MQTT;
-using ColorVision.MySql.DAO;
+﻿using ColorVision.MySql.DAO;
 using ColorVision.Themes;
 using System.Windows;
 using System.Windows.Controls;

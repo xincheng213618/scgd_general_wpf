@@ -5,8 +5,6 @@ using System.IO;
 using System.Windows.Media;
 using ColorVision.MVVM;
 using System.Windows.Controls;
-using System.Windows;
-using System.Threading.Tasks;
 
 namespace ColorVision.Solution.V.Files
 {

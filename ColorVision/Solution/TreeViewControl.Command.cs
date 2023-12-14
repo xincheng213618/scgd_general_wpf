@@ -1,7 +1,5 @@
-﻿using ColorVision.Solution;
-using ColorVision.Solution.V;
+﻿using ColorVision.Solution.V;
 using System.Windows.Input;
-using System.Windows.Media;
 
 namespace ColorVision.Solution
 {

@@ -1,5 +1,4 @@
-﻿using ColorVision.Device.Spectrum;
-using System;
+﻿using System;
 using System.Windows;
 using System.Windows.Controls;
 

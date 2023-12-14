@@ -9,17 +9,13 @@ using ColorVision.Solution;
 using ColorVision.Templates.POI.MySql;
 using ColorVision.User;
 using ColorVision.Util;
-using cvColorVision;
 using cvColorVision.Util;
-using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Threading;
 using System.Windows;
-using System.Windows.Forms.Design;
 
 namespace ColorVision.Templates
 {

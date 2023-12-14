@@ -3,8 +3,6 @@ using ColorVision.Solution;
 using ColorVision.SettingUp;
 using ColorVision.Templates;
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -17,7 +15,6 @@ using System.Diagnostics;
 using ColorVision.Util;
 using ColorVision.Services;
 using ColorVision.RC;
-using ColorVision.RecentFile;
 using ColorVision.Lincense;
 using ColorVision.Services.Msg;
 using ColorVision.Language;
@@ -25,9 +22,6 @@ using ColorVision.Themes;
 using System.Globalization;
 using System.Threading;
 using ColorVision.Extension;
-using log4net.Appender;
-using ColorVision.Services.Algorithm.Templates;
-using Panuon.WPF;
 
 namespace ColorVision
 {
