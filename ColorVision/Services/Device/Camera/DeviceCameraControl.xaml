@@ -23,6 +23,7 @@
         <Grid Margin="5">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <Grid x:Name="DeviceHeaderGrid" Grid.Row="0">
@@ -52,8 +53,15 @@
                     </DockPanel>
                 </Border>
             </Grid>
-
             <Border  Grid.Row="1"  Background="{DynamicResource RegionBrush}" CornerRadius="5" Margin="0,5,0,0">
+                <StackPanel Margin="5">
+                    <Button Content="上传校正文件"  Command="{Binding UploadCalibrationCommand}"/>
+                </StackPanel>
+            </Border>
+
+
+
+            <Border  Grid.Row="2"  Background="{DynamicResource RegionBrush}" CornerRadius="5" Margin="0,5,0,0">
                 <Grid x:Name="MQTTShow">
                     <Grid  x:Name="MQTTShowContent" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter1}}">
                         <ScrollViewer  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">

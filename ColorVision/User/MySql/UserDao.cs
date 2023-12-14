@@ -7,12 +7,6 @@ using Org.BouncyCastle.Crypto.Generators;
 
 namespace ColorVision.User.MySql
 {
-    public class t_scgd_sys_user_model
-    {
-
-    }
-
-
     public class UserDao
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseDao));
@@ -22,6 +16,20 @@ namespace ColorVision.User.MySql
         public UserDao()
         {
             MySqlControl = MySqlControl.GetInstance();
+        }
+
+
+        public void GetAllUser()
+        {
+            string query = "SELECT * FROM t_scgd_sys_user WHERE 1=1";
+
+            using var command = new MySqlCommand(query, MySqlConnection);
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                Console.WriteLine(reader.GetString(0));
+            }
+
         }
 
         public bool Checklogin(string account, string password)

@@ -8,7 +8,6 @@
         Title="UserManager" Height="450" Width="800">
     <Grid>
         <ListView>
-
         </ListView>
     </Grid>
 </Window>
