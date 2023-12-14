@@ -108,7 +108,16 @@ namespace ColorVision.Device.Camera
                     DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
                     FileDownload(pm_dl);
                     break;
+                case MQTTCameraEventEnum.Event_Calibration_UploadFile:
+                    DeviceFileUpdownParam pm_up = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
+                    FileUpload(pm_up);
+                    break;
             }
+        }
+
+        private void FileUpload(DeviceFileUpdownParam param)
+        {
+            if (!string.IsNullOrWhiteSpace(param.FileName)) netFileUtil.TaskStartUploadFile(param.IsLocal, param.ServerEndpoint, param.FileName);
         }
 
         private void FileDownload(DeviceFileUpdownParam param)
@@ -399,7 +408,7 @@ namespace ColorVision.Device.Camera
 
                 //}
 
-                Service.UploadCalibrationFile("E:\\work\\cv\\scgd\\scgd_general\\cvCameraTCL_Modify_new\\WindowsFormsTest\\bin\\Release\\cfg\\mura.cfg",38);
+                Service.UploadCalibrationFile("D:\\img\\20230407175926_1_src.tif", 38);
             }
         }
 

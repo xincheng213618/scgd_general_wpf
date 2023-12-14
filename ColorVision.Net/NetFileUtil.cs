@@ -1,12 +1,13 @@
 #pragma warning disable CS8601,CA1822
 using FileServerPlugin;
-using log4net;
 using MQTTMessageLib.FileServer;
 using NetMQ;
 using NetMQ.Sockets;
+using OpenCvSharp;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ColorVision.Net
@@ -14,7 +15,7 @@ namespace ColorVision.Net
     public delegate void NetFileHandler(object sender, NetFileEvent arg);
     public class NetFileUtil
     {
-        private static readonly ILog logger = LogManager.GetLogger(typeof(NetFileUtil));
+        private static readonly log4net.ILog logger = log4net.LogManager.GetLogger(typeof(NetFileUtil));
 
         public event NetFileHandler handler;
         private Dictionary<string, string> fileCache;
@@ -52,16 +53,19 @@ namespace ColorVision.Net
             Task t = new(() =>
             {
                 if (isLocal) OpenLocalFile(fileName, extType);
-                else if (!string.IsNullOrWhiteSpace(serverEndpoint)) DownloadFile(serverEndpoint, fileName);
+                else if (!string.IsNullOrWhiteSpace(serverEndpoint)) DownloadFile(serverEndpoint, fileName, extType);
             });
             t.Start();
         }
         public void TaskStartUploadFile(bool isLocal, string serverEndpoint, string fileName)
         {
-            Task t = new(() => { if (!isLocal && !string.IsNullOrWhiteSpace(serverEndpoint)) UploadFile(serverEndpoint, fileName); });
-            t.Start();
+            if (!isLocal && !string.IsNullOrWhiteSpace(serverEndpoint))
+            {
+                Task t = new(() => { UploadFile(serverEndpoint, fileName); });
+                t.Start();
+            }
         }
-        private void DownloadFile(string serverEndpoint, string fileName)
+        private void DownloadFile(string serverEndpoint, string fileName, FileExtType extType)
         {
             DealerSocket client = null;
             byte[] bytes = null;
@@ -92,7 +96,10 @@ namespace ColorVision.Net
             }
             finally
             {
-                CVCIEFileInfo fileInfo = new CVCIEFileInfo() { data = bytes,};
+                CVCIEFileInfo fileInfo = default;
+                if (extType == FileExtType.Src) fileInfo = new CVCIEFileInfo() { data = bytes, };
+                else if (extType == FileExtType.Raw) fileInfo = DecodeCVFile(bytes, fileName);
+                else if (extType == FileExtType.CIE) fileInfo = DecodeCVFile(bytes, fileName);
                 handler?.Invoke(this, new NetFileEvent(code, fileName, fileInfo));
             }
         }
@@ -103,14 +110,20 @@ namespace ColorVision.Net
             var message = new List<byte[]>();
             CVCIEFileInfo fileData = ReadLocalBinaryFile(fileName);
             int code = -1;
+            bool? sendResult = false;
+            string signRecv;
             if (fileData.data != null)
             {
                 message.Add(fileData.data);
                 try
                 {
+                    Thread.Sleep(1000);
+                    logger.Debug("Begin TrySendMultipartBytes ......");
                     client = new DealerSocket(serverEndpoint);
-                    client?.TrySendMultipartBytes(TimeSpan.FromMilliseconds(5000), message);
+                    client?.SendMultipartBytes(message);
+                    sendResult = client?.TryReceiveFrameString(TimeSpan.FromSeconds(30), out signRecv);
                     code = 0;
+                    logger.Debug("End TrySendMultipartBytes.");
                     client?.Close();
                     client?.Dispose();
                 }
@@ -212,14 +225,14 @@ namespace ColorVision.Net
             return ReadCVImage(fileName);
         }
 
-        private CVCIEFileInfo ReadCVImageRaw(string fileName)
+        private CVCIEFileInfo DecodeCVFile(byte[] fileData, string fileName)
         {
             UInt32 w = 0, h = 0, bpp = 0, channels = 0;
             string srcFileName;
             byte[] imgData = null;
             float[] exp;
             CVCIEFileInfo result = new CVCIEFileInfo();
-            if (CVFileUtils.GetParamFromFile(fileName, out w, out h, out bpp, out channels, out exp, out imgData, out srcFileName))
+            if (CVFileUtils.GetParamFromFile(fileData, out w, out h, out bpp, out channels, out exp, out imgData, out srcFileName))
             {
                 int Depth = CVFileUtils.GetMatDepth((int)bpp);
 
@@ -227,7 +240,7 @@ namespace ColorVision.Net
                 OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
                 OpenCvSharp.Mat dst = new OpenCvSharp.Mat();
                 src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
-                int len = (int)(w * h* channels);
+                int len = (int)(w * h * channels);
                 result.data = new byte[len];
                 Marshal.Copy(dst.Data, result.data, 0, len);
                 logger.DebugFormat("Raw src file({0}) convert rgb.", fileName);
@@ -244,6 +257,13 @@ namespace ColorVision.Net
             }
 
             return result;
+        }
+
+        private CVCIEFileInfo ReadCVImageRaw(string fileName)
+        {
+            byte[] fileData = CVFileUtils.ReadBinaryFile(fileName);
+
+            return DecodeCVFile(fileData, fileName);
         }
 
         private CVCIEFileInfo ReadCVImage(string fileName)
@@ -266,8 +286,18 @@ namespace ColorVision.Net
                         result.fileType = FileExtType.Src;
                         return result;
                     }
+                }else if (bpp == 16 || bpp == 8)
+                {
+                    result.data = imgData;
+                    result.fileType = FileExtType.Raw;
+                    result.width = (int)w;
+                    result.height = (int)h;
+                    result.bpp = (int)bpp;
+                    result.channels = (int)channels;
+                    result.depth = GetDepth(bpp);
+                    return result;
                 }
-                else
+                else if(bpp == 32)
                 {
                     int len = (int)(w * h * (bpp / 8));
                     if (channels == 3)
@@ -306,6 +336,14 @@ namespace ColorVision.Net
             }
 
             return result;
+        }
+
+        private int GetDepth(uint bpp)
+        {
+            if (bpp == 8) return 0;
+            else if(bpp == 16) return 2;
+
+            return 0;
         }
     }
 
