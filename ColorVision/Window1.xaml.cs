@@ -1,24 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using LiveChartsCore.Drawing;
 using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
-using LiveChartsCore.SkiaSharpView.Drawing.Geometries;
 using LiveChartsCore.Defaults;
-using LiveChartsCore.Kernel.Sketches;
-using System.Collections.ObjectModel;
-using NPOI.SS.Formula.Functions;
-using static cvColorVision.GCSDLL;
 
 namespace ColorVision
 {

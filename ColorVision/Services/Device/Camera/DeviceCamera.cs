@@ -1,6 +1,8 @@
-﻿using ColorVision.MySql.DAO;
+﻿using ColorVision.MVVM;
+using ColorVision.MySql.DAO;
 using ColorVision.Services.Device;
 using ColorVision.Services.Device.Camera;
+using ColorVision.Templates;
 using ColorVision.Themes;
 using System;
 using System.Windows;
@@ -37,6 +39,9 @@ namespace ColorVision.Device.Camera
         private bool _isVideo;
 
 
+        public RelayCommand UploadCalibrationCommand { get; set; }
+
+
         public DeviceCamera(SysResourceModel sysResourceModel, ServiceCamera cameraService) : base(sysResourceModel)
         {
             Service = cameraService;
@@ -56,7 +61,17 @@ namespace ColorVision.Device.Camera
 
             CameraDisplayControlLazy = new Lazy<CameraDisplayControl>(() => CameraDisplayControl??new CameraDisplayControl(this));
             EditCameraLazy =new Lazy<EditCamera>(()=>EditCamera??new EditCamera(this));
+
+            UploadCalibrationCommand = new RelayCommand(a =>
+            {
+                CalibrationUpload uploadCalibration = new CalibrationUpload(DeviceService);
+                uploadCalibration.ShowDialog();
+
+            });
         }
+
+
+
 
         public override void Dispose()
         {

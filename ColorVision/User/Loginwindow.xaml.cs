@@ -1,5 +1,6 @@
 ﻿using ColorVision.Services;
 using ColorVision.User;
+using ColorVision.User.MySql;
 using System;
 using System.Windows;
 
@@ -28,7 +29,6 @@ namespace ColorVision
                     UserName =account,
                     PerMissionMode = PerMissionMode.Administrator,
                 };
-
                 new WindowService() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show(); ;
                 return true;
             }
@@ -41,8 +41,6 @@ namespace ColorVision
                     UserName = account,
                     PerMissionMode = PerMissionMode.User,
                 };
-
-
 
                 new WindowDevices() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show(); ;
                 return true;
@@ -73,7 +71,8 @@ namespace ColorVision
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (PermissionsControl.Current.Login(Account1.Text, PasswordBox1.Password))
+            UserDao administrator = new UserDao();
+            if (administrator.Checklogin(Account1.Text, PasswordBox1.Password))
             {
                 this.Close();
             }

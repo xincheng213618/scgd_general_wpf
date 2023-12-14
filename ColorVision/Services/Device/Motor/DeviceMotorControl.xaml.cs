@@ -1,6 +1,4 @@
-﻿using ColorVision.Device.Camera;
-using ColorVision.Services;
-using cvColorVision;
+﻿using cvColorVision;
 using System;
 using System.Collections.Generic;
 using System.Linq;

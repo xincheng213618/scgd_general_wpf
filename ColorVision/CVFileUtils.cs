@@ -1,10 +1,4 @@
 ﻿#pragma warning disable CA1806,CA1833,CA1401,CA2101,CA1838,CS8603,CS8605,CA1707
-using System;
-using System.IO;
-using System.Runtime.InteropServices;
-using System.Threading.Channels;
-using System.Windows.Media.Media3D;
-
 namespace ColorVision
 {
     /*

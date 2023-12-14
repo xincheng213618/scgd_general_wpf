@@ -1,22 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Effects;
-using System.Windows.Media.Imaging;
-using ColorVision.Flow.Templates;
-using ColorVision.MVVM;
+using ColorVision.Device.Camera;
 using ColorVision.MySql.DAO;
 using cvColorVision;
-using NPOI.SS.Formula.Functions;
 
 namespace ColorVision.Templates
 {
@@ -25,6 +14,12 @@ namespace ColorVision.Templates
     /// </summary>
     public partial class CalibrationUpload : Window
     {
+        public DeviceServiceCamera DeviceServiceCamera { get; set; }
+
+        public CalibrationUpload(DeviceServiceCamera deviceServiceCamera):this()
+        {
+            DeviceServiceCamera = deviceServiceCamera;
+        }
 
         public CalibrationUpload()
         {
@@ -40,6 +35,10 @@ namespace ColorVision.Templates
                 UploadRec.Stroke = Brushes.Gray;
             };
         }
+
+
+
+
         private void Window_Initialized(object sender, EventArgs e)
         {
             CobCalibration.ItemsSource = Enum.GetValues(typeof(CalibrationType)).Cast<CalibrationType>();
@@ -89,19 +88,33 @@ namespace ColorVision.Templates
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            SysResourceModel sysResourceModel = new SysResourceModel();
-            sysResourceModel.Name = TxtCalibrationFileName.Text;
-            sysResourceModel.Value = TxtCalibrationFile.Text;
-            sysResourceModel.Type = 11;
 
-            if (CobCalibration.SelectedValue is CalibrationType CalibrationType)
+            if (DeviceServiceCamera != null)
             {
-                sysResourceModel.Type = (int)CalibrationRsourceService.GetInstance().CalibrationType2ResouceType(CalibrationType);
+                if (CobCalibration.SelectedValue is CalibrationType CalibrationType)
+                {
+                    DeviceServiceCamera.UploadCalibrationFile(TxtCalibrationFileName.Text, (int)CalibrationRsourceService.GetInstance().CalibrationType2ResouceType(CalibrationType));
+                    MessageBox.Show("上传中");
+                }
             }
-            
-            int ret = CalibrationRsourceService.GetInstance().Save(sysResourceModel);
-            if (ret == 1)
-                MessageBox.Show("上传成功");
+            else
+            {
+                SysResourceModel sysResourceModel = new SysResourceModel();
+                sysResourceModel.Name = TxtCalibrationFileName.Text;
+                sysResourceModel.Value = TxtCalibrationFile.Text;
+                sysResourceModel.Type = 11;
+
+                if (CobCalibration.SelectedValue is CalibrationType CalibrationType)
+                {
+                    sysResourceModel.Type = (int)CalibrationRsourceService.GetInstance().CalibrationType2ResouceType(CalibrationType);
+                }
+
+                int ret = CalibrationRsourceService.GetInstance().Save(sysResourceModel);
+                if (ret == 1)
+                    MessageBox.Show("上传成功");
+            }
+
+
         }
     }
 }

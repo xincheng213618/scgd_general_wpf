@@ -1,9 +1,9 @@
 ﻿using ColorVision.Themes.Controls;
-using ColorVision.User;
 using System;
+using ColorVision.MVVM;
 using System.Windows;
 
-namespace ColorVision.SettingUp
+namespace ColorVision.User
 {
     /// <summary>
     /// UserEdit.xaml 的交互逻辑
@@ -17,7 +17,6 @@ namespace ColorVision.SettingUp
         {
             UserConfig = userConfig;
             UserConfigCopy = new UserConfig();
-            //UserConfig?.CopyTo(UserConfigCopy);
             InitializeComponent();
         }
 
@@ -38,7 +37,7 @@ namespace ColorVision.SettingUp
 
         private void Ok_Click(object sender, RoutedEventArgs e)
         {
-            //UserConfigCopy.CopyTo(UserConfig);
+            UserConfigCopy.CopyTo(UserConfig);
         }
     }
 }

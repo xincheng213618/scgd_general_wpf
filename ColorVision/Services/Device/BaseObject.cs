@@ -1,7 +1,6 @@
 ﻿#pragma warning disable CS8625
 using ColorVision.Extension;
 using ColorVision.MVVM;
-using ColorVision.Services;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 

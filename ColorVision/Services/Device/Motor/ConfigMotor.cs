@@ -1,12 +1,6 @@
-﻿using ColorVision.Device;
-using ColorVision.Services.Device.Camera;
+﻿using ColorVision.Services.Device.Camera;
 using cvColorVision;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ColorVision.Services.Device.Motor
 {

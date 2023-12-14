@@ -1,11 +1,7 @@
 ﻿#pragma warning disable  CS8604,CS8631
-using ColorVision.Device;
 using ColorVision.Extension;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
-using ColorVision.Services;
-using ColorVision.Solution;
-using FlowEngineLib;
 using Newtonsoft.Json;
 using System;
 using System.IO;

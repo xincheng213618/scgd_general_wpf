@@ -4,7 +4,6 @@ using ColorVision.Device.PG;
 using ColorVision.Device.SMU;
 using ColorVision.Device.Spectrum;
 using ColorVision.Flow;
-using ColorVision.MQTT;
 using ColorVision.MySql;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
@@ -35,7 +34,6 @@ namespace ColorVision.Services
 
         public ObservableCollection<ServiceKind> Services { get; set; }
         public ObservableCollection<BaseChannel> Devices { get; set; }
-
 
         public SysResourceService ResourceService { get; set; }
 

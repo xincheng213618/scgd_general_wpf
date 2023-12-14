@@ -27,7 +27,6 @@ namespace ColorVision.Services
 
         public static T? DeserializeObject<T>(string? str)
         {
-
             try
             {
                 return JsonConvert.DeserializeObject<T>(str ?? string.Empty);

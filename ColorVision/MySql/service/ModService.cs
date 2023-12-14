@@ -2,7 +2,6 @@
 using ColorVision.Flow.Templates;
 using ColorVision.MySql.DAO;
 using ColorVision.Templates;
-using ColorVision.Templates.POI.MySql;
 
 namespace ColorVision.MySql.Service
 {

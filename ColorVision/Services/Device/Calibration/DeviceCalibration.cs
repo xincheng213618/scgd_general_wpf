@@ -1,6 +1,4 @@
-﻿using ColorVision.MQTT;
-using ColorVision.MySql.DAO;
-using NPOI.SS.Formula.Functions;
+﻿using ColorVision.MySql.DAO;
 using System.Windows.Controls;
 
 namespace ColorVision.Services.Device.Calibration

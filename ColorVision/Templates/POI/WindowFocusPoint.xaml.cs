@@ -1,9 +1,6 @@
 ﻿using ColorVision.Draw;
 using ColorVision.Extension;
 using ColorVision.MVVM;
-using ColorVision.MySql.DAO;
-using ColorVision.MySql.Service;
-using ColorVision.Templates.POI;
 using ColorVision.Templates.POI.MySql;
 using ColorVision.Util;
 using cvColorVision;
@@ -25,7 +22,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Windows.Forms.Integration;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;

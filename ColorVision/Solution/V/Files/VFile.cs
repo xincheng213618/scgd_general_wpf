@@ -1,6 +1,4 @@
-﻿using System.Windows.Controls;
-
-namespace ColorVision.Solution.V.Files
+﻿namespace ColorVision.Solution.V.Files
 {
     public class VFile : VObject
     {

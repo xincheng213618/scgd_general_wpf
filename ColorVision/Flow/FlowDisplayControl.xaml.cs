@@ -8,11 +8,9 @@ using System.IO;
 using Panuon.WPF.UI;
 using ColorVision.Services;
 using ColorVision.Themes;
-using System.Drawing;
 using System.Windows.Media;
 using ColorVision.Solution;
 using ColorVision.Flow.Templates;
-using Xceed.Wpf.Toolkit.Zoombox;
 
 namespace ColorVision.Flow
 {

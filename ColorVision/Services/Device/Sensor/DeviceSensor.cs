@@ -1,7 +1,4 @@
-﻿using ColorVision.Device.PG;
-using ColorVision.MQTT;
-using ColorVision.MySql.DAO;
-using ColorVision.Services.Device.Motor;
+﻿using ColorVision.MySql.DAO;
 using System.Windows.Controls;
 
 namespace ColorVision.Services.Device.Sensor

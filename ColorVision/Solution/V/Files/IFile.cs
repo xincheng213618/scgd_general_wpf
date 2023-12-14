@@ -1,5 +1,4 @@
 ﻿using System.Windows.Media;
-using System.Drawing;
 using System.Windows.Controls;
 
 namespace ColorVision.Solution.V.Files

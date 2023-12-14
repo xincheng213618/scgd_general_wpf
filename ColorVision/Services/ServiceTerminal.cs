@@ -1,6 +1,4 @@
-﻿using ColorVision.Device;
-using ColorVision.Device.Camera;
-using ColorVision.MQTT;
+﻿using ColorVision.Device.Camera;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.Services.Device;

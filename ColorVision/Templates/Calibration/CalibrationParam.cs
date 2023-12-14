@@ -2,7 +2,6 @@
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using cvColorVision;
-using System;
 using System.Collections.Generic;
 
 namespace ColorVision.Templates

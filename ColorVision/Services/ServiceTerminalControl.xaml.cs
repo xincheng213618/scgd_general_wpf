@@ -1,10 +1,8 @@
-﻿using ColorVision.Device;
-using ColorVision.Device.Camera;
+﻿using ColorVision.Device.Camera;
 using ColorVision.Device.FileServer;
 using ColorVision.Device.PG;
 using ColorVision.Device.SMU;
 using ColorVision.Device.Spectrum;
-using ColorVision.MQTT;
 using ColorVision.MySql.DAO;
 using ColorVision.Services.Algorithm;
 using ColorVision.Services.Device;

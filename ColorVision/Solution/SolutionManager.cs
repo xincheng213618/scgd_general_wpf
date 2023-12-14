@@ -1,15 +1,11 @@
-﻿using ColorVision.SettingUp;
-using System.Diagnostics;
-using System;
+﻿using System;
 using System.IO;
 using ColorVision.Util;
 using ColorVision.RecentFile;
-using ColorVision.MySql;
 using log4net;
 using System.Windows;
 using ColorVision.HotKey;
 using System.Windows.Input;
-using System.Security.Cryptography.X509Certificates;
 using ColorVision.Extension;
 
 namespace ColorVision.Solution

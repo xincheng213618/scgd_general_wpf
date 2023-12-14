@@ -10,17 +10,11 @@
     <Grid>
         <Image Source="/Assets/Image/uploadbg.avif"  Stretch="UniformToFill"/>
         <StackPanel Margin="5">
-            <DockPanel  Margin='2'>
-                <TextBlock Text="相机设备" MinWidth="100"/>
-                <hc:ComboBox IsEditable="True" Text=""  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
-            </DockPanel>
+
             <DockPanel  Margin='2'>
                 <TextBlock Text="校正类型" MinWidth="100"/>
                 <hc:ComboBox  x:Name="CobCalibration" IsEditable="True" Text=""  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
             </DockPanel>
-
-
-
         </StackPanel>
 
         <Border  Background="White" Height="200" CornerRadius="5" VerticalAlignment="Center" Margin="30">
@@ -31,17 +25,14 @@
                             <SolidColorBrush Color="#FAFAFA"/>
                         </Rectangle.Fill>
                     </Rectangle>
-
                     <StackPanel Margin="10">
                         <DockPanel Margin="2">
                             <Button Content="选择文件" DockPanel.Dock="Right" Click="Button_Click" />
                             <hc:TextBox x:Name="TxtCalibrationFile" IsReadOnly="True" Margin="0,0,10,0" />
                         </DockPanel>
-                        <DockPanel Margin='2'>
-                            <hc:TextBox x:Name="TxtCalibrationFileName"  Margin="0,0,10,0"  Foreground="White"/>
-                        </DockPanel>
-                    </StackPanel>
 
+                    </StackPanel>
+                    <hc:TextBox x:Name="TxtCalibrationFileName"   HorizontalAlignment="Center"  VerticalAlignment="Center" Background="Transparent" BorderThickness="0"  Foreground="Black"/>
                 </Grid>
 
 

@@ -31,7 +31,7 @@
   <ItemGroup>
     <ApplicationDefinition Remove="App.xaml" />
   </ItemGroup>
-
+	
   <ItemGroup>
     <None Remove="Assets\Image\ColorVision.ico" />
     <None Remove="Assets\Image\ColorVision.png" />
@@ -40,10 +40,10 @@
     <None Remove="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
     <None Remove="Assets\Image\pictureBox1.Image.png" />
     <None Remove="Assets\Image\uploadbg.avif" />
-    <None Remove="Templates\Calibration\uploadbg.avif" />
   </ItemGroup>  
 
   <ItemGroup>
+    <PackageReference Include="DotNetCore.NPOI" Version="1.2.3" />
     <PackageReference Include="Extended.Wpf.Toolkit" Version="4.5.1" />
     <PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.0-rc2" />
     <PackageReference Include="log4net" Version="2.0.15" />
@@ -52,7 +52,6 @@
     <PackageReference Include="MySql.Data" Version="8.1.0" />
     <PackageReference Include="MySqlConnector" Version="2.2.7" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="NPOI" Version="2.6.2" />
     <PackageReference Include="OpenCvSharp4.Extensions" Version="4.8.0.20230708" />
     <PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.8.0.20230708" />
     <PackageReference Include="ScottPlot.WPF" Version="4.1.67" />
@@ -135,7 +134,6 @@
     <Resource Include="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
     <Resource Include="Assets\Image\pictureBox1.Image.png" />
     <Resource Include="Assets\Image\uploadbg.avif" />
-    <Resource Include="Templates\Calibration\uploadbg.avif" />
   </ItemGroup>
 
 </Project>
