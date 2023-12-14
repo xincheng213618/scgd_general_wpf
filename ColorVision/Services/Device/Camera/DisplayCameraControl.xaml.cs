@@ -21,6 +21,8 @@ using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
 using log4net;
 using System.Windows.Threading;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 
 namespace ColorVision.Device.Camera
 {
@@ -167,11 +169,52 @@ namespace ColorVision.Device.Camera
             }
         }
 
+        public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; }
+
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Device;
 
-            ComboxCalibrationTemplate.ItemsSource = TemplateControl.GetInstance().CalibrationParams;
+            CalibrationParams = new ObservableCollection<TemplateModel<CalibrationParam>>();
+            CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam()) { ID = -1 });
+
+            foreach (var item in TemplateControl.GetInstance().CalibrationParams)
+                CalibrationParams.Add(item);
+            TemplateControl.GetInstance().CalibrationParams.CollectionChanged += (s, e) =>
+            {
+                switch (e.Action)
+                {
+                    case NotifyCollectionChangedAction.Add:
+                        // 处理添加项
+                        foreach (TemplateModel<CalibrationParam> newItem in e.NewItems)
+                        {
+                            CalibrationParams.Add(newItem);
+                        }
+                        break;
+                    case NotifyCollectionChangedAction.Remove:
+                        // 处理移除项
+                        foreach (TemplateModel<CalibrationParam> oldItem in e.OldItems)
+                        {
+                            CalibrationParams.Remove(oldItem);
+                        }
+                        break;
+                    case NotifyCollectionChangedAction.Replace:
+                        // 处理替换项
+                        // ...
+                        break;
+                    case NotifyCollectionChangedAction.Move:
+                        // 处理移动项
+                        // ...
+                        break;
+                    case NotifyCollectionChangedAction.Reset:
+                        // 处理清空集合
+                        CalibrationParams.Clear();
+                        break;
+                }
+            };
+
+
+            ComboxCalibrationTemplate.ItemsSource = CalibrationParams;
             ComboxCalibrationTemplate.SelectedIndex = 0;
 
             StackPanelOpen.Visibility = Visibility.Collapsed;
