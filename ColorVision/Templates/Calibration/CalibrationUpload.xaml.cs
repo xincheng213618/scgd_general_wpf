@@ -94,7 +94,6 @@ namespace ColorVision.Templates
                 if (CobCalibration.SelectedValue is CalibrationType CalibrationType)
                 {
                     DeviceServiceCamera.UploadCalibrationFile(TxtCalibrationFile.Text, (int)CalibrationRsourceService.GetInstance().CalibrationType2ResouceType(CalibrationType));
-                    MessageBox.Show("上传中");
                 }
             }
             else
