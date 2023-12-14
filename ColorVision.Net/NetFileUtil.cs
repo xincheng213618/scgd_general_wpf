@@ -6,6 +6,7 @@ using NetMQ.Sockets;
 using OpenCvSharp;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -59,7 +60,10 @@ namespace ColorVision.Net
         }
         public void TaskStartUploadFile(bool isLocal, string serverEndpoint, string fileName)
         {
-            if (!isLocal && !string.IsNullOrWhiteSpace(serverEndpoint))
+            if (isLocal)
+            {
+                handler?.Invoke(this, new NetFileEvent(0, fileName));
+            }else if (!string.IsNullOrWhiteSpace(serverEndpoint))
             {
                 Task t = new(() => { UploadFile(serverEndpoint, fileName); });
                 t.Start();
@@ -80,7 +84,7 @@ namespace ColorVision.Net
                     code = 0;
                     if (!string.IsNullOrEmpty(FileCachePath))
                     {
-                        string fullFileName = FileCachePath + "\\" + fileName;
+                        string fullFileName = FileCachePath + Path.DirectorySeparatorChar + fileName;
                         WriteLocalBinaryFile(fullFileName, bytes);
                         fileCache.Add(fileName, fullFileName);
                     }
@@ -97,9 +101,11 @@ namespace ColorVision.Net
             finally
             {
                 CVCIEFileInfo fileInfo = default;
-                if (extType == FileExtType.Src) fileInfo = new CVCIEFileInfo() { data = bytes, };
-                else if (extType == FileExtType.Raw) fileInfo = DecodeCVFile(bytes, fileName);
-                else if (extType == FileExtType.CIE) fileInfo = DecodeCVFile(bytes, fileName);
+                if (bytes != null)
+                {
+                    if (extType == FileExtType.Src) fileInfo = new CVCIEFileInfo() { data = bytes, };
+                    else if (extType == FileExtType.Raw || extType == FileExtType.CIE) fileInfo = DecodeCVFile(bytes, fileName);
+                }
                 handler?.Invoke(this, new NetFileEvent(code, fileName, fileInfo));
             }
         }
@@ -117,7 +123,6 @@ namespace ColorVision.Net
                 message.Add(fileData.data);
                 try
                 {
-                    Thread.Sleep(1000);
                     logger.Debug("Begin TrySendMultipartBytes ......");
                     client = new DealerSocket(serverEndpoint);
                     client?.SendMultipartBytes(message);
