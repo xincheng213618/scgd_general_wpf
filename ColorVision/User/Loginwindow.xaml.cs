@@ -70,8 +70,8 @@ namespace ColorVision
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            Administrator administrator = new Administrator();
-            if (administrator.CheckDatabase(Account1.Text, PasswordBox1.Password))
+            UserDao administrator = new UserDao();
+            if (administrator.Checklog(Account1.Text, PasswordBox1.Password))
             {
                 this.Close();
             }

@@ -7,19 +7,18 @@ using Org.BouncyCastle.Crypto.Generators;
 
 namespace ColorVision.User
 {
-    public class Administrator
+    public class UserDao
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseDao));
         public MySqlControl MySqlControl { get; set; }
         public MySqlConnection MySqlConnection { get => MySqlControl.MySqlConnection; }
 
-
-        public Administrator()
+        public UserDao()
         {
             MySqlControl = MySqlControl.GetInstance();
         }
 
-        public bool CheckDatabase(string account, string password)
+        public bool Checklog(string account, string password)
         {
             try
             {
@@ -31,7 +30,7 @@ namespace ColorVision.User
                     if (result != null)
                     {
                         string hashedPassword = Convert.ToString(result);
-                        return string.Equals(hashedPassword, hashedPassword, StringComparison.Ordinal);
+                        return string.Equals(password, hashedPassword, StringComparison.Ordinal);
                     }
                     return false;
                 }
