@@ -59,7 +59,10 @@ namespace ColorVision.Net
         }
         public void TaskStartUploadFile(bool isLocal, string serverEndpoint, string fileName)
         {
-            if (!isLocal && !string.IsNullOrWhiteSpace(serverEndpoint))
+            if (isLocal)
+            {
+                handler?.Invoke(this, new NetFileEvent(0, fileName));
+            }else if (!string.IsNullOrWhiteSpace(serverEndpoint))
             {
                 Task t = new(() => { UploadFile(serverEndpoint, fileName); });
                 t.Start();
