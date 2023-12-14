@@ -1,5 +1,6 @@
 ﻿using ColorVision.Services;
 using ColorVision.User;
+using ColorVision.User.MySql;
 using System;
 using System.Windows;
 
@@ -71,7 +72,7 @@ namespace ColorVision
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             UserDao administrator = new UserDao();
-            if (administrator.Checklog(Account1.Text, PasswordBox1.Password))
+            if (administrator.Checklogin(Account1.Text, PasswordBox1.Password))
             {
                 this.Close();
             }

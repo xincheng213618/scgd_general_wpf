@@ -1,4 +1,5 @@
-﻿using ColorVision.MVVM;
+﻿using ColorVision.Media;
+using ColorVision.MVVM;
 using OpenCvSharp;
 using System;
 using System.Collections.ObjectModel;

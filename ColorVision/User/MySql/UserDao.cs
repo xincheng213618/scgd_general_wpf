@@ -5,8 +5,14 @@ using log4net;
 using MySql.Data.MySqlClient;
 using Org.BouncyCastle.Crypto.Generators;
 
-namespace ColorVision.User
+namespace ColorVision.User.MySql
 {
+    public class t_scgd_sys_user_model
+    {
+
+    }
+
+
     public class UserDao
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseDao));
@@ -18,7 +24,7 @@ namespace ColorVision.User
             MySqlControl = MySqlControl.GetInstance();
         }
 
-        public bool Checklog(string account, string password)
+        public bool Checklogin(string account, string password)
         {
             try
             {
@@ -42,8 +48,5 @@ namespace ColorVision.User
                 return false;
             }
         }
-
-
-
     }
 }

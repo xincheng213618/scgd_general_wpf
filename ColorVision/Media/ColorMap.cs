@@ -5,7 +5,7 @@ using System.IO;
 using System.Windows.Resources;
 using System.Windows;
 
-namespace ColorVision
+namespace ColorVision.Media
 {
 
     public class ColorMap
@@ -62,12 +62,12 @@ namespace ColorVision
             minLut = 0;
             maxLut = 255;
         }
-        public ColorMap(String fileName,int colorMapNum)
+        public ColorMap(string fileName, int colorMapNum)
         {
             if (File.Exists(fileName))
             {
                 srcColor = Cv2.ImRead(fileName, ImreadModes.AnyColor);
-                buildCustomMap(colorMapNum,0,100);
+                buildCustomMap(colorMapNum, 0, 100);
             }
             else
             {
@@ -164,11 +164,11 @@ namespace ColorVision
             {
                 byte* rowDataSrc = (byte*)src.Ptr(row);
                 byte* rowDataDst = (byte*)dst.Ptr(row);
-                String rowData = "";
+                string rowData = "";
                 for (int col = 0; col < src.Cols; col++)
                 {
                     int idx = GetValOfColorMapIdx(rowDataSrc[col], step);
-                    rowData += String.Format("{0:D3}[{1}],", rowDataSrc[col], idx);
+                    rowData += string.Format("{0:D3}[{1}],", rowDataSrc[col], idx);
                     idx = GetColorMapIdx(idx);
                     rowDataDst[col * 3 + 0] = colorMap[idx].B;
                     rowDataDst[col * 3 + 1] = colorMap[idx].G;
@@ -180,7 +180,7 @@ namespace ColorVision
 
         private int GetColorMapIdx(int idx)
         {
-            int colorIdx = (colorMap.Length / depth) * idx;
+            int colorIdx = colorMap.Length / depth * idx;
             return colorIdx;
         }
 
@@ -200,7 +200,7 @@ namespace ColorVision
             {
                 //if (step[i] < 0.000000001f) return 0;
                 stepData = stepData + step[i];//计算出第i个等级的时候的结束像素
-                if (val>= stepData)
+                if (val >= stepData)
                 {
                     idx = idx + 1;
                 }
@@ -228,7 +228,7 @@ namespace ColorVision
             for (int i = 0; i < colorMapIdx.Length; i++)
             {
                 cmRt.Line(0, colorMapIdx[i], 50, colorMapIdx[i], Scalar.All(0));
-                String valText = String.Format("{0}", i + 1);
+                string valText = string.Format("{0}", i + 1);
                 if (i == 0)
                     cmRt.PutText(valText, new OpenCvSharp.Point(60, colorMapIdx[i] + 20), HersheyFonts.HersheyDuplex, 1, Scalar.All(0));
                 else
@@ -272,7 +272,7 @@ namespace ColorVision
             for (int i = 0; i < n; i++)
             {
                 pts[i] = startX;
-                startX = (float)(startX+ (x1 - x0) * step[i]/100);
+                startX = (float)(startX + (x1 - x0) * step[i] / 100);
             }
             return pts;
         }
@@ -318,8 +318,8 @@ namespace ColorVision
             {
                 for (int j = 0; j < src.Cols; j++)
                 {
-                    map_x.Set<float>(i, j, (float)j);
-                    map_y.Set<float>(i, j, (float)(src.Rows - 1 - i));
+                    map_x.Set(i, j, (float)j);
+                    map_y.Set(i, j, (float)(src.Rows - 1 - i));
                 }
             }
 
@@ -358,12 +358,12 @@ namespace ColorVision
 
         public void buildCustomMap(int n, double min, double max)//初始化colormap
         {
-            this.minLut = min;
-            this.maxLut = max;
+            minLut = min;
+            maxLut = max;
             double[] stepColorPer = new double[n];
             for (int i = 0; i < n; i++)
             {
-                stepColorPer[i] = (double)(100) / (n-1);
+                stepColorPer[i] = (double)100 / (n - 1);
             }
             Mat m = linspace(0, 1535, n, stepColorPer);//这里是算每一种等级实际显示的颜色
             Mat mClr = new Mat();
@@ -383,7 +383,7 @@ namespace ColorVision
                 stepPer[i] = perStepPiex;//算出每个伪彩色等级占用的像素数量，现在是用均分的，后面的再说
                 if (i == 0)
                 {
-                    stepPer[i] = stepPer[i]+startPiex;
+                    stepPer[i] = stepPer[i] + startPiex;
                 }
             }
 
