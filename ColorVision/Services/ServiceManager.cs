@@ -35,7 +35,6 @@ namespace ColorVision.Services
         public ObservableCollection<ServiceKind> Services { get; set; }
         public ObservableCollection<BaseChannel> Devices { get; set; }
 
-
         public SysResourceService ResourceService { get; set; }
 
         public UserConfig UserConfig { get; set; }
