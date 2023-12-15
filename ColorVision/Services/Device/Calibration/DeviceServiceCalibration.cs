@@ -50,44 +50,41 @@ namespace ColorVision.Services.Device.Calibration
                 Params = Params
             };
 
-            if (item.Color.Luminance.IsSelected)
-            {
-                Params.Add("CalibType", "Luminance");
-                Params.Add("CalibTypeFileName", item.Color.Luminance.FilePath);
-            }
+            //if (item.Color.Luminance.IsSelected)
+            //{
+            //    Params.Add("CalibType", "Luminance");
+            //    Params.Add("CalibTypeFileName", item.Color.Luminance.FilePath);
+            //}
 
-            if (item.Color.LumOneColor.IsSelected)
-            {
-                Params.Add("CalibType", "LumOneColor");
-                Params.Add("CalibTypeFileName", item.Color.LumOneColor.FilePath);
-            }
-            if (item.Color.LumFourColor.IsSelected)
-            {
-                Params.Add("CalibType", "LumFourColor");
-                Params.Add("CalibTypeFileName", item.Color.LumFourColor.FilePath);
-            }
-            if (item.Color.LumMultiColor.IsSelected)
-            {
-                Params.Add("CalibType", "LumMultiColor");
-                Params.Add("CalibTypeFileName", item.Color.LumMultiColor.FilePath);
-            }
+            //if (item.Color.LumOneColor.IsSelected)
+            //{
+            //    Params.Add("CalibType", "LumOneColor");
+            //    Params.Add("CalibTypeFileName", item.Color.LumOneColor.FilePath);
+            //}
+            //if (item.Color.LumFourColor.IsSelected)
+            //{
+            //    Params.Add("CalibType", "LumFourColor");
+            //    Params.Add("CalibTypeFileName", item.Color.LumFourColor.FilePath);
+            //}
+            //if (item.Color.LumMultiColor.IsSelected)
+            //{
+            //    Params.Add("CalibType", "LumMultiColor");
+            //    Params.Add("CalibTypeFileName", item.Color.LumMultiColor.FilePath);
+            //}
 
-            List<Dictionary<string, object>> List = new List<Dictionary<string, object>>
-            {
-                item.Normal.ToDictionary(),
-            };
+            //List<Dictionary<string, object>> List = new List<Dictionary<string, object>>
+            //{
+            //    item.Normal.ToDictionary(),
+            //};
 
-            List[0].Add("EXPOSURE", R);
-            List[1].Add("EXPOSURE", G);
-            List[2].Add("EXPOSURE", B);
+            //List[0].Add("EXPOSURE", R);
+            //List[1].Add("EXPOSURE", G);
+            //List[2].Add("EXPOSURE", B);
 
+            //Params.Add("List", List);
 
-
-            Params.Add("List", List);
-
-
-            Params.Add("SrcFileName", FilePath);
-            Params.Add("fname",DateTime.Now.ToString("yyyyMMddHHmmss") );
+            //Params.Add("SrcFileName", FilePath);
+            //Params.Add("fname",DateTime.Now.ToString("yyyyMMddHHmmss") );
             return PublishAsyncClient(msg);
         }
     }

@@ -302,7 +302,7 @@ namespace ColorVision.Services.Algorithm
 
             StackPanelSort.Children.Clear();
 
-            Button IDASC = new Button { Content = "按照序号正序", Tag = "IDASC", Margin = new Thickness(5) };
+            Button IDASC = new Button { Content = "按照序号降序", Tag = "IDASC", Margin = new Thickness(5) };
             IDASC.Click += (s, e) =>
             {
                 var sortedItems = GhostResults.OrderByDescending(f => f.Model.Id).ToList();
@@ -313,7 +313,7 @@ namespace ColorVision.Services.Algorithm
                 }
             };
             StackPanelSort.Children.Add(IDASC);
-            Button IDDESC = new Button { Content = "按照序号降序", Tag = "IDDESC", Margin = new Thickness(5) };
+            Button IDDESC = new Button { Content = "按照序号升序", Tag = "IDDESC", Margin = new Thickness(5) };
             IDDESC.Click += (s, e) =>
             {
                 var sortedItems = GhostResults.OrderBy(f => f.Model.Id).ToList();
@@ -325,7 +325,7 @@ namespace ColorVision.Services.Algorithm
             };
             StackPanelSort.Children.Add(IDDESC);
 
-            Button BatchESC = new Button { Content = "按照批次号正序", Tag = "BatchESC", Margin = new Thickness(5) };
+            Button BatchESC = new Button { Content = "按照批次号降序", Tag = "BatchESC", Margin = new Thickness(5) };
             BatchESC.Click += (s, e) =>
             {
                 var sortedItems = GhostResults.OrderByDescending(f => f.Batch?.Name).ToList();
@@ -338,7 +338,7 @@ namespace ColorVision.Services.Algorithm
             StackPanelSort.Children.Add(BatchESC);
 
 
-            Button BatchASC = new Button { Content = "按照批次号降序", Tag = "BatchASC", Margin = new Thickness(5) };
+            Button BatchASC = new Button { Content = "按照批次号升序", Tag = "BatchASC", Margin = new Thickness(5) };
             BatchASC.Click += (s, e) =>
             {
                 var sortedItems = GhostResults.OrderBy(f => f.Batch?.Name).ToList();
