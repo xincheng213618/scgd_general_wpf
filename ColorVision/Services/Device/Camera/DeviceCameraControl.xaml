@@ -387,12 +387,8 @@
                             </TabItem>
                             <TabItem Header="校正文件">
                                 <StackPanel Margin="5">
-                                    <StackPanel Orientation="Horizontal">
-                                        <Button Content="上传校正文件"  Command="{Binding UploadCalibrationCommand}"/>
-                                    </StackPanel>
                                     <TabControl x:Name="TabControlCalib" >
                                     </TabControl>
-                                    <StackPanel x:Name="StackPanelSort"  Orientation="Horizontal" Grid.Row="1"/>
                                 </StackPanel>
                             </TabItem>
                         </TabControl>
