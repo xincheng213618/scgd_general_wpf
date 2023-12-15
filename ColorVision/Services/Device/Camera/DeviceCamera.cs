@@ -64,14 +64,10 @@ namespace ColorVision.Device.Camera
 
             UploadCalibrationCommand = new RelayCommand(a =>
             {
-                CalibrationUpload uploadCalibration = new CalibrationUpload(DeviceService) {  WindowStartupLocation =WindowStartupLocation.CenterScreen};
+                CalibrationUpload uploadCalibration = new CalibrationUpload(DeviceService,ResouceType.DefectPoint) {  WindowStartupLocation =WindowStartupLocation.CenterScreen};
                 uploadCalibration.ShowDialog();
-
             });
         }
-
-
-
 
         public override void Dispose()
         {
@@ -80,7 +76,6 @@ namespace ColorVision.Device.Camera
             base.Dispose();
             GC.SuppressFinalize(this);
         }
-
 
         public override UserControl GetDeviceControl() => new DeviceCameraControl(this);
         public override UserControl GetDeviceInfo() => new DeviceCameraControl(this, false);

@@ -3,23 +3,56 @@ using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using cvColorVision;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Security.AccessControl;
 
 namespace ColorVision.Templates
 {
 
     public enum ResouceType
     {
+        [Description("暗噪声")]
         DarkNoise = 31,
+        [Description("缺陷点")]
         DefectPoint = 32,
+        [Description("DSNU")]
         DSNU = 33,
+        [Description("均匀场")]
         Uniformity = 34,
+        [Description("畸变")]
         Distortion = 35,
+        [Description("色偏")]
         ColorShift = 36,
+        [Description("亮度")]
         Luminance = 37,
+        [Description("单色")]
         LumOneColor = 38,
+        [Description("四色")]
         LumFourColor = 39,
+        [Description("多色")]
         LumMultiColor = 40,
     }
+
+
+    public class CalibrationRsource : ViewModelBase
+    {
+        public SysResourceModel SysResourceModel { get; set; }
+        public CalibrationRsource(SysResourceModel SysResourceModel)
+        {
+            this.SysResourceModel = SysResourceModel;
+            Name = SysResourceModel.Name;
+            FilePath = SysResourceModel.Value;
+            ID = SysResourceModel.Id.ToString();
+        }
+
+        public string Name { get; set; }
+        public string FilePath { get; set; }
+        public string ID { get; set; }
+
+        public int Pid { get; set; }
+    }
+
 
     public class CalibrationRsourceService
     {
@@ -62,6 +95,17 @@ namespace ColorVision.Templates
                 CalibrationType.ColorShift => ResouceType.ColorShift,
                 _ => ResouceType.DarkNoise,
             };
+        }
+
+        public ObservableCollection<CalibrationRsource> GetAllCalibrationRsources(ResouceType resouceType)
+        {
+            ObservableCollection<CalibrationRsource> ObservableCollections = new ObservableCollection<CalibrationRsource>();
+            var resouces = resourceDao.GetAllType((int)resouceType);
+            foreach (var item in resouces)
+            {
+                ObservableCollections.Add(new CalibrationRsource(item));
+            }
+            return ObservableCollections;
         }
 
         private void  GetCalibrationRsourceList(List<string> strings,ResouceType resouceType)

@@ -10,7 +10,6 @@
     <Grid>
         <Image Source="/Assets/Image/uploadbg.avif"  Stretch="UniformToFill"/>
         <StackPanel Margin="5">
-
             <DockPanel  Margin='2'>
                 <TextBlock Text="校正类型" MinWidth="100"/>
                 <hc:ComboBox  x:Name="CobCalibration" IsEditable="True" Text=""  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
