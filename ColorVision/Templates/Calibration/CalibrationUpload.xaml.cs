@@ -93,6 +93,7 @@ namespace ColorVision.Templates
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             DeviceServiceCamera.UploadCalibrationFile("", TxtCalibrationFile.Text, (int)ResouceType);
+            this.Close();
         }
     }
 }
