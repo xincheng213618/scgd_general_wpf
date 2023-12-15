@@ -105,7 +105,7 @@
                             <Button Content="自动曝光" Margin="0,2" Click="AutoExplose_Click" />
 
                     <DockPanel Margin="0,2">
-                        <Button  DockPanel.Dock="Right" Content="应用"  HorizontalAlignment="Right" Click="Calibration_Click" />
+                        <!-- <Button  DockPanel.Dock="Right" Content="应用"  HorizontalAlignment="Right" Click="Calibration_Click" /> -->
                         <TextBlock Text="校正：" />
                         <ComboBox x:Name="ComboxCalibrationTemplate" Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                         <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
