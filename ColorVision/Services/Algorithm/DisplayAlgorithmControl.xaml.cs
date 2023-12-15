@@ -479,7 +479,13 @@ namespace ColorVision.Services.Algorithm
                         break;
                     case "CalibrationUpload":
                         CalibrationUpload calibrationUpload = new CalibrationUpload();
+                        calibrationUpload.Owner = Window.GetWindow(this);
                         calibrationUpload.ShowDialog();
+                        break;
+                    case "FocusParm":
+                        windowTemplate = new WindowTemplate(TemplateType.PoiParam);
+                        windowTemplate.Owner = Window.GetWindow(this);
+                        windowTemplate.ShowDialog();
                         break;
                     default:
                         HandyControl.Controls.Growl.Info("开发中");
