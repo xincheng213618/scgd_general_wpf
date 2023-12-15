@@ -8,6 +8,7 @@
              xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              xmlns:resx="clr-namespace:ColorVision.Properties"
+             xmlns:calib="clr-namespace:ColorVision.Templates"
              d:DataContext="{d:DesignInstance local:DeviceCamera}"
              d:DesignHeight="400" d:DesignWidth="600" Initialized="UserControl_Initialized">
     <UserControl.Resources>
@@ -93,7 +94,7 @@
                                     </GroupBox>
                                 </StackPanel>
                             </TabItem>
-                            <TabItem Header="相机基础配置">
+                            <TabItem Header="基础配置">
                                 <StackPanel Margin="5">
                                     <GroupBox Header="相机基础配置" Margin="5">
                                         <StackPanel Margin="5">
@@ -144,7 +145,7 @@
                                 </StackPanel>
                             </TabItem>
 
-                            <TabItem Header="默认参数配置">
+                            <TabItem Header="默认参数">
                                 <StackPanel Margin="5">
                                     <GroupBox Header="默认参数配置" >
                                         <StackPanel Margin="5">
@@ -184,7 +185,7 @@
                                     </GroupBox>
                                 </StackPanel>
                             </TabItem>
-                            <TabItem Header="自动曝光参数">
+                            <TabItem Header="自动曝光">
                                 <StackPanel Margin="5">
                                     <GroupBox Header="自动曝光参数配置" >
                                         <StackPanel Margin="5">
@@ -228,7 +229,7 @@
                                     </GroupBox>
                                 </StackPanel>
                             </TabItem>
-                            <TabItem Header="滤色轮配置" Visibility="{Binding Config.IsChannelThree,Converter={StaticResource bool2VisibilityConverter}}">
+                            <TabItem Header="滤色轮" Visibility="{Binding Config.IsChannelThree,Converter={StaticResource bool2VisibilityConverter}}">
                                 <StackPanel Margin="5">
                                     <GroupBox Header="滤色轮配置"  >
                                         <StackPanel Margin="5">
@@ -339,7 +340,7 @@
 
                                 </StackPanel>
                             </TabItem>
-                            <TabItem Header="远程视频串流">
+                            <TabItem Header="视频串流">
                                 <StackPanel Margin="5">
                                     <GroupBox Header="远程视频串流配置" >
                                         <StackPanel Margin="5">
@@ -356,7 +357,7 @@
                                 </StackPanel>
 
                             </TabItem>
-                            <TabItem Header="图像文件服务">
+                            <TabItem Header="文件服务">
                                 <StackPanel Margin="5">
                                     <GroupBox Header="图像文件服务配置" >
                                         <StackPanel Margin="5">
@@ -386,9 +387,12 @@
                             </TabItem>
                             <TabItem Header="校正文件">
                                 <StackPanel Margin="5">
-                                    <Button Content="上传校正文件"  Command="{Binding UploadCalibrationCommand}"/>
-                                    <ListView>
-                                    </ListView>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Content="上传校正文件"  Command="{Binding UploadCalibrationCommand}"/>
+                                    </StackPanel>
+                                    <TabControl x:Name="TabControlCalib" >
+                                    </TabControl>
+                                    <StackPanel x:Name="StackPanelSort"  Orientation="Horizontal" Grid.Row="1"/>
                                 </StackPanel>
                             </TabItem>
                         </TabControl>

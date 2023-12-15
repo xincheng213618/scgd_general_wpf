@@ -16,10 +16,15 @@ namespace ColorVision.Templates
     {
         public DeviceServiceCamera DeviceServiceCamera { get; set; }
 
-        public CalibrationUpload(DeviceServiceCamera deviceServiceCamera):this()
+        public ResouceType ResouceType { get; set; }
+
+        public CalibrationUpload(DeviceServiceCamera deviceServiceCamera, ResouceType resouceType) :this()
         {
             DeviceServiceCamera = deviceServiceCamera;
+            ResouceType = resouceType;
         }
+
+
 
         public CalibrationUpload()
         {
@@ -88,33 +93,7 @@ namespace ColorVision.Templates
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-
-            if (DeviceServiceCamera != null)
-            {
-                if (CobCalibration.SelectedValue is CalibrationType CalibrationType)
-                {
-                    DeviceServiceCamera.UploadCalibrationFile("",TxtCalibrationFile.Text, (int)CalibrationRsourceService.GetInstance().CalibrationType2ResouceType(CalibrationType));
-                    MessageBox.Show("上传中");
-                }
-            }
-            else
-            {
-                SysResourceModel sysResourceModel = new SysResourceModel();
-                sysResourceModel.Name = TxtCalibrationFileName.Text;
-                sysResourceModel.Value = TxtCalibrationFile.Text;
-                sysResourceModel.Type = 11;
-
-                if (CobCalibration.SelectedValue is CalibrationType CalibrationType)
-                {
-                    sysResourceModel.Type = (int)CalibrationRsourceService.GetInstance().CalibrationType2ResouceType(CalibrationType);
-                }
-
-                int ret = CalibrationRsourceService.GetInstance().Save(sysResourceModel);
-                if (ret == 1)
-                    MessageBox.Show("上传成功");
-            }
-
-
+            DeviceServiceCamera.UploadCalibrationFile("", TxtCalibrationFile.Text, (int)ResouceType);
         }
     }
 }
