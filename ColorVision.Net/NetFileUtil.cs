@@ -33,7 +33,8 @@ namespace ColorVision.Net
         }
         public string GetCacheFileFullName(string fileName)
         {
-            if (fileCache.ContainsKey(fileName)) return fileCache[fileName];
+            if(string.IsNullOrEmpty(fileName)) return string.Empty;
+            else if (fileCache.ContainsKey(fileName)) return fileCache[fileName];
             else return string.Empty;
         }
 

@@ -389,7 +389,7 @@ namespace ColorVision.Device.Camera
 
         public MsgRecord GetData(double[] expTime, CalibrationParam param)
         {
-            string SerialNumber = Config.Code+"_"+ DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            string SerialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             var model = ServiceManager.GetInstance().BatchSave(SerialNumber);
             var Params = new Dictionary<string, object>() { };
             MsgSend msg;
