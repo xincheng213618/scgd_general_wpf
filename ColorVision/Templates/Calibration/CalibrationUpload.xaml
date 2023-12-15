@@ -22,17 +22,11 @@
                             <Button Content="选择文件" DockPanel.Dock="Right" Click="Button_Click" />
                             <hc:TextBox x:Name="TxtCalibrationFile" IsReadOnly="True" Margin="0,0,10,0" />
                         </DockPanel>
-
                     </StackPanel>
-                    <hc:TextBox x:Name="TxtCalibrationFileName"   HorizontalAlignment="Center"  VerticalAlignment="Center" Background="Transparent" BorderThickness="0"  Foreground="Black"/>
+                    <hc:TextBox x:Name="TxtCalibrationFileName"  HorizontalAlignment="Center"  VerticalAlignment="Center" Background="Transparent" BorderThickness="0"  Foreground="Black"/>
                 </Grid>
-
-
-
             </Border>
-
         </Border>
-
         <DockPanel Margin="0,5"  HorizontalAlignment="Center" VerticalAlignment="Bottom"> 
             <Button Content="上传"  Click="Button_Click_1"/>
         </DockPanel>
