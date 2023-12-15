@@ -46,8 +46,7 @@ namespace ColorVision.Templates
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            CobCalibration.ItemsSource = Enum.GetValues(typeof(CalibrationType)).Cast<CalibrationType>();
-            CobCalibration.SelectedIndex = 0;
+
 
         }
         private void UIElement_OnDrop(object sender, DragEventArgs e)
