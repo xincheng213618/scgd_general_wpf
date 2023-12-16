@@ -72,7 +72,25 @@ namespace ColorVision.Services.Algorithm
 
         private void View_OnCurSelectionChanged(AlgorithmResult data)
         {
-            doOpen(data.ImgFileName, FileExtType.Src);
+            //doOpen(data.ImgFileName, FileExtType.Src);
+
+            switch (data.ResultType)
+            {
+                case AlgorithmResultType.POI_XY_UV:
+                case AlgorithmResultType.POI_Y:
+                    doOpen(data.ImgFileName, FileExtType.CIE);
+                    break;
+                case AlgorithmResultType.SFR:
+                case AlgorithmResultType.MTF:
+                case AlgorithmResultType.FOV:
+                case AlgorithmResultType.Distortion:
+                case AlgorithmResultType.Ghost:
+                    //doOpenLocal(data.ImgFileName);
+                    doOpen(data.ImgFileName, FileExtType.Src);
+                    break;
+                default:
+                    break;
+            }
         }
 
         private void Service_OnAlgorithmEvent(object sender, MessageRecvArgs arg)
@@ -89,6 +107,11 @@ namespace ColorVision.Services.Algorithm
                     break;
 
                 case MQTTAlgorithmEventEnum.Event_POI_GetData:
+                case MQTTAlgorithmEventEnum.Event_FOV_GetData:
+                case MQTTAlgorithmEventEnum.Event_MTF_GetData:
+                case MQTTAlgorithmEventEnum.Event_SFR_GetData:
+                case MQTTAlgorithmEventEnum.Event_Ghost_GetData:
+                case MQTTAlgorithmEventEnum.Event_Distortion_GetData:
                     ShowResultFromDB(arg.SerialNumber, Convert.ToInt32(arg.Data.MasterId));
                     break;
                 case MQTTFileServerEventEnum.Event_File_Upload:
@@ -130,14 +153,29 @@ namespace ColorVision.Services.Algorithm
                     case AlgorithmResultType.POI_XY_UV:
                     case AlgorithmResultType.POI_Y:
                     case AlgorithmResultType.POI:
-                        ShowResultPOIFromDB(result);
+                        LoadResultPOIFromDB(result);
+                        break;
+                    case AlgorithmResultType.FOV:
+                        LoadResultFOVFromDB(result);
+                        break;
+                    case AlgorithmResultType.SFR:
+                        LoadResultSFRFromDB(result);
+                        break;
+                    case AlgorithmResultType.MTF:
+                        LoadResultMTFFromDB(result);
+                        break;
+                    case AlgorithmResultType.Ghost:
+                        LoadResultGhostFromDB(result);
+                        break;
+                    case AlgorithmResultType.Distortion:
+                        LoadResultDistortionFromDB(result);
                         break;
                 }
             }
             handler?.Close();
         }
 
-        private void ShowResultPOIFromDB(AlgResultMasterModel result)
+        private void LoadResultPOIFromDB(AlgResultMasterModel result)
         {
             var details = resultService.GetPOIByPid(result.Id);
             switch (result.ImgFileType)
@@ -165,6 +203,25 @@ namespace ColorVision.Services.Algorithm
             }
         }
 
+        private void LoadResultFOVFromDB(AlgResultMasterModel result)
+        {
+            var details = resultService.GetFOVByPid(result.Id);
+            var results = BuildFOVResult(details);
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                Device.View.FovDataDraw(result, results);
+            });
+        }
+
+        private void LoadResultSFRFromDB(AlgResultMasterModel result)
+        {
+            var details = resultService.GetSFRByPid(result.Id);
+            var results = BuildSFRResult(details);
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                Device.View.SFRDataDraw(result, results);
+            });
+        }
         private List<POIResultCIExyuv> BuildPOIResultCIExyuv(List<POIPointResultModel> details)
         {
             List<POIResultCIExyuv> results = new List<POIResultCIExyuv>();
@@ -179,7 +236,7 @@ namespace ColorVision.Services.Algorithm
             return results;
         }
 
-        private List<POIResultCIEY> BuildPOIResultCIEY(List<POIPointResultModel> details)
+        private List<MQTTMessageLib.Algorithm.POIResultCIEY> BuildPOIResultCIEY(List<POIPointResultModel> details)
         {
             List<POIResultCIEY> results = new List<POIResultCIEY>();
             foreach (POIPointResultModel detail in details)
@@ -188,6 +245,111 @@ namespace ColorVision.Services.Algorithm
                                         new POIPoint((int)detail.PoiId, -1, detail.PoiName, (POIPointTypes)detail.PoiType, (int)detail.PoiX, (int)detail.PoiY, (int)detail.PoiWidth, (int)detail.PoiHeight),
                                         JsonConvert.DeserializeObject<POIDataCIEY>(detail.Value));
 
+                results.Add(result);
+            }
+
+            return results;
+        }
+
+        private List<MQTTMessageLib.Algorithm.FOVResult> BuildFOVResult(List<AlgResultFOVModel> details)
+        {
+            List<MQTTMessageLib.Algorithm.FOVResult> results = new List<MQTTMessageLib.Algorithm.FOVResult>();
+            foreach (AlgResultFOVModel detail in details)
+            {
+                MQTTMessageLib.Algorithm.FOVResult result = new MQTTMessageLib.Algorithm.FOVResult();
+                result.Pattern = (FovPattern)detail.Pattern;
+                result.Type = (FovType)detail.Type;
+                result.Degrees = (double)detail.Degrees;
+                results.Add(result);
+            }
+
+            return results;
+        }
+        private List<MQTTMessageLib.Algorithm.SFRResult> BuildSFRResult(List<AlgResultSFRModel> details)
+        {
+            List<MQTTMessageLib.Algorithm.SFRResult> results = new List<MQTTMessageLib.Algorithm.SFRResult>();
+            foreach (AlgResultSFRModel detail in details)
+            {
+                MQTTMessageLib.Algorithm.SFRResult result = new MQTTMessageLib.Algorithm.SFRResult(JsonConvert.DeserializeObject<float[]>(detail.Pdfrequency), JsonConvert.DeserializeObject<float[]>(detail.PdomainSamplingData));
+                results.Add(result);
+            }
+
+            return results;
+        }
+        private void LoadResultMTFFromDB(AlgResultMasterModel result)
+        {
+            var details = resultService.GetMTFByPid(result.Id);
+            var results = BuildMTFResult(details);
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                Device.View.MTFDataDraw(result, results);
+            });
+        }
+
+        private List<MQTTMessageLib.Algorithm.MTFResult> BuildMTFResult(List<AlgResultMTFModel> details)
+        {
+            List<MQTTMessageLib.Algorithm.MTFResult> results = new List<MQTTMessageLib.Algorithm.MTFResult>();
+            foreach (AlgResultMTFModel detail in details)
+            {
+                MQTTMessageLib.Algorithm.MTFResult result = new MQTTMessageLib.Algorithm.MTFResult(
+                    new POIPoint((int)detail.PoiId, -1, detail.PoiName, (POIPointTypes)detail.PoiType, (int)detail.PoiX, (int)detail.PoiY, (int)detail.PoiWidth, (int)detail.PoiHeight),
+                    JsonConvert.DeserializeObject<MQTTMessageLib.Algorithm.MTFResultData>(detail.Value));
+                results.Add(result);
+            }
+
+            return results;
+        }
+
+        private void LoadResultGhostFromDB(AlgResultMasterModel result)
+        {
+            var details = resultService.GetGhostByPid(result.Id);
+            var results = BuildGhostResult(details);
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                Device.View.GhostDataDraw(result, results);
+            });
+        }
+
+        private List<MQTTMessageLib.Algorithm.GhostResult> BuildGhostResult(List<AlgResultGhostModel> details)
+        {
+            List<MQTTMessageLib.Algorithm.GhostResult> results = new List<MQTTMessageLib.Algorithm.GhostResult>();
+            foreach (AlgResultGhostModel detail in details)
+            {
+                MQTTMessageLib.Algorithm.GhostResult result = new MQTTMessageLib.Algorithm.GhostResult();
+                result.Rows = detail.Rows;
+                result.Cols = detail.Cols;
+                result.LedCenters = JsonConvert.DeserializeObject<PointFloat[]>(detail.LEDCenters);
+                result.LEDBlobGray = JsonConvert.DeserializeObject<float[]>(detail.LEDBlobGray);
+                result.LEDPixels = JsonConvert.DeserializeObject<List<PointInt[]>>(detail.LEDPixels);
+                result.GhostPixels = JsonConvert.DeserializeObject<List<PointInt[]>>(detail.GhostPixels);
+                result.ghostAverageGray = JsonConvert.DeserializeObject<float[]>(detail.GhostAverageGray);
+                result.singleLedPixelNum = JsonConvert.DeserializeObject<int[]>(detail.SingleLedPixelNum);
+                result.singleGhostPixelNum = JsonConvert.DeserializeObject<int[]>(detail.SingleGhostPixelNum);
+                results.Add(result);
+            }
+
+            return results;
+        }
+
+        private void LoadResultDistortionFromDB(AlgResultMasterModel result)
+        {
+            var details = resultService.GetDistortionByPid(result.Id);
+            var results = BuildDistortionResult(details);
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                Device.View.DistortionDataDraw(result, results);
+            });
+        }
+
+        private List<MQTTMessageLib.Algorithm.DistortionResult> BuildDistortionResult(List<AlgResultDistortionModel> details)
+        {
+            List<MQTTMessageLib.Algorithm.DistortionResult> results = new List<MQTTMessageLib.Algorithm.DistortionResult>();
+            foreach (AlgResultDistortionModel detail in details)
+            {
+                MQTTMessageLib.Algorithm.DistortionResult result =
+                    new MQTTMessageLib.Algorithm.DistortionResult(JsonConvert.DeserializeObject<PointFloat[]>(detail.FinalPoints),
+                    new PointDouble(detail.PointX, detail.PointY), detail.MaxRatio,
+                    detail.RotationAngle, detail.Type, detail.LayoutType, detail.SlopeType, detail.CornerType);
                 results.Add(result);
             }
 

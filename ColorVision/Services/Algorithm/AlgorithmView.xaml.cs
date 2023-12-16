@@ -133,6 +133,198 @@ namespace ColorVision.Services.Algorithm
             this.Y = data.Y;
         }
     }
+    public class MTFResultData : PoiResultData
+    {
+        public double Articulation { get { return _Articulation; } set { _Articulation = value; NotifyPropertyChanged(); } }
+
+        private double _Articulation;
+
+        public MTFResultData(POIPoint point, double articulation)
+        {
+            this.Point = point;
+            this.Articulation = articulation;
+        }
+    }
+
+    public class FOVResultData : ViewModelBase
+    {
+        public FovPattern Pattern { get; set; }
+
+        public FovType Type { get; set; }
+
+        public double Degrees { get; set; }
+
+        public FOVResultData(FovPattern pattern, FovType type, double degrees)
+        {
+            Pattern = pattern;
+            Type = type;
+            Degrees = degrees;
+        }
+    }
+
+    public class SFRResultData : ViewModelBase
+    {
+        public SFRResultData(float pdfrequency, float pdomainSamplingData)
+        {
+            this.pdfrequency = pdfrequency;
+            this.pdomainSamplingData = pdomainSamplingData;
+        }
+
+        public float pdfrequency { get; set; }
+
+        public float pdomainSamplingData { get; set; }
+    }
+
+    public class DistortionResultData : ViewModelBase
+    {
+        public DistortionResultData(DistortionType disType, DisSlopeType slopeType, DisLayoutType layoutType, DisCornerType cornerType, double maxRatio, PointFloat[] finalPoint)
+        {
+            DisType = disType;
+            SlopeType = slopeType;
+            LayoutType = layoutType;
+            CornerType = cornerType;
+            MaxRatio = maxRatio;
+            FinalPoints = finalPoint;
+        }
+
+        public DistortionType DisType { get; set; }
+        public string DisTypeDesc
+        {
+            get
+            {
+                string result = DisType.ToString();
+                switch (DisType)
+                {
+                    case DistortionType.OpticsDist:
+                        result = DisType.ToString();
+                        break;
+                    case DistortionType.TVDistH:
+                        result = DisType.ToString();
+                        break;
+                    case DistortionType.TVDistV:
+                        result = DisType.ToString();
+                        break;
+                    default:
+                        result = DisType.ToString();
+                        break;
+                }
+                return result;
+            }
+        }
+        public DisSlopeType SlopeType { get; set; }
+
+        public string SlopeTypeDesc
+        {
+            get
+            {
+                string result = SlopeType.ToString();
+                switch (SlopeType)
+                {
+                    case DisSlopeType.CenterPoint:
+                        result = "中心九点";
+                        break;
+                    case DisSlopeType.lb_Variance:
+                        result = "方差去除";
+                        break;
+                    default:
+                        result = SlopeType.ToString();
+                        break;
+                }
+                return result;
+            }
+        }
+        public DisLayoutType LayoutType { get; set; }
+
+        public string LayoutTypeDesc
+        {
+            get
+            {
+                string result = LayoutType.ToString();
+                switch (LayoutType)
+                {
+                    case DisLayoutType.SlopeIN:
+                        result = "斜率布点";
+                        break;
+                    case DisLayoutType.SlopeOUT:
+                        result = "非斜率布点";
+                        break;
+                    default:
+                        result = LayoutType.ToString();
+                        break;
+                }
+                return result;
+            }
+        }
+        public DisCornerType CornerType { get; set; }
+
+        public string CornerTypeDesc
+        {
+            get
+            {
+                string result = CornerType.ToString();
+                switch (CornerType)
+                {
+                    case DisCornerType.Circlepoint:
+                        result = "圆点";
+                        break;
+                    case DisCornerType.Checkerboard:
+                        result = "棋盘格";
+                        break;
+                    default:
+                        result = CornerType.ToString();
+                        break;
+                }
+                return result;
+            }
+        }
+        public double MaxRatio { get; set; }
+        public PointFloat[] FinalPoints { get; set; }
+    }
+    public class GhostPointResultData : ViewModelBase
+    {
+        public GhostPointResultData(PointFloat centerPoint, float ledBlobGray, float ghostAvrGray)
+        {
+            CenterPoint = centerPoint;
+            LedBlobGray = ledBlobGray;
+            GhostAvrGray = ghostAvrGray;
+        }
+
+        public PointFloat CenterPoint { get; set; }
+        public string CenterPointDis
+        {
+            get
+            {
+                return string.Format("{0},{1}", CenterPoint.X, CenterPoint.Y);
+            }
+        }
+        public float LedBlobGray { get; set; }
+        public float GhostAvrGray { get; set; }
+    }
+    public class GhostResultData : ViewModelBase
+    {
+        public GhostResultData(int rows, int cols, string ghostPixelNum, string ghostPixels, string ledPixelNum, string ledPixels, string ledCenters, string ledBlobGray, string ghostAvrGray)
+        {
+            Rows = rows;
+            Cols = cols;
+            GhostPixelNum = ghostPixelNum;
+            GhostPixels = ghostPixels;
+            LedPixelNum = ledPixelNum;
+            LedPixels = ledPixels;
+            LedCenters = ledCenters;
+            LedBlobGray = ledBlobGray;
+            GhostAvrGray = ghostAvrGray;
+        }
+
+        public int Rows { get; set; }
+        public int Cols { get; set; }
+        public string GhostPixelNum { get; set; }
+        public string GhostPixels { get; set; }
+        public string LedPixelNum { get; set; }
+        public string LedPixels { get; set; }
+        public string LedCenters { get; set; }
+        public string LedBlobGray { get; set; }
+        public string GhostAvrGray { get; set; }
+    }
     public class AlgorithmResult : ViewModelBase
     {
         private int _Id;
@@ -145,6 +337,11 @@ namespace ColorVision.Services.Algorithm
         private long _totalTime;
         private string _resultDesc;
         private ObservableCollection<PoiResultData> _PoiData;
+        private ObservableCollection<FOVResultData> _FOVData;
+        private ObservableCollection<MTFResultData> _MTFData;
+        private ObservableCollection<SFRResultData> _SFRData;
+        private ObservableCollection<GhostResultData> _GhostData;
+        private ObservableCollection<DistortionResultData> _DistortionData;
 
         public int Id { get { return _Id; } set { _Id = value; NotifyPropertyChanged(); } }
         public string SerialNumber { get { return _SerialNumber; } set { _SerialNumber = value; NotifyPropertyChanged(); } }
@@ -203,9 +400,20 @@ namespace ColorVision.Services.Algorithm
         public int ResultCode { get { return _resultCode; } set { _resultCode = value; NotifyPropertyChanged(); } }
         public string ResultDesc { get { return _resultDesc; } set { _resultDesc = value; NotifyPropertyChanged(); } }
         public ObservableCollection<PoiResultData> PoiData { get { return _PoiData; } set { _PoiData = value; NotifyPropertyChanged(); } }
+        public ObservableCollection<FOVResultData> FOVData { get { return _FOVData; } set { _FOVData = value; NotifyPropertyChanged(); } }
+        public ObservableCollection<MTFResultData> MTFData { get { return _MTFData; } set { _MTFData = value; NotifyPropertyChanged(); } }
+        public ObservableCollection<SFRResultData> SFRData { get { return _SFRData; } set { _SFRData = value; NotifyPropertyChanged(); } }
+        public ObservableCollection<DistortionResultData> DistortionData { get { return _DistortionData; } set { _DistortionData = value; NotifyPropertyChanged(); } }
+        public ObservableCollection<GhostResultData> GhostData { get { return _GhostData; } set { _GhostData = value; NotifyPropertyChanged(); } }
+
         public AlgorithmResult()
         {
             this._PoiData = new ObservableCollection<PoiResultData>();
+            this._FOVData = new ObservableCollection<FOVResultData>();
+            this._MTFData = new ObservableCollection<MTFResultData>();
+            this._SFRData = new ObservableCollection<SFRResultData>();
+            this._GhostData = new ObservableCollection<GhostResultData>();
+            this._DistortionData = new ObservableCollection<DistortionResultData>();
         }
 
         public AlgorithmResult(int id, string serialNumber, string imgFileName, string pOITemplateName, string recvTime, AlgorithmResultType resultType, int? resultCode, string resultDesc, long totalTime = 0) : this()
@@ -319,11 +527,67 @@ namespace ColorVision.Services.Algorithm
             }
             listViewY.View = gridViewY;
             listViewY.ItemsSource = PoiYResultDatas;
+            //SFR
+            List<string> bdheadersSFR = new List<string> { "pdfrequency", "pdomainSamplingData" };
+            List<string> headersSFR = new List<string> { "pdfrequency", "pdomainSamplingData" };
+            GridView gridViewSFR = new GridView();
+            for (int i = 0; i < headersSFR.Count; i++)
+            {
+                gridViewSFR.Columns.Add(new GridViewColumn() { Header = headersSFR[i], DisplayMemberBinding = new Binding(bdheadersSFR[i]) });
+            }
+            listViewSFR.View = gridViewSFR;
+            listViewSFR.ItemsSource = SFRResultDatas;
+            //FOV
+            List<string> bdheadersFOV = new List<string> { "Pattern", "Type", "Degrees" };
+            List<string> headersFOV = new List<string> { "Pattern", "Type", "Degrees" };
+            GridView gridViewFOV = new GridView();
+            for (int i = 0; i < headersFOV.Count; i++)
+            {
+                gridViewFOV.Columns.Add(new GridViewColumn() { Header = headersFOV[i], DisplayMemberBinding = new Binding(bdheadersFOV[i]) });
+            }
+            listViewFOV.View = gridViewFOV;
+            listViewFOV.ItemsSource = FOVResultDatas;
+            //MTF
+            List<string> bdheadersMTF = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "Articulation" };
+            List<string> headersMTF = new List<string> { "名称", "位置", "大小", "形状", "MTF" };
+            GridView gridViewMTF = new GridView();
+            for (int i = 0; i < headersMTF.Count; i++)
+            {
+                gridViewMTF.Columns.Add(new GridViewColumn() { Header = headersMTF[i], DisplayMemberBinding = new Binding(bdheadersMTF[i]) });
+            }
+            listViewMTF.View = gridViewMTF;
+            listViewMTF.ItemsSource = MTFResultDatas;
+            //Ghost
+            List<string> bdheadersGhost = new List<string> { "CenterPointDis", "LedBlobGray", "GhostAvrGray" };
+            List<string> headersGhost = new List<string> { "质心坐标", "光斑灰度", "鬼影灰度" };
+            GridView gridViewGhost = new GridView();
+            for (int i = 0; i < headersGhost.Count; i++)
+            {
+                gridViewGhost.Columns.Add(new GridViewColumn() { Header = headersGhost[i], DisplayMemberBinding = new Binding(bdheadersGhost[i]) });
+            }
+            listViewGhost.View = gridViewGhost;
+            listViewGhost.ItemsSource = GhostPointResultDatas;
+            //Distortion
+            List<string> bdheadersDis = new List<string> { "DisTypeDesc", "SlopeTypeDesc", "LayoutTypeDesc", "CornerTypeDesc", "MaxRatio" };
+            List<string> headersDis = new List<string> { "类型", "斜率", "布点", "角点", "畸变率" };
+            GridView gridViewDis = new GridView();
+            for (int i = 0; i < headersDis.Count; i++)
+            {
+                gridViewDis.Columns.Add(new GridViewColumn() { Header = headersDis[i], DisplayMemberBinding = new Binding(bdheadersDis[i]) });
+            }
+            listViewDistortion.View = gridViewDis;
+            listViewDistortion.ItemsSource = DistortionResultDatas;
         }
 
         public ObservableCollection<PoiResultData> PoiResultDatas { get; set; } = new ObservableCollection<PoiResultData>();
         public ObservableCollection<PoiResultData> PoiYResultDatas { get; set; } = new ObservableCollection<PoiResultData>();
-        public ObservableCollection<PoiResult> PoiResults { get; set; } = new ObservableCollection<PoiResult>();
+        //public ObservableCollection<PoiResult> PoiResults { get; set; } = new ObservableCollection<PoiResult>();
+        public ObservableCollection<FOVResultData> FOVResultDatas { get; set; } = new ObservableCollection<FOVResultData>();
+        public ObservableCollection<PoiResultData> MTFResultDatas { get; set; } = new ObservableCollection<PoiResultData>();
+        public ObservableCollection<GhostResultData> GhostResultDatas { get; set; } = new ObservableCollection<GhostResultData>();
+        public ObservableCollection<GhostPointResultData> GhostPointResultDatas { get; set; } = new ObservableCollection<GhostPointResultData>();
+        public ObservableCollection<SFRResultData> SFRResultDatas { get; set; } = new ObservableCollection<SFRResultData>();
+        public ObservableCollection<DistortionResultData> DistortionResultDatas { get; set; } = new ObservableCollection<DistortionResultData>();
         public Dictionary<string, AlgorithmResult> resultDis { get; set; } = new Dictionary<string, AlgorithmResult>();
         public ObservableCollection<AlgorithmResult> AlgResults { get; set; } = new ObservableCollection<AlgorithmResult>();
 
@@ -409,6 +673,90 @@ namespace ColorVision.Services.Algorithm
                 {
                     PoiResultCIExyuvData resultData = new PoiResultCIExyuvData(item.Point, item.Data);
                     result.PoiData.Add(resultData);
+                }
+                RefreshResultListView();
+            }
+        }
+
+        public void FovDataDraw(AlgResultMasterModel result, List<MQTTMessageLib.Algorithm.FOVResult> results)
+        {
+            FovDataDraw(result.Id.ToString(), result.BatchCode, result.ImgFile, result.TName, results, result.ResultCode, result.Result, result.TotalTime);
+        }
+        public void FovDataDraw(string key, string serialNumber, string imgFileName, string templateName, List<MQTTMessageLib.Algorithm.FOVResult> results, int? resultCode, string resultDesc, long totalTime)
+        {
+            if (!resultDis.ContainsKey(key))
+            {
+                AlgorithmResult result = new AlgorithmResult(AlgResults.Count + 1, serialNumber, imgFileName, templateName, DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss"), AlgorithmResultType.FOV, resultCode, resultDesc, totalTime);
+                AlgResults.Add(result);
+                resultDis[key] = result;
+                foreach (var item in results)
+                {
+                    FOVResultData resultData = new FOVResultData(item.Pattern, item.Type, item.Degrees);
+                    result.FOVData.Add(resultData);
+                }
+                RefreshResultListView();
+            }
+        }
+
+        public void MTFDataDraw(AlgResultMasterModel result, List<MQTTMessageLib.Algorithm.MTFResult> results)
+        {
+            MTFDataDraw(result.Id.ToString(), result.BatchCode, result.ImgFile, result.TName, results, result.ResultCode, result.Result, result.TotalTime);
+        }
+        public void MTFDataDraw(string key, string serialNumber, string imgFileName, string templateName, List<MQTTMessageLib.Algorithm.MTFResult> results, int? resultCode, string resultDesc, long totalTime)
+        {
+            if (!resultDis.ContainsKey(key))
+            {
+                AlgorithmResult result = new AlgorithmResult(AlgResults.Count + 1, serialNumber, imgFileName, templateName, DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss"), AlgorithmResultType.MTF, resultCode, resultDesc, totalTime);
+                AlgResults.Add(result);
+                resultDis[key] = result;
+                foreach (var item in results)
+                {
+                    MTFResultData resultData = new MTFResultData(item.Point, item.Data.Articulation);
+                    result.MTFData.Add(resultData);
+                }
+                RefreshResultListView();
+            }
+        }
+
+        public void SFRDataDraw(AlgResultMasterModel result, List<MQTTMessageLib.Algorithm.SFRResult> results)
+        {
+            SFRDataDraw(result.Id.ToString(), result.BatchCode, result.ImgFile, result.TName, results, result.ResultCode, result.Result, result.TotalTime);
+        }
+        public void SFRDataDraw(string key, string serialNumber, string imgFileName, string templateName, List<MQTTMessageLib.Algorithm.SFRResult> results, int? resultCode, string resultDesc, long totalTime)
+        {
+            if (!resultDis.ContainsKey(key))
+            {
+                AlgorithmResult result = new AlgorithmResult(AlgResults.Count + 1, serialNumber, imgFileName, templateName, DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss"), AlgorithmResultType.SFR, resultCode, resultDesc, totalTime);
+                AlgResults.Add(result);
+                resultDis[key] = result;
+                foreach (var item in results)
+                {
+                    for (int i = 0; i < item.pdfrequency.Length; i++)
+                    {
+                        SFRResultData resultData = new SFRResultData(item.pdfrequency[i], item.pdomainSamplingData[i]);
+                        result.SFRData.Add(resultData);
+                    }
+                }
+                RefreshResultListView();
+            }
+        }
+
+        public void DistortionDataDraw(AlgResultMasterModel result, List<MQTTMessageLib.Algorithm.DistortionResult> results)
+        {
+            DistortionDataDraw(result.Id.ToString(), result.BatchCode, result.ImgFile, result.TName, results, result.ResultCode, result.Result, result.TotalTime);
+        }
+
+        public void DistortionDataDraw(string key, string serialNumber, string imgFileName, string templateName, List<MQTTMessageLib.Algorithm.DistortionResult> results, int? resultCode, string resultDesc, long totalTime)
+        {
+            if (!resultDis.ContainsKey(key))
+            {
+                AlgorithmResult result = new AlgorithmResult(AlgResults.Count + 1, serialNumber, imgFileName, templateName, DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss"), AlgorithmResultType.Distortion, resultCode, resultDesc, totalTime);
+                AlgResults.Add(result);
+                resultDis[key] = result;
+                foreach (var item in results)
+                {
+                    DistortionResultData resultData = new DistortionResultData(item.distortionType, item.slopeType, item.layoutType, item.cornerType, item.maxErrorRatio, item.finalPoints);
+                    result.DistortionData.Add(resultData);
                 }
                 RefreshResultListView();
             }
