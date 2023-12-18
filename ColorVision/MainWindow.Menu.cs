@@ -129,7 +129,7 @@ namespace ColorVision
                         windowTemplate.ShowDialog();
                         break;
                     case "CalibrationUpload":
-                        CalibrationUpload calibrationUpload = new CalibrationUpload();
+                        CalibrationUploadWindow calibrationUpload = new CalibrationUploadWindow();
                         calibrationUpload.ShowDialog();
                         break;
                     default:

@@ -80,27 +80,8 @@ namespace ColorVision.Device.Camera
                 StackPanelSort.Children.Clear();
                 stackPanel.Children.Insert(0, StackPanelSort);
 
-                Button button = new Button() { Content = "上传校正文件", Margin = new Thickness(5) };
-                button.Click += (s, e) =>
-                {
-                    CalibrationUpload uploadCalibration = new CalibrationUpload(Service, item) { WindowStartupLocation = WindowStartupLocation.CenterScreen };
-                    uploadCalibration.ShowDialog();
-                };
-                StackPanelSort.Children.Add(button);
 
-
-                Button IDASC = new Button { Content = "按照序号降序", Tag = "IDASC", Margin = new Thickness(5) };
-                IDASC.Click += (s, e) =>
-                {
-                    var sortedItems = CalibrationRsources.OrderByDescending(f => f.ID).ToList();
-                    CalibrationRsources.Clear();
-                    foreach (var item in sortedItems)
-                    {
-                        CalibrationRsources.Add(item);
-                    }
-                };
-                StackPanelSort.Children.Add(IDASC);
-                Button IDDESC = new Button { Content = "按照序号升序", Tag = "IDDESC", Margin = new Thickness(5) };
+                RadioButton IDDESC = new RadioButton { Content = "按照序号升序", Tag = "IDDESC", Margin = new Thickness(5) ,IsChecked =true};
                 IDDESC.Click += (s, e) =>
                 {
                     var sortedItems = CalibrationRsources.OrderBy(f => f.ID).ToList();
@@ -112,7 +93,33 @@ namespace ColorVision.Device.Camera
                 };
                 StackPanelSort.Children.Add(IDDESC);
 
-                Button BatchESC = new Button { Content = "按照批次号降序", Tag = "BatchESC", Margin = new Thickness(5) };
+                RadioButton IDASC = new RadioButton { Content = "按照序号降序", Tag = "IDASC", Margin = new Thickness(5) };
+                IDASC.Click += (s, e) =>
+                {
+                    var sortedItems = CalibrationRsources.OrderByDescending(f => f.ID).ToList();
+                    CalibrationRsources.Clear();
+                    foreach (var item in sortedItems)
+                    {
+                        CalibrationRsources.Add(item);
+                    }
+                };
+                StackPanelSort.Children.Add(IDASC);
+
+
+                RadioButton BatchASC = new RadioButton { Content = "按照批次号升序", Tag = "BatchASC", Margin = new Thickness(5) };
+                BatchASC.Click += (s, e) =>
+                {
+                    var sortedItems = CalibrationRsources.OrderBy(f => f.Name).ToList();
+                    CalibrationRsources.Clear();
+                    foreach (var item in sortedItems)
+                    {
+                        CalibrationRsources.Add(item);
+                    }
+                };
+                StackPanelSort.Children.Add(BatchASC);
+
+
+                RadioButton BatchESC = new RadioButton { Content = "按照批次号降序", Tag = "BatchESC", Margin = new Thickness(5) };
                 BatchESC.Click += (s, e) =>
                 {
                     var sortedItems = CalibrationRsources.OrderByDescending(f => f.Name).ToList();
@@ -125,18 +132,14 @@ namespace ColorVision.Device.Camera
                 StackPanelSort.Children.Add(BatchESC);
 
 
-                Button BatchASC = new Button { Content = "按照批次号升序", Tag = "BatchASC", Margin = new Thickness(5) };
-                BatchASC.Click += (s, e) =>
-                {
-                    var sortedItems = CalibrationRsources.OrderBy(f => f.Name).ToList();
-                    CalibrationRsources.Clear();
-                    foreach (var item in sortedItems)
-                    {
-                        CalibrationRsources.Add(item);
-                    }
-                };
-                StackPanelSort.Children.Add(BatchASC);
 
+                Button button = new Button() { Content = "上传校正文件", Margin = new Thickness(5) };
+                button.Click += (s, e) =>
+                {
+                    CalibrationUploadWindow uploadCalibration = new CalibrationUploadWindow(Service, item) { WindowStartupLocation = WindowStartupLocation.CenterScreen };
+                    uploadCalibration.ShowDialog();
+                };
+                StackPanelSort.Children.Add(button);
 
                 TabControlCalib.Items.Add(tabItem);
             }
