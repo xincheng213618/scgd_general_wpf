@@ -42,10 +42,13 @@ namespace ColorVision.Templates
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            if (DeviceServiceCamera != null)
+            if (string.IsNullOrEmpty(Upload1.UploadFileName)|| string.IsNullOrEmpty(Upload1.UploadFilePath))
             {
-                DeviceServiceCamera.UploadCalibrationFile(Upload1.UploadFileName, Upload1.UploadFilePath, (int)ResouceType);
+                MessageBox.Show("您未选择文件");
+                this.Close();
+                return;
             }
+            DeviceServiceCamera?.UploadCalibrationFile(Upload1.UploadFileName, Upload1.UploadFilePath, (int)ResouceType);
             this.Close();
         }
     }
