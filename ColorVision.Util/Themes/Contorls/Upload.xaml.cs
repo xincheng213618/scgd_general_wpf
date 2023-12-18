@@ -4,7 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.Templates
+namespace ColorVision.Themes.Controls
 {
     /// <summary>
     /// Upload.xaml 的交互逻辑
