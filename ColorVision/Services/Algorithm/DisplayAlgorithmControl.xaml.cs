@@ -508,7 +508,7 @@ namespace ColorVision.Services.Algorithm
             }
 
             string sn = null;
-            var pm = TemplateControl.GetInstance().SFRParams[ComboxGhostTemplate.SelectedIndex].Value;
+            var pm = TemplateControl.GetInstance().GhostParams[ComboxGhostTemplate.SelectedIndex].Value;
             var msg = Service.Ghost(ImageFile.Text, pm.ID, ComboxGhostTemplate.Text, sn);
             Helpers.SendCommand(msg, "Ghost");
         }
