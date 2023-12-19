@@ -50,5 +50,16 @@ namespace ColorVision.Services
                 firstNode.Focus();
             }
         }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            ColorVision.Util.Tool.ExecuteCommandAsAdmin("net stop RegistrationCenterService");
+            ColorVision.Util.Tool.ExecuteCommandAsAdmin("net stop CVMainService_x64");
+
+            // ... 可能需要等待服务完全停止 ...
+
+            ColorVision.Util.Tool.ExecuteCommandAsAdmin("net start RegistrationCenterService");
+            ColorVision.Util.Tool.ExecuteCommandAsAdmin("net start CVMainService_x64");
+        }
     }
 }

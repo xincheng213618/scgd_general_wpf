@@ -27,6 +27,28 @@ namespace ColorVision.Util
             }
         }
 
+        public static void ExecuteCommandAsAdmin(string command)
+        {
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.UseShellExecute = true;
+            startInfo.WorkingDirectory = @"C:\Windows\System32";
+            startInfo.FileName = "cmd.exe";
+            startInfo.Verb = "runas"; // 请求管理员权限
+            startInfo.Arguments = "/c " + command; // 创建文件夹的命令
+            startInfo.WindowStyle = ProcessWindowStyle.Hidden; // 隐藏命令行窗口
+
+
+            try
+            {
+                Process process = Process.Start(startInfo);
+                process?.WaitForExit(); 
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+
 
         public static bool CreateDirectory(string folderPath)
         {
