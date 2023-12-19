@@ -13,6 +13,11 @@ namespace ColorVision.MySql.Service
         private POIPointResultDao poiPointResultDao;
         private MeasureImgResultDao measureImgResultDao;
 
+        private AlgResultFOVDao FOVResultDao;
+        private AlgResultSFRDao SFRResultDao;
+        private AlgResultMTFDao MTFResultDao;
+        private AlgResultGhostDao GhostResultDao;
+        private AlgResultDistortionDao DisResultDao;
         public ResultService()
         {
             spectumDao = new SpectumResultDao();
@@ -21,6 +26,12 @@ namespace ColorVision.MySql.Service
             poiPointResultDao = new POIPointResultDao();
             algResultMasterDao = new AlgResultMasterDao();
             measureImgResultDao = new MeasureImgResultDao();
+
+            FOVResultDao = new AlgResultFOVDao();
+            SFRResultDao = new AlgResultSFRDao();
+            MTFResultDao = new AlgResultMTFDao();
+            GhostResultDao = new AlgResultGhostDao();
+            DisResultDao = new AlgResultDistortionDao();
         }
 
         internal int SpectumDeleteById(int id)
@@ -80,5 +91,14 @@ namespace ColorVision.MySql.Service
         {
             return measureImgResultDao.GetAllByBatchCode(serialNumber);
         }
+
+        public List<AlgResultFOVModel> GetFOVByPid(int pid) => FOVResultDao.GetAllByPid(pid);
+
+        public List<AlgResultSFRModel> GetSFRByPid(int pid) => SFRResultDao.GetAllByPid(pid);
+
+        public List<AlgResultMTFModel> GetMTFByPid(int pid) => MTFResultDao.GetAllByPid(pid);
+        public List<AlgResultGhostModel> GetGhostByPid(int pid) => GhostResultDao.GetAllByPid(pid);
+
+        public List<AlgResultDistortionModel> GetDistortionByPid(int pid) => DisResultDao.GetAllByPid(pid);
     }
 }
