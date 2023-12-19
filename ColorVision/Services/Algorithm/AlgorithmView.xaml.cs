@@ -537,16 +537,6 @@ namespace ColorVision.Services.Algorithm
             }
             listViewSFR.View = gridViewSFR;
             listViewSFR.ItemsSource = SFRResultDatas;
-            //FOV
-            List<string> bdheadersFOV = new List<string> { "Pattern", "Type", "Degrees" };
-            List<string> headersFOV = new List<string> { "Pattern", "Type", "Degrees" };
-            GridView gridViewFOV = new GridView();
-            for (int i = 0; i < headersFOV.Count; i++)
-            {
-                gridViewFOV.Columns.Add(new GridViewColumn() { Header = headersFOV[i], DisplayMemberBinding = new Binding(bdheadersFOV[i]) });
-            }
-            listViewFOV.View = gridViewFOV;
-            listViewFOV.ItemsSource = FOVResultDatas;
 
             //MTF
             List<string> bdheadersMTF = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "Articulation" };
@@ -558,26 +548,8 @@ namespace ColorVision.Services.Algorithm
             }
             listViewMTF.View = gridViewMTF;
             listViewMTF.ItemsSource = MTFResultDatas;
-            //Ghost
-            List<string> bdheadersGhost = new List<string> { "CenterPointDis", "LedBlobGray", "GhostAvrGray" };
-            List<string> headersGhost = new List<string> { "质心坐标", "光斑灰度", "鬼影灰度" };
-            GridView gridViewGhost = new GridView();
-            for (int i = 0; i < headersGhost.Count; i++)
-            {
-                gridViewGhost.Columns.Add(new GridViewColumn() { Header = headersGhost[i], DisplayMemberBinding = new Binding(bdheadersGhost[i]) });
-            }
-            listViewGhost.View = gridViewGhost;
-            listViewGhost.ItemsSource = GhostPointResultDatas;
-            //Distortion
-            List<string> bdheadersDis = new List<string> { "DisTypeDesc", "SlopeTypeDesc", "LayoutTypeDesc", "CornerTypeDesc", "MaxRatio" };
-            List<string> headersDis = new List<string> { "类型", "斜率", "布点", "角点", "畸变率" };
-            GridView gridViewDis = new GridView();
-            for (int i = 0; i < headersDis.Count; i++)
-            {
-                gridViewDis.Columns.Add(new GridViewColumn() { Header = headersDis[i], DisplayMemberBinding = new Binding(bdheadersDis[i]) });
-            }
-            listViewDistortion.View = gridViewDis;
-            listViewDistortion.ItemsSource = DistortionResultDatas;
+
+
         }
 
         public ObservableCollection<PoiResultData> PoiResultDatas { get; set; } = new ObservableCollection<PoiResultData>();
@@ -806,7 +778,8 @@ namespace ColorVision.Services.Algorithm
             AlgorithmResult data = listView1.Items[listView1.SelectedIndex] as AlgorithmResult;
             if(data != null)
             {
-                OnCurSelectionChanged?.Invoke(data);
+                //OnCurSelectionChanged?.Invoke(data);
+                img_view.OpenImage(data.ImgFileName);
                 PoiResultDatas.Clear();
                 PoiYResultDatas.Clear();
                 img_view.ResetPOIPoint();
@@ -833,16 +806,49 @@ namespace ColorVision.Services.Algorithm
                         img_view.AddPOIPoint(PoiYResultDatas);
                         break;
                     case AlgorithmResultType.FOV:
+
+                        List<string> bdheadersFOV = new List<string> { "Pattern", "Type", "Degrees" };
+                        List<string> headersFOV = new List<string> { "Pattern", "Type", "Degrees" };
+                        GridView gridViewFOV = new GridView();
+                        for (int i = 0; i < headersFOV.Count; i++)
+                        {
+                            gridViewFOV.Columns.Add(new GridViewColumn() { Header = headersFOV[i], DisplayMemberBinding = new Binding(bdheadersFOV[i]) });
+                        }
+                        listViewFOV.View = gridViewFOV;
+                        listViewFOV.ItemsSource = FOVResultDatas;
+
                         listViewFOV.Visibility =Visibility.Visible;
                         listViewFOV.ItemsSource = data.FOVData;
                         break;
                     case AlgorithmResultType.SFR:
+
                         break;
                     case AlgorithmResultType.MTF:
                         break;
                     case AlgorithmResultType.Ghost:
+                        listViewFOV.Visibility = Visibility.Visible;
+                        List<string> bdheadersGhost = new List<string> { "CenterPointDis", "LedBlobGray", "GhostAvrGray" };
+                        List<string> headersGhost = new List<string> { "质心坐标", "光斑灰度", "鬼影灰度" };
+                        GridView gridViewGhost = new GridView();
+                        for (int i = 0; i < headersGhost.Count; i++)
+                        {
+                            gridViewGhost.Columns.Add(new GridViewColumn() { Header = headersGhost[i], DisplayMemberBinding = new Binding(bdheadersGhost[i]) });
+                        }
+                        listViewFOV.View = gridViewGhost;
+                        listViewFOV.ItemsSource = data.GhostData;
+
                         break;
                     case AlgorithmResultType.Distortion:
+                        listViewFOV.Visibility = Visibility.Visible;
+                        List<string> bdheadersDis = new List<string> { "DisTypeDesc", "SlopeTypeDesc", "LayoutTypeDesc", "CornerTypeDesc", "MaxRatio" };
+                        List<string> headersDis = new List<string> { "类型", "斜率", "布点", "角点", "畸变率" };
+                        GridView gridViewDis = new GridView();
+                        for (int i = 0; i < headersDis.Count; i++)
+                        {
+                            gridViewDis.Columns.Add(new GridViewColumn() { Header = headersDis[i], DisplayMemberBinding = new Binding(bdheadersDis[i]) });
+                        }
+                        listViewFOV.View = gridViewDis;
+                        listViewFOV.ItemsSource = data.DistortionData;
                         break;
                     case AlgorithmResultType.Calibration:
                         break;
@@ -873,10 +879,6 @@ namespace ColorVision.Services.Algorithm
 
         }
 
-        public void OpenImage(byte[] bytes)
-        {
-            img_view.OpenImage(bytes);
-        }
 
 
         private void listViewY_SelectionChanged(object sender, SelectionChangedEventArgs e)

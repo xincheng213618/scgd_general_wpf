@@ -64,7 +64,7 @@ namespace ColorVision.Services.Algorithm
                 handler?.Close();
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    MessageBox.Show(Application.Current.MainWindow, "文件打开失败", "ColorVision");
+                    //MessageBox.Show(Application.Current.MainWindow, "文件打开失败", "ColorVision");
                 });
             }
         }
@@ -522,7 +522,7 @@ namespace ColorVision.Services.Algorithm
             }
             string sn = null;
             var pm = TemplateControl.GetInstance().DistortionParams[ComboxDistortionTemplate.SelectedIndex].Value;
-            var msg = Service.Distortion(ImageFile.Text, pm.ID, ComboxDistortionTemplate.Name, sn);
+            var msg = Service.Distortion(ImageFile.Text, pm.ID, ComboxDistortionTemplate.Text, sn);
             Helpers.SendCommand(msg, "Distortion");
         }
 

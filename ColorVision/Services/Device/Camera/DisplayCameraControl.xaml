@@ -29,7 +29,6 @@
                 <Image Source="{DynamicResource DrawingImageProperty}" Height="18" Margin="0,0,0,0"/>
                 <Button Background="Transparent" BorderThickness="0" Command="{Binding PropertyCommand}" />
             </Grid>
-            <TextBox Text="{Binding DeviceService.DeviceStatusString}"  DockPanel.Dock="Right" IsReadOnly="True"  BorderThickness="0" Background="Transparent" />
             <Grid>
                 <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}" Content="{Binding Config.Name}"  FontSize="15"  IsChecked="True" />
                 <Grid  Height="18"   HorizontalAlignment="Left" MouseLeftButtonDown="Grid_MouseLeftButtonDown" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" Background="{DynamicResource GlobalBackground}" Margin="4,0,0,0">
