@@ -174,9 +174,7 @@ namespace ColorVision.RC
                 {
                     log.Debug(serviceKind.ServiceType.ToString());
                 }
-                //if (serviceKind.ServiceType.ToString() == ServiceType.Algorithm.ToString())
-                //    continue;
-                //foreach (var item in data)
+                foreach (var item in data)
                 {
                     if (ss !=null)
                     {
