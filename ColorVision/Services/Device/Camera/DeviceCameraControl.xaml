@@ -357,7 +357,7 @@
                                 </StackPanel>
 
                             </TabItem>
-                            <TabItem Header="文件服务">
+                            <TabItem Header="文件服务" Height="30" VerticalAlignment="Top">
                                 <StackPanel Margin="5">
                                     <GroupBox Header="图像文件服务配置" >
                                         <StackPanel Margin="5">

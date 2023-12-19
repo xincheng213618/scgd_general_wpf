@@ -70,18 +70,7 @@ namespace ColorVision.Services.Algorithm
 
             StackPanelSort.Children.Clear();
 
-            Button IDASC = new Button { Content = "按照序号正序", Tag = "IDASC", Margin = new Thickness(5) };
-            IDASC.Click += (s, e) =>
-            {
-                var sortedItems = FOVResults.OrderByDescending(f => f.Model.Id).ToList();
-                FOVResults.Clear();
-                foreach (var item in sortedItems)
-                {
-                    FOVResults.Add(item);
-                }
-            };
-            StackPanelSort.Children.Add(IDASC);
-            Button IDDESC = new Button { Content = "按照序号降序", Tag = "IDDESC", Margin = new Thickness(5) };
+            RadioButton IDDESC = new RadioButton { Content = "按照序号升序", Tag = "IDDESC", Margin = new Thickness(5), IsChecked = true };
             IDDESC.Click += (s, e) =>
             {
                 var sortedItems = FOVResults.OrderBy(f => f.Model.Id).ToList();
@@ -93,7 +82,33 @@ namespace ColorVision.Services.Algorithm
             };
             StackPanelSort.Children.Add(IDDESC);
 
-            Button BatchESC = new Button { Content = "按照批次号正序", Tag = "BatchESC", Margin = new Thickness(5) };
+            RadioButton IDASC = new RadioButton { Content = "按照序号降序", Tag = "IDASC", Margin = new Thickness(5) };
+            IDASC.Click += (s, e) =>
+            {
+                var sortedItems = FOVResults.OrderByDescending(f => f.Model.Id).ToList();
+                FOVResults.Clear();
+                foreach (var item in sortedItems)
+                {
+                    FOVResults.Add(item);
+                }
+            };
+            StackPanelSort.Children.Add(IDASC);
+
+
+            RadioButton BatchASC = new RadioButton { Content = "按照批次号升序", Tag = "BatchASC", Margin = new Thickness(5) };
+            BatchASC.Click += (s, e) =>
+            {
+                var sortedItems = FOVResults.OrderBy(f => f.Batch?.Name).ToList();
+                FOVResults.Clear();
+                foreach (var item in sortedItems)
+                {
+                    FOVResults.Add(item);
+                }
+            };
+            StackPanelSort.Children.Add(BatchASC);
+
+
+            RadioButton BatchESC = new RadioButton { Content = "按照批次号降序", Tag = "BatchESC", Margin = new Thickness(5) };
             BatchESC.Click += (s, e) =>
             {
                 var sortedItems = FOVResults.OrderByDescending(f => f.Batch?.Name).ToList();
@@ -106,17 +121,8 @@ namespace ColorVision.Services.Algorithm
             StackPanelSort.Children.Add(BatchESC);
 
 
-            Button BatchASC = new Button { Content = "按照批次号降序", Tag = "BatchASC", Margin = new Thickness(5) };
-            BatchASC.Click += (s, e) =>
-            {
-                var sortedItems = FOVResults.OrderBy(f => f.Batch?.Name).ToList();
-                FOVResults.Clear();
-                foreach (var item in sortedItems)
-                {
-                    FOVResults.Add(item);
-                }
-            };
-            StackPanelSort.Children.Add(BatchASC);
+
+
 
         }
 
@@ -147,18 +153,7 @@ namespace ColorVision.Services.Algorithm
 
             StackPanelSort.Children.Clear();
 
-            Button IDASC = new Button { Content = "按照序号正序", Tag = "IDASC", Margin = new Thickness(5) };
-            IDASC.Click += (s, e) =>
-            {
-                var sortedItems = MTFResults.OrderByDescending(f => f.Model.Id).ToList();
-                MTFResults.Clear();
-                foreach (var item in sortedItems)
-                {
-                    MTFResults.Add(item);
-                }
-            };
-            StackPanelSort.Children.Add(IDASC);
-            Button IDDESC = new Button { Content = "按照序号降序", Tag = "IDDESC", Margin = new Thickness(5) };
+            RadioButton IDDESC = new RadioButton { Content = "按照序号升序", Tag = "IDDESC", Margin = new Thickness(5), IsChecked = true };
             IDDESC.Click += (s, e) =>
             {
                 var sortedItems = MTFResults.OrderBy(f => f.Model.Id).ToList();
@@ -170,20 +165,20 @@ namespace ColorVision.Services.Algorithm
             };
             StackPanelSort.Children.Add(IDDESC);
 
-            Button BatchESC = new Button { Content = "按照批次号正序", Tag = "BatchESC", Margin = new Thickness(5) };
-            BatchESC.Click += (s, e) =>
+            RadioButton IDASC = new RadioButton { Content = "按照序号降序", Tag = "IDASC", Margin = new Thickness(5) };
+            IDASC.Click += (s, e) =>
             {
-                var sortedItems = MTFResults.OrderByDescending(f => f.Batch?.Name).ToList();
+                var sortedItems = MTFResults.OrderByDescending(f => f.Model.Id).ToList();
                 MTFResults.Clear();
                 foreach (var item in sortedItems)
                 {
                     MTFResults.Add(item);
                 }
             };
-            StackPanelSort.Children.Add(BatchESC);
+            StackPanelSort.Children.Add(IDASC);
 
 
-            Button BatchASC = new Button { Content = "按照批次号降序", Tag = "BatchASC", Margin = new Thickness(5) };
+            RadioButton BatchASC = new RadioButton { Content = "按照批次号升序", Tag = "BatchASC", Margin = new Thickness(5) };
             BatchASC.Click += (s, e) =>
             {
                 var sortedItems = MTFResults.OrderBy(f => f.Batch?.Name).ToList();
@@ -194,6 +189,19 @@ namespace ColorVision.Services.Algorithm
                 }
             };
             StackPanelSort.Children.Add(BatchASC);
+
+
+            RadioButton BatchESC = new RadioButton { Content = "按照批次号降序", Tag = "BatchESC", Margin = new Thickness(5) };
+            BatchESC.Click += (s, e) =>
+            {
+                var sortedItems = MTFResults.OrderByDescending(f => f.Batch?.Name).ToList();
+                MTFResults.Clear();
+                foreach (var item in sortedItems)
+                {
+                    MTFResults.Add(item);
+                }
+            };
+            StackPanelSort.Children.Add(BatchESC);
 
         }
 
@@ -224,18 +232,8 @@ namespace ColorVision.Services.Algorithm
 
             StackPanelSort.Children.Clear();
 
-            Button IDASC = new Button { Content = "按照序号正序", Tag = "IDASC", Margin = new Thickness(5) };
-            IDASC.Click += (s, e) =>
-            {
-                var sortedItems = SFRResults.OrderByDescending(f => f.Model.Id).ToList();
-                SFRResults.Clear();
-                foreach (var item in sortedItems)
-                {
-                    SFRResults.Add(item);
-                }
-            };
-            StackPanelSort.Children.Add(IDASC);
-            Button IDDESC = new Button { Content = "按照序号降序", Tag = "IDDESC", Margin = new Thickness(5) };
+
+            RadioButton IDDESC = new RadioButton { Content = "按照序号升序", Tag = "IDDESC", Margin = new Thickness(5), IsChecked = true };
             IDDESC.Click += (s, e) =>
             {
                 var sortedItems = SFRResults.OrderBy(f => f.Model.Id).ToList();
@@ -247,20 +245,20 @@ namespace ColorVision.Services.Algorithm
             };
             StackPanelSort.Children.Add(IDDESC);
 
-            Button BatchESC = new Button { Content = "按照批次号正序", Tag = "BatchESC", Margin = new Thickness(5) };
-            BatchESC.Click += (s, e) =>
-            {
-                var sortedItems = SFRResults.OrderByDescending(f => f.Batch?.Name).ToList();
+            RadioButton IDASC = new RadioButton { Content = "按照序号降序", Tag = "IDASC", Margin = new Thickness(5) };
+            IDASC.Click += (s, e) =>
+            { 
+                var sortedItems = SFRResults.OrderByDescending(f => f.Model.Id).ToList();
                 SFRResults.Clear();
                 foreach (var item in sortedItems)
                 {
-                    SFRResults.Add(item);
+                SFRResults.Add(item);
                 }
             };
-            StackPanelSort.Children.Add(BatchESC);
+            StackPanelSort.Children.Add(IDASC);
 
 
-            Button BatchASC = new Button { Content = "按照批次号降序", Tag = "BatchASC", Margin = new Thickness(5) };
+            RadioButton BatchASC = new RadioButton { Content = "按照批次号升序", Tag = "BatchASC", Margin = new Thickness(5) };
             BatchASC.Click += (s, e) =>
             {
                 var sortedItems = SFRResults.OrderBy(f => f.Batch?.Name).ToList();
@@ -272,6 +270,18 @@ namespace ColorVision.Services.Algorithm
             };
             StackPanelSort.Children.Add(BatchASC);
 
+
+            RadioButton BatchESC = new RadioButton { Content = "按照批次号降序", Tag = "BatchESC", Margin = new Thickness(5) };
+            BatchESC.Click += (s, e) =>
+            {
+                var sortedItems = SFRResults.OrderByDescending(f => f.Batch?.Name).ToList();
+                SFRResults.Clear();
+                foreach (var item in sortedItems)
+                {
+                    SFRResults.Add(item);
+                }
+            };
+            StackPanelSort.Children.Add(BatchESC);
         }
 
 
@@ -302,18 +312,8 @@ namespace ColorVision.Services.Algorithm
 
             StackPanelSort.Children.Clear();
 
-            Button IDASC = new Button { Content = "按照序号降序", Tag = "IDASC", Margin = new Thickness(5) };
-            IDASC.Click += (s, e) =>
-            {
-                var sortedItems = GhostResults.OrderByDescending(f => f.Model.Id).ToList();
-                GhostResults.Clear();
-                foreach (var item in sortedItems)
-                {
-                    GhostResults.Add(item);
-                }
-            };
-            StackPanelSort.Children.Add(IDASC);
-            Button IDDESC = new Button { Content = "按照序号升序", Tag = "IDDESC", Margin = new Thickness(5) };
+
+            RadioButton IDDESC = new RadioButton { Content = "按照序号升序", Tag = "IDDESC", Margin = new Thickness(5), IsChecked = true };
             IDDESC.Click += (s, e) =>
             {
                 var sortedItems = GhostResults.OrderBy(f => f.Model.Id).ToList();
@@ -325,20 +325,20 @@ namespace ColorVision.Services.Algorithm
             };
             StackPanelSort.Children.Add(IDDESC);
 
-            Button BatchESC = new Button { Content = "按照批次号降序", Tag = "BatchESC", Margin = new Thickness(5) };
-            BatchESC.Click += (s, e) =>
+            RadioButton IDASC = new RadioButton { Content = "按照序号降序", Tag = "IDASC", Margin = new Thickness(5) };
+            IDASC.Click += (s, e) =>
             {
-                var sortedItems = GhostResults.OrderByDescending(f => f.Batch?.Name).ToList();
+                var sortedItems = GhostResults.OrderByDescending(f => f.Model.Id).ToList();
                 GhostResults.Clear();
                 foreach (var item in sortedItems)
                 {
                     GhostResults.Add(item);
                 }
             };
-            StackPanelSort.Children.Add(BatchESC);
+            StackPanelSort.Children.Add(IDASC);
 
 
-            Button BatchASC = new Button { Content = "按照批次号升序", Tag = "BatchASC", Margin = new Thickness(5) };
+            RadioButton BatchASC = new RadioButton { Content = "按照批次号升序", Tag = "BatchASC", Margin = new Thickness(5) };
             BatchASC.Click += (s, e) =>
             {
                 var sortedItems = GhostResults.OrderBy(f => f.Batch?.Name).ToList();
@@ -349,6 +349,19 @@ namespace ColorVision.Services.Algorithm
                 }
             };
             StackPanelSort.Children.Add(BatchASC);
+
+
+            RadioButton BatchESC = new RadioButton { Content = "按照批次号降序", Tag = "BatchESC", Margin = new Thickness(5) };
+            BatchESC.Click += (s, e) =>
+            {
+                var sortedItems = GhostResults.OrderByDescending(f => f.Batch?.Name).ToList();
+                GhostResults.Clear();
+                foreach (var item in sortedItems)
+                {
+                    GhostResults.Add(item);
+                }
+            };
+            StackPanelSort.Children.Add(BatchESC);
 
         }
 
@@ -380,18 +393,7 @@ namespace ColorVision.Services.Algorithm
 
             StackPanelSort.Children.Clear();
 
-            Button IDASC = new Button { Content = "按照序号正序", Tag = "IDASC", Margin = new Thickness(5) };
-            IDASC.Click += (s, e) =>
-            {
-                var sortedItems = DistortionResults.OrderByDescending(f => f.Model.Id).ToList();
-                DistortionResults.Clear();
-                foreach (var item in sortedItems)
-                {
-                    DistortionResults.Add(item);
-                }
-            };
-            StackPanelSort.Children.Add(IDASC);
-            Button IDDESC = new Button { Content = "按照序号降序", Tag = "IDDESC", Margin = new Thickness(5) };
+            RadioButton IDDESC = new RadioButton { Content = "按照序号升序", Tag = "IDDESC", Margin = new Thickness(5), IsChecked = true };
             IDDESC.Click += (s, e) =>
             {
                 var sortedItems = DistortionResults.OrderBy(f => f.Model.Id).ToList();
@@ -403,20 +405,20 @@ namespace ColorVision.Services.Algorithm
             };
             StackPanelSort.Children.Add(IDDESC);
 
-            Button BatchESC = new Button { Content = "按照批次号正序", Tag = "BatchESC", Margin = new Thickness(5) };
-            BatchESC.Click += (s, e) =>
+            RadioButton IDASC = new RadioButton { Content = "按照序号降序", Tag = "IDASC", Margin = new Thickness(5) };
+            IDASC.Click += (s, e) =>
             {
-                var sortedItems = DistortionResults.OrderByDescending(f => f.Batch?.Name).ToList();
+                var sortedItems = DistortionResults.OrderByDescending(f => f.Model.Id).ToList();
                 DistortionResults.Clear();
                 foreach (var item in sortedItems)
                 {
                     DistortionResults.Add(item);
                 }
             };
-            StackPanelSort.Children.Add(BatchESC);
+            StackPanelSort.Children.Add(IDASC);
 
 
-            Button BatchASC = new Button { Content = "按照批次号降序", Tag = "BatchASC", Margin = new Thickness(5) };
+            RadioButton BatchASC = new RadioButton { Content = "按照批次号升序", Tag = "BatchASC", Margin = new Thickness(5) };
             BatchASC.Click += (s, e) =>
             {
                 var sortedItems = DistortionResults.OrderBy(f => f.Batch?.Name).ToList();
@@ -427,6 +429,19 @@ namespace ColorVision.Services.Algorithm
                 }
             };
             StackPanelSort.Children.Add(BatchASC);
+
+
+            RadioButton BatchESC = new RadioButton { Content = "按照批次号降序", Tag = "BatchESC", Margin = new Thickness(5) };
+            BatchESC.Click += (s, e) =>
+            {
+                var sortedItems = DistortionResults.OrderByDescending(f => f.Batch?.Name).ToList();
+                DistortionResults.Clear();
+                foreach (var item in sortedItems)
+                {
+                    DistortionResults.Add(item);
+                }
+            };
+            StackPanelSort.Children.Add(BatchESC);
 
         }
 

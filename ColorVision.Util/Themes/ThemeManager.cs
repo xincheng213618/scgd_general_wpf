@@ -13,6 +13,8 @@ namespace ColorVision.Themes
         Light,
         [Description("ThemeDark")]
         Dark,
+        [Description("ThemePink")]
+        Pink,
         [Description("ThemeUseSystem")]
         UseSystem
     };
@@ -88,6 +90,18 @@ namespace ColorVision.Themes
             "/ColorVision.Util;component/Themes/Window/BaseWindow.xaml"
         };
 
+        public static List<string> ResourceDictionaryPink { get; set; } = new List<string>()
+        {
+            "/HandyControl;component/Themes/basic/colors/colorsviolet.xaml",
+            "/HandyControl;component/Themes/Theme.xaml",
+            "/ColorVision.Util;component/Themes/White.xaml",
+            "/ColorVision.Util;component/Themes/Base.xaml",
+            "/ColorVision.Util;component/Themes/Menu.xaml",
+            "/ColorVision.Util;component/Themes/GroupBox.xaml" ,
+            "/ColorVision.Util;component/Themes/Icons.xaml",
+            "/ColorVision.Util;component/Themes/Window/BaseWindow.xaml"
+        };
+
         private void ApplyActTheme(Application app, Theme theme)
         {
             if (CurrentUITheme == theme) return;
@@ -117,6 +131,18 @@ namespace ColorVision.Themes
                     app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ControlsDictionary());
 
                     foreach (var item in ResourceDictionaryDark)
+                    {
+                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
+                        app.Resources.MergedDictionaries.Add(dictionary);
+                    }
+                    break;
+                case Theme.Pink:
+                    var pink1 = new Wpf.Ui.Markup.ThemesDictionary();
+                    pink1.Theme = ThemeType.Light;
+                    app.Resources.MergedDictionaries.Add(pink1);
+                    app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ControlsDictionary());
+
+                    foreach (var item in ResourceDictionaryPink)
                     {
                         ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
                         app.Resources.MergedDictionaries.Add(dictionary);

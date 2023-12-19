@@ -180,4 +180,7 @@
   <data name="UseSystem" xml:space="preserve">
     <value>跟随系统</value>
   </data>
+  <data name="ThemePink" xml:space="preserve">
+    <value>粉色</value>
+  </data>
 </root>

@@ -95,6 +95,11 @@ namespace ColorVision
             menuItem1.Click += Test_Click;
             menuItem.Items.Add(menuItem1);
             Menu1.Items.Add(menuItem);
+
+
+            MenuItem menuItem2 = new MenuItem() { Header = "校正上传" ,Tag = "CalibrationUpload" };
+            menuItem2.Click += MenuItem_Template;
+            menuItem.Items.Add(menuItem2);
             #endif
 
 

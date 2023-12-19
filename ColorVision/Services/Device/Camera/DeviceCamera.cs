@@ -64,7 +64,7 @@ namespace ColorVision.Device.Camera
 
             UploadCalibrationCommand = new RelayCommand(a =>
             {
-                CalibrationUpload uploadCalibration = new CalibrationUpload(DeviceService,ResouceType.DefectPoint) {  WindowStartupLocation =WindowStartupLocation.CenterScreen};
+                CalibrationUploadWindow uploadCalibration = new CalibrationUploadWindow(DeviceService,ResouceType.DefectPoint) {  WindowStartupLocation =WindowStartupLocation.CenterScreen};
                 uploadCalibration.ShowDialog();
             });
         }

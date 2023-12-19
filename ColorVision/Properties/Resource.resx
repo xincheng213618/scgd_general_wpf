@@ -327,4 +327,7 @@
   <data name="MTFToolTip" xml:space="preserve">
     <value>调制传递函数</value>
   </data>
+  <data name="ThemePink" xml:space="preserve">
+    <value>粉色</value>
+  </data>
 </root>

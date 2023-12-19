@@ -180,4 +180,7 @@
   <data name="UseSystem" xml:space="preserve">
     <value>Следуйте системе</value>
   </data>
+  <data name="ThemePink" xml:space="preserve">
+    <value>розовый</value>
+  </data>
 </root>

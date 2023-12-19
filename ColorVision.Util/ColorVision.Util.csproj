@@ -29,6 +29,9 @@
 	    <AutoGen>True</AutoGen>
 	    <DependentUpon>Resource.resx</DependentUpon>
 	  </Compile>
+	  <Compile Update="Themes\Contorls\Upload.xaml.cs">
+	    <SubType>Code</SubType>
+	  </Compile>
 	</ItemGroup>
 
 	<ItemGroup>
