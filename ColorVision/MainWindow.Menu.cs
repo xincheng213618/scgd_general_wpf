@@ -40,7 +40,7 @@ namespace ColorVision
                 WindowTemplate windowTemplate;
                 if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
                 {
-                    MessageBox.Show(Application.Current.MainWindow, "数据库连接失败，请先连接数据库在操作", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                    MessageBox.Show("数据库连接失败，请先连接数据库在操作", "ColorVision");
                     return;
                 }
                 switch (menuItem.Tag?.ToString()??string.Empty)
