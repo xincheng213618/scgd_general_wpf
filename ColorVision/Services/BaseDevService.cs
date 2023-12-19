@@ -173,7 +173,7 @@ namespace ColorVision.Services
 
         private void Timer_Elapsed(object? sender, ElapsedEventArgs e)
         {
-            if (DateTime.Now - LastAliveTime > TimeSpan.FromMilliseconds(HeartbeatTime * 2))
+            if (DateTime.Now - LastAliveTime > TimeSpan.FromMilliseconds(HeartbeatTime))
             {
                 DisConnected?.Invoke(sender ,new EventArgs());
                 IsAlive = false;

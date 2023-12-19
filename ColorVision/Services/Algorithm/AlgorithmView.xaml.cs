@@ -547,6 +547,7 @@ namespace ColorVision.Services.Algorithm
             }
             listViewFOV.View = gridViewFOV;
             listViewFOV.ItemsSource = FOVResultDatas;
+
             //MTF
             List<string> bdheadersMTF = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "Articulation" };
             List<string> headersMTF = new List<string> { "名称", "位置", "大小", "形状", "MTF" };
@@ -809,26 +810,46 @@ namespace ColorVision.Services.Algorithm
                 PoiResultDatas.Clear();
                 PoiYResultDatas.Clear();
                 img_view.ResetPOIPoint();
-                if (data.ResultType == AlgorithmResultType.POI_XY_UV)
-                {
-                    listViewY.Hide();
-                    listView2.Show();
-                    foreach (var item in data.PoiData)
-                    {
-                        PoiResultDatas.Add(item);
-                    }
-                    img_view.AddPOIPoint(PoiResultDatas);
+                switch (data.ResultType)
+                {   
+                    case AlgorithmResultType.POI:
+                        break;
+                    case AlgorithmResultType.POI_XY_UV:
+                        listViewY.Hide();
+                        listView2.Show();
+                        foreach (var item in data.PoiData)
+                        {
+                            PoiResultDatas.Add(item);
+                        }
+                        img_view.AddPOIPoint(PoiResultDatas);
+                        break;
+                    case AlgorithmResultType.POI_Y:
+                        listView2.Hide();
+                        listViewY.Show();
+                        foreach (var item in data.PoiData)
+                        {
+                            PoiYResultDatas.Add(item);
+                        }
+                        img_view.AddPOIPoint(PoiYResultDatas);
+                        break;
+                    case AlgorithmResultType.FOV:
+                        listViewFOV.Visibility =Visibility.Visible;
+                        listViewFOV.ItemsSource = data.FOVData;
+                        break;
+                    case AlgorithmResultType.SFR:
+                        break;
+                    case AlgorithmResultType.MTF:
+                        break;
+                    case AlgorithmResultType.Ghost:
+                        break;
+                    case AlgorithmResultType.Distortion:
+                        break;
+                    case AlgorithmResultType.Calibration:
+                        break;
+                    default:
+                        break;
                 }
-                else if (data.ResultType == AlgorithmResultType.POI_Y)
-                {
-                    listView2.Hide();
-                    listViewY.Show();
-                    foreach (var item in data.PoiData)
-                    {
-                        PoiYResultDatas.Add(item);
-                    }
-                    img_view.AddPOIPoint(PoiYResultDatas);
-                }
+
             }
         }
 
@@ -856,6 +877,7 @@ namespace ColorVision.Services.Algorithm
         {
             img_view.OpenImage(bytes);
         }
+
 
         private void listViewY_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {

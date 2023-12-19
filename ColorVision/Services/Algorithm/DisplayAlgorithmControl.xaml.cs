@@ -44,7 +44,6 @@ namespace ColorVision.Services.Algorithm
 
             netFileUtil = new NetFileUtil(SolutionManager.GetInstance().CurrentSolution.FullName + "\\Cache");
             netFileUtil.handler += NetFileUtil_handler;
-
             Service.OnMessageRecved += Service_OnAlgorithmEvent;
             View.OnCurSelectionChanged += View_OnCurSelectionChanged;
 
@@ -72,8 +71,6 @@ namespace ColorVision.Services.Algorithm
 
         private void View_OnCurSelectionChanged(AlgorithmResult data)
         {
-            //doOpen(data.ImgFileName, FileExtType.Src);
-
             switch (data.ResultType)
             {
                 case AlgorithmResultType.POI_XY_UV:

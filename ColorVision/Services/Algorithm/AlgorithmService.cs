@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
+using System.Windows.Input;
 
 namespace ColorVision.Services.Algorithm
 {
@@ -23,38 +24,20 @@ namespace ColorVision.Services.Algorithm
 
         public event MessageRecvHandler OnMessageRecved;
 
-
-        public AlgorithmService(ConfigAlgorithm Config) : base(Config)
+        public DeviceAlgorithm DeviceAlgorithm { get; set; }
+        public AlgorithmService(DeviceAlgorithm device, ConfigAlgorithm Config) : base(Config)
         {
+            DeviceAlgorithm = device;
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
             DeviceStatus = DeviceStatus.UnInit;
-            GetAllSnID();
-            Connected +=(s,e)=> GetAllSnID();
         }
 
 
         private void MQTTCamera_MsgReturnChanged(MsgReturn msg)
         {
             IsRun = false;
-            switch (msg.EventName)
-            {
-                case "CM_GetAllSnID":
-                    try
-                    {
-                        SnID = msg.Data.SnID[0];
-                        Init();
-                    }
-                    catch (Exception ex)
-                    {
-                        if (log.IsErrorEnabled)
-                            log.Error(ex);
-                    }
-                    return;
-            }
-
             if (msg.Code == 0)
             {
-
                 switch (msg.EventName)
                 {
                     case "Init":
@@ -71,6 +54,7 @@ namespace ColorVision.Services.Algorithm
                     case "Open":
                         DeviceStatus = DeviceStatus.Opened;
                         break;
+
                     case MQTTAlgorithmEventEnum.Event_POI_GetData:
                         OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         DeviceStatus = DeviceStatus.Opened;
@@ -84,6 +68,12 @@ namespace ColorVision.Services.Algorithm
                         OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         break;
                     case "MTF":
+                        Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, $"{msg.EventName}执行成功", "ColorVision"));
+                        break;
+                    case "FOV":
+                        OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
+                        string filepath = msg.Data.ImgFileName;
+                        Application.Current.Dispatcher.BeginInvoke(() => DeviceAlgorithm.View.img_view.OpenImage(filepath));
                         Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, $"{msg.EventName}执行成功", "ColorVision"));
                         break;
                     default:
@@ -184,9 +174,6 @@ namespace ColorVision.Services.Algorithm
 
             return PublishAsyncClient(msg);
         }
-
-        public MsgRecord GetAllSnID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });
-
 
         public MsgRecord SetLicense(string md5, string FileData)
         {

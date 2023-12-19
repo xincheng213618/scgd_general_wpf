@@ -31,7 +31,7 @@ namespace ColorVision.Services.Device
         /// 心跳时间
         /// </summary>
         public int HeartbeatTime { get => _HeartbeatTime; set { _HeartbeatTime = value; NotifyPropertyChanged(); } }
-        private int _HeartbeatTime = 2000;
+        private int _HeartbeatTime = 10000;
         /// <summary>
         /// 是否存活
         /// </summary>

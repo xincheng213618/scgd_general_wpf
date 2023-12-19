@@ -15,7 +15,7 @@ namespace ColorVision.Services.Algorithm
         public DeviceAlgorithm(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             View ??= new AlgorithmView();
-            Service = new AlgorithmService(Config);
+            Service = new AlgorithmService(this,Config);
 
             if (Application.Current.TryFindResource("DrawingImageAlgorithm") is DrawingImage DrawingImageAlgorithm)
                 Icon = DrawingImageAlgorithm;
