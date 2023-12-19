@@ -5,6 +5,7 @@ using FileServerPlugin;
 using HandyControl.Tools.Extension;
 using log4net;
 using MQTTMessageLib.Algorithm;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -18,7 +19,6 @@ using System.Windows.Input;
 
 namespace ColorVision.Services.Algorithm
 {
-
     public class PoiResult : ViewModelBase
     {
         private int _Id;
@@ -394,7 +394,7 @@ namespace ColorVision.Services.Algorithm
         {
             get
             {
-                return string.Format("{0}", _totalTime);
+                return string.Format("{0}", TimeSpan.FromMilliseconds(_totalTime).ToString().TrimEnd('0'));
             }
         }
         public int ResultCode { get { return _resultCode; } set { _resultCode = value; NotifyPropertyChanged(); } }
@@ -498,7 +498,7 @@ namespace ColorVision.Services.Algorithm
             };
 
             GridView gridView = new GridView();
-            List<string> headers = new List<string> { "序号", "批次号", "模板", "图像数据文件", "测量时间", "类型", "用时(毫秒)", "结果", "描述" };
+            List<string> headers = new List<string> { "序号", "批次号", "模板", "图像数据文件", "测量时间", "类型", "用时(时:分:秒)", "结果", "描述" };
             List<string> bdheaders = new List<string> { "Id", "SerialNumber", "POITemplateName", "ImgFileName", "RecvTime", "ResultTypeDis", "TotalTime", "Result", "ResultDesc" };
             for (int i = 0; i < headers.Count; i++)
             {
@@ -581,7 +581,6 @@ namespace ColorVision.Services.Algorithm
 
         public ObservableCollection<PoiResultData> PoiResultDatas { get; set; } = new ObservableCollection<PoiResultData>();
         public ObservableCollection<PoiResultData> PoiYResultDatas { get; set; } = new ObservableCollection<PoiResultData>();
-        //public ObservableCollection<PoiResult> PoiResults { get; set; } = new ObservableCollection<PoiResult>();
         public ObservableCollection<FOVResultData> FOVResultDatas { get; set; } = new ObservableCollection<FOVResultData>();
         public ObservableCollection<PoiResultData> MTFResultDatas { get; set; } = new ObservableCollection<PoiResultData>();
         public ObservableCollection<GhostResultData> GhostResultDatas { get; set; } = new ObservableCollection<GhostResultData>();
@@ -677,7 +676,28 @@ namespace ColorVision.Services.Algorithm
                 RefreshResultListView();
             }
         }
-
+        public void GhostDataDraw(AlgResultMasterModel result, List<MQTTMessageLib.Algorithm.GhostResult> results)
+        {
+            GhostDataDraw(result.Id.ToString(), result.BatchCode, result.ImgFile, result.TName, results, result.ResultCode, result.Result, result.TotalTime);
+        }
+        public void GhostDataDraw(string key, string serialNumber, string imgFileName, string templateName, List<MQTTMessageLib.Algorithm.GhostResult> results, int? resultCode, string resultDesc, long totalTime)
+        {
+            if (!resultDis.ContainsKey(key))
+            {
+                AlgorithmResult result = new AlgorithmResult(AlgResults.Count + 1, serialNumber, imgFileName, templateName, DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss"), AlgorithmResultType.Ghost, resultCode, resultDesc, totalTime);
+                AlgResults.Add(result);
+                resultDis[key] = result;
+                foreach (var item in results)
+                {
+                    GhostResultData resultData = new GhostResultData(item.Rows, item.Cols,
+                        JsonConvert.SerializeObject(item.singleGhostPixelNum), JsonConvert.SerializeObject(item.GhostPixels),
+                        JsonConvert.SerializeObject(item.singleLedPixelNum), JsonConvert.SerializeObject(item.LEDPixels),
+                        JsonConvert.SerializeObject(item.LedCenters), JsonConvert.SerializeObject(item.LEDBlobGray), JsonConvert.SerializeObject(item.ghostAverageGray));
+                    result.GhostData.Add(resultData);
+                }
+                RefreshResultListView();
+            }
+        }
         public void FovDataDraw(AlgResultMasterModel result, List<MQTTMessageLib.Algorithm.FOVResult> results)
         {
             FovDataDraw(result.Id.ToString(), result.BatchCode, result.ImgFile, result.TName, results, result.ResultCode, result.Result, result.TotalTime);

@@ -207,6 +207,7 @@ namespace ColorVision.Net
             CVCIEFileInfo data = default;
             if(extType == FileExtType.CIE) data = ReadLocalBinaryCIEFile(fileName);
             else if(extType == FileExtType.Raw) data = ReadLocalBinaryRawFile(fileName);
+            else if (extType == FileExtType.Tif) data = ReadTIFImage(fileName);
             else data = ReadLocalBinaryFile(fileName);
             int code = 0;
             if (data.data == null) code = -1;
@@ -350,6 +351,57 @@ namespace ColorVision.Net
             else if(bpp == 16) return 2;
 
             return 0;
+        }
+
+        private int GetBpp(int depth)
+        {
+            int bpp = 8;
+            switch (depth)
+            {
+                case 0:
+                case 1:
+                    bpp = 8;
+                    break;
+                case 2:
+                case 3:
+                    bpp = 16;
+                    break;
+                case 4:
+                case 5:
+                    bpp = 32;
+                    break;
+                case 6:
+                    bpp = 64;
+                    break;
+                default:
+                    break;
+            }
+
+            return bpp;
+        }
+
+        private CVCIEFileInfo ReadTIFImage(string fileName)
+        {
+            CVCIEFileInfo result = default;
+            Mat src = Cv2.ImRead(fileName, ImreadModes.Unchanged);
+            int channels = src.Channels();
+            int bpp = GetBpp(src.Depth());
+            if (bpp == 32)
+            {
+                OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
+                OpenCvSharp.Mat dst = new OpenCvSharp.Mat();
+                src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
+                string fullFileName = FileCachePath + Path.DirectorySeparatorChar + Path.GetFileName(fileName);
+                OpenCvSharp.Cv2.ImWrite(fullFileName, dst);
+                result = ReadLocalBinaryFile(fullFileName);
+            }
+            else
+            {
+                result = ReadLocalBinaryFile(fileName);
+            }
+
+
+            return result;
         }
     }
 

@@ -1,0 +1,77 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ColorVision.MySql.DAO
+{
+    public class AlgResultGhostModel : PKModel
+    {
+        public int Pid { get; set; }
+        public int Radius { get; set; }
+        public int Rows { get; set; }
+        public int Cols { get; set; }
+        public float RatioH { get; set; }
+        public float RatioL { get; set; }
+
+        public string LEDCenters { get; set; }
+        public string LEDPixels { get; set; }
+        public string LEDBlobGray { get; set; }
+        public string GhostAverageGray { get; set; }
+        public string SingleLedPixelNum { get; set; }
+        public string SingleGhostPixelNum { get; set; }
+        public string GhostPixels { get; set; }
+    }
+    public class AlgResultGhostDao : BaseDaoMaster<AlgResultGhostModel>
+    {
+        public AlgResultGhostDao() : base(string.Empty, "t_scgd_algorithm_result_detail_ghost", "id", false)
+        {
+        }
+
+        public override AlgResultGhostModel GetModel(DataRow item)
+        {
+            AlgResultGhostModel model = new AlgResultGhostModel
+            {
+                Id = item.Field<int>("id"),
+                Pid = item.Field<int?>("pid") ?? -1,
+                Radius = item.Field<int?>("radius") ?? -1,
+                Rows = item.Field<int?>("rows") ?? -1,
+                Cols = item.Field<int?>("cols") ?? -1,
+                RatioH = item.Field<float?>("ratio_h") ?? -1,
+                RatioL = item.Field<float?>("ratio_l") ?? -1,
+                LEDCenters = item.Field<string>("led_centers"),
+                LEDPixels = item.Field<string>("led_pixels"),
+                LEDBlobGray = item.Field<string>("led_blob_gray"),
+                GhostAverageGray = item.Field<string>("ghost_average_gray"),
+                SingleLedPixelNum = item.Field<string>("single_led_pixel_num"),
+                SingleGhostPixelNum = item.Field<string>("single_ghost_pixel_num"),
+                GhostPixels = item.Field<string>("ghost_pixels") ,
+            };
+            return model;
+        }
+
+        public override DataRow Model2Row(AlgResultGhostModel item, DataRow row)
+        {
+            if (item != null)
+            {
+                if (item.Id > 0) row["id"] = item.Id;
+                row["pid"] = item.Pid;
+                row["radius"] = item.Radius;
+                row["rows"] = item.Rows;
+                row["cols"] = item.Cols;
+                row["ratio_h"] = item.RatioH;
+                row["ratio_l"] = item.RatioL;
+                row["led_centers"] = item.LEDCenters;
+                row["led_pixels"] = item.LEDPixels;
+                row["led_blob_gray"] = item.LEDBlobGray;
+                row["ghost_average_gray"] = item.GhostAverageGray;
+                row["single_led_pixel_num"] = item.SingleLedPixelNum;
+                row["single_ghost_pixel_num"] = item.SingleGhostPixelNum;
+                row["ghost_pixels"] = item.GhostPixels;
+            }
+            return row;
+        }
+    }
+}

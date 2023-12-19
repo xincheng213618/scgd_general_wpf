@@ -148,13 +148,13 @@ namespace ColorVision.Services.Algorithm
             PublishAsyncClient(msg);
         }
 
-        public MsgRecord GetData(int pid,string fileName,string tempName,string serialNumber)
+        public MsgRecord POI(string fileName, int pid, string tempName,string serialNumber)
         {
             string sn = null;
             if(string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
 
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "nBatchID", -1 } };
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }};
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
 
             MsgSend msg = new MsgSend
@@ -166,25 +166,22 @@ namespace ColorVision.Services.Algorithm
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord FOV( string fileName, FOVParam fOVParam)
-        {  
+        public MsgRecord FOV( string fileName, int pid, string tempName, string serialNumber)
+        {
+            string sn = null;
+            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            else sn = serialNumber;
+
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName } };
+            Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
+
             MsgSend msg = new MsgSend
             {
                 EventName = "FOV",
-                Params = new Dictionary<string, object>() { { "nBatchID", -1 } }
+                SerialNumber = sn,
+                Params = Params
             };
 
-            msg.Params.Add("radio", fOVParam.Radio);
-            msg.Params.Add("cameraDegrees", fOVParam.CameraDegrees);
-            msg.Params.Add("dFovDist", fOVParam.DFovDist);
-            msg.Params.Add("fovPattern", (int)fOVParam.FovPattern);
-            msg.Params.Add("fovType", (int)fOVParam.FovType);
-            msg.Params.Add("thresholdValus", (int)fOVParam.ThresholdValus);
-            msg.Params.Add("x_c", fOVParam.Xc);
-            msg.Params.Add("y_c", fOVParam.Yc);
-            msg.Params.Add("x_p", fOVParam.Xp);
-            msg.Params.Add("y_p", fOVParam.Yp);
-            msg.Params.Add("file_data", ToJsonFileList(ImageChannelType.Gray_Y, fileName));
             return PublishAsyncClient(msg);
         }
 
@@ -202,25 +199,23 @@ namespace ColorVision.Services.Algorithm
         }
 
 
-        public MsgRecord MTF(string FileName,MTFParam mTFParam)
+        public MsgRecord MTF(string fileName, int pid, string tempName, string serialNumber,int poiId, string poiTempName)
         {
-            string SerialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            var model = ServiceManager.GetInstance().BatchSave(SerialNumber);
+            string sn = null;
+            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            else sn = serialNumber;
+
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName } };
+            Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
+            Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiId, Name = poiTempName });
 
             MsgSend msg = new MsgSend
             {
                 EventName = "MTF",
-                SerialNumber = SerialNumber,
-                Params = new Dictionary<string, object>() { { "SnID", SnID }, { "nBatchID", -1 }, }
+                SerialNumber = sn,
+                Params = Params
             };
 
-            msg.Params.Add("eEvaFunc", (int)mTFParam.eEvaFunc);
-            msg.Params.Add("dx", (int)mTFParam.dx);
-            msg.Params.Add("dy", (int)mTFParam.dy);
-            msg.Params.Add("ksize", (int)mTFParam.ksize);
-            msg.Params.Add("dRatio", (int)mTFParam.MTF_dRatio);
-
-            msg.Params.Add("file_data", ToJsonFileList(ImageChannelType.Gray_Y, FileName));  
             return PublishAsyncClient(msg);
         }
 
@@ -245,176 +240,101 @@ namespace ColorVision.Services.Algorithm
             return JsonConvert.SerializeObject(file_data);
         }
 
-        public MsgRecord SFR(int pid, string FileName,SFRParam sFRParam )
+        public MsgRecord SFR(string fileName, int pid, string tempName, string serialNumber)
         {
-            string SerialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            var model = ServiceManager.GetInstance().BatchSave(SerialNumber);
+            string sn = null;
+            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            else sn = serialNumber;
+
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName } };
+            Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
 
             MsgSend msg = new MsgSend
             {
                 EventName = "SFR",
-                DeviceCode = Config.Code,
-                SerialNumber = SerialNumber,
-                Params = new Dictionary<string, object>() {{ "nPid", pid }, { "nBatchID", -1 } }
+                SerialNumber = sn,
+                Params = Params
             };
 
-            msg.Params.Add("x", sFRParam.ROI.x);
-            msg.Params.Add("y", sFRParam.ROI.y);
-            msg.Params.Add("cx", sFRParam.ROI.cx);
-            msg.Params.Add("cy", sFRParam.ROI.cy);
-            msg.Params.Add("gamma", sFRParam.Gamma);
-
-            msg.Params.Add("file_data", ToJsonFileList(ImageChannelType.Gray_Y, FileName));
             return PublishAsyncClient(msg);
         }
 
 
-        public MsgRecord Ghost(string FileName, GhostParam ghostParam)
+        public MsgRecord Ghost(string fileName, int pid, string tempName, string serialNumber)
         {
-            string SerialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            var model = ServiceManager.GetInstance().BatchSave(SerialNumber);
+            string sn = null;
+            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            else sn = serialNumber;
+
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName } };
+            Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
+
             MsgSend msg = new MsgSend
             {
                 EventName = "Ghost",
-                DeviceCode = Config.Code,
-                SerialNumber = SerialNumber,
-                Params = new Dictionary<string, object>() {{ "nBatchID", -1 } }
+                SerialNumber = sn,
+                Params = Params
             };
-            msg.Params.Add("bSQL", 1);
-            msg.Params.Add("MName", "default1");
 
-
-            msg.Params.Add("LedNums_X", ghostParam.Ghost_cols);
-            msg.Params.Add("LedNums_Y", ghostParam.Ghost_rows);
-
-            msg.Params.Add("radius", ghostParam.Ghost_radius);
-            msg.Params.Add("ratioH", ghostParam.Ghost_ratioH);
-            msg.Params.Add("ratioL", ghostParam.Ghost_ratioL);
-
-            msg.Params.Add("file_data", ToJsonFileList(ImageChannelType.CIE_Y, FileName));
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord Distortion(string FileName, DistortionParam distortionParam)
+        public MsgRecord Distortion(string fileName, int pid, string tempName, string serialNumber)
         {
+            string sn = null;
+            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            else sn = serialNumber;
+
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName } };
+            Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
+
             MsgSend msg = new MsgSend
             {
                 EventName = "Distortion",
-                Params = new Dictionary<string, object>() { { "nBatchID", -1 } }
+                SerialNumber = sn,
+                Params = Params
             };
-            var Blob_Threshold_Params = new Dictionary<string, object>() { };
-
-            Blob_Threshold_Params.Add("filterByColor", distortionParam.filterByColor);
-            Blob_Threshold_Params.Add("blobColor", distortionParam.blobColor);
-            Blob_Threshold_Params.Add("minThreshold", distortionParam.minThreshold);
-            Blob_Threshold_Params.Add("maxThreshold", distortionParam.maxThreshold);   
-            Blob_Threshold_Params.Add("thresholdStep", distortionParam.thresholdStep);
-            Blob_Threshold_Params.Add("ifDEBUG", distortionParam.ifDEBUG);
-            Blob_Threshold_Params.Add("darkRatio", distortionParam.darkRatio);
-            Blob_Threshold_Params.Add("contrastRatio", distortionParam.contrastRatio);
-            Blob_Threshold_Params.Add("bgRadius", distortionParam.bgRadius);
-            Blob_Threshold_Params.Add("minDistBetweenBlobs", distortionParam.minDistBetweenBlobs);
-            Blob_Threshold_Params.Add("filterByArea", distortionParam.filterByArea);
-            Blob_Threshold_Params.Add("minArea", distortionParam.minArea);
-            Blob_Threshold_Params.Add("maxArea", distortionParam.maxArea);
-            Blob_Threshold_Params.Add("minRepeatability", distortionParam.minRepeatability);
-            Blob_Threshold_Params.Add("filterByCircularity", distortionParam.filterByCircularity);
-            Blob_Threshold_Params.Add("minCircularity", distortionParam.minCircularity);
-            Blob_Threshold_Params.Add("maxCircularity", distortionParam.maxCircularity);
-            Blob_Threshold_Params.Add("filterByConvexity", distortionParam.filterByConvexity);
-            Blob_Threshold_Params.Add("minConvexity", distortionParam.minConvexity);
-            Blob_Threshold_Params.Add("maxConvexity", distortionParam.maxConvexity);
-            Blob_Threshold_Params.Add("filterByInertia", distortionParam.filterByInertia);
-            Blob_Threshold_Params.Add("minInertiaRatio", distortionParam.minInertiaRatio);
-            Blob_Threshold_Params.Add("maxInertiaRatio", distortionParam.maxInertiaRatio);
-
-            msg.Params.Add("Blob_Threshold_Params", Blob_Threshold_Params);
-
-            msg.Params.Add("filterByColor", distortionParam.filterByColor);
-            msg.Params.Add("blobColor", distortionParam.blobColor);
-            msg.Params.Add("minThreshold", distortionParam.minThreshold);
-            msg.Params.Add("maxThreshold", distortionParam.maxThreshold);
-            msg.Params.Add("thresholdStep", distortionParam.thresholdStep);
-            msg.Params.Add("ifDEBUG", distortionParam.ifDEBUG);
-            msg.Params.Add("darkRatio", distortionParam.darkRatio);
-            msg.Params.Add("contrastRatio", distortionParam.contrastRatio);
-            msg.Params.Add("bgRadius", distortionParam.bgRadius);
-            msg.Params.Add("minDistBetweenBlobs", distortionParam.minDistBetweenBlobs);
-            msg.Params.Add("filterByArea", distortionParam.filterByArea);
-            msg.Params.Add("minArea", distortionParam.minArea);
-            msg.Params.Add("maxArea", distortionParam.maxArea);
-            msg.Params.Add("minRepeatability", distortionParam.minRepeatability);
-            msg.Params.Add("filterByCircularity", distortionParam.filterByCircularity);
-            msg.Params.Add("minCircularity", distortionParam.minCircularity);
-            msg.Params.Add("maxCircularity", distortionParam.maxCircularity);
-            msg.Params.Add("filterByConvexity", distortionParam.filterByConvexity);
-            msg.Params.Add("minConvexity", distortionParam.minConvexity);
-            msg.Params.Add("maxConvexity", distortionParam.maxConvexity);
-            msg.Params.Add("filterByInertia", distortionParam.filterByInertia);
-            msg.Params.Add("minInertiaRatio", distortionParam.minInertiaRatio);
-            msg.Params.Add("maxInertiaRatio", distortionParam.maxInertiaRatio);
-
-            var ISIZE = new Dictionary<string, object>() {};
-            ISIZE.Add("cx", distortionParam.Width);
-            ISIZE.Add("cy", distortionParam.Height);
-            msg.Params.Add("ISIZE", ISIZE);
-
-
-
-            msg.Params.Add("cx", distortionParam.Width);
-            msg.Params.Add("cy", distortionParam.Height);
-
-            msg.Params.Add("type", distortionParam.type);
-            msg.Params.Add("sType", distortionParam.sType);
-            msg.Params.Add("lType", distortionParam.lType);
-            msg.Params.Add("dType", distortionParam.dType);
-
-
-            msg.Params.Add("file_data", ToJsonFileList(ImageChannelType.Gray_Y, FileName));
 
             return PublishAsyncClient(msg);
         }
 
 
 
-        public MsgRecord FocusPoints(string FileName, FocusPointsParam focusPointsParam)
+        public MsgRecord FocusPoints(string fileName, int pid, string tempName, string serialNumber)
         {
-            var Params = new Dictionary<string, object>() { { "nBatchID", -1 } };
+            string sn = null;
+            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            else sn = serialNumber;
+
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName } };
+            Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
 
             MsgSend msg = new MsgSend
             {
                 EventName = "FocusPoints",
+                SerialNumber = sn,
                 Params = Params
             };
-            Params.Add("file_data", ToJsonFileList(ImageChannelType.Gray_Y, FileName));
+
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord LedCheck(string FileName, LedCheckParam ledCheckParam)
+        public MsgRecord LedCheck(string fileName, int pid, string tempName, string serialNumber)
         {
-            var Params = new Dictionary<string, object>() { { "nBatchID", -1 } };
+            string sn = null;
+            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            else sn = serialNumber;
+
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName } };
+            Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
 
             MsgSend msg = new MsgSend
             {
                 EventName = "LedCheck",
+                SerialNumber = sn,
                 Params = Params
             };
-            Params.Add("checkChannel", ledCheckParam.CheckChannel);
-            Params.Add("isguding", ledCheckParam.Isguding);
-            Params.Add("gudingrid", ledCheckParam.Gudingrid);
-            Params.Add("lunkuomianji", ledCheckParam.Lunkuomianji);
-            Params.Add("pointNum", ledCheckParam.PointNum);
-            Params.Add("hegexishu", ledCheckParam.Hegexishu);
-            Params.Add("erzhihuapiancha", ledCheckParam.Erzhihuapiancha);
-            Params.Add("binaryCorret", ledCheckParam.BinaryCorret);
-            Params.Add("boundry", ledCheckParam.Boundry);
-            Params.Add("isuseLocalRdPoint", ledCheckParam.IsuseLocalRdPoint);
-            Params.Add("picwid", ledCheckParam.Picwid);
-            Params.Add("pichig", ledCheckParam.Pichig);
-            Params.Add("LengthCheck", ledCheckParam.LengthCheck ?? Array.Empty<double>());
-            Params.Add("LengthRange", ledCheckParam.LengthRange ?? Array.Empty<double>());
-            Params.Add("localRdMark", ledCheckParam.LocalRdMark ?? Array.Empty<double>());
-            Params.Add("file_data", ToJsonFileList(ImageChannelType.Gray_Y, FileName));
+
             return PublishAsyncClient(msg,60000);
         }
 
