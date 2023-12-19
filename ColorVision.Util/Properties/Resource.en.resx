@@ -180,4 +180,7 @@
   <data name="UseSystem" xml:space="preserve">
     <value>UseSystem</value>
   </data>
+  <data name="ThemePink" xml:space="preserve">
+    <value>Pink</value>
+  </data>
 </root>

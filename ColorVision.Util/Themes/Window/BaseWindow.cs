@@ -70,11 +70,11 @@ namespace ColorVision.Themes.Controls
                         this.WindowStyle = WindowStyle.None;
                     }
 
-                    wac.Color = ThemeManager.Current.CurrentUITheme == Theme.Light ? Color.FromArgb(200, 255, 255, 255) : Color.FromArgb(180, 0, 0, 0);
+                    wac.Color = ThemeManager.Current.CurrentUITheme == Theme.Dark ? Color.FromArgb(180, 0, 0, 0) : Color.FromArgb(200, 255, 255, 255);
                     wac.IsEnabled = true;
                     ThemeChangedHandler themeChangedHandler = (s) => {
 
-                        wac.Color = ThemeManager.Current.CurrentUITheme == Theme.Light ? Color.FromArgb(200, 255, 255, 255) : Color.FromArgb(180, 0, 0, 0);
+                        wac.Color = ThemeManager.Current.CurrentUITheme == Theme.Dark ? Color.FromArgb(180, 0, 0, 0) : Color.FromArgb(200, 255, 255, 255);
                         wac.IsEnabled = true;
                     };
                     ThemeManager.Current.CurrentUIThemeChanged += themeChangedHandler;
