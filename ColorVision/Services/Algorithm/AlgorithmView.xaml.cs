@@ -527,29 +527,6 @@ namespace ColorVision.Services.Algorithm
             }
             listViewY.View = gridViewY;
             listViewY.ItemsSource = PoiYResultDatas;
-            //SFR
-            List<string> bdheadersSFR = new List<string> { "pdfrequency", "pdomainSamplingData" };
-            List<string> headersSFR = new List<string> { "pdfrequency", "pdomainSamplingData" };
-            GridView gridViewSFR = new GridView();
-            for (int i = 0; i < headersSFR.Count; i++)
-            {
-                gridViewSFR.Columns.Add(new GridViewColumn() { Header = headersSFR[i], DisplayMemberBinding = new Binding(bdheadersSFR[i]) });
-            }
-            listViewSFR.View = gridViewSFR;
-            listViewSFR.ItemsSource = SFRResultDatas;
-
-            //MTF
-            List<string> bdheadersMTF = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "Articulation" };
-            List<string> headersMTF = new List<string> { "名称", "位置", "大小", "形状", "MTF" };
-            GridView gridViewMTF = new GridView();
-            for (int i = 0; i < headersMTF.Count; i++)
-            {
-                gridViewMTF.Columns.Add(new GridViewColumn() { Header = headersMTF[i], DisplayMemberBinding = new Binding(bdheadersMTF[i]) });
-            }
-            listViewMTF.View = gridViewMTF;
-            listViewMTF.ItemsSource = MTFResultDatas;
-
-
         }
 
         public ObservableCollection<PoiResultData> PoiResultDatas { get; set; } = new ObservableCollection<PoiResultData>();
@@ -783,6 +760,7 @@ namespace ColorVision.Services.Algorithm
                 PoiResultDatas.Clear();
                 PoiYResultDatas.Clear();
                 img_view.ResetPOIPoint();
+                listViewFOV.Visibility = Visibility.Collapsed;
                 switch (data.ResultType)
                 {   
                     case AlgorithmResultType.POI:
@@ -806,7 +784,7 @@ namespace ColorVision.Services.Algorithm
                         img_view.AddPOIPoint(PoiYResultDatas);
                         break;
                     case AlgorithmResultType.FOV:
-
+                        listViewFOV.Visibility = Visibility.Visible;
                         List<string> bdheadersFOV = new List<string> { "Pattern", "Type", "Degrees" };
                         List<string> headersFOV = new List<string> { "Pattern", "Type", "Degrees" };
                         GridView gridViewFOV = new GridView();
@@ -821,9 +799,29 @@ namespace ColorVision.Services.Algorithm
                         listViewFOV.ItemsSource = data.FOVData;
                         break;
                     case AlgorithmResultType.SFR:
-
+                        listViewFOV.Visibility = Visibility.Visible;
+                        List<string> bdheadersSFR = new List<string> { "pdfrequency", "pdomainSamplingData" };
+                        List<string> headersSFR = new List<string> { "pdfrequency", "pdomainSamplingData" };
+                        GridView gridViewSFR = new GridView();
+                        for (int i = 0; i < headersSFR.Count; i++)
+                        {
+                            gridViewSFR.Columns.Add(new GridViewColumn() { Header = headersSFR[i], DisplayMemberBinding = new Binding(bdheadersSFR[i]) });
+                        }
+                        listViewFOV.View = gridViewSFR;
+                        listViewFOV.ItemsSource = SFRResultDatas;
                         break;
                     case AlgorithmResultType.MTF:
+                        listViewFOV.Visibility = Visibility.Visible;
+                        //MTF
+                        List<string> bdheadersMTF = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "Articulation" };
+                        List<string> headersMTF = new List<string> { "名称", "位置", "大小", "形状", "MTF" };
+                        GridView gridViewMTF = new GridView();
+                        for (int i = 0; i < headersMTF.Count; i++)
+                        {
+                            gridViewMTF.Columns.Add(new GridViewColumn() { Header = headersMTF[i], DisplayMemberBinding = new Binding(bdheadersMTF[i]) });
+                        }
+                        listViewFOV.View = gridViewMTF;
+                        listViewFOV.ItemsSource = data.MTFData;
                         break;
                     case AlgorithmResultType.Ghost:
                         listViewFOV.Visibility = Visibility.Visible;
@@ -836,7 +834,6 @@ namespace ColorVision.Services.Algorithm
                         }
                         listViewFOV.View = gridViewGhost;
                         listViewFOV.ItemsSource = data.GhostData;
-
                         break;
                     case AlgorithmResultType.Distortion:
                         listViewFOV.Visibility = Visibility.Visible;
