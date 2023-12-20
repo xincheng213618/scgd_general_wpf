@@ -3,7 +3,7 @@
 #ifdef OPENCV_EXPORTS
 #define COLORVISIONCORE_API __declspec(dllexport)
 #else
-#define OPENCV_API __declspec(dllimport)
+#define COLORVISIONCORE_API __declspec(dllimport)
 #endif
 
 typedef int(__cdecl* InitialFrame)(void*, int, int, int);

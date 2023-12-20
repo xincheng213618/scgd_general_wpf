@@ -25,7 +25,7 @@ namespace ColorVision
             }
         }
 
-        public byte[] pData;
+        public IntPtr pData;
     }
 
     public static class OpenCVHelper
@@ -44,10 +44,14 @@ namespace ColorVision
         [DllImport("OpenCVHelper.dll", CharSet = CharSet.Unicode)]
         public static extern void ReadCVFile(string FullPath);
 
+        [DllImport("OpenCVHelper.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern int ReadGhostImage([MarshalAs(UnmanagedType.LPStr)] string FilePath, ref IntPtr data, out int rows,out int cols, out int channels);
+
+
         [DllImport("OpenCVHelper.dll")]
         public unsafe static extern void SetInitialFrame(nint pRoutineHandler);
 
-        [DllImport("OpenCVHelper.dll", CharSet = CharSet.Unicode)]
+        [DllImport("OpenCVHelper.dll")]
         public static extern void ReadVideoTest(string FullPath);
 
 

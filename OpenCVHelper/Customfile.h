@@ -6,8 +6,10 @@
 #ifdef OPENCV_EXPORTS
 #define COLORVISIONCORE_API __declspec(dllexport)
 #else
-#define OPENCV_API __declspec(dllimport)
+#define COLORVISIONCORE_API __declspec(dllimport)
 #endif
+
+
 
 typedef struct CustomFile
 {
@@ -31,6 +33,7 @@ extern "C" COLORVISIONCORE_API int CVWrite(std::string path, cv::Mat src, int co
 extern COLORVISIONCORE_API cv::Mat CVRead(std::string FileName);
 extern "C" COLORVISIONCORE_API void OsWrite(std::string path, cv::Mat src);
 extern "C" COLORVISIONCORE_API void OsWrite1(std::string path, cv::Mat src);
+
 
 
 

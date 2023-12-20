@@ -10,6 +10,19 @@
 #define OPENCV_API __declspec(dllimport)
 #endif
 
+typedef struct HImage
+{
+    int rows;
+    int cols;
+    int channels;
+    int depth; //Bpp
+    int type()  const { return (((depth) & ((1 << 3) - 1)) + (((channels)-1) << 3)); }
+    int elemSize() const { return  ((((((((depth) & ((1 << 3) - 1)) + (((channels)-1) << 3))) & ((512 - 1) << 3)) >> 3) + 1) * ((0x28442211 >> (((((depth) & ((1 << 3) - 1)) + (((channels)-1) << 3))) & ((1 << 3) - 1)) * 4) & 15)); }
+    char* pData;
+}HImage;
+extern "C" COLORVISIONCORE_API int  ReadGhostImage(const char* FilePath, unsigned char** data, int* rows, int* cols, int* channels);
+
+
 extern "C" COLORVISIONCORE_API double CalArtculation(int nw, int nh, char* data);
 extern "C" COLORVISIONCORE_API double CalArtculationROI(int nw, int nh, char* data,int x ,int y ,int width, int height);
 

@@ -82,7 +82,6 @@ namespace ColorVision
             FlowDisplayControl flowDisplayControl = new FlowDisplayControl();
             SPDisplay.Children.Insert(0, flowDisplayControl);
 
-
             ViewGridManager.GetInstance().SetViewNum(1);
             this.Closed += (s, e) => { Environment.Exit(-1); };
             Debug.WriteLine("启动成功");
@@ -101,8 +100,6 @@ namespace ColorVision
             menuItem2.Click += MenuItem_Template;
             menuItem.Items.Add(menuItem2);
             #endif
-
-
         }
 
         private void MenuStatusBar_Click(object sender, RoutedEventArgs e)

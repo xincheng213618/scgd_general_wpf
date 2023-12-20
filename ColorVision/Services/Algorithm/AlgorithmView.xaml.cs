@@ -828,7 +828,7 @@ namespace ColorVision.Services.Algorithm
                         listViewFOV.ItemsSource = data.MTFData;
                         break;
                     case AlgorithmResultType.Ghost:
-                        img_view.OpenImage(data.ImgFileName);
+                        img_view.OpenGhostImage(data.ImgFileName);
                         listViewFOV.Visibility = Visibility.Visible;
                         List<string> bdheadersGhost = new List<string> { "CenterPointDis", "LedBlobGray", "GhostAvrGray" };
                         List<string> headersGhost = new List<string> { "质心坐标", "光斑灰度", "鬼影灰度" };
