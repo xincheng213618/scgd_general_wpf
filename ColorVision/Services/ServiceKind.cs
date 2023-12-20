@@ -11,6 +11,7 @@ namespace ColorVision.Services
         public ServiceType ServiceType { get =>  (ServiceType)SysDictionaryModel.Value; }
         public ServiceKind() : base()
         {
+
         }
 
         public List<string> ServicesCodes { get

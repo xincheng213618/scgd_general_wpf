@@ -8,6 +8,7 @@ using log4net;
 using MQTTMessageLib.Algorithm;
 using OpenCvSharp.WpfExtensions;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
@@ -661,17 +662,20 @@ namespace ColorVision
         {
             if (filePath == null)
                 return;
-            HImage hImage; 
-
-            int i = OpenCVHelper.ReadGhostImage(filePath, out hImage);
+            int i = OpenCVHelper.ReadGhostImage(filePath, out HImage hImage);
             if (i != 0) return;
-            SetImageSource(hImage);
-            //i = OpenCVHelper.ReadGhostHImage(hImage, out HImage hImage1);
-            //if (i != 0) return;
-            //SetImageSource(hImage1);
+            var writeableBitmap =HImageToWriteableBitmap(hImage);
+            ViewBitmapSource = writeableBitmap;
+            ImageShow.Source = ViewBitmapSource;
+            i = OpenCVHelper.ReadGhostHImage(hImage, out HImage hImage1);
+            if (i != 0) return;
+            PseudoImage = HImageToWriteableBitmap(hImage1);
         }
 
-        private void SetImageSource(HImage hImage)
+
+
+
+        private WriteableBitmap HImageToWriteableBitmap(HImage hImage)
         {
             PixelFormat format = hImage.channels switch
             {
@@ -681,22 +685,20 @@ namespace ColorVision
                 _ => PixelFormats.Default,
             };
 
-            Application.Current.Dispatcher.Invoke(delegate
-            {
-                WriteableBitmap writeableBitmap = new WriteableBitmap(hImage.cols, hImage.rows, 96.0, 96.0, format, null);
-                OpenCVHelper.RtlMoveMemory(writeableBitmap.BackBuffer, hImage.pData, (uint)(hImage.cols * hImage.rows * hImage.channels));
-                writeableBitmap.Lock();
-                writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight));
-                writeableBitmap.Unlock();
-                ImageShow.Source = writeableBitmap;
-            });
+            WriteableBitmap writeableBitmap = new WriteableBitmap(hImage.cols, hImage.rows, 96.0, 96.0, format, null);
+            OpenCVHelper.RtlMoveMemory(writeableBitmap.BackBuffer, hImage.pData, (uint)(hImage.cols * hImage.rows * hImage.channels));
+            writeableBitmap.Lock();
+            writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight));
+            writeableBitmap.Unlock();
+            return writeableBitmap;
         }
 
 
 
         private void SetImageSource(BitmapSource bitmapImage)
         {
-            ImageShow.Source = bitmapImage;
+            ViewBitmapSource = bitmapImage;
+            ImageShow.Source = ViewBitmapSource;
             DrawGridImage(DrawingVisualGrid, bitmapImage);
             Zoombox1.ZoomUniform();
             ToolBar1.Visibility = Visibility.Visible;
@@ -705,11 +707,41 @@ namespace ColorVision
 
         private void SetImageSource(BitmapImage bitmapImage)
         {
-            ImageShow.Source = bitmapImage;
+            ViewBitmapSource = bitmapImage;
+            ImageShow.Source = ViewBitmapSource;
             DrawGridImage(DrawingVisualGrid, bitmapImage);
             Zoombox1.ZoomUniform();
             ToolBar1.Visibility = Visibility.Visible;
             ImageShow.ImageInitialize();
+        }
+        public ImageSource PseudoImage { get; set; }
+
+        public ImageSource ViewBitmapSource { get; set; }
+
+
+        private void ToggleButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is ToggleButton toggleButton)
+            {
+                if (PseudoImage != null)
+                {
+                    if (toggleButton.IsChecked == true)
+                    {
+                        ImageShow.Source = PseudoImage;
+                    }
+                    else
+                    {
+                        ImageShow.Source = ViewBitmapSource;
+                    }
+                }
+                else
+                {
+                    PseudoColor pseudoColor = new PseudoColor();
+                    Window window = new Window() { Owner = Window.GetWindow(this), WindowStartupLocation = WindowStartupLocation.CenterOwner, SizeToContent = SizeToContent.WidthAndHeight };
+                    window.Content = pseudoColor;
+                    window.Show();
+                }
+            }
         }
 
         private void ToolBar1_Loaded(object sender, RoutedEventArgs e)
@@ -761,20 +793,29 @@ namespace ColorVision
             
         }
 
-        private void ToggleButton_Click(object sender, RoutedEventArgs e)
+        public void AddPoint(List<Point> points)
         {
-            PseudoColor pseudoColor = new PseudoColor();
-            Window window = new Window() {  Owner =Window.GetWindow(this),WindowStartupLocation = WindowStartupLocation.CenterOwner ,SizeToContent = SizeToContent.WidthAndHeight};
-            window.Content = pseudoColor;
-            window.Show();
+            int id =0;
+            foreach (var item in points)
+            {
+                id++;
+                DrawingVisualCircleWord Circle = new DrawingVisualCircleWord();
+                Circle.Attribute.Center = item;
+                Circle.Attribute.Radius = 1 / Zoombox1.ContentMatrix.M11*30;
+                Circle.Attribute.Brush = Brushes.Transparent;
+                Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                Circle.Attribute.ID = id;
+                Circle.Render();
+                ImageShow.AddVisual(Circle);
+            }
         }
+
 
         public void AddPOIPoint(ObservableCollection<PoiResultData> poiResultDatas)
         {
             try
             {
                 int i = 0;
-
                 foreach (var item in poiResultDatas)
                 {
                     i++;

@@ -828,7 +828,10 @@ namespace ColorVision.Services.Algorithm
                         listViewFOV.ItemsSource = data.MTFData;
                         break;
                     case AlgorithmResultType.Ghost:
-                        img_view.OpenGhostImage(data.ImgFileName);
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            img_view.OpenGhostImage(data.ImgFileName);
+                        });
                         listViewFOV.Visibility = Visibility.Visible;
                         List<string> bdheadersGhost = new List<string> { "CenterPointDis", "LedBlobGray", "GhostAvrGray" };
                         List<string> headersGhost = new List<string> { "质心坐标", "光斑灰度", "鬼影灰度" };
@@ -852,6 +855,12 @@ namespace ColorVision.Services.Algorithm
                         }
                         listViewFOV.View = gridViewDis;
                         listViewFOV.ItemsSource = data.DistortionData;
+                        List<Point> points = new List<Point>();
+                        foreach (var item in data.DistortionData[0].FinalPoints)
+                        {
+                            points.Add(new Point(item.X,item.Y));
+                        }
+                        img_view.AddPoint(points);
                         break;
                     case AlgorithmResultType.Calibration:
                         break;

@@ -61,7 +61,7 @@ namespace ColorVision.Services
             //ColorVision.Util.Tool.ExecuteCommandAsAdmin("net start RegistrationCenterService");
             //ColorVision.Util.Tool.ExecuteCommandAsAdmin("net start CVMainService_x64");
 
-            ColorVision.Util.Tool.ExecuteCommandAsAdmin("net stop CVMainService_x64&&net start CVMainService_x64");
+            ColorVision.Util.Tool.ExecuteCommandAsAdmin("net stop RegistrationCenterService&&net stop CVMainService_x64&&net start RegistrationCenterService&&net start CVMainService_x64");
 
         }
     }
