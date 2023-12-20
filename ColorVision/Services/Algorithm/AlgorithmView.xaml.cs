@@ -755,8 +755,6 @@ namespace ColorVision.Services.Algorithm
             AlgorithmResult data = listView1.Items[listView1.SelectedIndex] as AlgorithmResult;
             if(data != null)
             {
-                //OnCurSelectionChanged?.Invoke(data);
-                img_view.OpenImage(data.ImgFileName);
                 PoiResultDatas.Clear();
                 PoiYResultDatas.Clear();
                 img_view.ResetPOIPoint();
@@ -764,8 +762,10 @@ namespace ColorVision.Services.Algorithm
                 switch (data.ResultType)
                 {   
                     case AlgorithmResultType.POI:
+                        OnCurSelectionChanged?.Invoke(data);
                         break;
                     case AlgorithmResultType.POI_XY_UV:
+                        OnCurSelectionChanged?.Invoke(data);
                         listViewY.Hide();
                         listView2.Show();
                         foreach (var item in data.PoiData)
@@ -775,6 +775,7 @@ namespace ColorVision.Services.Algorithm
                         img_view.AddPOIPoint(PoiResultDatas);
                         break;
                     case AlgorithmResultType.POI_Y:
+                        OnCurSelectionChanged?.Invoke(data);
                         listView2.Hide();
                         listViewY.Show();
                         foreach (var item in data.PoiData)
@@ -784,6 +785,7 @@ namespace ColorVision.Services.Algorithm
                         img_view.AddPOIPoint(PoiYResultDatas);
                         break;
                     case AlgorithmResultType.FOV:
+                        img_view.OpenImage(data.ImgFileName);
                         listViewFOV.Visibility = Visibility.Visible;
                         List<string> bdheadersFOV = new List<string> { "Pattern", "Type", "Degrees" };
                         List<string> headersFOV = new List<string> { "Pattern", "Type", "Degrees" };
@@ -799,6 +801,7 @@ namespace ColorVision.Services.Algorithm
                         listViewFOV.ItemsSource = data.FOVData;
                         break;
                     case AlgorithmResultType.SFR:
+                        img_view.OpenImage(data.ImgFileName);
                         listViewFOV.Visibility = Visibility.Visible;
                         List<string> bdheadersSFR = new List<string> { "pdfrequency", "pdomainSamplingData" };
                         List<string> headersSFR = new List<string> { "pdfrequency", "pdomainSamplingData" };
@@ -811,6 +814,7 @@ namespace ColorVision.Services.Algorithm
                         listViewFOV.ItemsSource = SFRResultDatas;
                         break;
                     case AlgorithmResultType.MTF:
+                        img_view.OpenImage(data.ImgFileName);
                         listViewFOV.Visibility = Visibility.Visible;
                         //MTF
                         List<string> bdheadersMTF = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "Articulation" };
@@ -824,6 +828,7 @@ namespace ColorVision.Services.Algorithm
                         listViewFOV.ItemsSource = data.MTFData;
                         break;
                     case AlgorithmResultType.Ghost:
+                        img_view.OpenImage(data.ImgFileName);
                         listViewFOV.Visibility = Visibility.Visible;
                         List<string> bdheadersGhost = new List<string> { "CenterPointDis", "LedBlobGray", "GhostAvrGray" };
                         List<string> headersGhost = new List<string> { "质心坐标", "光斑灰度", "鬼影灰度" };
@@ -836,6 +841,7 @@ namespace ColorVision.Services.Algorithm
                         listViewFOV.ItemsSource = data.GhostData;
                         break;
                     case AlgorithmResultType.Distortion:
+                        img_view.OpenImage(data.ImgFileName);
                         listViewFOV.Visibility = Visibility.Visible;
                         List<string> bdheadersDis = new List<string> { "DisTypeDesc", "SlopeTypeDesc", "LayoutTypeDesc", "CornerTypeDesc", "MaxRatio" };
                         List<string> headersDis = new List<string> { "类型", "斜率", "布点", "角点", "畸变率" };
