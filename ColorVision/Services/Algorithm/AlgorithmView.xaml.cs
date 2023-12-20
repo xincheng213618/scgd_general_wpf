@@ -855,12 +855,16 @@ namespace ColorVision.Services.Algorithm
                         }
                         listViewFOV.View = gridViewDis;
                         listViewFOV.ItemsSource = data.DistortionData;
-                        List<Point> points = new List<Point>();
-                        foreach (var item in data.DistortionData[0].FinalPoints)
+                        if (data.DistortionData.Count > 0)
                         {
-                            points.Add(new Point(item.X,item.Y));
+                            List<Point> points = new List<Point>();
+                            foreach (var item in data.DistortionData[0].FinalPoints)
+                            {
+                                points.Add(new Point(item.X, item.Y));
+                            }
+                            img_view.AddPoint(points);
                         }
-                        img_view.AddPoint(points);
+                       
                         break;
                     case AlgorithmResultType.Calibration:
                         break;
