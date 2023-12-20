@@ -4,7 +4,7 @@
 #include <opencv2/opencv.hpp>
 
 
-int ReadGhostImage(const char* FilePath, unsigned char** data, int* rows, int* cols, int* channels)
+int ReadGhostImage(const char* FilePath, HImage* outImage)
 {
 	cv::Mat mat = cv::imread(FilePath, cv::ImreadModes::IMREAD_UNCHANGED);
 	if (mat.empty())
@@ -21,13 +21,14 @@ int ReadGhostImage(const char* FilePath, unsigned char** data, int* rows, int* c
 	cv::Mat scaledMat;
 	mat.convertTo(scaledMat, CV_8UC1, 255.0 / (maxVal - minVal), -minVal * 255.0 / (maxVal - minVal));
 
-	// 为图像数据分配内存
-	*data = new unsigned char[scaledMat.total() * scaledMat.elemSize()];
-	memcpy(*data, scaledMat.data, scaledMat.total() * scaledMat.elemSize());
+	///这里不分配的话，局部内存会在运行结束之后清空
+	outImage->pData = new unsigned char[scaledMat.total() * scaledMat.elemSize()];
+	memcpy(outImage->pData, scaledMat.data, scaledMat.total() * scaledMat.elemSize());
 
-	*rows = scaledMat.rows;
-	*cols = scaledMat.cols;
-	*channels = scaledMat.channels();
+	outImage->rows = scaledMat.rows;
+	outImage->cols = scaledMat.cols;
+	outImage->channels = scaledMat.channels();
+	outImage->depth = scaledMat.depth(); // 设置每像素位数
 	return 0;
 
 }

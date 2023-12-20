@@ -2,8 +2,8 @@
 using ColorVision.Draw.Ruler;
 using ColorVision.MVVM;
 using ColorVision.Services.Algorithm;
+using cvColorVision;
 using FileServerPlugin;
-using HarfBuzzSharp;
 using log4net;
 using MQTTMessageLib.Algorithm;
 using OpenCvSharp.WpfExtensions;
@@ -19,7 +19,6 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Media.Media3D;
 
 namespace ColorVision
 {
@@ -658,55 +657,35 @@ namespace ColorVision
             }
         }
 
-        public BitmapImage ConvertToBitmapImage(IntPtr buffer, int width, int height, int channels)
-        {
-            int stride = width * channels;
-            BitmapSource bitmapSource = BitmapSource.Create(
-                width,
-                height,
-                96, // dpiX
-                96, // dpiY
-                PixelFormats.Gray8,
-                null, // palette
-                buffer,
-                height * stride,
-                stride
-            );
-
-            // Convert BitmapSource to BitmapImage
-            BitmapImage bitmapImage = new BitmapImage();
-            using (MemoryStream memoryStream = new MemoryStream())
-            {
-                PngBitmapEncoder encoder = new PngBitmapEncoder();
-                encoder.Frames.Add(BitmapFrame.Create(bitmapSource));
-                encoder.Save(memoryStream);
-                memoryStream.Seek(0, SeekOrigin.Begin);
-
-                bitmapImage.BeginInit();
-                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                bitmapImage.StreamSource = memoryStream;
-                bitmapImage.EndInit();
-                bitmapImage.Freeze(); // Make the BitmapImage thread-safe
-            }
-
-            return bitmapImage;
-        }
-
-
-
         public void OpenGhostImage(string? filePath)
         {
             if (filePath == null)
                 return;
-            IntPtr imageDataPtr = IntPtr.Zero;
-            int rows, cols, channels;
+            HImage hImage; 
 
-            int i = OpenCVHelper.ReadGhostImage(filePath, ref imageDataPtr, out rows, out cols, out channels);
+            int i = OpenCVHelper.ReadGhostImage(filePath, out hImage);
             if (i != 0) return;
 
-            BitmapImage image = ConvertToBitmapImage(imageDataPtr, cols, rows, channels);
 
-            ImageShow.Source = image;
+            PixelFormat format = hImage.channels switch
+            {
+                1 => PixelFormats.Gray8,
+                3 => PixelFormats.Bgr24,
+                4 => PixelFormats.Bgr32,
+                _ => PixelFormats.Default,
+            };
+
+            Application.Current.Dispatcher.Invoke(delegate
+            {
+                WriteableBitmap writeableBitmap = new WriteableBitmap(hImage.cols, hImage.rows, 96.0, 96.0, format, null);
+                OpenCVHelper.RtlMoveMemory(writeableBitmap.BackBuffer, hImage.pData, (uint)(hImage.cols * hImage.rows * hImage.channels));
+                writeableBitmap.Lock();
+                writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight));
+                writeableBitmap.Unlock();
+                ImageShow.Source = writeableBitmap;
+            });
+
+
 
         }
 
