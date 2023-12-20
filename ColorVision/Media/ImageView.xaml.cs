@@ -665,8 +665,14 @@ namespace ColorVision
 
             int i = OpenCVHelper.ReadGhostImage(filePath, out hImage);
             if (i != 0) return;
+            SetImageSource(hImage);
+            //i = OpenCVHelper.ReadGhostHImage(hImage, out HImage hImage1);
+            //if (i != 0) return;
+            //SetImageSource(hImage1);
+        }
 
-
+        private void SetImageSource(HImage hImage)
+        {
             PixelFormat format = hImage.channels switch
             {
                 1 => PixelFormats.Gray8,
@@ -684,9 +690,6 @@ namespace ColorVision
                 writeableBitmap.Unlock();
                 ImageShow.Source = writeableBitmap;
             });
-
-
-
         }
 
 

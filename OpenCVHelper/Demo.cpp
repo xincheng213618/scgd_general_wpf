@@ -4,6 +4,35 @@
 #include <opencv2/opencv.hpp>
 
 
+int ReadGhostHImage(HImage img, HImage* outImage)
+{
+	 cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+
+	if (mat.empty())
+		return -1;
+
+	// 转换为8位图像
+	double minVal, maxVal;
+	cv::minMaxLoc(mat, &minVal, &maxVal); // 找到图像的最小和最大像素值
+	cv::Mat scaledMat;
+	mat.convertTo(scaledMat, CV_8UC1, 255.0 / (maxVal - minVal), -minVal * 255.0 / (maxVal - minVal));
+
+	cv::applyColorMap(scaledMat, scaledMat, cv::COLORMAP_JET);
+
+	///这里不分配的话，局部内存会在运行结束之后清空
+	outImage->pData = new unsigned char[scaledMat.total() * scaledMat.elemSize()];
+	memcpy(outImage->pData, scaledMat.data, scaledMat.total() * scaledMat.elemSize());
+
+	outImage->rows = scaledMat.rows;
+	outImage->cols = scaledMat.cols;
+	outImage->channels = scaledMat.channels();
+	outImage->depth = scaledMat.depth(); // 设置每像素位数
+	return 0;
+}
+
+
+
+
 int ReadGhostImage(const char* FilePath, HImage* outImage)
 {
 	cv::Mat mat = cv::imread(FilePath, cv::ImreadModes::IMREAD_UNCHANGED);
@@ -30,7 +59,6 @@ int ReadGhostImage(const char* FilePath, HImage* outImage)
 	outImage->channels = scaledMat.channels();
 	outImage->depth = scaledMat.depth(); // 设置每像素位数
 	return 0;
-
 }
 
 
