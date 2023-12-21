@@ -4,6 +4,7 @@ using ColorVision.MySql.DAO;
 using FileServerPlugin;
 using HandyControl.Tools.Extension;
 using log4net;
+using Microsoft.Windows.Themes;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using System;
@@ -15,7 +16,9 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
+using System.Windows.Documents;
 using System.Windows.Input;
+using Wpf.Ui.Interop.WinDef;
 
 namespace ColorVision.Services.Algorithm
 {
@@ -750,6 +753,15 @@ namespace ColorVision.Services.Algorithm
 
         }
 
+        /// <summary>
+        /// 专门位鬼影设计的类
+        /// </summary>
+        class Point1
+        {
+            public int X { get; set; }
+            public int Y { get; set; }
+        }
+
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             AlgorithmResult data = listView1.Items[listView1.SelectedIndex] as AlgorithmResult;
@@ -759,6 +771,7 @@ namespace ColorVision.Services.Algorithm
                 PoiYResultDatas.Clear();
                 img_view.ResetPOIPoint();
                 listViewFOV.Visibility = Visibility.Collapsed;
+                List<POIPoint> pOIPoints = new List<POIPoint>();
                 switch (data.ResultType)
                 {   
                     case AlgorithmResultType.POI:
@@ -768,11 +781,13 @@ namespace ColorVision.Services.Algorithm
                         OnCurSelectionChanged?.Invoke(data);
                         listViewY.Hide();
                         listView2.Show();
+
                         foreach (var item in data.PoiData)
                         {
                             PoiResultDatas.Add(item);
+                            pOIPoints.Add(item.Point);
                         }
-                        img_view.AddPOIPoint(PoiResultDatas);
+                        img_view.AddPOIPoint(pOIPoints);
                         break;
                     case AlgorithmResultType.POI_Y:
                         OnCurSelectionChanged?.Invoke(data);
@@ -781,8 +796,9 @@ namespace ColorVision.Services.Algorithm
                         foreach (var item in data.PoiData)
                         {
                             PoiYResultDatas.Add(item);
+                            pOIPoints.Add(item.Point);
                         }
-                        img_view.AddPOIPoint(PoiYResultDatas);
+                        img_view.AddPOIPoint(pOIPoints);
                         break;
                     case AlgorithmResultType.FOV:
                         img_view.OpenImage(data.ImgFileName);
@@ -812,13 +828,14 @@ namespace ColorVision.Services.Algorithm
                         }
                         listViewFOV.View = gridViewSFR;
                         listViewFOV.ItemsSource = SFRResultDatas;
+
                         break;
                     case AlgorithmResultType.MTF:
                         img_view.OpenImage(data.ImgFileName);
                         listViewFOV.Visibility = Visibility.Visible;
                         //MTF
-                        List<string> bdheadersMTF = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "Articulation" };
-                        List<string> headersMTF = new List<string> { "名称", "位置", "大小", "形状", "MTF" };
+                        List<string> bdheadersMTF = new List<string> { "PixelPos", "PixelSize", "Shapes", "Articulation" };
+                        List<string> headersMTF = new List<string> { "位置", "大小", "形状", "MTF" };
                         GridView gridViewMTF = new GridView();
                         for (int i = 0; i < headersMTF.Count; i++)
                         {
@@ -826,16 +843,62 @@ namespace ColorVision.Services.Algorithm
                         }
                         listViewFOV.View = gridViewMTF;
                         listViewFOV.ItemsSource = data.MTFData;
-
-
-
+                        List<Point> pointmtf = new List<Point>();
+                        foreach (var item in data.MTFData)
+                        {
+                            pOIPoints.Add(item.Point);
+                        }
+                        img_view.AddPOIPoint(pOIPoints);
 
                         break;
                     case AlgorithmResultType.Ghost:
-                        Application.Current.Dispatcher.Invoke(() =>
+                        if (data.GhostData.Count == 0)
+                            return;
+                        try
                         {
-                            img_view.OpenGhostImage(data.ImgFileName);
-                        });
+
+
+
+
+                            string json = data.GhostData[0].GhostPixels;
+                            List<List<Point1>> PointAll = JsonConvert.DeserializeObject<List<List<Point1>>>(json);
+                            int[] pointx;
+                            int[] pointy;
+                            List<Point1> Points = new List<Point1>();
+                            foreach (var item in PointAll)
+                                foreach (var item1 in item)
+                                    Points.Add(item1);
+
+                            if (Points != null)
+                            {
+                                pointx = new int[Points.Count];
+                                pointy = new int[Points.Count];
+                                for (int i = 0; i < Points.Count; i++)
+                                {
+                                    pointx[i] = (int)Points[i].X;
+                                    pointy[i] = (int)Points[i].Y;
+                                }
+                            }
+                            else
+                            {
+                                pointx = new int[1] { 1 };
+                                pointy = new int[1] { 1 };
+                            }
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                img_view.OpenGhostImage(data.ImgFileName, pointx, pointy);
+                            });
+
+
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show(ex.Message);
+                        }
+
+
+
+
                         listViewFOV.Visibility = Visibility.Visible;
                         List<string> bdheadersGhost = new List<string> { "CenterPointDis", "LedBlobGray", "GhostAvrGray" };
                         List<string> headersGhost = new List<string> { "质心坐标", "光斑灰度", "鬼影灰度" };

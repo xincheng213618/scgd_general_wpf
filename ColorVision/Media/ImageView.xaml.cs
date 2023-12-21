@@ -7,6 +7,7 @@ using FileServerPlugin;
 using log4net;
 using MQTTMessageLib.Algorithm;
 using OpenCvSharp.WpfExtensions;
+using Panuon.WPF;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -658,11 +659,12 @@ namespace ColorVision
             }
         }
 
-        public void OpenGhostImage(string? filePath)
+        public void OpenGhostImage(string? filePath, int[] pointx, int[] pointy)
         {
             if (filePath == null)
                 return;
-            int i = OpenCVHelper.ReadGhostImage(filePath, out HImage hImage);
+
+            int i = OpenCVHelper.ReadGhostImage(filePath,pointx.Length,pointx,pointy ,out HImage hImage);
             if (i != 0) return;
             var writeableBitmap =HImageToWriteableBitmap(hImage);
             ViewBitmapSource = writeableBitmap;
@@ -809,46 +811,39 @@ namespace ColorVision
                 ImageShow.AddVisual(Circle);
             }
         }
-
-
-        public void AddPOIPoint(ObservableCollection<PoiResultData> poiResultDatas)
+        public void AddPOIPoint(List<POIPoint> PoiPoints)
         {
-            try
+            int id = 0;
+            foreach (var item in PoiPoints)
             {
-                int i = 0;
-                foreach (var item in poiResultDatas)
-                {
-                    i++;
-                    switch (item.Point.PointType)
-                    {
-                        case POIPointTypes.Circle:
-                            DrawingVisualCircleWord Circle = new DrawingVisualCircleWord();
-                            Circle.Attribute.Center = new Point(item.Point.PixelX, item.Point.PixelY);
-                            Circle.Attribute.Radius = item.Point.Radius;
-                            Circle.Attribute.Brush = Brushes.Transparent;
-                            Circle.Attribute.Pen = new Pen(Brushes.Red, item.Point.Width / 30.0);
-                            Circle.Attribute.ID = item.Point.Id;
-                            Circle.Attribute.Text = item.Point.Name;
-                            Circle.Render();
-                            ImageShow.AddVisual(Circle);
-                            break;
-                        case POIPointTypes.Rect:
-                            DrawingVisualRectangleWord Rectangle = new DrawingVisualRectangleWord();
-                            Rectangle.Attribute.Rect = new Rect(item.Point.PixelX, item.Point.PixelY, item.Point.Width, item.Point.Height);
-                            Rectangle.Attribute.Brush = Brushes.Transparent;
-                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.Point.Width / 30.0);
-                            Rectangle.Attribute.ID = item.Point.Id;
-                            Rectangle.Attribute.Name = item.Point.Name;
-                            Rectangle.Render();
-                            ImageShow.AddVisual(Rectangle);
-                            break;
-                        //case RiPointTypes.Mask:
-                        //    break;
-                    }
+                switch (item.PointType)
+                {   
+                    case POIPointTypes.Circle:
+                        DrawingVisualCircleWord Circle = new DrawingVisualCircleWord();
+                        Circle.Attribute.Center = new Point(item.PixelX, item.PixelY);
+                        Circle.Attribute.Radius = item.Radius;
+                        Circle.Attribute.Brush = Brushes.Transparent;
+                        Circle.Attribute.Pen = new Pen(Brushes.Red, item.Width / 30.0);
+                        Circle.Attribute.ID = item.Id;
+                        Circle.Attribute.Text = item.Name;
+                        Circle.Render();
+                        ImageShow.AddVisual(Circle);
+                        break;
+                    case POIPointTypes.Rect:
+                        DrawingVisualRectangleWord Rectangle = new DrawingVisualRectangleWord();
+                        Rectangle.Attribute.Rect = new Rect(item.PixelX, item.PixelY, item.Width, item.Height);
+                        Rectangle.Attribute.Brush = Brushes.Transparent;
+                        Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.Width / 30.0);
+                        Rectangle.Attribute.ID = item.Id;
+                        Rectangle.Attribute.Name = item.Name;
+                        Rectangle.Render();
+                        ImageShow.AddVisual(Rectangle);
+                        break;
+                    case POIPointTypes.Mask:
+                        break;
+                    default:
+                        break;
                 }
-            }
-            catch
-            {
 
             }
         }
