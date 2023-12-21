@@ -94,24 +94,32 @@ namespace ColorVision.Services.Device.Camera
         /// <summary>
         /// 色/亮度图像
         /// </summary>
-        public string CIEFileBasePath { get; set; }
+        public string CIEFileBasePath { get => _CIEFileBasePath; set { _CIEFileBasePath = value; NotifyPropertyChanged(); } }
+        private string _CIEFileBasePath;
+
         /// <summary>
         /// 相机原始图像
         /// </summary>
-        public string RawFileBasePath { get; set; }
+        public string RawFileBasePath { get => _RawFileBasePath; set { _RawFileBasePath = value; NotifyPropertyChanged(); } }
+        private string _RawFileBasePath;
+
         /// <summary>
         /// 校正后tif图像
         /// </summary>
-        public string SrcFileBasePath { get; set; }
+        public string SrcFileBasePath { get => _SrcFileBasePath; set { _SrcFileBasePath = value; NotifyPropertyChanged(); } }
+        private string _SrcFileBasePath;
+
         /// <summary>
         /// 校正文件路径
         /// </summary>
-        public string CalibrationFileBasePath { get; set; }
+        public string CalibrationFileBasePath { get => _CalibrationFileBasePath; set { _CalibrationFileBasePath = value; NotifyPropertyChanged(); } }
+        private string _CalibrationFileBasePath;
+
         /// <summary>
         /// 端口地址
         /// </summary>
-        public string Endpoint { get; set; }
-
+        public string Endpoint { get => _Endpoint; set { _Endpoint = value; NotifyPropertyChanged(); } }
+        private string _Endpoint;
     }
 
     public class CameraCfg : ViewModelBase

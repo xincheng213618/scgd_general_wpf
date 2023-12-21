@@ -43,12 +43,12 @@ namespace ColorVision.Templates
             this.SysResourceModel = SysResourceModel;
             Name = SysResourceModel.Name;
             FilePath = SysResourceModel.Value;
-            ID = SysResourceModel.Id.ToString();
+            ID = SysResourceModel.Id;
         }
 
         public string Name { get; set; }
         public string FilePath { get; set; }
-        public string ID { get; set; }
+        public int ID { get; set; }
 
         public int Pid { get; set; }
     }
@@ -117,6 +117,7 @@ namespace ColorVision.Templates
                 strings.Add(item.Name??string.Empty);
             }
         }
+        public int Delete(int id) => resourceDao.DeleteById(id);
 
         public int Save(SysResourceModel value) => resourceDao.Save(value);
 

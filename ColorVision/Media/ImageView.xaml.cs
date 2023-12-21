@@ -659,12 +659,12 @@ namespace ColorVision
             }
         }
 
-        public void OpenGhostImage(string? filePath, int[] pointx, int[] pointy)
+        public void OpenGhostImage(string? filePath,int[] LED_pixel_X, int[] LED_pixel_Y, int[] Ghost_pixel_X, int[] Ghost_pixel_Y)
         {
             if (filePath == null)
                 return;
 
-            int i = OpenCVHelper.ReadGhostImage(filePath,pointx.Length,pointx,pointy ,out HImage hImage);
+            int i = OpenCVHelper.ReadGhostImage(filePath, LED_pixel_X.Length, LED_pixel_X, LED_pixel_Y, Ghost_pixel_X.Length, Ghost_pixel_X, Ghost_pixel_Y, out HImage hImage);
             if (i != 0) return;
             var writeableBitmap =HImageToWriteableBitmap(hImage);
             ViewBitmapSource = writeableBitmap;

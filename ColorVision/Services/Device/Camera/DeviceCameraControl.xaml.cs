@@ -133,14 +133,50 @@ namespace ColorVision.Device.Camera
 
 
 
+
+
+                StackPanel stack = new StackPanel();
+
+
                 Button button = new Button() { Content = "上传校正文件", Margin = new Thickness(5) };
                 button.Click += (s, e) =>
                 {
                     CalibrationUploadWindow uploadCalibration = new CalibrationUploadWindow(Service, item) { WindowStartupLocation = WindowStartupLocation.CenterScreen };
                     uploadCalibration.ShowDialog();
-                    CalibrationRsourceService.GetInstance().Refresh();
+                    listView.ItemsSource = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item);
                 };
-                StackPanelSort.Children.Add(button);
+                stack.Children.Add(button);
+
+
+                Button button1 = new Button() { Content = "刷新", Margin = new Thickness(5) };
+                button1.Click += (s, e) =>
+                {
+                    listView.ItemsSource = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item);
+                };
+                stack.Children.Add(button1);
+
+                Button button2 = new Button() { Content = "删除", Margin = new Thickness(5) };
+                button2.Click += (s, e) =>
+                {
+                    if (listView.SelectedIndex > 0)
+                    {
+                        CalibrationRsource calibrationRsource = CalibrationRsources[listView.SelectedIndex];
+                        CalibrationRsourceService.GetInstance().Delete(calibrationRsource.ID);
+                        listView.ItemsSource = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item);
+                    }
+                    else
+                    {
+                        MessageBox.Show("请选择您要删除的文件");
+                    }
+
+                };
+                stack.Children.Add(button2);
+
+
+
+                stackPanel.Children.Insert(0, stack);
+
+
 
                 TabControlCalib.Items.Add(tabItem);
             }
