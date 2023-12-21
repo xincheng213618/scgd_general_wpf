@@ -770,8 +770,8 @@ namespace ColorVision.Services.Algorithm
                 PoiResultDatas.Clear();
                 PoiYResultDatas.Clear();
                 img_view.ResetPOIPoint();
-                listViewFOV.Visibility = Visibility.Collapsed;
-                List<POIPoint> pOIPoints = new List<POIPoint>();
+                listViewSide.Visibility = Visibility.Collapsed;
+                List<POIPoint> DrawPoiPoint = new List<POIPoint>();
                 switch (data.ResultType)
                 {   
                     case AlgorithmResultType.POI:
@@ -785,9 +785,9 @@ namespace ColorVision.Services.Algorithm
                         foreach (var item in data.PoiData)
                         {
                             PoiResultDatas.Add(item);
-                            pOIPoints.Add(item.Point);
+                            DrawPoiPoint.Add(item.Point);
                         }
-                        img_view.AddPOIPoint(pOIPoints);
+                        img_view.AddPOIPoint(DrawPoiPoint);
                         break;
                     case AlgorithmResultType.POI_Y:
                         OnCurSelectionChanged?.Invoke(data);
@@ -796,13 +796,13 @@ namespace ColorVision.Services.Algorithm
                         foreach (var item in data.PoiData)
                         {
                             PoiYResultDatas.Add(item);
-                            pOIPoints.Add(item.Point);
+                            DrawPoiPoint.Add(item.Point);
                         }
-                        img_view.AddPOIPoint(pOIPoints);
+                        img_view.AddPOIPoint(DrawPoiPoint);
                         break;
                     case AlgorithmResultType.FOV:
                         img_view.OpenImage(data.ImgFileName);
-                        listViewFOV.Visibility = Visibility.Visible;
+                        listViewSide.Visibility = Visibility.Visible;
                         List<string> bdheadersFOV = new List<string> { "Pattern", "Type", "Degrees" };
                         List<string> headersFOV = new List<string> { "Pattern", "Type", "Degrees" };
                         GridView gridViewFOV = new GridView();
@@ -810,15 +810,13 @@ namespace ColorVision.Services.Algorithm
                         {
                             gridViewFOV.Columns.Add(new GridViewColumn() { Header = headersFOV[i], DisplayMemberBinding = new Binding(bdheadersFOV[i]) });
                         }
-                        listViewFOV.View = gridViewFOV;
-                        listViewFOV.ItemsSource = FOVResultDatas;
-
-                        listViewFOV.Visibility =Visibility.Visible;
-                        listViewFOV.ItemsSource = data.FOVData;
+                        listViewSide.View = gridViewFOV;
+                        listViewSide.Visibility =Visibility.Visible;
+                        listViewSide.ItemsSource = data.FOVData;
                         break;
                     case AlgorithmResultType.SFR:
                         img_view.OpenImage(data.ImgFileName);
-                        listViewFOV.Visibility = Visibility.Visible;
+                        listViewSide.Visibility = Visibility.Visible;
                         List<string> bdheadersSFR = new List<string> { "pdfrequency", "pdomainSamplingData" };
                         List<string> headersSFR = new List<string> { "pdfrequency", "pdomainSamplingData" };
                         GridView gridViewSFR = new GridView();
@@ -826,13 +824,17 @@ namespace ColorVision.Services.Algorithm
                         {
                             gridViewSFR.Columns.Add(new GridViewColumn() { Header = headersSFR[i], DisplayMemberBinding = new Binding(bdheadersSFR[i]) });
                         }
-                        listViewFOV.View = gridViewSFR;
-                        listViewFOV.ItemsSource = SFRResultDatas;
-
+                        listViewSide.View = gridViewSFR;
+                        listViewSide.ItemsSource = data.SFRData;
+                        foreach (var item in data.MTFData)
+                        {
+                            DrawPoiPoint.Add(item.Point);
+                        }
+                        img_view.AddPOIPoint(DrawPoiPoint);
                         break;
                     case AlgorithmResultType.MTF:
                         img_view.OpenImage(data.ImgFileName);
-                        listViewFOV.Visibility = Visibility.Visible;
+                        listViewSide.Visibility = Visibility.Visible;
                         //MTF
                         List<string> bdheadersMTF = new List<string> { "PixelPos", "PixelSize", "Shapes", "Articulation" };
                         List<string> headersMTF = new List<string> { "位置", "大小", "形状", "MTF" };
@@ -841,14 +843,13 @@ namespace ColorVision.Services.Algorithm
                         {
                             gridViewMTF.Columns.Add(new GridViewColumn() { Header = headersMTF[i], DisplayMemberBinding = new Binding(bdheadersMTF[i]) });
                         }
-                        listViewFOV.View = gridViewMTF;
-                        listViewFOV.ItemsSource = data.MTFData;
-                        List<Point> pointmtf = new List<Point>();
+                        listViewSide.View = gridViewMTF;
+                        listViewSide.ItemsSource = data.MTFData;
                         foreach (var item in data.MTFData)
                         {
-                            pOIPoints.Add(item.Point);
+                            DrawPoiPoint.Add(item.Point);
                         }
-                        img_view.AddPOIPoint(pOIPoints);
+                        img_view.AddPOIPoint(DrawPoiPoint);
 
                         break;
                     case AlgorithmResultType.Ghost:
@@ -899,7 +900,7 @@ namespace ColorVision.Services.Algorithm
 
 
 
-                        listViewFOV.Visibility = Visibility.Visible;
+                        listViewSide.Visibility = Visibility.Visible;
                         List<string> bdheadersGhost = new List<string> { "CenterPointDis", "LedBlobGray", "GhostAvrGray" };
                         List<string> headersGhost = new List<string> { "质心坐标", "光斑灰度", "鬼影灰度" };
                         GridView gridViewGhost = new GridView();
@@ -907,12 +908,12 @@ namespace ColorVision.Services.Algorithm
                         {
                             gridViewGhost.Columns.Add(new GridViewColumn() { Header = headersGhost[i], DisplayMemberBinding = new Binding(bdheadersGhost[i]) });
                         }
-                        listViewFOV.View = gridViewGhost;
-                        listViewFOV.ItemsSource = data.GhostData;
+                        listViewSide.View = gridViewGhost;
+                        listViewSide.ItemsSource = data.GhostData;
                         break;
                     case AlgorithmResultType.Distortion:
                         img_view.OpenImage(data.ImgFileName);
-                        listViewFOV.Visibility = Visibility.Visible;
+                        listViewSide.Visibility = Visibility.Visible;
                         List<string> bdheadersDis = new List<string> { "DisTypeDesc", "SlopeTypeDesc", "LayoutTypeDesc", "CornerTypeDesc", "MaxRatio" };
                         List<string> headersDis = new List<string> { "类型", "斜率", "布点", "角点", "畸变率" };
                         GridView gridViewDis = new GridView();
@@ -920,8 +921,8 @@ namespace ColorVision.Services.Algorithm
                         {
                             gridViewDis.Columns.Add(new GridViewColumn() { Header = headersDis[i], DisplayMemberBinding = new Binding(bdheadersDis[i]) });
                         }
-                        listViewFOV.View = gridViewDis;
-                        listViewFOV.ItemsSource = data.DistortionData;
+                        listViewSide.View = gridViewDis;
+                        listViewSide.ItemsSource = data.DistortionData;
                         if (data.DistortionData.Count > 0)
                         {
                             List<Point> points = new List<Point>();
