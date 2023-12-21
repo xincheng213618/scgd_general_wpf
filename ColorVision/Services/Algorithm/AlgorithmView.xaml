@@ -43,11 +43,7 @@
         </Grid>
         <ListView x:Name="listView2"  Grid.Column="1" SelectionChanged="listView2_SelectionChanged" Visibility="Collapsed"/>
         <ListView x:Name="listViewY"  Grid.Column="1" SelectionChanged="listViewY_SelectionChanged" Visibility="Collapsed"/>
-        <ListView x:Name="listViewFOV"  Grid.Column="1" Visibility="Collapsed"/>
-        <ListView x:Name="listViewSFR"  Grid.Column="1" Visibility="Collapsed"/>
-        <ListView x:Name="listViewMTF"  Grid.Column="1" Visibility="Collapsed"/>
-        <ListView x:Name="listViewGhost"  Grid.Column="1" Visibility="Collapsed"/>
-        <ListView x:Name="listViewDistortion"  Grid.Column="1" Visibility="Collapsed"/>
+        <ListView x:Name="listViewSide"  Grid.Column="1" Visibility="Collapsed"/>
         <GridSplitter  Grid.Column="1" IsEnabled="{Binding ElementName=toggle2,Path=IsChecked}" Background="LightGray"  Width="2" HorizontalAlignment="Left"   DragCompleted="GridSplitter_DragCompleted1"  />
 
     </Grid>

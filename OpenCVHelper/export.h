@@ -21,7 +21,7 @@ typedef struct HImage
     unsigned char* pData;
 }HImage;
 
-extern "C" COLORVISIONCORE_API int ReadGhostImage(const char* FilePath, HImage * outImage);
+extern "C" COLORVISIONCORE_API int ReadGhostImage(const char* FilePath, int singleGhostPixelNum, int* Ghost_pixel_X, int* Ghost_pixel_Y, HImage * outImage);
 extern "C" COLORVISIONCORE_API int ReadGhostHImage(HImage img, HImage * outImage);
 
 extern "C" COLORVISIONCORE_API double CalArtculation(int nw, int nh, char* data);

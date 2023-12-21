@@ -33,7 +33,7 @@ int ReadGhostHImage(HImage img, HImage* outImage)
 
 
 
-int ReadGhostImage(const char* FilePath, HImage* outImage)
+int ReadGhostImage(const char* FilePath, int singleGhostPixelNum, int* Ghost_pixel_X, int* Ghost_pixel_Y, HImage* outImage)
 {
 	cv::Mat mat = cv::imread(FilePath, cv::ImreadModes::IMREAD_UNCHANGED);
 	if (mat.empty())
@@ -49,6 +49,16 @@ int ReadGhostImage(const char* FilePath, HImage* outImage)
 	cv::minMaxLoc(mat, &minVal, &maxVal); // 找到图像的最小和最大像素值
 	cv::Mat scaledMat;
 	mat.convertTo(scaledMat, CV_8UC1, 255.0 / (maxVal - minVal), -minVal * 255.0 / (maxVal - minVal));
+
+	std::vector<std::vector<cv::Point>> paintContours;
+
+	for (size_t i = 0; i < singleGhostPixelNum; i++)
+	{
+		std::vector<cv::Point> lists;
+		lists.push_back(cv::Point(Ghost_pixel_X[i], Ghost_pixel_Y[i]));
+		paintContours.push_back(lists);
+	}
+	cv::drawContours(scaledMat, paintContours, -1, cv::Scalar(255), -1, 8, cv::noArray(), INT_MAX, cv::Point());
 
 	///这里不分配的话，局部内存会在运行结束之后清空
 	outImage->pData = new unsigned char[scaledMat.total() * scaledMat.elemSize()];

@@ -45,7 +45,7 @@ namespace ColorVision
         public static extern void ReadCVFile(string FullPath);
 
         [DllImport("OpenCVHelper.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern int ReadGhostImage([MarshalAs(UnmanagedType.LPStr)] string FilePath, out HImage hImage);
+        public static extern int ReadGhostImage([MarshalAs(UnmanagedType.LPStr)] string FilePath, int singleGhostPixelNum, int[] pointx, int[] pointy, out HImage hImage);
 
         [DllImport("OpenCVHelper.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern int ReadGhostHImage(HImage image, out HImage hImage);
