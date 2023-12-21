@@ -31,7 +31,7 @@ namespace ColorVision.RC
         {
             _AppId = "app1";
             _AppSecret = "123456";
-            _RCName = "RC01";
+            _RCName = "RC_local";
         }
     }
 }
