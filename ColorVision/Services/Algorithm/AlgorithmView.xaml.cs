@@ -826,6 +826,10 @@ namespace ColorVision.Services.Algorithm
                         }
                         listViewFOV.View = gridViewMTF;
                         listViewFOV.ItemsSource = data.MTFData;
+
+
+
+
                         break;
                     case AlgorithmResultType.Ghost:
                         Application.Current.Dispatcher.Invoke(() =>

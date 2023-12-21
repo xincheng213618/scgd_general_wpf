@@ -65,17 +65,12 @@
                 </GroupBox>
                 <GroupBox  Header="算法服务">
                     <StackPanel  >
-                        <Button Content="算法服务初始化"  HorizontalAlignment="Left" Click="Algorithm_INI" Visibility="Collapsed" />
-                        <Button Content="数据显示窗口"  HorizontalAlignment="Left" Click="Button_Click" Visibility="Visible" />
                         <GroupBox  Header="图片文件">
                             <DockPanel Margin="0,2">
                                 <Button  Content="..." DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Open_File" />
                                 <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" HorizontalAlignment="Left" Width="130" />
                             </DockPanel>
                         </GroupBox>
-
-
-
                         <GroupBox  Header="FOV" ToolTip="Field of view">
                             <DockPanel Margin="0,2">
                                 <Button  Content="计算" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="FOV_Click" />
