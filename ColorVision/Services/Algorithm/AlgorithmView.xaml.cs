@@ -2,6 +2,7 @@
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using FileServerPlugin;
+using FlowEngineLib;
 using HandyControl.Tools.Extension;
 using log4net;
 using Microsoft.Windows.Themes;
@@ -826,11 +827,11 @@ namespace ColorVision.Services.Algorithm
                         }
                         listViewSide.View = gridViewSFR;
                         listViewSide.ItemsSource = data.SFRData;
-                        foreach (var item in data.MTFData)
+                        if (data.SFRData.Count > 0)
                         {
-                            DrawPoiPoint.Add(item.Point);
+                            img_view.AddRect(new Rect(10,10,10,10));
                         }
-                        img_view.AddPOIPoint(DrawPoiPoint);
+
                         break;
                     case AlgorithmResultType.MTF:
                         img_view.OpenImage(data.ImgFileName);
@@ -896,8 +897,6 @@ namespace ColorVision.Services.Algorithm
                         {
                             MessageBox.Show(ex.Message);
                         }
-
-
 
 
                         listViewSide.Visibility = Visibility.Visible;

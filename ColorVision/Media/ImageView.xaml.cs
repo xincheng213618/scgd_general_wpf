@@ -811,6 +811,17 @@ namespace ColorVision
                 ImageShow.AddVisual(Circle);
             }
         }
+
+        public void AddRect(Rect rect)
+        {
+            DrawingVisualRectangleWord Rectangle = new DrawingVisualRectangleWord();
+            Rectangle.Attribute.Rect = new Rect(rect.X, rect.Y, rect.Width, rect.Height);
+            Rectangle.Attribute.Brush = Brushes.Transparent;
+            Rectangle.Attribute.Pen = new Pen(Brushes.Red, rect.Width / 30.0);
+            Rectangle.Render();
+            ImageShow.AddVisual(Rectangle);
+        }
+
         public void AddPOIPoint(List<POIPoint> PoiPoints)
         {
             int id = 0;
