@@ -569,10 +569,10 @@ namespace ColorVision.Services.Algorithm
                     file.WriteLine(headers);
                 }
                 string value = "";
-                foreach (var item in ListContents[listView1.SelectedIndex])
-                {
-                    value += item + ",";
-                }
+                //foreach (var item in ListContents[listView1.SelectedIndex])
+                //{
+                //    value += item + ",";
+                //}
                 file.WriteLine(value);
             }
         }
@@ -741,9 +741,6 @@ namespace ColorVision.Services.Algorithm
             if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
             listView1.ScrollIntoView(listView1.SelectedItem);
         }
-
-        private List<List<string>> ListContents { get; set; } = new List<List<string>>() { };
-
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
             
@@ -765,6 +762,8 @@ namespace ColorVision.Services.Algorithm
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (listView1.SelectedIndex < 0)
+                return;
             AlgorithmResult data = listView1.Items[listView1.SelectedIndex] as AlgorithmResult;
             if(data != null)
             {
@@ -956,14 +955,6 @@ namespace ColorVision.Services.Algorithm
         {
 
         }
-
-        private void Button2_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-
-
         private void listViewY_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
 
@@ -972,6 +963,11 @@ namespace ColorVision.Services.Algorithm
         internal void OpenImage(CVCIEFileInfo fileInfo)
         {
             img_view.OpenImage(fileInfo);
+        }
+
+        private void Button_Delete_Click(object sender, RoutedEventArgs e)
+        {
+            AlgResults.Clear();
         }
     }
 }

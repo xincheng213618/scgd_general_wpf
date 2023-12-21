@@ -138,6 +138,7 @@ namespace ColorVision.Device.Camera
                 {
                     CalibrationUploadWindow uploadCalibration = new CalibrationUploadWindow(Service, item) { WindowStartupLocation = WindowStartupLocation.CenterScreen };
                     uploadCalibration.ShowDialog();
+                    CalibrationRsourceService.GetInstance().Refresh();
                 };
                 StackPanelSort.Children.Add(button);
 
