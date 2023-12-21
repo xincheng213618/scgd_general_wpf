@@ -10,6 +10,11 @@
              d:DataContext="{d:DesignInstance local:DeviceCamera}"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800" Initialized="UserControl_Initialized">
+    <UserControl.Resources>
+        <Style TargetType="TextBox" BasedOn="{StaticResource TextBoxBaseBaseStyle}">
+            <EventSetter Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown"/>
+        </Style>
+    </UserControl.Resources>
     <Grid  x:Name="MQTTEditContent" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter}}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
@@ -135,7 +140,7 @@
                             <StackPanel Margin="0.2" Visibility="{Binding Config.IsExpThree,Converter={StaticResource bool2VisibilityConverter1}}">
                                 <DockPanel  >
                                     <TextBlock  Text="默认曝光" Width="120" />
-                                    <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTime}"  Width="50"/>
+                                    <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTime}"   Width="50"/>
                                     <hc:PreviewSlider x:Name="SliderexpTime"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="{Binding Config.ExpTime}" Maximum="60000">
                                         <hc:PreviewSlider.PreviewContent>
                                             <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0."/>

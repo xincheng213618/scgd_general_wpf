@@ -23,6 +23,7 @@ using log4net;
 using System.Windows.Threading;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Windows.Input;
 
 namespace ColorVision.Device.Camera
 {
@@ -511,6 +512,7 @@ namespace ColorVision.Device.Camera
             }
         }
 
+
         private void GoHome_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
@@ -580,6 +582,14 @@ namespace ColorVision.Device.Camera
         private void SliderexpTime_MouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
 
+        }
+        private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                NativeMethods.Keyboard.PressKey(0x09);
+                e.Handled = true;
+            }
         }
     }
 }

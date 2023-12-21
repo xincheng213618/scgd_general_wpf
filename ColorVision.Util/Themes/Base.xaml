@@ -21,7 +21,7 @@
         <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
         <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
     </Style>
-    
+
     <Style TargetType="{x:Type ComboBox}" BasedOn="{StaticResource ComboBoxBaseStyle}">
       
         

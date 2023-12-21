@@ -6,7 +6,6 @@ namespace ColorVision.Themes
 {
     public partial class BaseEvent : ResourceDictionary
     {
-
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
@@ -14,7 +13,6 @@ namespace ColorVision.Themes
                 NativeMethods.Keyboard.PressKey(0x09);
                 e.Handled = true;
             }
-
         }
         public void NumberValidationTextBox(object sender, KeyEventArgs e)
         {

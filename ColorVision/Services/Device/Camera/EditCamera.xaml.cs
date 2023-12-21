@@ -4,6 +4,7 @@ using System.Linq;
 using System.Windows.Controls;
 using cvColorVision;
 using ColorVision.Extension;
+using System.Windows.Input;
 
 
 namespace ColorVision.Device.Camera
@@ -22,6 +23,15 @@ namespace ColorVision.Device.Camera
         {
             DeviceCamera = mQTTDeviceCamera;
             InitializeComponent();
+        }
+
+        private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                NativeMethods.Keyboard.PressKey(0x09);
+                e.Handled = true;
+            }
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -176,5 +186,6 @@ namespace ColorVision.Device.Camera
                 }
             };
         }
+
     }
 }
