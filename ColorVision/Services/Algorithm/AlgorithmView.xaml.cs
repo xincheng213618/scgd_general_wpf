@@ -907,10 +907,6 @@ namespace ColorVision.Services.Algorithm
                                 LED_pixel_X = new int[1] { 1 };
                                 LED_pixel_Y = new int[1] { 1 };
                             }
-
-
-
-
                             Application.Current.Dispatcher.Invoke(() =>
                             {
                                 img_view.OpenGhostImage(data.ImgFileName, LED_pixel_X, LED_pixel_Y, Ghost_pixel_X, Ghost_pixel_Y);
@@ -960,6 +956,20 @@ namespace ColorVision.Services.Algorithm
                         break;
                     case AlgorithmResultType.Calibration:
                         break;
+                    case AlgorithmResultType.LedCheck:
+                        img_view.OpenImage(data.ImgFileName);
+                        listViewSide.Visibility = Visibility.Collapsed;
+                        //if (data.DistortionData.Count > 0)
+                        //{
+                        //    List<Point> points = new List<Point>();
+                        //    foreach (var item in data.DistortionData[0].FinalPoints)
+                        //    {
+                        //        points.Add(new Point(item.X, item.Y));
+                        //    }
+                        //    img_view.AddPoint(points);
+                        //}
+                        break;
+
                     default:
                         break;
                 }
