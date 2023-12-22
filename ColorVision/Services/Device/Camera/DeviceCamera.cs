@@ -37,10 +37,7 @@ namespace ColorVision.Device.Camera
             }
         }
         private bool _isVideo;
-
-
         public RelayCommand UploadCalibrationCommand { get; set; }
-
 
         public DeviceCamera(SysResourceModel sysResourceModel, ServiceCamera cameraService) : base(sysResourceModel)
         {
