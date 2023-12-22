@@ -1,4 +1,5 @@
-﻿using ColorVision.Services.Device;
+﻿using ColorVision.RC;
+using ColorVision.Services.Device;
 using System;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -63,8 +64,8 @@ namespace ColorVision.Services
             //Col   rVision.Util.Tool.ExecuteCommandAsAdmin("net start RegistrationCenterService");
             //ColorVision.Util.Tool.ExecuteCommandAsAdmin("net start CVMainService_x64");
 
-            ColorVision.Util.Tool.ExecuteCommandAsAdmin("net stop RegistrationCenterService&net stop CVMainService_x64&net start RegistrationCenterService&net start CVMainService_x64");
-
+            //ColorVision.Util.Tool.ExecuteCommandAsAdmin("net stop RegistrationCenterService&net stop CVMainService_x64&net start RegistrationCenterService&net start CVMainService_x64");
+            RCService.GetInstance().RestartServices();
         }
     }
 }

@@ -47,6 +47,7 @@ namespace ColorVision.RC
         private string RCRegTopic;
         private string RCHeartbeatTopic;
         private string RCPublicTopic;
+        private string RCAdminTopic;
         private NodeToken? Token;
         private bool TryTestRegist;
         public ServiceNodeStatus RegStatus { get=> _RegStatus; set { _RegStatus = value; NotifyPropertyChanged();NotifyPropertyChanged(nameof(IsConnect)); } }
@@ -90,6 +91,7 @@ namespace ColorVision.RC
             this.RCRegTopic = MQTTRCServiceTypeConst.BuildRegTopic(RCNodeName);
             this.RCHeartbeatTopic = MQTTRCServiceTypeConst.BuildHeartbeatTopic(RCNodeName);
             this.RCPublicTopic = MQTTRCServiceTypeConst.BuildPublicTopic(RCNodeName);
+            this.RCAdminTopic = MQTTRCServiceTypeConst.BuildAdminTopic(RCNodeName);
         }
 
         private Task MqttClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
@@ -362,7 +364,14 @@ namespace ColorVision.RC
             return false;
         }
 
-
+        public void RestartServices()
+        {
+            if (Token != null)
+            {
+                MQTTRCServicesRestartRequest reg = new MQTTRCServicesRestartRequest(NodeName, null, Token.AccessToken);
+                PublishAsyncClient(RCAdminTopic, JsonConvert.SerializeObject(reg));
+            }
+        }
 
 
         public bool TryRegist(RCServiceConfig cfg)
