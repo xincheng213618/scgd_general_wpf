@@ -107,7 +107,6 @@ namespace ColorVision.Device.Camera
                 };
                 StackPanelSort.Children.Add(IDASC);
 
-
                 RadioButton BatchASC = new RadioButton { Content = "按照批次号升序", Tag = "BatchASC", Margin = new Thickness(5) };
                 BatchASC.Click += (s, e) =>
                 {
@@ -119,7 +118,6 @@ namespace ColorVision.Device.Camera
                     }
                 };
                 StackPanelSort.Children.Add(BatchASC);
-
 
                 RadioButton BatchESC = new RadioButton { Content = "按照批次号降序", Tag = "BatchESC", Margin = new Thickness(5) };
                 BatchESC.Click += (s, e) =>

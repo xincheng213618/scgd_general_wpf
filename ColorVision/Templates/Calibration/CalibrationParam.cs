@@ -319,6 +319,7 @@ namespace ColorVision.Templates
         public CalibrationColor Color { get; set; }
         public CalibrationParam() 
         {
+            this.ID = -1;
             Normal = new CalibrationNormal(new List<ModDetailModel>(),"");
             Color = new CalibrationColor(new List<ModDetailModel>());
         }

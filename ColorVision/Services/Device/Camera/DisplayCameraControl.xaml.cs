@@ -186,7 +186,7 @@ namespace ColorVision.Device.Camera
             this.DataContext = Device;
 
             CalibrationParams = new ObservableCollection<TemplateModel<CalibrationParam>>();
-            CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam()) { ID = -1 });
+            CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam()));
 
             foreach (var item in TemplateControl.GetInstance().CalibrationParams)
                 CalibrationParams.Add(item);
