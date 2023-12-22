@@ -9,14 +9,14 @@ namespace ColorVision.Themes
 {
     public enum Theme
     {
+        [Description("ThemeUseSystem")]
+        UseSystem,
         [Description("ThemeLight")]
         Light,
         [Description("ThemeDark")]
         Dark,
         [Description("ThemePink")]
-        Pink,
-        [Description("ThemeUseSystem")]
-        UseSystem
+        Pink
     };
 
     public static class ThemeManagerExtensions
