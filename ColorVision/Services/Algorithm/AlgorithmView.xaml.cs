@@ -1,4 +1,5 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
+using ColorVision.Draw;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using FileServerPlugin;
@@ -19,6 +20,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Media;
 using Wpf.Ui.Interop.WinDef;
 
 namespace ColorVision.Services.Algorithm
@@ -318,7 +320,6 @@ namespace ColorVision.Services.Algorithm
             LedBlobGray = ledBlobGray;
             GhostAvrGray = ghostAvrGray;
         }
-
         public int Rows { get; set; }
         public int Cols { get; set; }
         public string GhostPixelNum { get; set; }
@@ -329,6 +330,18 @@ namespace ColorVision.Services.Algorithm
         public string LedBlobGray { get; set; }
         public string GhostAvrGray { get; set; }
     }
+
+    public class LedResultData : ViewModelBase
+    {
+        public LedResultData(Point point, double radius)
+        {
+            Point = point;
+            Radius = radius;
+        }
+        public Point Point { get; set; }
+        public double Radius { get; set; }
+    }
+
     public class AlgorithmResult : ViewModelBase
     {
         private int _Id;
@@ -346,7 +359,6 @@ namespace ColorVision.Services.Algorithm
         private ObservableCollection<SFRResultData> _SFRData;
         private ObservableCollection<GhostResultData> _GhostData;
         private ObservableCollection<DistortionResultData> _DistortionData;
-
         public int Id { get { return _Id; } set { _Id = value; NotifyPropertyChanged(); } }
         public string SerialNumber { get { return _SerialNumber; } set { _SerialNumber = value; NotifyPropertyChanged(); } }
         public string ImgFileName { get { return _ImgFileName; } set { _ImgFileName = value; NotifyPropertyChanged(); } }
@@ -407,8 +419,9 @@ namespace ColorVision.Services.Algorithm
         public ObservableCollection<FOVResultData> FOVData { get { return _FOVData; } set { _FOVData = value; NotifyPropertyChanged(); } }
         public ObservableCollection<MTFResultData> MTFData { get { return _MTFData; } set { _MTFData = value; NotifyPropertyChanged(); } }
         public ObservableCollection<SFRResultData> SFRData { get { return _SFRData; } set { _SFRData = value; NotifyPropertyChanged(); } }
-        public ObservableCollection<DistortionResultData> DistortionData { get { return _DistortionData; } set { _DistortionData = value; NotifyPropertyChanged(); } }
         public ObservableCollection<GhostResultData> GhostData { get { return _GhostData; } set { _GhostData = value; NotifyPropertyChanged(); } }
+        public ObservableCollection<DistortionResultData> DistortionData { get { return _DistortionData; } set { _DistortionData = value; NotifyPropertyChanged(); } }
+        public ObservableCollection<LedResultData> LedResultDatas { get; set; }
 
         public AlgorithmResult()
         {
@@ -418,6 +431,7 @@ namespace ColorVision.Services.Algorithm
             this._SFRData = new ObservableCollection<SFRResultData>();
             this._GhostData = new ObservableCollection<GhostResultData>();
             this._DistortionData = new ObservableCollection<DistortionResultData>();
+            LedResultDatas = new ObservableCollection<LedResultData>();
         }
 
         public AlgorithmResult(int id, string serialNumber, string imgFileName, string pOITemplateName, string recvTime, AlgorithmResultType resultType, int? resultCode, string resultDesc, long totalTime = 0) : this()
@@ -720,6 +734,24 @@ namespace ColorVision.Services.Algorithm
             DistortionDataDraw(result.Id.ToString(), result.BatchCode, result.ImgFile, result.TName, results, result.ResultCode, result.Result, result.TotalTime);
         }
 
+        public void LedcheckDataDraw(AlgResultMasterModel result, List<AlgResultLedcheckModel> details)
+        {
+            if (!resultDis.ContainsKey(result.Id.ToString()))
+            {
+                AlgorithmResult algorithmResult = new AlgorithmResult(AlgResults.Count + 1, result.BatchCode, result.ImgFile, result.TName, DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss"), AlgorithmResultType.LedCheck, result.ResultCode, result.Result, result.TotalTime);
+                foreach (var item in details)
+                {
+                    LedResultData ledResultData = new LedResultData(new Point((double)item.PosX, (double)item.PosY), (double)item.Radius);
+                    algorithmResult.LedResultDatas.Add(ledResultData);
+                };
+                AlgResults.Add(algorithmResult);
+
+                RefreshResultListView();
+                resultDis[result.Id.ToString()] = algorithmResult;
+            }
+
+        }
+
         public void DistortionDataDraw(string key, string serialNumber, string imgFileName, string templateName, List<MQTTMessageLib.Algorithm.DistortionResult> results, int? resultCode, string resultDesc, long totalTime)
         {
             if (!resultDis.ContainsKey(key))
@@ -921,7 +953,7 @@ namespace ColorVision.Services.Algorithm
 
 
                         listViewSide.Visibility = Visibility.Visible;
-                        List<string> bdheadersGhost = new List<string> { "CenterPointDis", "LedBlobGray", "GhostAvrGray" };
+                        List<string> bdheadersGhost = new List<string> { "LedCenters", "LedBlobGray", "GhostAvrGray" };
                         List<string> headersGhost = new List<string> { "质心坐标", "光斑灰度", "鬼影灰度" };
                         GridView gridViewGhost = new GridView();
                         for (int i = 0; i < headersGhost.Count; i++)
@@ -958,16 +990,30 @@ namespace ColorVision.Services.Algorithm
                         break;
                     case AlgorithmResultType.LedCheck:
                         img_view.OpenImage(data.ImgFileName);
-                        listViewSide.Visibility = Visibility.Collapsed;
-                        //if (data.DistortionData.Count > 0)
-                        //{
-                        //    List<Point> points = new List<Point>();
-                        //    foreach (var item in data.DistortionData[0].FinalPoints)
-                        //    {
-                        //        points.Add(new Point(item.X, item.Y));
-                        //    }
-                        //    img_view.AddPoint(points);
-                        //}
+                        listViewSide.Visibility = Visibility.Visible;
+                        bdheadersDis = new List<string> { "Point", "Radius" };
+                        headersDis = new List<string> { "坐标", "半径"};
+                        gridViewDis = new GridView();
+                        for (int i = 0; i < headersDis.Count; i++)
+                        {
+                            gridViewDis.Columns.Add(new GridViewColumn() { Header = headersDis[i], DisplayMemberBinding = new Binding(bdheadersDis[i]) });
+                        }
+                        listViewSide.View = gridViewDis;
+                        listViewSide.ItemsSource = data.LedResultDatas;
+                        if (data.LedResultDatas.Count > 0)
+                        {
+                            List<Point> points = new List<Point>();
+                            foreach (var item in data.LedResultDatas)
+                            {
+                                DrawingVisualCircle Circle = new DrawingVisualCircle();
+                                Circle.Attribute.Center = item.Point;
+                                Circle.Attribute.Radius = item.Radius;
+                                Circle.Attribute.Brush = Brushes.Transparent;
+                                Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / img_view.Zoombox1.ContentMatrix.M11);
+                                Circle.Render();
+                                img_view.ImageShow.AddVisual(Circle);
+                            }
+                        }
                         break;
 
                     default:

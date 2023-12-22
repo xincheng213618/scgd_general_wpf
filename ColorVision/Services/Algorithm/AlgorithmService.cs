@@ -73,12 +73,9 @@ namespace ColorVision.Services.Algorithm
                         break;
                     case "FOV":
                         OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
-                        string filepath = msg.Data.ImgFileName;
-                        Application.Current.Dispatcher.BeginInvoke(() => DeviceAlgorithm.View.img_view.OpenImage(filepath));
                         Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, $"{msg.EventName}执行成功", "ColorVision"));
                         break;
                     default:
-                        //Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, $"{msg.EventName}执行成功", "ColorVision"));
                         OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         break;
                 }

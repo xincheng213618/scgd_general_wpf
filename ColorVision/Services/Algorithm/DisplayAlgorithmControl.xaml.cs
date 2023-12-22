@@ -115,6 +115,7 @@ namespace ColorVision.Services.Algorithm
                 case MQTTAlgorithmEventEnum.Event_MTF_GetData:
                 case MQTTAlgorithmEventEnum.Event_SFR_GetData:
                 case MQTTAlgorithmEventEnum.Event_Ghost_GetData:
+                case MQTTAlgorithmEventEnum.Event_LedCheck_GetData:
                 case MQTTAlgorithmEventEnum.Event_Distortion_GetData:
                     ShowResultFromDB(arg.SerialNumber, Convert.ToInt32(arg.Data.MasterId));
                     break;
@@ -174,11 +175,18 @@ namespace ColorVision.Services.Algorithm
                     case AlgorithmResultType.Distortion:
                         LoadResultDistortionFromDB(result);
                         break;
+                    case AlgorithmResultType.LedCheck:
+                        List<AlgResultLedcheckModel> details = algResultLedcheckDao.GetAllByPid(result.Id);
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            Device.View.LedcheckDataDraw(result, details);
+                        }); 
+                        break;
                 }
             }
             handler?.Close();
         }
-
+        AlgResultLedcheckDao algResultLedcheckDao = new AlgResultLedcheckDao();
         private void LoadResultPOIFromDB(AlgResultMasterModel result)
         {
             var details = resultService.GetPOIByPid(result.Id);
