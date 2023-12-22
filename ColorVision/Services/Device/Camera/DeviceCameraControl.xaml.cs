@@ -131,13 +131,7 @@ namespace ColorVision.Device.Camera
                 };
                 StackPanelSort.Children.Add(BatchESC);
 
-
-
-
-
-                StackPanel stack = new StackPanel();
-
-
+                StackPanel stack = new StackPanel() {  Orientation =Orientation.Horizontal};
                 Button button = new Button() { Content = "上传校正文件", Margin = new Thickness(5) };
                 button.Click += (s, e) =>
                 {
@@ -146,7 +140,6 @@ namespace ColorVision.Device.Camera
                     listView.ItemsSource = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item);
                 };
                 stack.Children.Add(button);
-
 
                 Button button1 = new Button() { Content = "刷新", Margin = new Thickness(5) };
                 button1.Click += (s, e) =>

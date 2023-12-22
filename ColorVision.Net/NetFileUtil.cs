@@ -63,8 +63,10 @@ namespace ColorVision.Net
         {
             if (isLocal)
             {
-                handler?.Invoke(this, new NetFileEvent(0, fileName));
-            }else if (!string.IsNullOrWhiteSpace(serverEndpoint))
+                //本地直接Copy
+                //handler?.Invoke(this, new NetFileEvent(0, fileName));
+            }
+            else if (!string.IsNullOrWhiteSpace(serverEndpoint))
             {
                 Task t = new(() => { UploadFile(serverEndpoint, fileName); });
                 t.Start();
