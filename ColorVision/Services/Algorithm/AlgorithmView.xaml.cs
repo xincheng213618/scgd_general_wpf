@@ -1009,7 +1009,7 @@ namespace ColorVision.Services.Algorithm
                                 Circle.Attribute.Center = item.Point;
                                 Circle.Attribute.Radius = item.Radius;
                                 Circle.Attribute.Brush = Brushes.Transparent;
-                                Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / img_view.Zoombox1.ContentMatrix.M11);
+                                Circle.Attribute.Pen = new Pen(Brushes.Red, 2);
                                 Circle.Render();
                                 img_view.ImageShow.AddVisual(Circle);
                             }
