@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.ServiceModel;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -583,10 +584,19 @@ namespace ColorVision.Services.Algorithm
                     file.WriteLine(headers);
                 }
                 string value = "";
-                //foreach (var item in ListContents[listView1.SelectedIndex])
-                //{
-                //    value += item + ",";
-                //}
+                foreach (var item in AlgResults)
+                {
+                    value += item.Id + "," 
+                        +item.SerialNumber + "," 
+                        + item.POITemplateName  + "," 
+                        + item.ImgFileName +","
+                        + item.RecvTime + ","
+                        + item.ResultTypeDis + ","
+                        + item.TotalTime + ","
+                        + item.Result + ","
+                        + item.ResultDesc + ","
+                        + Environment.NewLine;
+                }
                 file.WriteLine(value);
             }
         }
