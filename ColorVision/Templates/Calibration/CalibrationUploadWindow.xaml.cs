@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Media;
 using ColorVision.Device.Camera;
 using ColorVision.MySql.DAO;
+using ColorVision.Themes.Controls;
 using cvColorVision;
 
 namespace ColorVision.Templates
@@ -34,11 +35,12 @@ namespace ColorVision.Templates
 
         }
 
-
         private void Window_DragEnter(object sender, DragEventArgs e)
         {
             e.Effects = DragDropEffects.Copy;
         }
+
+        public EventHandler OnUpload { get; set; }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
@@ -48,7 +50,7 @@ namespace ColorVision.Templates
                 this.Close();
                 return;
             }
-            DeviceServiceCamera?.UploadCalibrationFile(Upload1.UploadFileName, Upload1.UploadFilePath, (int)ResouceType);
+            OnUpload?.Invoke(Upload1,new EventArgs());
             this.Close();
         }
     }

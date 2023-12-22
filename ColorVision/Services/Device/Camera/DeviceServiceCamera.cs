@@ -598,14 +598,14 @@ namespace ColorVision.Device.Camera
             PublishAsyncClient(msg);
         }
 
-        public void UploadCalibrationFile(string name, string fileName,int fileType)
+        public MsgRecord UploadCalibrationFile(string name, string fileName,int fileType)
         {
             MsgSend msg = new MsgSend
             {
                 EventName = MQTTCameraEventEnum.Event_Calibration_UploadFile,
                 Params = new Dictionary<string, object> { { "name", name }, { "fileName", fileName }, { "fileType", fileType } }
             };
-            PublishAsyncClient(msg);
+             return PublishAsyncClient(msg);
         }
     }
 }

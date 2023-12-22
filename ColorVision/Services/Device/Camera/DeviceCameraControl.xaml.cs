@@ -7,7 +7,9 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using ColorVision.Extension;
+using ColorVision.Services.Msg;
 using ColorVision.Templates;
+using ColorVision.Themes.Controls;
 using cvColorVision;
 using SkiaSharp;
 
@@ -136,8 +138,18 @@ namespace ColorVision.Device.Camera
                 button.Click += (s, e) =>
                 {
                     CalibrationUploadWindow uploadCalibration = new CalibrationUploadWindow(Service, item) { WindowStartupLocation = WindowStartupLocation.CenterScreen };
+                    uploadCalibration.OnUpload += (s, e) =>
+                    {
+                        if (s is Upload upload)
+                        {
+                            MsgRecord msgRecord = Service?.UploadCalibrationFile(upload.UploadFileName, upload.UploadFilePath, (int)item);
+                            msgRecord.MsgRecordStateChanged += (s) =>
+                            {
+                                listView.ItemsSource = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item);
+                            };
+                        }
+                    };
                     uploadCalibration.ShowDialog();
-                    listView.ItemsSource = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item);
                 };
                 stack.Children.Add(button);
 
@@ -164,13 +176,7 @@ namespace ColorVision.Device.Camera
 
                 };
                 stack.Children.Add(button2);
-
-
-
                 stackPanel.Children.Insert(0, stack);
-
-
-
                 TabControlCalib.Items.Add(tabItem);
             }
 
