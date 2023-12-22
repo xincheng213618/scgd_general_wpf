@@ -1045,7 +1045,9 @@ namespace ColorVision.Services.Algorithm
 
         private void GridSplitter_DragCompleted1(object sender, DragCompletedEventArgs e)
         {
-
+            listView2.Width = ListCol2.ActualWidth;
+            ListCol1.Width = new GridLength(1, GridUnitType.Star);
+            ListCol2.Width = GridLength.Auto;
         }
         private void listViewY_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -1060,6 +1062,13 @@ namespace ColorVision.Services.Algorithm
         private void Button_Delete_Click(object sender, RoutedEventArgs e)
         {
             AlgResults.Clear();
+        }
+
+        private void GridSplitter_DragCompleted(object sender, DragCompletedEventArgs e)
+        {
+            listView1.Height = ListRow2.ActualHeight - 38;
+            ListRow2.Height = GridLength.Auto;
+            ListRow1.Height = new GridLength(1, GridUnitType.Star);
         }
     }
 }
