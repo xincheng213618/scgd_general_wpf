@@ -42,16 +42,16 @@ namespace ColorVision.Services.Device.Camera
             set => NotifyPropertyChanged();
         }
 
-        public double ExpTime { get => _ExpTime; set { _ExpTime = value; NotifyPropertyChanged(); } }
-        private double _ExpTime = 10;
-        public double ExpTimeR { get => _ExpTimeR; set { _ExpTimeR = value; NotifyPropertyChanged(); } }
-        private double _ExpTimeR = 10;
+        public int ExpTime { get => _ExpTime; set { _ExpTime = value; NotifyPropertyChanged(); } }
+        private int _ExpTime = 10;
+        public int ExpTimeR { get => _ExpTimeR; set { _ExpTimeR = value; NotifyPropertyChanged(); } }
+        private int _ExpTimeR = 10;
 
-        public double ExpTimeG { get => _ExpTimeG; set { _ExpTimeG = value; NotifyPropertyChanged(); } }
-        private double _ExpTimeG = 10;
+        public int ExpTimeG { get => _ExpTimeG; set { _ExpTimeG = value; NotifyPropertyChanged(); } }
+        private int _ExpTimeG = 10;
 
-        public double ExpTimeB { get => _ExpTimeB; set { _ExpTimeB = value; NotifyPropertyChanged(); } }
-        private double _ExpTimeB = 10;
+        public int ExpTimeB { get => _ExpTimeB; set { _ExpTimeB = value; NotifyPropertyChanged(); } }
+        private int _ExpTimeB = 10;
 
 
         public double Saturation { get => _Saturation; set { _Saturation = value; NotifyPropertyChanged(); } }
