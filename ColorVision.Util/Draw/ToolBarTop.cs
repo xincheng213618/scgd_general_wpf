@@ -25,7 +25,7 @@ namespace ColorVision.Draw
         private ZoomboxSub ZoomboxSub { get; set; }
         private DrawCanvas Image { get; set; }
 
-        private ToolBarTopShowImage ShowImage { get; set; }
+        private ToolShowImage ShowImage { get; set; }
         private ToolBarMeasure ToolBarMeasure { get; set; }
 
         private FrameworkElement Parent { get; set; }
@@ -42,7 +42,7 @@ namespace ColorVision.Draw
             Image = drawCanvas ?? throw new ArgumentNullException(nameof(drawCanvas));
 
 
-            ShowImage = new ToolBarTopShowImage(zombox, drawCanvas);
+            ShowImage = new ToolShowImage(zombox, drawCanvas);
             ToolBarMeasure = new ToolBarMeasure(Parent, zombox, drawCanvas);
             ToolBarScaleRuler = new ToolBarScaleRuler(Parent, zombox, drawCanvas);
             ToolConcentricCircle = new ToolConcentricCircle(zombox, drawCanvas);
