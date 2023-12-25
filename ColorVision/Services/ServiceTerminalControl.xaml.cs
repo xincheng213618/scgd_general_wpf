@@ -93,7 +93,7 @@ namespace ColorVision.Services
                 SysResourceModel sysResourceModel;
                 BaseDeviceConfig deviceConfig;
                 switch (serviceTerminal.Type)
-                {   
+                {
                     case ServiceType.Camera:
                         ConfigCamera cameraConfig1 = new ConfigCamera
                         {
@@ -103,6 +103,11 @@ namespace ColorVision.Services
                             TakeImageMode = TakeImageMode.Measure_Normal,
                             ImageBpp = ImageBpp.bpp8,
                             Channel = ImageChannel.One,
+                            FileServerCfg = new FileServerCfg()
+                            {
+                                Endpoint = "tcp://127.0.0.1:" + (Math.Abs(new Random().Next()) % 99 + 6800),
+                                DataBasePath = "D:\\CVTest",
+                            }
                         };
 
                         sysResourceModel = saveConfigInfo(cameraConfig1, sysResource);
@@ -160,7 +165,7 @@ namespace ColorVision.Services
                             ID = TextBox_Code.Text,
                             Name = TextBox_Name.Text,
                             Endpoint = "tcp://127.0.0.1:" + (Math.Abs(new Random().Next()) % 99 + 6500),
-                            FileBasePath = "D:/img",
+                            FileBasePath = "D:\\CVTest",
                         };
                         sysResourceModel = saveConfigInfo(deviceConfig, sysResource);
                         if (sysResourceModel != null)
@@ -172,9 +177,7 @@ namespace ColorVision.Services
                             ID = TextBox_Code.Text,
                             Name = TextBox_Name.Text,
                             Endpoint = "tcp://127.0.0.1:" + (Math.Abs(new Random().Next()) % 99 + 6600),
-                            CIEFileBasePath = "D:/img/cvcie",
-                            RawFileBasePath = "D:/img/raw",
-                            SrcFileBasePath = "D:/img/src",
+                            DataBasePath = "D:\\CVTest",
                         };
                         sysResourceModel = saveConfigInfo(deviceConfig, sysResource);
                         if (sysResourceModel != null)
