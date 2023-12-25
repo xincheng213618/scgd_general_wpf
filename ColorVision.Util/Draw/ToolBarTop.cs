@@ -136,7 +136,7 @@ namespace ColorVision.Draw
                 if (value) Activate = false;
                 _ShowImageInfo = value;
 
-                ShowImage.ShowImageInfo = value;
+                ShowImage.IsShow = value;
                 NotifyPropertyChanged();
             }
         }
@@ -243,6 +243,28 @@ namespace ColorVision.Draw
                 NotifyPropertyChanged();
             }
         }
+
+        private bool _ConcentricCircle;
+
+        public bool ConcentricCircle
+        {
+            get => _ConcentricCircle;
+            set
+            {
+                if (_ConcentricCircle == value) return;
+                _ConcentricCircle = value;
+                if (value)
+                {
+                    Activate = true;
+                    LastChoice = nameof(ConcentricCircle);
+                }
+                NotifyPropertyChanged();
+            }
+        }
+
+
+
+
 
         public string LastChoice { get => _LastChoice; set 
             {

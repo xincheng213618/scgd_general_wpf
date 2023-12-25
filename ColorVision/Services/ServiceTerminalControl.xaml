@@ -82,12 +82,14 @@
                         <Button  Margin="0,0,0,5" Height="40" Click="Button_Click_1" ToolTip="{x:Static resx:Resource.Edit}">
                             <Image Source="{StaticResource DrawingImageEdit}" Height="25"/>
                         </Button>
-                        <Button Margin="0,0,0,5" Height="40" Grid.Column="2" Click="Button_Click_2"  VerticalAlignment="Stretch"   >
-                            <TextBlock Text="+"  FontFamily="Consolas"  TextWrapping="Wrap"   FontSize="25" />
-                        </Button>
                         <Button Margin="0,0,0,5" Height="40" Grid.Column="2"  Click="ReFresh_Click" Command="{Binding RefreshCommand}"  VerticalAlignment="Stretch"   ToolTip="刷新">
                             <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"   Foreground="{DynamicResource GlobalTextBrush}"  FontSize="15" ToolTip="刷新"/>
                         </Button>
+                        <Grid Height="40" Margin="0,0,0,5">
+                            <Image Source="{StaticResource DrawingImageAdd1}" Margin="5"/>
+                            <Button   Background="Transparent" Click="Button_Click_2"  VerticalAlignment="Stretch"/>
+                        </Grid>
+
                     </StackPanel>
                 </Grid>
 

@@ -43,6 +43,9 @@ namespace ColorVision.Device.Camera
         {
             Service = cameraService;
             DeviceService = new DeviceServiceCamera(Config, Service);
+            this.Config.SendTopic = Service.SendTopic;
+            this.Config.SubscribeTopic = Service.SubscribeTopic;
+
             View = new CameraView();
             if (Application.Current.TryFindResource("DrawingImageCamera") is DrawingImage  drawingImage)
                 Icon = drawingImage;
@@ -64,6 +67,9 @@ namespace ColorVision.Device.Camera
                 CalibrationUploadWindow uploadCalibration = new CalibrationUploadWindow(DeviceService,ResouceType.DefectPoint) {  WindowStartupLocation =WindowStartupLocation.CenterScreen};
                 uploadCalibration.ShowDialog();
             });
+
+
+
         }
 
         public override void Dispose()

@@ -68,7 +68,7 @@ namespace ColorVision.Draw
         {
             if (ComboBoxFontFamily.SelectedIndex > -1)
             {
-                //MessageBox.Show("!");
+                //MessageBox.IsShow("!");
             }
         }
 

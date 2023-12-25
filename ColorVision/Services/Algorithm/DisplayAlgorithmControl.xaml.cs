@@ -64,7 +64,7 @@ namespace ColorVision.Services.Algorithm
                 handler?.Close();
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    //MessageBox.Show(Application.Current.MainWindow, "文件打开失败", "ColorVision");
+                    //MessageBox.IsShow(Application.Current.MainWindow, "文件打开失败", "ColorVision");
                 });
             }
         }
