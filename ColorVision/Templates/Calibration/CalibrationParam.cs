@@ -97,10 +97,10 @@ namespace ColorVision.Templates
             };
         }
 
-        public ObservableCollection<CalibrationRsource> GetAllCalibrationRsources(ResouceType resouceType)
+        public ObservableCollection<CalibrationRsource> GetAllCalibrationRsources(ResouceType resouceType,int id)
         {
             ObservableCollection<CalibrationRsource> ObservableCollections = new ObservableCollection<CalibrationRsource>();
-            var resouces = resourceDao.GetAllType((int)resouceType);
+            var resouces = resourceDao.GetAllTypeCamera((int)resouceType,id);
             foreach (var item in resouces)
             {
                 ObservableCollections.Add(new CalibrationRsource(item));

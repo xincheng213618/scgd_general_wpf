@@ -74,7 +74,7 @@ namespace ColorVision.Device.Camera
 
 
 
-                ObservableCollection<CalibrationRsource> CalibrationRsources = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item);
+                ObservableCollection<CalibrationRsource> CalibrationRsources = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item, DeviceCamera.MySqlId);
 
                 listView.ItemsSource = CalibrationRsources;
 
@@ -143,7 +143,7 @@ namespace ColorVision.Device.Camera
                             MsgRecord msgRecord = Service?.UploadCalibrationFile(upload.UploadFileName, upload.UploadFilePath, (int)item);
                             msgRecord.MsgRecordStateChanged += (s) =>
                             {
-                                CalibrationRsources = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item);
+                                CalibrationRsources = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item, DeviceCamera.MySqlId);
                                 listView.ItemsSource = CalibrationRsources;
                             };
                         }
@@ -155,7 +155,7 @@ namespace ColorVision.Device.Camera
                 Button button1 = new Button() { Content = "刷新", Margin = new Thickness(5) };
                 button1.Click += (s, e) =>
                 {
-                    CalibrationRsources = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item);
+                    CalibrationRsources = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item, DeviceCamera.MySqlId);
                     listView.ItemsSource = CalibrationRsources;
                 };
                 stack.Children.Add(button1);
@@ -167,7 +167,7 @@ namespace ColorVision.Device.Camera
                     {
                         CalibrationRsource calibrationRsource = CalibrationRsources[listView.SelectedIndex];
                         CalibrationRsourceService.GetInstance().Delete(calibrationRsource.ID);
-                        CalibrationRsources = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item);
+                        CalibrationRsources = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item, DeviceCamera.MySqlId);
                         listView.ItemsSource = CalibrationRsources;
                     }
                     else

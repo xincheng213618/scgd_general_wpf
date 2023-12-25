@@ -352,6 +352,12 @@ namespace ColorVision.MySql
             DataTable d_info = GetData(sql);
             return d_info;
         }
+        public DataTable GetTableAllByTypeAndCamera(int type,int CamerId)
+        {
+            string sql = $"select * from {GetTableName()} where type={type} &&pid ={CamerId} " + GetDelSQL(true);
+            DataTable d_info = GetData(sql);
+            return d_info;
+        }
 
 
 
