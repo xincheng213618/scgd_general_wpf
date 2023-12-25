@@ -32,6 +32,8 @@ namespace ColorVision.Draw
 
         public ToolBarScaleRuler ToolBarScaleRuler { get; set; }
 
+        public ToolConcentricCircle ToolConcentricCircle { get; set; }
+
 
         public ToolBarTop(FrameworkElement Parent,ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
@@ -43,6 +45,7 @@ namespace ColorVision.Draw
             ShowImage = new ToolBarTopShowImage(zombox, drawCanvas);
             ToolBarMeasure = new ToolBarMeasure(Parent, zombox, drawCanvas);
             ToolBarScaleRuler = new ToolBarScaleRuler(Parent, zombox, drawCanvas);
+            ToolConcentricCircle = new ToolConcentricCircle(zombox, drawCanvas);
             ToolBarScaleRuler.IsShow = false;
 
             ZoomUniformToFill = new RelayCommand(a => ZoomboxSub.ZoomUniformToFill());
@@ -253,6 +256,7 @@ namespace ColorVision.Draw
             {
                 if (_ConcentricCircle == value) return;
                 _ConcentricCircle = value;
+                ToolConcentricCircle.IsShow = value;
                 if (value)
                 {
                     Activate = true;

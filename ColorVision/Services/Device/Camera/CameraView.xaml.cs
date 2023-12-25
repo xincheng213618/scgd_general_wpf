@@ -36,44 +36,6 @@ namespace ColorVision.Services.Device.Camera
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             View = new View();
-            View.ViewIndexChangedEvent += (s, e) =>
-            {
-                if (e == -2)
-                {
-                    MenuItem menuItem3 = new MenuItem { Header = "还原到主窗口中" };
-                    menuItem3.Click += (s, e) =>
-                    {
-                        if (ViewGridManager.GetInstance().IsGridEmpty(View.PreViewIndex))
-                        {
-                            View.ViewIndex = View.PreViewIndex;
-                        }
-                        else
-                        {
-                            View.ViewIndex = -1;
-                        }
-                    };
-                    this.ContextMenu = new ContextMenu();
-                    this.ContextMenu.Items.Add(menuItem3);
-
-                }
-                else
-                {
-                    MenuItem menuItem = new MenuItem() { Header = "设为主窗口" };
-                    menuItem.Click += (s, e) => { ViewGridManager.GetInstance().SetOneView(this); };
-                    MenuItem menuItem1 = new MenuItem() { Header = "展示全部窗口" };
-                    menuItem1.Click += (s, e) => { ViewGridManager.GetInstance().SetViewNum(-1); };
-                    MenuItem menuItem2 = new MenuItem() { Header = "独立窗口中显示" };
-                    menuItem2.Click += (s, e) => { View.ViewIndex = -2; };
-                    MenuItem menuItem3 = new MenuItem() { Header = Properties.Resource.WindowHidden };
-                    menuItem3.Click += (s, e) => { View.ViewIndex = -1; };
-                    this.ContextMenu = new ContextMenu();
-                    this.ContextMenu.Items.Add(menuItem);
-                    this.ContextMenu.Items.Add(menuItem1);
-                    this.ContextMenu.Items.Add(menuItem2);
-                    this.ContextMenu.Items.Add(menuItem3);
-
-                }
-            };
 
             GridView gridView = new GridView();
             List<string> headers = new List<string> { "序号", "批次号", "参数", "图像数据文件", "图像信息", "测量时间", "用时(时:分:秒)", "结果", "描述" };
