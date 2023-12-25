@@ -92,6 +92,12 @@ namespace ColorVision.Services.Device.Camera
     public class FileServerCfg : ViewModelBase
     {
         /// <summary>
+        /// 数据基础路径
+        /// </summary>
+        public string DataBasePath { get => _DataBasePath; set { _DataBasePath = value; NotifyPropertyChanged(); } }
+        private string _DataBasePath;
+        /*
+        /// <summary>
         /// 色/亮度图像
         /// </summary>
         public string CIEFileBasePath { get => _CIEFileBasePath; set { _CIEFileBasePath = value; NotifyPropertyChanged(); } }
@@ -114,7 +120,7 @@ namespace ColorVision.Services.Device.Camera
         /// </summary>
         public string CalibrationFileBasePath { get => _CalibrationFileBasePath; set { _CalibrationFileBasePath = value; NotifyPropertyChanged(); } }
         private string _CalibrationFileBasePath;
-
+        ////////*/
         /// <summary>
         /// 端口地址
         /// </summary>

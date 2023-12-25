@@ -338,36 +338,36 @@
                         </StackPanel>
                     </GroupBox>
 
-                    <GroupBox Header="远程视频串流配置" Margin="0,5">
+                    <GroupBox Header="视频模式" Margin="0,5">
                         <StackPanel Margin="5">
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="串流指定IP:" Width="120"/>
-                                <TextBox Text="{Binding Config.VideoConfig.Host}" />
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="串流指定端口:" Width="120"/>
-                                <TextBox Text="{Binding Config.VideoConfig.Port}"/>
-                            </DockPanel>
+                            <GroupBox Header="视频串流配置" Margin="0,5">
+                                <StackPanel Margin="5">
+                                    <DockPanel Margin="0,2">
+                                        <TextBlock Text="串流指定IP:" Width="120"/>
+                                        <TextBox Text="{Binding Config.VideoConfig.Host}" />
+                                    </DockPanel>
+                                    <DockPanel Margin="0,2">
+                                        <TextBlock Text="串流指定端口:" Width="120"/>
+                                        <TextBox Text="{Binding Config.VideoConfig.Port}"/>
+                                    </DockPanel>
+                                </StackPanel>
+                            </GroupBox>
+                            <GroupBox Header="视频图像配置" Margin="0,5" >
+                                <StackPanel Margin="5">
+                                    <DockPanel>
+                                        <TextBlock Text="缩放比例:" Width="120"/>
+                                        <TextBox Text="{Binding Config.VideoConfig.ResizeRatio}"/>
+                                    </DockPanel>
+                                </StackPanel>
+                            </GroupBox>
                         </StackPanel>
                     </GroupBox>
 
-                    <GroupBox Header="图像文件服务配置" Margin="0,5">
+                    <GroupBox Header="数据文件服务配置" Margin="0,5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2">
-                                <TextBlock Text="色亮度路径:" Width="120"/>
-                                <TextBox Text="{Binding Config.FileServerCfg.CIEFileBasePath}" />
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="相机原路径:" Width="120"/>
-                                <TextBox Text="{Binding Config.FileServerCfg.RawFileBasePath}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="校正后路径:" Width="120"/>
-                                <TextBox Text="{Binding Config.FileServerCfg.SrcFileBasePath}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="校正文件路径:" Width="120"/>
-                                <TextBox Text="{Binding Config.FileServerCfg.CalibrationFileBasePath}"/>
+                                <TextBlock Text="数据目录:" Width="120"/>
+                                <TextBox Text="{Binding Config.FileServerCfg.DataBasePath}" />
                             </DockPanel>
                             <DockPanel Margin="0,2">
                                 <TextBlock Text="端口地址:" Width="120"/>
