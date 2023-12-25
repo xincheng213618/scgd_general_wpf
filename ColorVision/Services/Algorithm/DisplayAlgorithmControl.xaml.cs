@@ -485,11 +485,16 @@ namespace ColorVision.Services.Algorithm
                 MessageBox.Show(Application.Current.MainWindow, "请先选择关注点模板", "ColorVision");
                 return;
             }
-            string sn = null;
-            var pm = TemplateControl.GetInstance().MTFParams[ComboxMTFTemplate.SelectedIndex].Value;
-            var poi_pm = TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value;
-            var ss = Service.MTF(ImageFile.Text, pm.ID, ComboxMTFTemplate.Text, sn, poi_pm.ID, ComboxPoiTemplate.Text);
-            Helpers.SendCommand(ss,"MTF");
+            string sn = string.Empty;
+            string imgFileName = ImageFile.Text;
+
+            if (GetAlgSN(ref sn, ref imgFileName))
+            {
+                var pm = TemplateControl.GetInstance().MTFParams[ComboxMTFTemplate.SelectedIndex].Value;
+                var poi_pm = TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value;
+                var ss = Service.MTF(imgFileName, pm.ID, ComboxMTFTemplate.Text, sn, poi_pm.ID, ComboxPoiTemplate.Text);
+                Helpers.SendCommand(ss, "MTF");
+            }
         }
 
         private void SFR_Clik(object sender, RoutedEventArgs e)
@@ -500,10 +505,15 @@ namespace ColorVision.Services.Algorithm
                 return;
             }
 
-            string sn = null;
-            var pm = TemplateControl.GetInstance().SFRParams[ComboxSFRTemplate.SelectedIndex].Value;
-            var msg = Service.SFR(ImageFile.Text, pm.ID, ComboxSFRTemplate.Text, sn);
-            Helpers.SendCommand(msg, "SFR");
+            string sn = string.Empty;
+            string imgFileName = ImageFile.Text;
+
+            if (GetAlgSN(ref sn, ref imgFileName))
+            {
+                var pm = TemplateControl.GetInstance().SFRParams[ComboxSFRTemplate.SelectedIndex].Value;
+                var msg = Service.SFR(imgFileName, pm.ID, ComboxSFRTemplate.Text, sn);
+                Helpers.SendCommand(msg, "SFR");
+            }
 
         }
 
@@ -514,11 +524,15 @@ namespace ColorVision.Services.Algorithm
                 MessageBox.Show(Application.Current.MainWindow, "请先选择Ghost模板", "ColorVision");
                 return;
             }
+            string sn = string.Empty;
+            string imgFileName = ImageFile.Text;
 
-            string sn = null;
-            var pm = TemplateControl.GetInstance().GhostParams[ComboxGhostTemplate.SelectedIndex].Value;
-            var msg = Service.Ghost(ImageFile.Text, pm.ID, ComboxGhostTemplate.Text, sn);
-            Helpers.SendCommand(msg, "Ghost");
+            if (GetAlgSN(ref sn, ref imgFileName))
+            {
+                var pm = TemplateControl.GetInstance().GhostParams[ComboxGhostTemplate.SelectedIndex].Value;
+                var msg = Service.Ghost(imgFileName, pm.ID, ComboxGhostTemplate.Text, sn);
+                Helpers.SendCommand(msg, "Ghost");
+            }
         }
 
         private void Distortion_Click(object sender, RoutedEventArgs e)
@@ -528,12 +542,41 @@ namespace ColorVision.Services.Algorithm
                 MessageBox.Show(Application.Current.MainWindow, "请先选择Distortion模板", "ColorVision");
                 return;
             }
-            string sn = null;
-            var pm = TemplateControl.GetInstance().DistortionParams[ComboxDistortionTemplate.SelectedIndex].Value;
-            var msg = Service.Distortion(ImageFile.Text, pm.ID, ComboxDistortionTemplate.Text, sn);
-            Helpers.SendCommand(msg, "Distortion");
+            string sn = string.Empty;
+            string imgFileName = ImageFile.Text;
+
+            if (GetAlgSN(ref sn, ref imgFileName))
+            {
+                var pm = TemplateControl.GetInstance().DistortionParams[ComboxDistortionTemplate.SelectedIndex].Value;
+                var msg = Service.Distortion(imgFileName, pm.ID, ComboxDistortionTemplate.Text, sn);
+                Helpers.SendCommand(msg, "Distortion");
+            }
         }
 
+        private bool GetAlgSN(ref string sn, ref string imgFileName)
+        {
+            bool? isSN = AlgBatchSelect.IsChecked;
+            if (isSN.HasValue && isSN.Value)
+            {
+                if (string.IsNullOrWhiteSpace(AlgBatchCode.Text))
+                {
+                    MessageBox.Show(Application.Current.MainWindow, "批次号不能为空，请先输入批次号", "ColorVision");
+                    return false;
+                }
+                sn = AlgBatchCode.Text;
+                imgFileName = string.Empty;
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(imgFileName))
+                {
+                    MessageBox.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
+                    return false;
+                }
+            }
+
+            return true;
+        }
 
         private void FOV_Click(object sender, RoutedEventArgs e)
         {
@@ -543,10 +586,15 @@ namespace ColorVision.Services.Algorithm
                 return;
             }
 
-            string sn = null;
-            var pm = TemplateControl.GetInstance().FOVParams[ComboxFOVTemplate.SelectedIndex].Value;
-            var msg = Service.FOV(ImageFile.Text, pm.ID, ComboxFOVTemplate.Text, sn);
-            Helpers.SendCommand(msg, "FOV");
+            string sn = string.Empty;
+            string imgFileName = ImageFile.Text;
+
+            if(GetAlgSN(ref sn,ref imgFileName))
+            {
+                var pm = TemplateControl.GetInstance().FOVParams[ComboxFOVTemplate.SelectedIndex].Value;
+                var msg = Service.FOV(imgFileName, pm.ID, ComboxFOVTemplate.Text, sn);
+                Helpers.SendCommand(msg, "FOV");
+            }
         }
 
 

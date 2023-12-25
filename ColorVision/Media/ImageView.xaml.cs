@@ -655,8 +655,22 @@ namespace ColorVision
         {
             if (filePath != null && File.Exists(filePath))
             {
-                BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
-                SetImageSource(bitmapImage);
+                string ext = System.IO.Path.GetExtension(filePath).ToLower();
+                if (ext == ".tif")
+                {
+                    BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
+                    SetImageSource(bitmapImage);
+                }
+                else if (ext == ".cvraw")
+                {
+                    CVCIEFileInfo fileInfo = new CVCIEFileInfo();
+                    fileInfo.fileType = MQTTMessageLib.FileServer.FileExtType.Raw;
+                    int ret = CVFileUtils.ReadCVFile(filePath, ref fileInfo);
+                    if (ret == 0)
+                    {
+                        OpenImage(fileInfo);
+                    }
+                }
             }
         }
 
