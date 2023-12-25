@@ -7,6 +7,52 @@ using System.Windows.Input;
 
 namespace ColorVision.Draw
 {
+    public class ToolConcentricCircle
+    {
+        private ZoomboxSub ZoomboxSub { get; set; }
+        private DrawCanvas Image { get; set; }
+
+        public DrawingVisual DrawVisualImage { get; set; }
+
+        public ToolConcentricCircle(ZoomboxSub zombox, DrawCanvas drawCanvas)
+        {
+            ZoomboxSub = zombox;
+            Image = drawCanvas;
+            DrawVisualImage = new DrawingVisual();
+        }
+
+        public bool IsShow
+        {
+            get => _IsShow; set
+            {
+                if (_IsShow == value) return;
+                _IsShow = value;
+                //DrawVisualImageControl(_IsShow);
+                //if (value)
+                //{
+                //    Image.MouseMove += MouseMove;
+                //    Image.MouseEnter += MouseEnter;
+                //    Image.MouseLeave += MouseLeave;
+                //}
+                //else
+                //{
+                //    Image.MouseMove -= MouseMove;
+                //    Image.MouseEnter -= MouseEnter;
+                //    Image.MouseLeave -= MouseLeave;
+                //}
+            }
+        }
+        private bool _IsShow;
+
+
+
+
+
+
+    }
+
+
+
     public class ToolBarTopShowImage
     {
         private ZoomboxSub ZoomboxSub { get; set; }
@@ -22,13 +68,13 @@ namespace ColorVision.Draw
             DrawVisualImage = new DrawingVisual();
         }
 
-        public bool ShowImageInfo
+        public bool IsShow
         {
-            get => _ShowImageInfo; set
+            get => _IsShow; set
             {
-                if (_ShowImageInfo == value) return;
-                _ShowImageInfo = value;
-                DrawVisualImageControl(_ShowImageInfo);
+                if (_IsShow == value) return;
+                _IsShow = value;
+                DrawVisualImageControl(_IsShow);
                 if (value)
                 {
                     Image.MouseMove += MouseMove;
@@ -43,7 +89,8 @@ namespace ColorVision.Draw
                 }
             }
         }
-        private bool _ShowImageInfo;
+        private bool _IsShow;
+
 
         public class ImageInfo
         {
@@ -118,7 +165,7 @@ namespace ColorVision.Draw
 
         public void MouseMove(object sender, MouseEventArgs e)
         {
-            if (ShowImageInfo && sender is DrawCanvas drawCanvas && drawCanvas.Source is BitmapSource bitmap)
+            if (IsShow && sender is DrawCanvas drawCanvas && drawCanvas.Source is BitmapSource bitmap)
             {
                 var point = e.GetPosition(drawCanvas);
 

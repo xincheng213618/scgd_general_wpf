@@ -61,12 +61,8 @@ namespace ColorVision.Services.Device
 
         public string SNID { get => ID; }
 
-        public string MD5 { get => _MD5; set { _MD5 = value; NotifyPropertyChanged(); } }
-        private string _MD5;
-
-
-
         public bool IsOnline { get => DeviceServiceStatus == DeviceServiceStatus.Online; }
+
         private DeviceServiceStatus _DeviceServiceStatus;
         public DeviceServiceStatus DeviceServiceStatus
         {

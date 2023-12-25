@@ -1209,7 +1209,7 @@ namespace ColorVision.Templates
                             IWorkbook workbook = WorkbookFactory.Create("cfg\\" + ledCheckCfg.本地点位信息坐标);
                             ISheet sheet = workbook.GetSheetAt(0);//获取第一个工作薄
                             testdata = sheet.LastRowNum;
-                            //MessageBox.Show(testdata.ToString());
+                            //MessageBox.IsShow(testdata.ToString());
                             IRow row;
                             RDdata = new string[testdata];
                             PointX = new double[testdata];

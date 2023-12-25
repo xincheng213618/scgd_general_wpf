@@ -2,6 +2,7 @@
 using ColorVision.Extension;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
+using MySqlX.XDevAPI;
 using Newtonsoft.Json;
 using System;
 using System.IO;
@@ -95,10 +96,12 @@ namespace ColorVision.Services.Device
         public override string Code { get => SysResourceModel.Code ?? string.Empty; set { SysResourceModel.Code = value; NotifyPropertyChanged(); } }
         public override string Name { get => SysResourceModel.Name ?? string.Empty; set{ SysResourceModel.Name = value; NotifyPropertyChanged(); } }
 
+
+        public int MySqlId { get => SysResourceModel.Id; }
+
         public BaseDevice(SysResourceModel sysResourceModel) : base()
         {
             SysResourceModel = sysResourceModel;
-
             ContextMenu = new ContextMenu();
             MenuItem menuItem = new MenuItem() { Header = "删除资源" };
             menuItem.Click += (s, e) =>
