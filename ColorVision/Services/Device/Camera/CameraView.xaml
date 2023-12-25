@@ -19,24 +19,13 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <ToolBar Grid.Row="0" Loaded="ToolBar_Loaded"  Background ="#EEF4F9" ToolBarTray.IsLocked="True">
-            <ToggleButton x:Name="toggle1" Click="Button_Click_ShowResultGrid" Margin="2,0,0,0" >
-                <Image Stretch="Uniform" Source="{DynamicResource DrawingImageList}" >
-                    <Image.RenderTransform>
-                        <RotateTransform Angle="90" CenterX="8" CenterY="8"/>
-                    </Image.RenderTransform>
-                </Image>
-            </ToggleButton>
-            <ToggleButton  x:Name="toggle2" Click="Button_Click_ShowRightGrid" Margin="2,0,0,0" >
-                <Image Stretch="Uniform"  Source="{DynamicResource DrawingImageList}" >
-                </Image>
-            </ToggleButton>
-            <Button Click="Button_Click_Export" Margin="2,0,0,0" >
-                <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSave}" />
-            </Button>
-            <Button Click="Button_Click_Clear" Margin="2,0,0,0"  >
-                <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" />
-            </Button>
-        </ToolBar>
+                <Button Click="Button_Click_Export" Margin="2,0,0,0" >
+                    <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSave}" />
+                </Button>
+                <Button Click="Button_Click_Clear" Margin="2,0,0,0"  >
+                    <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" />
+                </Button>
+            </ToolBar>
             <ListView Height="250" Grid.Row="1" x:Name="listView1" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" />
         </Grid>
     </Grid>

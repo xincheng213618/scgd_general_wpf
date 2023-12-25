@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.ServiceModel;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -583,10 +584,19 @@ namespace ColorVision.Services.Algorithm
                     file.WriteLine(headers);
                 }
                 string value = "";
-                //foreach (var item in ListContents[listView1.SelectedIndex])
-                //{
-                //    value += item + ",";
-                //}
+                foreach (var item in AlgResults)
+                {
+                    value += item.Id + "," 
+                        +item.SerialNumber + "," 
+                        + item.POITemplateName  + "," 
+                        + item.ImgFileName +","
+                        + item.RecvTime + ","
+                        + item.ResultTypeDis + ","
+                        + item.TotalTime + ","
+                        + item.Result + ","
+                        + item.ResultDesc + ","
+                        + Environment.NewLine;
+                }
                 file.WriteLine(value);
             }
         }
@@ -1009,7 +1019,7 @@ namespace ColorVision.Services.Algorithm
                                 Circle.Attribute.Center = item.Point;
                                 Circle.Attribute.Radius = item.Radius;
                                 Circle.Attribute.Brush = Brushes.Transparent;
-                                Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / img_view.Zoombox1.ContentMatrix.M11);
+                                Circle.Attribute.Pen = new Pen(Brushes.Red, 2);
                                 Circle.Render();
                                 img_view.ImageShow.AddVisual(Circle);
                             }
@@ -1035,7 +1045,9 @@ namespace ColorVision.Services.Algorithm
 
         private void GridSplitter_DragCompleted1(object sender, DragCompletedEventArgs e)
         {
-
+            listView2.Width = ListCol2.ActualWidth;
+            ListCol1.Width = new GridLength(1, GridUnitType.Star);
+            ListCol2.Width = GridLength.Auto;
         }
         private void listViewY_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -1050,6 +1062,13 @@ namespace ColorVision.Services.Algorithm
         private void Button_Delete_Click(object sender, RoutedEventArgs e)
         {
             AlgResults.Clear();
+        }
+
+        private void GridSplitter_DragCompleted(object sender, DragCompletedEventArgs e)
+        {
+            listView1.Height = ListRow2.ActualHeight - 38;
+            ListRow2.Height = GridLength.Auto;
+            ListRow1.Height = new GridLength(1, GridUnitType.Star);
         }
     }
 }

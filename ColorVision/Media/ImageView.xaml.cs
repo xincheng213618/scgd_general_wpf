@@ -15,6 +15,7 @@ using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -672,6 +673,13 @@ namespace ColorVision
             i = OpenCVHelper.ReadGhostHImage(hImage, out HImage hImage1);
             if (i != 0) return;
             PseudoImage = HImageToWriteableBitmap(hImage1);
+
+            Task.Run(() => {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    Zoombox1.ZoomUniform();
+                });
+            });
         }
 
 
@@ -712,7 +720,12 @@ namespace ColorVision
             ViewBitmapSource = bitmapImage;
             ImageShow.Source = ViewBitmapSource;
             DrawGridImage(DrawingVisualGrid, bitmapImage);
-            Zoombox1.ZoomUniform();
+            Task.Run(() => {
+                Application.Current.Dispatcher.Invoke(()=>
+                {
+                    Zoombox1.ZoomUniform();
+                });
+            });
             ToolBar1.Visibility = Visibility.Visible;
             ImageShow.ImageInitialize();
         }

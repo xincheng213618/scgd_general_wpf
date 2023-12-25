@@ -1503,18 +1503,33 @@ namespace ColorVision.Templates
                     DrawBaseAttribute drawAttributeBase = item.GetAttribute();
                     if (drawAttributeBase is CircleAttribute circle)
                     {
-                        PoiParamData poiParamData = new PoiParamData()
+                        if (circle is CircleTextAttribute circleTextAttribute)
                         {
-                            ID = circle.ID,
-                            Name = ((CircleTextAttribute)circle).Text,
-                            PointType = RiPointTypes.Circle,
-                            PixX = circle.Center.X,
-                            PixY = circle.Center.Y,
-                            PixWidth = circle.Radius,
-                            PixHeight = circle.Radius,
-                        };
-                        PoiParam.PoiPoints.Add(poiParamData);
-
+                            PoiParamData poiParamData = new PoiParamData()
+                            {
+                                ID = circle.ID,
+                                Name = circleTextAttribute.Text,
+                                PointType = RiPointTypes.Circle,
+                                PixX = circle.Center.X,
+                                PixY = circle.Center.Y,
+                                PixWidth = circle.Radius,
+                                PixHeight = circle.Radius,
+                            };
+                            PoiParam.PoiPoints.Add(poiParamData);
+                        }
+                        else
+                        {
+                            PoiParamData poiParamData = new PoiParamData()
+                            {
+                                ID = circle.ID,
+                                PointType = RiPointTypes.Circle,
+                                PixX = circle.Center.X,
+                                PixY = circle.Center.Y,
+                                PixWidth = circle.Radius,
+                                PixHeight = circle.Radius,
+                            };
+                            PoiParam.PoiPoints.Add(poiParamData);
+                        }
                     }
                     else if (drawAttributeBase is RectangleAttribute rectangle)
                     {

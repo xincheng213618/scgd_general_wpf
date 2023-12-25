@@ -163,7 +163,7 @@ namespace ColorVision.Device.Camera
                 Button button2 = new Button() { Content = "删除", Margin = new Thickness(5) };
                 button2.Click += (s, e) =>
                 {
-                    if (listView.SelectedIndex > 0)
+                    if (listView.SelectedIndex > -1)
                     {
                         CalibrationRsource calibrationRsource = CalibrationRsources[listView.SelectedIndex];
                         CalibrationRsourceService.GetInstance().Delete(calibrationRsource.ID);

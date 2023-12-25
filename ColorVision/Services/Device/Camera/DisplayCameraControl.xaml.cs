@@ -488,8 +488,16 @@ namespace ColorVision.Device.Camera
                 switch (button.Tag?.ToString() ?? string.Empty)
                 {
                     case "Calibration":
-                        Calibration calibration = new Calibration(TemplateControl.CalibrationParams[0].Value);
-                        windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration,false);
+                        Calibration calibration;
+                        if (TemplateControl.CalibrationParams.Count>0) 
+                        {
+                             calibration = new Calibration(TemplateControl.CalibrationParams[0].Value);
+                        }
+                        else
+                        {
+                             calibration = new Calibration();
+                        }
+                        windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration, false);
                         windowTemplate.Owner = Window.GetWindow(this);
                         windowTemplate.ShowDialog();
                         break;
