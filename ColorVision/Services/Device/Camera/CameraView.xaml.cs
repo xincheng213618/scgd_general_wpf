@@ -7,6 +7,8 @@ using MQTTMessageLib.Camera;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -100,12 +102,47 @@ namespace ColorVision.Services.Device.Camera
 
         private void Button_Click_Export(object sender, RoutedEventArgs e)
         {
+            if (listView1.SelectedIndex < 0)
+            {
+                MessageBox.Show(Application.Current.MainWindow, "您需要先选择数据", "ColorVision");
+                return;
+            }
 
+            using var dialog = new System.Windows.Forms.SaveFileDialog();
+            dialog.Filter = "CSV files (*.csv) | *.csv";
+            dialog.FileName = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
+            dialog.RestoreDirectory = true;
+            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                using StreamWriter file = new StreamWriter(dialog.FileName, true, Encoding.UTF8);
+                if (listView1.View is GridView gridView1)
+                {
+                    string headers = "";
+                    foreach (var item in gridView1.Columns)
+                    {
+                        headers += item.Header.ToString() + ",";
+                    }
+                    file.WriteLine(headers);
+                }
+                string value = "";
+                foreach (var item in Results)
+                {
+                    value += item.Id + ","
+                        + item.SerialNumber + ","
+                        + item.ImgFileName + ","
+                        + item.RecvTime + ","
+                        + item.TotalTime + ","
+                        + item.Result + ","
+                        + item.ResultDesc + ","
+                        + Environment.NewLine;
+                }
+                file.WriteLine(value);
+            }
         }
 
         private void Button_Click_Clear(object sender, RoutedEventArgs e)
         {
-
+            Results.Clear();
         }
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
