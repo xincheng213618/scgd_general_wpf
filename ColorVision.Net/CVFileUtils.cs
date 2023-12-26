@@ -76,6 +76,31 @@ namespace FileServerPlugin
             return WriteBinaryFile_CVCIE(fileName, fileInfo.gain, fileInfo.exp, fileInfo.width, fileInfo.height, fileInfo.bpp, fileInfo.channels, fileInfo.data, fileInfo.srcFileName);
         }
 
+        public static int ReadCVFile(string fileName, ref CVCIEFileInfo fileInfo)
+        {
+            byte[] fileData = ReadBinaryFile(fileName);
+            if (fileData == null) return -1;
+            UInt32 w = 0, h = 0, bpp = 0, channels = 0;
+            string srcFileName;
+            byte[] imgData = null;
+            float[] exp;
+            if (GetParamFromFile(fileData, out w, out h, out bpp, out channels, out exp, out imgData, out srcFileName))
+            {
+                fileInfo.exp = exp;
+                fileInfo.width = (int)w;
+                fileInfo.height = (int)h;
+                fileInfo.bpp = (int)bpp;
+                fileInfo.channels = (int)channels;
+                fileInfo.data = imgData;
+                fileInfo.srcFileName = srcFileName;
+                fileInfo.depth = GetMatDepth(bpp);
+
+                return 0;
+            }
+
+            return -2;
+        }
+
         public static bool GetFileHeader(string fileName, out uint w, out uint h, out uint bpp, out uint channels, out float[] exp, out string srcFileName)
         {
             byte[] fileData = ReadBinaryFile(fileName);
@@ -196,7 +221,7 @@ namespace FileServerPlugin
             }
         }
 
-        public static int GetMatDepth(int bpp)
+        public static int GetMatDepth(uint bpp)
         {
             int depth = 0;
             switch (bpp)
@@ -216,6 +241,11 @@ namespace FileServerPlugin
             }
 
             return depth;
+        }
+
+        public static int GetMatDepth(int bpp)
+        {
+            return GetMatDepth((uint)bpp);
         }
     }
 }

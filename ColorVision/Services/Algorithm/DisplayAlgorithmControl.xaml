@@ -66,10 +66,17 @@
                 <GroupBox  Header="算法服务">
                     <StackPanel  >
                         <GroupBox  Header="图片文件">
-                            <DockPanel Margin="0,2">
-                                <Button  Content="..." DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Open_File" />
-                                <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" HorizontalAlignment="Left" Width="130" />
-                            </DockPanel>
+                            <StackPanel  Margin="5" >
+                                <DockPanel Margin="0,2">
+                                    <RadioButton IsChecked="True" GroupName="alg_src"/>
+                                    <Button  Content="..." DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Open_File" />
+                                    <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" HorizontalAlignment="Left" Width="130" />
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <RadioButton x:Name="AlgBatchSelect" Content="批次号" GroupName="alg_src"/>
+                                    <TextBox x:Name="AlgBatchCode" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" />
+                                </DockPanel>
+                            </StackPanel>
                         </GroupBox>
                         <GroupBox  Header="FOV" ToolTip="Field of view">
                             <DockPanel Margin="0,2">
