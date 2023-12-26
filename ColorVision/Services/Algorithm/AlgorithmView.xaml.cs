@@ -1070,5 +1070,10 @@ namespace ColorVision.Services.Algorithm
             ListRow2.Height = GridLength.Auto;
             ListRow1.Height = new GridLength(1, GridUnitType.Star);
         }
+
+        private void Search_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }
