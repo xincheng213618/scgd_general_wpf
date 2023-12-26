@@ -145,11 +145,11 @@ namespace ColorVision
 
         private void Zoombox1_LayoutUpdated(object? sender, EventArgs e)
         {
-            //foreach (var item in DrawingVisualLists)
-            //{
-            //    item.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-            //    item.Render();
-            //}
+            foreach (var item in DrawingVisualLists)
+            {
+                item.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                item.Render();
+            }
         }
 
 
@@ -830,7 +830,7 @@ namespace ColorVision
                 id++;
                 DrawingVisualCircleWord Circle = new DrawingVisualCircleWord();
                 Circle.Attribute.Center = item;
-                Circle.Attribute.Radius = 1 / Zoombox1.ContentMatrix.M11*30;
+                Circle.Attribute.Radius = 20 / Zoombox1.ContentMatrix.M11;
                 Circle.Attribute.Brush = Brushes.Transparent;
                 Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
                 Circle.Attribute.ID = id;
@@ -861,7 +861,7 @@ namespace ColorVision
                         Circle.Attribute.Center = new Point(item.PixelX, item.PixelY);
                         Circle.Attribute.Radius = item.Radius;
                         Circle.Attribute.Brush = Brushes.Transparent;
-                        Circle.Attribute.Pen = new Pen(Brushes.Red, item.Width / 30.0);
+                        Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
                         Circle.Attribute.ID = item.Id;
                         Circle.Attribute.Text = item.Name;
                         Circle.Render();
@@ -871,7 +871,7 @@ namespace ColorVision
                         DrawingVisualRectangleWord Rectangle = new DrawingVisualRectangleWord();
                         Rectangle.Attribute.Rect = new Rect(item.PixelX, item.PixelY, item.Width, item.Height);
                         Rectangle.Attribute.Brush = Brushes.Transparent;
-                        Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.Width / 30.0);
+                        Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
                         Rectangle.Attribute.ID = item.Id;
                         Rectangle.Attribute.Name = item.Name;
                         Rectangle.Render();

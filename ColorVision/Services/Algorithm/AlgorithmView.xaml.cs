@@ -2,8 +2,10 @@
 using ColorVision.Draw;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
+using ColorVision.MySql.Service;
 using FileServerPlugin;
 using FlowEngineLib;
+using HandyControl.Data;
 using HandyControl.Tools.Extension;
 using log4net;
 using Microsoft.Windows.Themes;
@@ -23,6 +25,7 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using Wpf.Ui.Interop.WinDef;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 
 namespace ColorVision.Services.Algorithm
 {
@@ -151,6 +154,13 @@ namespace ColorVision.Services.Algorithm
             this.Point = point;
             this.Articulation = articulation;
         }
+
+        public MTFResultData(AlgResultMTFModel detail)
+        {
+            this.Point = new POIPoint((int)detail.PoiId, -1, detail.PoiName, (POIPointTypes)detail.PoiType, (int)detail.PoiX, (int)detail.PoiY, (int)detail.PoiWidth, (int)detail.PoiHeight);
+            var temp = JsonConvert.DeserializeObject<MQTTMessageLib.Algorithm.MTFResultData>(detail.Value);
+            this.Articulation = temp.Articulation;
+        }
     }
 
     public class FOVResultData : ViewModelBase
@@ -166,6 +176,13 @@ namespace ColorVision.Services.Algorithm
             Pattern = pattern;
             Type = type;
             Degrees = degrees;
+        }
+
+        public FOVResultData(AlgResultFOVModel algResultFOVModel)
+        {
+            Pattern = (FovPattern)algResultFOVModel.Pattern;
+            Type = (FovType)algResultFOVModel.Type;
+            Degrees = (double)algResultFOVModel.Degrees;
         }
     }
 
@@ -192,6 +209,16 @@ namespace ColorVision.Services.Algorithm
             CornerType = cornerType;
             MaxRatio = maxRatio;
             FinalPoints = finalPoint;
+        }
+
+        public DistortionResultData(AlgResultDistortionModel algResultDistortionModel)
+        {
+            DisType = (DistortionType)algResultDistortionModel.Type;
+            SlopeType = (DisSlopeType)algResultDistortionModel.SlopeType;
+            LayoutType = (DisLayoutType)algResultDistortionModel.LayoutType;
+            CornerType = (DisCornerType)algResultDistortionModel.CornerType;
+            MaxRatio = (double)algResultDistortionModel.MaxRatio;
+            FinalPoints = JsonConvert.DeserializeObject<PointFloat[]>(algResultDistortionModel.FinalPoints);
         }
 
         public DistortionType DisType { get; set; }
@@ -321,6 +348,19 @@ namespace ColorVision.Services.Algorithm
             LedBlobGray = ledBlobGray;
             GhostAvrGray = ghostAvrGray;
         }
+        public GhostResultData(AlgResultGhostModel algResultGhostModel)
+        {
+            Rows = algResultGhostModel.Rows;
+            Cols = algResultGhostModel.Cols;
+            GhostPixelNum = algResultGhostModel.SingleGhostPixelNum;
+            GhostPixels = algResultGhostModel.GhostPixels;
+            LedPixelNum = algResultGhostModel.SingleLedPixelNum;
+            LedPixels = algResultGhostModel.LEDPixels;
+            LedCenters = algResultGhostModel.LEDCenters;
+            LedBlobGray = algResultGhostModel.LEDBlobGray;
+            GhostAvrGray = algResultGhostModel.GhostAverageGray;
+        }
+
         public int Rows { get; set; }
         public int Cols { get; set; }
         public string GhostPixelNum { get; set; }
@@ -435,6 +475,19 @@ namespace ColorVision.Services.Algorithm
             LedResultDatas = new ObservableCollection<LedResultData>();
         }
 
+        public AlgorithmResult(AlgResultMasterModel algResultMasterModel)
+        {
+            _Id = algResultMasterModel.Id;
+            _SerialNumber = algResultMasterModel.BatchCode;
+            _ImgFileName = algResultMasterModel.ImgFile;
+            _POITemplateName = algResultMasterModel.TName;
+            _RecvTime = algResultMasterModel.CreateDate.ToString();
+            _ResultType = algResultMasterModel.ImgFileType;
+            _resultCode = (int)algResultMasterModel.ResultCode;
+            _totalTime = algResultMasterModel.TotalTime;
+            _resultDesc = algResultMasterModel.Result;
+        }
+
         public AlgorithmResult(int id, string serialNumber, string imgFileName, string pOITemplateName, string recvTime, AlgorithmResultType resultType, int? resultCode, string resultDesc, long totalTime = 0) : this()
         {
             _Id = id;
@@ -460,8 +513,10 @@ namespace ColorVision.Services.Algorithm
         private static readonly ILog logger = LogManager.GetLogger(typeof(AlgorithmView));
         public View View { get; set; }
         public event CurSelectionChanged OnCurSelectionChanged;
-        public AlgorithmView()
+        public DeviceAlgorithm Device { get; set; }
+        public AlgorithmView(DeviceAlgorithm deviceAlgorithm)
         {
+            Device = deviceAlgorithm;
             InitializeComponent();
         }
 
@@ -654,128 +709,20 @@ namespace ColorVision.Services.Algorithm
                 RefreshResultListView();
             }
         }
-        public void GhostDataDraw(AlgResultMasterModel result, List<MQTTMessageLib.Algorithm.GhostResult> results)
-        {
-            GhostDataDraw(result.Id.ToString(), result.BatchCode, result.ImgFile, result.TName, results, result.ResultCode, result.Result, result.TotalTime);
-        }
-        public void GhostDataDraw(string key, string serialNumber, string imgFileName, string templateName, List<MQTTMessageLib.Algorithm.GhostResult> results, int? resultCode, string resultDesc, long totalTime)
-        {
-            if (!resultDis.ContainsKey(key))
-            {
-                AlgorithmResult result = new AlgorithmResult(AlgResults.Count + 1, serialNumber, imgFileName, templateName, DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss"), AlgorithmResultType.Ghost, resultCode, resultDesc, totalTime);
-                AlgResults.Add(result);
-                resultDis[key] = result;
-                foreach (var item in results)
-                {
-                    GhostResultData resultData = new GhostResultData(item.Rows, item.Cols,
-                        JsonConvert.SerializeObject(item.singleGhostPixelNum), JsonConvert.SerializeObject(item.GhostPixels),
-                        JsonConvert.SerializeObject(item.singleLedPixelNum), JsonConvert.SerializeObject(item.LEDPixels),
-                        JsonConvert.SerializeObject(item.LedCenters), JsonConvert.SerializeObject(item.LEDBlobGray), JsonConvert.SerializeObject(item.ghostAverageGray));
-                    result.GhostData.Add(resultData);
-                }
-                RefreshResultListView();
-            }
-        }
-        public void FovDataDraw(AlgResultMasterModel result, List<MQTTMessageLib.Algorithm.FOVResult> results)
-        {
-            FovDataDraw(result.Id.ToString(), result.BatchCode, result.ImgFile, result.TName, results, result.ResultCode, result.Result, result.TotalTime);
-        }
-        public void FovDataDraw(string key, string serialNumber, string imgFileName, string templateName, List<MQTTMessageLib.Algorithm.FOVResult> results, int? resultCode, string resultDesc, long totalTime)
-        {
-            if (!resultDis.ContainsKey(key))
-            {
-                AlgorithmResult result = new AlgorithmResult(AlgResults.Count + 1, serialNumber, imgFileName, templateName, DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss"), AlgorithmResultType.FOV, resultCode, resultDesc, totalTime);
-                AlgResults.Add(result);
-                resultDis[key] = result;
-                foreach (var item in results)
-                {
-                    FOVResultData resultData = new FOVResultData(item.Pattern, item.Type, item.Degrees);
-                    result.FOVData.Add(resultData);
-                }
-                RefreshResultListView();
-            }
-        }
 
-        public void MTFDataDraw(AlgResultMasterModel result, List<MQTTMessageLib.Algorithm.MTFResult> results)
-        {
-            MTFDataDraw(result.Id.ToString(), result.BatchCode, result.ImgFile, result.TName, results, result.ResultCode, result.Result, result.TotalTime);
-        }
-        public void MTFDataDraw(string key, string serialNumber, string imgFileName, string templateName, List<MQTTMessageLib.Algorithm.MTFResult> results, int? resultCode, string resultDesc, long totalTime)
-        {
-            if (!resultDis.ContainsKey(key))
-            {
-                AlgorithmResult result = new AlgorithmResult(AlgResults.Count + 1, serialNumber, imgFileName, templateName, DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss"), AlgorithmResultType.MTF, resultCode, resultDesc, totalTime);
-                AlgResults.Add(result);
-                resultDis[key] = result;
-                foreach (var item in results)
-                {
-                    MTFResultData resultData = new MTFResultData(item.Point, item.Data.Articulation);
-                    result.MTFData.Add(resultData);
-                }
-                RefreshResultListView();
-            }
-        }
 
-        public void SFRDataDraw(AlgResultMasterModel result, List<MQTTMessageLib.Algorithm.SFRResult> results)
-        {
-            SFRDataDraw(result.Id.ToString(), result.BatchCode, result.ImgFile, result.TName, results, result.ResultCode, result.Result, result.TotalTime);
-        }
-        public void SFRDataDraw(string key, string serialNumber, string imgFileName, string templateName, List<MQTTMessageLib.Algorithm.SFRResult> results, int? resultCode, string resultDesc, long totalTime)
-        {
-            if (!resultDis.ContainsKey(key))
-            {
-                AlgorithmResult result = new AlgorithmResult(AlgResults.Count + 1, serialNumber, imgFileName, templateName, DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss"), AlgorithmResultType.SFR, resultCode, resultDesc, totalTime);
-                AlgResults.Add(result);
-                resultDis[key] = result;
-                foreach (var item in results)
-                {
-                    for (int i = 0; i < item.pdfrequency.Length; i++)
-                    {
-                        SFRResultData resultData = new SFRResultData(item.pdfrequency[i], item.pdomainSamplingData[i]);
-                        result.SFRData.Add(resultData);
-                    }
-                }
-                RefreshResultListView();
-            }
-        }
+        AlgResultLedcheckDao algResultLedcheckDao = new AlgResultLedcheckDao();
 
-        public void DistortionDataDraw(AlgResultMasterModel result, List<MQTTMessageLib.Algorithm.DistortionResult> results)
-        {
-            DistortionDataDraw(result.Id.ToString(), result.BatchCode, result.ImgFile, result.TName, results, result.ResultCode, result.Result, result.TotalTime);
-        }
-
-        public void LedcheckDataDraw(AlgResultMasterModel result, List<AlgResultLedcheckModel> details)
+        public void AlgResultMasterModelDataDraw(AlgResultMasterModel result)
         {
             if (!resultDis.ContainsKey(result.Id.ToString()))
             {
-                AlgorithmResult algorithmResult = new AlgorithmResult(AlgResults.Count + 1, result.BatchCode, result.ImgFile, result.TName, DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss"), AlgorithmResultType.LedCheck, result.ResultCode, result.Result, result.TotalTime);
-                foreach (var item in details)
-                {
-                    LedResultData ledResultData = new LedResultData(new Point((double)item.PosX, (double)item.PosY), (double)item.Radius);
-                    algorithmResult.LedResultDatas.Add(ledResultData);
-                };
+                AlgorithmResult algorithmResult = new AlgorithmResult(result);
                 AlgResults.Add(algorithmResult);
-
                 RefreshResultListView();
                 resultDis[result.Id.ToString()] = algorithmResult;
             }
 
-        }
-
-        public void DistortionDataDraw(string key, string serialNumber, string imgFileName, string templateName, List<MQTTMessageLib.Algorithm.DistortionResult> results, int? resultCode, string resultDesc, long totalTime)
-        {
-            if (!resultDis.ContainsKey(key))
-            {
-                AlgorithmResult result = new AlgorithmResult(AlgResults.Count + 1, serialNumber, imgFileName, templateName, DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss"), AlgorithmResultType.Distortion, resultCode, resultDesc, totalTime);
-                AlgResults.Add(result);
-                resultDis[key] = result;
-                foreach (var item in results)
-                {
-                    DistortionResultData resultData = new DistortionResultData(item.distortionType, item.slopeType, item.layoutType, item.cornerType, item.maxErrorRatio, item.finalPoints);
-                    result.DistortionData.Add(resultData);
-                }
-                RefreshResultListView();
-            }
         }
 
         private void RefreshResultListView()
@@ -802,29 +749,31 @@ namespace ColorVision.Services.Algorithm
             public int Y { get; set; }
         }
 
+        ResultService resultService = new ResultService();
+
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (listView1.SelectedIndex < 0)
                 return;
-            AlgorithmResult data = listView1.Items[listView1.SelectedIndex] as AlgorithmResult;
-            if(data != null)
+            AlgorithmResult result = listView1.Items[listView1.SelectedIndex] as AlgorithmResult;
+            if(result != null)
             {
                 PoiResultDatas.Clear();
                 PoiYResultDatas.Clear();
                 img_view.ResetPOIPoint();
                 listViewSide.Visibility = Visibility.Collapsed;
                 List<POIPoint> DrawPoiPoint = new List<POIPoint>();
-                switch (data.ResultType)
+                switch (result.ResultType)
                 {   
                     case AlgorithmResultType.POI:
-                        OnCurSelectionChanged?.Invoke(data);
+                        OnCurSelectionChanged?.Invoke(result);
                         break;
                     case AlgorithmResultType.POI_XY_UV:
-                        OnCurSelectionChanged?.Invoke(data);
+                        OnCurSelectionChanged?.Invoke(result);
                         listViewY.Hide();
                         listView2.Show();
 
-                        foreach (var item in data.PoiData)
+                        foreach (var item in result.PoiData)
                         {
                             PoiResultDatas.Add(item);
                             DrawPoiPoint.Add(item.Point);
@@ -832,10 +781,10 @@ namespace ColorVision.Services.Algorithm
                         img_view.AddPOIPoint(DrawPoiPoint);
                         break;
                     case AlgorithmResultType.POI_Y:
-                        OnCurSelectionChanged?.Invoke(data);
+                        OnCurSelectionChanged?.Invoke(result);
                         listView2.Hide();
                         listViewY.Show();
-                        foreach (var item in data.PoiData)
+                        foreach (var item in result.PoiData)
                         {
                             PoiYResultDatas.Add(item);
                             DrawPoiPoint.Add(item.Point);
@@ -843,8 +792,16 @@ namespace ColorVision.Services.Algorithm
                         img_view.AddPOIPoint(DrawPoiPoint);
                         break;
                     case AlgorithmResultType.FOV:
-                        img_view.OpenImage(data.ImgFileName);
+                        img_view.OpenImage(result.ImgFileName);
                         listViewSide.Visibility = Visibility.Visible;
+
+                        List<AlgResultFOVModel> AlgResultFOVModels = resultService.GetFOVByPid(result.Id);
+                        foreach (var item in AlgResultFOVModels)
+                        {
+                            FOVResultData fOVResultData = new FOVResultData(item);
+                            result.FOVData.Add(fOVResultData);
+                        };
+
                         List<string> bdheadersFOV = new List<string> { "Pattern", "Type", "Degrees" };
                         List<string> headersFOV = new List<string> { "Pattern", "Type", "Degrees" };
                         GridView gridViewFOV = new GridView();
@@ -854,11 +811,28 @@ namespace ColorVision.Services.Algorithm
                         }
                         listViewSide.View = gridViewFOV;
                         listViewSide.Visibility =Visibility.Visible;
-                        listViewSide.ItemsSource = data.FOVData;
+                        listViewSide.ItemsSource = result.FOVData;
                         break;
                     case AlgorithmResultType.SFR:
-                        img_view.OpenImage(data.ImgFileName);
+                        img_view.OpenImage(result.ImgFileName);
                         listViewSide.Visibility = Visibility.Visible;
+
+                        if (result.SFRData == null)
+                        {
+                            result.SFRData = new ObservableCollection<SFRResultData>();
+                            List<AlgResultSFRModel> AlgResultSFRModels = resultService.GetSFRByPid(result.Id);
+                            foreach (var item in AlgResultSFRModels)
+                            {
+                                var Pdfrequencys = JsonConvert.DeserializeObject<float[]>(item.Pdfrequency);
+                                var PdomainSamplingDatas = JsonConvert.DeserializeObject<float[]>(item.PdomainSamplingData);
+                                for (int i = 0; i < Pdfrequencys.Length; i++)
+                                {
+                                    SFRResultData resultData = new SFRResultData(Pdfrequencys[i], PdomainSamplingDatas[i]);
+                                    result.SFRData.Add(resultData);
+                                }
+                            };
+                        }
+
                         List<string> bdheadersSFR = new List<string> { "pdfrequency", "pdomainSamplingData" };
                         List<string> headersSFR = new List<string> { "pdfrequency", "pdomainSamplingData" };
                         GridView gridViewSFR = new GridView();
@@ -867,17 +841,28 @@ namespace ColorVision.Services.Algorithm
                             gridViewSFR.Columns.Add(new GridViewColumn() { Header = headersSFR[i], DisplayMemberBinding = new Binding(bdheadersSFR[i]) });
                         }
                         listViewSide.View = gridViewSFR;
-                        listViewSide.ItemsSource = data.SFRData;
-                        if (data.SFRData.Count > 0)
+                        listViewSide.ItemsSource = result.SFRData;
+                        if (result.SFRData.Count > 0)
                         {
                             img_view.AddRect(new Rect(10,10,10,10));
                         }
 
                         break;
                     case AlgorithmResultType.MTF:
-                        img_view.OpenImage(data.ImgFileName);
+                        img_view.OpenImage(result.ImgFileName);
                         listViewSide.Visibility = Visibility.Visible;
-                        //MTF
+                        if (result.MTFData == null)
+                        {
+                            result.MTFData = new ObservableCollection<MTFResultData>();
+                            List<AlgResultMTFModel> AlgResultMTFModels = resultService.GetMTFByPid(result.Id);
+                            foreach (var item in AlgResultMTFModels)
+                            {
+                                MTFResultData mTFResultData = new MTFResultData(item);
+                                result.MTFData.Add(mTFResultData);
+                            }
+                        }
+
+
                         List<string> bdheadersMTF = new List<string> { "PixelPos", "PixelSize", "Shapes", "Articulation" };
                         List<string> headersMTF = new List<string> { "位置", "大小", "形状", "MTF" };
                         GridView gridViewMTF = new GridView();
@@ -886,8 +871,8 @@ namespace ColorVision.Services.Algorithm
                             gridViewMTF.Columns.Add(new GridViewColumn() { Header = headersMTF[i], DisplayMemberBinding = new Binding(bdheadersMTF[i]) });
                         }
                         listViewSide.View = gridViewMTF;
-                        listViewSide.ItemsSource = data.MTFData;
-                        foreach (var item in data.MTFData)
+                        listViewSide.ItemsSource = result.MTFData;
+                        foreach (var item in result.MTFData)
                         {
                             DrawPoiPoint.Add(item.Point);
                         }
@@ -895,11 +880,19 @@ namespace ColorVision.Services.Algorithm
 
                         break;
                     case AlgorithmResultType.Ghost:
-                        if (data.GhostData.Count == 0)
-                            return;
+                        if (result.GhostData == null)
+                        {
+                            result.GhostData = new ObservableCollection<GhostResultData>();
+                            List<AlgResultGhostModel> AlgResultGhostModels = resultService.GetGhostByPid(result.Id);
+                            foreach (var item in AlgResultGhostModels)
+                            {
+                                GhostResultData ghostResultData = new GhostResultData(item);
+                                result.GhostData.Add(ghostResultData);
+                            }
+                        }
                         try
                         {
-                            string GhostPixels = data.GhostData[0].GhostPixels;
+                            string GhostPixels = result.GhostData[0].GhostPixels;
                             List<List<Point1>> GhostPixel = JsonConvert.DeserializeObject<List<List<Point1>>>(GhostPixels);
                             int[] Ghost_pixel_X;
                             int[] Ghost_pixel_Y;
@@ -924,7 +917,7 @@ namespace ColorVision.Services.Algorithm
                                 Ghost_pixel_Y = new int[1] { 1 };
                             }
 
-                            string LedPixels = data.GhostData[0].LedPixels;
+                            string LedPixels = result.GhostData[0].LedPixels;
                             List<List<Point1>> LedPixel = JsonConvert.DeserializeObject<List<List<Point1>>>(LedPixels);
                             int[] LED_pixel_X;
                             int[] LED_pixel_Y;
@@ -951,7 +944,7 @@ namespace ColorVision.Services.Algorithm
                             }
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                img_view.OpenGhostImage(data.ImgFileName, LED_pixel_X, LED_pixel_Y, Ghost_pixel_X, Ghost_pixel_Y);
+                                img_view.OpenGhostImage(result.ImgFileName, LED_pixel_X, LED_pixel_Y, Ghost_pixel_X, Ghost_pixel_Y);
                             });
 
 
@@ -971,11 +964,22 @@ namespace ColorVision.Services.Algorithm
                             gridViewGhost.Columns.Add(new GridViewColumn() { Header = headersGhost[i], DisplayMemberBinding = new Binding(bdheadersGhost[i]) });
                         }
                         listViewSide.View = gridViewGhost;
-                        listViewSide.ItemsSource = data.GhostData;
+                        listViewSide.ItemsSource = result.GhostData;
                         break;
                     case AlgorithmResultType.Distortion:
-                        img_view.OpenImage(data.ImgFileName);
+                        img_view.OpenImage(result.ImgFileName);
                         listViewSide.Visibility = Visibility.Visible;
+
+                        if (result.DistortionData == null)
+                        {
+                            result.DistortionData = new ObservableCollection<DistortionResultData>();
+                            var Distortions = resultService.GetDistortionByPid(result.Id);
+                            foreach (var item in Distortions)
+                            {
+                                DistortionResultData distortionResultData = new DistortionResultData(item);
+                                result.DistortionData.Add(distortionResultData);
+                            }
+                        }
                         List<string> bdheadersDis = new List<string> { "DisTypeDesc", "SlopeTypeDesc", "LayoutTypeDesc", "CornerTypeDesc", "MaxRatio" };
                         List<string> headersDis = new List<string> { "类型", "斜率", "布点", "角点", "畸变率" };
                         GridView gridViewDis = new GridView();
@@ -984,11 +988,11 @@ namespace ColorVision.Services.Algorithm
                             gridViewDis.Columns.Add(new GridViewColumn() { Header = headersDis[i], DisplayMemberBinding = new Binding(bdheadersDis[i]) });
                         }
                         listViewSide.View = gridViewDis;
-                        listViewSide.ItemsSource = data.DistortionData;
-                        if (data.DistortionData.Count > 0)
+                        listViewSide.ItemsSource = result.DistortionData;
+                        if (result.DistortionData.Count > 0)
                         {
                             List<Point> points = new List<Point>();
-                            foreach (var item in data.DistortionData[0].FinalPoints)
+                            foreach (var item in result.DistortionData[0].FinalPoints)
                             {
                                 points.Add(new Point(item.X, item.Y));
                             }
@@ -999,8 +1003,19 @@ namespace ColorVision.Services.Algorithm
                     case AlgorithmResultType.Calibration:
                         break;
                     case AlgorithmResultType.LedCheck:
-                        img_view.OpenImage(data.ImgFileName);
+                        img_view.OpenImage(result.ImgFileName);
                         listViewSide.Visibility = Visibility.Visible;
+                        if (result.LedResultDatas == null)
+                        {
+                            result.LedResultDatas = new ObservableCollection<LedResultData>();
+                            List<AlgResultLedcheckModel> AlgResultLedcheckModels = algResultLedcheckDao.GetAllByPid(result.Id);
+                            foreach (var item in AlgResultLedcheckModels)
+                            {
+                                LedResultData ledResultData = new LedResultData(new Point((double)item.PosX, (double)item.PosY), (double)item.Radius);
+                                result.LedResultDatas.Add(ledResultData);
+                            };
+                        }
+
                         bdheadersDis = new List<string> { "Point", "Radius" };
                         headersDis = new List<string> { "坐标", "半径"};
                         gridViewDis = new GridView();
@@ -1009,11 +1024,11 @@ namespace ColorVision.Services.Algorithm
                             gridViewDis.Columns.Add(new GridViewColumn() { Header = headersDis[i], DisplayMemberBinding = new Binding(bdheadersDis[i]) });
                         }
                         listViewSide.View = gridViewDis;
-                        listViewSide.ItemsSource = data.LedResultDatas;
-                        if (data.LedResultDatas.Count > 0)
+                        listViewSide.ItemsSource = result.LedResultDatas;
+                        if (result.LedResultDatas.Count > 0)
                         {
                             List<Point> points = new List<Point>();
-                            foreach (var item in data.LedResultDatas)
+                            foreach (var item in result.LedResultDatas)
                             {
                                 DrawingVisualCircle Circle = new DrawingVisualCircle();
                                 Circle.Attribute.Center = item.Point;
@@ -1070,9 +1085,17 @@ namespace ColorVision.Services.Algorithm
             ListRow2.Height = GridLength.Auto;
             ListRow1.Height = new GridLength(1, GridUnitType.Star);
         }
-
+        AlgResultMasterDao algResultMasterDao = new AlgResultMasterDao();
         private void Search_Click(object sender, RoutedEventArgs e)
         {
+            AlgResults.Clear();
+            List<AlgResultMasterModel> algResults = algResultMasterDao.GetAll();
+
+            foreach (var item in algResults)
+            {
+                AlgorithmResult algorithmResult = new AlgorithmResult(item);
+                AlgResults.Add(algorithmResult);
+            }
 
         }
     }

@@ -99,7 +99,14 @@ namespace ColorVision
             MenuItem menuItem2 = new MenuItem() { Header = "校正上传" ,Tag = "CalibrationUpload" };
             menuItem2.Click += MenuItem_Template;
             menuItem.Items.Add(menuItem2);
-            #endif
+
+            MenuItem menuItem3 = new MenuItem() { Header = "重启服务", Tag = "CalibrationUpload" };
+            menuItem3.Click += (s,e) =>
+            {
+                ColorVision.Util.Tool.ExecuteCommandAsAdmin("net stop RegistrationCenterService&net stop CVMainService_x64&net start RegistrationCenterService&net start CVMainService_x64");
+            };
+            menuItem.Items.Add(menuItem3);
+#endif
         }
 
         private void MenuStatusBar_Click(object sender, RoutedEventArgs e)

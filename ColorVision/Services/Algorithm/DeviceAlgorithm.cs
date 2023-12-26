@@ -1,6 +1,8 @@
-﻿using ColorVision.MySql.DAO;
+﻿using ColorVision.Device.Camera;
+using ColorVision.MySql.DAO;
 using ColorVision.Services.Device;
 using ColorVision.Themes;
+using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -14,7 +16,7 @@ namespace ColorVision.Services.Algorithm
 
         public DeviceAlgorithm(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
-            View ??= new AlgorithmView();
+            View ??= new AlgorithmView(this);
             Service = new AlgorithmService(this,Config);
 
             if (Application.Current.TryFindResource("DrawingImageAlgorithm") is DrawingImage DrawingImageAlgorithm)
@@ -28,11 +30,15 @@ namespace ColorVision.Services.Algorithm
             };
             View.View.Title = "算法展示";
             View.View.Icon = Icon;
+
+            DisplayAlgorithmControlLazy = new Lazy<DisplayAlgorithmControl>(() => { DisplayAlgorithmControl ??= new DisplayAlgorithmControl(this);return DisplayAlgorithmControl;   });
         }
+        readonly Lazy<DisplayAlgorithmControl> DisplayAlgorithmControlLazy;
+        public DisplayAlgorithmControl DisplayAlgorithmControl { get; set; }
 
         public override UserControl GetDeviceControl() => new DeviceAlgorithmControl(this);
         public override UserControl GetDeviceInfo() => new DeviceAlgorithmControl(this,false);
 
-        public override UserControl GetDisplayControl() => new DisplayAlgorithmControl(this);
+        public override UserControl GetDisplayControl() => DisplayAlgorithmControlLazy.Value;
     }
 }

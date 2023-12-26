@@ -168,9 +168,6 @@ namespace ColorVision
             OpenSetting();
         }
 
-
-
-
         private void OpenSetting()
         {
             new SettingWindow() { Owner =this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
