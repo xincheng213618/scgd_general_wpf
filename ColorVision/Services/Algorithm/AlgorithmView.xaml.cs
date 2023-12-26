@@ -24,6 +24,7 @@ using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using Wpf.Ui.Interop.WinDef;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 
@@ -653,6 +654,32 @@ namespace ColorVision.Services.Algorithm
                         + Environment.NewLine;
                 }
                 file.WriteLine(value);
+
+                ImageSource bitmapSource = img_view.ImageShow.Source;
+                SaveImageSourceToFile(bitmapSource, dialog.FileName +".png");
+            }
+        }
+
+
+        public static void SaveImageSourceToFile(ImageSource imageSource, string filePath)
+        {
+            var bitmapSource = imageSource as BitmapSource;
+            if (bitmapSource != null)
+            {
+                // Create a PngBitmapEncoder
+                BitmapEncoder encoder = new PngBitmapEncoder();
+                encoder.Frames.Add(BitmapFrame.Create(bitmapSource));
+
+                // Open a file stream for writing
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    // Save the image to the file stream
+                    encoder.Save(fileStream);
+                }
+            }
+            else
+            {
+                throw new ArgumentException("The provided ImageSource cannot be converted to a BitmapSource.");
             }
         }
 

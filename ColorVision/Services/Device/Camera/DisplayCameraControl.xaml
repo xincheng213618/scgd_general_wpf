@@ -53,11 +53,7 @@
                     <DockPanel Margin="0,2" Visibility="{Binding DeviceService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter}}">
                         <TextBlock  Text="曝光(ms)" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0" />
                         <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTime}" MinWidth="50"/>
-                        <hc:PreviewSlider TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="1" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTime}" Minimum="1" Maximum="60000">
-                            <hc:PreviewSlider.PreviewContent>
-                                <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="{}{0:#0.}ms"/>
-                            </hc:PreviewSlider.PreviewContent>
-                        </hc:PreviewSlider>
+                        <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeLog}" Minimum="0" Maximum="11.002"/>
                     </DockPanel>
 
                     <StackPanel x:Name="StackPanelImage">
@@ -65,40 +61,24 @@
                             <DockPanel Margin="0,2">
                                 <TextBlock  Text="曝光(ms)" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0" />
                                 <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTime}" Width="50"/>
-                                <hc:PreviewSlider x:Name="SliderexpTime"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1" ValueChanged="PreviewSlider_ValueChanged"    Value="{Binding Config.ExpTime}" Minimum="1" Maximum="60000">
-                                    <hc:PreviewSlider.PreviewContent>
-                                        <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="{}{0:#0.}ms"/>
-                                    </hc:PreviewSlider.PreviewContent>
-                                </hc:PreviewSlider>
+                                <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeLog}" Minimum="0" Maximum="11.002"/>
                             </DockPanel>
                         </StackPanel>
                         <StackPanel Visibility="{Binding Config.IsExpThree,Converter={StaticResource bool2VisibilityConverter}}">
                             <DockPanel Margin="0,2">
                                 <TextBlock  Text="曝光R(ms)" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
                                 <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeR}" Width="50"/>
-                                <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="100"  ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeR}" Minimum="1" Maximum="60000">
-                                    <hc:PreviewSlider.PreviewContent>
-                                        <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="{}{0:#0.}ms"/>
-                                    </hc:PreviewSlider.PreviewContent>
-                                </hc:PreviewSlider>
+                                <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeRLog}" Minimum="0" Maximum="11.002"/>
                             </DockPanel>
                             <DockPanel Margin="0,2">
                                 <TextBlock  Text="曝光G(ms)" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
                                 <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeG}" Width="50"/>
-                                <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="100" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeG}" Minimum="1" Maximum="60000">
-                                    <hc:PreviewSlider.PreviewContent>
-                                        <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="{}{0:#0.}ms"/>
-                                    </hc:PreviewSlider.PreviewContent>
-                                </hc:PreviewSlider>
+                                <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeGLog}" Minimum="0" Maximum="11.002"/>
                             </DockPanel>
                             <DockPanel Margin="0,2">
                                 <TextBlock  Text="曝光B(ms)" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
                                 <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeB}" Width="50"/>
-                                <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True" SmallChange ="1" LargeChange="100" ValueChanged="PreviewSlider_ValueChanged"    Value="{Binding Config.ExpTimeB}" Minimum="1" Maximum="60000">
-                                    <hc:PreviewSlider.PreviewContent>
-                                        <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="{}{0:#0.}ms"/>
-                                    </hc:PreviewSlider.PreviewContent>
-                                </hc:PreviewSlider>
+                                <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.001" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeBLog}" Minimum="0" Maximum="11.002"/>
                             </DockPanel>
                         </StackPanel>
 

@@ -351,11 +351,6 @@ namespace ColorVision.Device.Camera
         {
             if (sender is Button button)
             {
-                if (SliderexpTime.Value <= 0)
-                {
-                    MessageBox.Show(Application.Current.MainWindow, "曝光时间小于0");
-                    return;
-                }
                 string filename = DateTime.Now.ToString("yyyyMMddHHmmss") + ".tif";
 
                 if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
