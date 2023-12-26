@@ -4,17 +4,20 @@ using System.Windows.Input;
 using System;
 using System.Globalization;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 
 namespace ColorVision.Draw
 {
-    public class ToolConcentricCircle
+    public class ToolReferenceLine
     {
         private ZoomboxSub ZoomboxSub { get; set; }
         private DrawCanvas Image { get; set; }
 
         public DrawingVisual DrawVisualImage { get; set; }
 
-        public ToolConcentricCircle(ZoomboxSub zombox, DrawCanvas drawCanvas)
+        public int Mode { get; set; } = 2;
+
+        public ToolReferenceLine(ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
             ZoomboxSub = zombox;
             Image = drawCanvas;
@@ -34,7 +37,9 @@ namespace ColorVision.Draw
                     Image.MouseMove += MouseMove;
                     Image.PreviewMouseLeftButtonDown += PreviewMouseLeftButtonDown;
                     Image.PreviewMouseRightButtonDown += Image_PreviewMouseRightButtonDown;
-                    Image.PreviewMouseUp += PreviewMouseUp; 
+                    Image.PreviewMouseUp += PreviewMouseUp;
+                    ZoomboxSub.LayoutUpdated += ZoomboxSub_LayoutUpdated;
+
                 }
                 else
                 {
@@ -42,10 +47,16 @@ namespace ColorVision.Draw
                     Image.PreviewMouseLeftButtonDown -= PreviewMouseLeftButtonDown;
                     Image.PreviewMouseRightButtonDown -= Image_PreviewMouseRightButtonDown;
                     Image.PreviewMouseUp -= PreviewMouseUp;
+                    ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
+
                 }
             }
         }
 
+        private void ZoomboxSub_LayoutUpdated(object? sender, EventArgs e)
+        {
+            Render();
+        }
 
         private bool IsRMouseDown;
         private bool IsLMouseDown;
@@ -121,7 +132,7 @@ namespace ColorVision.Draw
         {
             // Convert angle to radians
             double angleRad = angle * Math.PI / 180.0;
-
+            
             // Define the second lenc for the line from the given lenc and angle
             Point pAngle = new Point(p.X + Math.Cos(angleRad), p.Y + Math.Sin(angleRad));
 
@@ -191,20 +202,11 @@ namespace ColorVision.Draw
         {
             using DrawingContext dc = DrawVisualImage.RenderOpen();
             Brush brush = Brushes.Red;
-            Pen pen = new Pen(brush, 1 / ZoomboxSub.ContentMatrix.M11);
+            double ratio = 1 / ZoomboxSub.ContentMatrix.M11;
+            Pen pen = new Pen(brush, ratio);
 
 
             Point ActL = RMouseDownP + PointLen;
-
-            int lenc = (int)Math.Sqrt(PointLen.X * PointLen.X + PointLen.Y * PointLen.Y);
-
-            dc.DrawEllipse(Brushes.Transparent, pen, RMouseDownP, lenc, lenc);
-            dc.DrawEllipse(Brushes.Transparent, pen, RMouseDownP, lenc+10, lenc+ 10);
-            dc.DrawEllipse(Brushes.Transparent, pen, RMouseDownP, lenc +30, lenc+30);
-            dc.DrawEllipse(Brushes.Transparent, pen, RMouseDownP, lenc+50, lenc + 50);
-            dc.DrawEllipse(Brushes.Transparent, pen, RMouseDownP, lenc + 100, lenc + 100);
-            dc.DrawEllipse(Brushes.Transparent, pen, RMouseDownP, lenc + 200, lenc + 200);
-
 
 
             double angle = CalculateAngle(RMouseDownP, ActL);
@@ -212,38 +214,93 @@ namespace ColorVision.Draw
             double ActualWidth = Image.ActualWidth;
             double ActualHeight = Image.ActualHeight;
 
-
-            // 旋转变换
-            List<Point> intersectionPoints = CalculateIntersectionPoints(ActualHeight, ActualWidth, CenterPoint, angle);
-
-            if (intersectionPoints.Count == 4)
+            if(Mode == 0)
             {
-                dc.DrawLine(pen, intersectionPoints[0], intersectionPoints[1]); // 水平线
-                dc.DrawLine(pen, intersectionPoints[2], intersectionPoints[3]); // 垂直线
+                // 旋转变换
+                List<Point> intersectionPoints = CalculateIntersectionPoints(ActualHeight, ActualWidth, CenterPoint, angle);
+
+                if (intersectionPoints.Count == 4)
+                {
+                    dc.DrawLine(pen, intersectionPoints[0], intersectionPoints[1]); // 水平线
+                    dc.DrawLine(pen, intersectionPoints[2], intersectionPoints[3]); // 垂直线
+                }
+
+                TextAttribute textAttribute = new TextAttribute();
+                textAttribute.FontSize = 15 / ZoomboxSub.ContentMatrix.M11;
+
+                FormattedText formattedText = new FormattedText(angle.ToString("F1") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
+                dc.DrawText(formattedText, RMouseDownP + new System.Windows.Vector(20, 20));
+
+
+
+                int lenc = (int)Math.Sqrt(PointLen.X * PointLen.X + PointLen.Y * PointLen.Y);
+
+                dc.DrawEllipse(Brushes.Transparent, pen, RMouseDownP, lenc, lenc);
+                dc.DrawEllipse(Brushes.Transparent, pen, RMouseDownP, lenc + 10, lenc + 10);
+                dc.DrawEllipse(Brushes.Transparent, pen, RMouseDownP, lenc + 30, lenc + 30);
+                dc.DrawEllipse(Brushes.Transparent, pen, RMouseDownP, lenc + 50, lenc + 50);
+                dc.DrawEllipse(Brushes.Transparent, pen, RMouseDownP, lenc + 100, lenc + 100);
+                dc.DrawEllipse(Brushes.Transparent, pen, RMouseDownP, lenc + 200, lenc + 200);
+
+
+                //dc.PushTransform(new RotateTransform(angle, RMouseDownP.X, RMouseDownP.Y));
+                FormattedText formattedText1 = new FormattedText(lenc.ToString("F1"), CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
+                dc.DrawText(formattedText1, RMouseDownP + PointLen);
+
+                FormattedText formattedText2 = new FormattedText((lenc + 10).ToString("F1"), CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
+                dc.DrawText(formattedText2, RMouseDownP + PointLen);
+
+                FormattedText formattedText3 = new FormattedText((lenc + 1).ToString("F1"), CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
+                dc.DrawText(formattedText3, RMouseDownP - PointLen);
+            }
+            else if (Mode==1)
+            {
+
+                // 旋转变换
+                List<Point> intersectionPoints = CalculateIntersectionPoints(ActualHeight, ActualWidth, CenterPoint, angle);
+
+                if (intersectionPoints.Count == 4)
+                {
+                    dc.DrawLine(pen, intersectionPoints[0], intersectionPoints[1]); // 水平线
+                    dc.DrawLine(pen, intersectionPoints[2], intersectionPoints[3]); // 垂直线
+                }
+
+                TextAttribute textAttribute = new TextAttribute();
+                textAttribute.FontSize = 15 / ZoomboxSub.ContentMatrix.M11;
+
+                FormattedText formattedText = new FormattedText(angle.ToString("F1") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
+                dc.DrawText(formattedText, RMouseDownP + new System.Windows.Vector(20, 20));
+            }
+            else if (Mode == 2)
+            {
+                double angle1 = (angle +45) * Math.PI / 180.0;
+                // 旋转变换
+                List<Point> intersectionPoints = CalculateIntersectionPoints(ActualHeight, ActualWidth, CenterPoint + new Vector(5*ratio* Math.Cos(angle1), 5 * ratio * Math.Sin(angle1)), angle);
+
+                if (intersectionPoints.Count == 4)
+                {
+                    dc.DrawLine(pen, intersectionPoints[0], intersectionPoints[1]); // 水平线,
+                    dc.DrawLine(pen, intersectionPoints[2], intersectionPoints[3]); // 垂直线
+                }
+                intersectionPoints = CalculateIntersectionPoints(ActualHeight, ActualWidth, CenterPoint - new Vector(5 * ratio * Math.Cos(angle1), 5*ratio * Math.Sin(angle1)), angle);
+                if (intersectionPoints.Count == 4)
+                {
+                    dc.DrawLine(pen, intersectionPoints[0], intersectionPoints[1]); // 水平线,
+                    dc.DrawLine(pen, intersectionPoints[2], intersectionPoints[3]); // 垂直线
+                }
+
+
+
+
+                TextAttribute textAttribute = new TextAttribute();
+                textAttribute.FontSize = 15 / ZoomboxSub.ContentMatrix.M11;
+
+                FormattedText formattedText = new FormattedText(angle.ToString("F1") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
+                dc.DrawText(formattedText, RMouseDownP + new System.Windows.Vector(20, 20));
             }
 
-            TextAttribute textAttribute = new TextAttribute();
-            textAttribute.FontSize = 15 / ZoomboxSub.ContentMatrix.M11;
-
-            FormattedText formattedText = new FormattedText(angle.ToString("F1") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-            dc.DrawText(formattedText, RMouseDownP + new System.Windows.Vector(20, 20));
 
 
-            
-
-            //dc.PushTransform(new RotateTransform(angle, RMouseDownP.X, RMouseDownP.Y));
-            FormattedText formattedText1 = new FormattedText(lenc.ToString("F1"), CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-            dc.DrawText(formattedText1, RMouseDownP + PointLen);
-
-            FormattedText formattedText2 = new FormattedText((lenc + 10).ToString("F1"), CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-            dc.DrawText(formattedText2, RMouseDownP + PointLen );
-
-            FormattedText formattedText3 = new FormattedText((lenc+1).ToString("F1"), CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-            dc.DrawText(formattedText3, RMouseDownP - PointLen );
-
-
-
-            //dc.Pop();
         }
 
         private bool _IsShow;

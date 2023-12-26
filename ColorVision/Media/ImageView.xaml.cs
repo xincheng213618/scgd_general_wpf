@@ -891,6 +891,27 @@ namespace ColorVision
             ImageShow.Clear();
         }
 
+        private void reference_Click(object sender, RoutedEventArgs e)
+        {
+            menuPop1.IsOpen = true;
+        }
 
+        private void reference1_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.Tag is string tag)
+            {
+                int i = int.Parse(tag);
+                if (i == -1)
+                {
+                    ToolBarTop.ToolConcentricCircle.IsShow = false;
+                }
+                else 
+                {
+                    ToolBarTop.ToolConcentricCircle.IsShow = true;
+                    ToolBarTop.ToolConcentricCircle.Mode = i;
+                }
+                menuPop1.IsOpen = false;
+            }
+        }
     }
 }
