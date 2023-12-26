@@ -155,13 +155,13 @@ namespace ColorVision.Services.Algorithm
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord FOV( string fileName, int pid, string tempName, string serialNumber)
+        public MsgRecord FOV( string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
 
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName } };
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName },{ "FileType", fileExtType }, };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
 
             MsgSend msg = new MsgSend
@@ -185,13 +185,13 @@ namespace ColorVision.Services.Algorithm
         }
 
 
-        public MsgRecord MTF(string fileName, int pid, string tempName, string serialNumber,int poiId, string poiTempName)
+        public MsgRecord MTF(string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber,int poiId, string poiTempName)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
 
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName } };
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
             Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiId, Name = poiTempName });
 
@@ -226,13 +226,13 @@ namespace ColorVision.Services.Algorithm
             return JsonConvert.SerializeObject(file_data);
         }
 
-        public MsgRecord SFR(string fileName, int pid, string tempName, string serialNumber)
+        public MsgRecord SFR(string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
 
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName } };
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
 
             MsgSend msg = new MsgSend
@@ -246,13 +246,13 @@ namespace ColorVision.Services.Algorithm
         }
 
 
-        public MsgRecord Ghost(string fileName, int pid, string tempName, string serialNumber)
+        public MsgRecord Ghost(string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
 
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName } };
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
 
             MsgSend msg = new MsgSend
@@ -265,13 +265,13 @@ namespace ColorVision.Services.Algorithm
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord Distortion(string fileName, int pid, string tempName, string serialNumber)
+        public MsgRecord Distortion(string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
 
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName } };
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
 
             MsgSend msg = new MsgSend
@@ -286,13 +286,13 @@ namespace ColorVision.Services.Algorithm
 
 
 
-        public MsgRecord FocusPoints(string fileName, int pid, string tempName, string serialNumber)
+        public MsgRecord FocusPoints(string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
 
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName } };
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
 
             MsgSend msg = new MsgSend
@@ -305,13 +305,13 @@ namespace ColorVision.Services.Algorithm
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord LedCheck(string fileName, int pid, string tempName, string serialNumber)
+        public MsgRecord LedCheck(string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
 
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName } };
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
 
             MsgSend msg = new MsgSend
@@ -331,24 +331,34 @@ namespace ColorVision.Services.Algorithm
             return PublishAsyncClient(msg);
         }
 
-        internal void Open(string fileName)
+        internal void Open(string fileName, FileExtType extType)
         {
             MsgSend msg = new MsgSend
             {
                 EventName = MQTTFileServerEventEnum.Event_File_Download,
                 ServiceName = Config.Code,
-                Params = new Dictionary<string, object> { { "FileName", fileName }, { "FileExtType", FileExtType.CIE } }
+                Params = new Dictionary<string, object> { { "FileName", fileName }, { "FileExtType", extType } }
             };
             PublishAsyncClient(msg);
         }
 
-        internal void UploadCIEFile(string fileName)
+        public void UploadCIEFile(string fileName)
         {
             MsgSend msg = new MsgSend
             {
                 EventName = MQTTFileServerEventEnum.Event_File_Upload,
                 ServiceName = Config.Code,
                 Params = new Dictionary<string, object> { { "FileName", fileName }, { "FileExtType", FileExtType.CIE } }
+            };
+            PublishAsyncClient(msg);
+        }
+
+        public void GetRawFiles()
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = MQTTFileServerEventEnum.Event_File_List_All,
+                Params = new Dictionary<string, object> { { "FileExtType", FileExtType.Raw } }
             };
             PublishAsyncClient(msg);
         }
