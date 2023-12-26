@@ -194,8 +194,6 @@ namespace ColorVision.Services.Algorithm
                     LoadResultPOIFromDB(result);
                     break;
                 case AlgorithmResultType.Distortion:
-                    LoadResultDistortionFromDB(result);
-                    break;
                 case AlgorithmResultType.Ghost:
                 case AlgorithmResultType.LedCheck:
                 case AlgorithmResultType.FOV:
