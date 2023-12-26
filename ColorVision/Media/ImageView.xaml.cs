@@ -851,7 +851,6 @@ namespace ColorVision
 
         public void AddPOIPoint(List<POIPoint> PoiPoints)
         {
-            int id = 0;
             foreach (var item in PoiPoints)
             {
                 switch (item.PointType)

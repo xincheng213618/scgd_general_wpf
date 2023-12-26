@@ -97,17 +97,42 @@ namespace ColorVision.Services.Algorithm
             netFileUtil.OpenLocalFile(localName, extType);
         }
 
+        private void DoShowFileList(DeviceListAllFilesParam data)
+        {
+            switch (data.FileExtType)
+            {
+                case FileExtType.Raw:
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        CB_RawImageFiles.ItemsSource = data.Files;
+                        CB_RawImageFiles.SelectedIndex = 0;
+                    });
+                    break;
+                case FileExtType.Src:
+                    break;
+                case FileExtType.CIE:
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        CB_CIEImageFiles.ItemsSource = data.Files;
+                        CB_CIEImageFiles.SelectedIndex = 0;
+                    });
+                    break;
+                case FileExtType.Calibration:
+                    break;
+                case FileExtType.Tif:
+                    break;
+                default:
+                    break;
+            }
+        }
+
         private void Service_OnAlgorithmEvent(object sender, MessageRecvArgs arg)
         {
             switch (arg.EventName)
             {
                 case MQTTFileServerEventEnum.Event_File_List_All:
                     DeviceListAllFilesParam data = JsonConvert.DeserializeObject<DeviceListAllFilesParam>(JsonConvert.SerializeObject(arg.Data));
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        CB_CIEImageFiles.ItemsSource = data.Files;
-                        CB_CIEImageFiles.SelectedIndex = 0;
-                    });
+                    DoShowFileList(data);
                     break;
 
                 case MQTTAlgorithmEventEnum.Event_POI_GetData:
@@ -361,12 +386,13 @@ namespace ColorVision.Services.Algorithm
             }
             string sn = string.Empty;
             string imgFileName = ImageFile.Text;
+            FileExtType fileExtType = FileExtType.Tif;
 
-            if (GetAlgSN(ref sn, ref imgFileName))
+            if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
             {
                 var pm = TemplateControl.GetInstance().MTFParams[ComboxMTFTemplate.SelectedIndex].Value;
                 var poi_pm = TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value;
-                var ss = Service.MTF(imgFileName, pm.ID, ComboxMTFTemplate.Text, sn, poi_pm.ID, ComboxPoiTemplate.Text);
+                var ss = Service.MTF(imgFileName, fileExtType, pm.ID, ComboxMTFTemplate.Text, sn, poi_pm.ID, ComboxPoiTemplate.Text);
                 Helpers.SendCommand(ss, "MTF");
             }
         }
@@ -381,11 +407,12 @@ namespace ColorVision.Services.Algorithm
 
             string sn = string.Empty;
             string imgFileName = ImageFile.Text;
+            FileExtType fileExtType = FileExtType.Tif;
 
-            if (GetAlgSN(ref sn, ref imgFileName))
+            if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
             {
                 var pm = TemplateControl.GetInstance().SFRParams[ComboxSFRTemplate.SelectedIndex].Value;
-                var msg = Service.SFR(imgFileName, pm.ID, ComboxSFRTemplate.Text, sn);
+                var msg = Service.SFR(imgFileName, fileExtType, pm.ID, ComboxSFRTemplate.Text, sn);
                 Helpers.SendCommand(msg, "SFR");
             }
 
@@ -400,11 +427,12 @@ namespace ColorVision.Services.Algorithm
             }
             string sn = string.Empty;
             string imgFileName = ImageFile.Text;
+            FileExtType fileExtType = FileExtType.Tif;
 
-            if (GetAlgSN(ref sn, ref imgFileName))
+            if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
             {
                 var pm = TemplateControl.GetInstance().GhostParams[ComboxGhostTemplate.SelectedIndex].Value;
-                var msg = Service.Ghost(imgFileName, pm.ID, ComboxGhostTemplate.Text, sn);
+                var msg = Service.Ghost(imgFileName, fileExtType, pm.ID, ComboxGhostTemplate.Text, sn);
                 Helpers.SendCommand(msg, "Ghost");
             }
         }
@@ -418,18 +446,20 @@ namespace ColorVision.Services.Algorithm
             }
             string sn = string.Empty;
             string imgFileName = ImageFile.Text;
+            FileExtType fileExtType = FileExtType.Tif;
 
-            if (GetAlgSN(ref sn, ref imgFileName))
+            if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
             {
                 var pm = TemplateControl.GetInstance().DistortionParams[ComboxDistortionTemplate.SelectedIndex].Value;
-                var msg = Service.Distortion(imgFileName, pm.ID, ComboxDistortionTemplate.Text, sn);
+                var msg = Service.Distortion(imgFileName, fileExtType, pm.ID, ComboxDistortionTemplate.Text, sn);
                 Helpers.SendCommand(msg, "Distortion");
             }
         }
 
-        private bool GetAlgSN(ref string sn, ref string imgFileName)
+        private bool GetAlgSN(ref string sn, ref string imgFileName,ref FileExtType fileExtType)
         {
             bool? isSN = AlgBatchSelect.IsChecked;
+            bool? isRaw = AlgRawSelect.IsChecked;
             if (isSN.HasValue && isSN.Value)
             {
                 if (string.IsNullOrWhiteSpace(AlgBatchCode.Text))
@@ -440,15 +470,22 @@ namespace ColorVision.Services.Algorithm
                 sn = AlgBatchCode.Text;
                 imgFileName = string.Empty;
             }
+            else if (isRaw.HasValue && isRaw.Value) {
+                imgFileName = CB_RawImageFiles.Text;
+                fileExtType = FileExtType.Raw;
+                sn = string.Empty;
+            }
             else
             {
-                if (string.IsNullOrWhiteSpace(imgFileName))
-                {
-                    MessageBox.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
-                    return false;
-                }
+                imgFileName = ImageFile.Text;
+                fileExtType = FileExtType.Tif;
+                sn = string.Empty;
             }
-
+            if (string.IsNullOrWhiteSpace(imgFileName))
+            {
+                MessageBox.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
+                return false;
+            }
             return true;
         }
 
@@ -461,12 +498,13 @@ namespace ColorVision.Services.Algorithm
             }
 
             string sn = string.Empty;
-            string imgFileName = ImageFile.Text;
+            string imgFileName = ImageFile.Text; 
+            FileExtType fileExtType = FileExtType.Tif;
 
-            if(GetAlgSN(ref sn,ref imgFileName))
+            if (GetAlgSN(ref sn,ref imgFileName ,ref fileExtType))
             {
                 var pm = TemplateControl.GetInstance().FOVParams[ComboxFOVTemplate.SelectedIndex].Value;
-                var msg = Service.FOV(imgFileName, pm.ID, ComboxFOVTemplate.Text, sn);
+                var msg = Service.FOV(imgFileName, fileExtType, pm.ID, ComboxFOVTemplate.Text, sn);
                 Helpers.SendCommand(msg, "FOV");
             }
         }
@@ -521,7 +559,7 @@ namespace ColorVision.Services.Algorithm
             string localName = netFileUtil.GetCacheFileFullName(fileName);
             if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
             {
-                Service.Open(fileName);
+                Service.Open(fileName, extType);
             }
             else
             {
@@ -617,10 +655,16 @@ namespace ColorVision.Services.Algorithm
                 return;
             }
 
-            string sn = null;
-            var pm = TemplateControl.GetInstance().FocusPointsParams[ComboxFocusPointsTemplate.SelectedIndex].Value;
-            var ss = Service.FocusPoints(ImageFile.Text, pm.ID, ComboxFocusPointsTemplate.Text, sn);
-            Helpers.SendCommand(ss, "FocusPoints");
+            string sn = string.Empty;
+            string imgFileName = ImageFile.Text;
+            FileExtType fileExtType = FileExtType.Tif;
+
+            if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
+            {
+                var pm = TemplateControl.GetInstance().FocusPointsParams[ComboxFocusPointsTemplate.SelectedIndex].Value;
+                var ss = Service.FocusPoints(ImageFile.Text, fileExtType, pm.ID, ComboxFocusPointsTemplate.Text, sn);
+                Helpers.SendCommand(ss, "FocusPoints");
+            }
         }
 
         private void LedCheck_Click(object sender, RoutedEventArgs e)
@@ -631,10 +675,36 @@ namespace ColorVision.Services.Algorithm
                 return;
             }
 
-            string sn = null;
-            var pm = TemplateControl.GetInstance().LedCheckParams[ComboxLedCheckTemplate.SelectedIndex].Value;
-            var ss = Service.LedCheck(ImageFile.Text, pm.ID, ComboxLedCheckTemplate.Text, sn);
-            Helpers.SendCommand(ss, "正在计算灯珠");
+            string sn = string.Empty;
+            string imgFileName = ImageFile.Text;
+            FileExtType fileExtType = FileExtType.Tif;
+
+            if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
+            {
+                var pm = TemplateControl.GetInstance().LedCheckParams[ComboxLedCheckTemplate.SelectedIndex].Value;
+                var ss = Service.LedCheck(ImageFile.Text, fileExtType, pm.ID, ComboxLedCheckTemplate.Text, sn);
+                Helpers.SendCommand(ss, "正在计算灯珠");
+            }
+        }
+
+        private void Button_Click_RawRefresh(object sender, RoutedEventArgs e)
+        {
+            Service.GetRawFiles();
+        }
+
+        private void Button_Click_RawUpload(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void Button_Click_RawOpen(object sender, RoutedEventArgs e)
+        {
+            handler = PendingBox.Show(Application.Current.MainWindow, "", "打开图片", true);
+            handler.Cancelling += delegate
+            {
+                handler?.Close();
+            };
+            doOpen(CB_RawImageFiles.Text, FileExtType.Raw);
         }
     }
 }
