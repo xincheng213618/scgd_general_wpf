@@ -16,10 +16,10 @@
         </Style>
     </UserControl.Resources>
     <Grid  x:Name="MQTTEditContent" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter}}">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="60"/>
-        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
         <ScrollViewer  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5" Margin="0,0,5,0">
                 <StackPanel Margin="5,0">
@@ -376,12 +376,10 @@
                         </StackPanel>
                     </GroupBox>
                 </StackPanel>
-
             </Border>
-
         </ScrollViewer>
-        <Border Grid.Column="1" Margin="5">
-            <Button  Content="{x:Static resx:Resource.Submit}" Command="{Binding SaveCommand}" />
+        <Border Grid.Row="1" Margin="5" Height="30">
+            <Button  Content="{x:Static resx:Resource.Submit}" Foreground="White" Background="{StaticResource PrimaryBrush}" Command="{Binding SaveCommand}" />
         </Border>
     </Grid>
 </UserControl>
