@@ -13,7 +13,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 
-namespace ColorVision.Device.SMU
+namespace ColorVision.Services.Device.SMU
 {
     /// <summary>
     /// SpectrumView.xaml 的交互逻辑

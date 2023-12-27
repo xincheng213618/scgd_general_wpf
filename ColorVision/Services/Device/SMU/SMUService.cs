@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace ColorVision.Device.SMU
+namespace ColorVision.Services.Device.SMU
 {
     public delegate void MQTTSMUScanResultHandler(SMUScanResultData data);
     public delegate void MQTTSMUResultHandler(SMUResultData data);

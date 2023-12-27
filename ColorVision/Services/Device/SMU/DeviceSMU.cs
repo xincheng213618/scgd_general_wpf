@@ -5,7 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.Device.SMU
+namespace ColorVision.Services.Device.SMU
 {
     public class DeviceSMU : BaseDevice<ConfigSMU>
     {

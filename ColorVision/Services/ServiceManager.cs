@@ -1,7 +1,6 @@
 ﻿using ColorVision.Device.Camera;
 using ColorVision.Device.FileServer;
 using ColorVision.Device.PG;
-using ColorVision.Device.SMU;
 using ColorVision.Device.Spectrum;
 using ColorVision.Flow;
 using ColorVision.MySql;
@@ -13,6 +12,7 @@ using ColorVision.Services.Device.Calibration;
 using ColorVision.Services.Device.CfwPort;
 using ColorVision.Services.Device.Motor;
 using ColorVision.Services.Device.Sensor;
+using ColorVision.Services.Device.SMU;
 using ColorVision.User;
 using Newtonsoft.Json;
 using System;

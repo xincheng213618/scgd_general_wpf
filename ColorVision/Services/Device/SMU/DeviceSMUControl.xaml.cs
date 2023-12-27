@@ -3,7 +3,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Device.SMU
+namespace ColorVision.Services.Device.SMU
 {
     /// <summary>
     /// DeviceSMUControl.xaml 的交互逻辑
