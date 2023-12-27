@@ -608,9 +608,14 @@ namespace ColorVision.Device.Camera
              return PublishAsyncClient(msg);
         }
 
-        public void CacheClear()
+        public MsgRecord CacheClear()
         {
-            PublishAsyncClient(new MsgSend { EventName = "" });
+            MsgSend msg = new MsgSend
+            {
+                EventName = MQTTCameraEventEnum.Event_Delete_Data,
+                Params = new Dictionary<string, object> { }
+            };
+            return PublishAsyncClient(msg);
         }
     }
 }
