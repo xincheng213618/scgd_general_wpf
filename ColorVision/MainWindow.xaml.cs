@@ -85,8 +85,22 @@ namespace ColorVision
             ViewGridManager.GetInstance().SetViewNum(1);
             this.Closed += (s, e) => { Environment.Exit(-1); };
             Debug.WriteLine("启动成功");
-            
-            
+
+
+
+            MenuItem menulog = new MenuItem() { Header = "服务日志" };
+            menulog.Click += (s, e) =>
+            {
+                Process.Start("explorer.exe", "http://localhost:8082/system/log");
+            };
+            MenuHelp.Items.Insert(0, menulog);
+
+            MenuItem menulog1 = new MenuItem() { Header = "服务相机日志" };
+            menulog1.Click += (s, e) =>
+            {
+                Process.Start("explorer.exe", "http://localhost:8082/system/device/camera/log");
+            };
+            MenuHelp.Items.Insert(1, menulog1);
             
             #if (DEBUG == true)
             MenuItem menuItem = new MenuItem() { Header = "测试" };
