@@ -163,11 +163,7 @@
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="5" >
                                             <TextBlock Text="当前工程: " />
-                                            <TextBlock Text="{Binding SolutionConfig.SolutionName}"  />
-                                        </DockPanel>
-                                        <DockPanel Margin="5">
-                                            <TextBlock Text="当前工程路径: "/>
-                                            <TextBlock Text="{Binding SolutionConfig.SolutionFullName}"  />
+                                            <TextBlock Text="{Binding SolutionConfig.FullName}"  />
                                         </DockPanel>
 
                                     </StackPanel>
@@ -177,13 +173,12 @@
                                         <DockPanel Margin="5" >
                                             <Button DockPanel.Dock="Right" Content="{x:Static resx:Resource.Reset}" Click="SetProjectDefaultCreatName_Click"  />
                                             <TextBlock Text="新建工程格式:" MinWidth="150" />
-                                            <TextBox Text="{Binding SolutionConfig.SolutionSetting.DefaultCreatName}" HorizontalAlignment="Left" Width="200"/>
+                                            <TextBox Text="{Binding SolutionSetting.DefaultCreatName}" HorizontalAlignment="Left" Width="200"/>
                                         </DockPanel>
-
                                         <DockPanel Margin="5" >
                                             <Button DockPanel.Dock="Right" Content="{x:Static resx:Resource.Reset}" Click="SetProjectDefault__Click"  />
                                             <TextBlock Text="默认文件存储格式:"  MinWidth="150"  />
-                                            <TextBox Text="{Binding SolutionConfig.SolutionSetting.DefaultSaveName}" HorizontalAlignment="Left" Width="200" />
+                                            <TextBox Text="{Binding SolutionSetting.DefaultSaveName}" HorizontalAlignment="Left" Width="200" />
                                         </DockPanel>
                                     </StackPanel>
                                 </Border>
