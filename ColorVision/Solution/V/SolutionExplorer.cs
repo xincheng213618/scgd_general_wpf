@@ -61,87 +61,87 @@ namespace ColorVision.Solution.V
 
             List<string> strings = new List<string>() { "MTF", "SFR", "畸变", "灯光检测", "鬼影", "关注点" };
 
-            if (true)
-            {
-                HistoryFolder mtfFolder = new HistoryFolder("MTF");
-                var VFolder = new VFolder(mtfFolder);
-                vhistoryFolder.AddChild(VFolder);
+            //if (true)
+            //{
+            //    HistoryFolder mtfFolder = new HistoryFolder("MTF");
+            //    var VFolder = new VFolder(mtfFolder);
+            //    vhistoryFolder.AddChild(VFolder);
 
-                AlgorithmMTFResult MysqlResult = new AlgorithmMTFResult();
-                var results = MysqlResult.GetAll();
-                foreach (var result in results)
-                {
-                    HistoryFolder historyresult = new HistoryFolder(new MTFResult(result).Batch?.Name ?? new MTFResult(result).Model.Id.ToString());
-                    var vhistoryFolder2 = new VFolder(historyresult);
-                    VFolder.AddChild(vhistoryFolder2);
-                }
-                results.Clear();
-            }
+            //    AlgorithmMTFResult MysqlResult = new AlgorithmMTFResult();
+            //    var results = MysqlResult.GetAll();
+            //    foreach (var result in results)
+            //    {
+            //        HistoryFolder historyresult = new HistoryFolder(new MTFResult(result).Batch?.Name ?? new MTFResult(result).Model.Id.ToString());
+            //        var vhistoryFolder2 = new VFolder(historyresult);
+            //        VFolder.AddChild(vhistoryFolder2);
+            //    }
+            //    results.Clear();
+            //}
 
-            if (true)
-            {
-                HistoryFolder mtfFolder = new HistoryFolder("SFR");
-                var VFolder = new VFolder(mtfFolder);
-                vhistoryFolder.AddChild(VFolder);
+            //if (true)
+            //{
+            //    HistoryFolder mtfFolder = new HistoryFolder("SFR");
+            //    var VFolder = new VFolder(mtfFolder);
+            //    vhistoryFolder.AddChild(VFolder);
 
-                AlgorithmSFRResult MysqlResult = new AlgorithmSFRResult();
-                var results = MysqlResult.GetAll();
-                foreach (var result in results)
-                {
-                    HistoryFolder historyresult = new HistoryFolder(new SFRResult(result).Batch?.Name ?? new SFRResult(result).Model.Id.ToString());
-                    var vhistoryFolder2 = new VFolder(historyresult);
-                    VFolder.AddChild(vhistoryFolder2);
-                }
-                results.Clear();
-            }
+            //    AlgorithmSFRResult MysqlResult = new AlgorithmSFRResult();
+            //    var results = MysqlResult.GetAll();
+            //    foreach (var result in results)
+            //    {
+            //        HistoryFolder historyresult = new HistoryFolder(new SFRResult(result).Batch?.Name ?? new SFRResult(result).Model.Id.ToString());
+            //        var vhistoryFolder2 = new VFolder(historyresult);
+            //        VFolder.AddChild(vhistoryFolder2);
+            //    }
+            //    results.Clear();
+            //}
 
-            if (true)
-            {
-                HistoryFolder mtfFolder = new HistoryFolder("FOV");
-                var VFolder = new VFolder(mtfFolder);
-                vhistoryFolder.AddChild(VFolder);
-                AlgorithmFOVResult MysqlResult = new AlgorithmFOVResult();
-                var results = MysqlResult.GetAll();
-                foreach (var result in results)
-                {
-                    HistoryFolder historyresult = new HistoryFolder(new FOVResult(result).Batch?.Name ?? new FOVResult(result).Model.Id.ToString());
-                    var vhistoryFolder2 = new VFolder(historyresult);
-                    VFolder.AddChild(vhistoryFolder2);
-                }
-                results.Clear();
-            }
+            //if (true)
+            //{
+            //    HistoryFolder mtfFolder = new HistoryFolder("FOV");
+            //    var VFolder = new VFolder(mtfFolder);
+            //    vhistoryFolder.AddChild(VFolder);
+            //    AlgorithmFOVResult MysqlResult = new AlgorithmFOVResult();
+            //    var results = MysqlResult.GetAll();
+            //    foreach (var result in results)
+            //    {
+            //        HistoryFolder historyresult = new HistoryFolder(new FOVResult(result).Batch?.Name ?? new FOVResult(result).Model.Id.ToString());
+            //        var vhistoryFolder2 = new VFolder(historyresult);
+            //        VFolder.AddChild(vhistoryFolder2);
+            //    }
+            //    results.Clear();
+            //}
 
-            if (true)
-            {
-                HistoryFolder mtfFolder = new HistoryFolder("Ghost");
-                var VFolder = new VFolder(mtfFolder);
-                vhistoryFolder.AddChild(VFolder);
-                AlgorithmGhostResult MysqlResult = new AlgorithmGhostResult();
-                var results = MysqlResult.GetAll();
-                foreach (var result in results)
-                {
-                    HistoryFolder historyresult = new HistoryFolder(new GhostResult(result).Batch?.Name ?? new GhostResult(result).Model.Id.ToString());
-                    var vhistoryFolder2 = new VFolder(historyresult);
-                    VFolder.AddChild(vhistoryFolder2);
-                }
-                results.Clear();
-            }
+            //if (true)
+            //{
+            //    HistoryFolder mtfFolder = new HistoryFolder("Ghost");
+            //    var VFolder = new VFolder(mtfFolder);
+            //    vhistoryFolder.AddChild(VFolder);
+            //    AlgorithmGhostResult MysqlResult = new AlgorithmGhostResult();
+            //    var results = MysqlResult.GetAll();
+            //    foreach (var result in results)
+            //    {
+            //        HistoryFolder historyresult = new HistoryFolder(new GhostResult(result).Batch?.Name ?? new GhostResult(result).Model.Id.ToString());
+            //        var vhistoryFolder2 = new VFolder(historyresult);
+            //        VFolder.AddChild(vhistoryFolder2);
+            //    }
+            //    results.Clear();
+            //}
 
-            if (true)
-            {
-                HistoryFolder mtfFolder = new HistoryFolder("Distortion");
-                var VFolder = new VFolder(mtfFolder);
-                vhistoryFolder.AddChild(VFolder);
-                AlgorithmDistortionResult MysqlResult = new AlgorithmDistortionResult();
-                var results = MysqlResult.GetAll();
-                foreach (var result in results)
-                {
-                    HistoryFolder historyresult = new HistoryFolder(new DistortionResult(result).Batch?.Name ?? new DistortionResult(result).Model.Id.ToString());
-                    var vhistoryFolder2 = new VFolder(historyresult);
-                    VFolder.AddChild(vhistoryFolder2);
-                }
-                results.Clear();
-            }
+            //if (true)
+            //{
+            //    HistoryFolder mtfFolder = new HistoryFolder("Distortion");
+            //    var VFolder = new VFolder(mtfFolder);
+            //    vhistoryFolder.AddChild(VFolder);
+            //    AlgorithmDistortionResult MysqlResult = new AlgorithmDistortionResult();
+            //    var results = MysqlResult.GetAll();
+            //    foreach (var result in results)
+            //    {
+            //        HistoryFolder historyresult = new HistoryFolder(new DistortionResult(result).Batch?.Name ?? new DistortionResult(result).Model.Id.ToString());
+            //        var vhistoryFolder2 = new VFolder(historyresult);
+            //        VFolder.AddChild(vhistoryFolder2);
+            //    }
+            //    results.Clear();
+            //}
 
 
             foreach (var item in DirectoryInfo.GetDirectories())

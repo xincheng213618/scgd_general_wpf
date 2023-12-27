@@ -80,7 +80,14 @@ namespace ColorVision.Solution
 
         private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-
+            if (sender is ListView listView)
+            {
+                if (listView.SelectedIndex > -1)
+                {
+                    FullName = SolutionInfos[listView.SelectedIndex].FullName;
+                    this.Close();
+                }
+            }
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
