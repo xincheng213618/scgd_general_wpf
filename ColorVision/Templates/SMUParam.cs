@@ -74,7 +74,6 @@ namespace ColorVision.Templates
         public string DevName { get => _DevName; set { _DevName = value; NotifyPropertyChanged(); } }
         private string _DevName;
 
-
         public bool  IsNet { get => _IsNet; set { _IsNet = value; NotifyPropertyChanged(); } }
         private bool _IsNet =true;
 
@@ -87,6 +86,18 @@ namespace ColorVision.Templates
 
         public double LimitVal { get => _limitVal; set { _limitVal = value; NotifyPropertyChanged(); } }
         private double _limitVal;
+
+        public double MeasureVal { get => _MeasureVal; set { _MeasureVal = value; NotifyPropertyChanged(); } }
+        private double _MeasureVal;
+
+        public double LmtVal { get => _lmtVal; set { _lmtVal = value; NotifyPropertyChanged(); } }
+        private double _lmtVal;
+
+        public double? V { get => _V; set { _V = value; NotifyPropertyChanged(); } }
+        private double? _V;
+        public double? I { get => _I; set { _I = value; NotifyPropertyChanged(); } }
+        private double? _I;
+
 
         public bool Open(bool isNet,string devName)
         {
@@ -123,16 +134,7 @@ namespace ColorVision.Templates
             return PassSx.cvPssSxSetSourceV(DevID, isSourceV);
         }
 
-        public double MeasureVal { get => _MeasureVal; set { _MeasureVal = value; NotifyPropertyChanged(); } }
-        private double _MeasureVal;
 
-        public double LmtVal { get => _lmtVal; set { _lmtVal = value; NotifyPropertyChanged(); } }
-        private double _lmtVal;
-
-        public double? V { get => _V;  set { _V = value; NotifyPropertyChanged(); } }
-        private double? _V;
-        public double? I { get => _I;  set { _I = value; NotifyPropertyChanged(); } }
-        private double? _I;
         public void MeasureData(double measureVal, double lmtVal, ref double rstV, ref double rstI)
         {
             PassSx.cvMeasureData(DevID, measureVal, lmtVal, ref rstV, ref rstI);

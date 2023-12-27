@@ -2,13 +2,14 @@
 using ColorVision.Templates;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Device.SMU
+namespace ColorVision.Services.Device.SMU
 {
     /// <summary>
     /// SMUDisplayControl.xaml 的交互逻辑
@@ -16,44 +17,37 @@ namespace ColorVision.Device.SMU
     public partial class SMUDisplayControl : UserControl
     {
 
-        public DeviceSMU DeviceSMU { get; set; }
-        private SMUService SMUService { get => DeviceSMU.Service;  }
-        public SMUView View { get => DeviceSMU.View; }
+        public DeviceSMU Device { get; set; }
+        private SMUService DService { get => Device.Service;  }
+        private ConfigSMU Config { get => Device.Config; }
 
-        PassSxSource passSxSource;
+        public SMUView View { get => Device.View; }
+
 
         public SMUDisplayControl(DeviceSMU deviceSMU)
         {
-            this.DeviceSMU = deviceSMU;
+            this.Device = deviceSMU;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = DeviceSMU;
+            this.DataContext = Device;
 
-            SMUService.HeartbeatEvent += (e) => SMUService_DeviceStatusHandler(e.DeviceStatus);
-            SMUService.ScanResultEvent += SMUService_ScanResultHandler;
-            SMUService.ResultEvent += SMUService_ResultHandler;
-
-
-            passSxSource = new PassSxSource();
-            passSxSource.IsNet = SMUService.Config.IsNet;
-            passSxSource.DevName = SMUService.Config.ID;
-            StackPanelVI.DataContext = passSxSource;
-
-            StackPanelVITemplate.DataContext = passSxSource;
+            DService.HeartbeatEvent += (e) => SMUService_DeviceStatusHandler(e.DeviceStatus);
+            DService.ScanResultEvent += SMUService_ScanResultHandler;
+            DService.ResultEvent += SMUService_ResultHandler;
 
             ComboxVITemplate.ItemsSource = TemplateControl.GetInstance().SMUParams;
             ComboxVITemplate.SelectionChanged += (s, e) =>
             {
-                if (ComboxVITemplate.SelectedItem is KeyValuePair<string, SMUParam> KeyValue && KeyValue.Value is SMUParam SxParm)
+                if (ComboxVITemplate.SelectedItem is TemplateModel<SMUParam> KeyValue && KeyValue.Value is SMUParam SxParm)
                 {
-                    passSxSource.StartMeasureVal = SxParm.StartMeasureVal;
-                    passSxSource.StopMeasureVal = SxParm.StopMeasureVal;
-                    passSxSource.IsSourceV = SxParm.IsSourceV;
-                    passSxSource.LimitVal = SxParm.LmtVal;
-                    passSxSource.Number = SxParm.Number;
+                    Config.StartMeasureVal = SxParm.StartMeasureVal;
+                    Config.StopMeasureVal = SxParm.StopMeasureVal;
+                    Config.IsSourceV = SxParm.IsSourceV;
+                    Config.LimitVal = SxParm.LmtVal;
+                    Config.Number = SxParm.Number;
                 }
             };
             ComboxVITemplate.SelectedIndex = 0;
@@ -91,17 +85,15 @@ namespace ColorVision.Device.SMU
 
         private void SMUService_ResultHandler(SMUResultData data)
         {
-            passSxSource.V = data.V;
-            passSxSource.I = data.I;
+            Config.V = data.V;
+            Config.I = data.I;
         }
 
         private void SMUService_ScanResultHandler(SMUScanResultData data)
         {
-            passSxSource.VList = data.VList;
-            passSxSource.IList = data.IList;
             try
             {
-                View.DrawPlot(passSxSource.IsSourceV, passSxSource.StopMeasureVal, passSxSource.VList, passSxSource.IList);
+                View.DrawPlot(Config.IsSourceV, Config.StopMeasureVal, data.VList, data.IList);
             }
             catch 
             {
@@ -129,6 +121,8 @@ namespace ColorVision.Device.SMU
             }
         }
 
+        PassSxSource passSxSource = new PassSxSource();
+
         private void DoOpenByDll(Button button)
         {
             if (!passSxSource.IsOpen)
@@ -136,7 +130,7 @@ namespace ColorVision.Device.SMU
                 button.Content = "打开中";
                 Task.Run(() =>
                 {
-                    if (passSxSource.Open(passSxSource.IsNet, passSxSource.DevName))
+                    if (passSxSource.Open(Config.IsNet, Config.DevName))
                     {
                         Application.Current.Dispatcher.BeginInvoke(new Action(() =>
                         {
@@ -165,12 +159,12 @@ namespace ColorVision.Device.SMU
             if (btnTitle!=null && btnTitle.Equals("打开", StringComparison.Ordinal))
             {
                 button.Content = "打开中";
-                SMUService.Open(passSxSource.IsNet, passSxSource.DevName);
+                DService.Open(Config.IsNet, Config.DevName);
             }
             else
             {
                 button.Content = "关闭中";
-                SMUService.Close();
+                DService.Close();
             }
         }
 
@@ -186,51 +180,22 @@ namespace ColorVision.Device.SMU
         private void MeasureData_Click(object sender, RoutedEventArgs e)
         {
             //double V = 0, I = 0;
-            SMUService.GetData(passSxSource.IsSourceV, passSxSource.MeasureVal, passSxSource.LmtVal);
-            //passSxSource.MeasureData(passSxSource.MeasureVal, passSxSource.LmtVal, ref V, ref I);
+            DService.GetData(Config.IsSourceV, Config.MeasureVal, Config.LmtVal);
         }
         private void StepMeasureData_Click(object sender, RoutedEventArgs e)
         {
-            SMUService.GetData(passSxSource.IsSourceV, passSxSource.MeasureVal, passSxSource.LmtVal);
+            DService.GetData(Config.IsSourceV, Config.MeasureVal, Config.LmtVal);
         }
         private void MeasureDataClose_Click(object sender, RoutedEventArgs e)
         {
-            SMUService.CloseOutput();
-            passSxSource.V = null;
-            passSxSource.I = null;
+            DService.CloseOutput();
+            Config.V = null;
+            Config.I = null;
         }
         private void VIScan_Click(object sender, RoutedEventArgs e)
         {
-            SMUService.Scan(passSxSource.IsSourceV, passSxSource.StartMeasureVal, passSxSource.StopMeasureVal, passSxSource.LimitVal, passSxSource.Number);
+            DService.Scan(Config.IsSourceV, Config.StartMeasureVal, Config.StopMeasureVal, Config.LimitVal, Config.Number);
         }
-
-        private void VIExport_Click(object sender, RoutedEventArgs e)
-        {
-            if (passSxSource.VList.Length == 0)
-            {
-                MessageBox.Show("导出前，请先测量");
-                return;
-            }
-
-            System.Windows.Forms.SaveFileDialog saveFile = new System.Windows.Forms.SaveFileDialog();
-            saveFile.Filter = "CSV文档.csv|*.csv|所有文档|*.*";
-            if (saveFile.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                string csvTxt = "电压(V),电流(mA)\r\n";
-                for (int i = 0; i < passSxSource.VList.Length; i++)
-                {
-                    csvTxt += passSxSource.VList[i].ToString() + "," + passSxSource.IList[i].ToString() + "\r\n";
-                }
-
-                string fName = saveFile.FileName;
-                FileStream fs = File.Open(fName, FileMode.Create);
-                StreamWriter sw = new StreamWriter(fs, UnicodeEncoding.UTF8);
-                sw.Write(csvTxt);
-                sw.Close();
-                fs.Close();
-            }
-        }
-
 
         private void StackPanelVI_Initialized(object sender, EventArgs e)
         {

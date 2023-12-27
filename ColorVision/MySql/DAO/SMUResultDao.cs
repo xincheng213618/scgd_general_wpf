@@ -1,4 +1,4 @@
-﻿using ColorVision.Device.SMU;
+﻿using ColorVision.Services.Device.SMU;
 using System;
 using System.Collections.Generic;
 using System.Data;

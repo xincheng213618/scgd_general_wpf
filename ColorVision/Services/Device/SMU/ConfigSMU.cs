@@ -1,6 +1,6 @@
 ﻿using ColorVision.Services.Device;
 
-namespace ColorVision.Device.SMU
+namespace ColorVision.Services.Device.SMU
 {
     public class SMUResultData
     {
@@ -52,5 +52,35 @@ namespace ColorVision.Device.SMU
     {
         private bool _IsNet;
         public bool IsNet { get => _IsNet; set { _IsNet = value; NotifyPropertyChanged(); } }
+
+
+        public bool IsSourceV { get => _IsSourceV; set { _IsSourceV = value; NotifyPropertyChanged(); } }
+        private bool _IsSourceV = true;
+
+        public string DevName { get => _DevName; set { _DevName = value; NotifyPropertyChanged(); } }
+        private string _DevName;
+
+
+        public double StartMeasureVal { get => _startMeasureVal; set { _startMeasureVal = value; NotifyPropertyChanged(); } }
+        private double _startMeasureVal;
+        public double StopMeasureVal { get => _stopMeasureVal; set { _stopMeasureVal = value; NotifyPropertyChanged(); } }
+        private double _stopMeasureVal;
+        public int Number { get => _number; set { _number = value; NotifyPropertyChanged(); } }
+        private int _number;
+
+        public double LimitVal { get => _limitVal; set { _limitVal = value; NotifyPropertyChanged(); } }
+        private double _limitVal;
+
+        public double MeasureVal { get => _MeasureVal; set { _MeasureVal = value; NotifyPropertyChanged(); } }
+        private double _MeasureVal;
+
+        public double LmtVal { get => _lmtVal; set { _lmtVal = value; NotifyPropertyChanged(); } }
+        private double _lmtVal;
+
+        public double? V { get => _V; set { _V = value; NotifyPropertyChanged(); } }
+        private double? _V;
+        public double? I { get => _I; set { _I = value; NotifyPropertyChanged(); } }
+        private double? _I;
+
     }
 }
