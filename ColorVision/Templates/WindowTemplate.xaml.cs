@@ -180,7 +180,6 @@ namespace ColorVision.Templates
                         System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
                         ofd.Filter = "*.stn|*.stn";
                         if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                        //CreateNewTemplate(TemplateControl.FlowParams, Path.GetFileNameWithoutExtension(ofd.FileName), new FlowParam() { FileName = ofd.FileName });
                         string name = Path.GetFileNameWithoutExtension(ofd.FileName);
                         FlowParam? flowParam = TemplateControl.AddFlowParam(name);
                         if (flowParam != null)
@@ -624,6 +623,16 @@ namespace ColorVision.Templates
             {
                 templateModelBase.IsEditMode = true;
             }
+        }
+
+        private void Button_Export_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("开发中");
+        }
+
+        private void Button_Import_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("开发中");
         }
     }
 }

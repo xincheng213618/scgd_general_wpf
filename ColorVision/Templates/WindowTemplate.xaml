@@ -81,16 +81,22 @@
                 <TextBlock Text="模板名称："  Foreground="{DynamicResource GlobalTextBrush}"/>
                 <TextBox x:Name="TextBox1"/>
             </DockPanel>
-            <UniformGrid x:Name="FunctionGrid" Columns="3" Margin="0,5"    HorizontalAlignment="Stretch">
-                <Button Width="80"  Click="Button_New_Click" HorizontalAlignment="Left">
+            <UniformGrid x:Name="FunctionGrid" Columns="5" Margin="0,5"    HorizontalAlignment="Stretch">
+                <Button  Click="Button_New_Click" HorizontalAlignment="Left">
                     <TextBlock Text="新建"/>
                 </Button>
-                <Button  Width="80"   Click="Button_Del_Click" >
+                <Button HorizontalAlignment="Right"   Click="Button_Del_Click" >
                     <TextBlock Text="删除"/>
                 </Button>
-                <Button  Width="80" HorizontalAlignment="Right"  Click="Button_Save_Click" >
+                <Button   HorizontalAlignment="Right"  Click="Button_Save_Click" >
                     <TextBlock Text="保存"/>
-                </Button>                
+                </Button>
+                <Button  HorizontalAlignment="Right"  Click="Button_Export_Click" >
+                    <TextBlock Text="导出"/>
+                </Button>
+                <Button HorizontalAlignment="Right"  Click="Button_Import_Click" >
+                    <TextBlock Text="导入"/>
+                </Button>
 
             </UniformGrid>
         </StackPanel>
