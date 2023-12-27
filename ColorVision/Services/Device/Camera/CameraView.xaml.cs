@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8604,CS8629
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
+using ColorVision.Services.Algorithm;
 using FileServerPlugin;
 using log4net;
 using MQTTMessageLib.Camera;
@@ -109,16 +110,11 @@ namespace ColorVision.Services.Device.Camera
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            CameraImgResult data = listView1.Items[listView1.SelectedIndex] as CameraImgResult;
-            if (data != null)
+            if (listView1.SelectedIndex > -1)
             {
-                OnCurSelectionChanged?.Invoke(data);
+                OnCurSelectionChanged?.Invoke(Results[listView1.SelectedIndex]);
+                
             }
-        }
-
-        private void listView2_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-
         }
 
         private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -126,21 +122,6 @@ namespace ColorVision.Services.Device.Camera
 
         }
 
-        private void GridSplitter_DragCompleted1(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
-        {
-
-        }
-
-        private void ToolBar_Loaded(object sender, RoutedEventArgs e)
-        {
-            if (sender is ToolBar toolBar)
-            {
-                if (toolBar.Template.FindName("OverflowGrid", toolBar) is FrameworkElement overflowGrid)
-                    overflowGrid.Visibility = Visibility.Collapsed;
-                if (toolBar.Template.FindName("MainPanelBorder", toolBar) is FrameworkElement mainPanelBorder)
-                    mainPanelBorder.Margin = new Thickness(0);
-            }
-        }
         public void OpenImage(byte[] bytes)
         {
             img_view.OpenImage(bytes);
@@ -152,16 +133,9 @@ namespace ColorVision.Services.Device.Camera
         public void ShowResult(MeasureImgResultModel model)
         {
             string key = model.Id.ToString();
-            string serialNumber = model.BatchCode ?? string.Empty;
-            string imgFileName = model.RawFile ?? string.Empty;
-            int resultCode = model.ResultCode;
-            string resultDesc = model.ResultDesc;
-            string reqParams = model.ReqParams;
-            string imgFrameInfo = model.ImgFrameInfo;
-            long totalTime = model.TotalTime;
             if (!resultDis.ContainsKey(key))
             {
-                CameraImgResult result = new CameraImgResult(Results.Count + 1, serialNumber, imgFileName, DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss"), reqParams, imgFrameInfo, (CameraFileType)model.FileType, resultCode, resultDesc, totalTime);
+                CameraImgResult result = new CameraImgResult(model);
                 Results.Add(result);
                 resultDis[key] = result;
                 RefreshResultListView();
@@ -172,6 +146,20 @@ namespace ColorVision.Services.Device.Camera
         {
             if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
             listView1.ScrollIntoView(listView1.SelectedItem);
+        }
+
+
+        MeasureImgResultDao algResultMasterDao = new MeasureImgResultDao();
+
+        private void Search_Click(object sender, RoutedEventArgs e)
+        {
+            Results.Clear();
+            List<MeasureImgResultModel> algResults = algResultMasterDao.GetAll();
+            foreach (var item in algResults)
+            {
+                CameraImgResult CameraImgResult = new CameraImgResult(item);
+                Results.Add(CameraImgResult);
+            }
         }
     }
 
@@ -214,11 +202,22 @@ namespace ColorVision.Services.Device.Camera
         }
         public int ResultCode { get { return _resultCode; } set { _resultCode = value; NotifyPropertyChanged(); } }
         public string ResultDesc { get { return _resultDesc; } set { _resultDesc = value; NotifyPropertyChanged(); } }
-        public CameraImgResult()
+        public CameraImgResult(MeasureImgResultModel measureImgResultModel)
         {
+            Id = measureImgResultModel.Id;
+            SerialNumber = measureImgResultModel.BatchCode ?? string.Empty;
+            ImgFileName = measureImgResultModel.RawFile ?? string.Empty;
+            FileType = (CameraFileType)measureImgResultModel.FileType;
+            ReqParams = measureImgResultModel.ReqParams ?? string.Empty;
+            ImgFrameInfo = measureImgResultModel.ImgFrameInfo ?? string.Empty;
+            RecvTime = measureImgResultModel.CreateDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? string.Empty;
+            ResultCode = measureImgResultModel.ResultCode;
+            ResultDesc = measureImgResultModel.ResultDesc ?? string.Empty;
+            _totalTime = measureImgResultModel.TotalTime;
+
         }
 
-        public CameraImgResult(int id, string serialNumber, string imgFileName, string recvTime, string reqParams, string imgFrameInfo, CameraFileType fileType, int? resultCode, string resultDesc, long totalTime = 0) : this()
+        public CameraImgResult(int id, string serialNumber, string imgFileName, string recvTime, string reqParams, string imgFrameInfo, CameraFileType fileType, int? resultCode, string resultDesc, long totalTime = 0) 
         {
             _Id = id;
             _SerialNumber = serialNumber;
