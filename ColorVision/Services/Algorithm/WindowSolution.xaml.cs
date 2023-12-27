@@ -148,9 +148,6 @@ namespace ColorVision.Services.Algorithm
             }
             ListView1.View = gridView;
             ListView1.ItemsSource = MTFResults;
-
-
-
             StackPanelSort.Children.Clear();
 
             RadioButton IDDESC = new RadioButton { Content = "按照序号升序", Tag = "IDDESC", Margin = new Thickness(5), IsChecked = true };
