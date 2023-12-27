@@ -33,7 +33,7 @@ namespace ColorVision.Device.FileServer
             netFileUtil = new NetFileUtil(string.Empty);
             netFileUtil.handler += NetFileUtil_handler;
 
-            DeviceImg.Service.OnImageData += Service_OnImageData;
+            DeviceImg.DeviceService.OnImageData += Service_OnImageData;
         }
 
         private void NetFileUtil_handler(object sender, NetFileEvent arg)
@@ -123,7 +123,7 @@ namespace ColorVision.Device.FileServer
 
             View.View.ViewIndex = -1;
 
-            Task t = new(() => { DeviceImg.Service.GetAllFiles(); });
+            Task t = new(() => { DeviceImg.DeviceService.GetAllFiles(); });
             t.Start();
         }
 
@@ -136,7 +136,7 @@ namespace ColorVision.Device.FileServer
 
         private void doOpen(string fileName)
         {
-            DeviceImg.Service.Open(fileName);
+            DeviceImg.DeviceService.Open(fileName);
 
             handler = PendingBox.Show(Application.Current.MainWindow, "", "打开图片", true);
             handler.Cancelling += delegate
@@ -147,7 +147,7 @@ namespace ColorVision.Device.FileServer
 
         private void Button_Click_Refresh(object sender, RoutedEventArgs e)
         {
-            DeviceImg.Service.GetAllFiles();
+            DeviceImg.DeviceService.GetAllFiles();
         }
 
         private void Button_Click_Upload(object sender, RoutedEventArgs e)
@@ -158,8 +158,8 @@ namespace ColorVision.Device.FileServer
             openFileDialog.FilterIndex = 1;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-               // DeviceImg.Service.UploadFile(Path.GetFileName(openFileDialog.FileName));
-                DeviceImg.Service.UploadFile(openFileDialog.FileName);
+               // DeviceImg.DService.UploadFile(Path.GetFileName(openFileDialog.FileName));
+                DeviceImg.DeviceService.UploadFile(openFileDialog.FileName);
                 handler = PendingBox.Show(Application.Current.MainWindow, "", "上传", true);
                 handler.Cancelling += delegate
                 {

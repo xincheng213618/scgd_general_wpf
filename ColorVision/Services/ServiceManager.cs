@@ -182,13 +182,13 @@ namespace ColorVision.Services
                                         break;
                                     case ServiceType.FileServer:
                                         DeviceFileServer img = new DeviceFileServer(device);
-                                        svrObj = img.Service;
+                                        svrObj = img.DeviceService;
                                         mQTTService.AddChild(img);
                                         Devices.Add(img);
                                         break;
                                     case ServiceType.Algorithm:
                                         DeviceAlgorithm alg = new DeviceAlgorithm(device);
-                                        svrObj = alg.Service;
+                                        svrObj = alg.DeviceService;
                                         mQTTService.AddChild(alg);
                                         Devices.Add(alg);
                                         break;

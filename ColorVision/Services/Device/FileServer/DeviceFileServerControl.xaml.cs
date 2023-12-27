@@ -10,6 +10,7 @@ namespace ColorVision.Device.FileServer
     public partial class DeviceFileServerControl : UserControl
     {
         public DeviceFileServer DeviceFileServer { get; set; }
+        public FileServerService DService { get => DeviceFileServer.DeviceService; }
 
         public bool IsCanEdit { get; set; }
         public DeviceFileServerControl(DeviceFileServer device, bool isCanEdit = true)
@@ -25,5 +26,9 @@ namespace ColorVision.Device.FileServer
             this.DataContext = DeviceFileServer;
         }
 
+        private void ServiceCache_Click(object sender, RoutedEventArgs e)
+        {
+            DService.CacheClear();
+        }
     }
 }

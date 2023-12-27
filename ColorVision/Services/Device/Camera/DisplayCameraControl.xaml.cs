@@ -34,9 +34,8 @@ namespace ColorVision.Device.Camera
     public partial class CameraDisplayControl : UserControl
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(CameraDisplayControl));
-        public DeviceServiceCamera Service { get => Device.DeviceService; }
-
         public DeviceCamera Device { get; set; }
+        public DeviceServiceCamera DService { get => Device.DeviceService; }
 
         public CameraView View { get; set; }
 
@@ -54,7 +53,7 @@ namespace ColorVision.Device.Camera
             netFileUtil = new NetFileUtil(SolutionManager.GetInstance().CurrentSolution.FullName+"\\Cache");
             netFileUtil.handler += NetFileUtil_handler;
 
-            Service.OnMessageRecved += CameraService_OnMessageRecved;
+            DService.OnMessageRecved += CameraService_OnMessageRecved;
             View.OnCurSelectionChanged += View_OnCurSelectionChanged;
 
 
@@ -86,7 +85,7 @@ namespace ColorVision.Device.Camera
             string localName = netFileUtil.GetCacheFileFullName(fileName);
             if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
             {
-                Service.DownloadFile(fileName, extType);
+                DService.DownloadFile(fileName, extType);
             }
             else  
             {
@@ -262,13 +261,13 @@ namespace ColorVision.Device.Camera
             };
             View.View.ViewIndex = -1;
 
-            if (Service.DeviceStatus == DeviceStatus.Init)
+            if (DService.DeviceStatus == DeviceStatus.Init)
             {
                 StackPanelOpen.Visibility = Visibility.Visible;
                 ButtonOpen.Visibility = Visibility.Visible;
                 ButtonInit.Visibility = Visibility.Collapsed;
             }
-            Service.DeviceStatusChanged += (e) =>
+            DService.DeviceStatusChanged += (e) =>
             {
                 switch (e)
                 {
@@ -282,7 +281,7 @@ namespace ColorVision.Device.Camera
                     case DeviceStatus.Opened:
                         ButtonOpen.Visibility = Visibility.Collapsed;
                         ButtonClose.Visibility = Visibility.Visible;
-                        if (!Service.IsVideoOpen)
+                        if (!DService.IsVideoOpen)
                         {
                             StackPanelImage.Visibility = Visibility.Visible;
                         }
@@ -321,14 +320,14 @@ namespace ColorVision.Device.Camera
         {
             if (sender is Button button)
             {
-                if (Service.DeviceStatus == DeviceStatus.UnInit && button.Content.ToString() == "连接")
+                if (DService.DeviceStatus == DeviceStatus.UnInit && button.Content.ToString() == "连接")
                 {
-                    var msgRecord = Service.Init();
+                    var msgRecord = DService.Init();
                     Helpers.SendCommand(button, msgRecord,false);
                 }
-                else if (Service.DeviceStatus != DeviceStatus.UnInit || button.Content.ToString() == "断开连接")
+                else if (DService.DeviceStatus != DeviceStatus.UnInit || button.Content.ToString() == "断开连接")
                 {
-                    var msgRecord = Service.UnInit();
+                    var msgRecord = DService.UnInit();
                     Helpers.SendCommand(button, msgRecord, false);
                 }
                 else
@@ -343,7 +342,7 @@ namespace ColorVision.Device.Camera
         {
             if (sender is Button button)
             {
-                var msgRecord = Service.Open(Service.Config.ID, Device.Config.TakeImageMode, (int)Service.Config.ImageBpp);
+                var msgRecord = DService.Open(DService.Config.ID, Device.Config.TakeImageMode, (int)DService.Config.ImageBpp);
             }
         }
 
@@ -358,7 +357,7 @@ namespace ColorVision.Device.Camera
                     double[] expTime = null;
                     if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
                     else expTime = new double[] { Device.Config.ExpTime };
-                    MsgRecord msgRecord = Service.GetData(expTime, param);
+                    MsgRecord msgRecord = DService.GetData(expTime, param);
                     Helpers.SendCommand(msgRecord, msgRecord.MsgRecordState.ToDescription());
                 }
             }
@@ -368,7 +367,7 @@ namespace ColorVision.Device.Camera
         {
             if (sender is Button button)
             {
-                MsgRecord msgRecord = Service.GetAutoExpTime();
+                MsgRecord msgRecord = DService.GetAutoExpTime();
                 Helpers.SendCommand(button, msgRecord);
             }
         }
@@ -378,16 +377,16 @@ namespace ColorVision.Device.Camera
         private void Video_Click(object sender, RoutedEventArgs e)
         {
             CameraVideoControl ??= new CameraVideoControl();
-            if (!Service.IsVideoOpen)
+            if (!DService.IsVideoOpen)
             {
-                Service.CurrentTakeImageMode = TakeImageMode.Live;
+                DService.CurrentTakeImageMode = TakeImageMode.Live;
                 string host = GlobalSetting.GetInstance().SoftwareConfig.VideoConfig.Host;
                 int port = GlobalSetting.GetInstance().SoftwareConfig.VideoConfig.Port;
                 port = CameraVideoControl.Open(host, port);
                 if (port > 0)
                 {
                     CameraVideoControl.Start();
-                    Service.OpenVideo(host, port, Service.Config.ExpTime);
+                    DService.OpenVideo(host, port, DService.Config.ExpTime);
                     CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
                     CameraVideoControl.CameraVideoFrameReceived += CameraVideoFrameReceived;
                     StackPanelImage.Visibility = Visibility.Collapsed;
@@ -426,7 +425,7 @@ namespace ColorVision.Device.Camera
         {
             if (sender is Button button)
             {
-                MsgRecord msgRecord = Service.AutoFocus();
+                MsgRecord msgRecord = DService.AutoFocus();
                 Helpers.SendCommand(button, msgRecord);
             }
         }
@@ -437,12 +436,12 @@ namespace ColorVision.Device.Camera
             {
                 //if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
                 //{
-                //    MsgRecord msgRecord = Service.Calibration(param);
+                //    MsgRecord msgRecord = DService.Calibration(param);
                 //    Helpers.SendCommand(button, msgRecord);
 
                 //}
 
-                Service.UploadCalibrationFile("111","D:\\img\\20230407175926_1_src.tif", 38);
+                DService.UploadCalibrationFile("111","D:\\img\\20230407175926_1_src.tif", 38);
             }
         }
 
@@ -453,12 +452,12 @@ namespace ColorVision.Device.Camera
             {
                 EventName = "SetParam",
                 Params = new Dictionary<string, object>() { { "Func",new List<ParamFunction> (){
-                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 0 }, { "nPort", Service.Config.CFW.ChannelCfgs[0].Cfwport },{ "eImgChlType", (int)Service.Config.CFW.ChannelCfgs[0].Chtype } } },
-                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 1 }, { "nPort", Service.Config.CFW.ChannelCfgs[1].Cfwport },{ "eImgChlType", (int)Service.Config.CFW.ChannelCfgs[1].Chtype } } },
-                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 2 }, { "nPort", Service.Config.CFW.ChannelCfgs[2].Cfwport },{ "eImgChlType", (int)Service.Config.CFW.ChannelCfgs[2].Chtype } } },
+                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 0 }, { "nPort", DService.Config.CFW.ChannelCfgs[0].Cfwport },{ "eImgChlType", (int)DService.Config.CFW.ChannelCfgs[0].Chtype } } },
+                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 1 }, { "nPort", DService.Config.CFW.ChannelCfgs[1].Cfwport },{ "eImgChlType", (int)DService.Config.CFW.ChannelCfgs[1].Chtype } } },
+                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 2 }, { "nPort", DService.Config.CFW.ChannelCfgs[2].Cfwport },{ "eImgChlType", (int)DService.Config.CFW.ChannelCfgs[2].Chtype } } },
                 } } }
             };
-            Service.PublishAsyncClient(msg);
+            DService.PublishAsyncClient(msg);
         }
 
         private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -509,7 +508,7 @@ namespace ColorVision.Device.Camera
             {
                 if (int.TryParse(TextPos.Text, out int pos))
                 {
-                    var msgRecord = Service.Move(pos, CheckBoxIsAbs.IsChecked ?? true);
+                    var msgRecord = DService.Move(pos, CheckBoxIsAbs.IsChecked ?? true);
                     Helpers.SendCommand(button, msgRecord);
                 }
             }
@@ -522,7 +521,7 @@ namespace ColorVision.Device.Camera
             {
                 if (int.TryParse(TextPos.Text, out int pos))
                 {
-                    var msgRecord = Service.GoHome();
+                    var msgRecord = DService.GoHome();
                     Helpers.SendCommand(button, msgRecord);
                 }
             }
@@ -532,7 +531,7 @@ namespace ColorVision.Device.Camera
         {
             if (sender is Button button)
             {
-                var msgRecord = Service.GetPosition();
+                var msgRecord = DService.GetPosition();
                 Helpers.SendCommand(button, msgRecord);
             }
         }
@@ -543,21 +542,21 @@ namespace ColorVision.Device.Camera
             {
                 if (double.TryParse(TextDiaphragm.Text, out double pos))
                 {
-                    var msgRecord = Service.MoveDiaphragm(pos);
+                    var msgRecord = DService.MoveDiaphragm(pos);
                     Helpers.SendCommand(button, msgRecord);
                 }
             }
         }
         private void Close_Click(object sender, RoutedEventArgs e)
         {
-            if (Service.IsVideoOpen)
+            if (DService.IsVideoOpen)
             {
-                Service.Close();
+                DService.Close();
                 CameraVideoControl.Close();
             }
             else
             {
-                Service.Close();
+                DService.Close();
             }
         }
         private DispatcherTimer _timer;
@@ -565,14 +564,14 @@ namespace ColorVision.Device.Camera
         private void Timer_Tick(object? sender, EventArgs e)
         {
             _timer.Stop();
-            Service.SetExp();
+            DService.SetExp();
 
 
         }
 
         private void PreviewSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            if (Service.CurrentTakeImageMode == TakeImageMode.Live)
+            if (DService.CurrentTakeImageMode == TakeImageMode.Live)
             {
                 _timer.Stop();
                 _timer.Start();

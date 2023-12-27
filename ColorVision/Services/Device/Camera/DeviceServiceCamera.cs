@@ -607,5 +607,10 @@ namespace ColorVision.Device.Camera
             };
              return PublishAsyncClient(msg);
         }
+
+        public void CacheClear()
+        {
+            PublishAsyncClient(new MsgSend { EventName = "" });
+        }
     }
 }

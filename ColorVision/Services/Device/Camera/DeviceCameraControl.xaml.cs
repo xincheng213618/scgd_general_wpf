@@ -22,7 +22,7 @@ namespace ColorVision.Device.Camera
     {
         public DeviceCamera DeviceCamera { get; set; }
 
-        public DeviceServiceCamera Service { get => DeviceCamera.DeviceService; }
+        public DeviceServiceCamera DService { get => DeviceCamera.DeviceService; }
 
         public bool IsCanEdit { get; set; }
         public DeviceCameraControl(DeviceCamera mQTTDeviceCamera,bool isCanEdit =true)
@@ -135,12 +135,12 @@ namespace ColorVision.Device.Camera
                 Button button = new Button() { Content = "上传校正文件", Margin = new Thickness(5) };
                 button.Click += (s, e) =>
                 {
-                    CalibrationUploadWindow uploadCalibration = new CalibrationUploadWindow(Service, item) { WindowStartupLocation = WindowStartupLocation.CenterScreen };
+                    CalibrationUploadWindow uploadCalibration = new CalibrationUploadWindow(DService, item) { WindowStartupLocation = WindowStartupLocation.CenterScreen };
                     uploadCalibration.OnUpload += (s, e) =>
                     {
                         if (s is Upload upload)
                         {
-                            MsgRecord msgRecord = Service?.UploadCalibrationFile(upload.UploadFileName, upload.UploadFilePath, (int)item);
+                            MsgRecord msgRecord = DService?.UploadCalibrationFile(upload.UploadFileName, upload.UploadFilePath, (int)item);
                             msgRecord.MsgRecordStateChanged += (s) =>
                             {
                                 CalibrationRsources = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item, DeviceCamera.MySqlId);
@@ -185,6 +185,16 @@ namespace ColorVision.Device.Camera
 
 
 
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void ServiceCache_Click(object sender, RoutedEventArgs e)
+        {
+            DService.CacheClear();
         }
     }
 }

@@ -10,6 +10,7 @@ namespace ColorVision.Services.Algorithm
     public partial class DeviceAlgorithmControl : UserControl
     {
         public DeviceAlgorithm Device { get; set; }
+        public AlgorithmService DService { get => Device.DeviceService; }
 
         public bool IsCanEdit { get; set; }
 
@@ -24,6 +25,11 @@ namespace ColorVision.Services.Algorithm
         {
             if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
             this.DataContext = Device;
+        }
+
+        private void ServiceCache_Click(object sender, RoutedEventArgs e)
+        {
+            DService.CacheClear();
         }
     }
 }

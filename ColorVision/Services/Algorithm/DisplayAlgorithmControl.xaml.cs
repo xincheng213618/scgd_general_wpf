@@ -26,7 +26,7 @@ namespace ColorVision.Services.Algorithm
 
         public DeviceAlgorithm Device { get; set; }
 
-        public AlgorithmService Service { get => Device.Service; }
+        public AlgorithmService Service { get => Device.DeviceService; }
 
         public AlgorithmView View { get => Device.View; }
 

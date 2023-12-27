@@ -377,6 +377,10 @@
                                                 <TextBlock  Text="端口地址:" Width="120"/>
                                                 <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.FileServerCfg.Endpoint}"/>
                                             </DockPanel>
+                                            <DockPanel>
+                                                <Button DockPanel.Dock="Right" Content="清理" Click="ServiceCache_Click"/>
+                                                <TextBlock Text="服务缓存"/>
+                                            </DockPanel>
                                         </StackPanel>
                                     </GroupBox>
                                 </StackPanel>

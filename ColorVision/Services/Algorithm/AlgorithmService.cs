@@ -362,5 +362,9 @@ namespace ColorVision.Services.Algorithm
             };
             PublishAsyncClient(msg);
         }
+        public void CacheClear()
+        {
+            PublishAsyncClient(new MsgSend { EventName = "" });
+        }
     }
 }
