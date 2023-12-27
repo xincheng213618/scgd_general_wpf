@@ -24,7 +24,7 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Grid x:Name="TemplateGrid"  Grid.Row="0" Grid.Column="0" Grid.RowSpan="2"  Margin="0,0,0,0" >
+        <Grid x:Name="TemplateGrid"  Grid.Row="0" Grid.Column="0" Grid.RowSpan="1"  Margin="0,0,0,0" >
             <Border Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" CornerRadius="0"/>
             <ListView  x:Name="ListView1" Background="Transparent"  BorderThickness="0"  Style="{DynamicResource ListView.Small}"  Loaded="ListView1_Loaded"   ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" PreviewMouseDoubleClick="ListView1_PreviewMouseDoubleClick" SelectionChanged="ListView1_SelectionChanged">
                 <ListView.View>
@@ -66,7 +66,7 @@
 
         </Grid>
 
-        <Grid Grid.Row="0" Grid.Column="1"  x:Name="GridProperty" >
+        <Grid Grid.Row="0" Grid.Column="1"  Grid.RowSpan="2"  x:Name="GridProperty" >
             <!--<hc:PropertyGrid x:Name="PropertyGrid1"   hc:TipElement.Visibility="Visible"  />-->
             <!--<xctk:PropertyGrid   x:Name="PropertyGrid1" />-->
             <WindowsFormsHost>
@@ -76,7 +76,7 @@
 
         </Grid>
 
-        <StackPanel x:Name="CreateGrid"  Grid.Column="1" Grid.Row="1" HorizontalAlignment="Stretch" Margin="5">
+        <StackPanel x:Name="CreateGrid"  Grid.Column="0" Grid.Row="1" HorizontalAlignment="Stretch" Margin="5">
             <DockPanel Margin="3" >
                 <TextBlock Text="模板名称："  Foreground="{DynamicResource GlobalTextBrush}"/>
                 <TextBox x:Name="TextBox1"/>

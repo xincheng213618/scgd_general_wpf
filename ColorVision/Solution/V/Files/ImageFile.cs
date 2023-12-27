@@ -8,6 +8,7 @@ using System.Windows.Controls;
 using System.Windows;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using ColorVision.Media;
 
 namespace ColorVision.Solution.V.Files
 {

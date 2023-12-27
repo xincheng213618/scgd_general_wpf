@@ -6,7 +6,7 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Media;
 
-namespace ColorVision
+namespace ColorVision.Media
 {
     public class DataGridValue : ViewModelBase
     {

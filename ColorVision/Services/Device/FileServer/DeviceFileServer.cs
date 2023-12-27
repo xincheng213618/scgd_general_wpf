@@ -1,4 +1,5 @@
-﻿using ColorVision.MySql.DAO;
+﻿using ColorVision.Media;
+using ColorVision.MySql.DAO;
 using ColorVision.Services.Device;
 using System.Windows.Controls;
 

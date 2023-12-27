@@ -23,7 +23,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace ColorVision
+namespace ColorVision.Media
 {
     /// <summary>
     /// 用于还原窗口

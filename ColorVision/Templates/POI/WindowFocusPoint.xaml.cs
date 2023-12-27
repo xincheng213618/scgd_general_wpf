@@ -1,5 +1,6 @@
 ﻿using ColorVision.Draw;
 using ColorVision.Extension;
+using ColorVision.Media;
 using ColorVision.MVVM;
 using ColorVision.Templates.POI.MySql;
 using ColorVision.Util;

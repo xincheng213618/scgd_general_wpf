@@ -1,9 +1,9 @@
-﻿<UserControl x:Class="ColorVision.ImageView"
+﻿<UserControl x:Class="ColorVision.Media.ImageView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:ColorVision"
+             xmlns:local="clr-namespace:ColorVision.Media"
              xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
              xmlns:converter="clr-namespace:ColorVision.Draw.Converter;assembly=ColorVision.Util"
              xmlns:draw ="clr-namespace:ColorVision.Draw;assembly=ColorVision.Util"
@@ -135,11 +135,11 @@
             <draw:ZoomboxSub x:Name="Zoombox1"  MaxZoom="10"  MinZoom="0.01" Grid.Row="1" Grid.ColumnSpan="2">
                 <draw:DrawCanvas x:Name="ImageShow"  Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_MouseDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
             </draw:ZoomboxSub>
-            <StackPanel Grid.Row="0" Grid.RowSpan="2" >
-                <ToolBar x:Name="ToolBar1" DataContext="{Binding ToolBarTop}"   Loaded="ToolBar1_Loaded" Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" HorizontalAlignment="Center">
+            <Grid  Grid.Row="0" Grid.RowSpan="2" >
+                <ToolBar x:Name="ToolBar1" VerticalAlignment="Top" DataContext="{Binding ToolBarTop}"   Loaded="ToolBar1_Loaded" Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" HorizontalAlignment="Center">
                     <Button Content="打开" Click="Button_Click" Margin="4,0,1,0">
                     </Button>
-                    <ToggleButton  Click="ToggleButton_Click" Content="伪彩色" Margin="1,0"   >
+                    <ToggleButton  Click="ToggleButton_Click" Content="伪彩色" Margin="1,0">
                     </ToggleButton>
                     <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding Activate}"  Margin="1,0" ToolTip="可以按下Ctrl缩放和移动图像">
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}"/>
@@ -197,7 +197,8 @@
                         </StackPanel>
                     </Popup>
                 </ToolBar>
-            </StackPanel>
+            </Grid>
+
             <Border x:Name="BorderPropertieslayers" Background="#22000000" Visibility="Collapsed" Grid.Row="0" Grid.RowSpan="2" VerticalAlignment="Top" Margin="0,60,20,0" HorizontalAlignment="Right"  Height="50" Width="150" CornerRadius="10" >
                 <StackPanel Margin="5">
                     <TextBlock Text="{Binding ElementName=ImageShow,Path=Source.Width}" Foreground="White" HorizontalAlignment="Center" />

@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Services.Algorithm"
-             xmlns:cv="clr-namespace:ColorVision"
+             xmlns:media="clr-namespace:ColorVision.Media"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800" Initialized="UserControl_Initialized" >
 
@@ -18,7 +18,7 @@
                 <RowDefinition x:Name="ListRow1" Height="*"/>
                 <RowDefinition x:Name="ListRow2" Height="338"/>
             </Grid.RowDefinitions>
-            <cv:ImageView Grid.Row="0" x:Name="img_view"></cv:ImageView>
+            <media:ImageView Grid.Row="0" x:Name="img_view"></media:ImageView>
             <Grid  Grid.Row="1">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="38"/>
