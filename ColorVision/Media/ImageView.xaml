@@ -137,7 +137,7 @@
             </draw:ZoomboxSub>
 
             <ToolBarTray DockPanel.Dock="Top" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Center">
-                <ToolBar x:Name="ToolBar1" DataContext="{Binding ToolBarTop}"  Loaded="ToolBar1_Loaded" Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" >
+                <ToolBar x:Name="ToolBar1" DataContext="{Binding ToolBarTop}"  Style="{StaticResource ToolBarBaseStyle}"  Loaded="ToolBar1_Loaded" Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" >
                     <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding Activate}"  Margin="1,0" ToolTip="可以按下Ctrl缩放和移动图像">
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}"/>
                     </ToggleButton>
@@ -197,10 +197,12 @@
                 
             </ToolBarTray>
             <ToolBarTray DockPanel.Dock="Left" Orientation="Vertical" Margin="0,50" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Left" VerticalAlignment="Top">
-                <ToolBar>
-                    <Button Content="打开" Click="Button_Click" Margin="4,0,1,0">
+                <ToolBar ToolBarTray.IsLocked="True" >
+                    <Button Click="Button_Click">
+                        <Image  Source="{DynamicResource openDrawingImage}"/>
                     </Button>
-                    <ToggleButton  Click="ToggleButton_Click" Content="伪彩色" Margin="1,0">
+                    <ToggleButton  Click="ToggleButton_Click">
+                        <Image  Source="{DynamicResource colorDrawingImage}"/>
                     </ToggleButton>
                 </ToolBar>
             </ToolBarTray>

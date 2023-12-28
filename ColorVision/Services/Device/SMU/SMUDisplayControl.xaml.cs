@@ -206,5 +206,28 @@ namespace ColorVision.Services.Device.SMU
         {
             ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
         }
+
+        private void MenuItem_Template(object sender, RoutedEventArgs e)
+        {
+            if (sender is Control control)
+            {
+                SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
+                WindowTemplate windowTemplate;
+                if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
+                {
+                    MessageBox.Show("数据库连接失败，请先连接数据库在操作", "ColorVision");
+                    return;
+                }
+                switch (control.Tag?.ToString() ?? string.Empty)
+                {
+
+                    case "SMUParam":
+                        windowTemplate = new WindowTemplate(TemplateType.SMUParam, false);
+                        windowTemplate.Owner = Window.GetWindow(this);
+                        windowTemplate.ShowDialog();
+                        break;
+                }
+            }
+        }
     }
 }

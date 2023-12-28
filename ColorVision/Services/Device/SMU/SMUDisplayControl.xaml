@@ -119,8 +119,13 @@
                         </UniformGrid>
 
                         <DockPanel Margin="2">
-                            <TextBlock Text="资源模板：" VerticalAlignment="Center" Width="60"/>
+                            <Grid Width="20" Margin="5,0" HorizontalAlignment="Left" DockPanel.Dock="Right">
+                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                                <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="SMUParam" Click="MenuItem_Template"/>
+                            </Grid>
+                            <TextBlock Text="模板：" VerticalAlignment="Center" Width="53"/>
                             <ComboBox  x:Name="ComboxVITemplate"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key"  Margin="0,0,0,0"/>
+
                         </DockPanel>
                     </StackPanel>
                     

@@ -569,7 +569,7 @@ namespace ColorVision.Services.Algorithm
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button)
+            if (sender is Control button)
             {
                 TemplateControl= TemplateControl.GetInstance();
                 SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
