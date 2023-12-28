@@ -655,7 +655,7 @@ namespace ColorVision.Media
         {
             if (filePath != null && File.Exists(filePath))
             {
-                string ext = System.IO.Path.GetExtension(filePath).ToLower();
+                string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
                 if (ext == ".tif")
                 {
                     BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
@@ -679,12 +679,12 @@ namespace ColorVision.Media
             }
         }
 
-        public void OpenGhostImage(string? filePath,int[] LED_pixel_X, int[] LED_pixel_Y, int[] Ghost_pixel_X, int[] Ghost_pixel_Y)
+        public void OpenGhostImage(string? filePath,int[] LEDpixelX, int[] LEDPixelY, int[] GhostPixelX, int[] GhostPixelY)
         {
             if (filePath == null)
                 return;
 
-            int i = OpenCVHelper.ReadGhostImage(filePath, LED_pixel_X.Length, LED_pixel_X, LED_pixel_Y, Ghost_pixel_X.Length, Ghost_pixel_X, Ghost_pixel_Y, out HImage hImage);
+            int i = OpenCVHelper.ReadGhostImage(filePath, LEDpixelX.Length, LEDpixelX, LEDPixelY, GhostPixelX.Length, GhostPixelX, GhostPixelY, out HImage hImage);
             if (i != 0) return;
             var writeableBitmap =HImageToWriteableBitmap(hImage);
             ViewBitmapSource = writeableBitmap;
@@ -704,7 +704,7 @@ namespace ColorVision.Media
 
 
 
-        private WriteableBitmap HImageToWriteableBitmap(HImage hImage)
+        private static WriteableBitmap HImageToWriteableBitmap(HImage hImage)
         {
             PixelFormat format = hImage.channels switch
             {

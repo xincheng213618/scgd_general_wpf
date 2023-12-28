@@ -292,7 +292,7 @@ namespace ColorVision.Net
             {
                 if (System.IO.File.Exists(srcFileName))
                 {
-                    if (srcFileName.EndsWith("cvraw")){
+                    if (srcFileName.EndsWith("cvraw",StringComparison.OrdinalIgnoreCase)){
                         return ReadCVImageRaw(srcFileName);
                     }
                     else
