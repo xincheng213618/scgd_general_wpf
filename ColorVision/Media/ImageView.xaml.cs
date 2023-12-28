@@ -770,9 +770,7 @@ namespace ColorVision.Media
                 }
                 else
                 {
-                    PseudoColor pseudoColor = new PseudoColor();
-                    Window window = new Window() { Owner = Window.GetWindow(this), WindowStartupLocation = WindowStartupLocation.CenterOwner, SizeToContent = SizeToContent.WidthAndHeight };
-                    window.Content = pseudoColor;
+                    PseudoColor window = new PseudoColor() { Owner = Window.GetWindow(this)};
                     window.Show();
                 }
             }
@@ -916,6 +914,12 @@ namespace ColorVision.Media
                 }
                 menuPop1.IsOpen = false;
             }
+        }
+
+        private void RangeSlider1_ValueChanged(object sender, RoutedPropertyChangedEventArgs<HandyControl.Data.DoubleRange> e)
+        {
+            RowDefinitionStart.Height = new GridLength((170.0 / 255.0) * (255 - RangeSlider1.ValueEnd));
+            RowDefinitionEnd.Height = new GridLength((170.0 / 255.0) * RangeSlider1.ValueStart);
         }
     }
 }

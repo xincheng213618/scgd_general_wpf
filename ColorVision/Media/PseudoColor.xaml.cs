@@ -1,6 +1,5 @@
 ﻿using ColorVision.Media;
 using ColorVision.MVVM;
-using OpenCvSharp;
 using System;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -18,10 +17,23 @@ namespace ColorVision.Media
     }
 
 
+    public class PseudoColorConfig:ViewModelBase
+    {
+        public PseudoColorConfig() { }
+
+        public double Max { get; set; }
+
+        public double Min { get; set; }
+
+
+    }
+
+
+
     /// <summary>
     /// PseudoColor.xaml 的交互逻辑
     /// </summary>
-    public partial class PseudoColor : System.Windows.Controls.UserControl
+    public partial class PseudoColor : Window
     {
         public ColorMap colorMap { get; set; }
         double min_max { get; set; } 
@@ -52,6 +64,7 @@ namespace ColorVision.Media
         private void button_Create_Click(object sender, RoutedEventArgs e)
         {
             Genera();
+            this.Close();
         }
 
 
@@ -81,8 +94,8 @@ namespace ColorVision.Media
             {
                 int rows = colorMap.srcColor.Rows;
                 int cols = colorMap.srcColor.Cols;
-                Mat cm = new Mat(rows + 5, cols + 150, colorMap.srcColor.Type(), Scalar.All(255));
-                Mat cmRt = cm[new OpenCvSharp.Rect(0, 0, cols, rows)];
+                OpenCvSharp.Mat cm = new OpenCvSharp.Mat(rows + 5, cols + 150, colorMap.srcColor.Type(), OpenCvSharp.Scalar.All(255));
+                OpenCvSharp.Mat cmRt = cm[new OpenCvSharp.Rect(0, 0, cols, rows)];
                 colorMap.srcColor.Clone().CopyTo(cmRt);
                 cmRt = cm[new OpenCvSharp.Rect(cols, 0, 150, rows)];
 
@@ -109,12 +122,12 @@ namespace ColorVision.Media
                     //this.dataGridView1.Rows[clrMap.Length - 1 - i].Cells[0].Value = valText;
                     //this.dataGridView1.Rows[clrMap.Length - 1 - i].Cells[1].Value = clrMap[i];
 
-                    cmRt.Line(0, colorMap.colorMapIdx[i], 50, colorMap.colorMapIdx[i], Scalar.All(0));
+                    cmRt.Line(0, colorMap.colorMapIdx[i], 50, colorMap.colorMapIdx[i], OpenCvSharp.Scalar.All(0));
                     valText = String.Format("{0}", i + 1);
                     if (i == 0)
-                        cmRt.PutText(valText, new OpenCvSharp.Point(60, colorMap.colorMapIdx[i] + 20), HersheyFonts.HersheyDuplex, 1, Scalar.All(0));
+                        cmRt.PutText(valText, new OpenCvSharp.Point(60, colorMap.colorMapIdx[i] + 20), OpenCvSharp.HersheyFonts.HersheyDuplex, 1, OpenCvSharp.Scalar.All(0));
                     else
-                        cmRt.PutText(valText, new OpenCvSharp.Point(60, colorMap.colorMapIdx[i]), HersheyFonts.HersheyDuplex, 1, Scalar.All(0));
+                        cmRt.PutText(valText, new OpenCvSharp.Point(60, colorMap.colorMapIdx[i]), OpenCvSharp.HersheyFonts.HersheyDuplex, 1, OpenCvSharp.Scalar.All(0));
                 }
                 //for (int i = this.dataGridView1.Rows.Count - 1; i >= 0; i--)
                 //{

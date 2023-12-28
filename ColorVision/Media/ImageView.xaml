@@ -8,9 +8,10 @@
              xmlns:converter="clr-namespace:ColorVision.Draw.Converter;assembly=ColorVision.Util"
              xmlns:draw ="clr-namespace:ColorVision.Draw;assembly=ColorVision.Util"
              xmlns:resx="clr-namespace:ColorVision.Properties"
+             xmlns:hc="https://handyorg.github.io/handycontrol"
              d:DataContext="{d:DesignInstance local:ImageView}"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="1000" Initialized="UserControl_Initialized">
+             d:DesignHeight="600" d:DesignWidth="1000" Initialized="UserControl_Initialized">
     <UserControl.Resources>
         <DataTemplate x:Key="DrawingVisualCircleTemplate" >
             <StackPanel  Orientation="Horizontal">
@@ -196,14 +197,37 @@
                 </ToolBar>
                 
             </ToolBarTray>
-            <ToolBarTray DockPanel.Dock="Left" Orientation="Vertical" Margin="0,50" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <ToolBarTray DockPanel.Dock="Left" Orientation="Vertical" Margin="0,30,0,0" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Left" VerticalAlignment="Top">
                 <ToolBar ToolBarTray.IsLocked="True" >
                     <Button Click="Button_Click">
                         <Image  Source="{DynamicResource openDrawingImage}"/>
                     </Button>
-                    <ToggleButton  Click="ToggleButton_Click">
+                    <ToggleButton x:Name="Pseudo" Click="ToggleButton_Click">
                         <Image  Source="{DynamicResource colorDrawingImage}"/>
                     </ToggleButton>
+                    <Grid  Height="200" Visibility="{Binding ElementName=Pseudo,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBox Grid.Row="0" Width="28" Text="{Binding ValueEnd, ElementName=RangeSlider1, StringFormat=#0}" Style="{StaticResource BaseStyle}"  Background="Transparent"  BorderThickness="0"  HorizontalContentAlignment="Center" />
+                        <TextBox Grid.Row="2" Width="28" Text="{Binding ValueStart, ElementName=RangeSlider1, StringFormat=#0}" Style="{StaticResource BaseStyle}" Background="Transparent"  BorderThickness="0" HorizontalContentAlignment="Center"/>
+                        <Grid Grid.Row="1"   Width="18">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="0"  x:Name="RowDefinitionStart"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="0"  x:Name="RowDefinitionEnd"/>
+                            </Grid.RowDefinitions>
+                            <Border Grid.Row="0" Background="White" CornerRadius="10,10,0,0"/>
+                            <Border Grid.Row="1"  Background="Transparent">
+                                <Image Source="/Assets/Image/pictureBox1.Image.png" Stretch="Fill" VerticalAlignment="Top"/>
+                            </Border>
+                            <Border Grid.Row="2" Background="Black" CornerRadius="0,0,10,10 "/>
+                        </Grid>
+                        <hc:RangeSlider Grid.Row="1"  x:Name="RangeSlider1" FocusVisualStyle="{x:Null}"  Style="{StaticResource RangeSliderBaseStyle}" Background="Transparent" hc:TipElement.Visibility="Visible" hc:TipElement.Placement="Left" hc:TipElement.StringFormat="#0" ValueEnd="255"  Maximum="255" ValueStart="0"  Minimum="0" Orientation="Vertical" HorizontalAlignment="Center" ValueChanged="RangeSlider1_ValueChanged"/>
+                    </Grid>
+
                 </ToolBar>
             </ToolBarTray>
 
