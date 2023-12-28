@@ -163,7 +163,6 @@ namespace ColorVision.Device.Spectrum
             {
                 DrawPlot();
                 //listView2.ItemsSource = colorParams[listview.SelectedIndex].fPL;
-
                 listView2.Items.Clear();
 
                 for (int i = 0; i < (colorParams[listview.SelectedIndex].fSpect2 -380)*10; i += 10)
@@ -483,6 +482,11 @@ namespace ColorVision.Device.Spectrum
             listView1.Items.Clear();
             listView2.Items.Clear();
             ResultNum = 0;
+        }
+
+        private void Search_Click(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

@@ -498,5 +498,10 @@ namespace ColorVision.Services.Device.SMU
         {
 
         }
+
+        private void Search_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }

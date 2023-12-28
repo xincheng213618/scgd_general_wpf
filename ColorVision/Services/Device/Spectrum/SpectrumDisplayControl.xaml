@@ -68,8 +68,26 @@
                         <Button x:Name="btn_autoTest" Content="自动测试"  Click="Button_Click_AutoTest"/>
                         <Button x:Name="btn_oneInitDark" Content="单次校零"  Click="Button_Click_Init_Dark"/>
                     </UniformGrid>
-
                 </StackPanel>
+
+                <GroupBox Header="Shutter" Margin="5"  Visibility="{Binding Config.IsShutter,Converter={StaticResource bool2VisibilityConverter}}">
+                    <StackPanel>
+                        <DockPanel  Margin="0,2">
+                            <TextBlock Text="{Binding Config.SzComName}"/>
+                            <TextBlock Text=":"/>
+                            <TextBlock Text="{Binding Config.BaudRate}"/>
+                            <Button Content="连接"/>
+                        </DockPanel>
+                        <DockPanel  Margin="0,2">
+                            <TextBlock Text="{Binding Config.OpenCommnad}"/>
+                            <Button Content="打开"/>
+                        </DockPanel>
+                        <DockPanel  Margin="0,2">
+                            <TextBlock Text="{Binding Config.CloseCommnad}"/>
+                            <Button Content="关闭"/>
+                        </DockPanel>
+                    </StackPanel>
+                </GroupBox>
 
                 <DockPanel Margin="5">
                     <TextBlock Text="输出视图：" VerticalAlignment="Center" Width="60"/>
