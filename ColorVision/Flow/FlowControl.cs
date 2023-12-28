@@ -65,7 +65,7 @@ namespace ColorVision.Flow
         {
             if (flowEngine == null)
             {
-                FlowEngineLib.CVBaseDataFlow baseEvent = new FlowEngineLib.CVBaseDataFlow(svrName, "Stop", SerialNumber);
+                FlowEngineLib.Base.CVBaseDataFlow baseEvent = new FlowEngineLib.Base.CVBaseDataFlow(svrName, "Stop", SerialNumber);
 
                 string Msg = JsonConvert.SerializeObject(baseEvent);
                 Application.Current.Dispatcher.Invoke(() => FlowMsg?.Invoke(Msg, new EventArgs()));
@@ -83,7 +83,7 @@ namespace ColorVision.Flow
             SerialNumber = sn;
             if (flowEngine == null)
             {
-                FlowEngineLib.CVBaseDataFlow baseEvent = new FlowEngineLib.CVBaseDataFlow(svrName, "Start", sn);
+                FlowEngineLib.Base.CVBaseDataFlow baseEvent = new FlowEngineLib.Base.CVBaseDataFlow(svrName, "Start", sn);
 
                 string Msg = JsonConvert.SerializeObject(baseEvent);
                 Application.Current.Dispatcher.Invoke(() => FlowMsg?.Invoke(Msg, new EventArgs()));
