@@ -246,9 +246,15 @@ namespace ColorVision.Net
                 int Depth = CVFileUtils.GetMatDepth((int)bpp);
 
                 OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)h, (int)w, OpenCvSharp.MatType.MakeType(Depth, (int)channels), imgData);
-                OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
                 OpenCvSharp.Mat dst = new OpenCvSharp.Mat();
-                src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
+                if(bpp == 32)
+                {
+                    OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
+                    src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
+                }else if(bpp == 16)
+                {
+                    src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U, 255.0 / 65535, 0.5);
+                }
                 int len = (int)(w * h * channels);
                 result.data = new byte[len];
                 Marshal.Copy(dst.Data, result.data, 0, len);
