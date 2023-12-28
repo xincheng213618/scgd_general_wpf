@@ -129,7 +129,6 @@ namespace ColorVision.Media
         private void textBox_ValueChanged(object sender, HandyControl.Data.FunctionEventArgs<double> e)
         {
             Genera();
-
         }
     }
 }

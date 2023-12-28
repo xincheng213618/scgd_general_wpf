@@ -57,8 +57,7 @@ namespace ColorVision.Services.Device.SMU
         public bool IsSourceV { get => _IsSourceV; set { _IsSourceV = value; NotifyPropertyChanged(); } }
         private bool _IsSourceV = true;
 
-        public string DevName { get => _DevName; set { _DevName = value; NotifyPropertyChanged(); } }
-        private string _DevName;
+        public string DevName { get => ID; set { ID = value; NotifyPropertyChanged(); } }
 
 
         public double StartMeasureVal { get => _startMeasureVal; set { _startMeasureVal = value; NotifyPropertyChanged(); } }

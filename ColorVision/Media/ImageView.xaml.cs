@@ -671,6 +671,11 @@ namespace ColorVision.Media
                         OpenImage(fileInfo);
                     }
                 }
+                else
+                {
+                    BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
+                    SetImageSource(bitmapImage);
+                }
             }
         }
 

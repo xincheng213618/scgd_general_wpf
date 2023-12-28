@@ -257,11 +257,6 @@ namespace ColorVision.Draw
                 if (_ConcentricCircle == value) return;
                 _ConcentricCircle = value;
                 ToolConcentricCircle.IsShow = value;
-                if (value)
-                {
-                    Activate = true;
-                    LastChoice = nameof(ConcentricCircle);
-                }
                 NotifyPropertyChanged();
             }
         }

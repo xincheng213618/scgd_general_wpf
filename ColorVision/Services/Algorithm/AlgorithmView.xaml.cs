@@ -11,6 +11,7 @@ using log4net;
 using Microsoft.Windows.Themes;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
+using ScottPlot;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -822,12 +823,16 @@ namespace ColorVision.Services.Algorithm
                         img_view.OpenImage(result.ImgFileName);
                         listViewSide.Visibility = Visibility.Visible;
 
-                        List<AlgResultFOVModel> AlgResultFOVModels = resultService.GetFOVByPid(result.Id);
-                        foreach (var item in AlgResultFOVModels)
+                        if (result.SFRData == null)
                         {
-                            FOVResultData fOVResultData = new FOVResultData(item);
-                            result.FOVData.Add(fOVResultData);
-                        };
+                            result.FOVData = new ObservableCollection<FOVResultData>();
+                            List<AlgResultFOVModel> AlgResultFOVModels = resultService.GetFOVByPid(result.Id);
+                            foreach (var item in AlgResultFOVModels)
+                            {
+                                FOVResultData fOVResultData = new FOVResultData(item);
+                                result.FOVData.Add(fOVResultData);
+                            };
+                        }
 
                         List<string> bdheadersFOV = new List<string> { "Pattern", "Type", "Degrees" };
                         List<string> headersFOV = new List<string> { "Pattern", "Type", "Degrees" };
@@ -1077,7 +1082,11 @@ namespace ColorVision.Services.Algorithm
 
         private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-
+            if (e.Key == Key.Delete && listView1.SelectedIndex > -1)
+            {
+                int temp = listView1.SelectedIndex;
+                AlgResults.RemoveAt(temp);
+            }
         }
 
         private void listView2_SelectionChanged(object sender, SelectionChangedEventArgs e)

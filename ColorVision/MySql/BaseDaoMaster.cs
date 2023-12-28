@@ -225,7 +225,6 @@ namespace ColorVision.MySql
         {
             DeleteAllByPid(pid);
             DataTable d_info = GetDataTable();
-            //CreateColumns(d_info);
             foreach (var item in datas)
             {
                 //DataRow row = GetRow(item, d_info);

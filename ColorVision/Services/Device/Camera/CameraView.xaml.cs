@@ -119,7 +119,11 @@ namespace ColorVision.Services.Device.Camera
 
         private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-
+            if (e.Key == Key.Delete && listView1.SelectedIndex > -1)
+            {
+                int temp = listView1.SelectedIndex;
+                Results.RemoveAt(temp);
+            }
         }
 
         public void OpenImage(byte[] bytes)
