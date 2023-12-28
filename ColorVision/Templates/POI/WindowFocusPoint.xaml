@@ -19,42 +19,38 @@
     </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="300"/>
             <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="300"/>
         </Grid.ColumnDefinitions>
-        <Grid Grid.Row="0"  Background="{DynamicResource GlobalBackground}">
+        <Grid Grid.Column="1"  Background="{DynamicResource GlobalBackground}">
             <Grid.RowDefinitions>
                 <RowDefinition  Height="*"/>
                 <RowDefinition  Height="auto"/>
             </Grid.RowDefinitions>
             <ScrollViewer x:Name="ScrollViewer1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="5,0" Grid.Row="0" >
-                    <Border Margin="0,5" Style="{StaticResource BorderModuleArea}">
-                        <StackPanel>
-                            <GroupBox Header="图像尺寸设定" Margin="5">
-                                <StackPanel Margin="5">
-                                    <UniformGrid Columns="2">
-                                        <DockPanel  Margin="2">
-                                            <TextBlock Text="W:" Width="20"/>
-                                            <TextBox   x:Name="TextBoxCADW" Text="{Binding Width}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
-                                        </DockPanel>
-                                        <DockPanel Margin="2" >
-                                            <TextBlock Text="H:" Width="20"/>
-                                            <TextBox  x:Name="TextBoxCADH"  Text="{Binding Height}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
-                                        </DockPanel>
-                                    </UniformGrid>
-                                    <UniformGrid Columns="3">
-                                        <Button  Content="默认画布" Click="OpenCAD_Click"  Margin="2"/>
-                                        <Button  Content="视频导入" Click="Button1_Click" Margin="2"/>
-                                        <Button x:Name="button1" Content="图像导入" Click="Button1_Click"/>
-                                    </UniformGrid>
-                                </StackPanel>
-                            </GroupBox>
+                <StackPanel Margin="0" Grid.Row="0" >
+                    <Border Margin="0" Style="{StaticResource BorderModuleArea}">
+                        <StackPanel Margin="5">
+                            <UniformGrid Columns="2">
+                                <DockPanel  Margin="2">
+                                    <TextBlock Text="W:" Width="20"/>
+                                    <TextBox   x:Name="TextBoxCADW" Text="{Binding Width}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                </DockPanel>
+                                <DockPanel Margin="2" >
+                                    <TextBlock Text="H:" Width="20"/>
+                                    <TextBox  x:Name="TextBoxCADH"  Text="{Binding Height}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                </DockPanel>
+                            </UniformGrid>
+                            <UniformGrid Columns="3" >
+                                <Button  Content="默认画布" Click="OpenCAD_Click"  Margin="2"/>
+                                <Button  Content="视频导入" Click="Button1_Click" Margin="2"/>
+                                <Button x:Name="button1" Content="图像导入" Click="Button1_Click"  Margin="2"/>
+                            </UniformGrid>
                         </StackPanel>
                     </Border>
-                    <Border Margin="0,5" Style="{StaticResource BorderModuleArea}">
+                    <Border Margin="0,3" Style="{StaticResource BorderModuleArea}">
                         <StackPanel>
-                            <StackPanel  Margin="5">
+                            <StackPanel  Margin="2">
                                 <UniformGrid Columns="3">
                                     <Button x:Name="button2" Margin="2" Content="绘制" Click="Button2_Click"/>
                                     <Button x:Name="button3"  Margin="2"  ToolTip="清空关注点" Click="Button3_Click">
@@ -69,9 +65,9 @@
                     </Border>
 
 
-                    <Border Margin="0,5" Style="{StaticResource BorderModuleArea}">
+                    <Border Margin="0,2" Style="{StaticResource BorderModuleArea}">
                         <StackPanel>
-                            <GroupBox Header="布点模式" Margin="5">
+                            <GroupBox Header="布点模式" Margin="2">
                                 <StackPanel  >
                                     <UniformGrid Columns="2" >
                                         <RadioButton x:Name="RadioButtonMode1" Margin="2" HorizontalAlignment="Left" Content="配置参数" IsChecked="True"   Checked="RadioButtonMode1_Checked"/>
@@ -335,7 +331,7 @@
                         </StackPanel>
                     </Border>
 
-                    <GroupBox Header="设置" Margin="0,5">
+                    <GroupBox Header="设置" Margin="0,2">
                         <StackPanel Margin="0,5">
                             <DockPanel x:Name="SettingGroup"  d:DataContext="{d:DesignInstance Template:WindowFocusPoint}">
                                 <Button Content="重渲染"  ToolTip="一次"  Click="Button_Click_UpdateVisualLayout"  DockPanel.Dock="Right" Visibility="{Binding IsLayoutUpdated,Converter={StaticResource bool2VisibilityConverter1}}" IsEnabled="{Binding IsLayoutUpdated,Converter={StaticResource Boolean2BooleanReConverter}}" />
@@ -359,7 +355,7 @@
             </WindowsFormsHost>
         </Grid>
 
-        <Grid x:Name="ImageContentGrid" Grid.Column="1"  Background="#c3c3c3">
+        <Grid x:Name="ImageContentGrid" Grid.Column="0"  Background="#c3c3c3">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="auto"/>
