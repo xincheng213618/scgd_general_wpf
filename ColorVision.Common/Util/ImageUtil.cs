@@ -11,6 +11,20 @@ namespace ColorVision.Util
     /// </summary>
     public static class ImageUtil
     {
+
+        public static bool SaveImageSourceToFile(ImageSource imageSource, string filePath)
+        {
+            if (imageSource is BitmapSource bitmapSource)
+            {
+                BitmapEncoder encoder = new PngBitmapEncoder();
+                encoder.Frames.Add(BitmapFrame.Create(bitmapSource));
+                using var fileStream = new FileStream(filePath, FileMode.Create);
+                encoder.Save(fileStream);
+                return true;
+            }
+            return false;
+        }
+
         public static BitmapImage ByteArrayToBitmapImage(byte[] byteArray)
         {
             using Stream stream = new MemoryStream(byteArray);

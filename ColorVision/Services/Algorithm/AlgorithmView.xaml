@@ -18,7 +18,7 @@
                 <RowDefinition x:Name="ListRow1" Height="*"/>
                 <RowDefinition x:Name="ListRow2" Height="338"/>
             </Grid.RowDefinitions>
-            <media:ImageView Grid.Row="0" x:Name="img_view"></media:ImageView>
+            <media:ImageView Grid.Row="0" x:Name="ImageView"></media:ImageView>
             <Grid  Grid.Row="1">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="38"/>

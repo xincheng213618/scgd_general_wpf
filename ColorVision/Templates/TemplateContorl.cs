@@ -31,22 +31,8 @@ namespace ColorVision.Templates
         {
 
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     }
+
 
 
     /// <summary>

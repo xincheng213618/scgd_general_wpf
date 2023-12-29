@@ -3,6 +3,7 @@ using ColorVision.Draw;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
+using ColorVision.Util;
 using FileServerPlugin;
 using FlowEngineLib;
 using HandyControl.Data;
@@ -655,34 +656,13 @@ namespace ColorVision.Services.Algorithm
                         + Environment.NewLine;
                 }
                 file.WriteLine(value);
-
-                ImageSource bitmapSource = img_view.ImageShow.Source;
-                SaveImageSourceToFile(bitmapSource, dialog.FileName +".png");
+                ImageSource bitmapSource = ImageView.ImageShow.Source;
+                ImageUtil.SaveImageSourceToFile(bitmapSource, Path.GetFileNameWithoutExtension(dialog.FileName) + ".png");
             }
         }
 
 
-        public static void SaveImageSourceToFile(ImageSource imageSource, string filePath)
-        {
-            var bitmapSource = imageSource as BitmapSource;
-            if (bitmapSource != null)
-            {
-                // Create a PngBitmapEncoder
-                BitmapEncoder encoder = new PngBitmapEncoder();
-                encoder.Frames.Add(BitmapFrame.Create(bitmapSource));
 
-                // Open a file stream for writing
-                using (var fileStream = new FileStream(filePath, FileMode.Create))
-                {
-                    // Save the image to the file stream
-                    encoder.Save(fileStream);
-                }
-            }
-            else
-            {
-                throw new ArgumentException("The provided ImageSource cannot be converted to a BitmapSource.");
-            }
-        }
 
         public void AlgResultDataDraw(AlgResultMasterModel result)
         {
@@ -788,7 +768,7 @@ namespace ColorVision.Services.Algorithm
             {
                 PoiResultDatas.Clear();
                 PoiYResultDatas.Clear();
-                img_view.ResetPOIPoint();
+                ImageView.ResetPOIPoint();
                 listViewSide.Visibility = Visibility.Collapsed;
                 List<POIPoint> DrawPoiPoint = new List<POIPoint>();
                 switch (result.ResultType)
@@ -806,7 +786,7 @@ namespace ColorVision.Services.Algorithm
                             PoiResultDatas.Add(item);
                             DrawPoiPoint.Add(item.Point);
                         }
-                        img_view.AddPOIPoint(DrawPoiPoint);
+                        ImageView.AddPOIPoint(DrawPoiPoint);
                         break;
                     case AlgorithmResultType.POI_Y:
                         OnCurSelectionChanged?.Invoke(result);
@@ -817,10 +797,10 @@ namespace ColorVision.Services.Algorithm
                             PoiYResultDatas.Add(item);
                             DrawPoiPoint.Add(item.Point);
                         }
-                        img_view.AddPOIPoint(DrawPoiPoint);
+                        ImageView.AddPOIPoint(DrawPoiPoint);
                         break;
                     case AlgorithmResultType.FOV:
-                        img_view.OpenImage(result.ImgFileName);
+                        ImageView.OpenImage(result.ImgFileName);
                         listViewSide.Visibility = Visibility.Visible;
 
                         if (result.SFRData == null)
@@ -846,7 +826,7 @@ namespace ColorVision.Services.Algorithm
                         listViewSide.ItemsSource = result.FOVData;
                         break;
                     case AlgorithmResultType.SFR:
-                        img_view.OpenImage(result.ImgFileName);
+                        ImageView.OpenImage(result.ImgFileName);
                         listViewSide.Visibility = Visibility.Visible;
 
                         if (result.SFRData == null)
@@ -876,12 +856,12 @@ namespace ColorVision.Services.Algorithm
                         listViewSide.ItemsSource = result.SFRData;
                         if (result.SFRData.Count > 0)
                         {
-                            img_view.AddRect(new Rect(10,10,10,10));
+                            ImageView.AddRect(new Rect(10,10,10,10));
                         }
 
                         break;
                     case AlgorithmResultType.MTF:
-                        img_view.OpenImage(result.ImgFileName);
+                        ImageView.OpenImage(result.ImgFileName);
                         listViewSide.Visibility = Visibility.Visible;
                         if (result.MTFData == null)
                         {
@@ -908,7 +888,7 @@ namespace ColorVision.Services.Algorithm
                         {
                             DrawPoiPoint.Add(item.Point);
                         }
-                        img_view.AddPOIPoint(DrawPoiPoint);
+                        ImageView.AddPOIPoint(DrawPoiPoint);
 
                         break;
                     case AlgorithmResultType.Ghost:
@@ -976,7 +956,7 @@ namespace ColorVision.Services.Algorithm
                             }
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                img_view.OpenGhostImage(result.ImgFileName, LED_pixel_X, LED_pixel_Y, Ghost_pixel_X, Ghost_pixel_Y);
+                                ImageView.OpenGhostImage(result.ImgFileName, LED_pixel_X, LED_pixel_Y, Ghost_pixel_X, Ghost_pixel_Y);
                             });
 
 
@@ -999,7 +979,7 @@ namespace ColorVision.Services.Algorithm
                         listViewSide.ItemsSource = result.GhostData;
                         break;
                     case AlgorithmResultType.Distortion:
-                        img_view.OpenImage(result.ImgFileName);
+                        ImageView.OpenImage(result.ImgFileName);
                         listViewSide.Visibility = Visibility.Visible;
 
                         if (result.DistortionData == null)
@@ -1028,14 +1008,14 @@ namespace ColorVision.Services.Algorithm
                             {
                                 points.Add(new Point(item.X, item.Y));
                             }
-                            img_view.AddPoint(points);
+                            ImageView.AddPoint(points);
                         }
                        
                         break;
                     case AlgorithmResultType.Calibration:
                         break;
                     case AlgorithmResultType.LedCheck:
-                        img_view.OpenImage(result.ImgFileName);
+                        ImageView.OpenImage(result.ImgFileName);
                         listViewSide.Visibility = Visibility.Visible;
                         if (result.LedResultDatas == null)
                         {
@@ -1068,7 +1048,7 @@ namespace ColorVision.Services.Algorithm
                                 Circle.Attribute.Brush = Brushes.Transparent;
                                 Circle.Attribute.Pen = new Pen(Brushes.Red, 2);
                                 Circle.Render();
-                                img_view.ImageShow.AddVisual(Circle);
+                                ImageView.ImageShow.AddVisual(Circle);
                             }
                         }
                         break;
@@ -1107,7 +1087,7 @@ namespace ColorVision.Services.Algorithm
 
         internal void OpenImage(CVCIEFileInfo fileInfo)
         {
-            img_view.OpenImage(fileInfo);
+            ImageView.OpenImage(fileInfo);
         }
 
         private void Button_Delete_Click(object sender, RoutedEventArgs e)
