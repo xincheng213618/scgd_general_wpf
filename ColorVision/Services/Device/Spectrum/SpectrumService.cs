@@ -3,6 +3,7 @@ using ColorVision.Services;
 using ColorVision.Services.Device;
 using ColorVision.Services.Msg;
 using MQTTMessageLib;
+using MQTTMessageLib.Spectum;
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -305,6 +306,46 @@ namespace ColorVision.Device.Spectrum
             }
 
             DoHeartbeat(heartbeat);
+        }
+
+        public void ShutterConnect()
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = MQTTSpectumEventEnum.Event_Shutter_Connect,
+                ServiceName = Config.Code,
+            };
+            PublishAsyncClient(msg);
+        }
+
+        public void ShutterDisconnect()
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = MQTTSpectumEventEnum.Event_Shutter_Disconnect,
+                ServiceName = Config.Code,
+            };
+            PublishAsyncClient(msg);
+        }
+
+        public void ShutterDoopen()
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = MQTTSpectumEventEnum.Event_Shutter_Doopen,
+                ServiceName = Config.Code,
+            };
+            PublishAsyncClient(msg);
+        }
+
+        public void ShutterDoclose()
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = MQTTSpectumEventEnum.Event_Shutter_Doclose,
+                ServiceName = Config.Code,
+            };
+            PublishAsyncClient(msg);
         }
     }
 }

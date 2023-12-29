@@ -40,8 +40,8 @@ namespace ColorVision.Device.Spectrum
 
         private void Spectrum_AutoParamHandlerEvent(AutoIntTimeParam colorPara)
         {
-            MQTTDeviceSp.Config.TimeFrom = colorPara.fTimeB;
-            MQTTDeviceSp.Config.TimeLimit = colorPara.iLimitTime;
+            MQTTDeviceSp.Config.BeginIntegralTime = colorPara.fTimeB;
+            MQTTDeviceSp.Config.MaxIntegralTime = colorPara.iLimitTime;
         }
 
 
@@ -80,7 +80,7 @@ namespace ColorVision.Device.Spectrum
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (SpectrumService != null) SpectrumService.SetParam(MQTTDeviceSp.Config.TimeLimit, MQTTDeviceSp.Config.TimeFrom);
+            if (SpectrumService != null) SpectrumService.SetParam(MQTTDeviceSp.Config.MaxIntegralTime, MQTTDeviceSp.Config.BeginIntegralTime);
         }
     }
 }

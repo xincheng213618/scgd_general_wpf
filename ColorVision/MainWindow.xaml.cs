@@ -92,21 +92,35 @@ namespace ColorVision
 
 
 
-            MenuItem menulog = new MenuItem() { Header = "服务日志" };
+            MenuItem menulog = new MenuItem() { Header = "x64服务日志" };
             menulog.Click += (s, e) =>
             {
-                Process.Start("explorer.exe", "http://localhost:8082/system/log");
+                Process.Start("explorer.exe", "http://localhost:8064/system/log");
             };
             MenuHelp.Items.Insert(0, menulog);
 
-            MenuItem menulog1 = new MenuItem() { Header = "服务相机日志" };
+            MenuItem menulog1 = new MenuItem() { Header = "相机日志" };
             menulog1.Click += (s, e) =>
             {
-                Process.Start("explorer.exe", "http://localhost:8082/system/device/camera/log");
+                Process.Start("explorer.exe", "http://localhost:8064/system/device/camera/log");
             };
             MenuHelp.Items.Insert(1, menulog1);
-            
-            #if (DEBUG == true)
+
+            MenuItem menulog2 = new MenuItem() { Header = "x86服务相机日志" };
+            menulog2.Click += (s, e) =>
+            {
+                Process.Start("explorer.exe", "http://localhost:8086/system/log");
+            };
+            MenuHelp.Items.Insert(2, menulog2);
+
+            MenuItem menulog3 = new MenuItem() { Header = "光谱仪日志" };
+            menulog3.Click += (s, e) =>
+            {
+                Process.Start("explorer.exe", "http://localhost:8086/system/device/Spectrum/log");
+            };
+            MenuHelp.Items.Insert(3, menulog3);
+
+#if (DEBUG == true)
             MenuItem menuItem = new MenuItem() { Header = "测试" };
             MenuItem menuItem1 = new MenuItem() { Header = "折线图" };
             menuItem1.Click += Test_Click;

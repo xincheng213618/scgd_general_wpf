@@ -70,21 +70,21 @@
                     </UniformGrid>
                 </StackPanel>
 
-                <GroupBox Header="Shutter" Margin="5"  Visibility="{Binding Config.IsShutter,Converter={StaticResource bool2VisibilityConverter}}">
+                <GroupBox Header="Shutter" Margin="5"  Visibility="{Binding Config.IsShutterEnable,Converter={StaticResource bool2VisibilityConverter}}">
                     <StackPanel>
                         <DockPanel  Margin="0,2">
-                            <TextBlock Text="{Binding Config.SzComName}"/>
+                            <TextBlock Text="{Binding Config.ShutterCfg.Addr}"/>
                             <TextBlock Text=":"/>
-                            <TextBlock Text="{Binding Config.BaudRate}"/>
-                            <Button Content="连接"/>
+                            <TextBlock Text="{Binding Config.ShutterCfg.BaudRate}"/>
+                            <Button Content="连接" Click="Button_Click_Shutter_Connect" Visibility="Collapsed"/>
                         </DockPanel>
                         <DockPanel  Margin="0,2">
-                            <TextBlock Text="{Binding Config.OpenCommnad}"/>
-                            <Button Content="打开"/>
+                            <TextBlock Text="{Binding Config.ShutterCfg.OpenCmd}"/>
+                            <Button Content="打开" Click="Button_Click_Shutter_Doopen"/>
                         </DockPanel>
                         <DockPanel  Margin="0,2">
-                            <TextBlock Text="{Binding Config.CloseCommnad}"/>
-                            <Button Content="关闭"/>
+                            <TextBlock Text="{Binding Config.ShutterCfg.CloseCmd}"/>
+                            <Button Content="关闭" Click="Button_Click_Shutter_Doclose"/>
                         </DockPanel>
                     </StackPanel>
                 </GroupBox>

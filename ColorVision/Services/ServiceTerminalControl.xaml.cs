@@ -133,7 +133,15 @@ namespace ColorVision.Services
                         deviceConfig = new ConfigSpectrum
                         {
                             ID = TextBox_Code.Text,
-                            Name = TextBox_Name.Text
+                            Name = TextBox_Name.Text,
+                            ShutterCfg = new ShutterConfig()
+                            {
+                                Addr = "COM1",
+                                BaudRate = 115200,
+                                DelayTime = 1000,
+                                OpenCmd = "a",
+                                CloseCmd = "b"
+                            },
                         };
                         sysResourceModel = saveConfigInfo(deviceConfig, sysResource);
                         if (sysResourceModel != null)
