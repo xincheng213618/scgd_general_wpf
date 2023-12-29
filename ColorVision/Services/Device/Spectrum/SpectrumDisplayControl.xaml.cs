@@ -164,7 +164,7 @@ namespace ColorVision.Device.Spectrum
 
         private void Button_Click_OneTest(object sender, RoutedEventArgs e)
         {
-            SpectrumService.GetData((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value, AutoIntTime.IsChecked??false, AutoDark.IsChecked ?? false);
+            SpectrumService.GetData((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value, AutoIntTime.IsChecked??false, AutoDark.IsChecked ?? false, AutoShutterDark.IsChecked ?? false);
         }
 
         private void Button_Click_Close(object sender, RoutedEventArgs e)

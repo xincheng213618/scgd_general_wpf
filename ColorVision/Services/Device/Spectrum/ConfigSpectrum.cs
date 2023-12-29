@@ -53,15 +53,15 @@ namespace ColorVision.Device.Spectrum
 
     public class GetDataParamMQTT
     {
-        [JsonProperty("fIntTime")]
+        [JsonProperty("IntegralTime")]
         public float IntTime { get; set; }
-        [JsonProperty("iAveNum")]
+        [JsonProperty("NumberOfAverage")]
         public int AveNum { get; set; }
-        [JsonProperty("bUseAutoIntTime")]
+        [JsonProperty("AutoIntegration")]
         public bool BUseAutoIntTime { get; set; }
-        [JsonProperty("bUseAutoDark")]
+        [JsonProperty("SelfAdaptionInitDark")]
         public bool BUseAutoDark { get; set; }
-        [JsonProperty("bUseAutoShutterDark")]
+        [JsonProperty("AutoInitDark")]
         public bool BUseAutoShutterDark { get; set; }
     }
     public class ShutterConfig
