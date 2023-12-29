@@ -28,17 +28,14 @@ namespace ColorVision.Services.Device
 
         public RelayCommand SaveCommand { get; set; }
         public RelayCommand DeleteCommand { get; set; }
-
         public ContextMenu ContextMenu { get; set; }
         public ObservableCollection<BaseObject> VisualChildren { get; set; }
-
         public ServiceManager ServiceControl { get; set; }
         public BaseObject()
         {
             VisualChildren = new ObservableCollection<BaseObject>();
             SaveCommand = new RelayCommand(a => Save());
             DeleteCommand = new RelayCommand(a => Delete());
-
         }
         public BaseObject Parent
         {

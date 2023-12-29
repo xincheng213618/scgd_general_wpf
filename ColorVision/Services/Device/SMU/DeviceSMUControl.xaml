@@ -92,7 +92,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="60"/>
                         </Grid.ColumnDefinitions>
-                        <StackPanel Margin="5,0" >
+                        <StackPanel Margin="5,0">
                             <GroupBox Header="资源信息" Margin="0,5">
                                 <StackPanel Margin="5">
                                     <DockPanel Margin="0,2" >
@@ -114,14 +114,14 @@
                                     <DockPanel Margin="0,2" >
                                         <CheckBox DockPanel.Dock="Right" Content="网络" Width="50" Margin="5" IsChecked="{Binding Config.IsNet}"/>
                                         <TextBlock Text="设备地址"  Width="120"/>
-                                        <TextBox Text="{Binding Config.ID}"/>
+                                        <TextBox Text="{Binding Config.ID}" Width="300" Visibility="{Binding Config.IsNet,Converter={StaticResource bool2VisibilityConverter}}" Margin="38,0,0,0"/>
+                                        <hc:ComboBox  x:Name="TextSerial" IsEditable="True"  Width="300" Text="{Binding Config.ID}"  Visibility="{Binding Config.IsNet,Converter={StaticResource bool2VisibilityConverter1}}" hc:InfoElement.ShowClearButton="True"  />
                                     </DockPanel>
                                 </StackPanel>
                             </GroupBox>
                         </StackPanel>
-
                         <Border Grid.Column="1" Margin="5">
-                            <Button  Content="{x:Static resx:Resource.Submit}" Command="{Binding SaveCommand}" />
+                            <Button Content="{x:Static resx:Resource.Submit}" Command="{Binding SaveCommand}" />
                         </Border>
                     </Grid>                    
                 </Grid>

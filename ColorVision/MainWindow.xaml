@@ -114,7 +114,7 @@
                     <TabItem x:Name="ViewTab" Header="采集" Width="150" >
                         <ScrollViewer x:Name="ScrollViewerDisplay" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" >
                             <StackPanel x:Name="SPDisplay" >
-                                <StackPanel x:Name="StackPanelMQTT" Initialized="StackPanelMQTT_Initialized" >
+                                <StackPanel x:Name="StackPanelSPD" Initialized="StackPanelSPD_Initialized" >
                                 </StackPanel>
                             </StackPanel>
                         </ScrollViewer>

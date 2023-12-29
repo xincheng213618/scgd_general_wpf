@@ -657,7 +657,7 @@ namespace ColorVision.Services.Algorithm
                 }
                 file.WriteLine(value);
                 ImageSource bitmapSource = ImageView.ImageShow.Source;
-                ImageUtil.SaveImageSourceToFile(bitmapSource, Path.GetFileNameWithoutExtension(dialog.FileName) + ".png");
+                ImageUtil.SaveImageSourceToFile(bitmapSource, Path.Combine( Path.GetDirectoryName(dialog.FileName),Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
             }
         }
 

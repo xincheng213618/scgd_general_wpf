@@ -1,5 +1,6 @@
 ﻿using ColorVision.Services;
 using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -25,6 +26,8 @@ namespace ColorVision.Services.Device.SMU
         {
             if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
             this.DataContext = this.MQTTDeviceSMU;
+            List<string> Serials = new List<string> { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8" };
+            TextSerial.ItemsSource = Serials;
         }
 
 

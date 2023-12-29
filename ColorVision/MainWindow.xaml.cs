@@ -8,6 +8,8 @@ using ColorVision.Flow;
 using System.Diagnostics;
 using ColorVision.Services;
 using ColorVision.Solution;
+using LiveChartsCore.VisualElements;
+using MySqlConnector.Logging;
 
 namespace ColorVision
 {
@@ -133,10 +135,34 @@ namespace ColorVision
 
 
 
-        private void StackPanelMQTT_Initialized(object sender, EventArgs e)
+        private void StackPanelSPD_Initialized(object sender, EventArgs e)
         {
-            if (sender is StackPanel stackPanel)
-                stackPanel.Children.Add(ServiceManager.GetInstance().StackPanel);
+            if (sender is StackPanel stackPanel1)
+            {
+                var stackPanel = ServiceManager.GetInstance().StackPanel;
+                stackPanel1.Children.Add(stackPanel);
+
+                bool isDown = false;
+                stackPanel.PreviewMouseLeftButtonDown += (s, e) =>
+                {
+                    isDown = true;
+                };
+                stackPanel.PreviewMouseUp += (s, e) =>
+                {
+                    if (isDown)
+                    {
+                        isDown = false;
+                        var control = stackPanel.Children[0];
+                        stackPanel.Children.Remove(control);
+                        stackPanel.Children.Add(control);
+                    }
+                };
+            }
+
+        }
+
+        private void StackPanel_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+        {
         }
 
         private void ViewGrid_Click(object sender, RoutedEventArgs e)

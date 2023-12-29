@@ -186,6 +186,16 @@
                                         </DockPanel>
                                     </StackPanel>
                                 </Border>
+
+                                <Border Style="{StaticResource BorderModuleArea}" CornerRadius="8" Margin="0,5">
+                                    <StackPanel Margin="5">
+                                        <DockPanel Margin="5" >
+                                            <Button DockPanel.Dock="Right" Content="{x:Static resx:Resource.Reset}" Click="SetProjectDefault__Click"  />
+                                            <TextBlock Text="默导出存储格式:"  MinWidth="150"  />
+                                            <TextBox Text="{Binding SolutionSetting.DefaultImageSaveName}" HorizontalAlignment="Left" Width="200" />
+                                        </DockPanel>
+                                    </StackPanel>
+                                </Border>
                             </StackPanel>
                         </GroupBox>
                     </StackPanel>

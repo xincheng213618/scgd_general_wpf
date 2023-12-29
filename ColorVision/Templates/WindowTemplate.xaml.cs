@@ -164,6 +164,19 @@ namespace ColorVision.Templates
         {
             ListView1.ItemsSource = TemplateModelBases;
             this.Closed += WindowTemplate_Closed;
+
+            switch (TemplateType)
+            {
+                case TemplateType.PoiParam:
+                    this.MinWidth = 300;
+
+                    Width = 300;
+                    break;
+                case TemplateType.FlowParam:
+                    this.MinWidth = 300;
+                    Width = 300;
+                    break;
+            }
         }
 
         private void WindowTemplate_Closed(object? sender, EventArgs e)
