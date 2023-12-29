@@ -272,8 +272,22 @@ namespace ColorVision.Device.Spectrum
                 MessageBox.Show("测量失败");
             }
         }
+
         #endregion
 
+        private void Button_Click_Shutter_Connect(object sender, RoutedEventArgs e)
+        {
+            SpectrumService.ShutterConnect();
+        }
 
+        private void Button_Click_Shutter_Doopen(object sender, RoutedEventArgs e)
+        {
+            SpectrumService.ShutterDoopen();
+        }
+
+        private void Button_Click_Shutter_Doclose(object sender, RoutedEventArgs e)
+        {
+            SpectrumService.ShutterDoclose();
+        }
     }
 }

@@ -88,11 +88,11 @@
                                     </DockPanel>
                                     <DockPanel>
                                         <TextBlock Text="最大积分时间(ms)" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.TimeLimit}"/>
+                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.MaxIntegralTime}"/>
                                     </DockPanel>
                                     <DockPanel>
                                         <TextBlock Text="起始积分时间(ms)" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.TimeFrom}"/>
+                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.BeginIntegralTime}"/>
                                     </DockPanel>
                                 </StackPanel>
                             </GroupBox>
@@ -101,28 +101,28 @@
                                 <StackPanel Margin="5">
                                     <DockPanel Margin="0,2">
                                         <TextBlock Text="启用" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.IsShutter}"/>
+                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.IsShutterEnable}"/>
                                     </DockPanel>
                                     <StackPanel Visibility="{Binding Config.IsShutter,Converter={StaticResource bool2VisibilityConverter}}">
                                         <DockPanel Margin="0,2">
                                             <TextBlock Text="串口:" Width="120"/>
-                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.SzComName}"/>
+                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ShutterCfg.Addr}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,2">
                                             <TextBlock Text="波特率:" Width="120"/>
-                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.BaudRate}"/>
+                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ShutterCfg.BaudRate}"/>
                                         </DockPanel>
                                         <DockPanel>
                                             <TextBlock Text="延时(ms):" Width="120"/>
-                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ShutterDelay}"/>
+                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ShutterCfg.DelayTime}"/>
                                         </DockPanel>
                                         <DockPanel>
                                             <TextBlock Text="打开命令:" Width="120"/>
-                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.OpenCommnad}"/>
+                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ShutterCfg.OpenCmd}"/>
                                         </DockPanel>
                                         <DockPanel>
                                             <TextBlock Text="关闭命令" Width="120"/>
-                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CloseCommnad}"/>
+                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ShutterCfg.CloseCmd}"/>
                                         </DockPanel>
                                     </StackPanel>
                                 </StackPanel>
@@ -162,12 +162,12 @@
 
                                         <DockPanel Margin="0,2" >
                                             <TextBlock Text="最大积分时间(ms)"  Width="120"/>
-                                            <TextBox Text="{Binding Config.TimeLimit}"/>
+                                            <TextBox Text="{Binding Config.MaxIntegralTime}"/>
                                         </DockPanel>
 
                                         <DockPanel Margin="0,2" >
                                             <TextBlock Text="起始积分时间(ms)"  Width="120"/>
-                                            <TextBox Text="{Binding Config.TimeFrom}"/>
+                                            <TextBox Text="{Binding Config.BeginIntegralTime}"/>
                                         </DockPanel>
                                     </StackPanel>
                                 </GroupBox>
@@ -176,28 +176,28 @@
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="0,2">
                                             <TextBlock Text="启用" Width="120"/>
-                                            <ui:ToggleSwitch IsChecked="{Binding Config.IsShutter}"/>
+                                            <ui:ToggleSwitch IsChecked="{Binding Config.IsShutterEnable}"/>
                                         </DockPanel>
-                                        <StackPanel Visibility="{Binding Config.IsShutter,Converter={StaticResource bool2VisibilityConverter}}">
+                                        <StackPanel Visibility="{Binding Config.IsShutterEnable,Converter={StaticResource bool2VisibilityConverter}}">
                                             <DockPanel Margin="0,2">
                                                 <TextBlock Text="串口:" Width="120"/>
-                                                <hc:ComboBox  x:Name="TextSerial" IsEditable="True" Text="{Binding Config.SzComName}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
+                                                <hc:ComboBox  x:Name="TextSerial" IsEditable="True" Text="{Binding Config.ShutterCfg.Addr}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
                                             </DockPanel>
                                             <DockPanel Margin="0,2">
                                                 <TextBlock Text="波特率:" Width="120"/>
-                                                <hc:ComboBox  x:Name="TextBaudRate" IsEditable="True" Text="{Binding Config.BaudRate}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
+                                                <hc:ComboBox  x:Name="TextBaudRate" IsEditable="True" Text="{Binding Config.ShutterCfg.BaudRate}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
                                             </DockPanel>
                                             <DockPanel Margin="0,2">
                                                 <TextBlock Text="延时(ms):" Width="120"/>
-                                                <TextBox Text="{Binding Config.ShutterDelay}" />
+                                                <TextBox Text="{Binding Config.ShutterCfg.DelayTime}" />
                                             </DockPanel>
                                             <DockPanel Margin="0,2">
                                                 <TextBlock Text="打开命令:" Width="120"/>
-                                                <TextBox Text="{Binding Config.OpenCommnad}" />
+                                                <TextBox Text="{Binding Config.ShutterCfg.OpenCmd}" />
                                             </DockPanel>
                                             <DockPanel Margin="0,2">
                                                 <TextBlock Text="关闭命令" Width="120"/>
-                                                <TextBox Text="{Binding Config.CloseCommnad}" />
+                                                <TextBox Text="{Binding Config.ShutterCfg.CloseCmd}" />
                                             </DockPanel>
                                         </StackPanel>
                                     </StackPanel>

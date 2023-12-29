@@ -12,6 +12,7 @@ namespace ColorVision.Device.Spectrum
 
         public DeviceSpectrum(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
+            //if(Config.ShutterCfg == null) Config.ShutterCfg = new ShutterConfig() { Addr="COM1", BaudRate=115200, DelayTime=1000, OpenCmd="a", CloseCmd="b" };
             DeviceService = new SpectrumService(Config);
             View = new SpectrumView();
         }
