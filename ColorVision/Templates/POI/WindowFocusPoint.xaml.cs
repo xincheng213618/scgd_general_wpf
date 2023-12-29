@@ -1730,6 +1730,23 @@ namespace ColorVision.Templates
             ToolBarTop.Activate = true;
             ToolBarTop.DrawCircle = true;
         }
+
+        private void Button_Click_4(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void DatumAreaImport_Click(object sender, RoutedEventArgs e)
+        {
+            PoiParam.DatumArea.Polygon1X = PoiParam.DatumArea.X1X;
+            PoiParam.DatumArea.Polygon1Y = PoiParam.DatumArea.X1Y;
+            PoiParam.DatumArea.Polygon2X = PoiParam.DatumArea.X2X;
+            PoiParam.DatumArea.Polygon2Y = PoiParam.DatumArea.X2Y;
+            PoiParam.DatumArea.Polygon3X = PoiParam.DatumArea.X3X;
+            PoiParam.DatumArea.Polygon3Y = PoiParam.DatumArea.X3Y;
+            PoiParam.DatumArea.Polygon4X = PoiParam.DatumArea.X4X;
+            PoiParam.DatumArea.Polygon4Y = PoiParam.DatumArea.X4Y;
+        }
     }
 
 }
