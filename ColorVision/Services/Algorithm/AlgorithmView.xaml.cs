@@ -1113,5 +1113,10 @@ namespace ColorVision.Services.Algorithm
                 AlgResults.Add(algorithmResult);
             }
         }
+
+        private void Search1_Click(object sender, RoutedEventArgs e)
+        {
+            SerchPopup.IsOpen = true;
+        }
     }
 }

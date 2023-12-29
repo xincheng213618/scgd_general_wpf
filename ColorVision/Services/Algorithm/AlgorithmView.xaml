@@ -21,10 +21,10 @@
             <media:ImageView Grid.Row="0" x:Name="ImageView"></media:ImageView>
             <Grid  Grid.Row="1">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="38"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <ToolBar  Grid.Row="0" Background ="#EEF4F9" ToolBarTray.IsLocked="True">
+                <ToolBar  Grid.Row="0"   Margin="0,3,0,0"  Style="{StaticResource ToolBarBaseStyle}" ToolBarTray.IsLocked="True">
                     <ToggleButton x:Name="toggle1" Click="Button_Click_1" IsChecked="True" Margin="2,0,0,0" >
                         <Image Stretch="Uniform" Source="{DynamicResource DrawingImageList}" >
                             <Image.RenderTransform>
@@ -42,8 +42,20 @@
                     <Button Click="Button_Delete_Click" Margin="2,0,0,0"  >
                         <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" />
                     </Button>
-                    <Button Content="搜索" Click="Search_Click" Margin="2,0,0,0"/>
-
+                    <Button Content="查询" Click="Search_Click" Margin="2,0,0,0"/>
+                    <Button x:Name="Search" Content="高级查询" Click="Search1_Click" Margin="2,0,0,0"/>
+                    <Popup  x:Name="SerchPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Search}">
+                        <Border Margin="0,2" Style="{StaticResource BorderModuleArea}">
+                            <StackPanel>
+                                <TextBlock Text="22222"/>
+                                <TextBlock Text="22222"/>
+                                <TextBlock Text="22222"/>
+                                <TextBlock Text="22222"/>
+                                <TextBlock Text="22222"/>
+                                <Button Content="查询" Click="Search_Click" Margin="2,0,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </Popup>
                 </ToolBar>
                 <ListView  Grid.Row="1" x:Name="listView1" Height ="300"  ScrollViewer.VerticalScrollBarVisibility="Visible" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" />
             </Grid>
