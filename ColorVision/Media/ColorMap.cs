@@ -348,9 +348,9 @@ namespace ColorVision.Media
         //        cmRt.Line(0, y, 50, y, Scalar.All(0));
         //        String valText = String.Format("{0}", n - i);
         //        //if (i == 0)
-        //        // cmRt.PutText(valText, new OpenCvSharp.Point(60, y + 20), HersheyFonts.HersheyDuplex, 1, Scalar.All(0));
+        //        // cmRt.PutText(valText, new OpenCvSharp.POINT(60, y + 20), HersheyFonts.HersheyDuplex, 1, Scalar.All(0));
         //        //else
-        //        cmRt.PutText(valText, new OpenCvSharp.Point(60, y), HersheyFonts.HersheyDuplex, 1, Scalar.All(0));
+        //        cmRt.PutText(valText, new OpenCvSharp.POINT(60, y), HersheyFonts.HersheyDuplex, 1, Scalar.All(0));
 
         //    }
         //    return cm;

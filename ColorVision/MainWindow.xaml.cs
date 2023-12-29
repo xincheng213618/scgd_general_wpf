@@ -10,6 +10,8 @@ using ColorVision.Services;
 using ColorVision.Solution;
 using LiveChartsCore.VisualElements;
 using MySqlConnector.Logging;
+using System.Windows.Documents;
+using ColorVision.Media;
 
 namespace ColorVision
 {
@@ -141,22 +143,26 @@ namespace ColorVision
             {
                 var stackPanel = ServiceManager.GetInstance().StackPanel;
                 stackPanel1.Children.Add(stackPanel);
+                //bool isDown = false;
+                //AdornerLayer adornerLayer = AdornerLayer.GetAdornerLayer(Root);
+                //DragDropAdorner adorner = null;
+                //stackPanel.PreviewMouseLeftButtonDown += (s, e) =>
+                //{
+                //    isDown = true;
+                //    var control = stackPanel.Children[0];
+                //    adorner = new DragDropAdorner(control);
+                //    adornerLayer.Add(adorner);
 
-                bool isDown = false;
-                stackPanel.PreviewMouseLeftButtonDown += (s, e) =>
-                {
-                    isDown = true;
-                };
-                stackPanel.PreviewMouseUp += (s, e) =>
-                {
-                    if (isDown)
-                    {
-                        isDown = false;
-                        var control = stackPanel.Children[0];
-                        stackPanel.Children.Remove(control);
-                        stackPanel.Children.Add(control);
-                    }
-                };
+                //};
+                //stackPanel.PreviewMouseUp += (s, e) =>
+                //{
+                //    if (isDown)
+                //    {
+                //        if (adorner != null)
+                //            adornerLayer.Remove(adorner);
+
+                //    }
+                //};
             }
 
         }
