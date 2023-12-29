@@ -41,13 +41,13 @@ namespace ColorVision.MySql.DAO
                 Cols = item.Field<int?>("cols") ?? -1,
                 RatioH = item.Field<float?>("ratio_h") ?? -1,
                 RatioL = item.Field<float?>("ratio_l") ?? -1,
-                LEDCenters = item.Field<string>("led_centers"),
-                LEDPixels = item.Field<string>("led_pixels"),
-                LEDBlobGray = item.Field<string>("led_blob_gray"),
-                GhostAverageGray = item.Field<string>("ghost_average_gray"),
-                SingleLedPixelNum = item.Field<string>("single_led_pixel_num"),
-                SingleGhostPixelNum = item.Field<string>("single_ghost_pixel_num"),
-                GhostPixels = item.Field<string>("ghost_pixels") ,
+                LEDCenters = item.Field<string>("led_centers")??string.Empty,
+                LEDPixels = item.Field<string>("led_pixels") ?? string.Empty,
+                LEDBlobGray = item.Field<string>("led_blob_gray") ?? string.Empty,
+                GhostAverageGray = item.Field<string>("ghost_average_gray") ?? string.Empty,
+                SingleLedPixelNum = item.Field<string>("single_led_pixel_num") ?? string.Empty,
+                SingleGhostPixelNum = item.Field<string>("single_ghost_pixel_num") ?? string.Empty,
+                GhostPixels = item.Field<string>("ghost_pixels") ?? string.Empty,
             };
             return model;
         }

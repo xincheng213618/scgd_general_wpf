@@ -121,7 +121,7 @@ namespace ColorVision.Device.Camera
             if (!string.IsNullOrWhiteSpace(param.FileName))
             {
                 FileExtType extType = FileExtType.Raw;
-                if (param.FileName.EndsWith("cvcie")) extType = FileExtType.CIE;
+                if (param.FileName.EndsWith("cvcie",StringComparison.OrdinalIgnoreCase)) extType = FileExtType.CIE;
                 netFileUtil.TaskStartDownloadFile(param.IsLocal, param.ServerEndpoint, param.FileName, extType);
             }
         }

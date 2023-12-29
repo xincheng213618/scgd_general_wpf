@@ -392,7 +392,7 @@ namespace ColorVision.Services.Algorithm
         private string _SerialNumber;
         private string _ImgFileName;
         private string _POITemplateName;
-        private string _RecvTime;
+        private string? _RecvTime;
         private AlgorithmResultType _ResultType;
         private int _resultCode;
         private long _totalTime;
@@ -407,7 +407,7 @@ namespace ColorVision.Services.Algorithm
         public string SerialNumber { get { return _SerialNumber; } set { _SerialNumber = value; NotifyPropertyChanged(); } }
         public string ImgFileName { get { return _ImgFileName; } set { _ImgFileName = value; NotifyPropertyChanged(); } }
         public string POITemplateName { get { return _POITemplateName; } set { _POITemplateName = value; NotifyPropertyChanged(); } }
-        public string RecvTime { get { return _RecvTime; } set { _RecvTime = value; NotifyPropertyChanged(); } }
+        public string? RecvTime { get { return _RecvTime; } set { _RecvTime = value; NotifyPropertyChanged(); } }
 
         public string ResultTypeDis
         {

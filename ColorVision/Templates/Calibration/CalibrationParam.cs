@@ -77,25 +77,6 @@ namespace ColorVision.Templates
             LumMultiColorList = new List<string>();
         }
 
-        public ResouceType CalibrationType2ResouceType(CalibrationType calibrationType)
-        {
-            return calibrationType switch
-            {
-                CalibrationType.DarkNoise => ResouceType.DarkNoise,
-                CalibrationType.DefectWPoint => ResouceType.DefectPoint,
-                CalibrationType.DefectBPoint => ResouceType.DefectPoint,
-                CalibrationType.DefectPoint => ResouceType.DefectPoint,
-                CalibrationType.DSNU => ResouceType.DSNU,
-                CalibrationType.Uniformity => ResouceType.Uniformity,
-                CalibrationType.Luminance => ResouceType.Luminance,
-                CalibrationType.LumOneColor => ResouceType.LumOneColor,
-                CalibrationType.LumFourColor => ResouceType.LumFourColor,
-                CalibrationType.LumMultiColor => ResouceType.LumMultiColor,
-                CalibrationType.Distortion => ResouceType.Distortion,
-                CalibrationType.ColorShift => ResouceType.ColorShift,
-                _ => ResouceType.DarkNoise,
-            };
-        }
 
         public ObservableCollection<CalibrationRsource> GetAllCalibrationRsources(ResouceType resouceType,int id)
         {

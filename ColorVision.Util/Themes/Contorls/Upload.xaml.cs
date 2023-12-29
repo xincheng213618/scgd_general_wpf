@@ -73,8 +73,8 @@ namespace ColorVision.Themes.Controls
                 var a = sarr as string[];
                 TxtCalibrationFile.Text = a?.First();
                 TxtCalibrationFileName.Text = Path.GetFileName(a?.First());
-                UploadFileName = TxtCalibrationFileName.Text;
-                UploadFilePath = TxtCalibrationFile.Text;
+                UploadFileName = TxtCalibrationFileName.Text ?? string.Empty;
+                UploadFilePath = TxtCalibrationFile.Text ?? string.Empty;
                 GridUpdate.Visibility = Visibility.Collapsed;
                 GridShow.Visibility = Visibility.Visible;
                 UploadRec.Stroke = Brushes.Gray;

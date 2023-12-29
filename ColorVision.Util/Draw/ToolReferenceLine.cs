@@ -173,7 +173,7 @@ namespace ColorVision.Draw
             return withinX && withinY;
         }
 
-        public List<Point> CalculateIntersectionPoints(double width ,double height, Point point,double angle)
+        public static List<Point> CalculateIntersectionPoints(double width ,double height, Point point,double angle)
         {
             List<Point> points = new List<Point>();
             if (GetIntersection(point, angle, new Point(0, 0), new Point(0, width)) is Point point1)

@@ -159,7 +159,7 @@ namespace ColorVision.MySql.Service
 
         internal void Save(ParamBase value)
         {
-            if (GetMasterById(value.ID) is ModMasterModel modMasterModel)
+            if (GetMasterById(value.ID) is ModMasterModel modMasterModel && modMasterModel.Pcode != null)
             {
                 modMasterModel.Name = value.Name;
                 ModMasterDao modMasterDao = new ModMasterDao(modMasterModel.Pcode);
