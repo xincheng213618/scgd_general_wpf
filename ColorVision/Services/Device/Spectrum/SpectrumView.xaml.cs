@@ -245,7 +245,6 @@ namespace ColorVision.Device.Spectrum
                 listView1.Visibility = Visibility.Visible;
                 First = true;
             }
-
             ColorParam colorParam = data.Data;
             colorParams.Add(colorParam);
 

@@ -1,5 +1,8 @@
-﻿using ColorVision.MySql.Service;
+﻿using ColorVision.MySql.DAO;
+using ColorVision.MySql.Service;
 using ColorVision.Templates;
+using Newtonsoft.Json;
+using NPOI.XWPF.UserModel;
 using ScottPlot;
 using ScottPlot.Plottable;
 using System;
@@ -326,6 +329,7 @@ namespace ColorVision.Services.Device.SMU
             strings.Add(isSourceV ? "V" : "I");
             strings.Add(DateTime.Now.ToString());
             listViewItem.Content = strings;
+            ListContents.Add(strings);
             listView1.Items.Add(listViewItem);
             listView1.SelectedIndex = PassSxSources.Count - 1;
             listView1.ScrollIntoView(listViewItem);
@@ -390,14 +394,6 @@ namespace ColorVision.Services.Device.SMU
                 {
                     int index = listView1.Items.IndexOf(item);
                     ScatterPlots.RemoveAt(index);
-
-                    listView1.Items.RemoveAt(index);
-                    List<string> Contents = (List<string>)item.Content;
-                    int id = int.Parse(Contents[Contents.Count - 1]);
-                    if (id > 0)
-                    {
-                        spectumResult.SpectumDeleteById(id);
-                    }
                 }
             }
 
@@ -499,9 +495,24 @@ namespace ColorVision.Services.Device.SMU
 
         }
 
+        MRSmuScanDao MRSmuScanDao = new MRSmuScanDao();
         private void Search_Click(object sender, RoutedEventArgs e)
         {
+            ListContents.Clear();
+            listView1.Items.Clear();
 
+            foreach (var item in MRSmuScanDao.GetAll())
+            {
+
+                bool isSourceV = item.IsSourceV;
+                double endVal = item.SrcEnd;
+
+                double[] VList = JsonConvert.DeserializeObject<double[]> (item.VResult);
+                double[] IList = JsonConvert.DeserializeObject<double[]> (item.IResult);
+
+                DrawPlot(isSourceV, endVal, VList, IList);
+
+            }
         }
     }
 }
