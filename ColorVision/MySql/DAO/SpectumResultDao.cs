@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable 
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -7,36 +8,36 @@ namespace ColorVision.MySql.DAO
 {
     public class SpectumResultModel : PKModel
     {
-        public float IntTime { get; set; }
-        public int AveNum { get; set; }
+        public float? IntTime { get; set; }
+        public int iAveNum { get; set; }
         public bool IsUseAutoIntTime { get; set; }
         public bool IsUseAutoDark { get; set; }
         public int? Pid { get; set; }
-        public string? BatchId { get; set; }
-        public string? PL { get; set; }
-        public string? Ri { get; set; }
-        public float x { get; set; }
-        public float y { get; set; }
-        public float u { get; set; }
-        public float v { get; set; }
-        public float CCT { get; set; }
-        public float dC { get; set; }
-        public float Ld { get; set; }
-        public float Pur { get; set; }
-        public float Lp { get; set; }
-        public float HW { get; set; }
-        public float Lav { get; set; }
-        public float Ra { get; set; }
-        public float RR { get; set; }
-        public float GR { get; set; }
-        public float BR { get; set; }
-        public float Ip { get; set; }
-        public float Ph { get; set; }
-        public float Phe { get; set; }
-        public float Plambda { get; set; }
-        public float Spect1 { get; set; }
-        public float Spect2 { get; set; }
-        public float Interval { get; set; }
+        public int? BatchId { get; set; }
+        public string? fPL { get; set; }
+        public string? fRi { get; set; }
+        public float? fx { get; set; }
+        public float? fy { get; set; }
+        public float? fu { get; set; }
+        public float? fv { get; set; }
+        public float? fCCT { get; set; }
+        public float? dC { get; set; }
+        public float? fLd { get; set; }
+        public float? fPur { get; set; }
+        public float? fLp { get; set; }
+        public float? fHW { get; set; }
+        public float? fLav { get; set; }
+        public float? fRa { get; set; }
+        public float? fRR { get; set; }
+        public float? fGR { get; set; }
+        public float? fBR { get; set; }
+        public float? fIp { get; set; }
+        public float? fPh { get; set; }
+        public float? fPhe { get; set; }
+        public float? fPlambda { get; set; }
+        public float? fSpect1 { get; set; }
+        public float? fSpect2 { get; set; }
+        public float? fInterval { get; set; }
         public DateTime? CreateDate { get; set; } = DateTime.Now;
     }
     public class SpectumResultDao : BaseDaoMaster<SpectumResultModel>
@@ -72,36 +73,35 @@ namespace ColorVision.MySql.DAO
             SpectumResultModel model = new SpectumResultModel
             {
                 Id = item.Field<int>("id"),
-                IntTime = item.Field<float>("fIntTime"),
-                AveNum = item.Field<int>("iAveNum"),
-                IsUseAutoIntTime = item.Field<bool>("bUseAutoIntTime"),
-                IsUseAutoDark = item.Field<bool>("bUseAutoDark"),
-                Pid = item.Field<int?>("pid"),
-                BatchId = item.Field<string>("batch_id"),
-                PL = item.Field<string>("fPL"),
-                Ri = item.Field<string>("fRi"),
-                x = item.Field<float>("fx"),
-                y = item.Field<float>("fy"),
-                u = item.Field<float>("fu"),
-                v = item.Field<float>("fv"),
-                CCT = item.Field<float>("fCCT"),
-                dC = item.Field<float>("dC"),
-                Ld = item.Field<float>("fLd"),
-                Pur = item.Field<float>("fPur"),
-                Lp = item.Field<float>("fLp"),
-                HW = item.Field<float>("fHW"),
-                Lav = item.Field<float>("fLav"),
-                Ra = item.Field<float>("fRa"),
-                RR = item.Field<float>("fRR"),
-                GR = item.Field<float>("fGR"),
-                BR = item.Field<float>("fBR"),
-                Ip = item.Field<float>("fIp"),
-                Ph = item.Field<float>("fPh"),
-                Phe = item.Field<float>("fPhe"),
-                Plambda = item.Field<float>("fPlambda"),
-                Spect1 = item.Field<float>("fSpect1"),
-                Spect2 = item.Field<float>("fSpect2"),
-                Interval = item.Field<float>("fInterval"),
+                IntTime = item.Field<float?>("fIntTime"),
+                iAveNum = item.Field<int>("iAveNum"),
+                IsUseAutoIntTime = item.Field<bool>("self_adaption_init_dark"),
+                IsUseAutoDark = item.Field<bool>("auto_init_dark"),
+                BatchId = item.Field<int>("batch_id"),
+                fPL = item.Field<string>("fPL"),
+                fRi = item.Field<string>("fRi"),
+                fx = item.Field<float?>("fx"),
+                fy = item.Field<float?>("fy"),
+                fu = item.Field<float?>("fu"),
+                fv = item.Field<float?>("fv"),
+                fCCT = item.Field<float?>("fCCT"),
+                dC = item.Field<float?>("dC"),
+                fLd = item.Field<float?>("fLd"),
+                fPur = item.Field<float?>("fPur"),
+                fLp = item.Field<float?>("fLp"),
+                fHW = item.Field<float?>("fHW"),
+                fLav = item.Field<float?>("fLav"),
+                fRa = item.Field<float?>("fRa"),
+                fRR = item.Field<float?>("fRR"),
+                fGR = item.Field<float?>("fGR"),
+                fBR = item.Field<float?>("fBR"),
+                fIp = item.Field<float?>("fIp"),
+                fPh = item.Field<float?>("fPh"),
+                fPhe = item.Field<float?>("fPhe"),
+                fPlambda = item.Field<float?>("fPlambda"),
+                fSpect1 = item.Field<float?>("fSpect1"),
+                fSpect2 = item.Field<float?>("fSpect2"),
+                fInterval = item.Field<float?>("fInterval"),
                 CreateDate = item.Field<DateTime?>("create_date"),
             };
 

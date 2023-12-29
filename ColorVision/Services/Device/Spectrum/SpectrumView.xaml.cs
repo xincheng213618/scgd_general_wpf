@@ -1,4 +1,7 @@
-﻿using ColorVision.MySql.Service;
+﻿using ColorVision.MySql.DAO;
+using ColorVision.MySql.Service;
+using Newtonsoft.Json;
+using NPOI.XWPF.UserModel;
 using ScottPlot;
 using ScottPlot.Plottable;
 using System;
@@ -11,6 +14,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Markup;
 using static cvColorVision.GCSDLL;
 
 namespace ColorVision.Device.Spectrum
@@ -295,9 +299,9 @@ namespace ColorVision.Device.Spectrum
                 MarkerShape = MarkerShape.none,
                 LineStyle = LineStyle.Solid
             };
-
             ScatterPlots.Add(scatterPlot);
             listViewItem.Content = Contents;
+            ListContents.Add(Contents);
             listView1.Items.Add(listViewItem);
             listView1.SelectedIndex = colorParams.Count - 1;
             listView1.ScrollIntoView(listViewItem);
@@ -368,7 +372,7 @@ namespace ColorVision.Device.Spectrum
                     colorParams.RemoveAt(index);
 
                     ScatterPlots.RemoveAt(index);
-
+                    ListContents.RemoveAt(index);
                     listView1.Items.RemoveAt(index);
                     List<string> Contents = (List<string>)item.Content;
                     int id = int.Parse(Contents[Contents.Count - 1]);
@@ -484,8 +488,54 @@ namespace ColorVision.Device.Spectrum
             ResultNum = 0;
         }
 
+        SpectumResultDao  spectumResultDao = new SpectumResultDao();
+
+
         private void Search_Click(object sender, RoutedEventArgs e)
         {
+            colorParams.Clear();
+
+            ScatterPlots.Clear();
+            ListContents.Clear();
+            listView1.Items.Clear();
+
+
+            var list =  spectumResultDao.GetAll();
+            foreach (var item in list)
+            {
+                SpectumData spectumData = new SpectumData();
+                ColorParam param = new ColorParam()
+                {
+                    fx = item.fx ?? 0,
+                    fy = item.fy ?? 0,
+                    fu = item.fu ?? 0,
+                    fv = item.fv ?? 0,
+                    fCCT = item.fCCT ?? 0,
+                    dC = item.dC ?? 0,
+                    fLd = item.fLd ?? 0,
+                    fPur = item.fPur ?? 0,
+                    fLp = item.fLp ?? 0,
+                    fHW = item.fHW ?? 0,
+                    fLav = item.fLav ?? 0,
+                    fRa = item.fRa ?? 0,
+                    fRR = item.fRR ?? 0,
+                    fGR = item.fGR ?? 0,
+                    fBR = item.fBR ?? 0,
+                    fIp = item.fIp ?? 0,
+                    fPh = item.fPh ?? 0,
+                    fPhe = item.fPhe ?? 0,
+                    fPlambda = item.fPlambda ?? 0,
+                    fSpect1 = item.fSpect1 ?? 0,
+                    fSpect2 = item.fSpect2 ?? 0,
+                    fInterval = item.fInterval ?? 0,
+                    fPL = JsonConvert.DeserializeObject<float[]>(item.fPL ?? string.Empty) ?? System.Array.Empty<float>(),
+                    fRi = JsonConvert.DeserializeObject<float[]>(item.fRi ?? string.Empty) ?? System.Array.Empty<float>(),
+                };
+
+                spectumData.Data = param;
+                SpectrumDrawPlot(spectumData);
+            }
+
 
         }
     }

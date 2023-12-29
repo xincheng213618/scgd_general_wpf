@@ -342,13 +342,13 @@ namespace ColorVision.Media
         //    cmRt = cm[new Rect(cols, rows - Height, 150, Height)];
         //    for (int i = 0; i < n; i++)
         //    {
-        //        int y = mClr.Get<ushort>(i, 0);
-        //        cmRt.Line(0, y, 50, y, Scalar.All(0));
+        //        int fy = mClr.Get<ushort>(i, 0);
+        //        cmRt.Line(0, fy, 50, fy, Scalar.All(0));
         //        String valText = String.Format("{0}", n - i);
         //        //if (i == 0)
-        //        // cmRt.PutText(valText, new OpenCvSharp.POINT(60, y + 20), HersheyFonts.HersheyDuplex, 1, Scalar.All(0));
+        //        // cmRt.PutText(valText, new OpenCvSharp.POINT(60, fy + 20), HersheyFonts.HersheyDuplex, 1, Scalar.All(0));
         //        //else
-        //        cmRt.PutText(valText, new OpenCvSharp.POINT(60, y), HersheyFonts.HersheyDuplex, 1, Scalar.All(0));
+        //        cmRt.PutText(valText, new OpenCvSharp.POINT(60, fy), HersheyFonts.HersheyDuplex, 1, Scalar.All(0));
 
         //    }
         //    return cm;
