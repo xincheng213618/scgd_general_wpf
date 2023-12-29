@@ -6,13 +6,17 @@ using ColorVision.Templates.POI.MySql;
 using ColorVision.Util;
 using cvColorVision;
 using cvColorVision.Util;
+using FileServerPlugin;
 using log4net;
 using Newtonsoft.Json;
 using NPOI.SS.UserModel;
+using OpenCvSharp.WpfExtensions;
+using ScottPlot.Drawing.Colormaps;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -448,7 +452,7 @@ namespace ColorVision.Templates
         private void Button1_Click(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png,*.tif) | *.jpg; *.jpeg; *.png;*.tif";
+            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png,*.tif,*.cvraw) | *.jpg; *.jpeg; *.png;*.tif;*.cvraw";
             openFileDialog.RestoreDirectory = true;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
@@ -468,30 +472,46 @@ namespace ColorVision.Templates
         {
             if (filePath != null && File.Exists(filePath))
             {
-                BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
+                string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
 
-                if (ImageShow.Source == null)
+                if (ext == ".cvraw")
                 {
-                    ImageShow.Source = new BitmapImage(new Uri(filePath));
-                    Zoombox1.ZoomUniform();
-                    InitDatumAreaValue((int)bitmapImage.Width, (int)bitmapImage.Height);
+                    CVCIEFileInfo fileInfo = new CVCIEFileInfo();
+                    fileInfo.fileType = MQTTMessageLib.FileServer.FileExtType.Raw;
+                    int ret = CVFileUtils.ReadCVFile(filePath, ref fileInfo);
+                    if (ret == 0)
+                    {
+                        OpenCvSharp.Mat src;
+                        if (fileInfo.bpp != 8)
+                        {
+                            OpenCvSharp.Mat temp = new OpenCvSharp.Mat(fileInfo.height, fileInfo.width, OpenCvSharp.MatType.MakeType(fileInfo.depth, fileInfo.channels), fileInfo.data);
+                            src = new OpenCvSharp.Mat();
+                            temp.ConvertTo(src, OpenCvSharp.MatType.CV_8U, 1.0 / 256.0);
+                            temp.Dispose();
+                        }
+                        else
+                        {
+                             src = new OpenCvSharp.Mat(fileInfo.height, fileInfo.width, OpenCvSharp.MatType.MakeType(fileInfo.depth, fileInfo.channels), fileInfo.data);
+                        }
+
+                        BitmapSource bitmapSource = src.ToBitmapSource();
+                        ImageShow.Source = bitmapSource;
+                        InitDatumAreaValue((int)fileInfo.width, (int)fileInfo.height);
+                        PoiParam.Width = bitmapSource.PixelWidth;
+                        PoiParam.Height = bitmapSource.PixelHeight;
+                    }
                 }
                 else
                 {
-                    if (ImageShow.Source is BitmapImage img && (img.PixelWidth != bitmapImage.PixelWidth || img.PixelHeight != bitmapImage.PixelHeight))
-                    {
-                        InitDatumAreaValue((int)bitmapImage.Width, (int)bitmapImage.Height);
-                        ImageShow.Source = bitmapImage;
-                        Zoombox1.ZoomUniform();
-                    }
-                    else
-                    {
-                        ImageShow.Source = bitmapImage;
-                    }
-
+                    BitmapSource bitmapImage = new BitmapImage(new Uri(filePath));
+                    ImageShow.Source = bitmapImage;
+                    Zoombox1.ZoomUniform();
+                    InitDatumAreaValue((int)bitmapImage.Width, (int)bitmapImage.Height);
+                    PoiParam.Width = bitmapImage.PixelWidth;
+                    PoiParam.Height = bitmapImage.PixelHeight;
                 }
-                PoiParam.Width = bitmapImage.PixelWidth;
-                PoiParam.Height = bitmapImage.PixelHeight;
+
+
                 ImageShow.ImageInitialize();
             }
         }

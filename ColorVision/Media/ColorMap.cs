@@ -26,10 +26,8 @@ namespace ColorVision.Media
         {
             // 创建一个临时byte数组存储stream的数据
             byte[] bytes = new byte[stream.Length];
-
             // 将stream的位置重置到开始
             stream.Position = 0;
-
             // 将stream的数据读取到byte数组中
             stream.Read(bytes, 0, bytes.Length);
 

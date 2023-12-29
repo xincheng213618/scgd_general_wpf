@@ -66,13 +66,7 @@ namespace ColorVision.Device.Spectrum
     }
     public class ShutterConfig
     {
-        /// <summary>
-        /// 
-        /// </summary>
         public int BaudRate { get; set; }
-        /// <summary>
-        /// 
-        /// </summary>
         public string Addr { get; set; }
         public string OpenCmd { get; set; }
         public string CloseCmd { get; set; }
@@ -90,23 +84,8 @@ namespace ColorVision.Device.Spectrum
         private float _TimeFrom;
         public float BeginIntegralTime { get => _TimeFrom; set { _TimeFrom = value; NotifyPropertyChanged(); } }
 
-        public bool IsShutterEnable { get => _IsShutter; set { _IsShutter = value; NotifyPropertyChanged(); } }
+        public bool IsShutterEnable { get => _IsShutter; set { _IsShutter = value; NotifyPropertyChanged(); } } 
         private bool _IsShutter;
-
-        //public string SzComName { get => _szComName; set { _szComName = value; NotifyPropertyChanged(); } }
-        //private string _szComName = "COM1";
-
-        //public int BaudRate { get => _BaudRate; set { _BaudRate = value; NotifyPropertyChanged(); } }
-        //private int _BaudRate = 115200;
-
-        //public int ShutterDelay { get => _ShutterDelay; set { _ShutterDelay = value; NotifyPropertyChanged(); } }
-        //private int _ShutterDelay = 1000;
-
-        //public string OpenCommnad { get => _OpenCommnad; set { _OpenCommnad = value; NotifyPropertyChanged(); } }
-        //private string _OpenCommnad;
-
-        //public string CloseCommnad { get => _CloseCommnad; set { _CloseCommnad = value; NotifyPropertyChanged(); } }
-        //private string _CloseCommnad;
 
         public ShutterConfig ShutterCfg { get => _ShutterCfg; set { _ShutterCfg = value; NotifyPropertyChanged(); } }
         private ShutterConfig _ShutterCfg;
