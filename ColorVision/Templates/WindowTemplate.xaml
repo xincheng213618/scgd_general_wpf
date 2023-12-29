@@ -81,15 +81,12 @@
                 <TextBlock Text="模板名称："  Foreground="{DynamicResource GlobalTextBrush}"/>
                 <TextBox x:Name="TextBox1"/>
             </DockPanel>
-            <UniformGrid x:Name="FunctionGrid" Columns="5" Margin="0,5"    HorizontalAlignment="Stretch">
+            <StackPanel x:Name="FunctionGrid"  Orientation="Horizontal" Margin="0,5"    HorizontalAlignment="Stretch">
                 <Button  Click="Button_New_Click" HorizontalAlignment="Left">
                     <TextBlock Text="新建"/>
                 </Button>
                 <Button HorizontalAlignment="Right"   Click="Button_Del_Click" >
                     <TextBlock Text="删除"/>
-                </Button>
-                <Button   HorizontalAlignment="Right"  Click="Button_Save_Click" >
-                    <TextBlock Text="保存"/>
                 </Button>
                 <Button  HorizontalAlignment="Right"  Click="Button_Export_Click" >
                     <TextBlock Text="导出"/>
@@ -98,7 +95,7 @@
                     <TextBlock Text="导入"/>
                 </Button>
 
-            </UniformGrid>
+            </StackPanel>
         </StackPanel>
 
 

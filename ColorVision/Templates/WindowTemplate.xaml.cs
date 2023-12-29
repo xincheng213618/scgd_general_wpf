@@ -160,76 +160,16 @@ namespace ColorVision.Templates
             GridProperty.Children.Add(UserControl);
         }
 
-
-        public new void ShowDialog()
-        {
-            switch (TemplateType)
-            {
-                case TemplateType.PoiParam:
-                    this.MinWidth = 390;
-                    this.Width = 390;
-                    this.Closed += (s, e) =>
-                    {
-                        TemplateControl.Save(TemplateType);
-                    };
-                    break;
-                case TemplateType.FlowParam:
-                    Button button = new Button() { Content = "导入流程", Width =80};
-                    button.Click += (s, e) =>
-                    {
-                        System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
-                        ofd.Filter = "*.stn|*.stn";
-                        if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                        string name = Path.GetFileNameWithoutExtension(ofd.FileName);
-                        FlowParam? flowParam = TemplateControl.AddFlowParam(name);
-                        if (flowParam != null)
-                        {
-                            flowParam.FileName = Path.GetFileName(ofd.FileName); ;
-                            CreateNewTemplate(TemplateControl.FlowParams, name, flowParam);
-
-                            TemplateControl.GetInstance().Save2DB(flowParam);
-                        }
-                        else MessageBox.Show("数据库创建流程模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                    };
-                    FunctionGrid.Children.Insert(2, button);
-
-                    Button button1 = new Button() { Content = "导出流程", Width = 80 };
-                    button1.Click += (s, e) =>
-                    {
-                        if (ListView1.SelectedIndex<0)
-                        {
-                            MessageBox.Show("请选择您要导出的流程", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                            return;
-                        }
-                        System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
-                        ofd.DefaultExt = "stn";
-                        ofd.Filter = "*.stn|*.stn";
-                        ofd.AddExtension = false;
-                        ofd.RestoreDirectory = true;
-                        ofd.Title = "导出流程";
-                        ofd.FileName = TemplateControl.FlowParams[ListView1.SelectedIndex].Key;
-                        if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                        Tool.Base64ToFile(TemplateControl.FlowParams[ListView1.SelectedIndex].Value.DataBase64, ofd.FileName);
-                    };
-                    FunctionGrid.Children.Insert(3, button1);
-
-                    FunctionGrid.Columns = 5;
-                    FunctionGrid.Width = 450;
-                    this.MinWidth = 400;
-                    this.Width = 500;
-                    break;
-                default:
-                    ListView1.SelectedIndex = 0;
-                    break;
-            }
-            base.ShowDialog();
-        }
-
         private void Window_Initialized(object sender, EventArgs e)
         {
             ListView1.ItemsSource = TemplateModelBases;
+            this.Closed += WindowTemplate_Closed;
         }
 
+        private void WindowTemplate_Closed(object? sender, EventArgs e)
+        {
+            TemplateSave();
+        }
 
         private void ListView1_PreviewMouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
@@ -438,7 +378,6 @@ namespace ColorVision.Templates
 
         private void Button_Save_Click(object sender, RoutedEventArgs e)
         {
-            TemplateSave();
         }
 
         private void Button_New_Click(object sender, RoutedEventArgs e)
@@ -627,12 +566,113 @@ namespace ColorVision.Templates
 
         private void Button_Export_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("开发中");
+
+            if (ListView1.SelectedIndex < 0)
+            {
+                MessageBox.Show("请选择您要导出的流程", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                return;
+            }
+            System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
+            ofd.DefaultExt = "stn";
+            ofd.Filter = "*.stn|*.stn";
+            ofd.AddExtension = false;
+            ofd.RestoreDirectory = true;
+            ofd.Title = "导出流程";
+            ofd.FileName = TemplateControl.FlowParams[ListView1.SelectedIndex].Key;
+            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+
+            switch (TemplateType)
+            {
+                case TemplateType.FlowParam:
+                    Tool.Base64ToFile(TemplateControl.FlowParams[ListView1.SelectedIndex].Value.DataBase64, ofd.FileName);
+                    break;
+                case TemplateType.MeasureParam:
+                    break;
+                case TemplateType.Calibration:
+                    break;
+                case TemplateType.LedResult:
+                    break;
+                case TemplateType.AoiParam:
+                    break;
+                case TemplateType.PGParam:
+                    break;
+                case TemplateType.SMUParam:
+                    break;
+                case TemplateType.PoiParam:
+                    break;
+                case TemplateType.MTFParam:
+                    break;
+                case TemplateType.SFRParam:
+                    break;
+                case TemplateType.FOVParam:
+                    break;
+                case TemplateType.GhostParam:
+                    break;
+                case TemplateType.DistortionParam:
+                    break;
+                case TemplateType.LedCheckParam:
+                    break;
+                case TemplateType.FocusPointsParam:
+                    break;
+                default:
+                    break;
+            }
         }
 
         private void Button_Import_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("开发中");
+            System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
+            ofd.Filter = "*.stn|*.stn";
+            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+
+            switch (TemplateType)
+            {
+                case TemplateType.FlowParam:
+                    string name = Path.GetFileNameWithoutExtension(ofd.FileName);
+                    FlowParam? flowParam = TemplateControl.AddFlowParam(name);
+                    if (flowParam != null)
+                    {
+                        flowParam.FileName = Path.GetFileName(ofd.FileName); ;
+                        CreateNewTemplate(TemplateControl.FlowParams, name, flowParam);
+
+                        TemplateControl.GetInstance().Save2DB(flowParam);
+                    }
+                    else MessageBox.Show("数据库创建流程模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                    break;
+                case TemplateType.MeasureParam:
+                    break;
+                case TemplateType.Calibration:
+                    break;
+                case TemplateType.LedResult:
+                    break;
+                case TemplateType.AoiParam:
+                    break;
+                case TemplateType.PGParam:
+                    break;
+                case TemplateType.SMUParam:
+                    break;
+                case TemplateType.PoiParam:
+                    break;
+                case TemplateType.MTFParam:
+                    break;
+                case TemplateType.SFRParam:
+                    break;
+                case TemplateType.FOVParam:
+                    break;
+                case TemplateType.GhostParam:
+                    break;
+                case TemplateType.DistortionParam:
+                    break;
+                case TemplateType.LedCheckParam:
+                    break;
+                case TemplateType.FocusPointsParam:
+                    break;
+                default:
+                    break;
+            }
+
+
+
         }
     }
 }
