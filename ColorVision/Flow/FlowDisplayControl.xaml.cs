@@ -88,11 +88,6 @@ namespace ColorVision.Flow
                 };
             }
 
-
-
-
-
-
             FlowTemplate.ItemsSource = TemplateControl.GetInstance().FlowParams;
             FlowTemplate.SelectionChanged += (s, e) =>
             {
