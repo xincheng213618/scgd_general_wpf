@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading;
 using System;
 using System.Runtime.InteropServices;
+using System.IO;
 
 namespace ColorVision
 {
@@ -25,6 +26,8 @@ namespace ColorVision
 
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         private static extern ushort GlobalAddAtom(string lpString);
+
+        public static string SolutionPath { get; set; } = string.Empty;
 
         [STAThread]
         [DebuggerNonUserCode]
@@ -46,6 +49,11 @@ namespace ColorVision
                     {
                         App.IsReStart = true;
                     }
+
+                    if (args[i].EndsWith("cvsln", StringComparison.OrdinalIgnoreCase))
+                    {
+                        SolutionPath = args[i];
+                    }
                 }
             }
 
@@ -65,9 +73,9 @@ namespace ColorVision
                 IntPtr hWnd = CheckAppRunning.Check("ColorVision");
                 if (hWnd != IntPtr.Zero)
                 {
-                    if (args.Length > 0)
+                    if (args.Length > 0 && File.Exists(SolutionPath))
                     {
-                        ushort atom = GlobalAddAtom(args[0]);
+                        ushort atom = GlobalAddAtom(SolutionPath);
                         SendMessage(hWnd, WM_USER + 1, (IntPtr)atom, IntPtr.Zero);  // 发送消息
                     }
                     log.Info("程序已经打开");

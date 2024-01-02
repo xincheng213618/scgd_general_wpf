@@ -206,7 +206,7 @@ namespace ColorVision
                         menuItem.Header = item;
                         menuItem.Click += (sender, e) =>
                         {
-                            SolutionManager.GetInstance().OpenSolution(item);
+                            SolutionManager.GetInstance().OpenSolutionDirectory(item);
                         };
                         RecentListMenuItem.Items.Add(menuItem);
                     }

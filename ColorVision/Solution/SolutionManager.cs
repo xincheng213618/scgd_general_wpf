@@ -40,15 +40,24 @@ namespace ColorVision.Solution
         public SolutionManager()
         {
             SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
+
+            if (File.Exists(App.SolutionPath))
+            {
+                CurrentSolution.FullName = App.SolutionPath;
+            }
+            else
+            {
+                SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
+            }
             Application.Current.MainWindow.AddHotKeys(new HotKeys("打开工程", new Hotkey(Key.O, ModifierKeys.Control), OpenSolutionWindow));
             Application.Current.MainWindow.AddHotKeys(new HotKeys("新建工程", new Hotkey(Key.N, ModifierKeys.Control), NewCreateWindow));
 
-            OpenSolution(CurrentSolution.FullName);
+            OpenSolutionDirectory(CurrentSolution.FullName);
         }
 
         public DirectoryInfo SolutionDirectory { get; private set; }
 
-        public bool OpenSolution(string SolutionFullPath)
+        public bool OpenSolutionDirectory(string SolutionFullPath)
         {
             log.Debug("正在打开工程:" + SolutionFullPath);
 
@@ -64,6 +73,17 @@ namespace ColorVision.Solution
             SolutionDirectory = new DirectoryInfo(CurrentSolution.FullName);
             SolutionHistory.InsertFile(SolutionDirectory.FullName);
             SolutionLoaded?.Invoke(CurrentSolution, new EventArgs());
+            return true;
+        }
+
+        public bool OpenSolution(string FullPath)
+        {
+            if (File.Exists(FullPath)&& FullPath.EndsWith("cvsln", StringComparison.OrdinalIgnoreCase))
+            {
+                CurrentSolution.FullName = FullPath;
+                SolutionHistory.InsertFile(SolutionDirectory.FullName);
+                SolutionLoaded?.Invoke(CurrentSolution, new EventArgs());
+            }
             return true;
         }
 
@@ -89,7 +109,7 @@ namespace ColorVision.Solution
                 if (!string.IsNullOrWhiteSpace(openSolutionWindow.FullName))
                 {
                     if (Directory.Exists(openSolutionWindow.FullName))
-                        OpenSolution(openSolutionWindow.FullName);
+                        OpenSolutionDirectory(openSolutionWindow.FullName);
                     else
                         MessageBox.Show("找不到工程");
                 }
@@ -108,7 +128,7 @@ namespace ColorVision.Solution
                 {
                     string SolutionDirectoryPath = newCreatWindow.NewCreateViewMode.DirectoryPath + "\\" + newCreatWindow.NewCreateViewMode.Name;
                     CreateSolution(new DirectoryInfo(SolutionDirectoryPath));
-                    OpenSolution(SolutionDirectoryPath);
+                    OpenSolutionDirectory(SolutionDirectoryPath);
                 }
             };
             newCreatWindow.ShowDialog();
