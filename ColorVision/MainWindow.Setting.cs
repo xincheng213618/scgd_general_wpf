@@ -7,6 +7,8 @@ using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Windows.Media.Animation;
 using System.Windows.Media;
+using System.IO;
+using ColorVision.Solution;
 
 namespace ColorVision
 {
@@ -37,10 +39,17 @@ namespace ColorVision
                         int size = GlobalGetAtomName((ushort)wParam, chars, chars.Length);
                         if (size > 0)
                         {
-
                             string result = new string(chars, 0, size);
-                            MessageBox.Show(result, "ColorVision");
                             GlobalDeleteAtom((short)wParam);
+
+                            if (File.Exists(result))
+                            {
+                                SolutionManager.GetInstance().OpenSolution(result);
+                            }
+                            else
+                            {
+                                MessageBox.Show(result, "ColorVision");
+                            }
                         }
                     }
                     catch (Exception ex) 

@@ -36,6 +36,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ColorVisionCore", "ColorVis
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Net", "ColorVision.Net\ColorVision.Net.csproj", "{BAF74DE2-805D-42FB-B64F-38F789EEF292}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ColorVisionIcons64", "ColorVisionIcons64\ColorVisionIcons64.vcxproj", "{87FFB8BB-20C4-4D0D-8EF6-A39B0C14FF3A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -208,6 +210,22 @@ Global
 		{BAF74DE2-805D-42FB-B64F-38F789EEF292}.Release|x64.Build.0 = Release|x64
 		{BAF74DE2-805D-42FB-B64F-38F789EEF292}.Release|x86.ActiveCfg = Release|x64
 		{BAF74DE2-805D-42FB-B64F-38F789EEF292}.Release|x86.Build.0 = Release|x64
+		{87FFB8BB-20C4-4D0D-8EF6-A39B0C14FF3A}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{87FFB8BB-20C4-4D0D-8EF6-A39B0C14FF3A}.Debug|Any CPU.Build.0 = Debug|x64
+		{87FFB8BB-20C4-4D0D-8EF6-A39B0C14FF3A}.Debug|ARM64.ActiveCfg = Debug|x64
+		{87FFB8BB-20C4-4D0D-8EF6-A39B0C14FF3A}.Debug|ARM64.Build.0 = Debug|x64
+		{87FFB8BB-20C4-4D0D-8EF6-A39B0C14FF3A}.Debug|x64.ActiveCfg = Debug|x64
+		{87FFB8BB-20C4-4D0D-8EF6-A39B0C14FF3A}.Debug|x64.Build.0 = Debug|x64
+		{87FFB8BB-20C4-4D0D-8EF6-A39B0C14FF3A}.Debug|x86.ActiveCfg = Debug|Win32
+		{87FFB8BB-20C4-4D0D-8EF6-A39B0C14FF3A}.Debug|x86.Build.0 = Debug|Win32
+		{87FFB8BB-20C4-4D0D-8EF6-A39B0C14FF3A}.Release|Any CPU.ActiveCfg = Release|x64
+		{87FFB8BB-20C4-4D0D-8EF6-A39B0C14FF3A}.Release|Any CPU.Build.0 = Release|x64
+		{87FFB8BB-20C4-4D0D-8EF6-A39B0C14FF3A}.Release|ARM64.ActiveCfg = Release|x64
+		{87FFB8BB-20C4-4D0D-8EF6-A39B0C14FF3A}.Release|ARM64.Build.0 = Release|x64
+		{87FFB8BB-20C4-4D0D-8EF6-A39B0C14FF3A}.Release|x64.ActiveCfg = Release|x64
+		{87FFB8BB-20C4-4D0D-8EF6-A39B0C14FF3A}.Release|x64.Build.0 = Release|x64
+		{87FFB8BB-20C4-4D0D-8EF6-A39B0C14FF3A}.Release|x86.ActiveCfg = Release|Win32
+		{87FFB8BB-20C4-4D0D-8EF6-A39B0C14FF3A}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -219,10 +237,11 @@ Global
 		{8C2994F6-EF3C-40D2-A3C2-187B234805A0} = {55F5939D-C4F5-498D-97B0-8117E84F0FB1}
 		{3388B2F6-E9B4-4F0D-9106-25F5B911C424} = {55F5939D-C4F5-498D-97B0-8117E84F0FB1}
 		{A9255078-AA9E-4FFA-9008-AF74C0880952} = {55F5939D-C4F5-498D-97B0-8117E84F0FB1}
+		{87FFB8BB-20C4-4D0D-8EF6-A39B0C14FF3A} = {55F5939D-C4F5-498D-97B0-8117E84F0FB1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		RESX_PrefixTranslations = False
-		RESX_NeutralResourcesLanguage = zh-Hans
 		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
+		RESX_NeutralResourcesLanguage = zh-Hans
+		RESX_PrefixTranslations = False
 	EndGlobalSection
 EndGlobal

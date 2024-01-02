@@ -3,6 +3,7 @@ using ColorVision.Services.Algorithm.MySql;
 using ColorVision.Services.Algorithm.Result;
 using ColorVision.Solution.V.Files;
 using ColorVision.Solution.V.Folders;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows.Controls;
@@ -25,8 +26,20 @@ namespace ColorVision.Solution.V
 
         public SolutionExplorer(string FullPath)
         {
-            DirectoryInfo = new DirectoryInfo(FullPath);
-            this.Name = DirectoryInfo.Name;
+            if (File.Exists(FullPath) && FullPath.EndsWith("cvsln", StringComparison.OrdinalIgnoreCase))
+            {
+                FileInfo fileInfo = new FileInfo(FullPath);
+
+                this.Name = Path.GetFileNameWithoutExtension(FullPath);
+                DirectoryInfo = fileInfo.Directory;
+            }
+            else if(Directory.Exists(FullPath))
+            {
+                DirectoryInfo = new DirectoryInfo(FullPath);
+                this.Name = DirectoryInfo.Name;
+            }
+
+
             GeneralRelayCommand();
             GeneralContextMenu();
             GeneralCVSln();
