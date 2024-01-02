@@ -2,8 +2,8 @@
 {
     public enum ServiceType
     {
-        Camera = 1,
-        PG = 2,
+        camera = 1,
+        pg = 2,
         Spectum = 3,
         SMU = 4,
         Sensor = 5,

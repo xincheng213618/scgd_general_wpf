@@ -42,10 +42,10 @@ namespace ColorVision.Services.Device.SMU
     public class SMUScanParam
     {
         public bool IsSourceV { set; get; }
-        public double StartMeasureVal { set; get; }
-        public double StopMeasureVal { set; get; }
-        public double LimitVal { set; get; }
-        public int Number { set; get; }
+        public double BeginValue { set; get; }
+        public double EndValue { set; get; }
+        public double LimitValue { set; get; }
+        public int Points { set; get; }
     }
 
     public class ConfigSMU : BaseDeviceConfig

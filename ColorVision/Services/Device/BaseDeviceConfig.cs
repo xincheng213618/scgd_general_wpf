@@ -40,6 +40,46 @@ namespace ColorVision.Services.Device
         private bool _IsAlive;
         public DateTime LastAliveTime { get => _LastAliveTime; set { _LastAliveTime = value; NotifyPropertyChanged(); } }
         private DateTime _LastAliveTime = DateTime.MinValue;
+
+        public DeviceStatus DeviceStatus { get => _DeviceStatus; set { _DeviceStatus = value; NotifyPropertyChanged("BtnDeviceStatus"); } }
+        private DeviceStatus _DeviceStatus;
+
+        [JsonIgnore]
+        public string BtnDeviceStatus
+        {
+            get
+            {
+                string text = _DeviceStatus.ToString();
+                switch (_DeviceStatus)
+                {
+                    case DeviceStatus.Unknown:
+                        break;
+                    case DeviceStatus.Closed:
+                        text = "打开";
+                        break;
+                    case DeviceStatus.Closing:
+                        break;
+                    case DeviceStatus.Opened:
+                        text = "关闭";
+                        break;
+                    case DeviceStatus.Opening:
+                        break;
+                    case DeviceStatus.Busy:
+                        break;
+                    case DeviceStatus.Free:
+                        break;
+                    case DeviceStatus.UnInit:
+                        break;
+                    case DeviceStatus.Init:
+                        break;
+                    case DeviceStatus.UnConnected:
+                        break;
+                    default:
+                        break;
+                }
+                return text;
+            }
+        }
     }
 
     public enum DeviceServiceStatus

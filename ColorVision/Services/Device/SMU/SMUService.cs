@@ -2,6 +2,7 @@
 using ColorVision.Services;
 using ColorVision.Services.Device;
 using ColorVision.Services.Msg;
+using MQTTMessageLib.SMU;
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using System;
@@ -39,7 +40,7 @@ namespace ColorVision.Services.Device.SMU
                 try
                 {
                     MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg);
-                    if (json == null || !json.ServiceName.Equals(Config.Code, StringComparison.Ordinal))
+                    if (json == null)
                         return Task.CompletedTask;
 
                     if (json.Code == 0)
@@ -100,7 +101,7 @@ namespace ColorVision.Services.Device.SMU
         {
             MsgSend msg = new MsgSend
             {
-                EventName = "Open",
+                EventName = MQTTSMUEventEnum.Event_Open,
                 ServiceName = Config.Code,
                 Params = new SMUOpenParam() { DevName = devName, IsNet = isNet, }
             };
@@ -112,7 +113,7 @@ namespace ColorVision.Services.Device.SMU
         {
             MsgSend msg = new MsgSend
             {
-                EventName = "GetData",
+                EventName = MQTTSMUEventEnum.Event_GetData,
                 ServiceName = Config.Code,
                 Params = new SMUGetDataParam() { IsSourceV = isSourceV, MeasureValue = measureVal, LimitValue = lmtVal }
             };
@@ -124,7 +125,7 @@ namespace ColorVision.Services.Device.SMU
         {
             MsgSend msg = new MsgSend
             {
-                EventName = "Close",
+                EventName = MQTTSMUEventEnum.Event_Close,
                 ServiceName = Config.Code,
             };
             PublishAsyncClient(msg);
@@ -134,12 +135,14 @@ namespace ColorVision.Services.Device.SMU
         public bool Scan(bool isSourceV, double startMeasureVal, double stopMeasureVal, double lmtVal, int number)
         {
             string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            var Params = new Dictionary<string, object>();
+            Params.Add("DeviceParam", new SMUScanParam() { IsSourceV = isSourceV, BeginValue = startMeasureVal, EndValue = stopMeasureVal, LimitValue = lmtVal, Points = number });
             MsgSend msg = new MsgSend
             {
-                EventName = "Scan",
+                EventName = MQTTSMUEventEnum.Event_Scan,
                 ServiceName = Config.Code,
                 SerialNumber = sn,
-                Params = new SMUScanParam() { IsSourceV = isSourceV, StartMeasureVal = startMeasureVal, StopMeasureVal = stopMeasureVal, LimitVal = lmtVal, Number = number }
+                Params = Params,
             };
             PublishAsyncClient(msg);
             return true;
@@ -149,7 +152,7 @@ namespace ColorVision.Services.Device.SMU
         {
             MsgSend msg = new MsgSend
             {
-                EventName = "CloseOutput",
+                EventName = MQTTSMUEventEnum.Event_CloseOutput,
                 ServiceName = Config.Code,
             };
             PublishAsyncClient(msg);

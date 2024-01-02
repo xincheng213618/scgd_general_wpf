@@ -63,7 +63,7 @@ namespace ColorVision.Services
 
             switch (ServiceType)
             {
-                case ServiceType.Camera:
+                case ServiceType.camera:
                     ServiceCamera cameraService = new ServiceCamera(Config);
                     BaseService = cameraService;
                     RefreshCommand = new RelayCommand(a => cameraService.GetAllDevice());
