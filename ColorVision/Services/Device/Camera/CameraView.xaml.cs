@@ -165,6 +165,20 @@ namespace ColorVision.Services.Device.Camera
                 Results.Add(CameraImgResult);
             }
         }
+
+        private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void Search1_Click(object sender, RoutedEventArgs e)
+        {
+            SerchPopup.IsOpen = true;
+            TextBoxType.SelectedIndex = -1;
+            TextBoxId.Text = string.Empty;
+            TextBoxBatch.Text = string.Empty;
+            TextBoxFile.Text = string.Empty;
+        }
     }
 
 
