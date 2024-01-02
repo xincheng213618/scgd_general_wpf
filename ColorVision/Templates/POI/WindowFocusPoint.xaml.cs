@@ -478,7 +478,7 @@ namespace ColorVision.Templates
                 {
                     CVCIEFileInfo fileInfo = new CVCIEFileInfo();
                     fileInfo.fileType = MQTTMessageLib.FileServer.FileExtType.Raw;
-                    int ret = CVFileUtils.ReadCVFile(filePath, ref fileInfo);
+                    int ret = CVFileUtils.ReadCVFile_Raw(filePath, ref fileInfo);
                     if (ret == 0)
                     {
                         OpenCvSharp.Mat src;
