@@ -78,6 +78,7 @@ namespace ColorVision.MySql.DAO
             return row;
         }
 
+
         public override AlgResultMasterModel GetModel(DataRow item)
         {
             AlgResultMasterModel model = new AlgResultMasterModel

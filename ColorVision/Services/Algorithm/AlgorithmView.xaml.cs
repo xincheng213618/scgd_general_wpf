@@ -5,30 +5,22 @@ using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.Util;
 using FileServerPlugin;
-using FlowEngineLib;
-using HandyControl.Data;
 using HandyControl.Tools.Extension;
 using log4net;
-using Microsoft.Windows.Themes;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
-using ScottPlot;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.ServiceModel;
+using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using Wpf.Ui.Interop.WinDef;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 
 namespace ColorVision.Services.Algorithm
 {
@@ -604,6 +596,21 @@ namespace ColorVision.Services.Algorithm
             }
             listViewY.View = gridViewY;
             listViewY.ItemsSource = PoiYResultDatas;
+
+
+
+
+
+
+            var keyValuePairs = Enum.GetValues(typeof(AlgorithmResultType))
+                .Cast<AlgorithmResultType>()
+                .Select(e1 => new KeyValuePair<AlgorithmResultType, string>(e1, e1.ToString()))
+                .ToList();
+            TextBoxType.ItemsSource = keyValuePairs;
+
+
+
+
         }
 
         public ObservableCollection<PoiResultData> PoiResultDatas { get; set; } = new ObservableCollection<PoiResultData>();
@@ -1106,7 +1113,6 @@ namespace ColorVision.Services.Algorithm
         {
             AlgResults.Clear();
             List<AlgResultMasterModel> algResults = algResultMasterDao.GetAll();
-
             foreach (var item in algResults)
             {
                 AlgorithmResult algorithmResult = new AlgorithmResult(item);
@@ -1117,6 +1123,28 @@ namespace ColorVision.Services.Algorithm
         private void Search1_Click(object sender, RoutedEventArgs e)
         {
             SerchPopup.IsOpen = true;
+            TextBoxType.SelectedIndex = -1;
+            TextBoxId.Text = string.Empty;
+            TextBoxBatch.Text = string.Empty;
+            TextBoxFile.Text = string.Empty;
+        }
+
+        private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
+        {
+            string altype = string.Empty;
+            if (TextBoxType.SelectedValue is AlgorithmResultType algorithmResultType)
+                altype = ((int)algorithmResultType).ToString();
+
+
+            AlgResults.Clear();
+            List<AlgResultMasterModel> algResults = algResultMasterDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, altype.ToString(), TextBoxFile.Text);
+            foreach (var item in algResults)
+            {
+                AlgorithmResult algorithmResult = new AlgorithmResult(item);
+                AlgResults.Add(algorithmResult);
+            }
+
+
         }
     }
 }

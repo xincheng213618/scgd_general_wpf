@@ -359,8 +359,6 @@ namespace ColorVision.MySql
         }
 
 
-
-
         public List<T> GetAll()
         {
             List<T> list = new List<T>();
@@ -376,6 +374,22 @@ namespace ColorVision.MySql
             }
             return list;
         }
+        public List<T> ConditionalQuery(string id,string batchid,string ImageType,string fileName)
+        {
+            List<T> list = new List<T>();
+            string sql = $"select * from {GetTableName()} where `id` LIKE '%{id}%' AND `img_file_type` LIKE '%{ImageType}%' AND  `batch_id` LIKE '%{batchid}%' AND img_file LIKE '%{fileName}%'";
+            DataTable d_info = GetData(sql);
+            foreach (var item in d_info.AsEnumerable())
+            {
+                T? model = GetModel(item);
+                if (model != null)
+                {
+                    list.Add(model);
+                }
+            }
+            return list;
+        }
+
 
         public List<T> GetAll(int tenantId)
         {

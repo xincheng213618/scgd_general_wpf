@@ -225,7 +225,7 @@ namespace ColorVision.Device.Camera
 
 
             ComboxCalibrationTemplate.ItemsSource = CalibrationParams;
-            ComboxCalibrationTemplate.SelectedIndex = 0;
+            ComboxCalibrationTemplate.SelectedIndex = 0;  
 
             StackPanelOpen.Visibility = Visibility.Collapsed;
             StackPanelImage.Visibility = Visibility.Collapsed;
