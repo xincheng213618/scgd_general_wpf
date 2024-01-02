@@ -1,5 +1,6 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
 using ColorVision.Draw;
+using ColorVision.Extension;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
@@ -668,9 +669,6 @@ namespace ColorVision.Services.Algorithm
             }
         }
 
-
-
-
         public void AlgResultDataDraw(AlgResultMasterModel result)
         {
             AlgResultDataDraw(result.Id.ToString(), result.BatchCode, result.ImgFile, result.TName, result.ImgFileType, result.ResultCode, result.Result, result.TotalTime);
@@ -1111,13 +1109,7 @@ namespace ColorVision.Services.Algorithm
         AlgResultMasterDao algResultMasterDao = new AlgResultMasterDao();
         private void Search_Click(object sender, RoutedEventArgs e)
         {
-            AlgResults.Clear();
-            List<AlgResultMasterModel> algResults = algResultMasterDao.GetAll();
-            foreach (var item in algResults)
-            {
-                AlgorithmResult algorithmResult = new AlgorithmResult(item);
-                AlgResults.Add(algorithmResult);
-            }
+
         }
 
         private void Search1_Click(object sender, RoutedEventArgs e)
@@ -1131,20 +1123,33 @@ namespace ColorVision.Services.Algorithm
 
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
-            string altype = string.Empty;
-            if (TextBoxType.SelectedValue is AlgorithmResultType algorithmResultType)
-                altype = ((int)algorithmResultType).ToString();
-
-
-            AlgResults.Clear();
-            List<AlgResultMasterModel> algResults = algResultMasterDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, altype.ToString(), TextBoxFile.Text);
-            foreach (var item in algResults)
+            if (string.IsNullOrEmpty(TextBoxId.Text)&& string.IsNullOrEmpty(TextBoxBatch.Text) && string.IsNullOrEmpty(TextBoxType.Text) && string.IsNullOrEmpty(TextBoxFile.Text))
             {
-                AlgorithmResult algorithmResult = new AlgorithmResult(item);
-                AlgResults.Add(algorithmResult);
+                AlgResults.Clear();
+                List<AlgResultMasterModel> algResults = algResultMasterDao.GetAll();
+                foreach (var item in algResults)
+                {
+                    AlgorithmResult algorithmResult = new AlgorithmResult(item);
+                    AlgResults.Add(algorithmResult);
+                }
+                return;
             }
+            else
+            {
+                string altype = string.Empty;
+                if (TextBoxType.SelectedValue is AlgorithmResultType algorithmResultType)
+                    altype = ((int)algorithmResultType).ToString();
 
 
+                AlgResults.Clear();
+                List<AlgResultMasterModel> algResults = algResultMasterDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, altype.ToString(), TextBoxFile.Text);
+                foreach (var item in algResults)
+                {
+                    AlgorithmResult algorithmResult = new AlgorithmResult(item);
+                    AlgResults.Add(algorithmResult);
+                }
+
+            }
         }
     }
 }
