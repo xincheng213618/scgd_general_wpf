@@ -275,6 +275,7 @@ namespace ColorVision.Device.Camera
                         ButtonOpen.Visibility = Visibility.Visible;
                         StackPanelImage.Visibility = Visibility.Collapsed;
                         ButtonClose.Visibility = Visibility.Collapsed;
+                        View.img_view.Clear();
                         break;
                     case DeviceStatus.Closing:
                         break;
