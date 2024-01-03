@@ -73,7 +73,7 @@ namespace ColorVision.RC
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
 
 
-            int heartbeatTime = 10 * 1000;
+            int heartbeatTime = 2 * 1000;
             System.Timers.Timer hbTimer = new System.Timers.Timer(heartbeatTime);
             hbTimer.Elapsed += (s, e) => KeepLive(heartbeatTime);
             hbTimer.Enabled = true;
