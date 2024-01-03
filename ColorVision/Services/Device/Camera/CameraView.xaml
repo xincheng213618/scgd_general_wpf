@@ -14,7 +14,7 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <cv:ImageView Grid.Row="0" x:Name="img_view"></cv:ImageView>
+        <cv:ImageView Grid.Row="0" x:Name="ImageView"></cv:ImageView>
         <Grid x:Name="Grid1" Grid.Row="1">
             <Grid.RowDefinitions>
                 <RowDefinition Height="38"/>
@@ -65,14 +65,14 @@
                 </ListView.ItemContainerStyle>
                 <ListView.View >
                     <GridView>
-                        <GridViewColumn  Header="序号" Width="60">
+                        <GridViewColumn  Header="序号" Width="50">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type view:CameraViewResult}">
                                     <TextBlock Text="{ Binding  Id}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn  Header="批次号" Width="120">
+                        <GridViewColumn  Header="批次号" Width="160">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type view:CameraViewResult}">
                                     <TextBlock Text="{ Binding  SerialNumber}"/>
@@ -86,34 +86,35 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn  Header="参数" Width="120">
+                        <GridViewColumn  Header="参数" >
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type view:CameraViewResult}">
-                                    <TextBlock Text="ReqParams"/>
+                                    <TextBlock Text="{ Binding   ReqParams}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn  Header="图像信息" Width="150">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type view:CameraViewResult}">
-                                    <TextBlock Text="{ Binding  ImgFrameInfo}" />
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn  Header="结果" Width="150">
+
+                        <GridViewColumn  Header="结果" Width="50">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type view:CameraViewResult}">
                                     <TextBlock Text="{ Binding  Result}" />
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn  Header="用时" Width="150">
+                        <GridViewColumn  Header="用时" Width="100">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type view:CameraViewResult}">
                                     <TextBlock Text="{ Binding  TotalTime}" />
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
+                        <GridViewColumn  Header="图像信息" >
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type view:CameraViewResult}">
+                                    <TextBlock Text="{ Binding  ImgFrameInfo}" />
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>   
                     </GridView>
                 </ListView.View>
 

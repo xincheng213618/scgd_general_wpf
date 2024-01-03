@@ -276,7 +276,7 @@ namespace ColorVision.Device.Camera
                         ButtonOpen.Visibility = Visibility.Visible;
                         StackPanelImage.Visibility = Visibility.Collapsed;
                         ButtonClose.Visibility = Visibility.Collapsed;
-                        View.img_view.Clear();
+                        View.ImageView.Clear();
                         break;
                     case DeviceStatus.Closing:
                         break;
@@ -412,12 +412,12 @@ namespace ColorVision.Device.Camera
 
         public void CameraVideoFrameReceived(System.Drawing.Bitmap bmp)
         {
-            if (View.img_view.ImageShow.Source is WriteableBitmap bitmap)
+            if (View.ImageView.ImageShow.Source is WriteableBitmap bitmap)
             {
                 if(bitmap.Width!= bmp.Width)
                 {
                     WriteableBitmap writeableBitmap = ImageUtil.BitmapToWriteableBitmap(bmp);
-                    View.img_view.ImageShow.Source = writeableBitmap;
+                    View.ImageView.ImageShow.Source = writeableBitmap;
                 }
                 else
                 {
@@ -427,7 +427,7 @@ namespace ColorVision.Device.Camera
             else
             {
                 WriteableBitmap writeableBitmap = ImageUtil.BitmapToWriteableBitmap(bmp);
-                View.img_view.ImageShow.Source = writeableBitmap;
+                View.ImageView.ImageShow.Source = writeableBitmap;
             }
         }
 

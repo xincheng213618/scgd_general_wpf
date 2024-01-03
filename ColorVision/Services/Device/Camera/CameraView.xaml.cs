@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8604,CS8629
+using ColorVision.Media;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.Services.Algorithm;
@@ -18,6 +19,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace ColorVision.Services.Device.Camera
 {
@@ -31,7 +33,6 @@ namespace ColorVision.Services.Device.Camera
 
         public event ImgCurSelectionChanged OnCurSelectionChanged;
         public ObservableCollection<CameraViewResult> ViewResults { get; set; } = new ObservableCollection<CameraViewResult>();
-        public Dictionary<string, CameraViewResult> resultDis { get; set; } = new Dictionary<string, CameraViewResult>();
         public CameraView()
         {
             InitializeComponent();
@@ -59,13 +60,15 @@ namespace ColorVision.Services.Device.Camera
                 MessageBox.Show(Application.Current.MainWindow, "您需要先选择数据", "ColorVision");
                 return;
             }
-
             using var dialog = new System.Windows.Forms.SaveFileDialog();
             dialog.Filter = "CSV files (*.csv) | *.csv";
             dialog.FileName = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
             dialog.RestoreDirectory = true;
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
             CsvWriter.WriteToCsv(ViewResults[listView1.SelectedIndex], dialog.FileName);
+            ImageSource bitmapSource = ImageView.ImageShow.Source;
+            ImageUtil.SaveImageSourceToFile(bitmapSource, Path.Combine(Path.GetDirectoryName(dialog.FileName), Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
+
         }
 
 
@@ -95,26 +98,18 @@ namespace ColorVision.Services.Device.Camera
 
         public void OpenImage(byte[] bytes)
         {
-            img_view.OpenImage(bytes);
+            ImageView.OpenImage(bytes);
         }
         public void OpenImage(CVCIEFileInfo fileData)
         {
-            img_view.OpenImage(fileData);
-        }
-        public void ShowResult(MeasureImgResultModel model)
-        {
-            string key = model.Id.ToString();
-            if (!resultDis.ContainsKey(key))
-            {
-                CameraViewResult result = new CameraViewResult(model);
-                ViewResults.Add(result);
-                resultDis[key] = result;
-                RefreshResultListView();
-            }
+            ImageView.OpenImage(fileData);
         }
 
-        private void RefreshResultListView()
+        public void ShowResult(MeasureImgResultModel model)
         {
+            CameraViewResult result = new CameraViewResult(model);
+            ViewResults.Add(result);
+
             if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
             listView1.ScrollIntoView(listView1.SelectedItem);
         }
@@ -172,6 +167,7 @@ namespace ColorVision.Services.Device.Camera
             if (sender is MenuItem menuItem && menuItem.Tag is CameraViewResult viewResult)
             {
                 ViewResults.Remove(viewResult);
+                ImageView.Clear();
             }
         }
     }

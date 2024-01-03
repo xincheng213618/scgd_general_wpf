@@ -1140,7 +1140,6 @@ namespace ColorVision.Services.Algorithm
                 if (TextBoxType.SelectedValue is AlgorithmResultType algorithmResultType)
                     altype = ((int)algorithmResultType).ToString();
 
-
                 AlgResults.Clear();
                 List<AlgResultMasterModel> algResults = algResultMasterDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, altype.ToString(), TextBoxFile.Text);
                 foreach (var item in algResults)
