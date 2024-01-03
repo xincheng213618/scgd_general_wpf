@@ -260,9 +260,9 @@ namespace ColorVision.RC
                                         {
                                             if (baseObject1 is BaseChannel baseChannel && baseChannel.GetConfig() is BaseDeviceConfig baseDeviceConfig)
                                             {
-                                                //baseDeviceConfig.IsAlive = true;
+                                                baseDeviceConfig.IsAlive = true;
                                                 baseDeviceConfig.LastAliveTime = DateTime.Parse(ns.LiveTime);
-                                                baseDeviceConfig.HeartbeatTime = ns.OverTime+3000;
+                                                baseDeviceConfig.HeartbeatTime = ns.OverTime;
                                                 baseDeviceConfig.ServiceToken = ns.ServiceToken;
                                                 foreach(var devNew in ns.Devices)
                                                 {
