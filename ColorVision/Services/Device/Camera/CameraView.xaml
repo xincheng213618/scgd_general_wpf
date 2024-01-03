@@ -25,7 +25,6 @@
                 <Button Click="Button_Click_Clear" Margin="2,0,0,0"  >
                     <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" />
                 </Button>
-                <Button Content="搜索" Click="Search_Click" Margin="2,0,0,0"/>
                 <Button x:Name="Search" Content="高级查询" Click="Search1_Click" Margin="2,0,0,0"/>
                 <Popup  x:Name="SerchPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Search}">
                     <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="200">
@@ -39,12 +38,12 @@
                                 <TextBox x:Name="TextBoxBatch"  Style="{StaticResource TextBox.Small}" Text=""/>
                             </DockPanel>
                             <DockPanel Margin="0,2">
-                                <TextBlock Text="类型" Width="60"/>
-                                <ComboBox x:Name="TextBoxType"  Style="{StaticResource ComboBox.Small}" Text="" SelectedValuePath="Key"  DisplayMemberPath="Value" />
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
                                 <TextBlock Text="文件" Width="60"/>
                                 <TextBox  x:Name="TextBoxFile" Style="{StaticResource TextBox.Small}"  Text=""/>
+                            </DockPanel>
+                            <DockPanel Margin="0,2">
+                                <TextBlock Text="设备吗" Width="60"/>
+                                <TextBox  x:Name="TbDeviceCode" Style="{StaticResource TextBox.Small}"  Text=""/>
                             </DockPanel>
                             <Button Content="查询" Click="SearchAdvanced_Click" Margin="2,0,0,0"/>
                         </StackPanel>

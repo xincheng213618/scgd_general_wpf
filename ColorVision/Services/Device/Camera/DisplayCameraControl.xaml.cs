@@ -24,6 +24,7 @@ using System.Windows.Threading;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Windows.Input;
+using ColorVision.Services.Device.Camera.View;
 
 namespace ColorVision.Device.Camera
 {
@@ -62,7 +63,7 @@ namespace ColorVision.Device.Camera
             _timer.Tick += Timer_Tick; // 设置Tick事件处理程序
         }
 
-        private void View_OnCurSelectionChanged(CameraImgResult data)
+        private void View_OnCurSelectionChanged(CameraViewResult data)
         {
             if (data.ResultCode == 0)
             {

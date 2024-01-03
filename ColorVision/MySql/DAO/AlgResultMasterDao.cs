@@ -1,6 +1,8 @@
 ﻿#pragma warning disable CS8601
 using MQTTMessageLib.Algorithm;
+using NPOI.SS.Formula.Functions;
 using System;
+using System.Collections.Generic;
 using System.Data;
 
 namespace ColorVision.MySql.DAO
@@ -57,6 +59,16 @@ namespace ColorVision.MySql.DAO
             dInfo.Columns.Add("batch_id", typeof(int));
             dInfo.Columns.Add("create_date", typeof(DateTime));
             return dInfo;
+        }
+
+        public List<AlgResultMasterModel> ConditionalQuery(string id, string batchid, string ImageType, string fileName)
+        {
+            Dictionary<string, object> keyValuePairs = new Dictionary<string, object>(0);
+            keyValuePairs.Add("id", id);
+            keyValuePairs.Add("batch_id", batchid);
+            keyValuePairs.Add("img_file_type", ImageType);
+            keyValuePairs.Add("img_file", fileName);
+            return ConditionalQuery(keyValuePairs);
         }
 
         public override DataRow Model2Row(AlgResultMasterModel item, DataRow row)

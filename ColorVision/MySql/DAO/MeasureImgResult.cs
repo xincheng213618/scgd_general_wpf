@@ -1,4 +1,5 @@
-﻿using System.Data;
+﻿using System.Collections.Generic;
+using System.Data;
 
 namespace ColorVision.MySql.DAO
 {
@@ -47,8 +48,17 @@ namespace ColorVision.MySql.DAO
                 DeviceCode = item.Field<string>("device_code"),
                 CreateDate = item.Field<System.DateTime?>("create_date"),
             };
-
             return model;
+        }
+
+        public List<MeasureImgResultModel> ConditionalQuery(string id, string batch_code, string file_url, string device_code)
+        {
+            Dictionary<string, object> keyValuePairs = new Dictionary<string, object>(0);
+            keyValuePairs.Add("id", id);
+            keyValuePairs.Add("batch_code", batch_code);
+            keyValuePairs.Add("file_url", file_url);
+            keyValuePairs.Add("device_code", device_code);
+            return ConditionalQuery(keyValuePairs);
         }
     }
 }

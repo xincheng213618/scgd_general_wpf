@@ -4,6 +4,7 @@ using ColorVision.MySql.DAO;
 using ColorVision.Services.Algorithm;
 using FileServerPlugin;
 using log4net;
+using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.Camera;
 using System;
 using System.Collections.Generic;
@@ -25,10 +26,10 @@ namespace ColorVision.Services.Device.Camera
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(CameraView));
         public View View { get; set; }
-        public event ImgCurSelectionChanged OnCurSelectionChanged;
 
-        public ObservableCollection<CameraImgResult> Results { get; set; } = new ObservableCollection<CameraImgResult>();
-        public Dictionary<string, CameraImgResult> resultDis { get; set; } = new Dictionary<string, CameraImgResult>();
+        public event ImgCurSelectionChanged OnCurSelectionChanged;
+        public ObservableCollection<CameraViewResult> Results { get; set; } = new ObservableCollection<CameraViewResult>();
+        public Dictionary<string, CameraViewResult> resultDis { get; set; } = new Dictionary<string, CameraViewResult>();
         public CameraView()
         {
             InitializeComponent();
@@ -139,7 +140,7 @@ namespace ColorVision.Services.Device.Camera
             string key = model.Id.ToString();
             if (!resultDis.ContainsKey(key))
             {
-                CameraImgResult result = new CameraImgResult(model);
+                CameraViewResult result = new CameraViewResult(model);
                 Results.Add(result);
                 resultDis[key] = result;
                 RefreshResultListView();
@@ -153,74 +154,59 @@ namespace ColorVision.Services.Device.Camera
         }
 
 
-        MeasureImgResultDao algResultMasterDao = new MeasureImgResultDao();
+        MeasureImgResultDao MeasureImgResultDao = new MeasureImgResultDao();
 
         private void Search_Click(object sender, RoutedEventArgs e)
         {
             Results.Clear();
-            List<MeasureImgResultModel> algResults = algResultMasterDao.GetAll();
+            List<MeasureImgResultModel> algResults = MeasureImgResultDao.GetAll();
             foreach (var item in algResults)
             {
-                CameraImgResult CameraImgResult = new CameraImgResult(item);
+                CameraViewResult CameraImgResult = new CameraViewResult(item);
                 Results.Add(CameraImgResult);
             }
         }
 
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
+            if (string.IsNullOrEmpty(TextBoxId.Text) && string.IsNullOrEmpty(TextBoxBatch.Text) && string.IsNullOrEmpty(TextBoxFile.Text) && string.IsNullOrWhiteSpace(TbDeviceCode.Text))
+            {
+                Results.Clear();
+                foreach (var item in MeasureImgResultDao.GetAll())
+                {
+                    CameraViewResult algorithmResult = new CameraViewResult(item);
+                    Results.Add(algorithmResult);
+                }
+                return;
+            }
+            else
+            {
+                Results.Clear();
+                List<MeasureImgResultModel> algResults = MeasureImgResultDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, TextBoxFile.Text, TbDeviceCode.Text);
+                foreach (var item in algResults)
+                {
+                    CameraViewResult algorithmResult = new CameraViewResult(item);
+                    Results.Add(algorithmResult);
+                }
 
+            }
         }
 
         private void Search1_Click(object sender, RoutedEventArgs e)
         {
             SerchPopup.IsOpen = true;
-            TextBoxType.SelectedIndex = -1;
             TextBoxId.Text = string.Empty;
             TextBoxBatch.Text = string.Empty;
             TextBoxFile.Text = string.Empty;
+            TbDeviceCode.Text = string.Empty;
         }
     }
 
+    public delegate void ImgCurSelectionChanged(CameraViewResult data);
 
-    public delegate void ImgCurSelectionChanged(CameraImgResult data);
-    public class CameraImgResult : ViewModelBase
+    public class CameraViewResult : ViewModelBase
     {
-        private int _Id;
-        private string _SerialNumber;
-        private string _ImgFileName;
-        private string _Params;
-        private string _ImgFrameInfo;
-        private CameraFileType _FileType;
-        private string _RecvTime;
-        private int _resultCode;
-        private long _totalTime;
-        private string _resultDesc;
-
-        public int Id { get { return _Id; } set { _Id = value; NotifyPropertyChanged(); } }
-        public string SerialNumber { get { return _SerialNumber; } set { _SerialNumber = value; NotifyPropertyChanged(); } }
-        public string ImgFileName { get { return _ImgFileName; } set { _ImgFileName = value; NotifyPropertyChanged(); } }
-        public CameraFileType FileType { get { return _FileType; } set { _FileType = value; NotifyPropertyChanged(); } }
-        public string ReqParams { get { return _Params; } set { _Params = value; NotifyPropertyChanged(); } }
-        public string ImgFrameInfo { get { return _ImgFrameInfo; } set { _ImgFrameInfo = value; NotifyPropertyChanged(); } }
-        public string RecvTime { get { return _RecvTime; } set { _RecvTime = value; NotifyPropertyChanged(); } }
-
-        public string Result
-        {
-            get
-            {
-                return ResultCode == 0 ? "成功" : "失败";
-            }
-        }
-        public string TotalTime
-        {
-            get
-            {
-                return string.Format("{0}", TimeSpan.FromMilliseconds(_totalTime).ToString().TrimEnd('0'));
-            }
-        }
-        public int ResultCode { get { return _resultCode; } set { _resultCode = value; NotifyPropertyChanged(); } }
-        public string ResultDesc { get { return _resultDesc; } set { _resultDesc = value; NotifyPropertyChanged(); } }
-        public CameraImgResult(MeasureImgResultModel measureImgResultModel)
+        public CameraViewResult(MeasureImgResultModel measureImgResultModel)
         {
             Id = measureImgResultModel.Id;
             SerialNumber = measureImgResultModel.BatchCode ?? string.Empty;
@@ -232,22 +218,50 @@ namespace ColorVision.Services.Device.Camera
             ResultCode = measureImgResultModel.ResultCode;
             ResultDesc = measureImgResultModel.ResultDesc ?? string.Empty;
             _totalTime = measureImgResultModel.TotalTime;
-
         }
 
-        public CameraImgResult(int id, string serialNumber, string imgFileName, string recvTime, string reqParams, string imgFrameInfo, CameraFileType fileType, int? resultCode, string resultDesc, long totalTime = 0) 
+        public int Id { get { return _Id; } set { _Id = value; NotifyPropertyChanged(); } }
+        private int _Id;
+
+        public string SerialNumber { get { return _SerialNumber; } set { _SerialNumber = value; NotifyPropertyChanged(); } }
+        private string _SerialNumber;
+
+        public string ImgFileName { get { return _ImgFileName; } set { _ImgFileName = value; NotifyPropertyChanged(); } }
+        private string _ImgFileName;
+
+        public CameraFileType FileType { get { return _FileType; } set { _FileType = value; NotifyPropertyChanged(); } }
+        private CameraFileType _FileType;
+
+        public string ReqParams { get { return _Params; } set { _Params = value; NotifyPropertyChanged(); } }
+        private string _Params;
+
+        public string ImgFrameInfo { get { return _ImgFrameInfo; } set { _ImgFrameInfo = value; NotifyPropertyChanged(); } }
+        private string _ImgFrameInfo;
+
+        public string RecvTime { get { return _RecvTime; } set { _RecvTime = value; NotifyPropertyChanged(); } }
+        private string _RecvTime;
+
+        public string Result
         {
-            _Id = id;
-            _SerialNumber = serialNumber;
-            _ImgFileName = imgFileName;
-            _Params = reqParams;
-            _ImgFrameInfo = imgFrameInfo;
-            _FileType = fileType;
-            _RecvTime = recvTime;
-            _resultCode = (int)resultCode;
-            _totalTime = totalTime;
-            _resultDesc = resultDesc;
+            get
+            {
+                return ResultCode == 0 ? "成功" : "失败";
+            }
         }
+        private int _resultCode;
+
+        public string TotalTime
+        {
+            get
+            {
+                return string.Format("{0}", TimeSpan.FromMilliseconds(_totalTime).ToString().TrimEnd('0'));
+            }
+        }
+        private string _resultDesc;
+
+        public int ResultCode { get { return _resultCode; } set { _resultCode = value; NotifyPropertyChanged(); } }
+        public string ResultDesc { get { return _resultDesc; } set { _resultDesc = value; NotifyPropertyChanged(); } }
+        private long _totalTime;
     }
 
 
