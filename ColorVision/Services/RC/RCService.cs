@@ -196,8 +196,8 @@ namespace ColorVision.RC
                                     {
                                         if (devNew.Code == baseDeviceConfig.Code)
                                         {
-                                            baseDeviceConfig.IsAlive = true;
-                                            baseDeviceConfig.LastAliveTime = DateTime.Now;
+                                            //baseDeviceConfig.IsAlive = true;
+                                            baseDeviceConfig.LastAliveTime = DateTime.Parse(ss.LiveTime);
                                             baseDeviceConfig.DeviceStatus = (DeviceStatus)Enum.Parse(typeof(DeviceStatus),devNew.Status);
                                             break;
                                         }
@@ -260,10 +260,10 @@ namespace ColorVision.RC
                                         {
                                             if (baseObject1 is BaseChannel baseChannel && baseChannel.GetConfig() is BaseDeviceConfig baseDeviceConfig)
                                             {
-                                                baseDeviceConfig.IsAlive = true;
-                                                baseDeviceConfig.LastAliveTime = DateTime.Now;
-                                                baseDeviceConfig.HeartbeatTime = DateNodeServices[sortedDates.LastOrDefault()].OverTime;
-                                                baseDeviceConfig.ServiceToken = DateNodeServices[sortedDates.LastOrDefault()].ServiceToken;
+                                                //baseDeviceConfig.IsAlive = true;
+                                                baseDeviceConfig.LastAliveTime = DateTime.Parse(ns.LiveTime);
+                                                baseDeviceConfig.HeartbeatTime = ns.OverTime+3000;
+                                                baseDeviceConfig.ServiceToken = ns.ServiceToken;
                                                 foreach(var devNew in ns.Devices)
                                                 {
                                                     if (devNew.Value.Code == baseDeviceConfig.Code)
