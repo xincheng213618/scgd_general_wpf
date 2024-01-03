@@ -12,6 +12,8 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Threading;
 
 namespace ColorVision.RC
 {
@@ -127,7 +129,9 @@ namespace ColorVision.RC
                             MQTTRCServicesQueryResponse respQurey = JsonConvert.DeserializeObject<MQTTRCServicesQueryResponse>(Msg);
                             if (respQurey != null)
                             {
-                                UpdateServiceStatus(respQurey.Data);
+                                Application.Current.Dispatcher.Invoke((Action)delegate {
+                                    UpdateServiceStatus(respQurey.Data);
+                                });
                             }
                             break;
                         case MQTTNodeServiceEventEnum.Event_QueryServiceStatus:
@@ -169,37 +173,38 @@ namespace ColorVision.RC
 
         public static void UpdateServiceStatus(List<MQTTNodeServiceStatus> data)
         {
-            foreach (var serviceKind in ServiceManager.GetInstance().Services)
+            List< ServiceKind > svrs = new List< ServiceKind >(ServiceManager.GetInstance().Services);
+            foreach (var serviceKind in svrs)
             {
                 MQTTNodeServiceStatus ss = GetService(serviceKind.ServiceType.ToString(), data);
-                if(serviceKind.ServiceType.ToString() == ServiceType.Spectum.ToString())
+                if (ss == null) continue;
+                if (serviceKind.ServiceType.ToString() == ServiceType.Spectum.ToString())
                 {
                     log.Debug(serviceKind.ServiceType.ToString());
                 }
                 foreach (var item in data)
                 {
-                    if (ss !=null)
+                    foreach (var baseObject in serviceKind.VisualChildren)
                     {
-                        foreach (var baseObject in serviceKind.VisualChildren)
+                        if (baseObject is ServiceTerminal serviceTerminal)
                         {
-                            if (baseObject is ServiceTerminal serviceTerminal)
+                            foreach (var devNew in ss.DeviceList)
                             {
-                                foreach (var devNew in ss.DeviceList)
+                                foreach (var dev in serviceTerminal.VisualChildren)
                                 {
-                                    foreach (var dev in serviceTerminal.VisualChildren)
+                                    if (dev is BaseChannel baseChannel && baseChannel.GetConfig() is BaseDeviceConfig baseDeviceConfig)
                                     {
-                                        if (dev is BaseChannel baseChannel && baseChannel.GetConfig() is BaseDeviceConfig baseDeviceConfig)
+                                        if (devNew.Code == baseDeviceConfig.Code)
                                         {
-                                            if(devNew.Code == baseDeviceConfig.Code)
-                                            {
-                                                baseDeviceConfig.IsAlive = true;
-                                                baseDeviceConfig.LastAliveTime = DateTime.Now;
-                                            }
+                                            //baseDeviceConfig.IsAlive = true;
+                                            baseDeviceConfig.LastAliveTime = DateTime.Parse(ss.LiveTime);
+                                            baseDeviceConfig.DeviceStatus = (DeviceStatus)Enum.Parse(typeof(DeviceStatus),devNew.Status);
+                                            break;
                                         }
                                     }
                                 }
-
                             }
+
                         }
                     }
                 }
@@ -208,10 +213,11 @@ namespace ColorVision.RC
 
         public static void UpdateServiceStatus(Dictionary<string, List<MQTTNodeService>> data)
         {
-            foreach (var serviceKind in ServiceManager.GetInstance().Services)
+            List<ServiceKind> svrs = new List<ServiceKind>(ServiceManager.GetInstance().Services);
+            foreach (var serviceKind in svrs)
             {
-                if (serviceKind.ServiceType.ToString() == ServiceType.Algorithm.ToString())
-                    continue;
+                //if (serviceKind.ServiceType.ToString() == ServiceType.Algorithm.ToString())
+                //    continue;
                 foreach (var item in data)
                 {
                     if (item.Key.ToString() == serviceKind.ServiceType.ToString())
@@ -243,6 +249,7 @@ namespace ColorVision.RC
                                         }
                                         List<DateTime> sortedDates = dateTimes.OrderBy(date => date).ToList();
 
+                                        var ns = DateNodeServices[sortedDates.LastOrDefault()];
                                         serviceTerminal.Config.LastAliveTime = DateTime.Now;
                                         serviceTerminal.Config.IsAlive = true;
                                         serviceTerminal.Config.HeartbeatTime = DateNodeServices[sortedDates.LastOrDefault()].OverTime;
@@ -253,10 +260,18 @@ namespace ColorVision.RC
                                         {
                                             if (baseObject1 is BaseChannel baseChannel && baseChannel.GetConfig() is BaseDeviceConfig baseDeviceConfig)
                                             {
-                                                baseDeviceConfig.IsAlive = true;
-                                                baseDeviceConfig.LastAliveTime = DateTime.Now;
-                                                baseDeviceConfig.HeartbeatTime = DateNodeServices[sortedDates.LastOrDefault()].OverTime;
-                                                baseDeviceConfig.ServiceToken = DateNodeServices[sortedDates.LastOrDefault()].ServiceToken;
+                                                //baseDeviceConfig.IsAlive = true;
+                                                baseDeviceConfig.LastAliveTime = DateTime.Parse(ns.LiveTime);
+                                                baseDeviceConfig.HeartbeatTime = ns.OverTime+3000;
+                                                baseDeviceConfig.ServiceToken = ns.ServiceToken;
+                                                foreach(var devNew in ns.Devices)
+                                                {
+                                                    if (devNew.Value.Code == baseDeviceConfig.Code)
+                                                    {
+                                                        baseDeviceConfig.DeviceStatus = (DeviceStatus)Enum.Parse(typeof(DeviceStatus), devNew.Value.Status.ToString());
+                                                        break;
+                                                    }
+                                                }
                                             }
                                         }
 

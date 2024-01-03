@@ -77,7 +77,7 @@ namespace ColorVision.Services
             if (TextBox_Type.SelectedItem is ServiceTerminal serviceTerminal)
             {
                 ///这里对相机做一个特殊处理
-                if (serviceTerminal.Type != ServiceType.Camera)
+                if (serviceTerminal.Type != ServiceType.camera)
                 {
                     if (!Util.IsInvalidPath(TextBox_Name.Text, "资源名称") || !Util.IsInvalidPath(TextBox_Code.Text, "资源标识"))
                         return;
@@ -94,7 +94,7 @@ namespace ColorVision.Services
                 BaseDeviceConfig deviceConfig;
                 switch (serviceTerminal.Type)
                 {
-                    case ServiceType.Camera:
+                    case ServiceType.camera:
                         ConfigCamera cameraConfig1 = new ConfigCamera
                         {
                             ID = TextBox_Code.Text,
@@ -119,7 +119,7 @@ namespace ColorVision.Services
                             }
                         }
                         break;
-                    case ServiceType.PG:
+                    case ServiceType.pg:
                         ConfigPG pGConfig = new ConfigPG
                         {
                             ID = TextBox_Code.Text,

@@ -146,7 +146,7 @@ namespace ColorVision.Services
                             {
                                 switch ((ServiceType)device.Type)
                                 {
-                                    case ServiceType.Camera:
+                                    case ServiceType.camera:
 
                                         if (mQTTService.BaseService is ServiceCamera cameraService)
                                         {
@@ -156,7 +156,7 @@ namespace ColorVision.Services
                                             Devices.Add(deviceCamera);
                                         }
                                         break;
-                                    case ServiceType.PG:
+                                    case ServiceType.pg:
                                         DevicePG devicePG = new DevicePG(device);
                                         svrObj = devicePG.DeviceService;
                                         mQTTService.AddChild(devicePG);

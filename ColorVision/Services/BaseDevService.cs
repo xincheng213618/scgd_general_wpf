@@ -94,7 +94,7 @@ namespace ColorVision.Services
     public class BaseService : ViewModelBase, IHeartbeat, IServiceConfig, IDisposable
     {
         internal static readonly ILog log = LogManager.GetLogger(typeof(BaseService));
-
+        private static readonly log4net.ILog logger = log4net.LogManager.GetLogger(typeof(BaseService));
         public MQTTSetting MQTTSetting { get; set; }
         public MQTTControl MQTTControl { get; set; }
 
@@ -173,7 +173,9 @@ namespace ColorVision.Services
 
         private void Timer_Elapsed(object? sender, ElapsedEventArgs e)
         {
-            if (DateTime.Now - LastAliveTime > TimeSpan.FromMilliseconds(HeartbeatTime))
+            TimeSpan sp = DateTime.Now - LastAliveTime;
+            log.InfoFormat("{0}/TotalMilliseconds={1}/HeartbeatTime={2}", LastAliveTime.ToShortTimeString(), sp.TotalMilliseconds, HeartbeatTime);
+            if (sp > TimeSpan.FromMilliseconds(HeartbeatTime))
             {
                 DisConnected?.Invoke(sender ,new EventArgs());
                 IsAlive = false;

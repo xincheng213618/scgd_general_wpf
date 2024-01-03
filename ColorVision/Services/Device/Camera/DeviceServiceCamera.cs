@@ -24,10 +24,15 @@ namespace ColorVision.Device.Camera
 
         public ServiceCamera CameraService { get; set; }
 
-        public bool IsOnlie { get => CameraService.DevicesSN.Contains(Config.ID); }
-        public override bool IsAlive { get =>
-                Config.IsAlive && IsOnlie; set { 
-                Config.IsAlive = (value && IsOnlie); NotifyPropertyChanged(); } }
+        public bool IsOnlie { get => true; }
+        public override bool IsAlive
+        {
+            get =>
+                Config.IsAlive && IsOnlie; set
+            {
+                Config.IsAlive = (value && IsOnlie); NotifyPropertyChanged();
+            }
+        }
 
         public DeviceServiceCamera(ConfigCamera CameraConfig, ServiceCamera cameraService) : base(CameraConfig)
         {
