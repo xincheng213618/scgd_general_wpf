@@ -4,6 +4,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Services.Device.Camera"
+             xmlns:resx="clr-namespace:ColorVision.Properties"
+             xmlns:view ="clr-namespace:ColorVision.Services.Device.Camera.Views"
              xmlns:cv="clr-namespace:ColorVision.Media"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800" Initialized="UserControl_Initialized">
@@ -50,7 +52,72 @@
                     </Border>
                 </Popup>
             </ToolBar>
-            <ListView Height="250" Grid.Row="1" x:Name="listView1" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" />
+            <ListView Height="250" Grid.Row="1" x:Name="listView1" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" >
+                <ListView.Resources >
+                    <ContextMenu x:Key="ContextMenuItem">
+                        <MenuItem Header="{x:Static resx:Resource.Delete}"  Click="MenuItem_Delete_Click" Tag="{Binding .}"  />
+                    </ContextMenu>
+                </ListView.Resources>
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}">
+                        <Setter Property="ContextMenu" Value="{StaticResource ContextMenuItem}"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.View >
+                    <GridView>
+                        <GridViewColumn  Header="序号" Width="60">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type view:CameraViewResult}">
+                                    <TextBlock Text="{ Binding  Id}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn  Header="批次号" Width="120">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type view:CameraViewResult}">
+                                    <TextBlock Text="{ Binding  SerialNumber}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn  Header="图像数据文件" Width="120">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type view:CameraViewResult}">
+                                    <TextBlock Text="{ Binding   ImgFileName}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn  Header="参数" Width="120">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type view:CameraViewResult}">
+                                    <TextBlock Text="ReqParams"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn  Header="图像信息" Width="150">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type view:CameraViewResult}">
+                                    <TextBlock Text="{ Binding  ImgFrameInfo}" />
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn  Header="结果" Width="150">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type view:CameraViewResult}">
+                                    <TextBlock Text="{ Binding  Result}" />
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn  Header="用时" Width="150">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type view:CameraViewResult}">
+                                    <TextBlock Text="{ Binding  TotalTime}" />
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+
+            </ListView>
         </Grid>
     </Grid>
 </UserControl>

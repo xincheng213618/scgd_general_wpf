@@ -6,6 +6,8 @@ using System;
 
 namespace ColorVision.Services.Device.Camera.Views
 {
+    public delegate void ImgCurSelectionChanged(CameraViewResult data);
+
     public class CameraViewResult : ViewModelBase
     {
         public CameraViewResult(MeasureImgResultModel measureImgResultModel)
@@ -59,11 +61,12 @@ namespace ColorVision.Services.Device.Camera.Views
                 return string.Format("{0}", TimeSpan.FromMilliseconds(_totalTime).ToString().TrimEnd('0'));
             }
         }
+        private long _totalTime;
+
         private string _resultDesc;
 
         public int ResultCode { get { return _resultCode; } set { _resultCode = value; NotifyPropertyChanged(); } }
         public string ResultDesc { get { return _resultDesc; } set { _resultDesc = value; NotifyPropertyChanged(); } }
-        private long _totalTime;
     }
 
 
