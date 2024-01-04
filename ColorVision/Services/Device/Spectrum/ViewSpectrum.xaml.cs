@@ -499,6 +499,7 @@ namespace ColorVision.Device.Spectrum
                 }
 
             }
+            OrderPopup.IsOpen = false;
         }
     }
 }
