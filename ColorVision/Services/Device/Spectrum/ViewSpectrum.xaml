@@ -111,6 +111,90 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
+                            <GridViewColumn  Header="色度x" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type views:ViewResultSpectrum}">
+                                        <TextBlock Text="{ Binding fx}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="色度y" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type views:ViewResultSpectrum}">
+                                        <TextBlock Text="{ Binding fy}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="色度u" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type views:ViewResultSpectrum}">
+                                        <TextBlock Text="{ Binding fu}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="色度v" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type views:ViewResultSpectrum}">
+                                        <TextBlock Text="{ Binding fv}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="相关色温(K)" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type views:ViewResultSpectrum}">
+                                        <TextBlock Text="{ Binding fCCT}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="主波长Ld(nm)" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type views:ViewResultSpectrum}">
+                                        <TextBlock Text="{ Binding fLd}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="色纯度(%)" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type views:ViewResultSpectrum}">
+                                        <TextBlock Text="{ Binding fPur}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="峰值波长Lp(nm)" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type views:ViewResultSpectrum}">
+                                        <TextBlock Text="{ Binding fLp}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="显色性指数Ra" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type views:ViewResultSpectrum}">
+                                        <TextBlock Text="{ Binding fRa}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="半波宽" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type views:ViewResultSpectrum}">
+                                        <TextBlock Text="{ Binding fHW}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="电压" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type views:ViewResultSpectrum}">
+                                        <TextBlock Text="{ Binding V}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="电流" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type views:ViewResultSpectrum}">
+                                        <TextBlock Text="{ Binding I}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
                         </GridView>
                     </ListView.View>
                 </ListView>
