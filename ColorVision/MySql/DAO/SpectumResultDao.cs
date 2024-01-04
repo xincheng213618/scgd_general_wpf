@@ -44,6 +44,7 @@ namespace ColorVision.MySql.DAO
     {
         public SpectumResultDao() : base(string.Empty, "t_scgd_measure_result_spectrometer", "id", false)
         {
+
         }
 
         public List<SpectumResultModel> selectBySN(string sn)

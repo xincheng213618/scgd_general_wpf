@@ -21,6 +21,7 @@ using static cvColorVision.GCSDLL;
 using Newtonsoft.Json;
 using System.Linq;
 using ColorVision.Util;
+using ColorVision.Sort;
 
 namespace ColorVision.Device.Spectrum
 {
@@ -75,7 +76,6 @@ namespace ColorVision.Device.Spectrum
 
             listView1.Visibility = Visibility.Collapsed;
             listView2.Visibility = Visibility.Collapsed;
-
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -157,9 +157,9 @@ namespace ColorVision.Device.Spectrum
 
             ColorParam colorParam = data.Data;
             colorParams.Add(colorParam);
+
             ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(colorParam);
             ViewResultSpectrums.Add(viewResultSpectrum);
-
 
             ListViewItem listViewItem = new ListViewItem();
 
@@ -191,25 +191,7 @@ namespace ColorVision.Device.Spectrum
                 data.ID.ToString(),
             };
 
-
-            double[] x = new double[viewResultSpectrum.fPL.Length];
-            double[] y = new double[viewResultSpectrum.fPL.Length];
-            for (int i = 0; i < viewResultSpectrum.fPL.Length; i++)
-            {
-                x[i] = ((double)viewResultSpectrum.fSpect1 + Math.Round(viewResultSpectrum.fInterval, 1) * i);
-                y[i] = viewResultSpectrum.fPL[i];
-            }
-            ScatterPlot scatterPlot = new ScatterPlot(x, y)
-            {
-                Color = Color.DarkGoldenrod,
-                LineWidth = 1,
-                MarkerSize = 1,
-                Label = null,
-                MarkerShape = MarkerShape.none,
-                LineStyle = LineStyle.Solid
-            };
-            ScatterPlots.Add(scatterPlot);
-
+            ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
 
             listViewItem.Content = Contents;
             listView1.Items.Add(listViewItem);
@@ -218,7 +200,6 @@ namespace ColorVision.Device.Spectrum
         }
 
         private List<ScatterPlot> ScatterPlots { get; set; } = new List<ScatterPlot>();
-
 
         private void Button1_Click(object sender, RoutedEventArgs e)
         {
@@ -334,8 +315,6 @@ namespace ColorVision.Device.Spectrum
 
         }
 
-
-
         MarkerPlot markerPlot1;
 
         private void listView2_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -397,9 +376,7 @@ namespace ColorVision.Device.Spectrum
             ResultNum = 0;
         }
 
-        SpectumResultDao  spectumResultDao = new SpectumResultDao();
-
-
+        SpectumResultDao spectumResultDao = new SpectumResultDao();
 
         private void Search_Click(object sender, RoutedEventArgs e)
         {
@@ -449,15 +426,33 @@ namespace ColorVision.Device.Spectrum
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
 
+
         }
 
         private void Search1_Click(object sender, RoutedEventArgs e)
         {
             SerchPopup.IsOpen = true;
-            TextBoxType.SelectedIndex = -1;
             TextBoxId.Text = string.Empty;
-            TextBoxBatch.Text = string.Empty;
-            TextBoxFile.Text = string.Empty;
+        }
+
+        private void Order_Click(object sender, RoutedEventArgs e)
+        {
+            OrderPopup.IsOpen = true;
+        }
+        private void Radio_Checked(object sender, RoutedEventArgs e)
+        {
+            if (RadioID?.IsChecked == true)
+            {
+                if (RadioUp?.IsChecked ==true)
+                {
+                    ViewResultSpectrums.SortById();
+                }
+                if (RadioDown?.IsChecked == true)
+                {
+                    ViewResultSpectrums.SortById(true);
+                }
+
+            }
         }
     }
 }

@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Drawing;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.Sort;
 using Newtonsoft.Json;
+using ScottPlot;
+using ScottPlot.Plottable;
 using static cvColorVision.GCSDLL;
 
 namespace ColorVision.Device.Spectrum.Views
@@ -19,6 +22,42 @@ namespace ColorVision.Device.Spectrum.Views
         public int? BatchID { get; set; }
 
         public ObservableCollection<SpectralData> SpectralDatas { get; set; } = new ObservableCollection<SpectralData>();
+
+        public ScatterPlot ScatterPlot { get; set; }
+
+        public void Gen()
+        {
+
+            IP = Math.Round(fIp / 65535 * 100, 2).ToString() + "%";
+            Lv = (fPh / 1).ToString();
+
+            for (int i = 0; i < (fSpect2 - 380) * 10; i += 10)
+            {
+                SpectralData SpectralData = new SpectralData();
+                SpectralData.Wavelength = i / 10 + 380;
+                SpectralData.RelativeSpectrum = fPL[i];
+                SpectralData.AbsoluteSpectrum = fPL[i] * fPlambda;
+                SpectralDatas.Add(SpectralData);
+            }
+
+            double[] x = new double[fPL.Length];
+            double[] y = new double[fPL.Length];
+            for (int i = 0; i < fPL.Length; i++)
+            {
+                x[i] = ((double)fSpect1 + Math.Round(fInterval, 1) * i);
+                y[i] = fPL[i];
+            }
+
+            ScatterPlot = new ScatterPlot(x, y)
+            {
+                Color = Color.DarkGoldenrod,
+                LineWidth = 1,
+                MarkerSize = 1,
+                Label = null,
+                MarkerShape = MarkerShape.none,
+                LineStyle = LineStyle.Solid
+            };
+        }
 
         public ViewResultSpectrum(SpectumResultModel item)
         {
@@ -50,16 +89,9 @@ namespace ColorVision.Device.Spectrum.Views
             fPL = JsonConvert.DeserializeObject<float[]>(item.fPL ?? string.Empty) ?? System.Array.Empty<float>();
             fRi = JsonConvert.DeserializeObject<float[]>(item.fRi ?? string.Empty) ?? System.Array.Empty<float>();
 
-
-            for (int i = 0; i < (fSpect2 - 380) * 10; i += 10)
-            {
-                SpectralData SpectralData = new SpectralData();
-                SpectralData.Wavelength = i / 10 + 380;
-                SpectralData.RelativeSpectrum = fPL[i];
-                SpectralData.AbsoluteSpectrum = fPL[i]* fPlambda;
-                SpectralDatas.Add(SpectralData);
-            }
+            Gen();
         }
+
 
         public ViewResultSpectrum(ColorParam colorParam)
         {
@@ -89,17 +121,18 @@ namespace ColorVision.Device.Spectrum.Views
             fSpect2 = colorParam.fSpect2;
             fInterval = colorParam.fInterval;
             fPL = colorParam.fPL;
+            Gen();
 
-            for (int i = 0; i < (fSpect2 - 380) * 10; i += 10)
-            {
-                SpectralData SpectralData = new SpectralData();
-                SpectralData.Wavelength = i / 10 + 380;
-                SpectralData.RelativeSpectrum = fPL[i];
-                SpectralData.AbsoluteSpectrum = fPL[i] * fPlambda;
-                SpectralDatas.Add(SpectralData);
-            }
         }
 
+        /// <summary>
+        /// IP
+        /// </summary>
+        public string IP { get; set; }
+        /// <summary>
+        /// 亮度Lv(cd/m2)
+        /// </summary>
+        public string Lv { get; set; }
         public float fx { get; set; }
         public float fy { get; set; }
         public float fu { get; set; }
