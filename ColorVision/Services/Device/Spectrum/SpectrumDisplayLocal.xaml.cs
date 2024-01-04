@@ -1,4 +1,6 @@
-﻿using cvColorVision;
+﻿using ColorVision.Device.Spectrum.Configs;
+using ColorVision.Device.Spectrum.Views;
+using cvColorVision;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;

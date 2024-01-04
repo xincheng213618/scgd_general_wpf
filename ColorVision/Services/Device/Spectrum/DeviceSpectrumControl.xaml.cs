@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
+using ColorVision.Device.Spectrum.Configs;
 
 namespace ColorVision.Device.Spectrum
 {

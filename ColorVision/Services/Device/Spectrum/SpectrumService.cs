@@ -1,4 +1,5 @@
-﻿using ColorVision.MQTT;
+﻿using ColorVision.Device.Spectrum.Configs;
+using ColorVision.MQTT;
 using ColorVision.Services;
 using ColorVision.Services.Device;
 using ColorVision.Services.Msg;
@@ -24,8 +25,6 @@ namespace ColorVision.Device.Spectrum
         public event MQTTSpectrumDataHandler DataHandlerEvent;
         public event MQTTAutoParamHandler AutoParamHandlerEvent;
         public event MQTTSpectrumHeartbeatHandler HeartbeatHandlerEvent;
-
-
 
         public Dictionary<string, MsgSend> cmdMap { get; set; }
 

@@ -141,7 +141,6 @@
 
   <ItemGroup>
     <Folder Include="Services\Device\SMU\Views\" />
-    <Folder Include="Services\Device\Spectrum\Configs\" />
   </ItemGroup>
 
 </Project>
