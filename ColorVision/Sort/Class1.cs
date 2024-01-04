@@ -1,19 +1,23 @@
-﻿using System.Collections.ObjectModel;
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace ColorVision.Sort
 {
-    public interface ISortID
+    public interface ISortFilePath
     {
-        public int ID { get; set; }
+        public string FilePath { get; set; }
     }
 
     public static partial class SortableExtension
     {
-        public static void SortById<T>(this ObservableCollection<T> collection, bool descending = false) where T : ISortID
+        public static void SortByFilePath<T>(this ObservableCollection<T> collection, bool descending = false) where T : ISortFilePath
         {
             var sortedItems = collection.ToList();
-            sortedItems.Sort((x, y) => descending ? y.ID.CompareTo(x.ID) : x.ID.CompareTo(y.ID));
+            sortedItems.Sort((x, y) => descending ? string.Compare(y.FilePath, x.FilePath, System.StringComparison.Ordinal) : string.Compare(x.FilePath, y.FilePath, System.StringComparison.Ordinal));
 
             int index = 0;
             while (index < sortedItems.Count)

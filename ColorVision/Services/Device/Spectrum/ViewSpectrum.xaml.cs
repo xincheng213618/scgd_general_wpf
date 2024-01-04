@@ -57,22 +57,13 @@ namespace ColorVision.Device.Spectrum
             View = new View();
 
 
+            listView1.ItemsSource = ViewResultSpectrums;
+
+
+
             wpfplot1.Plot.Title("相对光谱曲线");
             wpfplot1.Plot.XLabel("波长[nm]");
             wpfplot1.Plot.YLabel("相对光谱");
-
-            GridView gridView = new GridView();
-
-            //List<string> headers = new List<string> { "序号", "IP", "亮度Lv(cd/m2)", "蓝光", "色度x", "色度y", "色度u", "色度v", "相关色温(K)", "主波长Ld(nm)", "色纯度(%)", "峰值波长Lp(nm)", "显色性指数Ra", "半波宽", "电压", "电流" };
-
-            //for (int i = 0; i < headers.Count; i++)
-            //{
-            //    gridView.Columns.Add(new GridViewColumn() { Header = headers[i], DisplayMemberBinding = new Binding(string.Format("[{0}]", i)) });
-            //}
-            //listView1.View = gridView;
-
-            listView1.ItemsSource = ViewResultSpectrums;
-
             wpfplot1.Plot.Clear();
             wpfplot1.Plot.SetAxisLimitsX(380, 810);
             wpfplot1.Plot.SetAxisLimitsY(0, 1);
@@ -181,16 +172,7 @@ namespace ColorVision.Device.Spectrum
                 Math.Round(colorParam.fIp / 65535 * 100, 2).ToString() + "%",
                 (colorParam.fPh / 1).ToString(),
                 Math.Round(sum1 / sum2 * 100, 2).ToString(),
-                Convert.ToString(Math.Round(colorParam.fx, 4)),
-                Convert.ToString(Math.Round(colorParam.fy, 4)),
-                Convert.ToString(Math.Round(colorParam.fu, 4)),
-                Convert.ToString(Math.Round(colorParam.fv, 4)),
-                Convert.ToString(Math.Round(colorParam.fCCT, 1)),
-                Convert.ToString(Math.Round(colorParam.fLd, 1)),
-                Convert.ToString(Math.Round(colorParam.fPur, 2)),
-                Convert.ToString(Math.Round(colorParam.fLp, 1)),
-                Convert.ToString(Math.Round(colorParam.fRa, 2)),
-                Convert.ToString(Math.Round(colorParam.fHW, 4)),
+
                 string.Format("{0:0.0000}",data.V),
                 string.Format("{0:0.0000}",data.I),
             };
