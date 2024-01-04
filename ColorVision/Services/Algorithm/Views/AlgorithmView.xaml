@@ -42,6 +42,24 @@
                     <Button Click="Button_Delete_Click" Margin="2,0,0,0"  >
                         <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" />
                     </Button>
+                    <Button x:Name="Order" Content="排序" Click="Order_Click" Margin="2,0,0,0"/>
+                    <Popup  x:Name="OrderPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Order}">
+                        <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="80">
+                            <StackPanel Margin="5">
+                                <StackPanel Margin="0,5">
+                                    <RadioButton x:Name="RadioID"  Content="名称"  IsChecked="True"  Checked="Radio_Checked" HorizontalAlignment="Left"/>
+                                    <RadioButton x:Name="RadioBatch" Margin="0,1" Content="批次号"  Checked="Radio_Checked" HorizontalAlignment="Left"/>
+                                    <RadioButton x:Name="RadioFilePath" Margin="0,1" Content="文件名"  Checked="Radio_Checked" HorizontalAlignment="Left"/>
+                                    <RadioButton x:Name="RadioCreateTime" Margin="0,1" Content="创建时间"  Checked="Radio_Checked" HorizontalAlignment="Left"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,5">
+                                    <RadioButton x:Name="RadioUp"  Content="递增" IsChecked="True" Checked="Radio_Checked"/>
+                                    <RadioButton x:Name="RadioDown"  Content="递减" Checked="Radio_Checked"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </Popup>
+
                     <Button x:Name="Search" Content="查询" Click="Search1_Click" Margin="2,0,0,0"/>
                     <Popup  x:Name="SerchPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Search}">
                         <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="200">

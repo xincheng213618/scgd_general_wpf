@@ -108,7 +108,7 @@ namespace ColorVision.Device.Camera
                 {
                     if (radioID.IsChecked == true)
                     {
-                        CalibrationRsources.SortById(radioUp.IsChecked== false);
+                        CalibrationRsources.SortByID(radioUp.IsChecked== false);
                     }
 
                     if (radioName.IsChecked == true)

@@ -10,7 +10,7 @@ namespace ColorVision.Sorts
 
     public static partial class SortableExtension
     {
-        public static void SortById<T>(this ObservableCollection<T> collection, bool descending = false) where T : ISortID
+        public static void SortByID<T>(this ObservableCollection<T> collection, bool descending = false) where T : ISortID
         {
             var sortedItems = collection.ToList();
             sortedItems.Sort((x, y) => descending ? y.ID.CompareTo(x.ID) : x.ID.CompareTo(y.ID));

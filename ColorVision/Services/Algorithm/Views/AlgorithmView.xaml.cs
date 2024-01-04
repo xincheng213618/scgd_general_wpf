@@ -3,6 +3,8 @@ using ColorVision.Draw;
 using ColorVision.Extension;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
+using ColorVision.Services.Device.Camera.Views;
+using ColorVision.Sorts;
 using ColorVision.Util;
 using FileServerPlugin;
 using HandyControl.Tools.Extension;
@@ -605,6 +607,36 @@ namespace ColorVision.Services.Algorithm.Views
                     AlgResults.Add(algorithmResult);
                 }
             }
+        }
+
+        private void Order_Click(object sender, RoutedEventArgs e)
+        {
+            OrderPopup.IsOpen = true;
+        }
+
+        private void Radio_Checked(object sender, RoutedEventArgs e)
+        {
+            if (RadioID?.IsChecked == true)
+            {
+                AlgResults.SortByID(RadioUp?.IsChecked == false);
+            }
+
+            if (RadioBatch?.IsChecked == true)
+            {
+                AlgResults.SortByBatch(RadioUp?.IsChecked == false);
+            }
+
+            if (RadioFilePath?.IsChecked == true)
+            {
+                AlgResults.SortByFilePath(RadioUp?.IsChecked == false);
+            }
+
+            if (RadioCreateTime?.IsChecked == true)
+            {
+                AlgResults.SortByCreateTime(RadioUp?.IsChecked == false);
+            }
+
+            OrderPopup.IsOpen = false;
         }
     }
 }

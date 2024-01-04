@@ -182,7 +182,7 @@ namespace ColorVision.Services.Device.Camera.Views
         {
             if (RadioID?.IsChecked == true)
             {
-                ViewResultCameras.SortById(RadioUp?.IsChecked == false);
+                ViewResultCameras.SortByID(RadioUp?.IsChecked == false);
             }
 
             if (RadioBatch?.IsChecked == true)

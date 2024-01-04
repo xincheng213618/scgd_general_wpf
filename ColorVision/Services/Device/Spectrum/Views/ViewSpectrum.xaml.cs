@@ -474,11 +474,11 @@ namespace ColorVision.Device.Spectrum.Views
             {
                 if (RadioUp?.IsChecked ==true)
                 {
-                    ViewResultSpectrums.SortById();
+                    ViewResultSpectrums.SortByID();
                 }
                 if (RadioDown?.IsChecked == true)
                 {
-                    ViewResultSpectrums.SortById(true);
+                    ViewResultSpectrums.SortByID(true);
                 }
 
             }
