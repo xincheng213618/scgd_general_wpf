@@ -2,6 +2,7 @@
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.Net;
+using ColorVision.Services.Algorithm.Views;
 using ColorVision.Services.Device;
 using ColorVision.Solution;
 using ColorVision.Templates;

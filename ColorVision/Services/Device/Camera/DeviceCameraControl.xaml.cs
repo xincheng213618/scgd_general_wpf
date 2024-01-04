@@ -108,17 +108,17 @@ namespace ColorVision.Device.Camera
                 {
                     if (radioID.IsChecked == true)
                     {
-                        CalibrationRsources.SortById(radioUp.IsChecked==true);
+                        CalibrationRsources.SortById(radioUp.IsChecked== false);
                     }
 
                     if (radioName.IsChecked == true)
                     {
-                        CalibrationRsources.SortByName(radioUp.IsChecked == true);
+                        CalibrationRsources.SortByName(radioUp.IsChecked == false);
                     }
 
                     if (radioFile.IsChecked == true)
                     {
-                        CalibrationRsources.SortByFilePath(radioUp.IsChecked == true);
+                        CalibrationRsources.SortByFilePath(radioUp.IsChecked == false);
                     }
                     orderPopup.IsOpen = false;
                 };

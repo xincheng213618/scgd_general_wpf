@@ -182,22 +182,22 @@ namespace ColorVision.Services.Device.Camera.Views
         {
             if (RadioID?.IsChecked == true)
             {
-                ViewResults.SortById(RadioUp?.IsChecked == true);
+                ViewResults.SortById(RadioUp?.IsChecked == false);
             }
 
             if (RadioBatch?.IsChecked == true)
             {
-                ViewResults.SortByBatch(RadioUp?.IsChecked == true);
+                ViewResults.SortByBatch(RadioUp?.IsChecked == false);
             }
 
             if (RadioFilePath?.IsChecked == true)
             {
-                ViewResults.SortByFilePath(RadioUp?.IsChecked == true);
+                ViewResults.SortByFilePath(RadioUp?.IsChecked == false);
             }
 
             if (RadioCreateTime?.IsChecked == true)
             {
-                ViewResults.SortByCreateTime(RadioUp?.IsChecked == true);
+                ViewResults.SortByCreateTime(RadioUp?.IsChecked == false);
             }
 
             OrderPopup.IsOpen = false;
