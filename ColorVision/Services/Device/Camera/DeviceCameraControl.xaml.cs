@@ -68,11 +68,7 @@ namespace ColorVision.Device.Camera
                 gridView.Columns.Add(new GridViewColumn() { Header = "名称", DisplayMemberBinding = new Binding("Name") });
                 gridView.Columns.Add(new GridViewColumn() { Header = "路径", DisplayMemberBinding = new Binding("FilePath") });
                 listView.View = gridView;
-
                 stackPanel.Children.Add(listView);
-
-                StackPanel StackPanelSort = new StackPanel() { Orientation = Orientation.Horizontal };
-
 
 
                 ObservableCollection<CalibrationRsource> CalibrationRsources = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item, DeviceCamera.MySqlId);
@@ -80,41 +76,8 @@ namespace ColorVision.Device.Camera
                 listView.ItemsSource = CalibrationRsources;
 
 
-                StackPanelSort.Children.Clear();
-                stackPanel.Children.Insert(0, StackPanelSort);
-
-                RadioButton IDDESC = new RadioButton { Content = "按照序号升序", Tag = "IDDESC", Margin = new Thickness(5) ,IsChecked =true};
-                IDDESC.Click += (s, e) =>
-                {
-                    CalibrationRsources.SortById();
-                };
-                StackPanelSort.Children.Add(IDDESC);
-
-                RadioButton IDASC = new RadioButton { Content = "按照序号降序", Tag = "IDASC", Margin = new Thickness(5) };
-                IDASC.Click += (s, e) =>
-                {
-                    CalibrationRsources.SortById(true);
-                };
-                StackPanelSort.Children.Add(IDASC);
-
-                RadioButton BatchASC = new RadioButton { Content = "按照名称升序", Tag = "BatchASC", Margin = new Thickness(5) };
-                BatchASC.Click += (s, e) =>
-                {
-                    CalibrationRsources.SortByName();
-
-                };
-                StackPanelSort.Children.Add(BatchASC);
-
-                RadioButton BatchESC = new RadioButton { Content = "按照名称降序", Tag = "BatchESC", Margin = new Thickness(5) };
-                BatchESC.Click += (s, e) =>
-                {
-                    CalibrationRsources.SortByName(true);
-                };
-                StackPanelSort.Children.Add(BatchESC);
-
-
                 Popup orderPopup = new Popup { Name = "OrderPopup", AllowsTransparency = true, Focusable = false, PopupAnimation = PopupAnimation.Slide, Placement = PlacementMode.Bottom, StaysOpen = false };
-                Button orderButton = new Button  { Name = "Order",Content = "排序", Margin = new Thickness(2, 0, 0, 0)  };
+                Button orderButton = new Button  { Name = "Order",Content = "排序", Margin = new Thickness(5) };
                 orderButton.Click += (s, e) =>
                 {
                     orderPopup.IsOpen = true;
@@ -124,8 +87,7 @@ namespace ColorVision.Device.Camera
 
                 // 创建边框和堆栈面板
                 Border border = new Border  {  Margin = new Thickness(5),Width = 80 };
-                // 应用样式（这里假设你已经定义了BorderModuleArea样式）
-                // border.Style = this.FindResource("BorderModuleArea") as Style;
+                border.Style = this.FindResource("BorderModuleArea") as Style;
 
                 StackPanel stackPanelorder = new StackPanel  {  Margin = new Thickness(5) };
 
@@ -158,6 +120,7 @@ namespace ColorVision.Device.Camera
                     {
                         CalibrationRsources.SortByFilePath(radioUp.IsChecked == true);
                     }
+                    orderPopup.IsOpen = false;
                 };
 
                 radioID.Checked += Radio_Checked; 
@@ -178,14 +141,11 @@ namespace ColorVision.Device.Camera
                 border.Child = stackPanelorder;
                 orderPopup.Child = border;
 
+                StackPanel stack = new StackPanel() { Orientation = Orientation.Horizontal };
+
+                stack.Children.Add(orderButton);
 
 
-                StackPanelSort.Children.Add(orderButton);
-
-
-
-
-                StackPanel stack = new StackPanel() {  Orientation =Orientation.Horizontal};
                 Button button = new Button() { Content = "上传校正文件", Margin = new Thickness(5) };
                 button.Click += (s, e) =>
                 {
