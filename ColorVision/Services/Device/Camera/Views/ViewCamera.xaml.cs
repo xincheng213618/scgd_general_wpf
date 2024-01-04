@@ -4,7 +4,7 @@ using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.Services.Algorithm;
 using ColorVision.Services.Device.Camera.Views;
-using ColorVision.Sort;
+using ColorVision.Sorts;
 using ColorVision.Templates;
 using ColorVision.Util;
 using FileServerPlugin;
@@ -26,16 +26,16 @@ using System.Windows.Media;
 namespace ColorVision.Services.Device.Camera.Views
 {
     /// <summary>
-    /// CameraView.xaml 的交互逻辑
+    /// ViewCamera.xaml 的交互逻辑
     /// </summary>
-    public partial class CameraView : UserControl, IView
+    public partial class ViewCamera : UserControl, IView
     {
-        private static readonly ILog logger = LogManager.GetLogger(typeof(CameraView));
+        private static readonly ILog logger = LogManager.GetLogger(typeof(ViewCamera));
         public View View { get; set; }
 
         public event ImgCurSelectionChanged OnCurSelectionChanged;
-        public ObservableCollection<CameraViewResult> ViewResults { get; set; } = new ObservableCollection<CameraViewResult>();
-        public CameraView()
+        public ObservableCollection<ViewResultCamera> ViewResultCameras { get; set; } = new ObservableCollection<ViewResultCamera>();
+        public ViewCamera()
         {
             InitializeComponent();
         }
@@ -43,7 +43,7 @@ namespace ColorVision.Services.Device.Camera.Views
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             View= new View();
-            listView1.ItemsSource = ViewResults;
+            listView1.ItemsSource = ViewResultCameras;
         }
 
         private void Button_Click_ShowResultGrid(object sender, RoutedEventArgs e)
@@ -67,7 +67,7 @@ namespace ColorVision.Services.Device.Camera.Views
             dialog.FileName = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
             dialog.RestoreDirectory = true;
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-            CsvWriter.WriteToCsv(ViewResults[listView1.SelectedIndex], dialog.FileName);
+            CsvWriter.WriteToCsv(ViewResultCameras[listView1.SelectedIndex], dialog.FileName);
             ImageSource bitmapSource = ImageView.ImageShow.Source;
             ImageUtil.SaveImageSourceToFile(bitmapSource, Path.Combine(Path.GetDirectoryName(dialog.FileName), Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
 
@@ -77,7 +77,7 @@ namespace ColorVision.Services.Device.Camera.Views
 
         private void Button_Click_Clear(object sender, RoutedEventArgs e)
         {
-            ViewResults.Clear();
+            ViewResultCameras.Clear();
         }
 
 
@@ -85,7 +85,7 @@ namespace ColorVision.Services.Device.Camera.Views
         {
             if (listView1.SelectedIndex > -1)
             {
-                OnCurSelectionChanged?.Invoke(ViewResults[listView1.SelectedIndex]);
+                OnCurSelectionChanged?.Invoke(ViewResultCameras[listView1.SelectedIndex]);
             }
         }
 
@@ -94,7 +94,7 @@ namespace ColorVision.Services.Device.Camera.Views
             if (e.Key == Key.Delete && listView1.SelectedIndex > -1)
             {
                 int temp = listView1.SelectedIndex;
-                ViewResults.RemoveAt(temp);
+                ViewResultCameras.RemoveAt(temp);
             }
         }
 
@@ -109,8 +109,8 @@ namespace ColorVision.Services.Device.Camera.Views
 
         public void ShowResult(MeasureImgResultModel model)
         {
-            CameraViewResult result = new CameraViewResult(model);
-            ViewResults.Add(result);
+            ViewResultCamera result = new ViewResultCamera(model);
+            ViewResultCameras.Add(result);
 
             if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
             listView1.ScrollIntoView(listView1.SelectedItem);
@@ -121,12 +121,12 @@ namespace ColorVision.Services.Device.Camera.Views
 
         private void Search_Click(object sender, RoutedEventArgs e)
         {
-            ViewResults.Clear();
+            ViewResultCameras.Clear();
             List<MeasureImgResultModel> algResults = MeasureImgResultDao.GetAll();
             foreach (var item in algResults)
             {
-                CameraViewResult CameraImgResult = new CameraViewResult(item);
-                ViewResults.Add(CameraImgResult);
+                ViewResultCamera CameraImgResult = new ViewResultCamera(item);
+                ViewResultCameras.Add(CameraImgResult);
             }
         }
 
@@ -134,22 +134,22 @@ namespace ColorVision.Services.Device.Camera.Views
         {
             if (string.IsNullOrEmpty(TextBoxId.Text) && string.IsNullOrEmpty(TextBoxBatch.Text) && string.IsNullOrEmpty(TextBoxFile.Text) && string.IsNullOrWhiteSpace(TbDeviceCode.Text))
             {
-                ViewResults.Clear();
+                ViewResultCameras.Clear();
                 foreach (var item in MeasureImgResultDao.GetAll())
                 {
-                    CameraViewResult algorithmResult = new CameraViewResult(item);
-                    ViewResults.Add(algorithmResult);
+                    ViewResultCamera algorithmResult = new ViewResultCamera(item);
+                    ViewResultCameras.Add(algorithmResult);
                 }
                 return;
             }
             else
             {
-                ViewResults.Clear();
+                ViewResultCameras.Clear();
                 List<MeasureImgResultModel> algResults = MeasureImgResultDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, TextBoxFile.Text, TbDeviceCode.Text);
                 foreach (var item in algResults)
                 {
-                    CameraViewResult algorithmResult = new CameraViewResult(item);
-                    ViewResults.Add(algorithmResult);
+                    ViewResultCamera algorithmResult = new ViewResultCamera(item);
+                    ViewResultCameras.Add(algorithmResult);
                 }
 
             }
@@ -166,9 +166,9 @@ namespace ColorVision.Services.Device.Camera.Views
 
         private void MenuItem_Delete_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is MenuItem menuItem && menuItem.Tag is CameraViewResult viewResult)
+            if (sender is MenuItem menuItem && menuItem.Tag is ViewResultCamera viewResult)
             {
-                ViewResults.Remove(viewResult);
+                ViewResultCameras.Remove(viewResult);
                 ImageView.Clear();
             }
         }
@@ -182,22 +182,22 @@ namespace ColorVision.Services.Device.Camera.Views
         {
             if (RadioID?.IsChecked == true)
             {
-                ViewResults.SortById(RadioUp?.IsChecked == false);
+                ViewResultCameras.SortById(RadioUp?.IsChecked == false);
             }
 
             if (RadioBatch?.IsChecked == true)
             {
-                ViewResults.SortByBatch(RadioUp?.IsChecked == false);
+                ViewResultCameras.SortByBatch(RadioUp?.IsChecked == false);
             }
 
             if (RadioFilePath?.IsChecked == true)
             {
-                ViewResults.SortByFilePath(RadioUp?.IsChecked == false);
+                ViewResultCameras.SortByFilePath(RadioUp?.IsChecked == false);
             }
 
             if (RadioCreateTime?.IsChecked == true)
             {
-                ViewResults.SortByCreateTime(RadioUp?.IsChecked == false);
+                ViewResultCameras.SortByCreateTime(RadioUp?.IsChecked == false);
             }
 
             OrderPopup.IsOpen = false;

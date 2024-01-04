@@ -76,16 +76,16 @@ namespace ColorVision.Services.Algorithm
             {
                 case AlgorithmResultType.POI_XY_UV:
                 case AlgorithmResultType.POI_Y:
-                    doOpen(data.ImgFileName, FileExtType.CIE);
+                    doOpen(data.FilePath, FileExtType.CIE);
                     break;
                 case AlgorithmResultType.SFR:
                 case AlgorithmResultType.MTF:
                 case AlgorithmResultType.FOV:
                 case AlgorithmResultType.Distortion:
-                    doOpenLocal(data.ImgFileName, FileExtType.Src);
+                    doOpenLocal(data.FilePath, FileExtType.Src);
                     break;
                 case AlgorithmResultType.Ghost:
-                    doOpenLocal(data.ImgFileName, FileExtType.Tif);
+                    doOpenLocal(data.FilePath, FileExtType.Tif);
                     //doOpen(data.FilePath, FileExtType.Src);
                     break;
                 default:

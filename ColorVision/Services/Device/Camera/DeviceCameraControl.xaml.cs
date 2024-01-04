@@ -9,7 +9,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using ColorVision.Extension;
 using ColorVision.Services.Msg;
-using ColorVision.Sort;
+using ColorVision.Sorts;
 using ColorVision.Templates;
 using ColorVision.Themes.Controls;
 using cvColorVision;

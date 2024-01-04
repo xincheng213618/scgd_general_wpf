@@ -21,12 +21,12 @@ using static cvColorVision.GCSDLL;
 using Newtonsoft.Json;
 using System.Linq;
 using ColorVision.Util;
-using ColorVision.Sort;
+using ColorVision.Sorts;
 using ColorVision.Services.Algorithm;
 using MQTTMessageLib.Algorithm;
 using System.Windows.Documents;
 
-namespace ColorVision.Device.Spectrum
+namespace ColorVision.Device.Spectrum.Views
 {
     /// <summary>
     /// ViewSpectrum.xaml 的交互逻辑

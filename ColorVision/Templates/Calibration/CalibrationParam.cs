@@ -1,7 +1,7 @@
 ﻿#pragma warning disable CS8603,CS0649
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
-using ColorVision.Sort;
+using ColorVision.Sorts;
 using cvColorVision;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

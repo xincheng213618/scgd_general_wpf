@@ -38,7 +38,7 @@ namespace ColorVision.Device.Camera
         public DeviceCamera Device { get; set; }
         public DeviceServiceCamera DService { get => Device.DeviceService; }
 
-        public CameraView View { get; set; }
+        public ViewCamera View { get; set; }
 
         private NetFileUtil netFileUtil;
         private IPendingHandler? handler { get; set; }
@@ -63,7 +63,7 @@ namespace ColorVision.Device.Camera
             _timer.Tick += Timer_Tick; // 设置Tick事件处理程序
         }
 
-        private void View_OnCurSelectionChanged(CameraViewResult data)
+        private void View_OnCurSelectionChanged(ViewResultCamera data)
         {
             if (data.ResultCode == 0)
             {

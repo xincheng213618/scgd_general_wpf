@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 using System.Drawing;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
-using ColorVision.Sort;
+using ColorVision.Sorts;
 using Newtonsoft.Json;
 using NPOI.SS.Formula.Functions;
 using ScottPlot;

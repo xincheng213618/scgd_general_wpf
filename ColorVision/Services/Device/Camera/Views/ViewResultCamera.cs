@@ -1,17 +1,17 @@
 ﻿#pragma warning disable CS8604,CS8629
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
-using ColorVision.Sort;
+using ColorVision.Sorts;
 using MQTTMessageLib.Camera;
 using System;
 
 namespace ColorVision.Services.Device.Camera.Views
 {
-    public delegate void ImgCurSelectionChanged(CameraViewResult data);
+    public delegate void ImgCurSelectionChanged(ViewResultCamera data);
 
-    public class CameraViewResult : ViewModelBase,ISortID,ISortBatch, ISortCreateTime, ISortFilePath
+    public class ViewResultCamera : ViewModelBase,ISortID,ISortBatch, ISortCreateTime, ISortFilePath
     {
-        public CameraViewResult(MeasureImgResultModel measureImgResultModel)
+        public ViewResultCamera(MeasureImgResultModel measureImgResultModel)
         {
             ID = measureImgResultModel.Id;
             Batch = measureImgResultModel.BatchCode ?? string.Empty;

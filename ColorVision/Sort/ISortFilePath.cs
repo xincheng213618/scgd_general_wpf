@@ -5,11 +5,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ColorVision.Sort
+namespace ColorVision.Sorts
 {
     public interface ISortFilePath
     {
-        public string FilePath { get; set; }
+        public string? FilePath { get; set; }
     }
 
     public static partial class SortableExtension

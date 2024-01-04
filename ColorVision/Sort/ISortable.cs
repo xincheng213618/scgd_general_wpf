@@ -3,7 +3,7 @@ using System.Text;
 using System.Threading.Tasks;
 using ColorVision.Templates;
 
-namespace ColorVision.Sort
+namespace ColorVision.Sorts
 {
     public interface ISortable : ISortID, ISortCreateTime, ISortBatch, ISortBatchID
     {

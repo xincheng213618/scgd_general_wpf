@@ -1,7 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.Linq;
 
-namespace ColorVision.Sort
+namespace ColorVision.Sorts
 {
     public interface ISortID
     {

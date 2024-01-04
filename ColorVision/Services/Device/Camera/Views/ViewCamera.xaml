@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="ColorVision.Services.Device.Camera.Views.CameraView"
+﻿<UserControl x:Class="ColorVision.Services.Device.Camera.Views.ViewCamera"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -84,28 +84,28 @@
                     <GridView>
                         <GridViewColumn  Header="序号" Width="50">
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:CameraViewResult}">
+                                <DataTemplate  DataType="{x:Type local:ViewResultCamera}">
                                     <TextBlock Text="{ Binding  ID}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn  Header="批次号" Width="160">
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:CameraViewResult}">
+                                <DataTemplate  DataType="{x:Type local:ViewResultCamera}">
                                     <TextBlock Text="{ Binding  Batch}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn  Header="图像数据文件" Width="120">
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:CameraViewResult}">
+                                <DataTemplate  DataType="{x:Type local:ViewResultCamera}">
                                     <TextBlock Text="{ Binding   FilePath}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn  Header="参数" >
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:CameraViewResult}">
+                                <DataTemplate  DataType="{x:Type local:ViewResultCamera}">
                                     <TextBlock Text="{ Binding   ReqParams}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
@@ -113,21 +113,21 @@
 
                         <GridViewColumn  Header="结果" Width="50">
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:CameraViewResult}">
+                                <DataTemplate  DataType="{x:Type local:ViewResultCamera}">
                                     <TextBlock Text="{ Binding  Result}" />
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn  Header="用时" Width="100">
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:CameraViewResult}">
+                                <DataTemplate  DataType="{x:Type local:ViewResultCamera}">
                                     <TextBlock Text="{ Binding  TotalTime}" />
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn  Header="图像信息" >
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:CameraViewResult}">
+                                <DataTemplate  DataType="{x:Type local:ViewResultCamera}">
                                     <TextBlock Text="{ Binding  ImgFrameInfo}" />
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
