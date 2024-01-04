@@ -97,7 +97,7 @@ namespace ColorVision.Services.Device.SMU
             return true;
         }
 
-        public bool Open(bool isNet, string devName)
+        public MsgRecord Open(bool isNet, string devName)
         {
             MsgSend msg = new MsgSend
             {
@@ -105,8 +105,7 @@ namespace ColorVision.Services.Device.SMU
                 ServiceName = Config.Code,
                 Params = new SMUOpenParam() { DevName = devName, IsNet = isNet, }
             };
-            PublishAsyncClient(msg);
-            return true;
+            return PublishAsyncClient(msg);
         }
 
         public bool GetData(bool isSourceV, double measureVal, double lmtVal)
@@ -121,15 +120,14 @@ namespace ColorVision.Services.Device.SMU
             return true;
         }
 
-        public bool Close()
+        public MsgRecord Close()
         {
             MsgSend msg = new MsgSend
             {
                 EventName = MQTTSMUEventEnum.Event_Close,
                 ServiceName = Config.Code,
             };
-            PublishAsyncClient(msg);
-            return true;
+            return PublishAsyncClient(msg);
         }
 
         public bool Scan(bool isSourceV, double startMeasureVal, double stopMeasureVal, double lmtVal, int number)

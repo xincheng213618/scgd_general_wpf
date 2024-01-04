@@ -1,5 +1,6 @@
 ﻿using ColorVision.Services.Device;
 using ColorVision.Templates;
+using ColorVision.Util;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -153,27 +154,21 @@ namespace ColorVision.Services.Device.SMU
             }
         }
 
-        private void DoOpenByMQTT(Button button)
-        {
-            string btnTitle = button.Content.ToString();
-            if (btnTitle!=null && btnTitle.Equals("打开", StringComparison.Ordinal))
-            {
-                button.Content = "打开中";
-                DService.Open(Config.IsNet, Config.DevName);
-            }
-            else
-            {
-                button.Content = "关闭中";
-                DService.Close();
-            }
-        }
+
 
 
         private void ButtonSourceMeter1_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
             {
-                DoOpenByMQTT(button);
+                if (Config.DeviceStatus != DeviceStatus.Opening)
+                {
+                    Helpers.SendCommand(button, DService.Open(Config.IsNet, Config.DevName));
+                }
+                else
+                {
+                    Helpers.SendCommand(button, DService.Close());
+                }
             }
         }
 
