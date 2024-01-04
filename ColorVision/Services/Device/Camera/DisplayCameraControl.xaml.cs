@@ -65,7 +65,7 @@ namespace ColorVision.Device.Camera
 
         private void View_OnCurSelectionChanged(ViewResultCamera data)
         {
-            if (data.ResultCode == 0)
+            if (data.ResultCode == 0 && data.FilePath!=null)
             {
                 switch (data.FileType)
                 {

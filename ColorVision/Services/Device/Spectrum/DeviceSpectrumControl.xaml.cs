@@ -81,7 +81,7 @@ namespace ColorVision.Device.Spectrum
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (SpectrumService != null) SpectrumService.SetParam(MQTTDeviceSp.Config.MaxIntegralTime, MQTTDeviceSp.Config.BeginIntegralTime);
+            SpectrumService?.SetParam(MQTTDeviceSp.Config.MaxIntegralTime, MQTTDeviceSp.Config.BeginIntegralTime);
         }
     }
 }

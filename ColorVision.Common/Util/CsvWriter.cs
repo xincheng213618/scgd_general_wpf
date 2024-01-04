@@ -42,7 +42,7 @@ namespace ColorVision.Util
 
                 // 处理可能包含逗号或引号的值
                 string valueAsString = value?.ToString() ?? string.Empty;
-                if (valueAsString.Contains(',') || valueAsString.Contains("\""))
+                if (valueAsString.Contains(',') || valueAsString.Contains('\"'))
                 {
                     valueAsString = $"\"{valueAsString.Replace("\"", "\"\"")}\"";
                 }
@@ -101,7 +101,7 @@ namespace ColorVision.Util
 
                     // 处理可能包含逗号或引号的值
                     string valueAsString = value?.ToString() ?? string.Empty;
-                    if (valueAsString.Contains(',') || valueAsString.Contains("\""))
+                    if (valueAsString.Contains(',') || valueAsString.Contains('\"'))
                     {
                         valueAsString = $"\"{valueAsString.Replace("\"", "\"\"")}\"";
                     }
