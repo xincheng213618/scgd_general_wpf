@@ -36,7 +36,7 @@ namespace ColorVision.Templates
     }
 
 
-    public class CalibrationRsource : ViewModelBase,ISortID,ISortName
+    public class CalibrationRsource : ViewModelBase,ISortID,ISortName, ISortFilePath
     {
         public SysResourceModel SysResourceModel { get; set; }
         public CalibrationRsource(SysResourceModel SysResourceModel)

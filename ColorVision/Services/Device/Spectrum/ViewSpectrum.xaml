@@ -58,7 +58,6 @@
                                     <RadioButton x:Name="RadioDown"  Content="递减" Checked="Radio_Checked"/>
                                 </StackPanel>
                             </StackPanel>
-
                         </Border>
                     </Popup>
 
