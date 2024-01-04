@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ColorVision.NativeMethods;
 
 namespace ColorVision.Sorts
 {
@@ -17,7 +18,7 @@ namespace ColorVision.Sorts
         public static void SortByFilePath<T>(this ObservableCollection<T> collection, bool descending = false) where T : ISortFilePath
         {
             var sortedItems = collection.ToList();
-            sortedItems.Sort((x, y) => descending ? string.Compare(y.FilePath, x.FilePath, System.StringComparison.Ordinal) : string.Compare(x.FilePath, y.FilePath, System.StringComparison.Ordinal));
+            sortedItems.Sort((x, y) => descending ? Shlwapi.CompareLogical(y.FilePath??string.Empty, x.FilePath ?? string.Empty) : Shlwapi.CompareLogical(x.FilePath ?? string.Empty, y.FilePath ?? string.Empty));
 
             int index = 0;
             while (index < sortedItems.Count)

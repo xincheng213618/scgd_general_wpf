@@ -54,15 +54,10 @@ namespace ColorVision.Services.Algorithm.Views
 
             View = new View();
 
-            GridView gridView = new GridView();
-            List<string> headers = new List<string> { "序号", "批次号", "模板", "图像数据文件", "测量时间", "类型", "用时(时:分:秒)", "结果", "描述" };
-            List<string> bdheaders = new List<string> { "Id", "SerialNumber", "POITemplateName", "ImgFileName", "RecvTime", "ResultTypeDis", "TotalTime", "Result", "ResultDesc" };
-            for (int i = 0; i < headers.Count; i++)
-            {
-                gridView.Columns.Add(new GridViewColumn() { Header = headers[i], Width = 100, DisplayMemberBinding = new Binding(bdheaders[i]) });
-            }
-            listView1.View = gridView;
+
             listView1.ItemsSource = AlgResults;
+
+
             //色度
             List<string> cieBdHeader = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
             List<string> cieHeader = new List<string> { "名称", "位置", "大小", "形状", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };

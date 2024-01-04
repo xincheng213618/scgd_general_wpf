@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Linq;
+using ColorVision.NativeMethods;
 
 namespace ColorVision.Sorts
 {
@@ -18,7 +19,7 @@ namespace ColorVision.Sorts
         public static void SortByBatch<T>(this ObservableCollection<T> collection, bool descending = false) where T : ISortBatch
         {
             var sortedItems = collection.ToList();
-            sortedItems.Sort((x, y) => descending ? string.Compare(y.Batch, x.Batch, System.StringComparison.Ordinal) : string.Compare(x.Batch, y.Batch, System.StringComparison.Ordinal));
+            sortedItems.Sort((x, y) => descending ? Shlwapi.CompareLogical(y.Batch ?? string.Empty, x.Batch ?? string.Empty) : Shlwapi.CompareLogical(x.Batch ?? string.Empty, y.Batch ?? string.Empty));
 
             int index = 0;
             while (index < sortedItems.Count)

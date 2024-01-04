@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:ColorVision.Services.Algorithm.Views"
              xmlns:media="clr-namespace:ColorVision.Media"
              mc:Ignorable="d" 
-             d:DesignHeight="600" d:DesignWidth="800" Initialized="UserControl_Initialized" >
+             d:DesignHeight="600" d:DesignWidth="1280" Initialized="UserControl_Initialized" >
 
     <Grid x:Name="MainGrid">
         <Grid.ColumnDefinitions>
@@ -44,7 +44,7 @@
                     </Button>
                     <Button x:Name="Order" Content="排序" Click="Order_Click" Margin="2,0,0,0"/>
                     <Popup  x:Name="OrderPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Order}">
-                        <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="80">
+                        <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="90">
                             <StackPanel Margin="5">
                                 <StackPanel Margin="0,5">
                                     <RadioButton x:Name="RadioID"  Content="名称"  IsChecked="True"  Checked="Radio_Checked" HorizontalAlignment="Left"/>
@@ -53,8 +53,8 @@
                                     <RadioButton x:Name="RadioCreateTime" Margin="0,1" Content="创建时间"  Checked="Radio_Checked" HorizontalAlignment="Left"/>
                                 </StackPanel>
                                 <StackPanel Margin="0,5">
-                                    <RadioButton x:Name="RadioUp"  Content="递增" IsChecked="True" Checked="Radio_Checked"/>
-                                    <RadioButton x:Name="RadioDown"  Content="递减" Checked="Radio_Checked"/>
+                                    <RadioButton x:Name="RadioUp"  Content="递增" IsChecked="True" Checked="Radio_Checked"  HorizontalAlignment="Left"/>
+                                    <RadioButton x:Name="RadioDown"  Content="递减" Checked="Radio_Checked"  HorizontalAlignment="Left"/>
                                 </StackPanel>
                             </StackPanel>
                         </Border>
@@ -85,7 +85,62 @@
                         </Border>
                     </Popup>
                 </ToolBar>
-                <ListView  Grid.Row="1" x:Name="listView1" Height ="300"  ScrollViewer.VerticalScrollBarVisibility="Visible" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" />
+                <ListView  Grid.Row="1" x:Name="listView1" Height ="300"  ScrollViewer.VerticalScrollBarVisibility="Visible" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" >
+                    <ListView.View >
+                        <GridView>
+                            <GridViewColumn  Header="序号" Width="50">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type  local:AlgorithmResult}">
+                                        <TextBlock Text="{ Binding  ID}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="批次号" Width="160">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:AlgorithmResult}">
+                                        <TextBlock Text="{ Binding  Batch}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="图像" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:AlgorithmResult}">
+                                        <TextBlock Text="{ Binding   FilePath}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="模板" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:AlgorithmResult}">
+                                        <TextBlock Text="{ Binding   POITemplateName}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+
+                            <GridViewColumn  Header="测量时间" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:AlgorithmResult}">
+                                        <TextBlock Text="{ Binding  CreateTime}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="用时" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:AlgorithmResult}">
+                                        <TextBlock Text="{ Binding  TotalTime}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="结果" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:AlgorithmResult}">
+                                        <TextBlock Text="{ Binding  Result}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
             </Grid>
             <GridSplitter  Grid.Row="1" IsEnabled="{Binding ElementName=toggle1,Path=IsChecked}" Background="#EEF4F9"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
         </Grid>
