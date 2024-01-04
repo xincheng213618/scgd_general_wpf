@@ -25,6 +25,7 @@ using ColorVision.Sorts;
 using ColorVision.Services.Algorithm;
 using MQTTMessageLib.Algorithm;
 using System.Windows.Documents;
+using ColorVision.Device.Spectrum.Configs;
 
 namespace ColorVision.Device.Spectrum.Views
 {

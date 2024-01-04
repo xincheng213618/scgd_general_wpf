@@ -5,7 +5,7 @@ namespace ColorVision.Sorts
 {
     public interface ISortName
     {
-        public string Name { get; set; }
+        public string? Name { get; set; }
     }
 
     public static partial class SortableExtension

@@ -47,8 +47,8 @@ namespace ColorVision.Templates
             ID = SysResourceModel.Id;
         }
 
-        public string Name { get; set; }
-        public string FilePath { get; set; }
+        public string? Name { get; set; }
+        public string? FilePath { get; set; }
         public int ID { get; set; }
 
         public int Pid { get; set; }

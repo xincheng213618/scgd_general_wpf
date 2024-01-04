@@ -56,8 +56,8 @@ namespace ColorVision.Services.Algorithm.Views
         public int ID { get { return _Id; } set { _Id = value; NotifyPropertyChanged(); } }
         private int _Id;
 
-        public string Batch { get { return _Batch; } set { _Batch = value; NotifyPropertyChanged(); } }
-        private string _Batch;
+        public string? Batch { get { return _Batch; } set { _Batch = value; NotifyPropertyChanged(); } }
+        private string? _Batch;
 
         public string? FilePath { get { return _FilePath; } set { _FilePath = value; NotifyPropertyChanged(); } }
         private string? _FilePath;

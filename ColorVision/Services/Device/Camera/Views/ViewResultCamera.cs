@@ -28,11 +28,11 @@ namespace ColorVision.Services.Device.Camera.Views
         public int ID { get { return _ID; } set { _ID = value; NotifyPropertyChanged(); } }
         private int _ID;
 
-        public string Batch { get { return _Batch; } set { _Batch = value; NotifyPropertyChanged(); } }
-        private string _Batch;
+        public string? Batch { get { return _Batch; } set { _Batch = value; NotifyPropertyChanged(); } }
+        private string? _Batch;
 
-        public string FilePath { get { return _FilePath; } set { _FilePath = value; NotifyPropertyChanged(); } }
-        private string _FilePath;
+        public string? FilePath { get { return _FilePath; } set { _FilePath = value; NotifyPropertyChanged(); } }
+        private string? _FilePath;
 
         public CameraFileType FileType { get { return _FileType; } set { _FileType = value; NotifyPropertyChanged(); } }
         private CameraFileType _FileType;
