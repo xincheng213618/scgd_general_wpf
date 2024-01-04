@@ -8,6 +8,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using ColorVision.Extension;
 using ColorVision.Services.Msg;
+using ColorVision.Sort;
 using ColorVision.Templates;
 using ColorVision.Themes.Controls;
 using cvColorVision;
@@ -86,48 +87,30 @@ namespace ColorVision.Device.Camera
                 RadioButton IDDESC = new RadioButton { Content = "按照序号升序", Tag = "IDDESC", Margin = new Thickness(5) ,IsChecked =true};
                 IDDESC.Click += (s, e) =>
                 {
-                    var sortedItems = CalibrationRsources.OrderBy(f => f.ID).ToList();
-                    CalibrationRsources.Clear();
-                    foreach (var item in sortedItems)
-                    {
-                        CalibrationRsources.Add(item);
-                    }
+                    CalibrationRsources.SortById();
                 };
                 StackPanelSort.Children.Add(IDDESC);
 
                 RadioButton IDASC = new RadioButton { Content = "按照序号降序", Tag = "IDASC", Margin = new Thickness(5) };
                 IDASC.Click += (s, e) =>
                 {
-                    var sortedItems = CalibrationRsources.OrderByDescending(f => f.ID).ToList();
-                    CalibrationRsources.Clear();
-                    foreach (var item in sortedItems)
-                    {
-                        CalibrationRsources.Add(item);
-                    }
+                    CalibrationRsources.SortById(true);
                 };
                 StackPanelSort.Children.Add(IDASC);
 
-                RadioButton BatchASC = new RadioButton { Content = "按照批次号升序", Tag = "BatchASC", Margin = new Thickness(5) };
+                RadioButton BatchASC = new RadioButton { Content = "按照名称升序", Tag = "BatchASC", Margin = new Thickness(5) };
                 BatchASC.Click += (s, e) =>
                 {
-                    var sortedItems = CalibrationRsources.OrderBy(f => f.Name).ToList();
-                    CalibrationRsources.Clear();
-                    foreach (var item in sortedItems)
-                    {
-                        CalibrationRsources.Add(item);
-                    }
+                    CalibrationRsources.SortByName();
+
                 };
                 StackPanelSort.Children.Add(BatchASC);
 
-                RadioButton BatchESC = new RadioButton { Content = "按照批次号降序", Tag = "BatchESC", Margin = new Thickness(5) };
+                RadioButton BatchESC = new RadioButton { Content = "按照名称降序", Tag = "BatchESC", Margin = new Thickness(5) };
                 BatchESC.Click += (s, e) =>
                 {
-                    var sortedItems = CalibrationRsources.OrderByDescending(f => f.Name).ToList();
-                    CalibrationRsources.Clear();
-                    foreach (var item in sortedItems)
-                    {
-                        CalibrationRsources.Add(item);
-                    }
+                    CalibrationRsources.SortByName(true);
+
                 };
                 StackPanelSort.Children.Add(BatchESC);
 

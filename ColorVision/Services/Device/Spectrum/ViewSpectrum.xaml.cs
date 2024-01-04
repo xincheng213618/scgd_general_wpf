@@ -1,13 +1,14 @@
 ﻿using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
-using Newtonsoft.Json;
 using NPOI.XWPF.UserModel;
 using ScottPlot;
 using ScottPlot.Plottable;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Drawing;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -15,32 +16,32 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Markup;
+using ColorVision.Device.Spectrum.Views;
 using static cvColorVision.GCSDLL;
+using Newtonsoft.Json;
+using System.Linq;
+using ColorVision.Util;
 
 namespace ColorVision.Device.Spectrum
 {
-
-
     /// <summary>
-    /// SpectrumView.xaml 的交互逻辑
+    /// ViewSpectrum.xaml 的交互逻辑
     /// </summary>
-    public partial class SpectrumView : UserControl,IView
+    public partial class ViewSpectrum : UserControl,IView
     {
-        private ResultService spectumResult;
+        private ResultService spectumResult = new ResultService();
+        public ObservableCollection<ViewResultSpectrum> ViewResultSpectrums { get; set; } = new ObservableCollection<ViewResultSpectrum>();
 
         public View View { get; set; }
 
-        public SpectrumView()
+        public ViewSpectrum()
         {
-            spectumResult = new ResultService();
             InitializeComponent();
         }
-
 
         static int ResultNum;
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-
             TextBox TextBox1 = new TextBox() { Width = 10, Background = System.Windows.Media.Brushes.Transparent, BorderThickness = new Thickness(0), Foreground = System.Windows.Media.Brushes.Transparent };
             Grid.SetColumn(TextBox1, 0);
             Grid.SetRow(TextBox1, 0);
@@ -49,68 +50,22 @@ namespace ColorVision.Device.Spectrum
             {
                 TextBox1.Focus();
             };
-
             View = new View();
-            View.ViewIndexChangedEvent += (s, e) =>
-            {
-                if (e == -2)
-                {
-                    MenuItem menuItem3 = new MenuItem { Header = "还原到主窗口中" };
-                    menuItem3.Click += (s, e) =>
-                    {
-                        if (ViewGridManager.GetInstance().IsGridEmpty(View.PreViewIndex))
-                        {
-                            View.ViewIndex = View.PreViewIndex;
-                        }
-                        else
-                        {
-                            View.ViewIndex = -1;
-                        }
-                    };
-                    this.ContextMenu = new ContextMenu();
-                    this.ContextMenu.Items.Add(menuItem3);
 
-                }
-                else
-                {
-                    MenuItem menuItem = new MenuItem() { Header = "设为主窗口" };
-                    menuItem.Click += (s, e) => { ViewGridManager.GetInstance().SetOneView(this); };
-                    MenuItem menuItem1 = new MenuItem() { Header = "展示全部窗口" };
-                    menuItem1.Click += (s, e) => { ViewGridManager.GetInstance().SetViewNum(-1); };
-                    MenuItem menuItem2 = new MenuItem() { Header = "独立窗口中显示" };
-                    menuItem2.Click += (s, e) => { View.ViewIndex = -2; };
-                    MenuItem menuItem3 = new MenuItem() { Header = Properties.Resource.WindowHidden };
-                    menuItem3.Click += (s, e) => { View.ViewIndex = -1; };
-                    this.ContextMenu = new ContextMenu();
-                    this.ContextMenu.Items.Add(menuItem);
-                    this.ContextMenu.Items.Add(menuItem1);
-                    this.ContextMenu.Items.Add(menuItem2);
-                    this.ContextMenu.Items.Add(menuItem3);
-                }
-            };
+
             wpfplot1.Plot.Title("相对光谱曲线");
             wpfplot1.Plot.XLabel("波长[nm]");
             wpfplot1.Plot.YLabel("相对光谱");
 
             GridView gridView = new GridView();
 
-            List<string> headers = new List<string> { "序号", "测量时间", "IP", "亮度Lv(cd/m2)", "蓝光", "色度x", "色度y", "色度u", "色度v", "相关色温(K)", "主波长Ld(nm)", "色纯度(%)", "峰值波长Lp(nm)", "显色性指数Ra", "半波宽", "电压", "电流" };
+            List<string> headers = new List<string> { "序号", "IP", "亮度Lv(cd/m2)", "蓝光", "色度x", "色度y", "色度u", "色度v", "相关色温(K)", "主波长Ld(nm)", "色纯度(%)", "峰值波长Lp(nm)", "显色性指数Ra", "半波宽", "电压", "电流" };
 
             for (int i = 0; i < headers.Count; i++)
             {
-                gridView.Columns.Add(new GridViewColumn() { Header = headers[i], Width = 100, DisplayMemberBinding = new Binding(string.Format("[{0}]", i)) });
+                gridView.Columns.Add(new GridViewColumn() { Header = headers[i], DisplayMemberBinding = new Binding(string.Format("[{0}]", i)) });
             }
             listView1.View = gridView;
-
-            List<string> headers2 = new List<string> { "波长", "相对光谱", "绝对光谱" };
-
-            GridView gridView2 = new GridView();
-            for (int i = 0; i < headers2.Count; i++)
-            {
-                gridView2.Columns.Add(new GridViewColumn() { Header = headers2[i], DisplayMemberBinding = new Binding(string.Format("[{0}]", i)) });
-            }
-
-            listView2.View = gridView2;
 
             wpfplot1.Plot.Clear();
             wpfplot1.Plot.SetAxisLimitsX(380, 810);
@@ -130,34 +85,14 @@ namespace ColorVision.Device.Spectrum
                 MessageBox.Show("您需要先选择数据");
                 return;
             }
-
             using var dialog = new System.Windows.Forms.SaveFileDialog();
             dialog.Filter = "CSV files (*.csv) | *.csv";
             dialog.FileName = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
             dialog.RestoreDirectory = true;
-            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                using StreamWriter file = new StreamWriter(dialog.FileName, true, Encoding.UTF8);
-                if (listView1.View is GridView gridView1)
-                {
-                    string headers = "";
-                    foreach (var item in gridView1.Columns)
-                    {
-                        headers += item.Header.ToString() + ",";
-                    }
-                    file.WriteLine(headers);
-                }
-                string value = "";
-                foreach (var item in ListContents[listView1.SelectedIndex])
-                {
-                    value += item + ",";
-                }
-                file.WriteLine(value);
-            }
+            if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
+            CsvWriter.WriteToCsv(ViewResultSpectrums[listView1.SelectedIndex], dialog.FileName);
         }
-
-        private List<List<string>> ListContents { get; set; } = new List<List<string>>() { };
 
         public List<ColorParam> colorParams { get; set; } = new List<ColorParam>() { };
 
@@ -166,32 +101,7 @@ namespace ColorVision.Device.Spectrum
             if (sender is ListView listview && listview.SelectedIndex > -1)
             {
                 DrawPlot();
-                //listView2.ItemsSource = colorParams[listview.SelectedIndex].fPL;
-                listView2.Items.Clear();
-
-                for (int i = 0; i < (colorParams[listview.SelectedIndex].fSpect2 -380)*10; i += 10)
-                {
-                    ListViewItem listViewItem2 = new ListViewItem();
-
-                    List<string> strings = new List<string>();
-                    strings.Add((i/10 +380).ToString());
-                    strings.Add(colorParams[listview.SelectedIndex].fPL[i].ToString());
-                    strings.Add((colorParams[listview.SelectedIndex].fPL[i]* colorParams[listview.SelectedIndex].fPlambda).ToString());
-
-                    listViewItem2.Content = strings;
-                    listView2.Items.Add(listViewItem2);
-
-                }
-
-                //ListViewItem listViewItem3= new ListViewItem();
-
-                //List<string> strings1 = new List<string>();
-                //strings1.Add("780");
-                //strings1.Add(colorParams[listview.SelectedIndex].fPL[3998].ToString());
-                //strings1.Add((colorParams[listview.SelectedIndex].fPL[3998] * colorParams[listview.SelectedIndex].fPlambda).ToString());
-                //listViewItem3.Content = strings1;
-                //listView2.Items.Add(listViewItem3);
-
+                listView2.ItemsSource = ViewResultSpectrums[listview.SelectedIndex].SpectralDatas;
             }
         }
 
@@ -210,7 +120,6 @@ namespace ColorVision.Device.Spectrum
                         LastMulSelectComparsion.LineWidth = 1;
                         LastMulSelectComparsion.MarkerSize = 1;
                     }
-
 
                     LastMulSelectComparsion = ScatterPlots[listView1.SelectedIndex];
                     LastMulSelectComparsion.LineWidth = 3;
@@ -235,18 +144,22 @@ namespace ColorVision.Device.Spectrum
 
             wpfplot1.Refresh();
         }
+
         bool First;
 
         public void SpectrumDrawPlot(SpectumData data)
         {
-            
             if (!First)
             {
                 listView1.Visibility = Visibility.Visible;
                 First = true;
             }
+
             ColorParam colorParam = data.Data;
             colorParams.Add(colorParam);
+            ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(colorParam);
+            ViewResultSpectrums.Add(viewResultSpectrum);
+
 
             ListViewItem listViewItem = new ListViewItem();
 
@@ -259,7 +172,6 @@ namespace ColorVision.Device.Spectrum
             List<string> Contents = new List<string>
             {
                 ResultNum.ToString(),
-                DateTime.Now.ToString(),
                 Math.Round(colorParam.fIp / 65535 * 100, 2).ToString() + "%",
                 (colorParam.fPh / 1).ToString(),
                 Math.Round(sum1 / sum2 * 100, 2).ToString(),
@@ -280,15 +192,13 @@ namespace ColorVision.Device.Spectrum
             };
 
 
-
-            double[] x = new double[colorParam.fPL.Length];
-            double[] y = new double[colorParam.fPL.Length];
-            for (int i = 0; i < colorParam.fPL.Length; i++)
+            double[] x = new double[viewResultSpectrum.fPL.Length];
+            double[] y = new double[viewResultSpectrum.fPL.Length];
+            for (int i = 0; i < viewResultSpectrum.fPL.Length; i++)
             {
-                x[i] = ((double)colorParam.fSpect1 + Math.Round(colorParam.fInterval, 1) * i);
-                y[i] = colorParam.fPL[i];
+                x[i] = ((double)viewResultSpectrum.fSpect1 + Math.Round(viewResultSpectrum.fInterval, 1) * i);
+                y[i] = viewResultSpectrum.fPL[i];
             }
-
             ScatterPlot scatterPlot = new ScatterPlot(x, y)
             {
                 Color = Color.DarkGoldenrod,
@@ -299,8 +209,9 @@ namespace ColorVision.Device.Spectrum
                 LineStyle = LineStyle.Solid
             };
             ScatterPlots.Add(scatterPlot);
+
+
             listViewItem.Content = Contents;
-            ListContents.Add(Contents);
             listView1.Items.Add(listViewItem);
             listView1.SelectedIndex = colorParams.Count - 1;
             listView1.ScrollIntoView(listViewItem);
@@ -371,7 +282,6 @@ namespace ColorVision.Device.Spectrum
                     colorParams.RemoveAt(index);
 
                     ScatterPlots.RemoveAt(index);
-                    ListContents.RemoveAt(index);
                     listView1.Items.RemoveAt(index);
                     List<string> Contents = (List<string>)item.Content;
                     int id = int.Parse(Contents[Contents.Count - 1]);
@@ -490,15 +400,15 @@ namespace ColorVision.Device.Spectrum
         SpectumResultDao  spectumResultDao = new SpectumResultDao();
 
 
+
         private void Search_Click(object sender, RoutedEventArgs e)
         {
             colorParams.Clear();
-
             ScatterPlots.Clear();
-            ListContents.Clear();
             listView1.Items.Clear();
 
             var list =  spectumResultDao.GetAll();
+            List<SpectumData> SpectumDatas = new List<SpectumData>();
             foreach (var item in list)
             {
                 SpectumData spectumData = new SpectumData();
@@ -531,10 +441,9 @@ namespace ColorVision.Device.Spectrum
                 };
 
                 spectumData.Data = param;
-                SpectrumDrawPlot(spectumData);
+                SpectumDatas.Add(spectumData);
+                SpectrumDrawPlot(SpectumDatas.Last());
             }
-
-
         }
 
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)

@@ -73,11 +73,12 @@ namespace ColorVision.MySql.DAO
             SpectumResultModel model = new SpectumResultModel
             {
                 Id = item.Field<int>("id"),
+                BatchId = item.Field<int>("batch_id"),
+                CreateDate = item.Field<DateTime?>("create_date"),
                 IntTime = item.Field<float?>("fIntTime"),
                 iAveNum = item.Field<int>("iAveNum"),
                 IsUseAutoIntTime = item.Field<bool>("self_adaption_init_dark"),
                 IsUseAutoDark = item.Field<bool>("auto_init_dark"),
-                BatchId = item.Field<int>("batch_id"),
                 fPL = item.Field<string>("fPL"),
                 fRi = item.Field<string>("fRi"),
                 fx = item.Field<float?>("fx"),
@@ -102,7 +103,6 @@ namespace ColorVision.MySql.DAO
                 fSpect1 = item.Field<float?>("fSpect1"),
                 fSpect2 = item.Field<float?>("fSpect2"),
                 fInterval = item.Field<float?>("fInterval"),
-                CreateDate = item.Field<DateTime?>("create_date"),
             };
 
             return model;

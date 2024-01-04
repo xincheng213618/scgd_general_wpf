@@ -19,7 +19,7 @@ using System.Windows.Input;
 namespace ColorVision.Services.Device.SMU
 {
     /// <summary>
-    /// SpectrumView.xaml 的交互逻辑
+    /// ViewSpectrum.xaml 的交互逻辑
     /// </summary>
     public partial class SMUView : UserControl,IView
     {

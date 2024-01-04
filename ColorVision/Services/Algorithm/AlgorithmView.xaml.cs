@@ -502,7 +502,7 @@ namespace ColorVision.Services.Algorithm
     public delegate void CurSelectionChanged(AlgorithmResult data);
 
     /// <summary>
-    /// SpectrumView.xaml 的交互逻辑
+    /// ViewSpectrum.xaml 的交互逻辑
     /// </summary>
     public partial class AlgorithmView : UserControl,IView
     {

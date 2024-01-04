@@ -1,9 +1,10 @@
-﻿<UserControl x:Class="ColorVision.Device.Spectrum.SpectrumView"
+﻿<UserControl x:Class="ColorVision.Device.Spectrum.ViewSpectrum"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Device.Spectrum"
+             xmlns:views ="clr-namespace:ColorVision.Device.Spectrum.Views"
              xmlns:ScottPlot="clr-namespace:ScottPlot;assembly=ScottPlot.WPF"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800" Initialized="UserControl_Initialized" >
@@ -75,7 +76,34 @@
             </Grid>
             <GridSplitter  Grid.Row="1" IsEnabled="{Binding ElementName=toggle1,Path=IsChecked}" Background="#EEF4F9"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
         </Grid>
-        <ListView x:Name="listView2"  Grid.Column="1" SelectionChanged="listView2_SelectionChanged" />
+        <ListView x:Name="listView2"  Grid.Column="1" SelectionChanged="listView2_SelectionChanged">
+            <ListView.View >
+                <GridView>
+                    <GridViewColumn  Header="波长" >
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type views:SpectralData}">
+                                <TextBlock Text="{ Binding  Wavelength}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="相对光谱">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type views:SpectralData}">
+                                <TextBlock Text="{Binding  RelativeSpectrum, StringFormat={}{0:F4}}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="绝对光谱" >
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type views:SpectralData}">
+                                <TextBlock Text="{ Binding   AbsoluteSpectrum, StringFormat={}{0:F4}}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+
+        </ListView>
         <GridSplitter  Grid.Column="1" IsEnabled="{Binding ElementName=toggle2,Path=IsChecked}" Background="LightGray"  Width="2" HorizontalAlignment="Left"   DragCompleted="GridSplitter_DragCompleted1"  />
 
     </Grid>

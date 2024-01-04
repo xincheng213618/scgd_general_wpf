@@ -8,12 +8,12 @@ namespace ColorVision.Device.Spectrum
     {
         public SpectrumService DeviceService { get; set; }
 
-        public SpectrumView View { get; set; }
+        public ViewSpectrum View { get; set; }
 
         public DeviceSpectrum(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DeviceService = new SpectrumService(Config);
-            View = new SpectrumView();
+            View = new ViewSpectrum();
         }
 
         public override UserControl GetDeviceControl() => new DeviceSpectrumControl(this);
