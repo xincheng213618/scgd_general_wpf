@@ -22,6 +22,9 @@ using Newtonsoft.Json;
 using System.Linq;
 using ColorVision.Util;
 using ColorVision.Sort;
+using ColorVision.Services.Algorithm;
+using MQTTMessageLib.Algorithm;
+using System.Windows.Documents;
 
 namespace ColorVision.Device.Spectrum
 {
@@ -60,13 +63,15 @@ namespace ColorVision.Device.Spectrum
 
             GridView gridView = new GridView();
 
-            List<string> headers = new List<string> { "序号", "IP", "亮度Lv(cd/m2)", "蓝光", "色度x", "色度y", "色度u", "色度v", "相关色温(K)", "主波长Ld(nm)", "色纯度(%)", "峰值波长Lp(nm)", "显色性指数Ra", "半波宽", "电压", "电流" };
+            //List<string> headers = new List<string> { "序号", "IP", "亮度Lv(cd/m2)", "蓝光", "色度x", "色度y", "色度u", "色度v", "相关色温(K)", "主波长Ld(nm)", "色纯度(%)", "峰值波长Lp(nm)", "显色性指数Ra", "半波宽", "电压", "电流" };
 
-            for (int i = 0; i < headers.Count; i++)
-            {
-                gridView.Columns.Add(new GridViewColumn() { Header = headers[i], DisplayMemberBinding = new Binding(string.Format("[{0}]", i)) });
-            }
-            listView1.View = gridView;
+            //for (int i = 0; i < headers.Count; i++)
+            //{
+            //    gridView.Columns.Add(new GridViewColumn() { Header = headers[i], DisplayMemberBinding = new Binding(string.Format("[{0}]", i)) });
+            //}
+            //listView1.View = gridView;
+
+            listView1.ItemsSource = ViewResultSpectrums;
 
             wpfplot1.Plot.Clear();
             wpfplot1.Plot.SetAxisLimitsX(380, 810);
@@ -93,8 +98,6 @@ namespace ColorVision.Device.Spectrum
 
             CsvWriter.WriteToCsv(ViewResultSpectrums[listView1.SelectedIndex], dialog.FileName);
         }
-
-        public List<ColorParam> colorParams { get; set; } = new List<ColorParam>() { };
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -156,10 +159,13 @@ namespace ColorVision.Device.Spectrum
             }
 
             ColorParam colorParam = data.Data;
-            colorParams.Add(colorParam);
 
             ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(colorParam);
+
+            viewResultSpectrum.V = data.V;
+            viewResultSpectrum.I = data.I;
             ViewResultSpectrums.Add(viewResultSpectrum);
+
 
             ListViewItem listViewItem = new ListViewItem();
 
@@ -187,15 +193,11 @@ namespace ColorVision.Device.Spectrum
                 Convert.ToString(Math.Round(colorParam.fHW, 4)),
                 string.Format("{0:0.0000}",data.V),
                 string.Format("{0:0.0000}",data.I),
-
-                data.ID.ToString(),
             };
 
             ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
 
-            listViewItem.Content = Contents;
-            listView1.Items.Add(listViewItem);
-            listView1.SelectedIndex = colorParams.Count - 1;
+            listView1.SelectedIndex = ViewResultSpectrums.Count - 1;
             listView1.ScrollIntoView(listViewItem);
         }
 
@@ -217,15 +219,15 @@ namespace ColorVision.Device.Spectrum
         private void ReDrawPlot()
         {
             wpfplot1.Plot.Clear();
-            wpfplot1.Plot.SetAxisLimitsX(colorParams[listView1.SelectedIndex].fSpect1, colorParams[listView1.SelectedIndex].fSpect2);
+            wpfplot1.Plot.SetAxisLimitsX(ViewResultSpectrums[listView1.SelectedIndex].fSpect1, ViewResultSpectrums[listView1.SelectedIndex].fSpect2);
             wpfplot1.Plot.SetAxisLimitsY(0, 1);
-            wpfplot1.Plot.XAxis.SetBoundary(colorParams[listView1.SelectedIndex].fSpect1-10, colorParams[listView1.SelectedIndex].fSpect2+10);
+            wpfplot1.Plot.XAxis.SetBoundary(ViewResultSpectrums[listView1.SelectedIndex].fSpect1-10, ViewResultSpectrums[listView1.SelectedIndex].fSpect2+10);
             wpfplot1.Plot.YAxis.SetBoundary(0, 1);
             LastMulSelectComparsion = null;
             if (MulComparison)
             {
                 listView1.SelectedIndex = listView1.Items.Count > 0 && listView1.SelectedIndex == -1 ? 0 : listView1.SelectedIndex;
-                for (int i = 0; i < colorParams.Count; i++)
+                for (int i = 0; i < ViewResultSpectrums.Count; i++)
                 {
                     if (i == listView1.SelectedIndex)
                         continue;
@@ -242,7 +244,7 @@ namespace ColorVision.Device.Spectrum
 
         private void Button2_Click(object sender, RoutedEventArgs e)
         {
-            if (listView1.SelectedIndex < 0 || colorParams.Count <= 0)
+            if (listView1.SelectedIndex < 0)
             {
                 MessageBox.Show("您需要先选择数据");
                 return;
@@ -260,7 +262,7 @@ namespace ColorVision.Device.Spectrum
                 if (item.IsSelected)
                 {
                     int index = listView1.Items.IndexOf(item);
-                    colorParams.RemoveAt(index);
+                    ViewResultSpectrums.RemoveAt(index);
 
                     ScatterPlots.RemoveAt(index);
                     listView1.Items.RemoveAt(index);
@@ -297,7 +299,7 @@ namespace ColorVision.Device.Spectrum
             if (e.Key == Key.Delete && listView1.SelectedIndex > -1)
             {
                 int temp = listView1.SelectedIndex;
-                colorParams.RemoveAt(listView1.SelectedIndex);
+                ViewResultSpectrums.RemoveAt(listView1.SelectedIndex);
                 listView1.Items.RemoveAt(listView1.SelectedIndex);
 
 
@@ -325,7 +327,7 @@ namespace ColorVision.Device.Spectrum
                 markerPlot1 = new MarkerPlot
                 {
                     X = listView2.SelectedIndex + 380,
-                    Y = colorParams[listView1.SelectedIndex].fPL[listView2.SelectedIndex * 10],
+                    Y = ViewResultSpectrums[listView1.SelectedIndex].fPL[listView2.SelectedIndex * 10],
                     MarkerShape = MarkerShape.filledCircle,
                     MarkerSize = 10f,
                     Color = Color.Orange,
@@ -378,54 +380,98 @@ namespace ColorVision.Device.Spectrum
 
         SpectumResultDao spectumResultDao = new SpectumResultDao();
 
-        private void Search_Click(object sender, RoutedEventArgs e)
-        {
-            colorParams.Clear();
-            ScatterPlots.Clear();
-            listView1.Items.Clear();
-
-            var list =  spectumResultDao.GetAll();
-            List<SpectumData> SpectumDatas = new List<SpectumData>();
-            foreach (var item in list)
-            {
-                SpectumData spectumData = new SpectumData();
-                ColorParam param = new ColorParam()
-                {
-                    fx = item.fx ?? 0,
-                    fy = item.fy ?? 0,
-                    fu = item.fu ?? 0,
-                    fv = item.fv ?? 0,
-                    fCCT = item.fCCT ?? 0,
-                    dC = item.dC ?? 0,
-                    fLd = item.fLd ?? 0,
-                    fPur = item.fPur ?? 0,
-                    fLp = item.fLp ?? 0,
-                    fHW = item.fHW ?? 0,
-                    fLav = item.fLav ?? 0,
-                    fRa = item.fRa ?? 0,
-                    fRR = item.fRR ?? 0,
-                    fGR = item.fGR ?? 0,
-                    fBR = item.fBR ?? 0,
-                    fIp = item.fIp ?? 0,
-                    fPh = item.fPh ?? 0,
-                    fPhe = item.fPhe ?? 0,
-                    fPlambda = item.fPlambda ?? 0,
-                    fSpect1 = item.fSpect1 ?? 0,
-                    fSpect2 = item.fSpect2 ?? 0,
-                    fInterval = item.fInterval ?? 0,
-                    fPL = JsonConvert.DeserializeObject<float[]>(item.fPL ?? string.Empty) ?? System.Array.Empty<float>(),
-                    fRi = JsonConvert.DeserializeObject<float[]>(item.fRi ?? string.Empty) ?? System.Array.Empty<float>(),
-                };
-
-                spectumData.Data = param;
-                SpectumDatas.Add(spectumData);
-                SpectrumDrawPlot(SpectumDatas.Last());
-            }
-        }
 
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
+            ViewResultSpectrums.Clear();
+            ScatterPlots.Clear();
 
+
+            if (string.IsNullOrEmpty(TextBoxId.Text) && string.IsNullOrEmpty(TextBoxBatch.Text))
+            {
+                var list = spectumResultDao.GetAll();
+                List<SpectumData> SpectumDatas = new List<SpectumData>();
+
+                foreach (var item in list)
+                {
+                    SpectumData spectumData = new SpectumData();
+                    ColorParam param = new ColorParam()
+                    {
+                        fx = item.fx ?? 0,
+                        fy = item.fy ?? 0,
+                        fu = item.fu ?? 0,
+                        fv = item.fv ?? 0,
+                        fCCT = item.fCCT ?? 0,
+                        dC = item.dC ?? 0,
+                        fLd = item.fLd ?? 0,
+                        fPur = item.fPur ?? 0,
+                        fLp = item.fLp ?? 0,
+                        fHW = item.fHW ?? 0,
+                        fLav = item.fLav ?? 0,
+                        fRa = item.fRa ?? 0,
+                        fRR = item.fRR ?? 0,
+                        fGR = item.fGR ?? 0,
+                        fBR = item.fBR ?? 0,
+                        fIp = item.fIp ?? 0,
+                        fPh = item.fPh ?? 0,
+                        fPhe = item.fPhe ?? 0,
+                        fPlambda = item.fPlambda ?? 0,
+                        fSpect1 = item.fSpect1 ?? 0,
+                        fSpect2 = item.fSpect2 ?? 0,
+                        fInterval = item.fInterval ?? 0,
+                        fPL = JsonConvert.DeserializeObject<float[]>(item.fPL ?? string.Empty) ?? System.Array.Empty<float>(),
+                        fRi = JsonConvert.DeserializeObject<float[]>(item.fRi ?? string.Empty) ?? System.Array.Empty<float>(),
+                    };
+
+                    spectumData.Data = param;
+                    SpectumDatas.Add(spectumData);
+                    SpectrumDrawPlot(SpectumDatas.Last());
+
+                }
+
+            }
+            else
+            {
+
+                var list = spectumResultDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text);
+                List<SpectumData> SpectumDatas = new List<SpectumData>();
+
+                foreach (var item in list)
+                {
+                    SpectumData spectumData = new SpectumData();
+                    ColorParam param = new ColorParam()
+                    {
+                        fx = item.fx ?? 0,
+                        fy = item.fy ?? 0,
+                        fu = item.fu ?? 0,
+                        fv = item.fv ?? 0,
+                        fCCT = item.fCCT ?? 0,
+                        dC = item.dC ?? 0,
+                        fLd = item.fLd ?? 0,
+                        fPur = item.fPur ?? 0,
+                        fLp = item.fLp ?? 0,
+                        fHW = item.fHW ?? 0,
+                        fLav = item.fLav ?? 0,
+                        fRa = item.fRa ?? 0,
+                        fRR = item.fRR ?? 0,
+                        fGR = item.fGR ?? 0,
+                        fBR = item.fBR ?? 0,
+                        fIp = item.fIp ?? 0,
+                        fPh = item.fPh ?? 0,
+                        fPhe = item.fPhe ?? 0,
+                        fPlambda = item.fPlambda ?? 0,
+                        fSpect1 = item.fSpect1 ?? 0,
+                        fSpect2 = item.fSpect2 ?? 0,
+                        fInterval = item.fInterval ?? 0,
+                        fPL = JsonConvert.DeserializeObject<float[]>(item.fPL ?? string.Empty) ?? System.Array.Empty<float>(),
+                        fRi = JsonConvert.DeserializeObject<float[]>(item.fRi ?? string.Empty) ?? System.Array.Empty<float>(),
+                    };
+
+                    spectumData.Data = param;
+                    SpectumDatas.Add(spectumData);
+                    SpectrumDrawPlot(SpectumDatas.Last());
+                }
+            }
 
         }
 

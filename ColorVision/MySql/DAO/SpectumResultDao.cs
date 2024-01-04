@@ -69,6 +69,15 @@ namespace ColorVision.MySql.DAO
             return d_info;
         }
 
+        public List<SpectumResultModel> ConditionalQuery(string id, string batchid)
+        {
+            Dictionary<string, object> keyValuePairs = new Dictionary<string, object>();
+            keyValuePairs.Add("id", id);
+            keyValuePairs.Add("batch_id", batchid);
+            return ConditionalQuery(keyValuePairs);
+        }
+
+
         public override SpectumResultModel GetModel(DataRow item)
         {
             SpectumResultModel model = new SpectumResultModel

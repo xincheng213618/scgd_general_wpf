@@ -62,8 +62,8 @@
                         </Border>
                     </Popup>
 
-                    <Button Content="搜索" Click="Search_Click" Margin="2,0,0,0"/>
-                    <Button x:Name="Search" Content="高级查询" Click="Search1_Click" Margin="2,0,0,0"/>
+                    <Button Content="搜索" Click="SearchAdvanced_Click" Margin="2,0,0,0"/>
+                    <Button x:Name="Search" Content="查询" Click="Search1_Click" Margin="2,0,0,0"/>
                     <Popup  x:Name="SerchPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Search}">
                         <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="200">
                             <StackPanel Margin="5">
@@ -80,7 +80,40 @@
                         </Border>
                     </Popup>
                 </ToolBar>
-                <ListView  Height="250"   Grid.Row="1" x:Name="listView1" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" />
+                <ListView  Height="250"   Grid.Row="1" x:Name="listView1" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" >
+                    <ListView.View >
+                        <GridView>
+                            <GridViewColumn  Header="序号" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type views:ViewResultSpectrum}">
+                                        <TextBlock Text="{ Binding  ID}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="IP">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type views:ViewResultSpectrum}">
+                                        <TextBlock Text="{Binding IP}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="亮度Lv(cd/m2)" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type views:ViewResultSpectrum}">
+                                        <TextBlock Text="{ Binding Lv}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="蓝光" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type views:ViewResultSpectrum}">
+                                        <TextBlock Text="{ Binding Blue}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
             </Grid>
             <GridSplitter  Grid.Row="1" IsEnabled="{Binding ElementName=toggle1,Path=IsChecked}" Background="#EEF4F9"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
         </Grid>

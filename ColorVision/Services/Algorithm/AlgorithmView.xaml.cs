@@ -1147,7 +1147,6 @@ namespace ColorVision.Services.Algorithm
                     AlgorithmResult algorithmResult = new AlgorithmResult(item);
                     AlgResults.Add(algorithmResult);
                 }
-
             }
         }
     }

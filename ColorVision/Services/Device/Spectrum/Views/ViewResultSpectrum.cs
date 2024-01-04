@@ -6,6 +6,7 @@ using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.Sort;
 using Newtonsoft.Json;
+using NPOI.SS.Formula.Functions;
 using ScottPlot;
 using ScottPlot.Plottable;
 using static cvColorVision.GCSDLL;
@@ -31,6 +32,12 @@ namespace ColorVision.Device.Spectrum.Views
             IP = Math.Round(fIp / 65535 * 100, 2).ToString() + "%";
             Lv = (fPh / 1).ToString();
 
+            double sum1 = 0, sum2 = 0;
+            for (int i = 35; i <= 75; i++)
+                sum1 += fPL[i * 10];
+            for (int i = 20; i <= 120; i++)
+                sum2 += fPL[i * 10];
+            Blue = Math.Round(sum1 / sum2 * 100, 2).ToString();
             for (int i = 0; i < (fSpect2 - 380) * 10; i += 10)
             {
                 SpectralData SpectralData = new SpectralData();
@@ -124,6 +131,8 @@ namespace ColorVision.Device.Spectrum.Views
             Gen();
 
         }
+        public float V { get; set; }
+        public float I { get; set; }
 
         /// <summary>
         /// IP
@@ -133,6 +142,12 @@ namespace ColorVision.Device.Spectrum.Views
         /// 亮度Lv(cd/m2)
         /// </summary>
         public string Lv { get; set; }
+
+        /// <summary>
+        /// 蓝光
+        /// </summary>
+        public string Blue { get; set; }
+
         public float fx { get; set; }
         public float fy { get; set; }
         public float fu { get; set; }

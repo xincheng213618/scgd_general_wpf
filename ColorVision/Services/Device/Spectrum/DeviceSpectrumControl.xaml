@@ -103,7 +103,7 @@
                                         <TextBlock Text="启用" Width="120"/>
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.IsShutterEnable}"/>
                                     </DockPanel>
-                                    <StackPanel Visibility="{Binding Config.IsShutter,Converter={StaticResource bool2VisibilityConverter}}">
+                                    <StackPanel Visibility="{Binding Config.IsShutterEnable,Converter={StaticResource bool2VisibilityConverter}}">
                                         <DockPanel Margin="0,2">
                                             <TextBlock Text="串口:" Width="120"/>
                                             <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ShutterCfg.Addr}"/>
