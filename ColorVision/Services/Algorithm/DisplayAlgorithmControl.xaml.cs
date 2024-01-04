@@ -85,7 +85,7 @@ namespace ColorVision.Services.Algorithm
                     break;
                 case AlgorithmResultType.Ghost:
                     doOpenLocal(data.ImgFileName, FileExtType.Tif);
-                    //doOpen(data.ImgFileName, FileExtType.Src);
+                    //doOpen(data.FilePath, FileExtType.Src);
                     break;
                 default:
                     break;

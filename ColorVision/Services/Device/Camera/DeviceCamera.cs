@@ -2,6 +2,7 @@
 using ColorVision.MySql.DAO;
 using ColorVision.Services.Device;
 using ColorVision.Services.Device.Camera;
+using ColorVision.Services.Device.Camera.Views;
 using ColorVision.Templates;
 using ColorVision.Themes;
 using System;

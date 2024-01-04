@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8604,CS8629
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
+using ColorVision.Sort;
 using MQTTMessageLib.Camera;
 using System;
 
@@ -8,30 +9,30 @@ namespace ColorVision.Services.Device.Camera.Views
 {
     public delegate void ImgCurSelectionChanged(CameraViewResult data);
 
-    public class CameraViewResult : ViewModelBase
+    public class CameraViewResult : ViewModelBase,ISortID,ISortBatch, ISortCreateTime, ISortFilePath
     {
         public CameraViewResult(MeasureImgResultModel measureImgResultModel)
         {
-            Id = measureImgResultModel.Id;
-            SerialNumber = measureImgResultModel.BatchCode ?? string.Empty;
-            ImgFileName = measureImgResultModel.RawFile ?? string.Empty;
+            ID = measureImgResultModel.Id;
+            Batch = measureImgResultModel.BatchCode ?? string.Empty;
+            FilePath = measureImgResultModel.RawFile ?? string.Empty;
             FileType = (CameraFileType)measureImgResultModel.FileType;
             ReqParams = measureImgResultModel.ReqParams ?? string.Empty;
             ImgFrameInfo = measureImgResultModel.ImgFrameInfo ?? string.Empty;
-            RecvTime = measureImgResultModel.CreateDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? string.Empty;
+            CreateTime = measureImgResultModel.CreateDate;
             ResultCode = measureImgResultModel.ResultCode;
             ResultDesc = measureImgResultModel.ResultDesc ?? string.Empty;
             _totalTime = measureImgResultModel.TotalTime;
         }
 
-        public int Id { get { return _Id; } set { _Id = value; NotifyPropertyChanged(); } }
-        private int _Id;
+        public int ID { get { return _ID; } set { _ID = value; NotifyPropertyChanged(); } }
+        private int _ID;
 
-        public string SerialNumber { get { return _SerialNumber; } set { _SerialNumber = value; NotifyPropertyChanged(); } }
-        private string _SerialNumber;
+        public string Batch { get { return _Batch; } set { _Batch = value; NotifyPropertyChanged(); } }
+        private string _Batch;
 
-        public string ImgFileName { get { return _ImgFileName; } set { _ImgFileName = value; NotifyPropertyChanged(); } }
-        private string _ImgFileName;
+        public string FilePath { get { return _FilePath; } set { _FilePath = value; NotifyPropertyChanged(); } }
+        private string _FilePath;
 
         public CameraFileType FileType { get { return _FileType; } set { _FileType = value; NotifyPropertyChanged(); } }
         private CameraFileType _FileType;
@@ -42,8 +43,8 @@ namespace ColorVision.Services.Device.Camera.Views
         public string ImgFrameInfo { get { return _ImgFrameInfo; } set { _ImgFrameInfo = value; NotifyPropertyChanged(); } }
         private string _ImgFrameInfo;
 
-        public string RecvTime { get { return _RecvTime; } set { _RecvTime = value; NotifyPropertyChanged(); } }
-        private string _RecvTime;
+        public DateTime? CreateTime { get { return _RecvTime; } set { _RecvTime = value; NotifyPropertyChanged(); } }
+        private DateTime? _RecvTime;
 
         public string Result
         {

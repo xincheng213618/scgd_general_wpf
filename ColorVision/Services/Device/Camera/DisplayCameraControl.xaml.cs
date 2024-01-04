@@ -70,10 +70,10 @@ namespace ColorVision.Device.Camera
                 switch (data.FileType)
                 {
                     case CameraFileType.SrcFile:
-                        doOpen(data.ImgFileName, FileExtType.Raw);
+                        doOpen(data.FilePath, FileExtType.Raw);
                         break;
                     case CameraFileType.CIEFile:
-                        doOpen(data.ImgFileName, FileExtType.CIE);
+                        doOpen(data.FilePath, FileExtType.CIE);
                         break;
                     default:
                         break;

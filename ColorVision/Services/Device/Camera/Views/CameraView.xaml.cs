@@ -4,6 +4,8 @@ using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.Services.Algorithm;
 using ColorVision.Services.Device.Camera.Views;
+using ColorVision.Sort;
+using ColorVision.Templates;
 using ColorVision.Util;
 using FileServerPlugin;
 using log4net;
@@ -21,7 +23,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace ColorVision.Services.Device.Camera
+namespace ColorVision.Services.Device.Camera.Views
 {
     /// <summary>
     /// CameraView.xaml 的交互逻辑
@@ -169,6 +171,36 @@ namespace ColorVision.Services.Device.Camera
                 ViewResults.Remove(viewResult);
                 ImageView.Clear();
             }
+        }
+
+        private void Order_Click(object sender, RoutedEventArgs e)
+        {
+            OrderPopup.IsOpen = true;
+        }
+
+        private void Radio_Checked(object sender, RoutedEventArgs e)
+        {
+            if (RadioID?.IsChecked == true)
+            {
+                ViewResults.SortById(RadioUp?.IsChecked == true);
+            }
+
+            if (RadioBatch?.IsChecked == true)
+            {
+                ViewResults.SortByBatch(RadioUp?.IsChecked == true);
+            }
+
+            if (RadioFilePath?.IsChecked == true)
+            {
+                ViewResults.SortByFilePath(RadioUp?.IsChecked == true);
+            }
+
+            if (RadioCreateTime?.IsChecked == true)
+            {
+                ViewResults.SortByCreateTime(RadioUp?.IsChecked == true);
+            }
+
+            OrderPopup.IsOpen = false;
         }
     }
 
