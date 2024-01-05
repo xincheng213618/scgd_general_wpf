@@ -1,4 +1,6 @@
 ﻿using ColorVision.Services.Device;
+using ColorVision.Services.Device.SMU.Configs;
+using ColorVision.Services.Device.SMU.Views;
 using ColorVision.Templates;
 using ColorVision.Util;
 using System;
@@ -22,7 +24,7 @@ namespace ColorVision.Services.Device.SMU
         private SMUService DService { get => Device.Service;  }
         private ConfigSMU Config { get => Device.Config; }
 
-        public SMUView View { get => Device.View; }
+        public ViewSMU View { get => Device.View; }
 
 
         public SMUDisplayControl(DeviceSMU deviceSMU)

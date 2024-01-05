@@ -12,6 +12,7 @@ using ColorVision.Services.Device.CfwPort;
 using ColorVision.Services.Device.Motor;
 using ColorVision.Services.Device.Sensor;
 using ColorVision.Services.Device.SMU;
+using ColorVision.Services.Device.SMU.Configs;
 using cvColorVision;
 using Newtonsoft.Json;
 using System;

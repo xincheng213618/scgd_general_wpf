@@ -1,5 +1,6 @@
 ﻿using ColorVision.MySql.DAO;
-using ColorVision.Services.Device;
+using ColorVision.Services.Device.SMU.Configs;
+using ColorVision.Services.Device.SMU.Views;
 using ColorVision.Themes;
 using System.Windows;
 using System.Windows.Controls;
@@ -11,13 +12,13 @@ namespace ColorVision.Services.Device.SMU
     {
         public SMUService Service { get; set; }
 
-        public SMUView View { get; set; }
+        public ViewSMU View { get; set; }
 
 
         public DeviceSMU(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             Service = new SMUService(Config);
-            View = new SMUView();
+            View = new ViewSMU();
 
             if (Application.Current.TryFindResource("SMUDrawingImage") is DrawingImage SMUDrawingImage)
                 Icon = SMUDrawingImage;

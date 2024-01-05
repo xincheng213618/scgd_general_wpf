@@ -1,6 +1,7 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.Services;
 using ColorVision.Services.Device;
+using ColorVision.Services.Device.SMU.Configs;
 using ColorVision.Services.Msg;
 using MQTTMessageLib.SMU;
 using MQTTnet.Client;
@@ -13,9 +14,6 @@ using System.Windows;
 
 namespace ColorVision.Services.Device.SMU
 {
-    public delegate void MQTTSMUScanResultHandler(SMUScanResultData data);
-    public delegate void MQTTSMUResultHandler(SMUResultData data);
-
     public class SMUService : BaseDevService<ConfigSMU>
     {
         public event MQTTSMUScanResultHandler ScanResultEvent;

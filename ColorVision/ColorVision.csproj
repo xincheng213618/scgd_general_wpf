@@ -139,8 +139,4 @@
     <Resource Include="Assets\png\PowerToy.png" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Services\Device\SMU\Views\" />
-  </ItemGroup>
-
 </Project>
