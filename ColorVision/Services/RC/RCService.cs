@@ -75,7 +75,7 @@ namespace ColorVision.RC
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
 
 
-            int heartbeatTime = 10 * 1000;
+            int heartbeatTime = 3 * 1000;
             System.Timers.Timer hbTimer = new System.Timers.Timer(heartbeatTime);
             hbTimer.Elapsed += (s, e) => KeepLive(heartbeatTime);
             hbTimer.Enabled = true;
@@ -243,7 +243,8 @@ namespace ColorVision.RC
                                         Dictionary<DateTime, MQTTNodeService> DateNodeServices = new Dictionary<DateTime, MQTTNodeService>();
                                         foreach (var mQTTNodeService in item1.Value)
                                         {
-                                            DateTime dateTime = DateTime.Parse(mQTTNodeService.LiveTime);
+                                            DateTime dateTime = DateTime.Now;
+                                            if(!string.IsNullOrEmpty(mQTTNodeService.LiveTime)) dateTime = DateTime.Parse(mQTTNodeService.LiveTime);
                                             dateTimes.Add(dateTime);
                                             DateNodeServices.Add(dateTime, mQTTNodeService);
                                         }
@@ -261,8 +262,8 @@ namespace ColorVision.RC
                                             if (baseObject1 is BaseChannel baseChannel && baseChannel.GetConfig() is BaseDeviceConfig baseDeviceConfig)
                                             {
                                                 //baseDeviceConfig.IsAlive = true;
-                                                baseDeviceConfig.LastAliveTime = DateTime.Parse(ns.LiveTime);
-                                                baseDeviceConfig.HeartbeatTime = ns.OverTime+3000;
+                                                if (!string.IsNullOrEmpty(ns.LiveTime)) baseDeviceConfig.LastAliveTime = DateTime.Parse(ns.LiveTime);
+                                                baseDeviceConfig.HeartbeatTime = ns.OverTime;
                                                 baseDeviceConfig.ServiceToken = ns.ServiceToken;
                                                 foreach(var devNew in ns.Devices)
                                                 {
