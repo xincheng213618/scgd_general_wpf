@@ -1,5 +1,6 @@
 ﻿using ColorVision.Device.Camera;
 using ColorVision.MySql.DAO;
+using ColorVision.Services.Algorithm.Views;
 using ColorVision.Services.Device;
 using ColorVision.Themes;
 using System;

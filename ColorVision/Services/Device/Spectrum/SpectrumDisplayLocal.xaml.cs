@@ -1,4 +1,6 @@
-﻿using cvColorVision;
+﻿using ColorVision.Device.Spectrum.Configs;
+using ColorVision.Device.Spectrum.Views;
+using cvColorVision;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -13,10 +15,10 @@ namespace ColorVision.Device.Spectrum
     /// </summary>
     public partial class SpectrumDisplayLocal : UserControl
     {
-        public SpectrumView View { get; set; }
+        public ViewSpectrum View { get; set; }
         public SpectrumDisplayLocal(DeviceSpectrum DeviceSpectrum)
         {
-            View = new SpectrumView();
+            View = new ViewSpectrum();
             InitializeComponent();
         }
 

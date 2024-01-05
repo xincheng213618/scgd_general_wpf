@@ -86,6 +86,7 @@ namespace ColorVision.Services.Device.Camera
         public ExpTimeCfg ExpTimeCfg { get; set; } = new ExpTimeCfg();
 
         public CameraCfg CameraCfg { get; set; } = new CameraCfg();
+
         public FileServerCfg FileServerCfg { get; set; } = new FileServerCfg();
 
         public bool IsSaveSrcPic { get; set; }

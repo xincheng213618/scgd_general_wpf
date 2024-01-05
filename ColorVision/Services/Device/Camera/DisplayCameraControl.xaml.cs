@@ -24,9 +24,7 @@ using System.Windows.Threading;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Windows.Input;
-using System.Buffers.Text;
-using Org.BouncyCastle.Utilities;
-using System.Text;
+using ColorVision.Services.Device.Camera.Views;
 
 namespace ColorVision.Device.Camera
 {
@@ -40,7 +38,7 @@ namespace ColorVision.Device.Camera
         public DeviceCamera Device { get; set; }
         public DeviceServiceCamera DService { get => Device.DeviceService; }
 
-        public CameraView View { get; set; }
+        public ViewCamera View { get; set; }
 
         private NetFileUtil netFileUtil;
         private IPendingHandler? handler { get; set; }
@@ -65,17 +63,17 @@ namespace ColorVision.Device.Camera
             _timer.Tick += Timer_Tick; // 设置Tick事件处理程序
         }
 
-        private void View_OnCurSelectionChanged(CameraImgResult data)
+        private void View_OnCurSelectionChanged(ViewResultCamera data)
         {
-            if (data.ResultCode == 0)
+            if (data.ResultCode == 0 && data.FilePath!=null)
             {
                 switch (data.FileType)
                 {
                     case CameraFileType.SrcFile:
-                        doOpen(data.ImgFileName, FileExtType.Raw);
+                        doOpen(data.FilePath, FileExtType.Raw);
                         break;
                     case CameraFileType.CIEFile:
-                        doOpen(data.ImgFileName, FileExtType.CIE);
+                        doOpen(data.FilePath, FileExtType.CIE);
                         break;
                     default:
                         break;
@@ -278,6 +276,7 @@ namespace ColorVision.Device.Camera
                         ButtonOpen.Visibility = Visibility.Visible;
                         StackPanelImage.Visibility = Visibility.Collapsed;
                         ButtonClose.Visibility = Visibility.Collapsed;
+                        View.ImageView.Clear();
                         break;
                     case DeviceStatus.Closing:
                         break;
@@ -391,7 +390,16 @@ namespace ColorVision.Device.Camera
                 if (port > 0)
                 {
                     CameraVideoControl.Start();
-                    DService.OpenVideo(host, port, DService.Config.ExpTime);
+                    MsgRecord msg= DService.OpenVideo(host, port, DService.Config.ExpTime);
+                    msg.MsgRecordStateChanged += (s) =>
+                    {
+                        if (s == MsgRecordState.Fail)
+                        {
+                            CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
+                            DService.Close();
+                            CameraVideoControl.Close();
+                        }
+                    };
                     CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
                     CameraVideoControl.CameraVideoFrameReceived += CameraVideoFrameReceived;
                     StackPanelImage.Visibility = Visibility.Collapsed;
@@ -406,12 +414,12 @@ namespace ColorVision.Device.Camera
 
         public void CameraVideoFrameReceived(System.Drawing.Bitmap bmp)
         {
-            if (View.img_view.ImageShow.Source is WriteableBitmap bitmap)
+            if (View.ImageView.ImageShow.Source is WriteableBitmap bitmap)
             {
                 if(bitmap.Width!= bmp.Width)
                 {
                     WriteableBitmap writeableBitmap = ImageUtil.BitmapToWriteableBitmap(bmp);
-                    View.img_view.ImageShow.Source = writeableBitmap;
+                    View.ImageView.ImageShow.Source = writeableBitmap;
                 }
                 else
                 {
@@ -421,7 +429,7 @@ namespace ColorVision.Device.Camera
             else
             {
                 WriteableBitmap writeableBitmap = ImageUtil.BitmapToWriteableBitmap(bmp);
-                View.img_view.ImageShow.Source = writeableBitmap;
+                View.ImageView.ImageShow.Source = writeableBitmap;
             }
         }
 

@@ -44,6 +44,7 @@ namespace ColorVision.MySql.DAO
     {
         public SpectumResultDao() : base(string.Empty, "t_scgd_measure_result_spectrometer", "id", false)
         {
+
         }
 
         public List<SpectumResultModel> selectBySN(string sn)
@@ -68,16 +69,26 @@ namespace ColorVision.MySql.DAO
             return d_info;
         }
 
+        public List<SpectumResultModel> ConditionalQuery(string id, string batchid)
+        {
+            Dictionary<string, object> keyValuePairs = new Dictionary<string, object>();
+            keyValuePairs.Add("id", id);
+            keyValuePairs.Add("batch_id", batchid);
+            return ConditionalQuery(keyValuePairs);
+        }
+
+
         public override SpectumResultModel GetModel(DataRow item)
         {
             SpectumResultModel model = new SpectumResultModel
             {
                 Id = item.Field<int>("id"),
+                BatchId = item.Field<int>("batch_id"),
+                CreateDate = item.Field<DateTime?>("create_date"),
                 IntTime = item.Field<float?>("fIntTime"),
                 iAveNum = item.Field<int>("iAveNum"),
                 IsUseAutoIntTime = item.Field<bool>("self_adaption_init_dark"),
                 IsUseAutoDark = item.Field<bool>("auto_init_dark"),
-                BatchId = item.Field<int>("batch_id"),
                 fPL = item.Field<string>("fPL"),
                 fRi = item.Field<string>("fRi"),
                 fx = item.Field<float?>("fx"),
@@ -102,7 +113,6 @@ namespace ColorVision.MySql.DAO
                 fSpect1 = item.Field<float?>("fSpect1"),
                 fSpect2 = item.Field<float?>("fSpect2"),
                 fInterval = item.Field<float?>("fInterval"),
-                CreateDate = item.Field<DateTime?>("create_date"),
             };
 
             return model;

@@ -3,6 +3,7 @@ using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.IO.Compression;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Security.Cryptography;
 using System.Security.Principal;
@@ -13,6 +14,11 @@ namespace ColorVision.Util
 {
     public static partial class Tool
     {
+        public static void ExtractToDirectory(string zipPath, string extractPath)
+        {
+            ZipFile.ExtractToDirectory(zipPath, extractPath);
+        }
+
         public static bool CreateDirectoryMax(string folderPath)
         {
             try

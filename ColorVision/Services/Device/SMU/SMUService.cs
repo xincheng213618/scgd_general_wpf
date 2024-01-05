@@ -1,6 +1,7 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.Services;
 using ColorVision.Services.Device;
+using ColorVision.Services.Device.SMU.Configs;
 using ColorVision.Services.Msg;
 using MQTTMessageLib.SMU;
 using MQTTnet.Client;
@@ -13,9 +14,6 @@ using System.Windows;
 
 namespace ColorVision.Services.Device.SMU
 {
-    public delegate void MQTTSMUScanResultHandler(SMUScanResultData data);
-    public delegate void MQTTSMUResultHandler(SMUResultData data);
-
     public class SMUService : BaseDevService<ConfigSMU>
     {
         public event MQTTSMUScanResultHandler ScanResultEvent;
@@ -56,12 +54,12 @@ namespace ColorVision.Services.Device.SMU
                         }
                         else if (json.EventName == "GetData")
                         {
-                            SMUResultData data = JsonConvert.DeserializeObject<SMUResultData>(JsonConvert.SerializeObject(json.Data));
+                            Configs.SMUResultData data = JsonConvert.DeserializeObject<Configs.SMUResultData>(JsonConvert.SerializeObject(json.Data));
                             Application.Current.Dispatcher.Invoke(() => ResultEvent?.Invoke(data));
                         }
                         else if (json.EventName == "Scan")
                         {
-                            SMUScanResultData data = JsonConvert.DeserializeObject<SMUScanResultData>(JsonConvert.SerializeObject(json.Data));
+                            Configs.SMUScanResultData data = JsonConvert.DeserializeObject<Configs.SMUScanResultData>(JsonConvert.SerializeObject(json.Data));
                             Application.Current.Dispatcher.Invoke(() => ScanResultEvent?.Invoke(data));
                         }
                         else if (json.EventName == "Close")
@@ -97,7 +95,7 @@ namespace ColorVision.Services.Device.SMU
             return true;
         }
 
-        public bool Open(bool isNet, string devName)
+        public MsgRecord Open(bool isNet, string devName)
         {
             MsgSend msg = new MsgSend
             {
@@ -105,8 +103,7 @@ namespace ColorVision.Services.Device.SMU
                 ServiceName = Config.Code,
                 Params = new SMUOpenParam() { DevName = devName, IsNet = isNet, }
             };
-            PublishAsyncClient(msg);
-            return true;
+            return PublishAsyncClient(msg);
         }
 
         public bool GetData(bool isSourceV, double measureVal, double lmtVal)
@@ -121,15 +118,14 @@ namespace ColorVision.Services.Device.SMU
             return true;
         }
 
-        public bool Close()
+        public MsgRecord Close()
         {
             MsgSend msg = new MsgSend
             {
                 EventName = MQTTSMUEventEnum.Event_Close,
                 ServiceName = Config.Code,
             };
-            PublishAsyncClient(msg);
-            return true;
+            return PublishAsyncClient(msg);
         }
 
         public bool Scan(bool isSourceV, double startMeasureVal, double stopMeasureVal, double lmtVal, int number)

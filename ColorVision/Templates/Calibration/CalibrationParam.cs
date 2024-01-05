@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8603,CS0649
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
+using ColorVision.Sorts;
 using cvColorVision;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -35,7 +36,7 @@ namespace ColorVision.Templates
     }
 
 
-    public class CalibrationRsource : ViewModelBase
+    public class CalibrationRsource : ViewModelBase,ISortID,ISortName, ISortFilePath
     {
         public SysResourceModel SysResourceModel { get; set; }
         public CalibrationRsource(SysResourceModel SysResourceModel)
@@ -46,8 +47,8 @@ namespace ColorVision.Templates
             ID = SysResourceModel.Id;
         }
 
-        public string Name { get; set; }
-        public string FilePath { get; set; }
+        public string? Name { get; set; }
+        public string? FilePath { get; set; }
         public int ID { get; set; }
 
         public int Pid { get; set; }

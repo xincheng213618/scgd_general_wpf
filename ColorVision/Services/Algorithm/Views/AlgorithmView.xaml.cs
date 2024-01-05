@@ -1,9 +1,10 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
 using ColorVision.Draw;
 using ColorVision.Extension;
-using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
+using ColorVision.Services.Device.Camera.Views;
+using ColorVision.Sorts;
 using ColorVision.Util;
 using FileServerPlugin;
 using HandyControl.Tools.Extension;
@@ -23,486 +24,10 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace ColorVision.Services.Algorithm
+namespace ColorVision.Services.Algorithm.Views
 {
-    public class PoiResult : ViewModelBase
-    {
-        private int _Id;
-        private string _SerialNumber;
-        private string _ImgFileName;
-        private string _POITemplateName;
-        private string _RecvTime;
-        private AlgorithmResultType _ResultType;
-        private ObservableCollection<PoiResultData> _PoiData;
-
-        public int Id { get { return _Id; } set { _Id = value; NotifyPropertyChanged(); } }
-        public string SerialNumber { get { return _SerialNumber; } set { _SerialNumber = value; NotifyPropertyChanged(); } }
-        public string ImgFileName { get { return _ImgFileName; } set { _ImgFileName = value; NotifyPropertyChanged(); } }
-        public string POITemplateName { get { return _POITemplateName; } set { _POITemplateName = value; NotifyPropertyChanged(); } }
-        public string RecvTime { get { return _RecvTime; } set { _RecvTime = value; NotifyPropertyChanged(); } }
-
-        public string ResultTypeDis { get {
-                string result = "";
-                switch (_ResultType)
-                {
-                    case AlgorithmResultType.POI_XY_UV:
-                        result = "色度";
-                        break;
-                    case AlgorithmResultType.POI_Y:
-                        result = "亮度";
-                        break;
-                    default:
-                        break;
-                }
-                return result; } }
-        public AlgorithmResultType ResultType
-        {
-            get { return _ResultType; }
-            set { _ResultType = value; }
-        }
-        public ObservableCollection<PoiResultData> PoiData { get { return _PoiData; } set { _PoiData = value; NotifyPropertyChanged(); } }
-
-        public PoiResult()
-        {
-            this._PoiData = new ObservableCollection<PoiResultData>();
-        }
-
-        public PoiResult(int id, string serialNumber, string imgFileName, string pOITemplateName, string recvTime, AlgorithmResultType resultType) : this()
-        {
-            _Id = id;
-            _SerialNumber = serialNumber;
-            _ImgFileName = imgFileName;
-            _POITemplateName = pOITemplateName;
-            _RecvTime = recvTime;
-            _ResultType = resultType;
-        }
-    }
-
-    public class PoiResultData:ViewModelBase
-    {
-        public POIPoint Point { get { return POIPoint; } set { POIPoint = value; NotifyPropertyChanged(); } }
-
-        public string Name { get { return POIPoint.Name; } }
-        public string PixelPos { get { return string.Format("{0},{1}", POIPoint.PixelX, POIPoint.PixelY); } }
-        public string PixelSize { get { return string.Format("{0},{1}", POIPoint.Width, POIPoint.Height); } }
-
-        public string Shapes { get { return string.Format("{0}", POIPoint.PointType == 0 ? "圆形" : "矩形"); } }
-
-        protected POIPoint POIPoint { get; set; }
-    }
-    public class PoiResultCIExyuvData : PoiResultData
-    {
-        public double CCT { get { return _CCT; } set { _CCT = value; NotifyPropertyChanged(); } }
-        public double Wave { get { return _Wave; } set { _Wave = value; NotifyPropertyChanged(); } }
-        public double X { get { return _X; } set { _X = value; NotifyPropertyChanged(); } }
-        public double Y { get { return _Y; } set { _Y = value; NotifyPropertyChanged(); } }
-        public double Z { get { return _Z; } set { _Z = value; NotifyPropertyChanged(); } }
-        public double u { get { return _u; } set { _u = value; NotifyPropertyChanged(); } }
-        public double v { get { return _v; } set { _v = value; NotifyPropertyChanged(); } }
-        public double x { get { return _x; } set { _x = value; NotifyPropertyChanged(); } }
-        public double y { get { return _y; } set { _y = value; NotifyPropertyChanged(); } }
-
-        private double _y;
-        private double _x;
-        private double _u;
-        private double _v;
-        private double _X;
-        private double _Y;
-        private double _Z;
-        private double _Wave;
-        private double _CCT;
-
-        public PoiResultCIExyuvData(POIPoint point, POIDataCIExyuv data)
-        {
-            this.Point = point;
-            this.u = data.u;
-            this.v = data.v;
-            this.x = data.x;
-            this.y = data.y;
-            this.X = data.X;
-            this.Y = data.Y;
-            this.Z = data.Z;
-            this.CCT = data.CCT;
-            this.Wave = data.Wave;
-        }
-    }
-
-    public class PoiResultCIEYData : PoiResultData
-    {
-        public double Y { get { return _Y; } set { _Y = value; NotifyPropertyChanged(); } }
-
-        private double _Y;
-
-        public PoiResultCIEYData(POIPoint point, POIDataCIEY data)
-        {
-            this.Point = point;
-            this.Y = data.Y;
-        }
-    }
-    public class MTFResultData : PoiResultData
-    {
-        public double Articulation { get { return _Articulation; } set { _Articulation = value; NotifyPropertyChanged(); } }
-
-        private double _Articulation;
-
-        public MTFResultData(POIPoint point, double articulation)
-        {
-            this.Point = point;
-            this.Articulation = articulation;
-        }
-
-        public MTFResultData(AlgResultMTFModel detail)
-        {
-            this.Point = new POIPoint((int)detail.PoiId, -1, detail.PoiName, (POIPointTypes)detail.PoiType, (int)detail.PoiX, (int)detail.PoiY, (int)detail.PoiWidth, (int)detail.PoiHeight);
-            var temp = JsonConvert.DeserializeObject<MQTTMessageLib.Algorithm.MTFResultData>(detail.Value);
-            this.Articulation = temp.Articulation;
-        }
-    }
-
-    public class FOVResultData : ViewModelBase
-    {
-        public FovPattern Pattern { get; set; }
-
-        public FovType Type { get; set; }
-
-        public double Degrees { get; set; }
-
-        public FOVResultData(FovPattern pattern, FovType type, double degrees)
-        {
-            Pattern = pattern;
-            Type = type;
-            Degrees = degrees;
-        }
-
-        public FOVResultData(AlgResultFOVModel algResultFOVModel)
-        {
-            Pattern = (FovPattern)algResultFOVModel.Pattern;
-            Type = (FovType)algResultFOVModel.Type;
-            Degrees = (double)algResultFOVModel.Degrees;
-        }
-    }
-
-    public class SFRResultData : ViewModelBase
-    {
-        public SFRResultData(float pdfrequency, float pdomainSamplingData)
-        {
-            this.pdfrequency = pdfrequency;
-            this.pdomainSamplingData = pdomainSamplingData;
-        }
-
-        public float pdfrequency { get; set; }
-
-        public float pdomainSamplingData { get; set; }
-    }
-
-    public class DistortionResultData : ViewModelBase
-    {
-        public DistortionResultData(DistortionType disType, DisSlopeType slopeType, DisLayoutType layoutType, DisCornerType cornerType, double maxRatio, PointFloat[] finalPoint)
-        {
-            DisType = disType;
-            SlopeType = slopeType;
-            LayoutType = layoutType;
-            CornerType = cornerType;
-            MaxRatio = maxRatio;
-            FinalPoints = finalPoint;
-        }
-
-        public DistortionResultData(AlgResultDistortionModel algResultDistortionModel)
-        {
-            DisType = (DistortionType)algResultDistortionModel.Type;
-            SlopeType = (DisSlopeType)algResultDistortionModel.SlopeType;
-            LayoutType = (DisLayoutType)algResultDistortionModel.LayoutType;
-            CornerType = (DisCornerType)algResultDistortionModel.CornerType;
-            MaxRatio = (double)algResultDistortionModel.MaxRatio;
-            FinalPoints = JsonConvert.DeserializeObject<PointFloat[]>(algResultDistortionModel.FinalPoints);
-        }
-
-        public DistortionType DisType { get; set; }
-        public string DisTypeDesc
-        {
-            get
-            {
-                string result = DisType.ToString();
-                switch (DisType)
-                {
-                    case DistortionType.OpticsDist:
-                        result = DisType.ToString();
-                        break;
-                    case DistortionType.TVDistH:
-                        result = DisType.ToString();
-                        break;
-                    case DistortionType.TVDistV:
-                        result = DisType.ToString();
-                        break;
-                    default:
-                        result = DisType.ToString();
-                        break;
-                }
-                return result;
-            }
-        }
-        public DisSlopeType SlopeType { get; set; }
-
-        public string SlopeTypeDesc
-        {
-            get
-            {
-                string result = SlopeType.ToString();
-                switch (SlopeType)
-                {
-                    case DisSlopeType.CenterPoint:
-                        result = "中心九点";
-                        break;
-                    case DisSlopeType.lb_Variance:
-                        result = "方差去除";
-                        break;
-                    default:
-                        result = SlopeType.ToString();
-                        break;
-                }
-                return result;
-            }
-        }
-        public DisLayoutType LayoutType { get; set; }
-
-        public string LayoutTypeDesc
-        {
-            get
-            {
-                string result = LayoutType.ToString();
-                switch (LayoutType)
-                {
-                    case DisLayoutType.SlopeIN:
-                        result = "斜率布点";
-                        break;
-                    case DisLayoutType.SlopeOUT:
-                        result = "非斜率布点";
-                        break;
-                    default:
-                        result = LayoutType.ToString();
-                        break;
-                }
-                return result;
-            }
-        }
-        public DisCornerType CornerType { get; set; }
-
-        public string CornerTypeDesc
-        {
-            get
-            {
-                string result = CornerType.ToString();
-                switch (CornerType)
-                {
-                    case DisCornerType.Circlepoint:
-                        result = "圆点";
-                        break;
-                    case DisCornerType.Checkerboard:
-                        result = "棋盘格";
-                        break;
-                    default:
-                        result = CornerType.ToString();
-                        break;
-                }
-                return result;
-            }
-        }
-        public double MaxRatio { get; set; }
-        public PointFloat[] FinalPoints { get; set; }
-    }
-    public class GhostPointResultData : ViewModelBase
-    {
-        public GhostPointResultData(PointFloat centerPoint, float ledBlobGray, float ghostAvrGray)
-        {
-            CenterPoint = centerPoint;
-            LedBlobGray = ledBlobGray;
-            GhostAvrGray = ghostAvrGray;
-        }
-
-        public PointFloat CenterPoint { get; set; }
-        public string CenterPointDis
-        {
-            get
-            {
-                return string.Format("{0},{1}", CenterPoint.X, CenterPoint.Y);
-            }
-        }
-        public float LedBlobGray { get; set; }
-        public float GhostAvrGray { get; set; }
-    }
-    public class GhostResultData : ViewModelBase
-    {
-        public GhostResultData(int rows, int cols, string ghostPixelNum, string ghostPixels, string ledPixelNum, string ledPixels, string ledCenters, string ledBlobGray, string ghostAvrGray)
-        {
-            Rows = rows;
-            Cols = cols;
-            GhostPixelNum = ghostPixelNum;
-            GhostPixels = ghostPixels;
-            LedPixelNum = ledPixelNum;
-            LedPixels = ledPixels;
-            LedCenters = ledCenters;
-            LedBlobGray = ledBlobGray;
-            GhostAvrGray = ghostAvrGray;
-        }
-        public GhostResultData(AlgResultGhostModel algResultGhostModel)
-        {
-            Rows = algResultGhostModel.Rows;
-            Cols = algResultGhostModel.Cols;
-            GhostPixelNum = algResultGhostModel.SingleGhostPixelNum;
-            GhostPixels = algResultGhostModel.GhostPixels;
-            LedPixelNum = algResultGhostModel.SingleLedPixelNum;
-            LedPixels = algResultGhostModel.LEDPixels;
-            LedCenters = algResultGhostModel.LEDCenters;
-            LedBlobGray = algResultGhostModel.LEDBlobGray;
-            GhostAvrGray = algResultGhostModel.GhostAverageGray;
-        }
-
-        public int Rows { get; set; }
-        public int Cols { get; set; }
-        public string GhostPixelNum { get; set; }
-        public string GhostPixels { get; set; }
-        public string LedPixelNum { get; set; }
-        public string LedPixels { get; set; }
-        public string LedCenters { get; set; }
-        public string LedBlobGray { get; set; }
-        public string GhostAvrGray { get; set; }
-    }
-
-    public class LedResultData : ViewModelBase
-    {
-        public LedResultData(Point point, double radius)
-        {
-            Point = point;
-            Radius = radius;
-        }
-        public Point Point { get; set; }
-        public double Radius { get; set; }
-    }
-
-    public class AlgorithmResult : ViewModelBase
-    {
-        private int _Id;
-        private string _SerialNumber;
-        private string _ImgFileName;
-        private string _POITemplateName;
-        private string? _RecvTime;
-        private AlgorithmResultType _ResultType;
-        private int _resultCode;
-        private long _totalTime;
-        private string _resultDesc;
-        private ObservableCollection<PoiResultData> _PoiData;
-        private ObservableCollection<FOVResultData> _FOVData;
-        private ObservableCollection<MTFResultData> _MTFData;
-        private ObservableCollection<SFRResultData> _SFRData;
-        private ObservableCollection<GhostResultData> _GhostData;
-        private ObservableCollection<DistortionResultData> _DistortionData;
-        public int Id { get { return _Id; } set { _Id = value; NotifyPropertyChanged(); } }
-        public string SerialNumber { get { return _SerialNumber; } set { _SerialNumber = value; NotifyPropertyChanged(); } }
-        public string ImgFileName { get { return _ImgFileName; } set { _ImgFileName = value; NotifyPropertyChanged(); } }
-        public string POITemplateName { get { return _POITemplateName; } set { _POITemplateName = value; NotifyPropertyChanged(); } }
-        public string? RecvTime { get { return _RecvTime; } set { _RecvTime = value; NotifyPropertyChanged(); } }
-
-        public string ResultTypeDis
-        {
-            get
-            {
-                string result = "";
-                switch (_ResultType)
-                {
-                    case AlgorithmResultType.POI_XY_UV:
-                        result = "色度";
-                        break;
-                    case AlgorithmResultType.POI_Y:
-                        result = "亮度";
-                        break;
-                    case AlgorithmResultType.POI:
-                        result = "关注点";
-                        break;
-                    case AlgorithmResultType.Distortion:
-                        result = "畸变";
-                        break;
-                    case AlgorithmResultType.Ghost:
-                        result = "鬼影";
-                        break;
-                    default:
-                        result = _ResultType.ToString();
-                        break;
-                }
-                return result;
-            }
-        }
-        public AlgorithmResultType ResultType
-        {
-            get { return _ResultType; }
-            set { _ResultType = value; }
-        }
-        public string Result
-        {
-            get
-            {
-                return ResultCode == 0 ? "成功" : "失败";
-            }
-        }
-        public string TotalTime
-        {
-            get
-            {
-                return string.Format("{0}", TimeSpan.FromMilliseconds(_totalTime).ToString().TrimEnd('0'));
-            }
-        }
-        public int ResultCode { get { return _resultCode; } set { _resultCode = value; NotifyPropertyChanged(); } }
-        public string ResultDesc { get { return _resultDesc; } set { _resultDesc = value; NotifyPropertyChanged(); } }
-        public ObservableCollection<PoiResultData> PoiData { get { return _PoiData; } set { _PoiData = value; NotifyPropertyChanged(); } }
-        public ObservableCollection<FOVResultData> FOVData { get { return _FOVData; } set { _FOVData = value; NotifyPropertyChanged(); } }
-        public ObservableCollection<MTFResultData> MTFData { get { return _MTFData; } set { _MTFData = value; NotifyPropertyChanged(); } }
-        public ObservableCollection<SFRResultData> SFRData { get { return _SFRData; } set { _SFRData = value; NotifyPropertyChanged(); } }
-        public ObservableCollection<GhostResultData> GhostData { get { return _GhostData; } set { _GhostData = value; NotifyPropertyChanged(); } }
-        public ObservableCollection<DistortionResultData> DistortionData { get { return _DistortionData; } set { _DistortionData = value; NotifyPropertyChanged(); } }
-        public ObservableCollection<LedResultData> LedResultDatas { get; set; }
-
-        public AlgorithmResult()
-        {
-            this._PoiData = new ObservableCollection<PoiResultData>();
-            this._FOVData = new ObservableCollection<FOVResultData>();
-            this._MTFData = new ObservableCollection<MTFResultData>();
-            this._SFRData = new ObservableCollection<SFRResultData>();
-            this._GhostData = new ObservableCollection<GhostResultData>();
-            this._DistortionData = new ObservableCollection<DistortionResultData>();
-            LedResultDatas = new ObservableCollection<LedResultData>();
-        }
-
-        public AlgorithmResult(AlgResultMasterModel algResultMasterModel)
-        {
-            _Id = algResultMasterModel.Id;
-            _SerialNumber = algResultMasterModel.BatchCode;
-            _ImgFileName = algResultMasterModel.ImgFile;
-            _POITemplateName = algResultMasterModel.TName;
-            _RecvTime = algResultMasterModel.CreateDate.ToString();
-            _ResultType = algResultMasterModel.ImgFileType;
-            _resultCode = (int)algResultMasterModel.ResultCode;
-            _totalTime = algResultMasterModel.TotalTime;
-            _resultDesc = algResultMasterModel.Result;
-        }
-
-        public AlgorithmResult(int id, string serialNumber, string imgFileName, string pOITemplateName, string recvTime, AlgorithmResultType resultType, int? resultCode, string resultDesc, long totalTime = 0) : this()
-        {
-            _Id = id;
-            _SerialNumber = serialNumber;
-            _ImgFileName = imgFileName;
-            _POITemplateName = pOITemplateName;
-            _RecvTime = recvTime;
-            _ResultType = resultType;
-            _resultCode = (int)resultCode;
-            _totalTime = totalTime;
-            _resultDesc = resultDesc;
-        }
-    }
-
-
-    public delegate void CurSelectionChanged(AlgorithmResult data);
-
     /// <summary>
-    /// SpectrumView.xaml 的交互逻辑
+    /// ViewSpectrum.xaml 的交互逻辑
     /// </summary>
     public partial class AlgorithmView : UserControl,IView
     {
@@ -528,54 +53,11 @@ namespace ColorVision.Services.Algorithm
             };
 
             View = new View();
-            View.ViewIndexChangedEvent += (s, e) =>
-            {
-                if (e == -2)
-                {
-                    MenuItem menuItem3 = new MenuItem { Header = "还原到主窗口中" };
-                    menuItem3.Click += (s, e) =>
-                    {
-                        if (ViewGridManager.GetInstance().IsGridEmpty(View.PreViewIndex))
-                        {
-                            View.ViewIndex = View.PreViewIndex;
-                        }
-                        else
-                        {
-                            View.ViewIndex = -1;
-                        }
-                    };
-                    this.ContextMenu = new ContextMenu();
-                    this.ContextMenu.Items.Add(menuItem3);
 
-                }
-                else
-                {
-                    MenuItem menuItem = new MenuItem() { Header = "设为主窗口" };
-                    menuItem.Click += (s, e) => { ViewGridManager.GetInstance().SetOneView(this); };
-                    MenuItem menuItem1 = new MenuItem() { Header = "展示全部窗口" };
-                    menuItem1.Click += (s, e) => { ViewGridManager.GetInstance().SetViewNum(-1); };
-                    MenuItem menuItem2 = new MenuItem() { Header = "独立窗口中显示" };
-                    menuItem2.Click += (s, e) => { View.ViewIndex = -2; };
-                    MenuItem menuItem3 = new MenuItem() { Header = Properties.Resource.WindowHidden };
-                    menuItem3.Click += (s, e) => { View.ViewIndex = -1; };
-                    this.ContextMenu = new ContextMenu();
-                    this.ContextMenu.Items.Add(menuItem);
-                    this.ContextMenu.Items.Add(menuItem1);
-                    this.ContextMenu.Items.Add(menuItem2);
-                    this.ContextMenu.Items.Add(menuItem3);
 
-                }
-            };
-
-            GridView gridView = new GridView();
-            List<string> headers = new List<string> { "序号", "批次号", "模板", "图像数据文件", "测量时间", "类型", "用时(时:分:秒)", "结果", "描述" };
-            List<string> bdheaders = new List<string> { "Id", "SerialNumber", "POITemplateName", "ImgFileName", "RecvTime", "ResultTypeDis", "TotalTime", "Result", "ResultDesc" };
-            for (int i = 0; i < headers.Count; i++)
-            {
-                gridView.Columns.Add(new GridViewColumn() { Header = headers[i], Width = 100, DisplayMemberBinding = new Binding(bdheaders[i]) });
-            }
-            listView1.View = gridView;
             listView1.ItemsSource = AlgResults;
+
+
             //色度
             List<string> cieBdHeader = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
             List<string> cieHeader = new List<string> { "名称", "位置", "大小", "形状", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
@@ -599,10 +81,6 @@ namespace ColorVision.Services.Algorithm
             listViewY.ItemsSource = PoiYResultDatas;
 
 
-
-
-
-
             var keyValuePairs = Enum.GetValues(typeof(AlgorithmResultType))
                 .Cast<AlgorithmResultType>()
                 .Select(e1 => new KeyValuePair<AlgorithmResultType, string>(e1, e1.ToString()))
@@ -616,13 +94,6 @@ namespace ColorVision.Services.Algorithm
 
         public ObservableCollection<PoiResultData> PoiResultDatas { get; set; } = new ObservableCollection<PoiResultData>();
         public ObservableCollection<PoiResultData> PoiYResultDatas { get; set; } = new ObservableCollection<PoiResultData>();
-        public ObservableCollection<FOVResultData> FOVResultDatas { get; set; } = new ObservableCollection<FOVResultData>();
-        public ObservableCollection<PoiResultData> MTFResultDatas { get; set; } = new ObservableCollection<PoiResultData>();
-        public ObservableCollection<GhostResultData> GhostResultDatas { get; set; } = new ObservableCollection<GhostResultData>();
-        public ObservableCollection<GhostPointResultData> GhostPointResultDatas { get; set; } = new ObservableCollection<GhostPointResultData>();
-        public ObservableCollection<SFRResultData> SFRResultDatas { get; set; } = new ObservableCollection<SFRResultData>();
-        public ObservableCollection<DistortionResultData> DistortionResultDatas { get; set; } = new ObservableCollection<DistortionResultData>();
-        public Dictionary<string, AlgorithmResult> resultDis { get; set; } = new Dictionary<string, AlgorithmResult>();
         public ObservableCollection<AlgorithmResult> AlgResults { get; set; } = new ObservableCollection<AlgorithmResult>();
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -652,11 +123,11 @@ namespace ColorVision.Services.Algorithm
                 string value = "";
                 foreach (var item in AlgResults)
                 {
-                    value += item.Id + "," 
-                        +item.SerialNumber + "," 
+                    value += item.ID + "," 
+                        +item.Batch + "," 
                         + item.POITemplateName  + "," 
-                        + item.ImgFileName +","
-                        + item.RecvTime + ","
+                        + item.FilePath +","
+                        + item.CreateTime + ","
                         + item.ResultTypeDis + ","
                         + item.TotalTime + ","
                         + item.Result + ","
@@ -675,13 +146,9 @@ namespace ColorVision.Services.Algorithm
         }
         public void AlgResultDataDraw(string key, string serialNumber, string imgFileName, string templateName, AlgorithmResultType resultType, int? resultCode, string resultDesc, long totalTime)
         {
-            if (!resultDis.ContainsKey(key))
-            {
-                AlgorithmResult result = new AlgorithmResult(AlgResults.Count + 1, serialNumber, imgFileName, templateName, DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss"), resultType, resultCode, resultDesc, totalTime);
-                AlgResults.Add(result);
-                resultDis[key] = result;
-                RefreshResultListView();
-            }
+            AlgorithmResult result = new AlgorithmResult(AlgResults.Count + 1, serialNumber, imgFileName, templateName, DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss"), resultType, resultCode, resultDesc, totalTime);
+            AlgResults.Add(result);
+            RefreshResultListView();
         }
         public void PoiDataDraw(AlgResultMasterModel result, List<POIResultCIEY> results)
         {
@@ -690,18 +157,14 @@ namespace ColorVision.Services.Algorithm
 
         public void PoiDataDraw(string key, string serialNumber, string imgFileName, string templateName, List<POIResultCIEY> results, int? resultCode, string resultDesc, long totalTime)
         {
-            if (!resultDis.ContainsKey(key))
+            AlgorithmResult result = new AlgorithmResult(AlgResults.Count + 1, serialNumber, imgFileName, templateName, DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss"), AlgorithmResultType.POI_Y, resultCode, resultDesc, totalTime);
+            AlgResults.Add(result);
+            foreach (var item in results)
             {
-                AlgorithmResult result = new AlgorithmResult(AlgResults.Count + 1, serialNumber, imgFileName, templateName, DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss"), AlgorithmResultType.POI_Y, resultCode, resultDesc, totalTime);
-                AlgResults.Add(result);
-                resultDis[key] = result;
-                foreach (var item in results)
-                {
-                    PoiResultCIEYData resultData = new PoiResultCIEYData(item.Point, item.Data);
-                    result.PoiData.Add(resultData);
-                }
-                RefreshResultListView();
+                PoiResultCIEYData resultData = new PoiResultCIEYData(item.Point, item.Data);
+                result.PoiData.Add(resultData);
             }
+            RefreshResultListView();
         }
         public void PoiDataDraw(AlgResultMasterModel result, List<POIResultCIExyuv> results)
         {
@@ -709,18 +172,14 @@ namespace ColorVision.Services.Algorithm
         }
         public void PoiDataDraw(string key, string serialNumber, string imgFileName, string templateName, List<POIResultCIExyuv> results, int? resultCode, string resultDesc, long totalTime)
         {
-            if (!resultDis.ContainsKey(key))
+            AlgorithmResult result = new AlgorithmResult(AlgResults.Count + 1, serialNumber, imgFileName, templateName, DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss"), AlgorithmResultType.POI_XY_UV, resultCode, resultDesc, totalTime);
+            AlgResults.Add(result);
+            foreach (var item in results)
             {
-                AlgorithmResult result = new AlgorithmResult(AlgResults.Count + 1, serialNumber, imgFileName, templateName, DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss"), AlgorithmResultType.POI_XY_UV, resultCode, resultDesc, totalTime);
-                AlgResults.Add(result);
-                resultDis[key] = result;
-                foreach (var item in results)
-                {
-                    PoiResultCIExyuvData resultData = new PoiResultCIExyuvData(item.Point, item.Data);
-                    result.PoiData.Add(resultData);
-                }
-                RefreshResultListView();
+                PoiResultCIExyuvData resultData = new PoiResultCIExyuvData(item.Point, item.Data);
+                result.PoiData.Add(resultData);
             }
+            RefreshResultListView();
         }
 
 
@@ -728,14 +187,9 @@ namespace ColorVision.Services.Algorithm
 
         public void AlgResultMasterModelDataDraw(AlgResultMasterModel result)
         {
-            if (!resultDis.ContainsKey(result.Id.ToString()))
-            {
-                AlgorithmResult algorithmResult = new AlgorithmResult(result);
-                AlgResults.Add(algorithmResult);
-                RefreshResultListView();
-                resultDis[result.Id.ToString()] = algorithmResult;
-            }
-
+            AlgorithmResult algorithmResult = new AlgorithmResult(result);
+            AlgResults.Add(algorithmResult);
+            RefreshResultListView();
         }
 
         private void RefreshResultListView()
@@ -805,13 +259,13 @@ namespace ColorVision.Services.Algorithm
                         ImageView.AddPOIPoint(DrawPoiPoint);
                         break;
                     case AlgorithmResultType.FOV:
-                        ImageView.OpenImage(result.ImgFileName);
+                        ImageView.OpenImage(result.FilePath);
                         listViewSide.Visibility = Visibility.Visible;
 
                         if (result.SFRData == null)
                         {
                             result.FOVData = new ObservableCollection<FOVResultData>();
-                            List<AlgResultFOVModel> AlgResultFOVModels = resultService.GetFOVByPid(result.Id);
+                            List<AlgResultFOVModel> AlgResultFOVModels = resultService.GetFOVByPid(result.ID);
                             foreach (var item in AlgResultFOVModels)
                             {
                                 FOVResultData fOVResultData = new FOVResultData(item);
@@ -831,13 +285,13 @@ namespace ColorVision.Services.Algorithm
                         listViewSide.ItemsSource = result.FOVData;
                         break;
                     case AlgorithmResultType.SFR:
-                        ImageView.OpenImage(result.ImgFileName);
+                        ImageView.OpenImage(result.FilePath);
                         listViewSide.Visibility = Visibility.Visible;
 
                         if (result.SFRData == null)
                         {
                             result.SFRData = new ObservableCollection<SFRResultData>();
-                            List<AlgResultSFRModel> AlgResultSFRModels = resultService.GetSFRByPid(result.Id);
+                            List<AlgResultSFRModel> AlgResultSFRModels = resultService.GetSFRByPid(result.ID);
                             foreach (var item in AlgResultSFRModels)
                             {
                                 var Pdfrequencys = JsonConvert.DeserializeObject<float[]>(item.Pdfrequency);
@@ -866,12 +320,12 @@ namespace ColorVision.Services.Algorithm
 
                         break;
                     case AlgorithmResultType.MTF:
-                        ImageView.OpenImage(result.ImgFileName);
+                        ImageView.OpenImage(result.FilePath);
                         listViewSide.Visibility = Visibility.Visible;
                         if (result.MTFData == null)
                         {
                             result.MTFData = new ObservableCollection<MTFResultData>();
-                            List<AlgResultMTFModel> AlgResultMTFModels = resultService.GetMTFByPid(result.Id);
+                            List<AlgResultMTFModel> AlgResultMTFModels = resultService.GetMTFByPid(result.ID);
                             foreach (var item in AlgResultMTFModels)
                             {
                                 MTFResultData mTFResultData = new MTFResultData(item);
@@ -900,7 +354,7 @@ namespace ColorVision.Services.Algorithm
                         if (result.GhostData == null)
                         {
                             result.GhostData = new ObservableCollection<GhostResultData>();
-                            List<AlgResultGhostModel> AlgResultGhostModels = resultService.GetGhostByPid(result.Id);
+                            List<AlgResultGhostModel> AlgResultGhostModels = resultService.GetGhostByPid(result.ID);
                             foreach (var item in AlgResultGhostModels)
                             {
                                 GhostResultData ghostResultData = new GhostResultData(item);
@@ -961,7 +415,7 @@ namespace ColorVision.Services.Algorithm
                             }
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                ImageView.OpenGhostImage(result.ImgFileName, LED_pixel_X, LED_pixel_Y, Ghost_pixel_X, Ghost_pixel_Y);
+                                ImageView.OpenGhostImage(result.FilePath, LED_pixel_X, LED_pixel_Y, Ghost_pixel_X, Ghost_pixel_Y);
                             });
 
 
@@ -984,13 +438,13 @@ namespace ColorVision.Services.Algorithm
                         listViewSide.ItemsSource = result.GhostData;
                         break;
                     case AlgorithmResultType.Distortion:
-                        ImageView.OpenImage(result.ImgFileName);
+                        ImageView.OpenImage(result.FilePath);
                         listViewSide.Visibility = Visibility.Visible;
 
                         if (result.DistortionData == null)
                         {
                             result.DistortionData = new ObservableCollection<DistortionResultData>();
-                            var Distortions = resultService.GetDistortionByPid(result.Id);
+                            var Distortions = resultService.GetDistortionByPid(result.ID);
                             foreach (var item in Distortions)
                             {
                                 DistortionResultData distortionResultData = new DistortionResultData(item);
@@ -1020,12 +474,12 @@ namespace ColorVision.Services.Algorithm
                     case AlgorithmResultType.Calibration:
                         break;
                     case AlgorithmResultType.LedCheck:
-                        ImageView.OpenImage(result.ImgFileName);
+                        ImageView.OpenImage(result.FilePath);
                         listViewSide.Visibility = Visibility.Visible;
                         if (result.LedResultDatas == null)
                         {
                             result.LedResultDatas = new ObservableCollection<LedResultData>();
-                            List<AlgResultLedcheckModel> AlgResultLedcheckModels = algResultLedcheckDao.GetAllByPid(result.Id);
+                            List<AlgResultLedcheckModel> AlgResultLedcheckModels = algResultLedcheckDao.GetAllByPid(result.ID);
                             foreach (var item in AlgResultLedcheckModels)
                             {
                                 LedResultData ledResultData = new LedResultData(new Point((double)item.PosX, (double)item.PosY), (double)item.Radius);
@@ -1140,7 +594,6 @@ namespace ColorVision.Services.Algorithm
                 if (TextBoxType.SelectedValue is AlgorithmResultType algorithmResultType)
                     altype = ((int)algorithmResultType).ToString();
 
-
                 AlgResults.Clear();
                 List<AlgResultMasterModel> algResults = algResultMasterDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, altype.ToString(), TextBoxFile.Text);
                 foreach (var item in algResults)
@@ -1148,8 +601,37 @@ namespace ColorVision.Services.Algorithm
                     AlgorithmResult algorithmResult = new AlgorithmResult(item);
                     AlgResults.Add(algorithmResult);
                 }
-
             }
+        }
+
+        private void Order_Click(object sender, RoutedEventArgs e)
+        {
+            OrderPopup.IsOpen = true;
+        }
+
+        private void Radio_Checked(object sender, RoutedEventArgs e)
+        {
+            if (RadioID?.IsChecked == true)
+            {
+                AlgResults.SortByID(RadioUp?.IsChecked == false);
+            }
+
+            if (RadioBatch?.IsChecked == true)
+            {
+                AlgResults.SortByBatch(RadioUp?.IsChecked == false);
+            }
+
+            if (RadioFilePath?.IsChecked == true)
+            {
+                AlgResults.SortByFilePath(RadioUp?.IsChecked == false);
+            }
+
+            if (RadioCreateTime?.IsChecked == true)
+            {
+                AlgResults.SortByCreateTime(RadioUp?.IsChecked == false);
+            }
+
+            OrderPopup.IsOpen = false;
         }
     }
 }

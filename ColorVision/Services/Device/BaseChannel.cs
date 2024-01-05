@@ -2,6 +2,7 @@
 using ColorVision.Extension;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
+using ColorVision.RC;
 using MySqlX.XDevAPI;
 using Newtonsoft.Json;
 using System;
@@ -212,6 +213,10 @@ namespace ColorVision.Services.Device
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
             ServiceManager.GetInstance().ResourceService.Save(SysResourceModel);
             IsEditMode = false;
+
+            ///每次提交之后重启服务
+            RCService.GetInstance().RestartServices();
+
         }
 
         public override void Delete()

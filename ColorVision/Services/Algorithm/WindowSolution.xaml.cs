@@ -1,5 +1,6 @@
 ﻿using ColorVision.Services.Algorithm.MySql;
 using ColorVision.Services.Algorithm.Result;
+using ColorVision.Services.Algorithm.Views;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

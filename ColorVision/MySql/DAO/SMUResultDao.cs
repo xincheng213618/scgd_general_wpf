@@ -1,4 +1,5 @@
 ﻿using ColorVision.Services.Device.SMU;
+using ColorVision.Services.Device.SMU.Configs;
 using System;
 using System.Collections.Generic;
 using System.Data;

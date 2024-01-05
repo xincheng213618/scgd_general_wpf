@@ -1,4 +1,5 @@
-﻿using log4net;
+﻿using ColorVision.Solution.V.Files;
+using log4net;
 using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
@@ -374,10 +375,23 @@ namespace ColorVision.MySql
             }
             return list;
         }
-        public List<T> ConditionalQuery(string id,string batchid,string ImageType,string fileName)
+
+        public List<T> ConditionalQuery(Dictionary<string,object> keyValuePairs)
         {
             List<T> list = new List<T>();
-            string sql = $"select * from {GetTableName()} where `id` LIKE '%{id}%' AND `img_file_type` LIKE '%{ImageType}%' AND  `batch_id` LIKE '%{batchid}%' AND img_file LIKE '%{fileName}%'";
+            string sql = $"select * from {GetTableName()} where 1=1";
+
+            // 遍历字典，为每个键值对构建查询条件
+            foreach (var pair in keyValuePairs)
+            {
+                // 这假设字典的键是数据库列的名称
+                // 并且值是你想要匹配的模式
+                if (pair.Value != null && !string.IsNullOrEmpty(pair.Value.ToString()))
+                {
+                    // 对于安全起见，应该使用参数化查询来避免SQL注入
+                    sql += $" AND `{pair.Key}` LIKE '%{pair.Value}%'";
+                }
+            }
             DataTable d_info = GetData(sql);
             foreach (var item in d_info.AsEnumerable())
             {
@@ -389,6 +403,8 @@ namespace ColorVision.MySql
             }
             return list;
         }
+
+
 
 
         public List<T> GetAll(int tenantId)

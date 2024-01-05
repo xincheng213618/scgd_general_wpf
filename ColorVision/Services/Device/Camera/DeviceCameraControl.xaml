@@ -96,7 +96,7 @@
                             </TabItem>
                             <TabItem Header="基础配置">
                                 <StackPanel Margin="5">
-                                    <GroupBox Header="相机基础配置" Margin="5">
+                                    <GroupBox Header="相机基础配置">
                                         <StackPanel Margin="5">
                                             <DockPanel >
                                                 <Grid Width="120" >

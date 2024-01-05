@@ -5,9 +5,11 @@ using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using ColorVision.Extension;
 using ColorVision.Services.Msg;
+using ColorVision.Sorts;
 using ColorVision.Templates;
 using ColorVision.Themes.Controls;
 using cvColorVision;
@@ -65,13 +67,8 @@ namespace ColorVision.Device.Camera
                 gridView.Columns.Add(new GridViewColumn() { Header = "序号", DisplayMemberBinding = new Binding("ID") });
                 gridView.Columns.Add(new GridViewColumn() { Header = "名称", DisplayMemberBinding = new Binding("Name") });
                 gridView.Columns.Add(new GridViewColumn() { Header = "路径", DisplayMemberBinding = new Binding("FilePath") });
-
                 listView.View = gridView;
-
                 stackPanel.Children.Add(listView);
-
-                StackPanel StackPanelSort = new StackPanel() { Orientation = Orientation.Horizontal };
-
 
 
                 ObservableCollection<CalibrationRsource> CalibrationRsources = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item, DeviceCamera.MySqlId);
@@ -79,59 +76,76 @@ namespace ColorVision.Device.Camera
                 listView.ItemsSource = CalibrationRsources;
 
 
-                StackPanelSort.Children.Clear();
-                stackPanel.Children.Insert(0, StackPanelSort);
-
-
-                RadioButton IDDESC = new RadioButton { Content = "按照序号升序", Tag = "IDDESC", Margin = new Thickness(5) ,IsChecked =true};
-                IDDESC.Click += (s, e) =>
+                Popup orderPopup = new Popup { Name = "OrderPopup", AllowsTransparency = true, Focusable = false, PopupAnimation = PopupAnimation.Slide, Placement = PlacementMode.Bottom, StaysOpen = false };
+                Button orderButton = new Button  { Name = "Order",Content = "排序", Margin = new Thickness(5) };
+                orderButton.Click += (s, e) =>
                 {
-                    var sortedItems = CalibrationRsources.OrderBy(f => f.ID).ToList();
-                    CalibrationRsources.Clear();
-                    foreach (var item in sortedItems)
-                    {
-                        CalibrationRsources.Add(item);
-                    }
+                    orderPopup.IsOpen = true;
                 };
-                StackPanelSort.Children.Add(IDDESC);
 
-                RadioButton IDASC = new RadioButton { Content = "按照序号降序", Tag = "IDASC", Margin = new Thickness(5) };
-                IDASC.Click += (s, e) =>
+                orderPopup.PlacementTarget = orderButton;
+
+                // 创建边框和堆栈面板
+                Border border = new Border  {  Margin = new Thickness(5),Width = 80 };
+                border.Style = this.FindResource("BorderModuleArea") as Style;
+
+                StackPanel stackPanelorder = new StackPanel  {  Margin = new Thickness(5) };
+
+                StackPanel stackPanelorder1 = new StackPanel { Margin = new Thickness(0,5,0,5) };
+                StackPanel stackPanelorder2 = new StackPanel { Margin = new Thickness(0,5,0,5) };
+                stackPanelorder.Children.Add(stackPanelorder1);
+                stackPanelorder.Children.Add(stackPanelorder2);
+
+                // 创建单选按钮
+                RadioButton radioID = new RadioButton {  Content = "序号", IsChecked = true };
+                RadioButton radioName = new RadioButton { Content = "名称" };
+                RadioButton radioFile = new RadioButton { Content = "路径"};
+
+                RadioButton radioUp = new RadioButton {  Content = "递增", IsChecked = true };
+                RadioButton radioDown = new RadioButton { Content = "递减" };
+
+                RoutedEventHandler Radio_Checked = (s, e) =>
                 {
-                    var sortedItems = CalibrationRsources.OrderByDescending(f => f.ID).ToList();
-                    CalibrationRsources.Clear();
-                    foreach (var item in sortedItems)
+                    if (radioID.IsChecked == true)
                     {
-                        CalibrationRsources.Add(item);
+                        CalibrationRsources.SortByID(radioUp.IsChecked== false);
                     }
-                };
-                StackPanelSort.Children.Add(IDASC);
 
-                RadioButton BatchASC = new RadioButton { Content = "按照批次号升序", Tag = "BatchASC", Margin = new Thickness(5) };
-                BatchASC.Click += (s, e) =>
-                {
-                    var sortedItems = CalibrationRsources.OrderBy(f => f.Name).ToList();
-                    CalibrationRsources.Clear();
-                    foreach (var item in sortedItems)
+                    if (radioName.IsChecked == true)
                     {
-                        CalibrationRsources.Add(item);
+                        CalibrationRsources.SortByName(radioUp.IsChecked == false);
                     }
-                };
-                StackPanelSort.Children.Add(BatchASC);
 
-                RadioButton BatchESC = new RadioButton { Content = "按照批次号降序", Tag = "BatchESC", Margin = new Thickness(5) };
-                BatchESC.Click += (s, e) =>
-                {
-                    var sortedItems = CalibrationRsources.OrderByDescending(f => f.Name).ToList();
-                    CalibrationRsources.Clear();
-                    foreach (var item in sortedItems)
+                    if (radioFile.IsChecked == true)
                     {
-                        CalibrationRsources.Add(item);
+                        CalibrationRsources.SortByFilePath(radioUp.IsChecked == false);
                     }
+                    orderPopup.IsOpen = false;
                 };
-                StackPanelSort.Children.Add(BatchESC);
 
-                StackPanel stack = new StackPanel() {  Orientation =Orientation.Horizontal};
+                radioID.Checked += Radio_Checked; 
+                radioName.Checked += Radio_Checked;
+                radioFile.Checked += Radio_Checked;
+                radioUp.Checked += Radio_Checked;
+                radioDown.Checked += Radio_Checked;
+
+
+                stackPanelorder1.Children.Add(radioID);
+                stackPanelorder1.Children.Add(radioName);
+                stackPanelorder1.Children.Add(radioFile);
+
+                stackPanelorder2.Children.Add(radioUp);
+                stackPanelorder2.Children.Add(radioDown);
+
+
+                border.Child = stackPanelorder;
+                orderPopup.Child = border;
+
+                StackPanel stack = new StackPanel() { Orientation = Orientation.Horizontal };
+
+                stack.Children.Add(orderButton);
+
+
                 Button button = new Button() { Content = "上传校正文件", Margin = new Thickness(5) };
                 button.Click += (s, e) =>
                 {

@@ -1,4 +1,6 @@
-﻿using ColorVision.Services.Device;
+﻿using ColorVision.Device.Spectrum.Configs;
+using ColorVision.Device.Spectrum.Views;
+using ColorVision.Services.Device;
 using cvColorVision;
 using System;
 using System.Collections.Generic;
@@ -17,7 +19,7 @@ namespace ColorVision.Device.Spectrum
         public DeviceSpectrum DeviceSpectrum { get; set; }
         public SpectrumService SpectrumService { get => DeviceSpectrum.DeviceService; }
 
-        public SpectrumView View { get => DeviceSpectrum.View;}
+        public ViewSpectrum View { get => DeviceSpectrum.View;}
         public SpectrumDisplayControl(DeviceSpectrum DeviceSpectrum)
         {
             this.DeviceSpectrum = DeviceSpectrum;
@@ -60,7 +62,7 @@ namespace ColorVision.Device.Spectrum
             SpectrumService.DataHandlerEvent += e =>
             {
                 if (e != null)
-                    SpectrumDrawPlot(e);
+                    View.SpectrumDrawPlot(e);
             };
 
             SpectrumService.HeartbeatEvent += e =>
@@ -75,6 +77,7 @@ namespace ColorVision.Device.Spectrum
         }
         private void doHeartbeat(HeartbeatParam e)
         {
+            SpectrumService.Config.DeviceStatus = e.DeviceStatus;
             if (e.DeviceStatus == DeviceStatus.Opened)
             {
                 btn_connect.Content = "关闭";
@@ -103,7 +106,6 @@ namespace ColorVision.Device.Spectrum
         private void doSpectrumHeartbeat(SpectumHeartbeatParam e)
         {
             doHeartbeat(e);
-
             if (e.IsAutoGetData)
             {
                 btn_autoTest.Content = "取消自动测试";
@@ -134,10 +136,6 @@ namespace ColorVision.Device.Spectrum
 
 
         #region MQTT
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            SpectrumService.Init();
-        }
 
         private void Button_Click_Open(object sender, RoutedEventArgs e)
         {

@@ -2,6 +2,7 @@
 using ColorVision.MySql.DAO;
 using ColorVision.Services.Device;
 using ColorVision.Services.Device.Camera;
+using ColorVision.Services.Device.Camera.Views;
 using ColorVision.Templates;
 using ColorVision.Themes;
 using System;
@@ -22,7 +23,7 @@ namespace ColorVision.Device.Camera
         public CameraDisplayControl CameraDisplayControl { get; set; }
         public EditCamera EditCamera { get; set; }
 
-        public CameraView View { get; set; }
+        public ViewCamera View { get; set; }
 
         public ServiceCamera Service { get; set; }
 
@@ -46,7 +47,7 @@ namespace ColorVision.Device.Camera
             this.Config.SendTopic = Service.SendTopic;
             this.Config.SubscribeTopic = Service.SubscribeTopic;
 
-            View = new CameraView();
+            View = new ViewCamera();
             if (Application.Current.TryFindResource("DrawingImageCamera") is DrawingImage  drawingImage)
                 Icon = drawingImage;
 

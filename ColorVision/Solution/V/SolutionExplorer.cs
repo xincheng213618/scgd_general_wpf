@@ -84,7 +84,7 @@ namespace ColorVision.Solution.V
             //    var results = MysqlResult.GetAll();
             //    foreach (var result in results)
             //    {
-            //        HistoryFolder historyresult = new HistoryFolder(new MTFResult(result).Batch?.Name ?? new MTFResult(result).Model.Id.ToString());
+            //        HistoryFolder historyresult = new HistoryFolder(new MTFResult(result).Batch?.Name ?? new MTFResult(result).Model.ID.ToString());
             //        var vhistoryFolder2 = new VFolder(historyresult);
             //        VFolder.AddChild(vhistoryFolder2);
             //    }
@@ -101,7 +101,7 @@ namespace ColorVision.Solution.V
             //    var results = MysqlResult.GetAll();
             //    foreach (var result in results)
             //    {
-            //        HistoryFolder historyresult = new HistoryFolder(new SFRResult(result).Batch?.Name ?? new SFRResult(result).Model.Id.ToString());
+            //        HistoryFolder historyresult = new HistoryFolder(new SFRResult(result).Batch?.Name ?? new SFRResult(result).Model.ID.ToString());
             //        var vhistoryFolder2 = new VFolder(historyresult);
             //        VFolder.AddChild(vhistoryFolder2);
             //    }
@@ -117,7 +117,7 @@ namespace ColorVision.Solution.V
             //    var results = MysqlResult.GetAll();
             //    foreach (var result in results)
             //    {
-            //        HistoryFolder historyresult = new HistoryFolder(new FOVResult(result).Batch?.Name ?? new FOVResult(result).Model.Id.ToString());
+            //        HistoryFolder historyresult = new HistoryFolder(new FOVResult(result).Batch?.Name ?? new FOVResult(result).Model.ID.ToString());
             //        var vhistoryFolder2 = new VFolder(historyresult);
             //        VFolder.AddChild(vhistoryFolder2);
             //    }
@@ -133,7 +133,7 @@ namespace ColorVision.Solution.V
             //    var results = MysqlResult.GetAll();
             //    foreach (var result in results)
             //    {
-            //        HistoryFolder historyresult = new HistoryFolder(new GhostResult(result).Batch?.Name ?? new GhostResult(result).Model.Id.ToString());
+            //        HistoryFolder historyresult = new HistoryFolder(new GhostResult(result).Batch?.Name ?? new GhostResult(result).Model.ID.ToString());
             //        var vhistoryFolder2 = new VFolder(historyresult);
             //        VFolder.AddChild(vhistoryFolder2);
             //    }
@@ -149,7 +149,7 @@ namespace ColorVision.Solution.V
             //    var results = MysqlResult.GetAll();
             //    foreach (var result in results)
             //    {
-            //        HistoryFolder historyresult = new HistoryFolder(new DistortionResult(result).Batch?.Name ?? new DistortionResult(result).Model.Id.ToString());
+            //        HistoryFolder historyresult = new HistoryFolder(new DistortionResult(result).Batch?.Name ?? new DistortionResult(result).Model.ID.ToString());
             //        var vhistoryFolder2 = new VFolder(historyresult);
             //        VFolder.AddChild(vhistoryFolder2);
             //    }

@@ -1,52 +1,8 @@
 ﻿using ColorVision.Services.Device;
 
-namespace ColorVision.Services.Device.SMU
+namespace ColorVision.Services.Device.SMU.Configs
 {
-    public class SMUResultData
-    {
-        public double V { set; get; }
-        public double I { set; get; }
 
-        public SMUResultData(double v, double i)
-        {
-            V = v;
-            I = i;
-        }
-    }
-
-    public class SMUScanResultData
-    {
-        public double[] VList { set; get; }
-        public double[] IList { set; get; }
-        public double[] ScanList { set; get; }
-
-        public SMUScanResultData(double[] scan, double[] v, double[] i)
-        {
-            VList = v;
-            IList = i;
-            ScanList = scan;
-        }
-    }
-    public class SMUOpenParam
-    {
-        public bool IsNet { set; get; }
-        public string DevName { set; get; }
-    }
-    public class SMUGetDataParam
-    {
-        public bool IsSourceV { set; get; }
-        public double MeasureValue { set; get; }
-        public double LimitValue { set; get; }
-    }
-
-    public class SMUScanParam
-    {
-        public bool IsSourceV { set; get; }
-        public double BeginValue { set; get; }
-        public double EndValue { set; get; }
-        public double LimitValue { set; get; }
-        public int Points { set; get; }
-    }
 
     public class ConfigSMU : BaseDeviceConfig
     {

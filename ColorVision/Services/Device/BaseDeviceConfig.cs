@@ -41,8 +41,8 @@ namespace ColorVision.Services.Device
         public DateTime LastAliveTime { get => _LastAliveTime; set { _LastAliveTime = value; NotifyPropertyChanged(); } }
         private DateTime _LastAliveTime = DateTime.MinValue;
 
-        public DeviceStatus DeviceStatus { get => _DeviceStatus; set { _DeviceStatus = value; NotifyPropertyChanged("BtnDeviceStatus"); } }
-        private DeviceStatus _DeviceStatus;
+        public DeviceStatus DeviceStatus { get => _DeviceStatus; set { _DeviceStatus = value; NotifyPropertyChanged(nameof(BtnDeviceStatus)); } }
+        private DeviceStatus _DeviceStatus = DeviceStatus.Closed;
 
         [JsonIgnore]
         public string BtnDeviceStatus

@@ -2,6 +2,7 @@
 using ColorVision.Device.FileServer;
 using ColorVision.Device.PG;
 using ColorVision.Device.Spectrum;
+using ColorVision.Device.Spectrum.Configs;
 using ColorVision.Flow;
 using ColorVision.MySql;
 using ColorVision.MySql.DAO;

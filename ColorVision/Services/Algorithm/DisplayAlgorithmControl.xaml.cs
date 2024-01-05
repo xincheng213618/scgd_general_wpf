@@ -2,6 +2,7 @@
 using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.Net;
+using ColorVision.Services.Algorithm.Views;
 using ColorVision.Services.Device;
 using ColorVision.Solution;
 using ColorVision.Templates;
@@ -75,17 +76,17 @@ namespace ColorVision.Services.Algorithm
             {
                 case AlgorithmResultType.POI_XY_UV:
                 case AlgorithmResultType.POI_Y:
-                    doOpen(data.ImgFileName, FileExtType.CIE);
+                    doOpen(data.FilePath, FileExtType.CIE);
                     break;
                 case AlgorithmResultType.SFR:
                 case AlgorithmResultType.MTF:
                 case AlgorithmResultType.FOV:
                 case AlgorithmResultType.Distortion:
-                    doOpenLocal(data.ImgFileName, FileExtType.Src);
+                    doOpenLocal(data.FilePath, FileExtType.Src);
                     break;
                 case AlgorithmResultType.Ghost:
-                    doOpenLocal(data.ImgFileName, FileExtType.Tif);
-                    //doOpen(data.ImgFileName, FileExtType.Src);
+                    doOpenLocal(data.FilePath, FileExtType.Tif);
+                    //doOpen(data.FilePath, FileExtType.Src);
                     break;
                 default:
                     break;

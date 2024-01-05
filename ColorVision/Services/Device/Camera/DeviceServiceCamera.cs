@@ -315,7 +315,7 @@ namespace ColorVision.Device.Camera
         private bool _IsVideoOpen ;
         public bool IsVideoOpen { get => _IsVideoOpen; set { _IsVideoOpen = value;NotifyPropertyChanged(); } }
 
-        public void OpenVideo(string host, int port,double expTime)
+        public MsgRecord OpenVideo(string host, int port,double expTime)
         {
             CurrentTakeImageMode = TakeImageMode.Live;
             IsVideoOpen = true;
@@ -324,7 +324,7 @@ namespace ColorVision.Device.Camera
                 EventName = "OpenLive",
                 Params = new Dictionary<string, object>() { { "RemoteIp", host }, { "RemotePort", port }, { "ExpTime", expTime } }
             };
-            PublishAsyncClient(msg);
+             return PublishAsyncClient(msg);
         }
         public TakeImageMode CurrentTakeImageMode { get; set; }
 
