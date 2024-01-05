@@ -77,6 +77,7 @@ namespace ColorVision.Device.Spectrum
         }
         private void doHeartbeat(HeartbeatParam e)
         {
+            SpectrumService.Config.DeviceStatus = e.DeviceStatus;
             if (e.DeviceStatus == DeviceStatus.Opened)
             {
                 btn_connect.Content = "关闭";
@@ -105,7 +106,6 @@ namespace ColorVision.Device.Spectrum
         private void doSpectrumHeartbeat(SpectumHeartbeatParam e)
         {
             doHeartbeat(e);
-
             if (e.IsAutoGetData)
             {
                 btn_autoTest.Content = "取消自动测试";
@@ -136,10 +136,6 @@ namespace ColorVision.Device.Spectrum
 
 
         #region MQTT
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            SpectrumService.Init();
-        }
 
         private void Button_Click_Open(object sender, RoutedEventArgs e)
         {

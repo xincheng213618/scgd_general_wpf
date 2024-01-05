@@ -39,6 +39,15 @@ namespace ColorVision.Device.Spectrum
             MQTTControl.SubscribeCache(SubscribeTopic);
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
             cmdMap = new Dictionary<string, MsgSend>();
+
+            AppDomain.CurrentDomain.ProcessExit += (s, e) =>
+            {
+                if (Config.DeviceStatus!=DeviceStatus.Closed)
+                {
+                    Close();
+                    Environment.Exit(-1);
+                }
+            };
         }
 
 
@@ -54,10 +63,7 @@ namespace ColorVision.Device.Spectrum
                         return Task.CompletedTask;
                     if (json.Code == 0)
                     {
-                        if (json.EventName == "Init")
-                        {
-                        }
-                        else if (json.EventName == "SetParam")
+                        if (json.EventName == "SetParam")
                         {
                         }
                         else if (json.EventName == "Open")
@@ -89,9 +95,6 @@ namespace ColorVision.Device.Spectrum
                             if (devs_heartbeat != null && devs_heartbeat.Count > 0) DoSpectumHeartbeat(devs_heartbeat);
                         }
                         else if (json.EventName == "Close")
-                        {
-                        }
-                        else if (json.EventName == "Uninit")
                         {
                         }
                         else if (json.EventName == "GetParam")
@@ -138,15 +141,6 @@ namespace ColorVision.Device.Spectrum
             return true;
         }
 
-        public bool UnInit()
-        {
-            MsgSend msg = new MsgSend
-            {
-                EventName = "UnInit",
-            };
-            PublishAsyncClient(msg);
-            return true;
-        }
 
         public void GetParam()
         {
@@ -209,7 +203,6 @@ namespace ColorVision.Device.Spectrum
 
         public bool Close()
         {
-
             MsgSend msg = new MsgSend
             {
                 EventName = "Close",
