@@ -54,12 +54,12 @@ namespace ColorVision.Services.Device.SMU
                         }
                         else if (json.EventName == "GetData")
                         {
-                            SMUResultData data = JsonConvert.DeserializeObject<SMUResultData>(JsonConvert.SerializeObject(json.Data));
+                            Configs.SMUResultData data = JsonConvert.DeserializeObject<Configs.SMUResultData>(JsonConvert.SerializeObject(json.Data));
                             Application.Current.Dispatcher.Invoke(() => ResultEvent?.Invoke(data));
                         }
                         else if (json.EventName == "Scan")
                         {
-                            SMUScanResultData data = JsonConvert.DeserializeObject<SMUScanResultData>(JsonConvert.SerializeObject(json.Data));
+                            Configs.SMUScanResultData data = JsonConvert.DeserializeObject<Configs.SMUScanResultData>(JsonConvert.SerializeObject(json.Data));
                             Application.Current.Dispatcher.Invoke(() => ScanResultEvent?.Invoke(data));
                         }
                         else if (json.EventName == "Close")
