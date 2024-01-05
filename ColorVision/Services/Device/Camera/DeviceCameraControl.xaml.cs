@@ -210,5 +210,35 @@ namespace ColorVision.Device.Camera
         {
             DService.CacheClear();
         }
+
+
+        private void Update_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void MenuItem_Template(object sender, RoutedEventArgs e)
+        {
+            if (sender is Control menuItem)
+            {
+                SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
+                WindowTemplate windowTemplate;
+                TemplateControl TemplateControl = TemplateControl.GetInstance();
+                if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
+                {
+                    MessageBox.Show("数据库连接失败，请先连接数据库在操作", "ColorVision");
+                    return;
+                }
+                switch (menuItem.Tag?.ToString() ?? string.Empty)
+                {
+                    case "Calibration":
+                        Calibration calibration = TemplateControl.CalibrationParams.Count == 0 ? new Calibration() : new Calibration(TemplateControl.CalibrationParams[0].Value);
+                        windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration);
+                        windowTemplate.Owner = Window.GetWindow(this);
+                        windowTemplate.ShowDialog();
+                        break;
+                }
+            }
+        }
     }
 }
