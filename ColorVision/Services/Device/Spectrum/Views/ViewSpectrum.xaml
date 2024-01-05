@@ -78,7 +78,7 @@
                         </Border>
                     </Popup>
                 </ToolBar>
-                <ListView  Height="250"   Grid.Row="1" x:Name="listView1" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" >
+                <ListView  Height="250" Grid.Row="1" x:Name="listView1" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" >
                     <ListView.View >
                         <GridView>
                             <GridViewColumn  Header="序号" >

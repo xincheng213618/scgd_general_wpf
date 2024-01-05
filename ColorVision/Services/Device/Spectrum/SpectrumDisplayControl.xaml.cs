@@ -62,7 +62,7 @@ namespace ColorVision.Device.Spectrum
             SpectrumService.DataHandlerEvent += e =>
             {
                 if (e != null)
-                    SpectrumDrawPlot(e);
+                    View.SpectrumDrawPlot(e);
             };
 
             SpectrumService.HeartbeatEvent += e =>
