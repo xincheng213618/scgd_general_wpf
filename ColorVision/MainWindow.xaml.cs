@@ -12,6 +12,9 @@ using LiveChartsCore.VisualElements;
 using MySqlConnector.Logging;
 using System.Windows.Documents;
 using ColorVision.Media;
+using ColorVision.Update;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ColorVision
 {
@@ -140,6 +143,27 @@ namespace ColorVision
             };
             menuItem.Items.Add(menuItem3);
 #endif
+
+            ///窗口打开的时候检测是否存在新版本
+            ///
+            Thread thread = new Thread(async () => await CheckUpdate()) { IsBackground = true };
+            thread.Start();
+            
+
+        }
+
+        public async Task CheckUpdate()
+        {
+            await Task.Delay(1000);
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+
+                AutoUpdater autoUpdater = new AutoUpdater();
+                autoUpdater.CheckAndUpdate(false);
+
+            });
+
         }
 
         private void MenuStatusBar_Click(object sender, RoutedEventArgs e)
