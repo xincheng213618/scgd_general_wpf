@@ -149,7 +149,7 @@
                         <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
                     </Style>
                 </ListView.ItemContainerStyle>
-                <ListView.View >
+                <ListView.View>
                     <GridView>
                         <GridViewColumn  Header="设备标识" Width="200">
                             <GridViewColumn.CellTemplate>

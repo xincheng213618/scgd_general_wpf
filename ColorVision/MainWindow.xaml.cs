@@ -39,7 +39,7 @@ namespace ColorVision
                     GlobalSetting.SoftwareConfig.SoftwareSetting = new SoftwareSetting();
                 return GlobalSetting.SoftwareConfig.SoftwareSetting;
             }
-        }
+        }  
         public MainWindow()
         {
             InitializeComponent();

@@ -1,14 +1,184 @@
-﻿using ColorVision.MVVM;
+﻿using ColorVision.Device.Spectrum.Views;
+using ColorVision.MVVM;
+using ColorVision.MySql.DAO;
 using ColorVision.Sorts;
+using cvColorVision;
+using Newtonsoft.Json;
+using NPOI.SS.Formula.Eval;
+using NPOI.SS.Formula.Functions;
+using ScottPlot;
+using ScottPlot.Plottable;
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Drawing;
+using static NPOI.HSSF.Util.HSSFColor;
+using static System.Net.WebRequestMethods;
 
 namespace ColorVision.Services.Device.SMU.Views
 {
+    public enum MeasurementType
+    {
+        [Description("电压")]
+        Voltage,
+        [Description("电流")]
+        Current
+    }
+
     public class ViewResultSMU : ViewModelBase, ISortable
     {
-        public int ID { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public DateTime? CreateTime { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public string? Batch { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public int? BatchID { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public ViewResultSMU(SmuScanModel item)
+        {
+            ID = item.Id;
+            CreateTime = item.CreateDate;
+            BatchID = item.BatchId;
+            MeasurementType = item.IsSourceV ? MeasurementType.Voltage : MeasurementType.Current;
+            LimitStart = item.SrcBegin;
+            LimitEnd = item.SrcEnd;
+
+            VList = JsonConvert.DeserializeObject<double[]>(item.VResult);
+            IList = JsonConvert.DeserializeObject<double[]>(item.IResult);
+            if (VList != null && IList != null)
+            {
+                for (int i = 0; i < VList.Length; i++)
+                {
+                    SMUDatas.Add(new SMUData() { Voltage = VList[i], Current = IList[i] });
+                }
+            }
+            Gen();
+        }
+
+        public ViewResultSMU(MeasurementType measurementType , float LimitEnd ,double[] VList, double[] IList)
+        {
+            ID = 0;
+
+            this.VList = VList;
+            this.IList = IList;
+            this.MeasurementType = measurementType;
+            this.LimitEnd = LimitEnd;
+            Gen();
+        }
+
+
+
+        public double[] VList { get; set; }
+        public double[] IList { get; set; }
+
+        public double xMin { get;set; }
+        public double xMax { get; set; }
+        public double yMin { get; set; }
+        public double yMax { get; set; }
+
+
+
+        public void Gen()
+        {
+
+            List<double> listV = new List<double>();
+            List<double> listI = new List<double>();
+            double VMax = 0, IMax = 0, VMin = 10000, IMin = 10000;
+            for (int i = 0; i < VList.Length; i++)
+            {
+                if (VList[i] > VMax) VMax = VList[i];
+                if (IList[i] > IMax) IMax = IList[i];
+                if (VList[i] < VMin) VMin = VList[i];
+                if (IList[i] < IMin) IMin = IList[i];
+
+                listV.Add(VList[i]);
+                listI.Add(IList[i]);
+            }
+            double endVal = LimitEnd;
+            int step = 10;
+            xMin = 0;
+            xMax = VMax + VMax / step;
+            yMin = 0 - IMax / step;
+            yMax = IMax + IMax / step;
+            double[] xs, ys;
+            if (MeasurementType == MeasurementType.Voltage)
+            {
+                xMin = VMin - VMin / step;
+                xMax = endVal + VMax / step;
+                yMin = IMin - IMin / step;
+                yMax = IMax + IMax / step;
+                if (VMax < endVal)
+                {
+                    double addPointStep = (endVal - VMax) / 2.0;
+                    listV.Add(VMax + addPointStep);
+                    listV.Add(endVal);
+                    listI.Add(IMax);
+                    listI.Add(IMax);
+                }
+                xs = listV.ToArray();
+                ys = listI.ToArray();
+
+                ScatterPlot = new ScatterPlot(xs, ys)
+                {
+                    Color = Color.DarkGoldenrod,
+                    LineWidth = 1,
+                    MarkerSize = 1,
+                    Label = null,
+                    MarkerShape = MarkerShape.none,
+                    LineStyle = LineStyle.Solid
+                };
+
+
+
+
+            }
+            else
+            {
+                endVal = endVal / 1000;
+                xMin = IMin - IMin / step;
+                xMax = endVal + IMax / step;
+                yMin = VMin - VMin / step;
+                yMax = VMax + VMax / step;
+                if (IMax < endVal)
+                {
+                    double addPointStep = (endVal - IMax) / 2.0;
+                    listI.Add(IMax + addPointStep);
+                    listI.Add(endVal);
+                    listV.Add(VMax);
+                    listV.Add(VMax);
+                }
+                xs = listV.ToArray();
+                ys = listI.ToArray();
+
+                ScatterPlot = new ScatterPlot(xs, ys)
+                {
+                    Color = Color.DarkGoldenrod,
+                    LineWidth = 1,
+                    MarkerSize = 1,
+                    Label = null,
+                    MarkerShape = MarkerShape.none,
+                    LineStyle = LineStyle.Solid
+                };
+
+            }
+        }
+
+
+        public ScatterPlot ScatterPlot { get; set; }
+
+
+        public int ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
+        private int _ID;
+        public DateTime? CreateTime { get; set; }
+        public string? Batch { get; set; }
+        public int? BatchID { get; set; }
+        public ObservableCollection<SMUData> SMUDatas { get; set; } = new ObservableCollection<SMUData>();
+
+
+        public MeasurementType MeasurementType { get; set; }
+
+        public  bool IsSourceV { get => MeasurementType == MeasurementType.Voltage; }
+
+        public float LimitStart { get; set; }
+        public float LimitEnd { get; set; }
+
+
+
+
+
     }
 }
