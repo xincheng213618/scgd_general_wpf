@@ -15,12 +15,7 @@ namespace ColorVision.Device.Camera.Video
         private VideoReader reader;
         private int width;
         private int height;
-        public SoftwareConfig SoftwareConfig { get; set; }
         public event CameraVideoFrameHandler CameraVideoFrameReceived;
-        public CameraVideoControl()
-        {
-            SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
-        }
         public int Open(string Host, int Port)
         {
             int ret = 1;
