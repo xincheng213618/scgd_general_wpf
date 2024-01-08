@@ -86,8 +86,8 @@ namespace ColorVision.Device.Camera
                         break;
                     case MQTTCameraEventEnum.Event_Open:
                     case MQTTCameraEventEnum.Event_OpenLive:
-                        DeviceStatus = DeviceStatus.Opened;
-                        break;
+                        //DeviceStatus = DeviceStatus.Opened;
+                        //break;
                     case MQTTCameraEventEnum.Event_GetData:
                         OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         DeviceStatus = DeviceStatus.Opened;
@@ -319,10 +319,11 @@ namespace ColorVision.Device.Camera
         {
             CurrentTakeImageMode = TakeImageMode.Live;
             IsVideoOpen = true;
+            bool IsLocal = (host=="127.0.0.1");
             MsgSend msg = new MsgSend
             {
                 EventName = "OpenLive",
-                Params = new Dictionary<string, object>() { { "RemoteIp", host }, { "RemotePort", port }, { "ExpTime", expTime } }
+                Params = new Dictionary<string, object>() { { "RemoteIp", host }, { "RemotePort", port }, { "ExpTime", expTime }, { "IsLocal", IsLocal } }
             };
              return PublishAsyncClient(msg);
         }
