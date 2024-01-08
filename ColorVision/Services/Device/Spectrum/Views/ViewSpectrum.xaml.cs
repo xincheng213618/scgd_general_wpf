@@ -26,16 +26,26 @@ using ColorVision.Services.Algorithm;
 using MQTTMessageLib.Algorithm;
 using System.Windows.Documents;
 using ColorVision.Device.Spectrum.Configs;
+using System.Runtime.CompilerServices;
+using System.ComponentModel;
 
 namespace ColorVision.Device.Spectrum.Views
 {
     /// <summary>
     /// ViewSpectrum.xaml 的交互逻辑
     /// </summary>
-    public partial class ViewSpectrum : UserControl,IView
+    public partial class ViewSpectrum : UserControl,IView,INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler? PropertyChanged;
+        public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
+
         private ResultService spectumResult = new ResultService();
         public ObservableCollection<ViewResultSpectrum> ViewResultSpectrums { get; set; } = new ObservableCollection<ViewResultSpectrum>();
+
+        public bool IsIDShow { get => _IsIDShow; set { _IsIDShow = value; NotifyPropertyChanged(); } }
+        private bool _IsIDShow = true;
+
 
         public View View { get; set; }
 
@@ -44,9 +54,9 @@ namespace ColorVision.Device.Spectrum.Views
             InitializeComponent();
         }
 
-        static int ResultNum;
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            DataContext = this;
             TextBox TextBox1 = new TextBox() { Width = 10, Background = System.Windows.Media.Brushes.Transparent, BorderThickness = new Thickness(0), Foreground = System.Windows.Media.Brushes.Transparent };
             Grid.SetColumn(TextBox1, 0);
             Grid.SetRow(TextBox1, 0);
@@ -341,9 +351,7 @@ namespace ColorVision.Device.Spectrum.Views
         internal void Clear()
         {
             wpfplot1.Plot.Clear();
-            listView1.Items.Clear();
-            listView2.Items.Clear();
-            ResultNum = 0;
+            ViewResultSpectrums.Clear();
         }
 
         SpectumResultDao spectumResultDao = new SpectumResultDao();
@@ -413,6 +421,17 @@ namespace ColorVision.Device.Spectrum.Views
 
             }
             OrderPopup.IsOpen = false;
+        }
+
+        private void MenuItem_Click(object sender, KeyEventArgs e)
+        {
+            if (sender is MenuItem menuItem)
+                menuItem.IsChecked = !menuItem.IsChecked;
+        }
+
+        private void LastNameCM_Click(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

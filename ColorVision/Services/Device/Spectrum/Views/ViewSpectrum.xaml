@@ -6,6 +6,7 @@
              xmlns:local ="clr-namespace:ColorVision.Device.Spectrum.Views"
              xmlns:ScottPlot="clr-namespace:ScottPlot;assembly=ScottPlot.WPF"
              mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance local:ViewSpectrum}"
              d:DesignHeight="450" d:DesignWidth="800" Initialized="UserControl_Initialized" >
 
     <Grid x:Name="MainGrid">
@@ -78,10 +79,17 @@
                         </Border>
                     </Popup>
                 </ToolBar>
-                <ListView  Height="250" Grid.Row="1" x:Name="listView1" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" >
+                <ListView  Height="250" Grid.Row="1" x:Name="listView1" SelectionChanged="listView1_SelectionChanged" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
                     <ListView.View >
                         <GridView>
-                            <GridViewColumn  Header="序号" >
+                            <GridView.ColumnHeaderContainerStyle>
+                                <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                </Style>
+                            </GridView.ColumnHeaderContainerStyle>
+                            <GridViewColumn  Header="序号" Width="{Binding IsIDShow,Converter={StaticResource WidthToBooleanConverter}}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{ Binding  ID}"/>

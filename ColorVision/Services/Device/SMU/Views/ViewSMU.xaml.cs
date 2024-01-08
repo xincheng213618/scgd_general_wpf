@@ -1,7 +1,10 @@
-﻿using ColorVision.MySql.DAO;
+﻿using ColorVision.Device.Spectrum.Views;
+using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.Templates;
+using ColorVision.Util;
 using Newtonsoft.Json;
+using NPOI.SS.Formula.Functions;
 using NPOI.XWPF.UserModel;
 using ScottPlot;
 using ScottPlot.Plottable;
@@ -26,14 +29,10 @@ namespace ColorVision.Services.Device.SMU.Views
     {
         public ObservableCollection<ViewResultSMU> ViewResultSMUs { get; set; } = new ObservableCollection<ViewResultSMU>();
         public View View { get; set; }
-        private ResultService spectumResult;
         public ViewSMU()
         {
-            spectumResult = new ResultService();
             InitializeComponent();
         }
-
-        static int ResultNum;
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             TextBox TextBox1 = new TextBox() { Width = 10, Background = System.Windows.Media.Brushes.Transparent, BorderThickness = new Thickness(0), Foreground = System.Windows.Media.Brushes.Transparent };
@@ -41,26 +40,9 @@ namespace ColorVision.Services.Device.SMU.Views
             Grid.SetRow(TextBox1, 0);
             MainGrid.Children.Insert(0, TextBox1);
             this.MouseDown += (s, e) =>  {TextBox1.Focus();};
-
             View = new View();
 
-            GridView gridView = new GridView();
-            List<string> headers = new List<string> { "序号","属性", "测量时间" };
-            for (int i = 0; i < headers.Count; i++)
-            {
-                gridView.Columns.Add(new GridViewColumn() { Header = headers[i], Width = 100, DisplayMemberBinding = new Binding(string.Format("[{0}]", i)) });
-            }
-            listView1.View = gridView;
-
-            List<string> headers2 = new List<string> { "电流","电压" };
-
-            GridView gridView2 = new GridView();
-            for (int i = 0; i < headers2.Count; i++)
-            {
-                gridView2.Columns.Add(new GridViewColumn() { Header = headers2[i], DisplayMemberBinding = new Binding(string.Format("[{0}]", i)) });
-            }
-
-            listView2.View = gridView2;
+            listView1.ItemsSource = ViewResultSMUs;
 
             wpfplot1.Plot.Clear();
             wpfplot2.Plot.Clear();
@@ -89,36 +71,18 @@ namespace ColorVision.Services.Device.SMU.Views
             dialog.Filter = "CSV files (*.csv) | *.csv";
             dialog.FileName = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
             dialog.RestoreDirectory = true;
-            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                using StreamWriter file = new StreamWriter(dialog.FileName, true, Encoding.UTF8);
-                if (listView1.View is GridView gridView1)
-                {
-                    string headers = "";
-                    foreach (var item in gridView1.Columns)
-                    {
-                        headers += item.Header.ToString() + ",";
-                    }
-                    file.WriteLine(headers);
-                }
-                string value = "";
-                foreach (var item in ListContents[listView1.SelectedIndex])
-                {
-                    value += item + ",";
-                }
-                file.WriteLine(value);
-            }
+            if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+                CsvWriter.WriteToCsv(ViewResultSMUs[listView1.SelectedIndex], dialog.FileName);
 
         }
 
-        private List<List<string>> ListContents { get; set; } = new List<List<string>>() { };
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (sender is ListView listview && listview.SelectedIndex > -1)
             {
                 DrawPlot();
-                //listView2.ItemsSource;
+                listView2.ItemsSource = ViewResultSMUs[listView1.SelectedIndex].SMUDatas;
             }
         }
 
@@ -139,43 +103,53 @@ namespace ColorVision.Services.Device.SMU.Views
                 }
 
 
-                LastMulSelectComparsion = ScatterPlots[listView1.SelectedIndex];
+                LastMulSelectComparsion = ViewResultSMUs[listView1.SelectedIndex].ScatterPlot;
                 LastMulSelectComparsion.LineWidth = 3;
                 LastMulSelectComparsion.MarkerSize = 3;
                 LastMulSelectComparsion.Color = Color.Red;
-                wpfplot1.Plot.Add(LastMulSelectComparsion);
 
+                if (ViewResultSMUs[listView1.SelectedIndex].IsSourceV)
+                {
+                    wpfplot2.Plot.Add(LastMulSelectComparsion);
+                    wpfplot2.Refresh();
+
+                }
+                else
+                {
+                    wpfplot1.Plot.Add(LastMulSelectComparsion);
+                    wpfplot1.Refresh();
+                }
             }
             else
             {
                
-                var temp = ScatterPlots[listView1.SelectedIndex];
+                var temp = ViewResultSMUs[listView1.SelectedIndex].ScatterPlot;
                 temp.Color = Color.DarkGoldenrod;
                 temp.LineWidth = 1;
                 temp.MarkerSize = 1;
 
 
+                ToggleButtonChoice.IsChecked = ViewResultSMUs[listView1.SelectedIndex].IsSourceV;
 
-                ToggleButtonChoice.IsChecked = PassSxSources[listView1.SelectedIndex].IsSourceV;
-
-                if (PassSxSources[listView1.SelectedIndex].IsSourceV)
+                if (ViewResultSMUs[listView1.SelectedIndex].IsSourceV)
                 {
                     wpfplot2.Plot.Add(temp);
                     wpfplot1.Plot.Remove(LastMulSelectComparsion);
                     wpfplot2.Plot.Remove(LastMulSelectComparsion);
+                    wpfplot2.Refresh();
+
                 }
                 else
                 {
                     wpfplot1.Plot.Add(temp);
                     wpfplot1.Plot.Remove(LastMulSelectComparsion);
                     wpfplot2.Plot.Remove(LastMulSelectComparsion);
-
+                    wpfplot1.Refresh();
                 }
 
                 LastMulSelectComparsion = temp;
 
             }
-            wpfplot1.Refresh();
         }
 
         List<PassSxSource> PassSxSources = new List<PassSxSource>();
@@ -183,117 +157,31 @@ namespace ColorVision.Services.Device.SMU.Views
         public void DrawPlot(bool isSourceV, double endVal,double[] VList, double[] IList)
         {
 
-            PassSxSource passSxSources = new PassSxSource();
-            passSxSources.IsSourceV = isSourceV;
-            PassSxSources.Add(passSxSources);
+            ViewResultSMU viewResultSMU = new ViewResultSMU(isSourceV? MeasurementType.Voltage: MeasurementType.Current, (float)endVal, VList, IList);
+            ViewResultSMUs.Add(viewResultSMU);
+            ToggleButtonChoice.IsChecked = viewResultSMU.MeasurementType == MeasurementType.Voltage;
 
-
-            List<double> listV = new List<double>();
-            List<double> listI = new List<double>();
-            double VMax = 0, IMax = 0, VMin = 10000, IMin = 10000;
-            for (int i = 0; i < VList.Length; i++)
+            if (viewResultSMU.MeasurementType == MeasurementType.Voltage)
             {
-                if (VList[i] > VMax) VMax = VList[i];
-                if (IList[i] > IMax) IMax = IList[i];
-                if (VList[i] < VMin) VMin = VList[i];
-                if (IList[i] < IMin) IMin = IList[i];
+                ToggleButtonChoice.IsChecked = true;
 
-                listV.Add(VList[i]);
-                listI.Add(IList[i]);
-            }
-            int step = 10;
-            double xMin = 0;
-            double xMax = VMax + VMax / step;
-            double yMin = 0 - IMax / step;
-            double yMax = IMax + IMax / step;
-            double[] xs, ys;
-            if (isSourceV)
-            {
-                xMin = VMin - VMin / step;
-                xMax = endVal + VMax / step;
-                yMin = IMin - IMin / step;
-                yMax = IMax + IMax / step;
-                if (VMax < endVal)
-                {
-                    double addPointStep = (endVal - VMax) / 2.0;
-                    listV.Add(VMax + addPointStep);
-                    listV.Add(endVal);
-                    listI.Add(IMax);
-                    listI.Add(IMax);
-                }
-                xs = listV.ToArray();
-                ys = listI.ToArray();
-
-                ScatterPlot scatterPlot = new ScatterPlot(xs, ys)
-                {
-                    Color = Color.DarkGoldenrod,
-                    LineWidth = 1,
-                    MarkerSize = 1,
-                    Label = null,
-                    MarkerShape = MarkerShape.none,
-                    LineStyle = LineStyle.Solid
-                };
-
-                wpfplot2.Plot.SetAxisLimitsX(xMin, xMax);
-                wpfplot2.Plot.SetAxisLimitsY(yMin, yMax);
-                wpfplot2.Plot.Add(scatterPlot);
+                wpfplot2.Plot.SetAxisLimitsX(viewResultSMU.xMin, viewResultSMU.xMax);
+                wpfplot2.Plot.SetAxisLimitsY(viewResultSMU.yMin, viewResultSMU.yMax);
+                wpfplot2.Plot.Add(viewResultSMU.ScatterPlot);
                 wpfplot2.Refresh();
-                ScatterPlots.Add(scatterPlot);
-
-
             }
             else
             {
-                endVal = endVal / 1000;
-                xMin = IMin - IMin / step;
-                xMax = endVal + IMax / step;
-                yMin = VMin - VMin / step;
-                yMax = VMax + VMax / step;
-                if (IMax < endVal)
-                {
-                    double addPointStep = (endVal - IMax) / 2.0;
-                    listI.Add(IMax + addPointStep);
-                    listI.Add(endVal);
-                    listV.Add(VMax);
-                    listV.Add(VMax);
-                }
-                xs = listV.ToArray();
-                ys = listI.ToArray();
+                ToggleButtonChoice.IsChecked = false;
 
-                ScatterPlot scatterPlot = new ScatterPlot(xs, ys)
-                {
-                    Color = Color.DarkGoldenrod,
-                    LineWidth = 1,
-                    MarkerSize = 1,
-                    Label = null,
-                    MarkerShape = MarkerShape.none,
-                    LineStyle = LineStyle.Solid
-                };
-                wpfplot1.Plot.SetAxisLimitsY(xMin, xMax);
-                wpfplot1.Plot.SetAxisLimitsX(yMin, yMax);
-                wpfplot1.Plot.Add(scatterPlot);
+                wpfplot1.Plot.SetAxisLimitsY(viewResultSMU.xMin, viewResultSMU.xMax);
+                wpfplot1.Plot.SetAxisLimitsX(viewResultSMU.yMin, viewResultSMU.yMax);
+                wpfplot1.Plot.Add(viewResultSMU.ScatterPlot);
                 wpfplot1.Refresh();
-                ScatterPlots.Add(scatterPlot);
-
             }
+
             ToggleButtonChoice.IsChecked = isSourceV;
-
-
-            ListViewItem listViewItem = new ListViewItem();
-            ResultNum++;
-            List<string> strings = new List<string>();
-            strings.Add(ResultNum.ToString());
-            strings.Add(isSourceV ? "V" : "I");
-            strings.Add(DateTime.Now.ToString());
-            listViewItem.Content = strings;
-            ListContents.Add(strings);
-            listView1.Items.Add(listViewItem);
-            listView1.SelectedIndex = PassSxSources.Count - 1;
-            listView1.ScrollIntoView(listViewItem);
-
         }
-
-        private List<ScatterPlot> ScatterPlots { get; set; } = new List<ScatterPlot>();
 
         private void Button1_Click(object sender, RoutedEventArgs e)
         {
@@ -311,20 +199,30 @@ namespace ColorVision.Services.Device.SMU.Views
         private void ReDrawPlot()
         {
             wpfplot1.Plot.Clear();
+            wpfplot2.Plot.Clear();
+
             LastMulSelectComparsion = null;
             if (MulComparison)
             {
-                listView1.SelectedIndex = listView1.Items.Count > 0 && listView1.SelectedIndex == -1 ? 0 : listView1.SelectedIndex;
-                for (int i = 0; i < ScatterPlots.Count; i++)
+                listView1.SelectedIndex = ViewResultSMUs.Count > 0 && listView1.SelectedIndex == -1 ? 0 : listView1.SelectedIndex;
+                for (int i = 0; i < ViewResultSMUs.Count; i++)
                 {
                     if (i == listView1.SelectedIndex)
                         continue;
-                    var plot = ScatterPlots[i];
+                    var plot = ViewResultSMUs[i].ScatterPlot;
                     plot.Color = Color.DarkGoldenrod;
                     plot.LineWidth = 1;
                     plot.MarkerSize = 1;
 
-                    wpfplot1.Plot.Add(plot);
+                    if (ViewResultSMUs[i].IsSourceV)
+                    {
+                        wpfplot1.Plot.Add(plot);
+                    }
+                    else
+                    {
+                        wpfplot2.Plot.Add(plot);
+                    }
+
                 }
             }
             DrawPlot();
@@ -337,27 +235,39 @@ namespace ColorVision.Services.Device.SMU.Views
                 MessageBox.Show("您需要先选择数据");
                 return;
             }
-            List<ListViewItem> lists = new List<ListViewItem>();
-            foreach (var item in listView1.Items)
+            var selectedItems = listView1.SelectedItems;
+
+            if (selectedItems.Count <= 1)
             {
-                if (item is ListViewItem listViewItem)
-                {
-                    lists.Add(listViewItem);
-                }
+                ViewResultSMUs.Clear();
             }
-            foreach (var item in lists)
+            else
             {
-                if (item.IsSelected)
+
+                var selectedItemsCopy = new List<object>();
+
+                foreach (var item in selectedItems)
                 {
-                    int index = listView1.Items.IndexOf(item);
-                    ScatterPlots.RemoveAt(index);
+                    selectedItemsCopy.Add(item);
+                }
+
+                foreach (var item in selectedItemsCopy)
+                {
+                    if (item is ViewResultSMU result)
+                    {
+                        ViewResultSMUs.Remove(result);
+                    }
                 }
             }
 
-
-            if (listView1.Items.Count > 0)
+            if (ViewResultSMUs.Count > 0)
             {
                 listView1.SelectedIndex = 0;
+            }
+            else
+            {
+                wpfplot1.Plot.Clear();
+                wpfplot1.Refresh();
             }
             ReDrawPlot();
         }
@@ -378,8 +288,8 @@ namespace ColorVision.Services.Device.SMU.Views
             if (e.Key == Key.Delete && listView1.SelectedIndex > -1)
             {
                 int temp = listView1.SelectedIndex;
-                listView1.Items.RemoveAt(listView1.SelectedIndex);
 
+                ViewResultSMUs.RemoveAt(listView1.SelectedIndex);
 
                 if (listView1.Items.Count > 0)
                 {
@@ -399,20 +309,49 @@ namespace ColorVision.Services.Device.SMU.Views
 
         private void listView2_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            wpfplot1.Plot.Remove(markerPlot1);
-            if (listView2.SelectedIndex > -1)
+            if (listView1.SelectedIndex >= 0)
             {
-                markerPlot1 = new MarkerPlot
+                if (ViewResultSMUs[listView1.SelectedIndex].IsSourceV)
                 {
-                    X = listView2.SelectedIndex + 380,
-                    MarkerShape = MarkerShape.filledCircle,
-                    MarkerSize = 10f,
-                    Color = Color.Orange,
-                    Label = null
-                };
-                wpfplot1.Plot.Add(markerPlot1);
+                    wpfplot2.Plot.Remove(markerPlot1);
+
+                    if (listView2.SelectedIndex > -1)
+                    {
+                        markerPlot1 = new MarkerPlot
+                        {
+                            X = ViewResultSMUs[listView1.SelectedIndex].SMUDatas[listView2.SelectedIndex].Voltage,
+                            Y = ViewResultSMUs[listView1.SelectedIndex].SMUDatas[listView2.SelectedIndex].Current,
+                            MarkerShape = MarkerShape.filledCircle,
+                            MarkerSize = 10f,
+                            Color = Color.Orange,
+                            Label = null
+                        };
+                        wpfplot2.Plot.Add(markerPlot1);
+                    }
+                    wpfplot2.Refresh();
+                }
+                else
+                {
+                    wpfplot1.Plot.Remove(markerPlot1);
+
+                    if (listView2.SelectedIndex > -1)
+                    {
+                        markerPlot1 = new MarkerPlot
+                        {
+                            X = ViewResultSMUs[listView1.SelectedIndex].SMUDatas[listView2.SelectedIndex].Voltage,
+                            Y = ViewResultSMUs[listView1.SelectedIndex].SMUDatas[listView2.SelectedIndex].Current,
+                            MarkerShape = MarkerShape.filledCircle,
+                            MarkerSize = 10f,
+                            Color = Color.Orange,
+                            Label = null
+                        };
+                        wpfplot1.Plot.Add(markerPlot1);
+                    }
+                    wpfplot1.Refresh();
+                }
+
             }
-            wpfplot1.Refresh();
+
         }
 
 
@@ -452,28 +391,23 @@ namespace ColorVision.Services.Device.SMU.Views
 
         }
 
+
         MRSmuScanDao MRSmuScanDao = new MRSmuScanDao();
         private void Search_Click(object sender, RoutedEventArgs e)
         {
-            ListContents.Clear();
-            listView1.Items.Clear();
-
+            ViewResultSMUs.Clear();
             foreach (var item in MRSmuScanDao.GetAll())
             {
-
-                bool isSourceV = item.IsSourceV;
-                double endVal = item.SrcEnd;
-
-                double[] VList = JsonConvert.DeserializeObject<double[]> (item.VResult);
-                double[] IList = JsonConvert.DeserializeObject<double[]> (item.IResult);
-
-                DrawPlot(isSourceV, endVal, VList, IList);
-
+                ViewResultSMU viewResultSMU = new ViewResultSMU(item);
+                ViewResultSMUs.Add(viewResultSMU);
+                ToggleButtonChoice.IsChecked = viewResultSMU.MeasurementType == MeasurementType.Voltage;
             }
         }
 
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
+
+
 
         }
 
