@@ -32,6 +32,7 @@ namespace ColorVision.Update
         {
             UpdateCommand = new RelayCommand((e) =>  CheckAndUpdate(false));
         }
+
         public RelayCommand UpdateCommand { get; set; }
 
 

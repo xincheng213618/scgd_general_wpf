@@ -1,6 +1,8 @@
 ﻿using ColorVision.MVVM;
 using System;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -64,9 +66,7 @@ namespace ColorVision.SettingUp
                     PCCPU = new PerformanceCounter("Processor", "% Processor Time", "_Total");
                     PCCPUThis = new PerformanceCounter("Process", "% Processor Time", Process.GetCurrentProcess().ProcessName);
                     PCRAM = new PerformanceCounter("Memory", "Available MBytes");
-
                     PCRAMThis = new PerformanceCounter("Process", "Working Set - Private", Process.GetCurrentProcess().ProcessName);
-
                     PerformanceCounterIsOpen = true;
                 }
                 catch
@@ -75,7 +75,14 @@ namespace ColorVision.SettingUp
                 }
             });
             timer = new Timer(TimeRun, null, 0, UpdateSpeed);
+
+            DriveInfo[] allDrives = DriveInfo.GetDrives();
+            foreach (var item in allDrives)
+            {
+                DriveInfos.Add(item);
+            }
         }
+        public ObservableCollection<DriveInfo> DriveInfos { get; set; } = new ObservableCollection<DriveInfo>();
 
 
         private void TimeRun(object? state)
@@ -99,6 +106,7 @@ namespace ColorVision.SettingUp
                 {
 
                 }
+
                 try
                 {
                     if (Setting.IsShowTime)
@@ -110,6 +118,33 @@ namespace ColorVision.SettingUp
                 }
             }
         }
+
+        public void CheckDiskSpace(string driveLetter, long threshold)
+        {
+
+
+            DriveInfo drive = new DriveInfo(driveLetter);
+
+            if (!drive.IsReady)
+            {
+                Console.WriteLine($"Drive {drive.Name} is not ready.");
+                return;
+            }
+
+            // 获取可用空间
+            long availableSpace = drive.AvailableFreeSpace;
+
+            // 如果可用空间小于阈值，则提醒用户
+            if (availableSpace < threshold)
+            {
+                Console.WriteLine($"Warning: Drive {drive.Name} has less than 10GB of free space.");
+            }
+            else
+            {
+                Console.WriteLine($"Drive {drive.Name} has enough free space.");
+            }
+        }
+
 
 
         /// <summary>
