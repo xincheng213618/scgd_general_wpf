@@ -3,8 +3,10 @@ using ColorVision.MySql.DAO;
 using ColorVision.Services.Device;
 using ColorVision.Services.Device.Camera;
 using ColorVision.Services.Device.Camera.Views;
+using ColorVision.Services.Msg;
 using ColorVision.Templates;
 using ColorVision.Themes;
+using ColorVision.Themes.Controls;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -14,8 +16,7 @@ namespace ColorVision.Device.Camera
 {
     public class DeviceCamera : BaseDevice<ConfigCamera>
     {
-        public DeviceServiceCamera DeviceService { get; set; }
-
+        public DeviceServiceCamera DService { get; set; }
 
         readonly Lazy<CameraDisplayControl> CameraDisplayControlLazy;
         readonly Lazy<EditCamera> EditCameraLazy;
@@ -43,12 +44,12 @@ namespace ColorVision.Device.Camera
         public DeviceCamera(SysResourceModel sysResourceModel, ServiceCamera cameraService) : base(sysResourceModel)
         {
             Service = cameraService;
-            DeviceService = new DeviceServiceCamera(Config, Service);
+            DService = new DeviceServiceCamera(Config, Service);
             this.Config.SendTopic = Service.SendTopic;
             this.Config.SubscribeTopic = Service.SubscribeTopic;
 
             View = new ViewCamera();
-            if (Application.Current.TryFindResource("DrawingImageCamera") is DrawingImage  drawingImage)
+            if (Application.Current.TryFindResource("DrawingImageCamera") is DrawingImage drawingImage)
                 Icon = drawingImage;
 
             ThemeManager.Current.CurrentUIThemeChanged += (s) =>
@@ -60,23 +61,37 @@ namespace ColorVision.Device.Camera
             View.View.Title = "相机视图";
             View.View.Icon = Icon;
 
-            CameraDisplayControlLazy = new Lazy<CameraDisplayControl>(() => CameraDisplayControl??new CameraDisplayControl(this));
-            EditCameraLazy =new Lazy<EditCamera>(()=>EditCamera??new EditCamera(this));
+            CameraDisplayControlLazy = new Lazy<CameraDisplayControl>(() => CameraDisplayControl ?? new CameraDisplayControl(this));
+            EditCameraLazy = new Lazy<EditCamera>(() => EditCamera ?? new EditCamera(this));
 
-            UploadCalibrationCommand = new RelayCommand(a =>
-            {
-                CalibrationUploadWindow uploadCalibration = new CalibrationUploadWindow(DeviceService,ResouceType.DefectPoint) {  WindowStartupLocation =WindowStartupLocation.CenterScreen};
-                uploadCalibration.ShowDialog();
-            });
-
-
-
+            UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));
         }
+        public void UploadCalibration(object sender)
+        {
+            UploadWindow uploadwindow = new UploadWindow("校正文件(*.zip, *.cvcal)|*.zip;*.cvcal") { WindowStartupLocation = WindowStartupLocation.CenterScreen };
+            uploadwindow.OnUpload += (s, e) =>
+            {
+                if (s is Upload upload)
+                {
+
+
+
+                    MsgRecord msgRecord = DService?.UploadCalibrationFile(upload.UploadFileName, upload.UploadFilePath, 1001);
+                    msgRecord.MsgRecordStateChanged += (s) =>
+                    {
+                        MessageBox.Show("sucess");
+                    };
+                }
+            };
+            uploadwindow.ShowDialog();
+        }
+
+
 
         public override void Dispose()
         {
             Service.Dispose();
-            DeviceService.Dispose();
+            DService.Dispose();
             base.Dispose();
             GC.SuppressFinalize(this);
         }

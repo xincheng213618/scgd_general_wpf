@@ -36,7 +36,7 @@ namespace ColorVision.Device.Camera
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(CameraDisplayControl));
         public DeviceCamera Device { get; set; }
-        public DeviceServiceCamera DService { get => Device.DeviceService; }
+        public DeviceServiceCamera DService { get => Device.DService; }
 
         public ViewCamera View { get; set; }
 

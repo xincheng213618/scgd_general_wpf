@@ -619,7 +619,7 @@ namespace ColorVision.Services.Algorithm
                         windowTemplate.ShowDialog();
                         break;
                     case "CalibrationUpload":
-                        CalibrationUploadWindow calibrationUpload = new CalibrationUploadWindow();
+                        UploadWindow calibrationUpload = new UploadWindow();
                         calibrationUpload.Owner = Window.GetWindow(this);
                         calibrationUpload.ShowDialog();
                         break;

@@ -11,28 +11,23 @@ using cvColorVision;
 namespace ColorVision.Templates
 {
     /// <summary>
-    /// CalibrationUploadWindow.xaml 的交互逻辑
+    /// UploadWindow.xaml 的交互逻辑
     /// </summary>
-    public partial class CalibrationUploadWindow : Window
+    public partial class UploadWindow : Window
     {
-        public DeviceServiceCamera DeviceServiceCamera { get; set; }
-
-        public ResouceType ResouceType { get; set; }
-
-        public CalibrationUploadWindow(DeviceServiceCamera deviceServiceCamera, ResouceType resouceType) :this()
+        public string Filter { get; set; }
+        public UploadWindow(string Filter = "")
         {
-            DeviceServiceCamera = deviceServiceCamera;
-            ResouceType = resouceType;
-        }
-
-        public CalibrationUploadWindow()
-        {
+            this.Filter = Filter;
             InitializeComponent();
         }
 
+       
+
         private void Window_Initialized(object sender, EventArgs e)
         {
-
+            if (!string.IsNullOrWhiteSpace(Filter))
+                Upload1.Filter = Filter;
         }
 
         private void Window_DragEnter(object sender, DragEventArgs e)

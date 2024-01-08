@@ -152,7 +152,7 @@ namespace ColorVision.Services
                                         if (mQTTService.BaseService is ServiceCamera cameraService)
                                         {
                                             DeviceCamera deviceCamera = new DeviceCamera(device, cameraService);
-                                            svrObj = deviceCamera.DeviceService;
+                                            svrObj = deviceCamera.DService;
                                             mQTTService.AddChild(deviceCamera);
                                             Devices.Add(deviceCamera);
                                         }

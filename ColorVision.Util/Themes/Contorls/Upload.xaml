@@ -20,8 +20,8 @@
                 <Grid>
                     <Rectangle x:Name="UploadRec" Stroke="#D9D9D9" StrokeDashArray="2,2" RadiusX="5" RadiusY="5" StrokeThickness="1"/>
                     <StackPanel x:Name="GridShow" Visibility="Collapsed" HorizontalAlignment="Center"  VerticalAlignment="Center">
-                        <hc:TextBox x:Name="TxtCalibrationFileName" HorizontalAlignment="Center"   Background="Transparent" BorderThickness="0,0,0,1" />
-                        <hc:TextBox x:Name="TxtCalibrationFile" HorizontalAlignment="Center"  Background="Transparent" BorderThickness="0" IsReadOnly="True" Margin="0,0,10,0" />
+                        <hc:TextBox x:Name="TxtFileName" HorizontalAlignment="Center"   Background="Transparent" BorderThickness="0,0,0,1" />
+                        <hc:TextBox x:Name="TxtFile" HorizontalAlignment="Center"  Background="Transparent" BorderThickness="0" IsReadOnly="True" Margin="0,0,10,0" />
                     </StackPanel>
                     <Grid x:Name="GridUpdate" Margin="20">
                         <Grid.RowDefinitions>
