@@ -22,6 +22,7 @@ using ColorVision.Themes;
 using System.Globalization;
 using System.Threading;
 using ColorVision.Extension;
+using ColorVision.Update;
 
 namespace ColorVision
 {
@@ -233,7 +234,8 @@ namespace ColorVision
 
         private void Update_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show(Application.Current.MainWindow, "当前版本已经是最新版本","ColorVision",MessageBoxButton.OK);
+            AutoUpdater AutoUpdater = new AutoUpdater();
+            AutoUpdater.CheckAndUpdate();
         }
         private void License_Click(object sender, RoutedEventArgs e)
         {

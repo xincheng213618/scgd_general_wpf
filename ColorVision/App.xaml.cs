@@ -23,7 +23,6 @@ namespace ColorVision
 
         public App()
         {
-
             Startup += (s, e) => Application_Startup(s, e);
             Exit += new ExitEventHandler(Application_Exit);
         }

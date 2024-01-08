@@ -12,6 +12,13 @@ using LiveChartsCore.VisualElements;
 using MySqlConnector.Logging;
 using System.Windows.Documents;
 using ColorVision.Media;
+using ColorVision.Update;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Reflection;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 
 namespace ColorVision
 {
@@ -139,8 +146,61 @@ namespace ColorVision
                 ColorVision.Util.Tool.ExecuteCommandAsAdmin("net stop RegistrationCenterService&net stop CVMainService_x64&net start RegistrationCenterService&net start CVMainService_x64");
             };
             menuItem.Items.Add(menuItem3);
+
+            MenuItem menuItem4 = new MenuItem() { Header = "光谱" };
+            menuItem4.Click += ReadTest;
+            menuItem.Items.Add(menuItem4);
+
 #endif
+
+            if (GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting.IsAutoUpdate)
+            {
+                Thread thread1 = new Thread(async () => await CheckUpdate()) { IsBackground = true };
+                thread1.Start();
+            }
         }
+        public async Task CheckUpdate()
+        {
+            await Task.Delay(1000);
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                AutoUpdater autoUpdater = AutoUpdater.GetInstance();
+                autoUpdater.CheckAndUpdate(false);
+            });
+
+        }
+
+        class SpectralData
+        {
+            public double Wavelength { get; set; }
+            public double X { get; set; }
+            public double Y { get; set; }
+            public double Z { get; set; }
+        }
+        List<SpectralData> spectralDataList = new List<SpectralData>();
+
+        public void ReadTest(object sender, RoutedEventArgs e)
+        {
+            var lines = File.ReadAllLines("C:\\Users\\17917\\Desktop\\三刺激值曲线CIE2015 的副本.csv");
+
+            foreach (var line in lines)
+            {
+                var values = line.Split(',');
+                if (values.Length == 4)
+                {
+                    var spectralData = new SpectralData
+                    {
+                        Wavelength = double.Parse(values[0], CultureInfo.InvariantCulture),
+                        X = double.Parse(values[1], CultureInfo.InvariantCulture),
+                        Y = double.Parse(values[2], CultureInfo.InvariantCulture),
+                        Z = double.Parse(values[3], CultureInfo.InvariantCulture)
+                    };
+                    spectralDataList.Add(spectralData);
+                }
+            }
+        }
+
+
 
         private void MenuStatusBar_Click(object sender, RoutedEventArgs e)
         {

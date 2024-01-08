@@ -384,7 +384,9 @@ namespace ColorVision.Device.Camera
                 DService.CurrentTakeImageMode = TakeImageMode.Live;
                 string host = GlobalSetting.GetInstance().SoftwareConfig.VideoConfig.Host;
                 int port = GlobalSetting.GetInstance().SoftwareConfig.VideoConfig.Port;
-                port = CameraVideoControl.Open(host, port);
+                //Convert.ToBase64String(Encoding.UTF8.GetBytes(Device.Code)).Substring(0, 8)
+                string mapName = string.Format("Global\\{0}_ImagePlayer", Device.Code);
+                port = CameraVideoControl.Open(host, port, mapName);
                 if (port > 0)
                 {
                     CameraVideoControl.Start();

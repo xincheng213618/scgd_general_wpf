@@ -6,14 +6,15 @@ using ColorVision.Solution.V.Folders;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.Solution.V
 {
     public class CVSolution:ViewModelBase
     {
-        
-
+       
     }
 
 
@@ -22,29 +23,82 @@ namespace ColorVision.Solution.V
         public DirectoryInfo DirectoryInfo { get; set; }
 
         public RelayCommand OpenExplorer { get; set; }
+        public RelayCommand ClearCacheCommand { get; set; }
 
+        public static SolutionSetting Setting { get => SolutionManager.GetInstance().Setting; }
 
         public SolutionExplorer(string FullPath)
         {
+
             if (File.Exists(FullPath) && FullPath.EndsWith("cvsln", StringComparison.OrdinalIgnoreCase))
             {
                 FileInfo fileInfo = new FileInfo(FullPath);
+                if (fileInfo !=null)
+                {
+                    DirectoryInfo = fileInfo.Directory;
+                    this.Name = Path.GetFileNameWithoutExtension(FullPath);
+                    if (DirectoryInfo != null)
+                    {
+                        DirectoryInfo rootDirectory = DirectoryInfo.Root;
+                        DriveInfo = new DriveInfo(rootDirectory.FullName);
+                    }
+                }
 
-                this.Name = Path.GetFileNameWithoutExtension(FullPath);
-                DirectoryInfo = fileInfo.Directory;
+
             }
             else if(Directory.Exists(FullPath))
             {
                 DirectoryInfo = new DirectoryInfo(FullPath);
                 this.Name = DirectoryInfo.Name;
+                DirectoryInfo rootDirectory = DirectoryInfo.Root;
+                DriveInfo = new DriveInfo(rootDirectory.FullName);
             }
-
 
             GeneralRelayCommand();
             GeneralContextMenu();
             GeneralCVSln();
             this.IsExpanded = true;
+
+            DriveMonitor();
+
         }
+
+        public Task DriveMonitor()
+        {
+            return Task.Run(() =>
+            {
+                bool IsMonitor = true;
+                while (IsMonitor)
+                {
+                    Task.Delay(100000);
+                    if (Setting.IsLackWarning)
+                    {
+                        if (DriveInfo.IsReady)
+                        {
+                            if (DriveInfo.AvailableFreeSpace < 1024 * 1024 * 1024)
+                            {
+
+                                Setting.IsMemoryLackWarning = false;
+                                MessageBox.Show("磁盘空间不足");
+                            }
+                        }
+                        else
+                        {
+                            IsMonitor = false;
+                        }
+                    }
+                }
+            });
+        }
+
+
+
+        public DriveInfo DriveInfo { get; set; }
+
+
+
+
+
         public void Refresh()
         {
             this.VisualChildren.Clear();
@@ -55,13 +109,22 @@ namespace ColorVision.Solution.V
         {
             OpenExplorer = new RelayCommand(a => 
             System.Diagnostics.Process.Start("explorer.exe", DirectoryInfo.FullName));
+
+            ClearCacheCommand = new RelayCommand(a =>
+            {
+                DirectoryInfo.Delete(true);
+                this.VisualChildren.Clear();
+                ///这里之后追加服务的清理
+            });
         }
 
         public void GeneralContextMenu()
         {
             ContextMenu = new ContextMenu();
-            MenuItem menuItem = new MenuItem() { Header = "打开文件夹", Command = OpenExplorer };
+            MenuItem menuItem = new MenuItem() { Header = "打开工程文件夹", Command = OpenExplorer };
             ContextMenu.Items.Add(menuItem);
+            MenuItem menuItem2 = new MenuItem() { Header = "清除缓存", Command = ClearCacheCommand };
+            ContextMenu.Items.Add(menuItem2);
         }
 
 

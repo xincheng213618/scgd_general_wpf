@@ -140,6 +140,11 @@
                         </Grid>
                     </ItemsPanelTemplate>
                 </StatusBar.ItemsPanel>
+
+                <StatusBarItem Grid.Column="0">
+                    
+                </StatusBarItem>
+                
                 <StatusBarItem Grid.Column="1" >
                     <DockPanel>
                         <StackPanel Orientation="Horizontal" Margin="0" >

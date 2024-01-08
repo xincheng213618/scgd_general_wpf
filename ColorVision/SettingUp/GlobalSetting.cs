@@ -1,5 +1,6 @@
 ﻿using ColorVision.MVVM;
 using ColorVision.SettingUp;
+using ColorVision.Update;
 using ColorVision.Util;
 using log4net;
 using System;
@@ -84,7 +85,7 @@ namespace ColorVision
                 SaveSoftwareConfig();
             };
 
-            PerformanceControlLazy = new Lazy<PerformanceControl>(() => PerformanceControl.GetInstance());
+            PerformanceControlLazy = new Lazy<SystemMonitor>(() => SystemMonitor.GetInstance());
         }
 
 
@@ -92,15 +93,14 @@ namespace ColorVision
         public bool IsAutoRun { get => Tool.IsAutoRun(GlobalConst.AutoRunName,GlobalConst.AutoRunRegPath); set { Tool.SetAutoRun(value, GlobalConst.AutoRunName, GlobalConst.AutoRunRegPath); NotifyPropertyChanged(); } }
 
         [JsonIgnore]
-        readonly Lazy<PerformanceControl> PerformanceControlLazy;
+        readonly Lazy<SystemMonitor> PerformanceControlLazy;
         [JsonIgnore]
-        public PerformanceControl PerformanceControl { get => PerformanceControlLazy.Value; }
+        public SystemMonitor PerformanceControl { get => PerformanceControlLazy.Value; }
         
 
         readonly Lazy<SoftwareConfig> SoftwareConfigLazy;
 
         public SoftwareConfig SoftwareConfig { get => SoftwareConfigLazy.Value; }
-
 
         public void SaveSoftwareConfig()
         {

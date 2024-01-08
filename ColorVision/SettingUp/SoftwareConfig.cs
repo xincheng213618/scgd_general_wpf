@@ -5,6 +5,7 @@ using ColorVision.RC;
 using ColorVision.SettingUp;
 using ColorVision.Solution;
 using ColorVision.Templates;
+using ColorVision.Update;
 using ColorVision.User;
 using System;
 using System.Collections.ObjectModel;
@@ -25,8 +26,8 @@ namespace ColorVision
 
             UserConfig = new UserConfig();
             SolutionConfig = new SolutionConfig();
-            PerformancSetting = new PerformancSetting();
-            PerformanceControlLazy = new Lazy<PerformanceControl>(() => PerformanceControl.GetInstance());
+            SystemMonitorSetting = new SystemMonitorSetting();
+            SystemMonitorLazy = new Lazy<SystemMonitor>(() => SystemMonitor.GetInstance());
             TemplateControlLazy = new Lazy<TemplateControl>(() => TemplateControl.GetInstance());
 
 
@@ -46,7 +47,8 @@ namespace ColorVision
 
             VideoConfig = new LocalVideoConfig();
         }
-
+        [JsonIgnore]
+        public AutoUpdater AutoUpdater { get;} = AutoUpdater.GetInstance();
 
         public static string Version { get => System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString() ?? "1.0"; } 
         public bool IsUseMySql { get => _IsUseMySql; set { _IsUseMySql = value; NotifyPropertyChanged(); UseMySqlChanged?.Invoke(value); } }
@@ -71,11 +73,11 @@ namespace ColorVision
 
 
         [JsonIgnore]
-        readonly Lazy<PerformanceControl> PerformanceControlLazy;
+        readonly Lazy<SystemMonitor> SystemMonitorLazy;
         [JsonIgnore]
-        public PerformanceControl PerformanceControl { get => PerformanceControlLazy.Value; }
+        public SystemMonitor SystemMonitor { get => SystemMonitorLazy.Value; }
 
-        public PerformancSetting PerformancSetting { get; set; }
+        public SystemMonitorSetting SystemMonitorSetting { get; set; }
 
         [JsonIgnore]
         readonly Lazy<TemplateControl> TemplateControlLazy;
@@ -106,6 +108,9 @@ namespace ColorVision
         public UserConfig UserConfig { get; set; }
 
         public SolutionConfig SolutionConfig { get; set; }
+
+        [JsonIgnore]
+        public static SolutionManager SolutionManager { get => SolutionManager.GetInstance(); }
 
         public SolutionSetting SolutionSetting { get; set; } = new SolutionSetting();
 

@@ -78,6 +78,9 @@ namespace ColorVision
         } 
         private string _UICulture = CultureInfo.InstalledUICulture.Name;
 
+        public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; NotifyPropertyChanged(); } }
+        private bool _IsAutoUpdate = true;
+
 
 
         public bool IsDeFaultOpenService { get=> _IsDeFaultOpenService; set { _IsDeFaultOpenService = value;NotifyPropertyChanged(); } }

@@ -12,6 +12,7 @@ using ColorVision.RC;
 using System.Threading;
 using ColorVision.Themes;
 using System.Windows.Media.Imaging;
+using ColorVision.Update;
 
 namespace ColorVision
 {
@@ -46,7 +47,9 @@ namespace ColorVision
             MySqlControl.GetInstance();
             Thread thread = new Thread(async () => await InitializedOver()) { IsBackground =true};
             thread.Start();
+
         }
+
         private static bool DebugBuild(Assembly assembly)
         {
             foreach (object attribute in assembly.GetCustomAttributes(false))

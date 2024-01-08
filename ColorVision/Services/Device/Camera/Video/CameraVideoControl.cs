@@ -1,11 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.MemoryMappedFiles;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using CVImageChannelLib;
 using log4net;
+using OpenCvSharp.Extensions;
 using OpenH264Lib;
 
 namespace ColorVision.Device.Camera.Video
@@ -23,10 +28,12 @@ namespace ColorVision.Device.Camera.Video
         public OpenH264Lib.Decoder Decoder { get; set; }
 
         public event CameraVideoFrameHandler CameraVideoFrameReceived;
+        private CVImageReaderProxy cvImgReader;
         public CameraVideoControl()
         {
             SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
             Decoder = new OpenH264Lib.Decoder(H264DllName);
+            OpenH264Lib.Encoder encoder = new OpenH264Lib.Encoder(H264DllName);
         }
         private UdpClient UdpClient { get; set; }
 
@@ -34,8 +41,34 @@ namespace ColorVision.Device.Camera.Video
         private int headLen;
 
         bool OpenVideo;
-        public int Open(string Host,int Port)
+        public int Open(string Host, int Port, string name)
         {
+            int ret = 0;
+            if (Host == "127.0.0.1") ret = OpenMMF(name);
+            else ret = OpenH264(Host, Port);
+            return ret;
+        }
+        private int OpenMMF(string DevName)
+        {
+            OpenVideo = true;
+            cvImgReader = new MMFReader(DevName);
+            return 1;
+        }
+        private int OpenH264(string Host, int Port)
+        {
+            //try
+            //{
+            //    H264Reader reader = new H264Reader(Host, Port);
+            //    cvImgReader = reader;
+            //    OpenVideo = true;
+            //    return reader.GetLocalPort();
+            //}
+            //catch (Exception ex)
+            //{
+            //    OpenVideo = false;
+            //    log.Error(ex.Message);
+            //    return -1;
+            //}
             try
             {
                 if (UdpClient != null)
@@ -60,44 +93,75 @@ namespace ColorVision.Device.Camera.Video
             }
         }
 
+        private void StartH264()
+        {
+            while (OpenVideo)
+            {
+                try
+                {
+                    if (UdpClient != null)
+                    {
+                        IPEndPoint remotePoint = new IPEndPoint(IPAddress.Parse("1.1.1.1"), 1);
+                        var received = UdpClient.Receive(ref remotePoint);
+                        if (received.Length > 0)
+                        {
+                            var bytes = AddPacket(received);
+                            if (bytes != null)
+                            {
+                                var bmp = Decoder.Decode(bytes, bytes.Length);
+                                if (bmp != null)
+                                {
+                                    Application.Current.Dispatcher.Invoke(() =>
+                                    {
+                                        CameraVideoFrameReceived?.Invoke(bmp);
+                                    });
+                                    bmp.Dispose();
+                                }
+                            }
+                        }
+                    }
+                    Task.Delay(1);
+                }
+                catch
+                {
+                    OpenVideo = false;
+                }
+
+            }
+        }
+
         public void Start()
         {
             Task.Run(() =>
             {
-                while (OpenVideo)
-                {
-                    try
-                    {
-                        if (UdpClient != null)
-                        {
-                            IPEndPoint remotePoint = new IPEndPoint(IPAddress.Parse("1.1.1.1"), 1);
-                            var received = UdpClient.Receive(ref remotePoint);
-                            if (received.Length > 0)
-                            {
-                                var bytes = AddPacket(received);
-                                if (bytes != null)
-                                {
-                                    var bmp = Decoder.Decode(bytes, bytes.Length);
-                                    if (bmp != null)
-                                    {
-                                        Application.Current.Dispatcher.Invoke(() =>
-                                        {
-                                            CameraVideoFrameReceived?.Invoke(bmp);
-                                        });
-                                        bmp.Dispose();
-                                    }
-                                }
-                            }
-                        }
-                        Task.Delay(1);
-                    }
-                    catch
-                    {
-                        OpenVideo = false;
-                    }
-
-                }
+                if (UdpClient != null) StartH264();
+                else StartMMF();
             });
+        }
+
+        private void StartMMF()
+        {
+            while (OpenVideo)
+            {
+                try
+                {
+                    var bmp = cvImgReader.Subscribe();
+                    if (bmp != null)
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            CameraVideoFrameReceived?.Invoke(bmp);
+                        });
+                        bmp.Dispose();
+                    }
+                    Task.Delay(1);
+                }
+                catch (Exception ex)
+                {
+                    //OpenVideo = false;
+                    //break;
+                }
+            }
         }
 
 

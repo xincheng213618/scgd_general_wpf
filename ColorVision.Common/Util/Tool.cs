@@ -102,8 +102,6 @@ namespace ColorVision.Util
             return Math.Max(dpiScaleX, dpiScaleY);
         }
 
-
-
         public static bool HasDefaultProgram(string fileName)
         {
             bool hasDefaultProgram = false;

@@ -174,7 +174,6 @@ namespace ColorVision.Services
         private void Timer_Elapsed(object? sender, ElapsedEventArgs e)
         {
             TimeSpan sp = DateTime.Now - LastAliveTime;
-            log.InfoFormat("{0}/TotalMilliseconds={1}/HeartbeatTime={2}", LastAliveTime.ToShortTimeString(), sp.TotalMilliseconds, HeartbeatTime);
             if (sp > TimeSpan.FromMilliseconds(HeartbeatTime))
             {
                 DisConnected?.Invoke(sender ,new EventArgs());
