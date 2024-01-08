@@ -5,6 +5,9 @@
                     >
 
     <SolidColorBrush x:Key="DarkDefaultBrush"  Color="#55326CF3" />
+    <converter:MemorySizeConverter x:Key="MemorySizeConverter"/>
+    
+
     <BooleanToVisibilityConverter x:Key="bool2VisibilityConverter"/>
     <converter:InverseBooleanConverter x:Key="inverseBooleanConverter"/>
     <converter:BooleanToVisibilityReConverter x:Key="bool2VisibilityConverter1"/>

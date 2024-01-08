@@ -7,6 +7,8 @@ using System.Windows;
 using ColorVision.HotKey;
 using System.Windows.Input;
 using ColorVision.Extension;
+using ColorVision.Solution.V;
+using System.Collections.ObjectModel;
 
 namespace ColorVision.Solution
 {
@@ -36,9 +38,14 @@ namespace ColorVision.Solution
         /// </summary>
         public event EventHandler SolutionLoaded;
 
+        public ObservableCollection<SolutionExplorer> SolutionExplorers { get; set; }
+
+
 
         public SolutionManager()
         {
+            SolutionExplorers = new ObservableCollection<SolutionExplorer>();
+
             SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
 
             if (File.Exists(App.SolutionPath))
@@ -53,6 +60,7 @@ namespace ColorVision.Solution
             Application.Current.MainWindow.AddHotKeys(new HotKeys("新建工程", new Hotkey(Key.N, ModifierKeys.Control), NewCreateWindow));
 
             OpenSolutionDirectory(CurrentSolution.FullName);
+
         }
 
         public DirectoryInfo SolutionDirectory { get; private set; }
@@ -73,6 +81,9 @@ namespace ColorVision.Solution
             SolutionDirectory = new DirectoryInfo(CurrentSolution.FullName);
             SolutionHistory.InsertFile(SolutionDirectory.FullName);
             SolutionLoaded?.Invoke(CurrentSolution, new EventArgs());
+
+            SolutionExplorers.Clear();
+            SolutionExplorers.Add(new SolutionExplorer(CurrentSolution.FullName));
             return true;
         }
 
@@ -83,6 +94,9 @@ namespace ColorVision.Solution
                 CurrentSolution.FullName = FullPath;
                 SolutionHistory.InsertFile(SolutionDirectory.FullName);
                 SolutionLoaded?.Invoke(CurrentSolution, new EventArgs());
+
+                SolutionExplorers.Clear();
+                SolutionExplorers.Add(new SolutionExplorer(FullPath));
             }
             return true;
         }

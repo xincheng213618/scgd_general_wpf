@@ -24,24 +24,16 @@ namespace ColorVision.Solution
         {
             InitializeComponent();
         }
-        public ObservableCollection<SolutionExplorer> SolutionExplorers { get; set; }
-
-
+        public ObservableCollection<SolutionExplorer> SolutionExplorers { get => SolutionManager.SolutionExplorers; }
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            Window window = Application.Current.MainWindow;
-            if (window != null)
-                window.Closing += Window_Closed;
-            SolutionExplorers = new ObservableCollection<SolutionExplorer>();
+            SolutionManager = SolutionManager.GetInstance();
             SolutionTreeView.ItemsSource = SolutionExplorers;
             IniCommand();
 
-            SolutionManager = SolutionManager.GetInstance();
-            TreeViewInitialized(SolutionManager.CurrentSolution.FullName);
-            SolutionManager.SolutionLoaded += (s, e) =>
-            {
-                TreeViewInitialized(SolutionManager.CurrentSolution.FullName);
-            };
+            Window window = Application.Current.MainWindow;
+            if (window != null)
+                window.Closing += Window_Closed;
         }
         
         private void Refresh_Click(object sender, RoutedEventArgs e)
@@ -63,7 +55,7 @@ namespace ColorVision.Solution
                 {
                     if (fn.Contains(".gprj"))
                     {
-                        OpenSolution(fn);
+                        SolutionManager.OpenSolution(fn);
                     }
                     else
                     {
@@ -77,19 +69,12 @@ namespace ColorVision.Solution
                     {
                         if (item.Extension == ".cvproj")
                         {
-                            OpenSolution(item.FullName);
+                            SolutionManager.OpenSolution(item.FullName);
                             break;
                         }
                     }
                 }
             }
-        }
-
-
-        public bool OpenSolution(string FullName)
-        {
-            TreeViewInitialized(FullName);
-            return true;
         }
 
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
@@ -105,9 +90,6 @@ namespace ColorVision.Solution
         private void SolutionTreeView_ContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
         }
-
-
-
 
         private Point SelectPoint;
 
@@ -170,14 +152,6 @@ namespace ColorVision.Solution
             SolutionManager.OpenSolutionWindow(Window.GetWindow(this));
         }
 
-        private void TreeViewInitialized(string FilePath)
-        {
-            if (FilePath != null)
-            {
-                SolutionExplorers.Clear();
-                SolutionExplorers.Add(new SolutionExplorer(FilePath));
-            }
-        }
 
 
 

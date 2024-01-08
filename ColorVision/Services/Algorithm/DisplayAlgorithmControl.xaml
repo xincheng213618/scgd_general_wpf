@@ -43,7 +43,7 @@
                                     <Button Content="刷新" Click="Button_Click_Refresh" />
                                     <Button DockPanel.Dock="Right" Content="上传" Click="Button_Click_Upload" Visibility="Hidden" Width="0" />
                                     <Button DockPanel.Dock="Right" Content="打开" Click="Button_Click_Open" />
-                                    <ComboBox x:Name="CB_CIEImageFiles"  Style="{StaticResource ComboBox.Small}"  />
+                                    <ComboBox x:Name="CB_CIEImageFiles"  Style="{StaticResource ComboBox.Small}"  Width="120"/>
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
                                     <RadioButton x:Name="BatchSelect" Content="批次号" GroupName="CIESrc"/>
@@ -77,7 +77,7 @@
                                     <Button Content="刷新" Click="Button_Click_RawRefresh" />
                                     <Button DockPanel.Dock="Right" Content="上传" Click="Button_Click_RawUpload" Visibility="Hidden" Width="0" />
                                     <Button DockPanel.Dock="Right" Content="打开" Click="Button_Click_RawOpen" />
-                                    <ComboBox x:Name="CB_RawImageFiles"  Style="{StaticResource ComboBox.Small}"  />
+                                    <ComboBox x:Name="CB_RawImageFiles"  Style="{StaticResource ComboBox.Small}" Width="120" />
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
                                     <RadioButton x:Name="AlgBatchSelect" Content="批次号" GroupName="alg_src"/>
