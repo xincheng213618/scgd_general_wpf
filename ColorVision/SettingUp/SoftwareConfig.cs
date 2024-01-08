@@ -26,8 +26,8 @@ namespace ColorVision
 
             UserConfig = new UserConfig();
             SolutionConfig = new SolutionConfig();
-            PerformancSetting = new PerformancSetting();
-            PerformanceControlLazy = new Lazy<PerformanceControl>(() => PerformanceControl.GetInstance());
+            SystemMonitorSetting = new SystemMonitorSetting();
+            SystemMonitorLazy = new Lazy<SystemMonitor>(() => SystemMonitor.GetInstance());
             TemplateControlLazy = new Lazy<TemplateControl>(() => TemplateControl.GetInstance());
 
 
@@ -73,11 +73,11 @@ namespace ColorVision
 
 
         [JsonIgnore]
-        readonly Lazy<PerformanceControl> PerformanceControlLazy;
+        readonly Lazy<SystemMonitor> SystemMonitorLazy;
         [JsonIgnore]
-        public PerformanceControl PerformanceControl { get => PerformanceControlLazy.Value; }
+        public SystemMonitor SystemMonitor { get => SystemMonitorLazy.Value; }
 
-        public PerformancSetting PerformancSetting { get; set; }
+        public SystemMonitorSetting SystemMonitorSetting { get; set; }
 
         [JsonIgnore]
         readonly Lazy<TemplateControl> TemplateControlLazy;

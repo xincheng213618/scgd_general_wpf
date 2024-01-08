@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace ColorVision.SettingUp
 {
 
-    public class PerformancSetting: ViewModelBase
+    public class SystemMonitorSetting: ViewModelBase
     {
         public int UpdateSpeed { get => _UpdateSpeed; set { _UpdateSpeed = value; NotifyPropertyChanged(); } }
         private int _UpdateSpeed = 1000;
@@ -20,13 +20,11 @@ namespace ColorVision.SettingUp
 
     }
 
-
-
-    public class PerformanceControl : ViewModelBase, IDisposable
+    public class SystemMonitor : ViewModelBase, IDisposable
     {
-        private static PerformanceControl _instance;
+        private static SystemMonitor _instance;
         private static readonly object _locker = new();
-        public static PerformanceControl GetInstance() { lock (_locker) { return _instance ??= new PerformanceControl(); } }
+        public static SystemMonitor GetInstance() { lock (_locker) { return _instance ??= new SystemMonitor(); } }
 
         private bool PerformanceCounterIsOpen;
         private PerformanceCounter PCCPU;
@@ -51,11 +49,11 @@ namespace ColorVision.SettingUp
             }    
         }
 
-        public PerformancSetting Setting { get; set; }
+        public SystemMonitorSetting Setting { get; set; }
 
-        public PerformanceControl()
+        public SystemMonitor()
         {
-            Setting = GlobalSetting.GetInstance().SoftwareConfig.PerformancSetting;
+            Setting = GlobalSetting.GetInstance().SoftwareConfig.SystemMonitorSetting;
             Task.Run(() => 
             {
                 try

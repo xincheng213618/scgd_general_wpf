@@ -279,15 +279,15 @@
                                     <Border Style="{StaticResource BorderModuleArea}" >
                                         <StackPanel Margin="5">
                                             <DockPanel Margin="5,2">
-                                                <TextBox DockPanel.Dock="Right"   Text="{Binding PerformanceControl.UpdateSpeed}" HorizontalContentAlignment="Right" HorizontalAlignment="Left" Width="200"/>
+                                                <TextBox DockPanel.Dock="Right"   Text="{Binding SystemMonitor.UpdateSpeed}" HorizontalContentAlignment="Right" HorizontalAlignment="Left" Width="200"/>
                                                 <TextBlock Text="更新速度" />
                                             </DockPanel>
                                             <DockPanel Margin="5,2">
-                                                <TextBox  DockPanel.Dock="Right"  Text="{Binding PerformancSetting.DefaultTimeFormat}"  HorizontalContentAlignment="Right" Width="200"/>
+                                                <TextBox  DockPanel.Dock="Right"  Text="{Binding SystemMonitorSetting.DefaultTimeFormat}"  HorizontalContentAlignment="Right" Width="200"/>
                                                 <TextBlock Text="日期格式" />
                                             </DockPanel>
                                             <DockPanel Margin="5">
-                                                <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding PerformancSetting.IsShowTime}"/>
+                                                <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding SystemMonitorSetting.IsShowTime}"/>
                                                 <TextBlock Text="显示时间"/>
                                             </DockPanel>
                                         </StackPanel>
