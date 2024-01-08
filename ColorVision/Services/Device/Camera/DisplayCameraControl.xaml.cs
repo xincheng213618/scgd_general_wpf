@@ -109,6 +109,12 @@ namespace ColorVision.Device.Camera
                     DeviceFileUpdownParam pm_up = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
                     FileUpload(pm_up);
                     break;
+                case MQTTCameraEventEnum.Event_OpenLive:
+                    DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(arg.Data));
+                    string mapName = Device.Code;
+                    if (pm_live.IsLocal) mapName = pm_live.MapName;
+                    CameraVideoControl.Start(pm_live.IsLocal, mapName, pm_live.FrameInfo.width, pm_live.FrameInfo.height);
+                    break;
             }
         }
 
@@ -384,12 +390,10 @@ namespace ColorVision.Device.Camera
                 DService.CurrentTakeImageMode = TakeImageMode.Live;
                 string host = GlobalSetting.GetInstance().SoftwareConfig.VideoConfig.Host;
                 int port = GlobalSetting.GetInstance().SoftwareConfig.VideoConfig.Port;
-                //Convert.ToBase64String(Encoding.UTF8.GetBytes(Device.Code)).Substring(0, 8)
-                string mapName = string.Format("Global\\{0}_ImagePlayer", Device.Code);
-                port = CameraVideoControl.Open(host, port, mapName);
+                //bool IsLocal = (host == "127.0.0.1");
+                port = CameraVideoControl.Open(host, port);
                 if (port > 0)
                 {
-                    CameraVideoControl.Start();
                     MsgRecord msg= DService.OpenVideo(host, port, DService.Config.ExpTime);
                     msg.MsgRecordStateChanged += (s) =>
                     {
@@ -403,6 +407,7 @@ namespace ColorVision.Device.Camera
                     CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
                     CameraVideoControl.CameraVideoFrameReceived += CameraVideoFrameReceived;
                     StackPanelImage.Visibility = Visibility.Collapsed;
+                    //
                 }
                 else
                 {

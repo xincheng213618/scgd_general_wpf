@@ -86,8 +86,8 @@ namespace ColorVision.Device.Camera
                         break;
                     case MQTTCameraEventEnum.Event_Open:
                     case MQTTCameraEventEnum.Event_OpenLive:
-                        DeviceStatus = DeviceStatus.Opened;
-                        break;
+                        //DeviceStatus = DeviceStatus.Opened;
+                        //break;
                     case MQTTCameraEventEnum.Event_GetData:
                         OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         DeviceStatus = DeviceStatus.Opened;
@@ -319,10 +319,11 @@ namespace ColorVision.Device.Camera
         {
             CurrentTakeImageMode = TakeImageMode.Live;
             IsVideoOpen = true;
+            bool IsLocal = (host=="127.0.0.1");
             MsgSend msg = new MsgSend
             {
                 EventName = "OpenLive",
-                Params = new Dictionary<string, object>() { { "RemoteIp", host }, { "RemotePort", port }, { "ExpTime", expTime } }
+                Params = new Dictionary<string, object>() { { "RemoteIp", host }, { "RemotePort", port }, { "ExpTime", expTime }, { "IsLocal", IsLocal } }
             };
              return PublishAsyncClient(msg);
         }
@@ -405,7 +406,15 @@ namespace ColorVision.Device.Camera
                 Params = Params
             };
             Params.Add("ExpTime", expTime);
-            Params.Add("Calibration", new CVTemplateParam() { ID = param.ID, Name = param.Name });
+            if (param.ID == -1)
+            {
+                Params.Add("Calibration", new CVTemplateParam() { ID = param.ID });
+            }
+            else
+            {
+                Params.Add("Calibration", new CVTemplateParam() { ID = param.ID, Name = param.Name });
+            }
+
             double timeout = 0;
             for (int i = 0; i < expTime.Length; i++) timeout += expTime[i];
             return PublishAsyncClient(msg, timeout + 10000);
