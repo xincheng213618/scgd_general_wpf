@@ -109,6 +109,9 @@ namespace ColorVision
 
         public SolutionConfig SolutionConfig { get; set; }
 
+        [JsonIgnore]
+        public static SolutionManager SolutionManager { get => SolutionManager.GetInstance(); }
+
         public SolutionSetting SolutionSetting { get; set; } = new SolutionSetting();
 
 

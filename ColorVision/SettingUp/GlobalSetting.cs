@@ -102,7 +102,6 @@ namespace ColorVision
 
         public SoftwareConfig SoftwareConfig { get => SoftwareConfigLazy.Value; }
 
-
         public void SaveSoftwareConfig()
         {
             string Temp0 = SoftwareConfig.MySqlConfig.UserPwd;

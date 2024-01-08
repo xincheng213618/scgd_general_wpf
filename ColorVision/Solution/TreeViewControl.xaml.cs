@@ -12,8 +12,6 @@ using ColorVision.Util;
 
 namespace ColorVision.Solution
 {
-
-
     /// <summary>
     /// TreeViewControl.xaml 的交互逻辑
     /// </summary>
@@ -115,7 +113,6 @@ namespace ColorVision.Solution
                 TreeViewItem item = ViewHelper.FindVisualParent<TreeViewItem>(result.VisualHit);
                 if (item == null)
                     return;
-
                 if (SelectedTreeViewItem != null && SelectedTreeViewItem != item && SelectedTreeViewItem.DataContext is VObject viewModeBase)
                 {
                     viewModeBase.IsEditMode = false;

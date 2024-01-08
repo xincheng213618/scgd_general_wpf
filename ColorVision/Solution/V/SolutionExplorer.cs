@@ -6,6 +6,8 @@ using ColorVision.Solution.V.Folders;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.Solution.V
@@ -23,28 +25,80 @@ namespace ColorVision.Solution.V
         public RelayCommand OpenExplorer { get; set; }
         public RelayCommand ClearCacheCommand { get; set; }
 
+        public static SolutionSetting Setting { get => SolutionManager.GetInstance().Setting; }
 
         public SolutionExplorer(string FullPath)
         {
+
             if (File.Exists(FullPath) && FullPath.EndsWith("cvsln", StringComparison.OrdinalIgnoreCase))
             {
                 FileInfo fileInfo = new FileInfo(FullPath);
+                if (fileInfo !=null)
+                {
+                    DirectoryInfo = fileInfo.Directory;
+                    this.Name = Path.GetFileNameWithoutExtension(FullPath);
+                    if (DirectoryInfo != null)
+                    {
+                        DirectoryInfo rootDirectory = DirectoryInfo.Root;
+                        DriveInfo = new DriveInfo(rootDirectory.FullName);
+                    }
+                }
 
-                this.Name = Path.GetFileNameWithoutExtension(FullPath);
-                DirectoryInfo = fileInfo.Directory;
+
             }
             else if(Directory.Exists(FullPath))
             {
                 DirectoryInfo = new DirectoryInfo(FullPath);
                 this.Name = DirectoryInfo.Name;
+                DirectoryInfo rootDirectory = DirectoryInfo.Root;
+                DriveInfo = new DriveInfo(rootDirectory.FullName);
             }
-
 
             GeneralRelayCommand();
             GeneralContextMenu();
             GeneralCVSln();
             this.IsExpanded = true;
+
+            DriveMonitor();
+
         }
+
+        public Task DriveMonitor()
+        {
+            return Task.Run(() =>
+            {
+                bool IsMonitor = true;
+                while (IsMonitor)
+                {
+                    Task.Delay(100000);
+                    if (Setting.IsLackWarning)
+                    {
+                        if (DriveInfo.IsReady)
+                        {
+                            if (DriveInfo.AvailableFreeSpace < 1024 * 1024 * 1024)
+                            {
+
+                                Setting.IsMemoryLackWarning = false;
+                                MessageBox.Show("磁盘空间不足");
+                            }
+                        }
+                        else
+                        {
+                            IsMonitor = false;
+                        }
+                    }
+                }
+            });
+        }
+
+
+
+        public DriveInfo DriveInfo { get; set; }
+
+
+
+
+
         public void Refresh()
         {
             this.VisualChildren.Clear();

@@ -121,8 +121,6 @@ namespace ColorVision.SettingUp
 
         public void CheckDiskSpace(string driveLetter, long threshold)
         {
-
-
             DriveInfo drive = new DriveInfo(driveLetter);
 
             if (!drive.IsReady)

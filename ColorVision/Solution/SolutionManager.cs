@@ -9,13 +9,14 @@ using System.Windows.Input;
 using ColorVision.Extension;
 using ColorVision.Solution.V;
 using System.Collections.ObjectModel;
+using ColorVision.MVVM;
 
 namespace ColorVision.Solution
 {
     /// <summary>
     /// 工程模块控制中心
     /// </summary>
-    public class SolutionManager
+    public class SolutionManager:ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(SolutionManager));
 
@@ -29,6 +30,8 @@ namespace ColorVision.Solution
         public SoftwareConfig SoftwareConfig { get; private set; }
         public RecentFileList SolutionHistory { get; set; } = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
 
+
+
         /// <summary>
         /// 工程初始化的时候
         /// </summary>
@@ -39,7 +42,8 @@ namespace ColorVision.Solution
         public event EventHandler SolutionLoaded;
 
         public ObservableCollection<SolutionExplorer> SolutionExplorers { get; set; }
-
+        public SolutionExplorer CurrentSolutionExplorer { get => _CurrentSolutionExplorer; set { _CurrentSolutionExplorer = value; NotifyPropertyChanged(); } }
+        private SolutionExplorer _CurrentSolutionExplorer;
 
 
         public SolutionManager()
@@ -83,7 +87,8 @@ namespace ColorVision.Solution
             SolutionLoaded?.Invoke(CurrentSolution, new EventArgs());
 
             SolutionExplorers.Clear();
-            SolutionExplorers.Add(new SolutionExplorer(CurrentSolution.FullName));
+            CurrentSolutionExplorer = new SolutionExplorer(SolutionFullPath);
+            SolutionExplorers.Add(CurrentSolutionExplorer);
             return true;
         }
 
@@ -96,7 +101,8 @@ namespace ColorVision.Solution
                 SolutionLoaded?.Invoke(CurrentSolution, new EventArgs());
 
                 SolutionExplorers.Clear();
-                SolutionExplorers.Add(new SolutionExplorer(FullPath));
+                CurrentSolutionExplorer = new SolutionExplorer(FullPath);
+                SolutionExplorers.Add(CurrentSolutionExplorer);
             }
             return true;
         }

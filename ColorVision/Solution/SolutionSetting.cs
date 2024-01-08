@@ -13,5 +13,11 @@ namespace ColorVision.Solution
         public string DefaultImageSaveName { get => _DefaultImageSaveName; set { _DefaultImageSaveName = value; NotifyPropertyChanged(); } }
         private string _DefaultImageSaveName = "yyyyddMMHHmmss";
 
+        public bool IsMemoryLackWarning{ get => _IsMemoryLackWarning; set { _IsMemoryLackWarning = value; NotifyPropertyChanged(); } }
+        private bool _IsMemoryLackWarning = true;
+
+        public bool IsLackWarning { get => _IsLackWarning; set { _IsLackWarning = value; NotifyPropertyChanged(); } }
+        private bool _IsLackWarning = true;
+
     }
 }

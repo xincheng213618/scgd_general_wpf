@@ -184,9 +184,18 @@
                                 <Border Style="{StaticResource BorderModuleArea}" >
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="5" >
-                                            <TextBlock Text="当前工程 " />
+                                            <TextBlock Text="当前工程路径： " />
                                             <TextBlock Text="{Binding SolutionConfig.FullName}"  />
                                         </DockPanel>
+
+                                        <DockPanel Margin="5" >
+                                            <TextBlock>
+                                                <Run Text="{Binding SolutionManager.CurrentSolutionExplorer.DriveInfo.AvailableFreeSpace,Mode=OneWay,Converter={StaticResource MemorySizeConverter}}"/>
+                                                <Run Text="可用，共"/>
+                                                <Run Text="{Binding SolutionManager.CurrentSolutionExplorer.DriveInfo.TotalSize,Mode=OneWay,Converter={StaticResource MemorySizeConverter}}"/>
+                                            </TextBlock>
+                                        </DockPanel>
+
                                         <DockPanel Margin="5" >
                                             <Button  DockPanel.Dock="Right"  Content="清除"    />
                                             <TextBlock Text="清除缓存 " />
@@ -204,6 +213,10 @@
                                             <Button DockPanel.Dock="Right" Content="{x:Static resx:Resource.Reset}" Click="SetProjectDefault__Click"  />
                                             <TextBlock Text="默认文件存储格式:"  MinWidth="150"  />
                                             <TextBox Text="{Binding SolutionSetting.DefaultSaveName}" HorizontalAlignment="Left" Width="200" />
+                                        </DockPanel>
+                                        <DockPanel Margin="5" >
+                                            <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding SolutionSetting.IsLackWarning}"/>
+                                            <TextBlock Text="工程硬盘剩余空间不足提示" />
                                         </DockPanel>
                                     </StackPanel>
                                 </Border>
