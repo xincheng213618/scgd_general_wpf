@@ -73,6 +73,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="CVImageChannelLib">
+      <HintPath>..\DLL\CVImageChannelLib.dll</HintPath>
+    </Reference>
     <Reference Include="FlowEngineLib">
       <HintPath>..\DLL\FlowEngineLib.dll</HintPath>
     </Reference>
