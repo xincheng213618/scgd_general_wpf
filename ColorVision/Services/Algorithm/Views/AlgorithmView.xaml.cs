@@ -146,7 +146,7 @@ namespace ColorVision.Services.Algorithm.Views
         }
         public void AlgResultDataDraw(string key, string serialNumber, string imgFileName, string templateName, AlgorithmResultType resultType, int? resultCode, string resultDesc, long totalTime)
         {
-            AlgorithmResult result = new AlgorithmResult(AlgResults.Count + 1, serialNumber, imgFileName, templateName, DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss"), resultType, resultCode, resultDesc, totalTime);
+            AlgorithmResult result = new AlgorithmResult(AlgResults.Count + 1, serialNumber, imgFileName, templateName, DateTime.Now, resultType, resultCode, resultDesc, totalTime);
             AlgResults.Add(result);
             RefreshResultListView();
         }
@@ -157,7 +157,7 @@ namespace ColorVision.Services.Algorithm.Views
 
         public void PoiDataDraw(string key, string serialNumber, string imgFileName, string templateName, List<POIResultCIEY> results, int? resultCode, string resultDesc, long totalTime)
         {
-            AlgorithmResult result = new AlgorithmResult(AlgResults.Count + 1, serialNumber, imgFileName, templateName, DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss"), AlgorithmResultType.POI_Y, resultCode, resultDesc, totalTime);
+            AlgorithmResult result = new AlgorithmResult(AlgResults.Count + 1, serialNumber, imgFileName, templateName, DateTime.Now, AlgorithmResultType.POI_Y, resultCode, resultDesc, totalTime);
             AlgResults.Add(result);
             foreach (var item in results)
             {
@@ -172,7 +172,7 @@ namespace ColorVision.Services.Algorithm.Views
         }
         public void PoiDataDraw(string key, string serialNumber, string imgFileName, string templateName, List<POIResultCIExyuv> results, int? resultCode, string resultDesc, long totalTime)
         {
-            AlgorithmResult result = new AlgorithmResult(AlgResults.Count + 1, serialNumber, imgFileName, templateName, DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss"), AlgorithmResultType.POI_XY_UV, resultCode, resultDesc, totalTime);
+            AlgorithmResult result = new AlgorithmResult(AlgResults.Count + 1, serialNumber, imgFileName, templateName, DateTime.Now, AlgorithmResultType.POI_XY_UV, resultCode, resultDesc, totalTime);
             AlgResults.Add(result);
             foreach (var item in results)
             {

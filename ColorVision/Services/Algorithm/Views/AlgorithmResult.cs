@@ -21,30 +21,22 @@ namespace ColorVision.Services.Algorithm.Views
         public ObservableCollection<LedResultData> LedResultDatas { get; set; }
 
 
-        public AlgorithmResult(AlgResultMasterModel item)
+        public AlgorithmResult(AlgResultMasterModel item) : this(item.Id, item.BatchCode, item.ImgFile, item.TName, item.CreateDate, item.ImgFileType, item.ResultCode, item.Result, item.TotalTime)
         {
-            ID = item.Id;
-            Batch = item.BatchCode;
-            FilePath = item.ImgFile;
-            CreateTime = item.CreateDate;
-            _POITemplateName = item.TName;
-            _ResultType = item.ImgFileType;
-            _resultCode = (int)item.ResultCode;
-            _totalTime = item.TotalTime;
-            _resultDesc = item.Result;
         }
 
-        public AlgorithmResult(int id, string serialNumber, string imgFileName, string pOITemplateName, string recvTime, AlgorithmResultType resultType, int? resultCode, string resultDesc, long totalTime = 0) 
+        public AlgorithmResult(int id, string serialNumber, string imgFileName, string pOITemplateName, DateTime? recvTime, AlgorithmResultType resultType, int? resultCode, string resultDesc, long totalTime = 0) 
         {
             _Id = id;
             Batch = serialNumber;
             FilePath = imgFileName;
             _POITemplateName = pOITemplateName;
-            CreateTime = DateTime.Parse(recvTime);
+            CreateTime = recvTime;
             _ResultType = resultType;
             _resultCode = (int)resultCode;
             _totalTime = totalTime;
             _resultDesc = resultDesc;
+            this.PoiData = new ObservableCollection<PoiResultData>();
         }
 
 
