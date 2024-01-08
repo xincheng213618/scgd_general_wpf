@@ -56,6 +56,9 @@
     </Window.Resources>
     <Grid>
         <TabControl TabStripPlacement="Left" Background="Transparent"  Style="{StaticResource  TabControlBaseStyle}">
+            <TabControl.Resources>
+                
+            </TabControl.Resources>
             <TabItem  x:Name="UniversalTabItem" MinWidth="100" Header="通用设置" >
                 <TabItem.Style>
                     <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">
@@ -67,12 +70,12 @@
                         <Setter Property="Background" Value="Transparent"/>
                     </Style>
                 </TabItem.Style>
-                <ScrollViewer   Background="{DynamicResource GlobalBorderBrush}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" >
-                    <StackPanel>
-                        <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
-                            <GroupBox.Header>
-                                <TextBlock Text="通用" FontSize="20"/>
-                            </GroupBox.Header>
+                <Grid Background="{DynamicResource GlobalBorderBrush}">
+                    <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
+                        <GroupBox.Header>
+                            <TextBlock Text="通用" FontSize="20"/>
+                        </GroupBox.Header>
+                        <ScrollViewer    HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" >
                             <StackPanel>
                                 <Border Style="{StaticResource BorderModuleArea}">
                                     <StackPanel Margin="5">
@@ -134,15 +137,25 @@
                                             <TextBlock Text="{x:Static resx:Resource.Language}"/>
                                         </DockPanel>
                                         <DockPanel  Margin="5">
+                                            <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding SoftwareSetting.IsAutoUpdate}"/>
+                                            <TextBlock Text="软件启动时检测更新"/>
+                                        </DockPanel>
+                                        <DockPanel  Margin="5">
+                                            <Button  DockPanel.Dock="Right" Content="检查更新" Command="{Binding AutoUpdater.UpdateCommand}"/>
+                                            <TextBlock Text="{Binding AutoUpdater.LatestVersion}"/>
+                                            <TextBlock Text="软件版本"/>
+                                        </DockPanel>
+                                        <ProgressBar Height="10"  Foreground="#B41515" Maximum="100" Minimum="0" Value="{Binding AutoUpdater.ProgressValue}" Background="#373B41" BorderThickness="0" Margin="5" VerticalAlignment="Bottom" />
+                                        <DockPanel  Margin="5">
                                             <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding SoftwareSetting.TransparentWindow}"/>
                                             <TextBlock Text="禁用硬件加速"/>
                                         </DockPanel>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
-                        </GroupBox>
-                    </StackPanel>
-                </ScrollViewer>
+                        </ScrollViewer>
+                    </GroupBox>
+                </Grid>
             </TabItem>
             <TabItem  Header="工程设置" >
                 <TabItem.Style>

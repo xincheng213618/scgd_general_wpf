@@ -5,6 +5,7 @@ using ColorVision.RC;
 using ColorVision.SettingUp;
 using ColorVision.Solution;
 using ColorVision.Templates;
+using ColorVision.Update;
 using ColorVision.User;
 using System;
 using System.Collections.ObjectModel;
@@ -46,7 +47,8 @@ namespace ColorVision
 
             VideoConfig = new LocalVideoConfig();
         }
-
+        [JsonIgnore]
+        public AutoUpdater AutoUpdater { get;} = AutoUpdater.GetInstance();
 
         public static string Version { get => System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString() ?? "1.0"; } 
         public bool IsUseMySql { get => _IsUseMySql; set { _IsUseMySql = value; NotifyPropertyChanged(); UseMySqlChanged?.Invoke(value); } }

@@ -15,6 +15,7 @@ using ColorVision.Media;
 using ColorVision.Update;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Reflection;
 
 namespace ColorVision
 {
@@ -144,27 +145,23 @@ namespace ColorVision
             menuItem.Items.Add(menuItem3);
 #endif
 
-            ///窗口打开的时候检测是否存在新版本
-            ///
-            Thread thread = new Thread(async () => await CheckUpdate()) { IsBackground = true };
-            thread.Start();
-            
-
+            if (GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting.IsAutoUpdate)
+            {
+                Thread thread1 = new Thread(async () => await CheckUpdate()) { IsBackground = true };
+                thread1.Start();
+            }
         }
-
         public async Task CheckUpdate()
         {
             await Task.Delay(1000);
-
             Application.Current.Dispatcher.Invoke(() =>
             {
-
-                AutoUpdater autoUpdater = new AutoUpdater();
+                AutoUpdater autoUpdater = AutoUpdater.GetInstance();
                 autoUpdater.CheckAndUpdate(false);
-
             });
 
         }
+
 
         private void MenuStatusBar_Click(object sender, RoutedEventArgs e)
         {
