@@ -31,8 +31,6 @@ namespace ColorVision.Solution.V.Folders
 
         public void Open()
         {
-            WindowSolution windowSolution = new WindowSolution();
-            windowSolution.Show();
         }
 
         public void Copy()

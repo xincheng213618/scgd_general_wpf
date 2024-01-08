@@ -635,11 +635,6 @@ namespace ColorVision.Services.Algorithm
             }
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            WindowSolution windowSolution = new WindowSolution() { Owner = Window.GetWindow(this) };
-            windowSolution.Show();
-        }
 
         private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
