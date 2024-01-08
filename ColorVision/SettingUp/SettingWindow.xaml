@@ -184,10 +184,13 @@
                                 <Border Style="{StaticResource BorderModuleArea}" >
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="5" >
-                                            <TextBlock Text="当前工程: " />
+                                            <TextBlock Text="当前工程 " />
                                             <TextBlock Text="{Binding SolutionConfig.FullName}"  />
                                         </DockPanel>
-
+                                        <DockPanel Margin="5" >
+                                            <Button  DockPanel.Dock="Right"  Content="清除"    />
+                                            <TextBlock Text="清除缓存 " />
+                                        </DockPanel>
                                     </StackPanel>
                                 </Border>
                                 <Border Style="{StaticResource BorderModuleArea}" CornerRadius="8">

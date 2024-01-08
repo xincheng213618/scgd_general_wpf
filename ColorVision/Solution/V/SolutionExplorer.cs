@@ -12,8 +12,7 @@ namespace ColorVision.Solution.V
 {
     public class CVSolution:ViewModelBase
     {
-        
-
+       
     }
 
 
@@ -22,6 +21,7 @@ namespace ColorVision.Solution.V
         public DirectoryInfo DirectoryInfo { get; set; }
 
         public RelayCommand OpenExplorer { get; set; }
+        public RelayCommand ClearCacheCommand { get; set; }
 
 
         public SolutionExplorer(string FullPath)
@@ -55,13 +55,22 @@ namespace ColorVision.Solution.V
         {
             OpenExplorer = new RelayCommand(a => 
             System.Diagnostics.Process.Start("explorer.exe", DirectoryInfo.FullName));
+
+            ClearCacheCommand = new RelayCommand(a =>
+            {
+                DirectoryInfo.Delete(true);
+                this.VisualChildren.Clear();
+                ///这里之后追加服务的清理
+            });
         }
 
         public void GeneralContextMenu()
         {
             ContextMenu = new ContextMenu();
-            MenuItem menuItem = new MenuItem() { Header = "打开文件夹", Command = OpenExplorer };
+            MenuItem menuItem = new MenuItem() { Header = "打开工程文件夹", Command = OpenExplorer };
             ContextMenu.Items.Add(menuItem);
+            MenuItem menuItem2 = new MenuItem() { Header = "清除缓存", Command = ClearCacheCommand };
+            ContextMenu.Items.Add(menuItem2);
         }
 
 
