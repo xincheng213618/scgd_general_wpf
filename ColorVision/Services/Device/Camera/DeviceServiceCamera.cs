@@ -405,7 +405,15 @@ namespace ColorVision.Device.Camera
                 Params = Params
             };
             Params.Add("ExpTime", expTime);
-            Params.Add("Calibration", new CVTemplateParam() { ID = param.ID, Name = param.Name });
+            if (param.ID == -1)
+            {
+                Params.Add("Calibration", new CVTemplateParam() { ID = param.ID });
+            }
+            else
+            {
+                Params.Add("Calibration", new CVTemplateParam() { ID = param.ID, Name = param.Name });
+            }
+
             double timeout = 0;
             for (int i = 0; i < expTime.Length; i++) timeout += expTime[i];
             return PublishAsyncClient(msg, timeout + 10000);
