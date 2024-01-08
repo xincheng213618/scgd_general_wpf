@@ -21,7 +21,9 @@ namespace ColorVision.Update
         private static readonly object _locker = new();
         public static AutoUpdater GetInstance() { lock (_locker) { return _instance ??= new AutoUpdater(); } }
 
-        public string UpdateUrl { get; set; } = "http://xc213618.ddns.me:9999/D%3A/LATEST_RELEASE";
+        public string UpdateUrl { get => _UpdateUrl; set { _UpdateUrl = value; NotifyPropertyChanged(); } }
+        private string _UpdateUrl = "http://xc213618.ddns.me:9999/D%3A/LATEST_RELEASE";
+
         public Version LatestVersion { get => _LatestVersion; set { _LatestVersion = value; NotifyPropertyChanged(); } }
         private Version _LatestVersion;
 
