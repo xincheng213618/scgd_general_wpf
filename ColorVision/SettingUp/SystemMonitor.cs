@@ -26,6 +26,8 @@ namespace ColorVision.SettingUp
         private static readonly object _locker = new();
         public static SystemMonitor GetInstance() { lock (_locker) { return _instance ??= new SystemMonitor(); } }
 
+
+
         private bool PerformanceCounterIsOpen;
         private PerformanceCounter PCCPU;
         private PerformanceCounter PCCPUThis;
@@ -50,6 +52,7 @@ namespace ColorVision.SettingUp
         }
 
         public SystemMonitorSetting Setting { get; set; }
+
 
         public SystemMonitor()
         {
