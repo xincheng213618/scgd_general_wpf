@@ -10,7 +10,6 @@ namespace ColorVision.Services.Msg
         public string DeviceName { get; set; }        /// <summary>
         /// 设备Code
         /// </summary>
-        [JsonProperty("CodeID")]
         public string DeviceCode { get; set; }
 
         public string SerialNumber { get; set; }

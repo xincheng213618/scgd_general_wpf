@@ -116,7 +116,7 @@ namespace ColorVision.Services.Algorithm
             MsgSend msg = new MsgSend
             {
                 EventName = "Init",
-                Params = new Dictionary<string, object>() { { "SnID", SnID } , {"CodeID",Config.Code } }
+                //Params = new Dictionary<string, object>() { { "SnID", SnID } , {"CodeID",Config.Code } }
             };
             return PublishAsyncClient(msg);
         }
