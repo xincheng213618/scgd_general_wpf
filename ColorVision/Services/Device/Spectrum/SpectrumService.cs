@@ -40,14 +40,14 @@ namespace ColorVision.Device.Spectrum
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
             cmdMap = new Dictionary<string, MsgSend>();
 
-            AppDomain.CurrentDomain.ProcessExit += (s, e) =>
-            {
-                if (Config.DeviceStatus!=DeviceStatus.Closed)
-                {
-                    Close();
-                    Environment.Exit(-1);
-                }
-            };
+            //AppDomain.CurrentDomain.ProcessExit += (s, e) =>
+            //{
+            //    if (Config.DeviceStatus!=DeviceStatus.Closed)
+            //    {
+            //        Close();
+            //        Environment.Exit(-1);
+            //    }
+            //};
         }
 
 
