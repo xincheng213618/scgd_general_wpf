@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8604,CS8629
+using ColorVision.Device.Camera;
 using ColorVision.Media;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
@@ -35,6 +36,7 @@ namespace ColorVision.Services.Device.Camera.Views
 
         public event ImgCurSelectionChanged OnCurSelectionChanged;
         public ObservableCollection<ViewResultCamera> ViewResultCameras { get; set; } = new ObservableCollection<ViewResultCamera>();
+        public DeviceServiceCamera DService{ get; set; }
         public ViewCamera()
         {
             InitializeComponent();
@@ -201,6 +203,38 @@ namespace ColorVision.Services.Device.Camera.Views
             }
 
             OrderPopup.IsOpen = false;
+        }
+
+
+
+        private void Src_Click(object sender, RoutedEventArgs e)
+        {
+            var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
+        }
+
+        private void X_Click(object sender, RoutedEventArgs e)
+        {
+            var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
+        }
+
+        private void Z_Click(object sender, RoutedEventArgs e)
+        {
+            var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
+        }
+
+        private void B_Click(object sender, RoutedEventArgs e)
+        {
+            var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
+        }
+
+        private void R_Click(object sender, RoutedEventArgs e)
+        {
+            var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
+        }
+
+        private void G_Click(object sender, RoutedEventArgs e)
+        {
+            var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
         }
     }
 

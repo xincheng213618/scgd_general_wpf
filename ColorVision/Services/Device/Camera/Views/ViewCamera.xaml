@@ -70,7 +70,15 @@
                         </StackPanel>
                     </Border>
                 </Popup>
-                
+                <Button Content="Src"  Click="Src_Click"/>
+                <Button Content="R"  Click="R_Click"/>
+                <Button Content="G"  Click="G_Click"/>
+                <Button Content="B"  Click="B_Click"/>
+
+                <Button Content="X"  Click="X_Click"/>
+                <Button Content="Y"  Click="Y_Click"/>
+                <Button Content="Z"  Click="Z_Click"/>
+
 
             </ToolBar>
             <ListView Height="250" Grid.Row="1" x:Name="listView1" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" >
