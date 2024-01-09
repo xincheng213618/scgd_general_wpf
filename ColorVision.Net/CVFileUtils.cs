@@ -1,12 +1,11 @@
 ﻿#pragma warning disable CA1806,CA1833,CA1401,CA2101,CA1838,CS8603,CA1051,CA1707,CS8625
 using MQTTMessageLib.FileServer;
-using OpenCvSharp;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 
-namespace FileServerPlugin
+
+namespace ColorVision.Net
 {
     public struct CVCIEFileInfo
     {
@@ -20,6 +19,19 @@ namespace FileServerPlugin
         public float[] exp;
         public string srcFileName;
         public byte[] data;
+        public CVCIEFileInfo(CVCIEFileInfo info)
+        {
+            fileType = info.fileType;
+            width = info.width;
+            height = info.height;
+            bpp = info.bpp;
+            depth = info.depth;
+            channels = info.channels;
+            gain = info.gain;
+            exp = info.exp;
+            srcFileName = info.srcFileName;
+            data = info.data;
+        }
     }
     public static class CVFileUtils
     {

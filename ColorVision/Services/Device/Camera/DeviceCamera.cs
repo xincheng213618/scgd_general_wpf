@@ -48,7 +48,7 @@ namespace ColorVision.Device.Camera
             this.Config.SendTopic = Service.SendTopic;
             this.Config.SubscribeTopic = Service.SubscribeTopic;
 
-            View = new ViewCamera();
+            View = new ViewCamera(DService);
             if (Application.Current.TryFindResource("DrawingImageCamera") is DrawingImage drawingImage)
                 Icon = drawingImage;
 

@@ -631,5 +631,15 @@ namespace ColorVision.Device.Camera
             };
             return PublishAsyncClient(msg);
         }
+
+        public MsgRecord GetChannel(int recId, CVImageChannelType chType)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = MQTTCameraEventEnum.Event_GetData_Channel,
+                Params = new Dictionary<string, object> { { "RecID", recId }, { "ChannelType", chType } }
+            };
+            return PublishAsyncClient(msg);
+        }
     }
 }
