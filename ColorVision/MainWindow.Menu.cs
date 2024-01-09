@@ -15,7 +15,7 @@ using System.Diagnostics;
 using ColorVision.Util;
 using ColorVision.Services;
 using ColorVision.RC;
-using ColorVision.Lincense;
+using ColorVision.OnlineLicensing;
 using ColorVision.Services.Msg;
 using ColorVision.Language;
 using ColorVision.Themes;

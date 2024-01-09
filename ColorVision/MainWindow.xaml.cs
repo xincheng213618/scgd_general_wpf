@@ -69,6 +69,7 @@ namespace ColorVision
         {
             GlobalSetting = GlobalSetting.GetInstance();
             SolutionManager.GetInstance();
+
             if (!WindowConfig.IsExist||(WindowConfig.IsExist&& WindowConfig.Icon == null)) {
                 ThemeManager.Current.SystemThemeChanged += (e) => {
                     this.Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision;component/Assets/Image/{(e == Theme.Light ? "ColorVision.ico" : "ColorVision1.ico")}"));

@@ -1,6 +1,6 @@
 ﻿using ColorVision.MVVM;
 
-namespace ColorVision.Lincense
+namespace ColorVision.OnlineLicensing
 {
     public class LicenseConfig : ViewModelBase
     {
