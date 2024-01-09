@@ -119,7 +119,7 @@ namespace ColorVision.Util
             }
 
             // 将生成的CSV内容写入文件
-            File.WriteAllText(filePath, csvBuilder.ToString());
+            File.WriteAllText(filePath, csvBuilder.ToString(),Encoding.UTF8);
         }
 
 

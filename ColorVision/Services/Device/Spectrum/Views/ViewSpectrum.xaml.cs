@@ -28,6 +28,8 @@ using System.Windows.Documents;
 using ColorVision.Device.Spectrum.Configs;
 using System.Runtime.CompilerServices;
 using System.ComponentModel;
+using System.Windows.Shapes;
+using NPOI.Util.Collections;
 
 namespace ColorVision.Device.Spectrum.Views
 {
@@ -94,11 +96,93 @@ namespace ColorVision.Device.Spectrum.Views
             }
             using var dialog = new System.Windows.Forms.SaveFileDialog();
             dialog.Filter = "CSV files (*.csv) | *.csv";
-            dialog.FileName = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
+            dialog.FileName = DateTime.Now.ToString("光谱仪导出yyyy-MM-dd-HH-mm-ss");
             dialog.RestoreDirectory = true;
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
-            CsvWriter.WriteToCsv(ViewResultSpectrums[listView1.SelectedIndex], dialog.FileName);
+            var csvBuilder = new StringBuilder();
+
+            List<string> properties = new List<string>();
+            properties.Add("序号");
+            properties.Add("批次号");
+            properties.Add("IP");
+            properties.Add("亮度Lv(cd/m2)");
+            properties.Add("蓝光");
+            properties.Add("色度x");
+            properties.Add("色度y");
+            properties.Add("色度u");
+            properties.Add("色度v");
+            properties.Add("相关色温(K)");
+            properties.Add("主波长Ld(nm)");
+            properties.Add("色纯度(%)");
+            properties.Add("峰值波长Lp(nm");
+            properties.Add("显色性指数Ra");
+            properties.Add("半波宽");
+            properties.Add("电压");
+            properties.Add("电流");
+            for (int i = 380; i <= 1000; i++)
+            {
+                properties.Add(i.ToString());
+            }
+
+
+            // 写入列头
+            for (int i = 0; i < properties.Count; i++)
+            {
+                // 添加列名
+                csvBuilder.Append(properties[i]);
+
+                // 如果不是最后一列，则添加逗号
+                if (i < properties.Count - 1)
+                    csvBuilder.Append(',');
+            }
+            // 添加换行符
+            csvBuilder.AppendLine();
+
+
+            var selectedItemsCopy = new List<object>();
+            foreach (var item in listView1.SelectedItems)
+            {
+                selectedItemsCopy.Add(item);
+            }
+
+            foreach (var item in selectedItemsCopy)
+            {
+                if (item is ViewResultSpectrum result)
+                {
+                    csvBuilder.Append(result.ID + ",");
+                    csvBuilder.Append(result.BatchID + ",");
+                    csvBuilder.Append(result.IP + ",");
+                    csvBuilder.Append(result.Lv + ",");
+                    csvBuilder.Append(result.Blue + ",");
+                    csvBuilder.Append(result.fx + ",");
+                    csvBuilder.Append(result.fy + ",");
+                    csvBuilder.Append(result.fu + ",");
+                    csvBuilder.Append(result.fv + ",");
+                    csvBuilder.Append(result.fCCT + ",");
+                    csvBuilder.Append(result.fLd + ",");
+                    csvBuilder.Append(result.fPur + ",");
+                    csvBuilder.Append(result.fLp + ",");
+                    csvBuilder.Append(result.fRa + ",");
+                    csvBuilder.Append(result.fHW + ",");
+                    csvBuilder.Append(result.V + ",");
+                    csvBuilder.Append(result.I + ",");
+
+                    for (int i = 0; i < result.SpectralDatas.Count; i++)
+                    {
+                        csvBuilder.Append(result.SpectralDatas[i].AbsoluteSpectrum);
+                        if (i < result.SpectralDatas.Count - 1)
+                            csvBuilder.Append(',');
+                    }
+                    csvBuilder.AppendLine();
+                }
+            }
+
+
+
+
+            File.WriteAllText(dialog.FileName, csvBuilder.ToString(), Encoding.UTF8);
+
         }
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -116,6 +200,11 @@ namespace ColorVision.Device.Spectrum.Views
         private void DrawPlot()
         {
             if (listView1.SelectedIndex < 0) return;
+            wpfplot1.Plot.SetAxisLimitsX(ViewResultSpectrums[listView1.SelectedIndex].fSpect1, ViewResultSpectrums[listView1.SelectedIndex].fSpect2);
+            wpfplot1.Plot.SetAxisLimitsY(0, 1);
+            wpfplot1.Plot.XAxis.SetBoundary(ViewResultSpectrums[listView1.SelectedIndex].fSpect1 - 10, ViewResultSpectrums[listView1.SelectedIndex].fSpect2 + 10);
+            wpfplot1.Plot.YAxis.SetBoundary(0, 1);
+
             if (ScatterPlots.Count > 0)
             {
                 if (MulComparison)
@@ -193,10 +282,9 @@ namespace ColorVision.Device.Spectrum.Views
             if (listView1.SelectedIndex < 0) return;
 
             wpfplot1.Plot.Clear();
-            wpfplot1.Plot.SetAxisLimitsX(ViewResultSpectrums[listView1.SelectedIndex].fSpect1, ViewResultSpectrums[listView1.SelectedIndex].fSpect2);
-            wpfplot1.Plot.SetAxisLimitsY(0, 1);
-            wpfplot1.Plot.XAxis.SetBoundary(ViewResultSpectrums[listView1.SelectedIndex].fSpect1-10, ViewResultSpectrums[listView1.SelectedIndex].fSpect2+10);
-            wpfplot1.Plot.YAxis.SetBoundary(0, 1);
+
+
+
             LastMulSelectComparsion = null;
             if (MulComparison)
             {
@@ -225,7 +313,7 @@ namespace ColorVision.Device.Spectrum.Views
             }
             var selectedItems = listView1.SelectedItems;
 
-            if(selectedItems.Count<=1)
+            if(selectedItems.Count<1)
             {
                 ViewResultSpectrums.Clear();
                 ScatterPlots.Clear();
@@ -348,10 +436,50 @@ namespace ColorVision.Device.Spectrum.Views
             ListCol2.Width = GridLength.Auto;
         }
 
-        internal void Clear()
+        public void Clear()
         {
-            wpfplot1.Plot.Clear();
-            ViewResultSpectrums.Clear();
+            if (listView1.SelectedIndex < 0)
+            {
+                MessageBox.Show("您需要先选择数据");
+                return;
+            }
+            var selectedItems = listView1.SelectedItems;
+
+            if (selectedItems.Count <= 1)
+            {
+                ViewResultSpectrums.Clear();
+                ScatterPlots.Clear();
+            }
+            else
+            {
+
+                var selectedItemsCopy = new List<object>();
+
+                foreach (var item in selectedItems)
+                {
+                    selectedItemsCopy.Add(item);
+                }
+
+                foreach (var item in selectedItemsCopy)
+                {
+                    if (item is ViewResultSpectrum result)
+                    {
+                        ViewResultSpectrums.Remove(result);
+                        ScatterPlots.Remove(result.ScatterPlot);
+                    }
+                }
+            }
+
+            if (ViewResultSpectrums.Count > 0)
+            {
+                listView1.SelectedIndex = 0;
+            }
+            else
+            {
+                wpfplot1.Plot.Clear();
+                wpfplot1.Refresh();
+            }
+            ReDrawPlot();
         }
 
         SpectumResultDao spectumResultDao = new SpectumResultDao();
