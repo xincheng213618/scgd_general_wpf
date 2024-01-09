@@ -1,5 +1,6 @@
 ﻿using ColorVision.Media;
 using ColorVision.Net;
+using ColorVision.SettingUp;
 using log4net;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
@@ -123,6 +124,18 @@ namespace ColorVision.Device.FileServer
             }
 
             View.View.ViewIndex = -1;
+
+            this.PreviewMouseLeftButtonDown += (s, e) =>
+            {
+                if (ViewConfig.GetInstance().IsAutoSelect)
+                {
+                    if (ViewGridManager.GetInstance().ViewMax == 1)
+                    {
+                        View.View.ViewIndex = 0;
+                        ViewGridManager.GetInstance().SetViewIndex(View, 0);
+                    }
+                }
+            };
 
             Task t = new(() => { DeviceImg.DeviceService.GetAllFiles(); });
             t.Start();

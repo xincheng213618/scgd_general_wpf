@@ -162,7 +162,7 @@ namespace ColorVision
                 ServiceManager ServiceManager = ServiceManager.GetInstance();
                 try
                 {
-                    if (!GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting.IsDeFaultOpenService)
+                    if (!GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting.IsDefaultOpenService)
                     {
                         TextBoxMsg.Text += $"{Environment.NewLine}初始化服务";
                         new WindowDevices() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();

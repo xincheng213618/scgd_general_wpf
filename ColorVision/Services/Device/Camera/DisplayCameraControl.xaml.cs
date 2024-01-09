@@ -25,6 +25,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Windows.Input;
 using ColorVision.Services.Device.Camera.Views;
+using ColorVision.SettingUp;
 
 namespace ColorVision.Device.Camera
 {
@@ -276,6 +277,18 @@ namespace ColorVision.Device.Camera
                 }
             };
             View.View.ViewIndex = -1;
+
+            this.PreviewMouseLeftButtonDown += (s, e) =>
+            {
+                if (ViewConfig.GetInstance().IsAutoSelect)
+                {
+                    if (ViewGridManager.GetInstance().ViewMax == 1)
+                    {
+                        View.View.ViewIndex = 0;
+                        ViewGridManager.GetInstance().SetViewIndex(View, 0);
+                    }
+                }
+            };
 
             if (DService.DeviceStatus == DeviceStatus.Init)
             {

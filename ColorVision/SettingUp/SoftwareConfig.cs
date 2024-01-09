@@ -46,11 +46,17 @@ namespace ColorVision
             RcServiceControlLazy = new Lazy<RCService>(() => RCService.GetInstance());
 
             VideoConfig = new LocalVideoConfig();
+            ViewConfig = ViewConfig.GetInstance();
         }
         [JsonIgnore]
         public AutoUpdater AutoUpdater { get;} = AutoUpdater.GetInstance();
 
+        public ViewConfig ViewConfig { get; set; }
+
+
+
         public static string Version { get => System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString() ?? "1.0"; } 
+
         public bool IsUseMySql { get => _IsUseMySql; set { _IsUseMySql = value; NotifyPropertyChanged(); UseMySqlChanged?.Invoke(value); } }
         private bool _IsUseMySql = true;
 

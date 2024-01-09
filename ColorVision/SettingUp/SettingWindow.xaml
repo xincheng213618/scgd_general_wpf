@@ -112,7 +112,7 @@
                                         </DockPanel>
 
                                         <DockPanel Margin="5">
-                                            <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding SoftwareSetting.IsDeFaultOpenService}"/>
+                                            <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding SoftwareSetting.IsDefaultOpenService}"/>
                                             <TextBlock Text="启动自动配置服务"/>
                                         </DockPanel>
                                         <DockPanel x:Name="AutoRunDock" Margin="5"  d:DataContext="{d:DesignInstance local:GlobalSetting}">
@@ -122,6 +122,10 @@
                                         <DockPanel  Margin="5">
                                             <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding SoftwareSetting.IsRestoreWindow}"/>
                                             <TextBlock Text="启动恢复界面布局"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="5">
+                                            <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding ViewConfig.IsAutoSelect}"/>
+                                            <TextBlock Text="自动切换选中视图"/>
                                         </DockPanel>
                                         <DockPanel  Margin="5">
                                             <hc:ComboBox x:Name="cmbloglevel" Text="{Binding SoftwareSetting.LogLevel}" hc:InfoElement.Placeholder="Level"  DockPanel.Dock="Right"  Style="{StaticResource ComboBox.Small}" Width="150"  />
@@ -135,7 +139,7 @@
                                             <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding SoftwareSetting.TransparentWindow}"/>
                                             <TextBlock Text="透明窗口"/>
                                         </DockPanel>
-
+  
 
                                         <DockPanel  Margin="5" x:Name="lauagDock">
                                             <hc:ComboBox x:Name="cmlauage" SelectedValue="{Binding SoftwareSetting.UICulture}" hc:InfoElement.Placeholder="{x:Static resx:Resource.Language}"  DockPanel.Dock="Right" Style="{StaticResource ComboBox.Small}" Width="150" />

@@ -4,6 +4,7 @@ using ColorVision.MySql.Service;
 using ColorVision.Net;
 using ColorVision.Services.Algorithm.Views;
 using ColorVision.Services.Device;
+using ColorVision.SettingUp;
 using ColorVision.Solution;
 using ColorVision.Templates;
 using log4net;
@@ -323,6 +324,18 @@ namespace ColorVision.Services.Algorithm
                 }
             };
             View.View.ViewIndex = -1;
+
+            this.PreviewMouseLeftButtonDown += (s, e) =>
+            {
+                if (ViewConfig.GetInstance().IsAutoSelect)
+                {
+                    if (ViewGridManager.GetInstance().ViewMax == 1)
+                    {
+                        View.View.ViewIndex = 0;
+                        ViewGridManager.GetInstance().SetViewIndex(View, 0);
+                    }
+                }
+            };
 
             resultService = new ResultService();
         }
