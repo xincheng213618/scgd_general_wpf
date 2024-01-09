@@ -27,7 +27,7 @@ namespace cvColorVision
         CIE_Y = 8,
         CIE_Z = 9,
         CIE_LvCxCy = 10,
-        LvCIE = 11
+        LvCIE = 11,
     };
 
     public enum CalibrationType

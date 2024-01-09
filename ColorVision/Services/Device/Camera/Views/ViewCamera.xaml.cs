@@ -3,14 +3,13 @@ using ColorVision.Device.Camera;
 using ColorVision.Media;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
+using ColorVision.Net;
 using ColorVision.Services.Algorithm;
 using ColorVision.Services.Device.Camera.Views;
 using ColorVision.Sorts;
 using ColorVision.Templates;
 using ColorVision.Util;
-using FileServerPlugin;
 using log4net;
-using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.Camera;
 using System;
 using System.Collections.Generic;
@@ -37,8 +36,9 @@ namespace ColorVision.Services.Device.Camera.Views
         public event ImgCurSelectionChanged OnCurSelectionChanged;
         public ObservableCollection<ViewResultCamera> ViewResultCameras { get; set; } = new ObservableCollection<ViewResultCamera>();
         public DeviceServiceCamera DService{ get; set; }
-        public ViewCamera()
+        public ViewCamera(DeviceServiceCamera ds)
         {
+            this.DService = ds;
             InitializeComponent();
         }
 
@@ -205,51 +205,45 @@ namespace ColorVision.Services.Device.Camera.Views
             OrderPopup.IsOpen = false;
         }
 
-
-
         private void Src_Click(object sender, RoutedEventArgs e)
         {
             var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-            var msgRecord = DService.UnInit();
+            var msgRecord = DService.GetChannel(ViewResultCamera.ID, CVImageChannelType.SRC);
         }
 
         private void X_Click(object sender, RoutedEventArgs e)
         {
             var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-            var msgRecord = DService.UnInit();
+            var msgRecord = DService.GetChannel(ViewResultCamera.ID, CVImageChannelType.CIE_XYZ_X);
         }
 
         private void Z_Click(object sender, RoutedEventArgs e)
         {
             var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-            var msgRecord = DService.UnInit();
+            var msgRecord = DService.GetChannel(ViewResultCamera.ID, CVImageChannelType.CIE_XYZ_Z);
         }
+        private void Y_Click(object sender, RoutedEventArgs e)
+        {
+            var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
+            var msgRecord = DService.GetChannel(ViewResultCamera.ID, CVImageChannelType.CIE_XYZ_Y);
 
+        }
         private void B_Click(object sender, RoutedEventArgs e)
         {
             var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-            var msgRecord = DService.UnInit();
+            var msgRecord = DService.GetChannel(ViewResultCamera.ID, CVImageChannelType.RGB_B);
         }
 
         private void R_Click(object sender, RoutedEventArgs e)
         {
             var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-            var msgRecord = DService.UnInit();
+            var msgRecord = DService.GetChannel(ViewResultCamera.ID, CVImageChannelType.RGB_R);
         }
 
         private void G_Click(object sender, RoutedEventArgs e)
         {
             var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-            var msgRecord = DService.UnInit();
-        }
-
-        private void Y_Click(object sender, RoutedEventArgs e)
-        {
-            var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-            var msgRecord = DService.UnInit();
-
+            var msgRecord = DService.GetChannel(ViewResultCamera.ID, CVImageChannelType.RGB_G);
         }
     }
-
-
 }

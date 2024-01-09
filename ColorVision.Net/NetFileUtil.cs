@@ -1,5 +1,5 @@
 #pragma warning disable CS8601,CA1822
-using FileServerPlugin;
+using MQTTMessageLib.Camera;
 using MQTTMessageLib.FileServer;
 using NetMQ;
 using NetMQ.Sockets;
@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using System.Windows.Markup;
 
 namespace ColorVision.Net
 {
@@ -58,6 +59,15 @@ namespace ColorVision.Net
             });
             t.Start();
         }
+        public void TaskStartDownloadFile(DeviceGetChannelResult param)
+        {
+            Task t = new(() =>
+            {
+                if (param.IsLocal) OpenLocalFileChannel(param.FileURL, param.FileType, param.ChannelType);
+                else if (!string.IsNullOrWhiteSpace(param.ServerEndpoint)) DownloadFileChannel(param.ServerEndpoint, param.FileURL, param.FileType, param.ChannelType);
+            });
+            t.Start();
+        }
         public void TaskStartUploadFile(bool isLocal, string serverEndpoint, string fileName)
         {
             if (isLocal)
@@ -70,6 +80,11 @@ namespace ColorVision.Net
                 Task t = new(() => { UploadFile(serverEndpoint, fileName); });
                 t.Start();
             }
+        }
+
+        private void DownloadFileChannel(string serverEndpoint, string fileName, FileExtType extType, CVImageChannelType channelType)
+        {
+
         }
         private void DownloadFile(string serverEndpoint, string fileName, FileExtType extType)
         {
@@ -201,6 +216,67 @@ namespace ColorVision.Net
                 }
                 catch (Exception ex) { logger.Error(ex); }
             }
+        }
+
+        public void OpenLocalFileChannel(string fileName, FileExtType extType, CVImageChannelType channelType)
+        {
+            int code = -1;
+            CVCIEFileInfo data = new CVCIEFileInfo();
+            int channel = -1;
+            int readRet = -1;
+            switch (channelType)
+            {
+                case CVImageChannelType.SRC:
+                    if (extType == FileExtType.Raw)
+                    {
+                        readRet = CVFileUtils.ReadCVFile_Raw(fileName, ref data);
+                    }
+                    else if (extType == FileExtType.CIE)
+                    {
+                        readRet = CVFileUtils.ReadCVFile_CIE_src(fileName, ref data);
+                    }
+                    if (readRet == 0) code = 0;
+                    break;
+                case CVImageChannelType.CIE_XYZ_X:
+                case CVImageChannelType.RGB_R:
+                    channel = 0;
+                    break;
+                case CVImageChannelType.CIE_XYZ_Y:
+                case CVImageChannelType.RGB_G:
+                    channel = 1;
+                    break;
+                case CVImageChannelType.CIE_XYZ_Z:
+                case CVImageChannelType.RGB_B:
+                    channel = 2;
+                    break;
+                case CVImageChannelType.CIE_Lv:
+                    break;
+                case CVImageChannelType.CIE_x:
+                    break;
+                case CVImageChannelType.CIE_y:
+                    break;
+                case CVImageChannelType.CIE_u:
+                    break;
+                case CVImageChannelType.CIE_v:
+                    break;
+                default:
+                    break;
+            }
+            if (channel >= 0)
+            {
+                if (extType == FileExtType.Raw)
+                {
+                    CVFileUtils.ReadCVFile_Raw_channel(fileName, channel, ref data);
+                    code = 0;
+                }
+                else if (extType == FileExtType.CIE)
+                {
+                    CVFileUtils.ReadCVFile_CIE_XYZ(fileName, channel, ref data);
+                    code = 0;
+                }
+            }
+
+            handler?.Invoke(this, new NetFileEvent(code, fileName, data));
         }
 
         public void OpenLocalFile(string fileName, FileExtType extType)
@@ -410,6 +486,8 @@ namespace ColorVision.Net
 
             return result;
         }
+
+
     }
 
     public class NetFileEvent

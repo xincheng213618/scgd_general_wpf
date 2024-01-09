@@ -1,13 +1,10 @@
 ﻿using ColorVision.Draw;
 using ColorVision.Draw.Ruler;
 using ColorVision.MVVM;
-using ColorVision.Services.Algorithm;
-using cvColorVision;
-using FileServerPlugin;
+using ColorVision.Net;
 using log4net;
 using MQTTMessageLib.Algorithm;
 using OpenCvSharp.WpfExtensions;
-using Panuon.WPF;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
