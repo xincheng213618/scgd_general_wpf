@@ -210,31 +210,37 @@ namespace ColorVision.Services.Device.Camera.Views
         private void Src_Click(object sender, RoutedEventArgs e)
         {
             var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
+            var msgRecord = DService.UnInit();
         }
 
         private void X_Click(object sender, RoutedEventArgs e)
         {
             var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
+            var msgRecord = DService.UnInit();
         }
 
         private void Z_Click(object sender, RoutedEventArgs e)
         {
             var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
+            var msgRecord = DService.UnInit();
         }
 
         private void B_Click(object sender, RoutedEventArgs e)
         {
             var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
+            var msgRecord = DService.UnInit();
         }
 
         private void R_Click(object sender, RoutedEventArgs e)
         {
             var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
+            var msgRecord = DService.UnInit();
         }
 
         private void G_Click(object sender, RoutedEventArgs e)
         {
             var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
+            var msgRecord = DService.UnInit();
         }
     }
 
