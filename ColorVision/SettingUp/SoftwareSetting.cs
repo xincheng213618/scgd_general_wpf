@@ -54,7 +54,7 @@ namespace ColorVision
                 log.Info("更新Log4Net 日志级别：" + value);
             }
         }
-        }
+    }
 
 
     public partial class SoftwareSetting :ViewModelBase
@@ -78,13 +78,18 @@ namespace ColorVision
         } 
         private string _UICulture = CultureInfo.InstalledUICulture.Name;
 
+        /// <summary>
+        /// 是否自动更新
+        /// </summary>
         public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; NotifyPropertyChanged(); } }
         private bool _IsAutoUpdate = true;
 
 
-
-        public bool IsDeFaultOpenService { get=> _IsDeFaultOpenService; set { _IsDeFaultOpenService = value;NotifyPropertyChanged(); } }
-        private bool _IsDeFaultOpenService = true;
+        /// <summary>
+        /// 是否默认配置
+        /// </summary>
+        public bool IsDefaultOpenService { get=> _IsDefaultOpenService; set { _IsDefaultOpenService = value;NotifyPropertyChanged(); } }
+        private bool _IsDefaultOpenService = true;
 
         public bool IsOpenStatusBar { get => _IsOpenStatusBar; set { _IsOpenStatusBar = value; NotifyPropertyChanged(); } }
         private bool _IsOpenStatusBar = true;

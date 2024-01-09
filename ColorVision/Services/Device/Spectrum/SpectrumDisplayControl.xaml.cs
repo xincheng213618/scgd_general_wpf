@@ -1,6 +1,7 @@
 ﻿using ColorVision.Device.Spectrum.Configs;
 using ColorVision.Device.Spectrum.Views;
 using ColorVision.Services.Device;
+using ColorVision.SettingUp;
 using cvColorVision;
 using System;
 using System.Collections.Generic;
@@ -50,6 +51,7 @@ namespace ColorVision.Device.Spectrum
             {
                 ComboxView.SelectedIndex = e2 + 2;
             };
+
             ComboxView.SelectionChanged += (s, e) =>
             {
                 if (ComboxView.SelectedItem is KeyValuePair<string, int> KeyValue)
@@ -59,6 +61,20 @@ namespace ColorVision.Device.Spectrum
                 }
             };
             View.View.ViewIndex = -1;
+
+            this.PreviewMouseLeftButtonDown += (s, e) =>
+            {
+                if (ViewConfig.GetInstance().IsAutoSelect)
+                {
+                    if (ViewGridManager.GetInstance().ViewMax == 1)
+                    {
+                        View.View.ViewIndex = 0;
+                        ViewGridManager.GetInstance().SetViewIndex(View, 0);
+                    }
+                }
+            };
+
+
             SpectrumService.DataHandlerEvent += e =>
             {
                 if (e != null)
@@ -287,5 +303,6 @@ namespace ColorVision.Device.Spectrum
         {
             SpectrumService.ShutterDoclose();
         }
+
     }
 }
