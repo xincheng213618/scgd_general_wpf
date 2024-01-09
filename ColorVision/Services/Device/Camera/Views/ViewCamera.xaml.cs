@@ -242,6 +242,13 @@ namespace ColorVision.Services.Device.Camera.Views
             var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
             var msgRecord = DService.UnInit();
         }
+
+        private void Y_Click(object sender, RoutedEventArgs e)
+        {
+            var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
+            var msgRecord = DService.UnInit();
+
+        }
     }
 
 
