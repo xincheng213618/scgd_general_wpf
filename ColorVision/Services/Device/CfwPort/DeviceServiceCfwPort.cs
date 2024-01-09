@@ -75,7 +75,7 @@ namespace ColorVision.Services.Device.CfwPort
             MsgSend msg = new MsgSend
             {
                 EventName = "Open",
-                Params = new Dictionary<string, object>() { {"CodeID", Config.Code }, { "szComName", Config.SzComName },{ "BaudRate", Config.BaudRate } }
+                //Params = new Dictionary<string, object>() { {"CodeID", Config.Code }, { "szComName", Config.SzComName },{ "BaudRate", Config.BaudRate } }
             };
 
             return PublishAsyncClient(msg);

@@ -17,7 +17,6 @@ namespace ColorVision.Services.Msg
         /// <summary>
         /// 设备Code
         /// </summary>
-        [JsonProperty("CodeID")]
         public string DeviceCode { get; set; }
         /// <summary>
         /// RC的结果，用来做认证的
