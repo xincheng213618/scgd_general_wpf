@@ -93,6 +93,8 @@ namespace ColorVision.Services.Device.SMU.Views
 
         private void DrawPlot()
         {
+            if (listView1.SelectedIndex < 0)  return;
+
             if (MulComparison)
             {
                 if (LastMulSelectComparsion != null)
