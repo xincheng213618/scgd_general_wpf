@@ -44,7 +44,7 @@ namespace ColorVision.Device.Camera
             //{  
             //    DeviceStatus = DeviceStatus.UnInit;
             //};
-
+            GetAllCameraID();
         }
 
         public override void Dispose()

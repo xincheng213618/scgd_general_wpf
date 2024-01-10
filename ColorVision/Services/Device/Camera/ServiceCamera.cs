@@ -28,7 +28,7 @@ namespace ColorVision.Device.Camera
             {
                 GetAllDevice();
             };
-            GetAllDevice();
+            //GetAllDevice();
             MsgReturnReceived += (msg) => Application.Current.Dispatcher.Invoke(()=> MQTTCamera_MsgReturnChanged(msg));
         }
 
