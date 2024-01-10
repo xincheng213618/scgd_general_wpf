@@ -93,12 +93,10 @@ namespace ColorVision.Services.Device
         public override ImageSource Icon { get => _Icon; set { _Icon = value; NotifyPropertyChanged(); } }
         private ImageSource _Icon;
 
-
         public override object GetConfig() => Config;
 
         public override string Code { get => SysResourceModel.Code ?? string.Empty; set { SysResourceModel.Code = value; NotifyPropertyChanged(); } }
         public override string Name { get => SysResourceModel.Name ?? string.Empty; set{ SysResourceModel.Name = value; NotifyPropertyChanged(); } }
-
 
         public int MySqlId { get => SysResourceModel.Id; }
 

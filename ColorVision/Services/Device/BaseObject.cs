@@ -25,7 +25,6 @@ namespace ColorVision.Services.Device
 
     public class BaseObject : ViewModelBase
     {
-
         public RelayCommand SaveCommand { get; set; }
         public RelayCommand DeleteCommand { get; set; }
         public ContextMenu ContextMenu { get; set; }
