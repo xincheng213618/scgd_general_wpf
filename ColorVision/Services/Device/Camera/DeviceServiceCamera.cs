@@ -408,7 +408,7 @@ namespace ColorVision.Device.Camera
             Params.Add("ExpTime", expTime);
             if (param.ID == -1)
             {
-                Params.Add("Calibration", new CVTemplateParam() { ID = param.ID });
+                Params.Add("Calibration", new CVTemplateParam() { ID = param.ID,Name = string.Empty });
             }
             else
             {
