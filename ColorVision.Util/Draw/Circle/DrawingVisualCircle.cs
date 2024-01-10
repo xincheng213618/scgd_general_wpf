@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1711,CA2211
-using System.Globalization;
+﻿using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
 

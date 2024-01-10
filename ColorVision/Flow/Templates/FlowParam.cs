@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8603  
-
+﻿
 using ColorVision.MySql.DAO;
 using ColorVision.Templates;
 using System.Collections.Generic;

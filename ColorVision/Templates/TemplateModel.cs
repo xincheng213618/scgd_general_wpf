@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8604
-using ColorVision.MVVM;
+﻿using ColorVision.MVVM;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;

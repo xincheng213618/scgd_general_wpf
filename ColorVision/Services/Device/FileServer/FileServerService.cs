@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1710 // 标识符应具有正确的后缀
-
+﻿
 using ColorVision.MQTT;
 using ColorVision.Services;
 using ColorVision.Services.Msg;

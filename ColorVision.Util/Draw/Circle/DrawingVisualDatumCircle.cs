@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1711,CA2211
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Media;
 
 namespace ColorVision.Draw

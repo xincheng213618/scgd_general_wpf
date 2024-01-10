@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1711,CA2211
-using System.ComponentModel;
+﻿using System.ComponentModel;
 
 namespace ColorVision.Draw
 {
