@@ -1,6 +1,4 @@
-﻿using ColorVision.Services.Device;
-
-namespace ColorVision.Services.Device.SMU.Configs
+﻿namespace ColorVision.Services.Device.SMU.Configs
 {
 
 

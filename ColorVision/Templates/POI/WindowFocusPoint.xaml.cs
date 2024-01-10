@@ -11,7 +11,6 @@ using log4net;
 using Newtonsoft.Json;
 using NPOI.SS.UserModel;
 using OpenCvSharp.WpfExtensions;
-using ScottPlot.Drawing.Colormaps;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

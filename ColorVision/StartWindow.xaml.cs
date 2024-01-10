@@ -12,7 +12,6 @@ using ColorVision.RC;
 using System.Threading;
 using ColorVision.Themes;
 using System.Windows.Media.Imaging;
-using ColorVision.Update;
 using System.Runtime.Versioning;
 
 namespace ColorVision

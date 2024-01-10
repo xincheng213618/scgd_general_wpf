@@ -5,10 +5,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Threading.Tasks;
 using System.Linq;
 using ColorVision.Solution.V;
-using ColorVision.Util;
 
 namespace ColorVision.Solution
 {

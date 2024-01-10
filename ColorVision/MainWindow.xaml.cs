@@ -8,14 +8,9 @@ using ColorVision.Flow;
 using System.Diagnostics;
 using ColorVision.Services;
 using ColorVision.Solution;
-using LiveChartsCore.VisualElements;
-using MySqlConnector.Logging;
-using System.Windows.Documents;
-using ColorVision.Media;
 using ColorVision.Update;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Reflection;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -156,7 +151,8 @@ namespace ColorVision
                 thread1.Start();
             }
         }
-        public async Task CheckUpdate()
+
+        public static async Task CheckUpdate()
         {
             await Task.Delay(1000);
             Application.Current.Dispatcher.Invoke(() =>

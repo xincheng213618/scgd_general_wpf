@@ -3,7 +3,6 @@ using cvColorVision;
 using ColorVision.MVVM;
 using ColorVision.Services.Device.Camera.Video;
 using System.Windows;
-using NPOI.SS.Formula.Functions;
 using System;
 
 namespace ColorVision.Services.Device.Camera

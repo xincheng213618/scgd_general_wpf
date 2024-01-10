@@ -62,7 +62,7 @@ namespace ColorVision.Device.Spectrum
             };
             View.View.ViewIndex = -1;
 
-            this.PreviewMouseLeftButtonDown += (s, e) =>
+            this.PreviewMouseLeftButtonUp += (s, e) =>
             {
                 if (ViewConfig.GetInstance().IsAutoSelect)
                 {

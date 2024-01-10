@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using ColorVision.Services.Msg;
 using ColorVision.Templates;
 using System.Windows;

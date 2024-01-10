@@ -1,35 +1,21 @@
-﻿using ColorVision.MySql.DAO;
-using ColorVision.MySql.Service;
-using NPOI.XWPF.UserModel;
-using ScottPlot;
+﻿using ScottPlot;
 using ScottPlot.Plottable;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Drawing;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Windows.Data;
 using System.Windows.Input;
-using System.Windows.Markup;
-using ColorVision.Device.Spectrum.Views;
 using static cvColorVision.GCSDLL;
-using Newtonsoft.Json;
-using System.Linq;
-using ColorVision.Util;
 using ColorVision.Sorts;
-using ColorVision.Services.Algorithm;
-using MQTTMessageLib.Algorithm;
-using System.Windows.Documents;
 using ColorVision.Device.Spectrum.Configs;
 using System.Runtime.CompilerServices;
 using System.ComponentModel;
-using System.Windows.Shapes;
-using NPOI.Util.Collections;
+using ColorVision.Services.Device.Spectrum.Dao;
 
 namespace ColorVision.Device.Spectrum.Views
 {
@@ -41,8 +27,6 @@ namespace ColorVision.Device.Spectrum.Views
         public event PropertyChangedEventHandler? PropertyChanged;
         public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
-
-        private ResultService spectumResult = new ResultService();
         public ObservableCollection<ViewResultSpectrum> ViewResultSpectrums { get; set; } = new ObservableCollection<ViewResultSpectrum>();
 
         public bool IsIDShow { get => _IsIDShow; set { _IsIDShow = value; NotifyPropertyChanged(); } }
@@ -437,48 +421,8 @@ namespace ColorVision.Device.Spectrum.Views
 
         public void Clear()
         {
-            if (listView1.SelectedIndex < 0)
-            {
-                MessageBox.Show("您需要先选择数据");
-                return;
-            }
-            var selectedItems = listView1.SelectedItems;
-
-            if (selectedItems.Count <= 1)
-            {
-                ViewResultSpectrums.Clear();
-                ScatterPlots.Clear();
-            }
-            else
-            {
-
-                var selectedItemsCopy = new List<object>();
-
-                foreach (var item in selectedItems)
-                {
-                    selectedItemsCopy.Add(item);
-                }
-
-                foreach (var item in selectedItemsCopy)
-                {
-                    if (item is ViewResultSpectrum result)
-                    {
-                        ViewResultSpectrums.Remove(result);
-                        ScatterPlots.Remove(result.ScatterPlot);
-                    }
-                }
-            }
-
-            if (ViewResultSpectrums.Count > 0)
-            {
-                listView1.SelectedIndex = 0;
-            }
-            else
-            {
-                wpfplot1.Plot.Clear();
-                wpfplot1.Refresh();
-            }
-            ReDrawPlot();
+            ViewResultSpectrums.Clear();
+            ScatterPlots.Clear();
         }
 
         SpectumResultDao spectumResultDao = new SpectumResultDao();
@@ -518,7 +462,6 @@ namespace ColorVision.Device.Spectrum.Views
                 listView1.Visibility = Visibility.Visible;
                 First = true;
                 listView1.SelectedIndex = 0;
-
             }
 
         }

@@ -1,13 +1,11 @@
-﻿using System;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Media;
-using System.Xml.Linq;
 
 namespace ColorVision.Solution
 {
     public class ViewHelper
     {
-        public static T FindVisualChild<T>(DependencyObject obj) where T : DependencyObject
+        public static T? FindVisualChild<T>(DependencyObject obj) where T : DependencyObject
         {
             if (obj is FrameworkElement frameworkElement)
             {
@@ -35,7 +33,7 @@ namespace ColorVision.Solution
         /// <typeparam name="T"></typeparam>
         /// <param name="obj"></param>
         /// <returns></returns>
-        public static T FindVisualParent<T>(DependencyObject obj) where T : class
+        public static T? FindVisualParent<T>(DependencyObject obj) where T : class
         {
             while (obj != null)
             {
@@ -50,7 +48,7 @@ namespace ColorVision.Solution
         /// <summary>
         /// 在给定的空间中，查找给定坐标点的给定类型的控件
         /// </summary>
-        public static T HitTestView<T>(Visual visual, Point pos) where T : class
+        public static T? HitTestView<T>(Visual visual, Point pos) where T : class
         {
             HitTestResult result = VisualTreeHelper.HitTest(visual, pos);
             if (result == null)

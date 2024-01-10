@@ -1,31 +1,16 @@
-﻿using ColorVision.Device.Spectrum.Views;
-using ColorVision.MVVM;
-using ColorVision.MySql.DAO;
+﻿using ColorVision.MVVM;
+using ColorVision.Services.Device.SMU.Dao;
 using ColorVision.Sorts;
-using cvColorVision;
 using Newtonsoft.Json;
-using NPOI.SS.Formula.Eval;
-using NPOI.SS.Formula.Functions;
 using ScottPlot;
 using ScottPlot.Plottable;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Drawing;
-using static NPOI.HSSF.Util.HSSFColor;
-using static System.Net.WebRequestMethods;
 
 namespace ColorVision.Services.Device.SMU.Views
 {
-    public enum MeasurementType
-    {
-        [Description("电压")]
-        Voltage,
-        [Description("电流")]
-        Current
-    }
-
     public class ViewResultSMU : ViewModelBase, ISortable
     {
         public ViewResultSMU(SmuScanModel item)

@@ -1,14 +1,9 @@
-﻿using ColorVision.Services.Device;
-using ColorVision.Services.Device.SMU.Configs;
+﻿using ColorVision.Services.Device.SMU.Configs;
 using ColorVision.Services.Device.SMU.Views;
 using ColorVision.SettingUp;
 using ColorVision.Templates;
-using ColorVision.Util;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;

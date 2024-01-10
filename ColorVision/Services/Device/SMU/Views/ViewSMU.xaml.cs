@@ -1,23 +1,15 @@
-﻿using ColorVision.Device.Spectrum.Views;
-using ColorVision.MySql.DAO;
-using ColorVision.MySql.Service;
+﻿using ColorVision.Services.Device.SMU.Dao;
 using ColorVision.Templates;
 using ColorVision.Util;
-using Newtonsoft.Json;
-using NPOI.SS.Formula.Functions;
-using NPOI.XWPF.UserModel;
 using ScottPlot;
 using ScottPlot.Plottable;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Drawing;
-using System.IO;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Windows.Data;
 using System.Windows.Input;
 
 namespace ColorVision.Services.Device.SMU.Views
@@ -93,6 +85,8 @@ namespace ColorVision.Services.Device.SMU.Views
 
         private void DrawPlot()
         {
+            if (listView1.SelectedIndex < 0)  return;
+
             if (MulComparison)
             {
                 if (LastMulSelectComparsion != null)
@@ -406,18 +400,37 @@ namespace ColorVision.Services.Device.SMU.Views
 
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
+            ViewResultSMUs.Clear();
+            if (string.IsNullOrEmpty(TextBoxId.Text) && string.IsNullOrEmpty(TextBoxBatch.Text))
+            {
+                foreach (var item in MRSmuScanDao.GetAll())
+                {
+                    ViewResultSMU viewResultSMU = new ViewResultSMU(item);
+                    ViewResultSMUs.Add(viewResultSMU);
+                };
+            }
+            else
+            {
 
-
-
+                var list = MRSmuScanDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text);
+                foreach (var item in list)
+                {
+                    ViewResultSMU viewResultSMU = new ViewResultSMU(item);
+                    ViewResultSMUs.Add(viewResultSMU);
+                };
+            }
+            if (ViewResultSMUs.Count > 0)
+            {
+                listView1.Visibility = Visibility.Visible;
+                listView1.SelectedIndex = 0;
+            }
         }
 
         private void Search1_Click(object sender, RoutedEventArgs e)
         {
             SerchPopup.IsOpen = true;
-            TextBoxType.SelectedIndex = -1;
             TextBoxId.Text = string.Empty;
             TextBoxBatch.Text = string.Empty;
-            TextBoxFile.Text = string.Empty;
         }
     }
 }

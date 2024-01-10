@@ -1,5 +1,4 @@
-﻿using ColorVision.Solution.V.Files;
-using log4net;
+﻿using log4net;
 using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;

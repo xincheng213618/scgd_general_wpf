@@ -118,33 +118,6 @@ namespace ColorVision.SettingUp
                 }
             }
         }
-
-        public void CheckDiskSpace(string driveLetter, long threshold)
-        {
-            DriveInfo drive = new DriveInfo(driveLetter);
-
-            if (!drive.IsReady)
-            {
-                Console.WriteLine($"Drive {drive.Name} is not ready.");
-                return;
-            }
-
-            // 获取可用空间
-            long availableSpace = drive.AvailableFreeSpace;
-
-            // 如果可用空间小于阈值，则提醒用户
-            if (availableSpace < threshold)
-            {
-                Console.WriteLine($"Warning: Drive {drive.Name} has less than 10GB of free space.");
-            }
-            else
-            {
-                Console.WriteLine($"Drive {drive.Name} has enough free space.");
-            }
-        }
-
-
-
         /// <summary>
         /// 当前分区硬盘大小
         /// </summary>

@@ -2,7 +2,6 @@
 using System.Windows.Controls;
 using ColorVision.Themes;
 using System.Windows;
-using ColorVision.Services.Algorithm;
 
 namespace ColorVision.Solution.V.Folders
 {
