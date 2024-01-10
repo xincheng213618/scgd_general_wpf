@@ -1,6 +1,7 @@
 ﻿using System.Data;
+using ColorVision.MySql;
 
-namespace ColorVision.MySql.DAO
+namespace ColorVision.Services.Device.Algorithm.Dao
 {
     public class AlgResultGhostModel : PKModel
     {
@@ -36,7 +37,7 @@ namespace ColorVision.MySql.DAO
                 Cols = item.Field<int?>("cols") ?? -1,
                 RatioH = item.Field<float?>("ratio_h") ?? -1,
                 RatioL = item.Field<float?>("ratio_l") ?? -1,
-                LEDCenters = item.Field<string>("led_centers")??string.Empty,
+                LEDCenters = item.Field<string>("led_centers") ?? string.Empty,
                 LEDPixels = item.Field<string>("led_pixels") ?? string.Empty,
                 LEDBlobGray = item.Field<string>("led_blob_gray") ?? string.Empty,
                 GhostAverageGray = item.Field<string>("ghost_average_gray") ?? string.Empty,

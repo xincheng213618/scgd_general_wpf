@@ -1,6 +1,6 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
 using ColorVision.MVVM;
-using ColorVision.MySql.DAO;
+using ColorVision.Services.Device.Algorithm.Dao;
 using ColorVision.Sorts;
 using MQTTMessageLib.Algorithm;
 using System;

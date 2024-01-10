@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS8603
 using ColorVision.MySql.DAO;
+using ColorVision.Services.Device.Algorithm.Dao;
 using ColorVision.Services.Device.SMU.Dao;
 using ColorVision.Services.Device.Spectrum.Dao;
 using System.Collections.Generic;

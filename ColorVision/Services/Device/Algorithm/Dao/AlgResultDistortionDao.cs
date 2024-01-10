@@ -1,7 +1,8 @@
-﻿using MQTTMessageLib.Algorithm;
+﻿using ColorVision.MySql;
+using MQTTMessageLib.Algorithm;
 using System.Data;
 
-namespace ColorVision.MySql.DAO
+namespace ColorVision.Services.Device.Algorithm.Dao
 {
     public class AlgResultDistortionModel : PKModel
     {

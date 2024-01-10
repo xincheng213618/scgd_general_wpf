@@ -1,10 +1,11 @@
 ﻿#pragma warning disable CS8601
+using ColorVision.MySql;
 using MQTTMessageLib.Algorithm;
 using System;
 using System.Collections.Generic;
 using System.Data;
 
-namespace ColorVision.MySql.DAO
+namespace ColorVision.Services.Device.Algorithm.Dao
 {
     public class AlgResultMasterModel : PKModel
     {

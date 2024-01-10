@@ -1,9 +1,9 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
 using ColorVision.Draw;
-using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.Net;
 using ColorVision.Services.Device.Algorithm;
+using ColorVision.Services.Device.Algorithm.Dao;
 using ColorVision.Services.Device.Algorithm.Views;
 using ColorVision.Sorts;
 using ColorVision.Util;

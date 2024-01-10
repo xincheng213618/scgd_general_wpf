@@ -1,6 +1,7 @@
 ﻿using System.Data;
+using ColorVision.MySql;
 
-namespace ColorVision.MySql.DAO
+namespace ColorVision.Services.Device.Algorithm.Dao
 {
     public class AlgResultLedcheckModel : PKModel
     {
