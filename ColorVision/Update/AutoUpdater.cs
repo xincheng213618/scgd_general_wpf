@@ -31,12 +31,41 @@ namespace ColorVision.Update
         public AutoUpdater()
         {
             UpdateCommand = new RelayCommand((e) =>  CheckAndUpdate(false));
+            DeleteAllCachedUpdateFiles();
         }
 
         public RelayCommand UpdateCommand { get; set; }
 
+        public static void DeleteAllCachedUpdateFiles()
+        {
+            // 获取临时文件夹路径
+            string tempPath = Path.GetTempPath();
 
+            // 搜索所有匹配的更新文件
+            string[] updateFiles = Directory.GetFiles(tempPath, "ColorVision-*.exe");
 
+            foreach (string updateFile in updateFiles)
+            {
+                try
+                {
+                    // 删除文件
+                    File.Delete(updateFile);
+                    Console.WriteLine($"Deleted update file: {updateFile}");
+                }
+                catch (Exception ex)
+                {
+                    // 如果删除过程中出现错误，输出错误信息
+                    Console.WriteLine($"Error deleting the update file {updateFile}: {ex.Message}");
+                }
+            }
+
+            if (updateFiles.Length == 0)
+            {
+                Console.WriteLine("No update files found to delete.");
+            }
+        }
+
+        // 调用函数以删除所有更新文件
         public async void CheckAndUpdate(bool detection = true)
         {
             try
