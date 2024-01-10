@@ -1,11 +1,11 @@
-﻿using ColorVision.Services.Device.SMU;
+﻿using ColorVision.MySql;
 using ColorVision.Services.Device.SMU.Configs;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 
-namespace ColorVision.MySql.DAO
+namespace ColorVision.Services.Device.SMU.Dao
 {
     public class SMUResultModel : PKModel
     {
@@ -24,12 +24,12 @@ namespace ColorVision.MySql.DAO
 
         private void setValue(double rstV, double rstI, SMUGetDataParam param)
         {
-            this.IsSourceV = param.IsSourceV;
-            this.SrcValue = (float)param.MeasureValue;
-            this.LimitValue = (float)param.LimitValue;
-            this.VResult = (float)rstV;
-            this.IResult = (float)rstI;
-            this.CreateDate = DateTime.Now;
+            IsSourceV = param.IsSourceV;
+            SrcValue = (float)param.MeasureValue;
+            LimitValue = (float)param.LimitValue;
+            VResult = (float)rstV;
+            IResult = (float)rstI;
+            CreateDate = DateTime.Now;
         }
 
         public int? Pid { get; set; }//

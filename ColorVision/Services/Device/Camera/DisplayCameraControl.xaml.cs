@@ -10,7 +10,6 @@ using cvColorVision;
 using ColorVision.Templates;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Device;
-using ColorVision.Services.Device.Camera;
 using ColorVision.Net;
 using ColorVision.Solution;
 using Panuon.WPF.UI;

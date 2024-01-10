@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -12,8 +10,6 @@ using ColorVision.Services.Msg;
 using ColorVision.Sorts;
 using ColorVision.Templates;
 using ColorVision.Themes.Controls;
-using cvColorVision;
-using SkiaSharp;
 
 namespace ColorVision.Device.Camera
 {

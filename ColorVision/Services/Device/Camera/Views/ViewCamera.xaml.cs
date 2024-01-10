@@ -1,13 +1,9 @@
 ﻿#pragma warning disable CS8604,CS8629
 using ColorVision.Device.Camera;
 using ColorVision.Media;
-using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.Net;
-using ColorVision.Services.Algorithm;
-using ColorVision.Services.Device.Camera.Views;
 using ColorVision.Sorts;
-using ColorVision.Templates;
 using ColorVision.Util;
 using log4net;
 using MQTTMessageLib.Camera;
@@ -15,11 +11,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 

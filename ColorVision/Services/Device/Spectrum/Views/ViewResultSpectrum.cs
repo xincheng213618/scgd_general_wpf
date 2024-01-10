@@ -1,12 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Drawing;
 using ColorVision.MVVM;
-using ColorVision.MySql.DAO;
+using ColorVision.Services.Device.Spectrum.Dao;
 using ColorVision.Sorts;
 using Newtonsoft.Json;
-using NPOI.SS.Formula.Functions;
 using ScottPlot;
 using ScottPlot.Plottable;
 using static cvColorVision.GCSDLL;

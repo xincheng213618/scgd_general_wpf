@@ -3,8 +3,11 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using ColorVision;
+using ColorVision.MySql;
+using ColorVision.MySql.DAO;
 
-namespace ColorVision.MySql.DAO
+namespace ColorVision.Services.Device.Spectrum.Dao
 {
     public class SpectumResultModel : PKModel
     {

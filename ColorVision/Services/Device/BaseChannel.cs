@@ -3,7 +3,6 @@ using ColorVision.Extension;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.RC;
-using MySqlX.XDevAPI;
 using Newtonsoft.Json;
 using System;
 using System.IO;

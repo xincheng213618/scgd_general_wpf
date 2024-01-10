@@ -1,35 +1,21 @@
-﻿using ColorVision.MySql.DAO;
-using ColorVision.MySql.Service;
-using NPOI.XWPF.UserModel;
-using ScottPlot;
+﻿using ScottPlot;
 using ScottPlot.Plottable;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Drawing;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Windows.Data;
 using System.Windows.Input;
-using System.Windows.Markup;
-using ColorVision.Device.Spectrum.Views;
 using static cvColorVision.GCSDLL;
-using Newtonsoft.Json;
-using System.Linq;
-using ColorVision.Util;
 using ColorVision.Sorts;
-using ColorVision.Services.Algorithm;
-using MQTTMessageLib.Algorithm;
-using System.Windows.Documents;
 using ColorVision.Device.Spectrum.Configs;
 using System.Runtime.CompilerServices;
 using System.ComponentModel;
-using System.Windows.Shapes;
-using NPOI.Util.Collections;
+using ColorVision.Services.Device.Spectrum.Dao;
 
 namespace ColorVision.Device.Spectrum.Views
 {
@@ -41,8 +27,6 @@ namespace ColorVision.Device.Spectrum.Views
         public event PropertyChangedEventHandler? PropertyChanged;
         public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
-
-        private ResultService spectumResult = new ResultService();
         public ObservableCollection<ViewResultSpectrum> ViewResultSpectrums { get; set; } = new ObservableCollection<ViewResultSpectrum>();
 
         public bool IsIDShow { get => _IsIDShow; set { _IsIDShow = value; NotifyPropertyChanged(); } }

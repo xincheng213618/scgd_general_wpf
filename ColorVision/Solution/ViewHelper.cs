@@ -1,7 +1,5 @@
-﻿using System;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Media;
-using System.Xml.Linq;
 
 namespace ColorVision.Solution
 {

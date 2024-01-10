@@ -1,12 +1,5 @@
 ﻿using System;
-using System.IO;
-using System.Linq;
 using System.Windows;
-using System.Windows.Media;
-using ColorVision.Device.Camera;
-using ColorVision.MySql.DAO;
-using ColorVision.Themes.Controls;
-using cvColorVision;
 
 namespace ColorVision.Templates
 {

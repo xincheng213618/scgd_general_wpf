@@ -1,5 +1,4 @@
-﻿using ColorVision.Media;
-using ColorVision.MVVM;
+﻿using ColorVision.MVVM;
 using System;
 using System.Collections.ObjectModel;
 using System.Windows;

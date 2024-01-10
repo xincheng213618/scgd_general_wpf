@@ -1,10 +1,10 @@
-﻿using ColorVision.Services.Device.SMU;
+﻿using ColorVision.MySql;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 
-namespace ColorVision.MySql.DAO
+namespace ColorVision.Services.Device.SMU.Dao
 {
     public class SmuScanModel : PKModel
     {
@@ -39,7 +39,7 @@ namespace ColorVision.MySql.DAO
         /// 点数
         /// </summary>
         public int Points { get; set; }
-       
+
 
         public DateTime? CreateDate { get; set; }
     }

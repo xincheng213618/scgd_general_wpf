@@ -1,6 +1,4 @@
 ﻿using ColorVision.MVVM;
-using ColorVision.Services.Algorithm.MySql;
-using ColorVision.Services.Algorithm.Result;
 using ColorVision.Solution.V.Files;
 using ColorVision.Solution.V.Folders;
 using System;

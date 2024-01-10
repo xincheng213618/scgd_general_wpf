@@ -14,6 +14,8 @@ using ColorVision.Services.Device.CfwPort;
 using ColorVision.Services.Device.Motor;
 using ColorVision.Services.Device.Sensor;
 using ColorVision.Services.Device.SMU;
+using ColorVision.Services.Device.SMU.Dao;
+using ColorVision.Services.Device.Spectrum.Dao;
 using ColorVision.User;
 using Newtonsoft.Json;
 using System;

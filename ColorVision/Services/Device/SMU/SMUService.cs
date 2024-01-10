@@ -1,6 +1,4 @@
 ﻿using ColorVision.MQTT;
-using ColorVision.Services;
-using ColorVision.Services.Device;
 using ColorVision.Services.Device.SMU.Configs;
 using ColorVision.Services.Msg;
 using MQTTMessageLib.SMU;

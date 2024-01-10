@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CS8601
 using MQTTMessageLib.Algorithm;
-using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.Data;

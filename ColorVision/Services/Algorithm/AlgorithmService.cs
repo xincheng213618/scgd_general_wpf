@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CS8602  
 
-using ColorVision.Services.Algorithm.Templates;
 using ColorVision.Services.Device;
 using ColorVision.Services.Msg;
 using cvColorVision;
@@ -12,7 +11,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
-using System.Windows.Input;
 
 namespace ColorVision.Services.Algorithm
 {

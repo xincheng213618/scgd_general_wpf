@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Security.Policy;
 using ColorVision.MySql;
 using log4net;
 using MySql.Data.MySqlClient;
-using Org.BouncyCastle.Crypto.Generators;
 
 namespace ColorVision.User.MySql
 {

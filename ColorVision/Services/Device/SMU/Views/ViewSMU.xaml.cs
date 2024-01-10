@@ -1,23 +1,15 @@
-﻿using ColorVision.Device.Spectrum.Views;
-using ColorVision.MySql.DAO;
-using ColorVision.MySql.Service;
+﻿using ColorVision.Services.Device.SMU.Dao;
 using ColorVision.Templates;
 using ColorVision.Util;
-using Newtonsoft.Json;
-using NPOI.SS.Formula.Functions;
-using NPOI.XWPF.UserModel;
 using ScottPlot;
 using ScottPlot.Plottable;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Drawing;
-using System.IO;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Windows.Data;
 using System.Windows.Input;
 
 namespace ColorVision.Services.Device.SMU.Views
