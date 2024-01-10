@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using System.Windows;
 using CVImageChannelLib;
 using log4net;
@@ -59,7 +60,11 @@ namespace ColorVision.Device.Camera.Video
         public void Close()
         {
             reader?.Close();
-            reader?.Dispose();
+            Task.Run(() =>
+            {
+                System.Threading.Thread.Sleep(500);
+                reader?.Dispose();
+            });
         }
 
         public void Dispose()
