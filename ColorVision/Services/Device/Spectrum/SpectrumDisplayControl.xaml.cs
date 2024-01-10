@@ -3,6 +3,7 @@ using ColorVision.Device.Spectrum.Views;
 using ColorVision.Services.Device;
 using ColorVision.SettingUp;
 using cvColorVision;
+using MQTTMessageLib;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -94,27 +95,27 @@ namespace ColorVision.Device.Spectrum
         private void doHeartbeat(HeartbeatParam e)
         {
             SpectrumService.Config.DeviceStatus = e.DeviceStatus;
-            if (e.DeviceStatus == DeviceStatus.Opened)
+            if (e.DeviceStatus == DeviceStatusType.Opened)
             {
                 btn_connect.Content = "关闭";
             }
-            else if (e.DeviceStatus == DeviceStatus.Closed)
+            else if (e.DeviceStatus == DeviceStatusType.Closed)
             {
                 btn_connect.Content = "打开";
             }
-            else if (e.DeviceStatus == DeviceStatus.Opening)
+            else if (e.DeviceStatus == DeviceStatusType.Opening)
             {
                 btn_connect.Content = "打开中";
             }
-            else if (e.DeviceStatus == DeviceStatus.Closing)
+            else if (e.DeviceStatus == DeviceStatusType.Closing)
             {
                 btn_connect.Content = "关闭中";
             }
-            else if (e.DeviceStatus == DeviceStatus.Busy)
+            else if (e.DeviceStatus == DeviceStatusType.Busy)
             {
                 enableBtn(false);
             }
-            else if (e.DeviceStatus == DeviceStatus.Free)
+            else if (e.DeviceStatus == DeviceStatusType.Free)
             {
                 enableBtn(true);
             }

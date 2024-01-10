@@ -27,7 +27,7 @@ namespace ColorVision.Services.Device.Algorithm
         {
             DeviceAlgorithm = device;
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
-            DeviceStatus = DeviceStatus.UnInit;
+            DeviceStatus = DeviceStatusType.Unknown;
         }
 
 
@@ -38,24 +38,24 @@ namespace ColorVision.Services.Device.Algorithm
             {
                 switch (msg.EventName)
                 {
-                    case "Init":
-                        DeviceStatus = DeviceStatus.Init;
-                        break;
-                    case "UnInit":
-                        DeviceStatus = DeviceStatus.UnInit;
-                        break;
+                    //case "Init":
+                    //    DeviceStatus = DeviceStatusType.Init;
+                    //    break;
+                    //case "UnInit":
+                    //    DeviceStatus = DeviceStatusType.UnInit;
+                    //    break;
                     case "SetParam":
                         break;
                     case "Close":
-                        DeviceStatus = DeviceStatus.Closed;
+                        DeviceStatus = DeviceStatusType.Closed;
                         break;
                     case "Open":
-                        DeviceStatus = DeviceStatus.Opened;
+                        DeviceStatus = DeviceStatusType.Opened;
                         break;
 
                     case MQTTAlgorithmEventEnum.Event_POI_GetData:
                         OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
-                        DeviceStatus = DeviceStatus.Opened;
+                        DeviceStatus = DeviceStatusType.Opened;
                         break;
                     case "SaveLicense":
                         break;
@@ -84,25 +84,25 @@ namespace ColorVision.Services.Device.Algorithm
                 {
                     case "GetData":
                         OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
-                        DeviceStatus = DeviceStatus.Opened;
+                        DeviceStatus = DeviceStatusType.Opened;
                         break;
-                    case "Close":
-                        DeviceStatus = DeviceStatus.UnInit;
-                        break;
-                    case "Open":
-                        DeviceStatus = DeviceStatus.UnInit;
-                        break;
-                    case "Init":
-                        DeviceStatus = DeviceStatus.UnInit;
-                        break;
-                    case "UnInit":
-                        DeviceStatus = DeviceStatus.UnInit;
-                        break;
+                    //case "Close":
+                    //    DeviceStatus = DeviceStatusType.UnInit;
+                    //    break;
+                    //case "Open":
+                    //    DeviceStatus = DeviceStatusType.UnInit;
+                    //    break;
+                    //case "Init":
+                    //    DeviceStatus = DeviceStatusType.UnInit;
+                    //    break;
+                    //case "UnInit":
+                    //    DeviceStatus = DeviceStatusType.UnInit;
+                    //    break;
                     case "Calibrations":
                         break;
                     default:
                         OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
-                        DeviceStatus = DeviceStatus.Opened;
+                        DeviceStatus = DeviceStatusType.Opened;
                         break;
                 }
             }

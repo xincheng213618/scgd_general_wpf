@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Services.Device;
+using MQTTMessageLib;
 
 namespace ColorVision.Device.PG
 {
@@ -36,21 +37,21 @@ namespace ColorVision.Device.PG
             }
         }
 
-        private void PGService_DeviceStatusHandler(DeviceStatus deviceStatus)
+        private void PGService_DeviceStatusHandler(DeviceStatusType deviceStatus)
         {
-            if (deviceStatus == DeviceStatus.Opened)
+            if (deviceStatus == DeviceStatusType.Opened)
             {
                 btn_open.Content = "关闭";
             }
-            else if (deviceStatus == DeviceStatus.Closed)
+            else if (deviceStatus == DeviceStatusType.Closed)
             {
                 btn_open.Content = "打开";
             }
-            else if (deviceStatus == DeviceStatus.Opening)
+            else if (deviceStatus == DeviceStatusType.Opening)
             {
                 btn_open.Content = "打开中";
             }
-            else if (deviceStatus == DeviceStatus.Closing)
+            else if (deviceStatus == DeviceStatusType.Closing)
             {
                 btn_open.Content = "关闭中";
             }

@@ -2,6 +2,7 @@
 using ColorVision.Services.Msg;
 using ColorVision.Templates;
 using System.Windows;
+using MQTTMessageLib;
 
 namespace ColorVision.Services.Device.Calibration
 {
@@ -10,7 +11,7 @@ namespace ColorVision.Services.Device.Calibration
         public DeviceServiceCalibration(ConfigCalibration config) : base(config)
         {
             MsgReturnReceived += ProcessingReceived;
-            DeviceStatus = DeviceStatus.UnInit;
+            DeviceStatus = DeviceStatusType.Unknown;
         }
 
         private void ProcessingReceived(MsgReturn msg)

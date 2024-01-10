@@ -1,4 +1,5 @@
 ﻿using ColorVision.MVVM;
+using MQTTMessageLib;
 using Newtonsoft.Json;
 using System;
 
@@ -41,8 +42,8 @@ namespace ColorVision.Services.Device
         public DateTime LastAliveTime { get => _LastAliveTime; set { _LastAliveTime = value; NotifyPropertyChanged(); } }
         private DateTime _LastAliveTime = DateTime.MinValue;
 
-        public DeviceStatus DeviceStatus { get => _DeviceStatus; set { _DeviceStatus = value; NotifyPropertyChanged(nameof(BtnDeviceStatus)); } }
-        private DeviceStatus _DeviceStatus = DeviceStatus.Closed;
+        public DeviceStatusType DeviceStatus { get => _DeviceStatus; set { _DeviceStatus = value; NotifyPropertyChanged(nameof(BtnDeviceStatus)); } }
+        private DeviceStatusType _DeviceStatus = DeviceStatusType.Closed;
 
         [JsonIgnore]
         public string BtnDeviceStatus
@@ -52,27 +53,27 @@ namespace ColorVision.Services.Device
                 string text = _DeviceStatus.ToString();
                 switch (_DeviceStatus)
                 {
-                    case DeviceStatus.Unknown:
+                    case DeviceStatusType.Unknown:
                         break;
-                    case DeviceStatus.Closed:
+                    case DeviceStatusType.Closed:
                         text = "打开";
                         break;
-                    case DeviceStatus.Closing:
+                    case DeviceStatusType.Closing:
                         break;
-                    case DeviceStatus.Opened:
+                    case DeviceStatusType.Opened:
                         text = "关闭";
                         break;
-                    case DeviceStatus.Opening:
+                    case DeviceStatusType.Opening:
                         break;
-                    case DeviceStatus.Busy:
+                    case DeviceStatusType.Busy:
                         break;
-                    case DeviceStatus.Free:
+                    case DeviceStatusType.Free:
                         break;
-                    case DeviceStatus.UnInit:
-                        break;
-                    case DeviceStatus.Init:
-                        break;
-                    case DeviceStatus.UnConnected:
+                    //case DeviceStatusType.UnInit:
+                    //    break;
+                    //case DeviceStatusType.Init:
+                    //    break;
+                    //case DeviceStatusType.UnConnected:
                         break;
                     default:
                         break;
@@ -123,7 +124,7 @@ namespace ColorVision.Services.Device
 
     public class HeartbeatParam
     {
-        public DeviceStatus DeviceStatus { get; set; }
+        public DeviceStatusType DeviceStatus { get; set; }
 
         [JsonProperty("time")]
         public string Time { get; set; }
@@ -132,6 +133,6 @@ namespace ColorVision.Services.Device
     public class DeviceHeartbeatParam
     {
         public string DeviceName { get; set; }
-        public DeviceStatus DeviceStatus { get; set; }
+        public DeviceStatusType DeviceStatus { get; set; }
     }
 }

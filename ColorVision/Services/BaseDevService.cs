@@ -41,8 +41,8 @@ namespace ColorVision.Services
     {
         public event DeviceStatusChangedHandler DeviceStatusChanged;
 
-        public DeviceStatus DeviceStatus { get => _DeviceStatus; set { _DeviceStatus = value; Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value)); NotifyPropertyChanged(); NotifyPropertyChanged(nameof(DeviceStatusString)); } }
-        private DeviceStatus _DeviceStatus;
+        public DeviceStatusType DeviceStatus { get => _DeviceStatus; set { _DeviceStatus = value; Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value)); NotifyPropertyChanged(); NotifyPropertyChanged(nameof(DeviceStatusString)); } }
+        private DeviceStatusType _DeviceStatus;
 
         public string DeviceStatusString { get => _DeviceStatus.ToDescription(); set { } }
 

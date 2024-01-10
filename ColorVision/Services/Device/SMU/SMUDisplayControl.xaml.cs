@@ -2,6 +2,7 @@
 using ColorVision.Services.Device.SMU.Views;
 using ColorVision.SettingUp;
 using ColorVision.Templates;
+using MQTTMessageLib;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -111,21 +112,21 @@ namespace ColorVision.Services.Device.SMU
             }
         }
 
-        private  void SMUService_DeviceStatusHandler(DeviceStatus deviceStatus)
+        private  void SMUService_DeviceStatusHandler(DeviceStatusType deviceStatus)
         {
-            if (deviceStatus == DeviceStatus.Opened)
+            if (deviceStatus == DeviceStatusType.Opened)
             {
                 ButtonSourceMeter1.Content = "关闭";
             }
-            else if (deviceStatus == DeviceStatus.Closed)
+            else if (deviceStatus == DeviceStatusType.Closed)
             {
                 ButtonSourceMeter1.Content = "打开";
             }
-            else if (deviceStatus == DeviceStatus.Opening)
+            else if (deviceStatus == DeviceStatusType.Opening)
             {
                 ButtonSourceMeter1.Content = "打开中";
             }
-            else if (deviceStatus == DeviceStatus.Closing)
+            else if (deviceStatus == DeviceStatusType.Closing)
             {
                 ButtonSourceMeter1.Content = "关闭中";
             }
@@ -170,7 +171,7 @@ namespace ColorVision.Services.Device.SMU
         {
             if (sender is Button button)
             {
-                if (Config.DeviceStatus != DeviceStatus.Opening)
+                if (Config.DeviceStatus != DeviceStatusType.Opening)
                 {
                     Helpers.SendCommand(button, DService.Open(Config.IsNet, Config.DevName));
                 }

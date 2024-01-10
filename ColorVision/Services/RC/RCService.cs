@@ -197,7 +197,7 @@ namespace ColorVision.RC
                                         {
                                             //baseDeviceConfig.IsAlive = true;
                                             baseDeviceConfig.LastAliveTime = DateTime.Parse(ss.LiveTime);
-                                            baseDeviceConfig.DeviceStatus = (DeviceStatus)Enum.Parse(typeof(DeviceStatus),devNew.Status);
+                                            baseDeviceConfig.DeviceStatus = (DeviceStatusType)Enum.Parse(typeof(DeviceStatusType), devNew.Status);
                                             break;
                                         }
                                     }
@@ -268,7 +268,7 @@ namespace ColorVision.RC
                                                 {
                                                     if (devNew.Value.Code == baseDeviceConfig.Code)
                                                     {
-                                                        baseDeviceConfig.DeviceStatus = (DeviceStatus)Enum.Parse(typeof(DeviceStatus), devNew.Value.Status.ToString());
+                                                        baseDeviceConfig.DeviceStatus = (DeviceStatusType)Enum.Parse(typeof(DeviceStatusType), devNew.Value.Status.ToString());
                                                         break;
                                                     }
                                                 }
@@ -354,7 +354,7 @@ namespace ColorVision.RC
             }
 
             List<DeviceHeartbeat> deviceStatues = new List<DeviceHeartbeat>();
-            deviceStatues.Add(new DeviceHeartbeat(DevcieName, DeviceStatusType.Opened));
+            deviceStatues.Add(new DeviceHeartbeat(DevcieName, MQTTMessageLib.DeviceStatusType.Opened));
             string serviceHeartbeat = JsonConvert.SerializeObject(new MQTTServiceHeartbeat(NodeName, "", "", NodeType, ServiceName, deviceStatues, Token.AccessToken, (int)(heartbeatTime * 1.5f)));
 
             PublishAsyncClient(RCHeartbeatTopic, serviceHeartbeat);

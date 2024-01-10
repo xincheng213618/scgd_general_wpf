@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using ColorVision.Services.Msg;
 using System.Windows;
+using MQTTMessageLib;
 
 namespace ColorVision.Services.Device.CfwPort
 {
@@ -9,10 +10,10 @@ namespace ColorVision.Services.Device.CfwPort
         public DeviceServiceCfwPort(ConfigCfwPort config) : base(config)
         {
             MsgReturnReceived += ProcessingReceived;
-            DeviceStatus = DeviceStatus.Closed;
+            DeviceStatus = DeviceStatusType.Closed;
             DisConnected += (s, e) =>
             {
-                DeviceStatus = DeviceStatus.Closed;
+                DeviceStatus = DeviceStatusType.Closed;
             };
         }
 
@@ -24,7 +25,7 @@ namespace ColorVision.Services.Device.CfwPort
                 switch (msg.EventName)
                 {
                     case "Open":
-                        DeviceStatus = DeviceStatus.Opened;
+                        DeviceStatus = DeviceStatusType.Opened;
                         break;
                     case "SetPort":
                         break;
@@ -32,7 +33,7 @@ namespace ColorVision.Services.Device.CfwPort
                         Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, $"Port:{(char)(msg.Data.nPort)}"));
                         break;
                     case "Clode":
-                        DeviceStatus = DeviceStatus.Closed;
+                        DeviceStatus = DeviceStatusType.Closed;
                         break;
                     default:
                         Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, $"未定义{msg.EventName}"));
@@ -45,17 +46,17 @@ namespace ColorVision.Services.Device.CfwPort
                 switch (msg.EventName)
                 {
                     case "Open":
-                        DeviceStatus = DeviceStatus.Closed;
+                        DeviceStatus = DeviceStatusType.Closed;
                         break;
                     case "SetPort":
-                        DeviceStatus = DeviceStatus.Closed;
+                        DeviceStatus = DeviceStatusType.Closed;
 
                         break;
                     case "GetPort":
-                        DeviceStatus = DeviceStatus.Closed;
+                        DeviceStatus = DeviceStatusType.Closed;
                         break;
                     case "Close":
-                        DeviceStatus = DeviceStatus.Closed;
+                        DeviceStatus = DeviceStatusType.Closed;
                         break;
                     default:
                         Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, $"未定义{msg.EventName}"));

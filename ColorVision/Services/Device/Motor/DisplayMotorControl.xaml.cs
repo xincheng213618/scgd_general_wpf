@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MQTTMessageLib;
+using System;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -25,14 +26,14 @@ namespace ColorVision.Services.Device.Motor
             DeviceService.DeviceStatusChanged += DeviceService_DeviceStatusChanged;
         }
 
-        private void DeviceService_DeviceStatusChanged(DeviceStatus deviceStatus)
+        private void DeviceService_DeviceStatusChanged(DeviceStatusType deviceStatus)
         {
             switch (deviceStatus)
             {
-                case DeviceStatus.Closed:
+                case DeviceStatusType.Closed:
                     ButtonSwitch.Content = "连接";
                     break;
-                case DeviceStatus.Opened:
+                case DeviceStatusType.Opened:
                     ButtonSwitch.Content = "关闭";
                     break;
             }
@@ -42,12 +43,12 @@ namespace ColorVision.Services.Device.Motor
         {
             if (sender is Button button)
             {
-                if (DeviceService.DeviceStatus == DeviceStatus.Closed && button.Content.ToString() == "连接")
+                if (DeviceService.DeviceStatus == DeviceStatusType.Closed && button.Content.ToString() == "连接")
                 {
                     var msgRecord = DeviceService.Open();
                     Helpers.SendCommand(button, msgRecord);
                 }
-                else if (DeviceService.DeviceStatus == DeviceStatus.Opened && button.Content.ToString() == "关闭")
+                else if (DeviceService.DeviceStatus == DeviceStatusType.Opened && button.Content.ToString() == "关闭")
                 {
                     var msgRecord = DeviceService.Close();
                     Helpers.SendCommand(button, msgRecord);

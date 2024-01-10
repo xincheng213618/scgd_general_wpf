@@ -2,7 +2,6 @@
 
 using ColorVision.OnlineLicensing;
 using ColorVision.Services;
-using ColorVision.Services.Device;
 using ColorVision.Extension;
 using ColorVision.Services.Msg;
 using Newtonsoft.Json.Linq;
@@ -10,6 +9,8 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
+using MQTTMessageLib;
+using ColorVision.Services.Device;
 
 namespace ColorVision.Device.Camera
 {
@@ -17,8 +18,8 @@ namespace ColorVision.Device.Camera
     {
         public event DeviceStatusChangedHandler DeviceStatusChanged;
 
-        public DeviceStatus DeviceStatus { get => _DeviceStatus; set { _DeviceStatus = value; Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value)); NotifyPropertyChanged(); NotifyPropertyChanged(nameof(DeviceStatusString)); } }
-        private DeviceStatus _DeviceStatus;
+        public DeviceStatusType DeviceStatus { get => _DeviceStatus; set { _DeviceStatus = value; Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value)); NotifyPropertyChanged(); NotifyPropertyChanged(nameof(DeviceStatusString)); } }
+        private DeviceStatusType _DeviceStatus;
 
         public string DeviceStatusString { get => DeviceStatus.ToDescription(); set { } }
         public ServiceCamera(BaseServiceConfig Config) :base(Config)

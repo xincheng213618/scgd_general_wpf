@@ -39,7 +39,7 @@ namespace ColorVision.Device.Camera
             CameraService = cameraService;
             CameraService.Devices.Add(this);
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
-            DeviceStatus = DeviceStatus.Init;
+            DeviceStatus = DeviceStatusType.Disconnected;
             //DisConnected += (s, e) =>
             //{  
             //    DeviceStatus = DeviceStatus.UnInit;
@@ -72,17 +72,17 @@ namespace ColorVision.Device.Camera
                 switch (msg.EventName)
                 {
                     case "Init":
-                        DeviceStatus = DeviceStatus.Init;
+                        //DeviceStatus = Services.Device.DeviceStatusType.Init;
                         SetCfg(ConfigType.Camera);
                         SetCfg(ConfigType.ExpTime);
                         break;
                     case "UnInit":
-                        DeviceStatus = DeviceStatus.UnInit;
+                        //DeviceStatus = Services.Device.DeviceStatusType.UnInit;
                         break;
                     case "SetParam":
                         break;
                     case "Close":
-                        DeviceStatus = DeviceStatus.Closed;
+                        //DeviceStatus = Services.Device.DeviceStatusType.Closed;
                         break;
                     case MQTTCameraEventEnum.Event_Open:
                     case MQTTCameraEventEnum.Event_OpenLive:
@@ -90,7 +90,7 @@ namespace ColorVision.Device.Camera
                         //break;
                     case MQTTCameraEventEnum.Event_GetData:
                         OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
-                        DeviceStatus = DeviceStatus.Opened;
+                        //DeviceStatus = Services.Device.DeviceStatusType.Opened;
                         break;
 
                     //case "GetData":
@@ -170,18 +170,18 @@ namespace ColorVision.Device.Camera
                 switch (msg.EventName)
                 {
                     case "Close":
-                        DeviceStatus = DeviceStatus.UnInit;
+                        DeviceStatus = DeviceStatusType.Closed;
                         break;
                     case "Open":
-                        if (DeviceStatus == DeviceStatus.Init)
+                        if (DeviceStatus == DeviceStatusType.Closed)
                             Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, "打开失败"));
-                        DeviceStatus = DeviceStatus.UnInit;
+                        DeviceStatus = DeviceStatusType.Closed;
                         break;
                     case "Init":
-                        DeviceStatus = DeviceStatus.UnInit;
+                        //DeviceStatus = DeviceStatusType.UnInit;
                         break;
                     case "UnInit":
-                        DeviceStatus = DeviceStatus.UnInit;
+                        //DeviceStatus = Services.Device.DeviceStatusType.UnInit;
                         break;
                     default:
                         OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));

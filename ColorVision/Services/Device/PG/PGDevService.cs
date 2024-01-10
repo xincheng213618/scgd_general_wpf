@@ -193,29 +193,29 @@ namespace ColorVision.Device.PG
                     var dev = item.Value;
                     switch (dev.Status)
                     {
-                        case DeviceStatusType.Unknown:
-                            heartbeat.DeviceStatus = DeviceStatus.Closed;
+                        case MQTTMessageLib.DeviceStatusType.Unknown:
+                            heartbeat.DeviceStatus = DeviceStatusType.Closed;
                             break;
-                        case DeviceStatusType.Closed:
-                            heartbeat.DeviceStatus = DeviceStatus.Closed;
+                        case MQTTMessageLib.DeviceStatusType.Closed:
+                            heartbeat.DeviceStatus = DeviceStatusType.Closed;
                             break;
-                        case DeviceStatusType.Closing:
-                            heartbeat.DeviceStatus = DeviceStatus.Closing;
+                        case MQTTMessageLib.DeviceStatusType.Closing:
+                            heartbeat.DeviceStatus = DeviceStatusType.Closing;
                             break;
-                        case DeviceStatusType.Opened:
-                            heartbeat.DeviceStatus = DeviceStatus.Opened;
+                        case MQTTMessageLib.DeviceStatusType.Opened:
+                            heartbeat.DeviceStatus = DeviceStatusType.Opened;
                             break;
-                        case DeviceStatusType.Opening:
-                            heartbeat.DeviceStatus = DeviceStatus.Opening;
+                        case MQTTMessageLib.DeviceStatusType.Opening:
+                            heartbeat.DeviceStatus = DeviceStatusType.Opening;
                             break;
-                        case DeviceStatusType.Busy:
-                            heartbeat.DeviceStatus = DeviceStatus.Busy;
+                        case MQTTMessageLib.DeviceStatusType.Busy:
+                            heartbeat.DeviceStatus = DeviceStatusType.Busy;
                             break;
-                        case DeviceStatusType.Free:
-                            heartbeat.DeviceStatus = DeviceStatus.Free;
+                        case MQTTMessageLib.DeviceStatusType.Free:
+                            heartbeat.DeviceStatus = DeviceStatusType.Free;
                             break;
                         default:
-                            heartbeat.DeviceStatus = DeviceStatus.Closed;
+                            heartbeat.DeviceStatus = DeviceStatusType.Closed;
                             break;
                     }
                 }

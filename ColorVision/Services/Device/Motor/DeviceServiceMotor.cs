@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using ColorVision.Services.Msg;
+using MQTTMessageLib;
 
 namespace ColorVision.Services.Device.Motor
 {
@@ -8,10 +9,10 @@ namespace ColorVision.Services.Device.Motor
         public DeviceServiceMotor(ConfigMotor config) : base(config)
         {
             MsgReturnReceived += ProcessingReceived;
-            DeviceStatus = DeviceStatus.Closed;
+            DeviceStatus = DeviceStatusType.Closed;
             DisConnected += (s, e) =>
             {
-                DeviceStatus = DeviceStatus.Closed;
+                DeviceStatus = DeviceStatusType.Closed;
             };
         }
 
@@ -23,7 +24,7 @@ namespace ColorVision.Services.Device.Motor
                 switch (msg.EventName)
                 {
                     case "Open":
-                        DeviceStatus = DeviceStatus.Opened;
+                        DeviceStatus = DeviceStatusType.Opened;
                         break;
                     case "Move":
                         break;
@@ -33,7 +34,7 @@ namespace ColorVision.Services.Device.Motor
                          Config.Position = msg.Data.nPosition;
                         break;
                     case "Close":
-                        DeviceStatus = DeviceStatus.Closed;
+                        DeviceStatus = DeviceStatusType.Closed;
                         break;
                 }
           
@@ -43,19 +44,19 @@ namespace ColorVision.Services.Device.Motor
                 switch (msg.EventName)
                 {
                     case "Open":
-                        DeviceStatus = DeviceStatus.Closed;
+                        DeviceStatus = DeviceStatusType.Closed;
                         break;
                     case "Move":
-                        DeviceStatus = DeviceStatus.Closed;
+                        DeviceStatus = DeviceStatusType.Closed;
                         break;
                     case "GetPosition":
-                        DeviceStatus = DeviceStatus.Closed;
+                        DeviceStatus = DeviceStatusType.Closed;
                         break;
                     case "Close":
-                        DeviceStatus = DeviceStatus.Closed;
+                        DeviceStatus = DeviceStatusType.Closed;
                         break;
                     default:
-                        DeviceStatus = DeviceStatus.Closed;
+                        DeviceStatus = DeviceStatusType.Closed;
                         break;
 
                 }

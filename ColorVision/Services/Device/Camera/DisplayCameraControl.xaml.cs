@@ -25,10 +25,10 @@ using System.Collections.Specialized;
 using System.Windows.Input;
 using ColorVision.Services.Device.Camera.Views;
 using ColorVision.SettingUp;
+using MQTTMessageLib;
 
 namespace ColorVision.Device.Camera
 {
-
     /// <summary>
     /// 根据服务的MQTT相机
     /// </summary>
@@ -313,7 +313,7 @@ namespace ColorVision.Device.Camera
                 }
             };
 
-            if (DService.DeviceStatus == DeviceStatus.Init)
+            if (DService.DeviceStatus == DeviceStatusType.Unknown)
             {
                 StackPanelOpen.Visibility = Visibility.Visible;
                 ButtonOpen.Visibility = Visibility.Visible;
@@ -323,15 +323,15 @@ namespace ColorVision.Device.Camera
             {
                 switch (e)
                 {
-                    case DeviceStatus.Closed:
+                    case DeviceStatusType.Closed:
                         ButtonOpen.Visibility = Visibility.Visible;
                         StackPanelImage.Visibility = Visibility.Collapsed;
                         ButtonClose.Visibility = Visibility.Collapsed;
                         View.ImageView.Clear();
                         break;
-                    case DeviceStatus.Closing:
+                    case DeviceStatusType.Closing:
                         break;
-                    case DeviceStatus.Opened:
+                    case DeviceStatusType.Opened:
                         ButtonOpen.Visibility = Visibility.Collapsed;
                         ButtonClose.Visibility = Visibility.Visible;
                         if (!DService.IsVideoOpen)
@@ -339,28 +339,28 @@ namespace ColorVision.Device.Camera
                             StackPanelImage.Visibility = Visibility.Visible;
                         }
                         break;
-                    case DeviceStatus.Opening:
+                    case DeviceStatusType.Opening:
                         break;
-                    case DeviceStatus.UnInit:
-                        StackPanelOpen.Visibility = Visibility.Collapsed;
-                        StackPanelImage.Visibility = Visibility.Collapsed;
-                        ButtonOpen.Visibility = Visibility.Collapsed;
-                        ButtonClose.Visibility = Visibility.Collapsed;
-                        ButtonInit.Content = "连接";
-                        ViewGridManager.GetInstance().RemoveView(View);
-                        break;
-                    case DeviceStatus.Init:
-                        StackPanelOpen.Visibility = Visibility.Visible;
-                        ButtonOpen.Visibility = Visibility.Collapsed;
-                        ButtonInit.Content = "断开连接";
-                        ViewGridManager.GetInstance().AddView(View);
-                        if (ViewGridManager.GetInstance().ViewMax > 4 || ViewGridManager.GetInstance().ViewMax == 3)
-                        {
-                            ViewGridManager.GetInstance().SetViewNum(-1);
-                        }
-                        break;
-                    case DeviceStatus.UnConnected:
-                        break;
+                    //case DeviceStatusType.UnInit:
+                    //    StackPanelOpen.Visibility = Visibility.Collapsed;
+                    //    StackPanelImage.Visibility = Visibility.Collapsed;
+                    //    ButtonOpen.Visibility = Visibility.Collapsed;
+                    //    ButtonClose.Visibility = Visibility.Collapsed;
+                    //    ButtonInit.Content = "连接";
+                    //    ViewGridManager.GetInstance().RemoveView(View);
+                    //    break;
+                    //case DeviceStatusType.Init:
+                    //    StackPanelOpen.Visibility = Visibility.Visible;
+                    //    ButtonOpen.Visibility = Visibility.Collapsed;
+                    //    ButtonInit.Content = "断开连接";
+                    //    ViewGridManager.GetInstance().AddView(View);
+                    //    if (ViewGridManager.GetInstance().ViewMax > 4 || ViewGridManager.GetInstance().ViewMax == 3)
+                    //    {
+                    //        ViewGridManager.GetInstance().SetViewNum(-1);
+                    //    }
+                    //    break;
+                    //case DeviceStatusType.UnConnected:
+                    //    break;
                     default:
                         break;
                 }
@@ -373,20 +373,20 @@ namespace ColorVision.Device.Camera
         {
             if (sender is Button button)
             {
-                if (DService.DeviceStatus == DeviceStatus.UnInit && button.Content.ToString() == "连接")
-                {
-                    var msgRecord = DService.Init();
-                    Helpers.SendCommand(button, msgRecord,false);
-                }
-                else if (DService.DeviceStatus != DeviceStatus.UnInit || button.Content.ToString() == "断开连接")
-                {
-                    var msgRecord = DService.UnInit();
-                    Helpers.SendCommand(button, msgRecord, false);
-                }
-                else
-                {
-                    MessageBox.Show(Application.Current.MainWindow, "指令已经发送请稍等", "ColorVision");
-                }
+                //if (DService.DeviceStatus == DeviceStatusType.UnInit && button.Content.ToString() == "连接")
+                //{
+                //    var msgRecord = DService.Init();
+                //    Helpers.SendCommand(button, msgRecord,false);
+                //}
+                //else if (DService.DeviceStatus != DeviceStatusType.UnInit || button.Content.ToString() == "断开连接")
+                //{
+                //    var msgRecord = DService.UnInit();
+                //    Helpers.SendCommand(button, msgRecord, false);
+                //}
+                //else
+                //{
+                //    MessageBox.Show(Application.Current.MainWindow, "指令已经发送请稍等", "ColorVision");
+                //}
             }
 
         }
