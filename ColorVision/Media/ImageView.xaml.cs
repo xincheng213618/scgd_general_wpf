@@ -607,7 +607,18 @@ namespace ColorVision.Media
             logger.Info("OpenImage .....");
 
             OpenCvSharp.Mat src = new OpenCvSharp.Mat(fileInfo.height, fileInfo.width, OpenCvSharp.MatType.MakeType(fileInfo.depth, fileInfo.channels), fileInfo.data);
-            SetImageSource(src.ToBitmapSource());
+            OpenCvSharp.Mat dst = null;
+            if (fileInfo.bpp == 32)
+            {
+                OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
+                dst = new OpenCvSharp.Mat();
+                src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
+            }
+            else
+            {
+                dst = src;
+            }
+            SetImageSource(dst.ToBitmapSource());
         }
 
         public void OpenImage(byte[] data)

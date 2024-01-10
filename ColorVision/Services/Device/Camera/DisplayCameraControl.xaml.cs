@@ -97,30 +97,54 @@ namespace ColorVision.Device.Camera
 
         private void CameraService_OnMessageRecved(object sender, Services.MessageRecvArgs arg)
         {
-            switch (arg.EventName)
+            if (arg.ResultCode == 0)
             {
-                case MQTTCameraEventEnum.Event_GetData:
-                    ShowResultFromDB(arg.SerialNumber, Convert.ToInt32(arg.Data.MasterId));
-                    break;
-                case MQTTFileServerEventEnum.Event_File_Download:
-                    DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
-                    FileDownload(pm_dl);
-                    break;
-                case MQTTCameraEventEnum.Event_GetData_Channel:
-                    DeviceGetChannelResult pm_dl_ch = JsonConvert.DeserializeObject<DeviceGetChannelResult>(JsonConvert.SerializeObject(arg.Data));
-                    FileDownload(pm_dl_ch);
-                    break;
-                case MQTTCameraEventEnum.Event_Calibration_UploadFile:
-                    DeviceFileUpdownParam pm_up = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
-                    FileUpload(pm_up);
-                    break;
-                case MQTTCameraEventEnum.Event_OpenLive:
-                    DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(arg.Data));
-                    string mapName = Device.Code;
-                    if (pm_live.IsLocal) mapName = pm_live.MapName;
-                    CameraVideoControl.Start(pm_live.IsLocal, mapName, pm_live.FrameInfo.width, pm_live.FrameInfo.height);
-                    break;
+                switch (arg.EventName)
+                {
+                    case MQTTCameraEventEnum.Event_GetData:
+                        ShowResultFromDB(arg.SerialNumber, Convert.ToInt32(arg.Data.MasterId));
+                        break;
+                    case MQTTFileServerEventEnum.Event_File_Download:
+                        DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
+                        FileDownload(pm_dl);
+                        break;
+                    case MQTTCameraEventEnum.Event_GetData_Channel:
+                        DeviceGetChannelResult pm_dl_ch = JsonConvert.DeserializeObject<DeviceGetChannelResult>(JsonConvert.SerializeObject(arg.Data));
+                        FileDownload(pm_dl_ch);
+                        break;
+                    case MQTTCameraEventEnum.Event_Calibration_UploadFile:
+                        DeviceFileUpdownParam pm_up = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
+                        FileUpload(pm_up);
+                        break;
+                    case MQTTCameraEventEnum.Event_OpenLive:
+                        DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(arg.Data));
+                        string mapName = Device.Code;
+                        if (pm_live.IsLocal) mapName = pm_live.MapName;
+                        CameraVideoControl.Start(pm_live.IsLocal, mapName, pm_live.FrameInfo.width, pm_live.FrameInfo.height);
+                        break;
+                }
             }
+            else
+            {
+                switch (arg.EventName)
+                {
+                    case MQTTCameraEventEnum.Event_GetData:
+                        break;
+                    case MQTTFileServerEventEnum.Event_File_Download:
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            MessageBox.Show("文件下载失败");
+                        });
+                        break;
+                    case MQTTCameraEventEnum.Event_GetData_Channel:
+                        break;
+                    case MQTTCameraEventEnum.Event_Calibration_UploadFile:
+                        break;
+                    case MQTTCameraEventEnum.Event_OpenLive:
+                        break;
+                }
+            }
+
         }
 
         private void FileDownload(DeviceGetChannelResult param)
