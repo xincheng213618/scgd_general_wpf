@@ -125,7 +125,6 @@ namespace ColorVision.Device.Spectrum.Views
                 properties.Add(i.ToString());
             }
 
-
             // 写入列头
             for (int i = 0; i < properties.Count; i++)
             {

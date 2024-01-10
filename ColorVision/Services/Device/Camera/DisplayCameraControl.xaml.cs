@@ -416,7 +416,7 @@ namespace ColorVision.Device.Camera
                 port = CameraVideoControl.Open(host, port);
                 if (port > 0)
                 {
-                    MsgRecord msg= DService.OpenVideo(host, port, DService.Config.ExpTime);
+                    MsgRecord msg = DService.OpenVideo(host, port, DService.Config.ExpTime);
                     msg.MsgRecordStateChanged += (s) =>
                     {
                         if (s == MsgRecordState.Fail)
@@ -429,7 +429,6 @@ namespace ColorVision.Device.Camera
                     CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
                     CameraVideoControl.CameraVideoFrameReceived += CameraVideoFrameReceived;
                     StackPanelImage.Visibility = Visibility.Collapsed;
-                    //
                 }
                 else
                 {
