@@ -1,5 +1,4 @@
-﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
-using ColorVision.MVVM;
+﻿using ColorVision.MVVM;
 using System.Windows;
 
 namespace ColorVision.Services.Device.Algorithm.Views

@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8602  
-
+﻿
 using ColorVision.Device.Camera;
 using ColorVision.MQTT;
 using System;

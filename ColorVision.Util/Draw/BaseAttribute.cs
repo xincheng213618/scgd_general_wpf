@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1711,CA2211
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;

@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8602  
-
+﻿
 using ColorVision.OnlineLicensing;
 using ColorVision.Services;
 using ColorVision.Extension;

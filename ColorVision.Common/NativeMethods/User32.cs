@@ -29,7 +29,6 @@ namespace ColorVision.NativeMethods
             LOGPIXELSY = 90
         }
 
-        [SuppressMessage("ReSharper", "InconsistentNaming")]
         public struct KeyboardHookStruct
         {
             public int vkCode { get; set; }

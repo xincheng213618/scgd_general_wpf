@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1010
-using ColorVision.Solution.V;
+﻿using ColorVision.Solution.V;
 using System;
 using System.Windows;
 using System.Windows.Controls;

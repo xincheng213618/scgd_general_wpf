@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8604
-using ColorVision.MySql.Service;
+﻿using ColorVision.MySql.Service;
 
 namespace ColorVision.Templates
 {
