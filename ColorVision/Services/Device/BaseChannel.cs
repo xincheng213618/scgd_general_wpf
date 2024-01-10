@@ -55,6 +55,9 @@ namespace ColorVision.Services.Device
             throw new NotImplementedException();
         }
 
+        public bool IsDisplayOpen { get => _IsDisplayOpen; set { _IsDisplayOpen = value; NotifyPropertyChanged(); } }
+        private bool _IsDisplayOpen = true;
+
         public virtual UserControl GetDisplayControl()
         {
             throw new NotImplementedException();

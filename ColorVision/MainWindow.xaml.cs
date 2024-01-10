@@ -156,6 +156,7 @@ namespace ColorVision
                 thread1.Start();
             }
         }
+
         public async Task CheckUpdate()
         {
             await Task.Delay(1000);

@@ -478,7 +478,6 @@ namespace ColorVision.Device.Spectrum.Views
                 listView1.Visibility = Visibility.Visible;
                 First = true;
                 listView1.SelectedIndex = 0;
-
             }
 
         }

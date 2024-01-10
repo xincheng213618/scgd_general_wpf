@@ -406,18 +406,37 @@ namespace ColorVision.Services.Device.SMU.Views
 
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
+            ViewResultSMUs.Clear();
+            if (string.IsNullOrEmpty(TextBoxId.Text) && string.IsNullOrEmpty(TextBoxBatch.Text))
+            {
+                foreach (var item in MRSmuScanDao.GetAll())
+                {
+                    ViewResultSMU viewResultSMU = new ViewResultSMU(item);
+                    ViewResultSMUs.Add(viewResultSMU);
+                };
+            }
+            else
+            {
 
-
-
+                var list = MRSmuScanDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text);
+                foreach (var item in list)
+                {
+                    ViewResultSMU viewResultSMU = new ViewResultSMU(item);
+                    ViewResultSMUs.Add(viewResultSMU);
+                };
+            }
+            if (ViewResultSMUs.Count > 0)
+            {
+                listView1.Visibility = Visibility.Visible;
+                listView1.SelectedIndex = 0;
+            }
         }
 
         private void Search1_Click(object sender, RoutedEventArgs e)
         {
             SerchPopup.IsOpen = true;
-            TextBoxType.SelectedIndex = -1;
             TextBoxId.Text = string.Empty;
             TextBoxBatch.Text = string.Empty;
-            TextBoxFile.Text = string.Empty;
         }
     }
 }

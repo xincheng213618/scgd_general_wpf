@@ -51,6 +51,14 @@ namespace ColorVision.MySql.DAO
 
         }
 
+        public List<SmuScanModel> ConditionalQuery(string id, string batchid)
+        {
+            Dictionary<string, object> keyValuePairs = new Dictionary<string, object>();
+            keyValuePairs.Add("id", id);
+            keyValuePairs.Add("batch_id", batchid);
+            return ConditionalQuery(keyValuePairs);
+        }
+
         public override DataRow Model2Row(SmuScanModel item, DataRow row)
         {
             if (item != null)
