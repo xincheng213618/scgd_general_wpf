@@ -437,48 +437,8 @@ namespace ColorVision.Device.Spectrum.Views
 
         public void Clear()
         {
-            if (listView1.SelectedIndex < 0)
-            {
-                MessageBox.Show("您需要先选择数据");
-                return;
-            }
-            var selectedItems = listView1.SelectedItems;
-
-            if (selectedItems.Count <= 1)
-            {
-                ViewResultSpectrums.Clear();
-                ScatterPlots.Clear();
-            }
-            else
-            {
-
-                var selectedItemsCopy = new List<object>();
-
-                foreach (var item in selectedItems)
-                {
-                    selectedItemsCopy.Add(item);
-                }
-
-                foreach (var item in selectedItemsCopy)
-                {
-                    if (item is ViewResultSpectrum result)
-                    {
-                        ViewResultSpectrums.Remove(result);
-                        ScatterPlots.Remove(result.ScatterPlot);
-                    }
-                }
-            }
-
-            if (ViewResultSpectrums.Count > 0)
-            {
-                listView1.SelectedIndex = 0;
-            }
-            else
-            {
-                wpfplot1.Plot.Clear();
-                wpfplot1.Refresh();
-            }
-            ReDrawPlot();
+            ViewResultSpectrums.Clear();
+            ScatterPlots.Clear();
         }
 
         SpectumResultDao spectumResultDao = new SpectumResultDao();
