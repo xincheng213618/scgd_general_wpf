@@ -58,19 +58,18 @@ namespace ColorVision.Solution.V
             GeneralContextMenu();
             GeneralCVSln();
             this.IsExpanded = true;
-
             DriveMonitor();
 
         }
 
-        public Task DriveMonitor()
+        public void DriveMonitor()
         {
-            return Task.Run(() =>
+            Task.Run(async () =>
             {
                 bool IsMonitor = true;
                 while (IsMonitor)
                 {
-                    Task.Delay(100000);
+                    await Task.Delay(100000);
                     if (Setting.IsLackWarning)
                     {
                         if (DriveInfo.IsReady)
