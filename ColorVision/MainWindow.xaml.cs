@@ -152,7 +152,7 @@ namespace ColorVision
             }
         }
 
-        public async Task CheckUpdate()
+        public static async Task CheckUpdate()
         {
             await Task.Delay(1000);
             Application.Current.Dispatcher.Invoke(() =>

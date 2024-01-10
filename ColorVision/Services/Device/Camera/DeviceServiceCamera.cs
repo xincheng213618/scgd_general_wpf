@@ -174,8 +174,8 @@ namespace ColorVision.Device.Camera
                         break;
                     case "Open":
                         if (DeviceStatus == DeviceStatus.Init)
-                            Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, "许可证异常，请配置相机设备许可证"));
-                        DeviceStatus = DeviceStatus.Opened;
+                            Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, "打开失败"));
+                        DeviceStatus = DeviceStatus.UnInit;
                         break;
                     case "Init":
                         DeviceStatus = DeviceStatus.UnInit;

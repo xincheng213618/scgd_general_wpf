@@ -7,19 +7,10 @@ using ScottPlot.Plottable;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Drawing;
 
 namespace ColorVision.Services.Device.SMU.Views
 {
-    public enum MeasurementType
-    {
-        [Description("电压")]
-        Voltage,
-        [Description("电流")]
-        Current
-    }
-
     public class ViewResultSMU : ViewModelBase, ISortable
     {
         public ViewResultSMU(SmuScanModel item)

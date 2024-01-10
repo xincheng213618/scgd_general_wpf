@@ -16,7 +16,7 @@ namespace ColorVision.Services.Device.Algorithm.Dao
         public double PointY { get; set; }
         public double MaxRatio { get; set; }
         public double RotationAngle { get; set; }
-        public string FinalPoints { get; set; }
+        public string? FinalPoints { get; set; }
     }
     public class AlgResultDistortionDao : BaseDaoMaster<AlgResultDistortionModel>
     {

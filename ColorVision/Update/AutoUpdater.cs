@@ -7,11 +7,15 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
 using ColorVision.MVVM;
+using ColorVision.MySql;
+using log4net;
 
 namespace ColorVision.Update
 {
     public class AutoUpdater : ViewModelBase
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(AutoUpdater));
+
         private static AutoUpdater _instance;
         private static readonly object _locker = new();
         public static AutoUpdater GetInstance() { lock (_locker) { return _instance ??= new AutoUpdater(); } }
@@ -45,18 +49,18 @@ namespace ColorVision.Update
                 {
                     // 删除文件
                     File.Delete(updateFile);
-                    Console.WriteLine($"Deleted update file: {updateFile}");
+                    log.Info($"Deleted update file: {updateFile}");
                 }
                 catch (Exception ex)
                 {
                     // 如果删除过程中出现错误，输出错误信息
-                    Console.WriteLine($"Error deleting the update file {updateFile}: {ex.Message}");
+                    log.Info($"Error deleting the update file {updateFile}: {ex.Message}");
                 }
             }
 
             if (updateFiles.Length == 0)
             {
-                Console.WriteLine("No update files found to delete.");
+                log.Info($"No update files found to delete.");
             }
         }
 
@@ -95,7 +99,7 @@ namespace ColorVision.Update
                 Console.WriteLine("An error occurred while updating: " + ex.Message);
             }
         }
-        private async Task<Version>  GetLatestVersionNumber(string url)
+        private static async Task<Version>  GetLatestVersionNumber(string url)
         {
             using HttpClient _httpClient = new HttpClient();
             string versionString = await _httpClient.GetStringAsync(url);
