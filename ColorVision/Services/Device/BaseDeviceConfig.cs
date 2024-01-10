@@ -83,7 +83,7 @@ namespace ColorVision.Services.Device
         }
     }
 
-    public enum DeviceServiceStatus
+    public enum ServiceStatus
     {
         Offline,
         Online
@@ -99,21 +99,6 @@ namespace ColorVision.Services.Device
         /// </summary>
         public string ID { get => _SNID; set {  _SNID = value; NotifyPropertyChanged(); } }
         private string _SNID;
-
-        public string SNID { get => ID; }
-
-        public bool IsOnline { get => DeviceServiceStatus == DeviceServiceStatus.Online; }
-
-        private DeviceServiceStatus _DeviceServiceStatus;
-        public DeviceServiceStatus DeviceServiceStatus
-        {
-            get => _DeviceServiceStatus;
-            set
-            {
-                _DeviceServiceStatus = value;
-                NotifyPropertyChanged(nameof(IsOnline));
-            }
-        }
 
     }
 

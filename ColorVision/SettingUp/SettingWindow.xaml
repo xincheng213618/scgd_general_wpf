@@ -154,7 +154,7 @@
                                             <TextBlock Text="{Binding AutoUpdater.LatestVersion}"/>
                                             <TextBlock Text="软件版本"/>
                                         </DockPanel>
-                                        <ProgressBar Height="10"  Foreground="#B41515" Maximum="100" Minimum="0" Value="{Binding AutoUpdater.ProgressValue}" Background="#373B41" BorderThickness="0" Margin="5" VerticalAlignment="Bottom" />
+                                        <ProgressBar Height="15"  Foreground="#B41515" Maximum="100" Minimum="0" Value="{Binding AutoUpdater.ProgressValue}" Background="#373B41" BorderThickness="0" Margin="5" VerticalAlignment="Bottom" />
                                         <DockPanel  Margin="5">
                                             <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding SoftwareSetting.TransparentWindow}"/>
                                             <TextBlock Text="禁用硬件加速"/>

@@ -80,6 +80,8 @@ namespace ColorVision.Update
                     {
                         if (MessageBox.Show($"发现新版本{LatestVersion},是否更新", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                         {
+                            WindowUpdate windowUpdate = new WindowUpdate() {  Owner =Application.Current.MainWindow ,WindowStartupLocation = WindowStartupLocation.CenterOwner};
+                            windowUpdate.Show();
                             DownloadAndUpdate(LatestVersion);
                         }
                     });              
@@ -171,14 +173,12 @@ namespace ColorVision.Update
             try
             {
                 Process p = Process.Start(startInfo);
+                Environment.Exit(0);
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
             }
-
-            // 关闭当前实例
-            Environment.Exit(0);
         }
 
 

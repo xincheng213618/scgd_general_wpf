@@ -199,7 +199,7 @@ namespace ColorVision.Device.Camera
             {
                 EventName = "Init",
             };
-            var Params = new Dictionary<string, object>() { { "CameraType", (int)Config.CameraType }, { "SnID", Config.SNID }, { "CodeID", Config.Code }, { "szCfgName", "" } };
+            var Params = new Dictionary<string, object>() { { "CameraType", (int)Config.CameraType }, { "SnID", Config.ID }, { "CodeID", Config.Code }, { "szCfgName", "" } };
             msg.Params = Params;
 
             ///如果配置电机，则传入电机的参数
