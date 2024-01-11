@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8603
+using ColorVision.Device.Camera;
 using ColorVision.MQTT;
 using ColorVision.Services;
 using ColorVision.Services.Device;
@@ -172,7 +173,7 @@ namespace ColorVision.RC
 
         public static void UpdateServiceStatus(List<MQTTNodeServiceStatus> data)
         {
-            List< ServiceKind > svrs = new List< ServiceKind >(ServiceManager.GetInstance().Services);
+            List<ServiceKind> svrs = new List<ServiceKind>(ServiceManager.GetInstance().Services);
             foreach (var serviceKind in svrs)
             {
                 MQTTNodeServiceStatus ss = GetService(serviceKind.ServiceType.ToString(), data);
@@ -198,12 +199,16 @@ namespace ColorVision.RC
                                             //baseDeviceConfig.IsAlive = true;
                                             baseDeviceConfig.LastAliveTime = DateTime.Parse(ss.LiveTime);
                                             baseDeviceConfig.DeviceStatus = (DeviceStatusType)Enum.Parse(typeof(DeviceStatusType), devNew.Status);
+                                            if (dev is DeviceCamera)
+                                            {
+                                                DeviceCamera deviceCamera = (DeviceCamera)dev;
+                                                deviceCamera.DService.DeviceStatus = baseDeviceConfig.DeviceStatus;
+                                            }
                                             break;
                                         }
                                     }
                                 }
                             }
-
                         }
                     }
                 }

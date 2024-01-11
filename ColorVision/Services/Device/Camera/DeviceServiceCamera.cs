@@ -39,7 +39,7 @@ namespace ColorVision.Device.Camera
             CameraService = cameraService;
             CameraService.Devices.Add(this);
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
-            DeviceStatus = DeviceStatusType.Disconnected;
+            DeviceStatus = DeviceStatusType.OffLine;
             //DisConnected += (s, e) =>
             //{  
             //    DeviceStatus = DeviceStatus.UnInit;

@@ -407,6 +407,10 @@ namespace ColorVision.Net
                 {
                     src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U, 255.0 / 65535, 0.5);
                 }
+                else
+                {
+                    dst = src;
+                }
                 int len = (int)(w * h * channels);
                 fileInfo.data = new byte[len];
                 Marshal.Copy(dst.Data, fileInfo.data, 0, len);

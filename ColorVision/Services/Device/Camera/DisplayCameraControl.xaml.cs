@@ -324,6 +324,8 @@ namespace ColorVision.Device.Camera
                 switch (e)
                 {
                     case DeviceStatusType.Closed:
+                        ButtonInit.Visibility = Visibility.Collapsed;
+                        StackPanelOpen.Visibility = Visibility.Visible;
                         ButtonOpen.Visibility = Visibility.Visible;
                         StackPanelImage.Visibility = Visibility.Collapsed;
                         ButtonClose.Visibility = Visibility.Collapsed;
@@ -373,6 +375,7 @@ namespace ColorVision.Device.Camera
         {
             if (sender is Button button)
             {
+                DService.GetAllCameraID();
                 //if (DService.DeviceStatus == DeviceStatusType.UnInit && button.Content.ToString() == "连接")
                 //{
                 //    var msgRecord = DService.Init();
