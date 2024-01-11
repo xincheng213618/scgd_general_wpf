@@ -32,6 +32,8 @@ namespace ColorVision.Templates
         LumFourColor = 39,
         [Description("多色")]
         LumMultiColor = 40,
+        [Description("校正压缩文件")]
+        ColorVisionCalibration = 1001
     }
 
 
@@ -75,6 +77,7 @@ namespace ColorVision.Templates
             LumOneColorList = new List<string>();
             LumFourColorList = new List<string>();
             LumMultiColorList = new List<string>();
+            CalibrationModeList = new List<string>();
         }
 
 
@@ -114,6 +117,7 @@ namespace ColorVision.Templates
             GetCalibrationRsourceList(LumOneColorList, ResouceType.LumOneColor);
             GetCalibrationRsourceList(LumFourColorList, ResouceType.LumFourColor);
             GetCalibrationRsourceList(LumMultiColorList, ResouceType.LumMultiColor);
+            GetCalibrationRsourceList(CalibrationModeList, ResouceType.ColorVisionCalibration);
         }
 
 
@@ -127,6 +131,9 @@ namespace ColorVision.Templates
         public List<string> LumOneColorList { get; set; }
         public List<string> LumFourColorList { get; set; }
         public List<string> LumMultiColorList { get; set; }
+
+        public List<string> CalibrationModeList { get; set; }
+
     }
 
 
@@ -296,6 +303,9 @@ namespace ColorVision.Templates
 
     public class CalibrationParam: ParamBase
     {
+        public string CalibrationMode { get; set; } = string.Empty;
+        public List<string> CalibrationModeList { get; set; }
+
         public CalibrationNormal Normal { get; set; } 
         public CalibrationColor Color { get; set; }
         public CalibrationParam() 
@@ -303,11 +313,14 @@ namespace ColorVision.Templates
             this.ID = -1;
             Normal = new CalibrationNormal(new List<ModDetailModel>(),"");
             Color = new CalibrationColor(new List<ModDetailModel>());
+            CalibrationModeList = CalibrationRsourceService.GetInstance().CalibrationModeList;
         }
         public CalibrationParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name??string.Empty, modDetails)
         {
             Normal = new CalibrationNormal(modDetails,"");
             Color = new CalibrationColor(modDetails);
+            CalibrationModeList = CalibrationRsourceService.GetInstance().CalibrationModeList;
+
         }
     }
 

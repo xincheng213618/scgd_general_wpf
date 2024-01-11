@@ -4,10 +4,13 @@ using ColorVision.Services.Device;
 using ColorVision.Services.Device.Camera;
 using ColorVision.Services.Device.Camera.Views;
 using ColorVision.Services.Msg;
+using ColorVision.Solution;
 using ColorVision.Templates;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using System;
+using System.IO;
+using System.IO.Compression;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -66,6 +69,7 @@ namespace ColorVision.Device.Camera
 
             UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));
         }
+        
         public void UploadCalibration(object sender)
         {
             UploadWindow uploadwindow = new UploadWindow("校正文件(*.zip, *.cvcal)|*.zip;*.cvcal") { WindowStartupLocation = WindowStartupLocation.CenterScreen };
@@ -73,12 +77,23 @@ namespace ColorVision.Device.Camera
             {
                 if (s is Upload upload)
                 {
+                    if (File.Exists(upload.UploadFilePath))
+                    {
+                        string path = SolutionManager.GetInstance().CurrentSolution.FullName + "\\Cache";
+                        ZipFile.ExtractToDirectory(upload.UploadFilePath, path);
+                        string filename = path +"\\" + Path.GetFileNameWithoutExtension(upload.UploadFilePath);
+                        string Cameracfg = filename + "\\Camera.cfg";
+                        string Calibrationcfg = filename + "\\Calibration.cfg";
+
+                    }
 
 
-
-                    MsgRecord msgRecord = DService?.UploadCalibrationFile(upload.UploadFileName, upload.UploadFilePath, 1001);
+                    MsgRecord msgRecord = DService?.UploadCalibrationFile(Path.GetFileNameWithoutExtension(upload.UploadFileName), upload.UploadFilePath, 1001);
                     msgRecord.MsgRecordStateChanged += (s) =>
                     {
+
+
+
                         MessageBox.Show("sucess");
                     };
                 }

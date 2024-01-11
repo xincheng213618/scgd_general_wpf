@@ -23,12 +23,6 @@ namespace ColorVision.Templates
             this.DataContext = CalibrationParam;
         }
 
-        public void SetCalibrationParam(CalibrationParam calibrationParam)
-        {
-            this.CalibrationParam = calibrationParam;
-            this.DataContext = CalibrationParam;
-        }
-
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
