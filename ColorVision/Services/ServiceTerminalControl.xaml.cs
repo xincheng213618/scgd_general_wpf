@@ -7,7 +7,7 @@ using ColorVision.MySql.DAO;
 using ColorVision.Services.Device;
 using ColorVision.Services.Device.Algorithm;
 using ColorVision.Services.Device.Calibration;
-using ColorVision.Services.Device.Camera;
+using ColorVision.Services.Device.Camera.Configs;
 using ColorVision.Services.Device.CfwPort;
 using ColorVision.Services.Device.Motor;
 using ColorVision.Services.Device.Sensor;

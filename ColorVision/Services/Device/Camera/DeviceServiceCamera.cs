@@ -2,7 +2,6 @@
 
 using ColorVision.Services;
 using ColorVision.Services.Device;
-using ColorVision.Services.Device.Camera;
 using ColorVision.Services.Msg;
 using ColorVision.Templates;
 using cvColorVision;
@@ -13,6 +12,7 @@ using ColorVision.Extension;
 using MQTTMessageLib.FileServer;
 using MQTTMessageLib.Camera;
 using MQTTMessageLib;
+using ColorVision.Services.Device.Camera.Configs;
 
 namespace ColorVision.Device.Camera
 {
@@ -73,8 +73,8 @@ namespace ColorVision.Device.Camera
                 {
                     case "Init":
                         //DeviceStatus = Services.Device.DeviceStatusType.Init;
-                        SetCfg(ConfigType.Camera);
-                        SetCfg(ConfigType.ExpTime);
+                        SetCfg(CameraConfigType.Camera);
+                        SetCfg(CameraConfigType.ExpTime);
                         break;
                     case "UnInit":
                         //DeviceStatus = Services.Device.DeviceStatusType.UnInit;
@@ -234,7 +234,7 @@ namespace ColorVision.Device.Camera
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord SetCfg(ConfigType configType)
+        public MsgRecord SetCfg(CameraConfigType configType)
         {
             MsgSend msg = new MsgSend { EventName = "SetCfg" };
 
@@ -242,19 +242,19 @@ namespace ColorVision.Device.Camera
             Params.Add("ConfigType", configType);
             switch (configType)
             {   
-                case ConfigType.Camera:
+                case CameraConfigType.Camera:
                     Params.Add("jsonCfg", Config.CameraCfg.ToJsonN());
                     break;
-                case ConfigType.ExpTime:
+                case CameraConfigType.ExpTime:
                     Params.Add("jsonCfg", Config.ExpTimeCfg.ToJsonN());
                     break;
-                case ConfigType.Calibration:
+                case CameraConfigType.Calibration:
                     Params.Add("jsonCfg", Config.ExpTimeCfg);
                     break;
-                case ConfigType.Channels:
+                case CameraConfigType.Channels:
                     Params.Add("jsonCfg", Config.CFW.ChannelCfgs.ToJsonN());
                     break;
-                case ConfigType.SYSTEM:
+                case CameraConfigType.SYSTEM:
                     Params.Add("jsonCfg", Config.ExpTimeCfg);
                     break;
                 default:

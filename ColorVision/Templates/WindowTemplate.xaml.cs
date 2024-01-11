@@ -17,6 +17,10 @@ using System.Windows.Input;
 
 namespace ColorVision.Templates
 {
+
+
+
+
     /// <summary>
     /// WindowTemplate.xaml 的交互逻辑
     /// </summary>
@@ -149,8 +153,8 @@ namespace ColorVision.Templates
             }
         }
 
-
         public UserControl  UserControl { get; set; }
+
         public WindowTemplate(TemplateType windowTemplateType,UserControl userControl,bool IsReLoad = true)
         {
             TemplateType = windowTemplateType;
@@ -172,7 +176,6 @@ namespace ColorVision.Templates
             {
                 case TemplateType.PoiParam:
                     this.MinWidth = 300;
-
                     Width = 300;
                     break;
                 case TemplateType.FlowParam:
@@ -881,9 +884,6 @@ namespace ColorVision.Templates
                 default:
                     break;
             }
-
-
-
         }
     }
 }

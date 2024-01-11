@@ -1,10 +1,10 @@
-﻿using ColorVision.Services.Device.Camera.Configs;
+﻿using Newtonsoft.Json;
 using cvColorVision;
-using Newtonsoft.Json;
+using ColorVision.MVVM;
 
-namespace ColorVision.Services.Device.Motor
+namespace ColorVision.Services.Device.Camera.Configs
 {
-    public class ConfigMotor: BaseDeviceConfig
+    public class MotorConfig : ViewModelBase
     {
         public FOCUS_COMMUN eFOCUSCOMMUN { get => _eFOCUSCOMMUN; set { _eFOCUSCOMMUN = value; NotifyPropertyChanged(); } }
         private FOCUS_COMMUN _eFOCUSCOMMUN;
@@ -18,10 +18,10 @@ namespace ColorVision.Services.Device.Motor
         public AutoFocusConfig AutoFocusConfig { get; set; } = new AutoFocusConfig();
 
         [JsonIgnore]
-        public int Position { get => _Position;set { _Position = value; NotifyPropertyChanged(); } }
+        public int Position { get => _Position; set { _Position = value; NotifyPropertyChanged(); } }
         private int _Position;
 
-        public int dwTimeOut { get => _dwTimeOut; set { _dwTimeOut = value; NotifyPropertyChanged(); } }
+        public int DwTimeOut { get => _dwTimeOut; set { _dwTimeOut = value; NotifyPropertyChanged(); } }
         private int _dwTimeOut = 5000;
     }
 }

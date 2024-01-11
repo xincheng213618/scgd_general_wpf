@@ -1,7 +1,7 @@
 ﻿using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.Services.Device;
-using ColorVision.Services.Device.Camera;
+using ColorVision.Services.Device.Camera.Configs;
 using ColorVision.Services.Device.Camera.Views;
 using ColorVision.Services.Msg;
 using ColorVision.Solution;

@@ -1,5 +1,5 @@
 ﻿using ColorVision.Services.Device;
-using ColorVision.Services.Device.Camera;
+using ColorVision.Services.Device.Camera.Configs;
 
 namespace ColorVision.Services.Device.Algorithm
 {
