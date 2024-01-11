@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using ColorVision.Services.Msg;
-using ColorVision.Templates;
 using System.Windows;
 using MQTTMessageLib;
+using ColorVision.Services.Device.Camera.Calibration;
 
 namespace ColorVision.Services.Device.Calibration
 {

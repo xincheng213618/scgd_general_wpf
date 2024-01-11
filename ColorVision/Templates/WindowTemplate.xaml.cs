@@ -3,6 +3,7 @@ using ColorVision.Flow.Templates;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.Services.Device.Algorithm.Templates;
+using ColorVision.Services.Device.Camera.Calibration;
 using ColorVision.Services.Device.PG.Templates;
 using ColorVision.Util;
 using Newtonsoft.Json;

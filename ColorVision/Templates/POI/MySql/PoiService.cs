@@ -45,7 +45,7 @@ namespace ColorVision.Templates.POI.MySql
 
         internal PoiMasterModel? GetMasterById(int pkId)
         {
-            return poiMaster.GetByID(pkId);
+            return poiMaster.GetById(pkId);
         }
 
         internal int MasterDeleteById(int id)

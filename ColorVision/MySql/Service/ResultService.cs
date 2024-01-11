@@ -78,7 +78,7 @@ namespace ColorVision.MySql.Service
 
         public AlgResultMasterModel GetAlgResultById(int id)
         {
-            return algResultMasterDao.GetByID(id);
+            return algResultMasterDao.GetById(id);
         }
 
         public List<POIPointResultModel> GetPOIByPid(int pid)
@@ -87,7 +87,7 @@ namespace ColorVision.MySql.Service
         }
         public MeasureImgResultModel GetCameraImgResultById(int id)
         {
-            return measureImgResultDao.GetByID(id);
+            return measureImgResultDao.GetById(id);
         }
 
         public List<MeasureImgResultModel>? GetCameraImgResultBySN(string serialNumber)

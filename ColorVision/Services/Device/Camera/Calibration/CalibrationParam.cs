@@ -2,12 +2,13 @@
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.Sorts;
+using ColorVision.Templates;
 using cvColorVision;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 
-namespace ColorVision.Templates
+namespace ColorVision.Services.Device.Camera.Calibration
 {
 
     public enum ResouceType
@@ -37,7 +38,7 @@ namespace ColorVision.Templates
     }
 
 
-    public class CalibrationRsource : ViewModelBase,ISortID,ISortName, ISortFilePath
+    public class CalibrationRsource : ViewModelBase, ISortID, ISortName, ISortFilePath
     {
         public SysResourceModel SysResourceModel { get; set; }
         public CalibrationRsource(SysResourceModel SysResourceModel)
@@ -66,7 +67,7 @@ namespace ColorVision.Templates
 
         public CalibrationRsourceService()
         {
-            this.resourceDao = new SysResourceDao();
+            resourceDao = new SysResourceDao();
             DarkNoiseList = new List<string>();
             DefectPointList = new List<string>();
             DSNUList = new List<string>();
@@ -81,10 +82,10 @@ namespace ColorVision.Templates
         }
 
 
-        public ObservableCollection<CalibrationRsource> GetAllCalibrationRsources(ResouceType resouceType,int id)
+        public ObservableCollection<CalibrationRsource> GetAllCalibrationRsources(ResouceType resouceType, int id)
         {
             ObservableCollection<CalibrationRsource> ObservableCollections = new ObservableCollection<CalibrationRsource>();
-            var resouces = resourceDao.GetAllTypeCamera((int)resouceType,id);
+            var resouces = resourceDao.GetAllTypeCamera((int)resouceType, id);
             foreach (var item in resouces)
             {
                 ObservableCollections.Add(new CalibrationRsource(item));
@@ -92,13 +93,13 @@ namespace ColorVision.Templates
             return ObservableCollections;
         }
 
-        private void  GetCalibrationRsourceList(List<string> strings,ResouceType resouceType)
+        private void GetCalibrationRsourceList(List<string> strings, ResouceType resouceType)
         {
             strings.Clear();
-            var resouces= resourceDao.GetAllType((int)resouceType);
+            var resouces = resourceDao.GetAllType((int)resouceType);
             foreach (var item in resouces)
             {
-                strings.Add(item.Name??string.Empty);
+                strings.Add(item.Name ?? string.Empty);
             }
         }
         public int Delete(int id) => resourceDao.DeleteById(id);
@@ -107,7 +108,7 @@ namespace ColorVision.Templates
 
         public void Refresh()
         {
-            GetCalibrationRsourceList(DarkNoiseList,ResouceType.DarkNoise);
+            GetCalibrationRsourceList(DarkNoiseList, ResouceType.DarkNoise);
             GetCalibrationRsourceList(DefectPointList, ResouceType.DefectPoint);
             GetCalibrationRsourceList(DSNUList, ResouceType.DSNU);
             GetCalibrationRsourceList(UniformityList, ResouceType.Uniformity);
@@ -139,9 +140,9 @@ namespace ColorVision.Templates
 
     public class CalibrationBase : ModelBase
     {
-         
+
         public RelayCommand SelectFileCommand { get; set; }
-        public CalibrationBase(List<ModDetailModel> detail,string propertyName = "") :base(detail)
+        public CalibrationBase(List<ModDetailModel> detail, string propertyName = "") : base(detail)
         {
             SelectFileCommand = new RelayCommand((s) =>
             {
@@ -159,18 +160,18 @@ namespace ColorVision.Templates
 
         private string propertyName = string.Empty;
 
-        public string FileName { get; set; } 
+        public string FileName { get; set; }
 
-        public string FilePath { get {  if (string.IsNullOrWhiteSpace(propertyName)) return GetValue(_FilePath); else return GetValue(_FilePath, propertyName); } set { if (string.IsNullOrWhiteSpace(propertyName)) SetProperty(ref _FilePath, value); else SetProperty(ref _FilePath,value, propertyName);} }
+        public string FilePath { get { if (string.IsNullOrWhiteSpace(propertyName)) return GetValue(_FilePath); else return GetValue(_FilePath, propertyName); } set { if (string.IsNullOrWhiteSpace(propertyName)) SetProperty(ref _FilePath, value); else SetProperty(ref _FilePath, value, propertyName); } }
         private string _FilePath;
 
-        public bool IsSelected { get { if (string.IsNullOrWhiteSpace(propertyName + "IsSelected")) return GetValue(_IsSelected); else return GetValue(_IsSelected, propertyName + "IsSelected"); } set { if (string.IsNullOrWhiteSpace(propertyName + "IsSelected")) SetProperty(ref _IsSelected, value); else SetProperty(ref _IsSelected,value, propertyName + "IsSelected"); } }
+        public bool IsSelected { get { if (string.IsNullOrWhiteSpace(propertyName + "IsSelected")) return GetValue(_IsSelected); else return GetValue(_IsSelected, propertyName + "IsSelected"); } set { if (string.IsNullOrWhiteSpace(propertyName + "IsSelected")) SetProperty(ref _IsSelected, value); else SetProperty(ref _IsSelected, value, propertyName + "IsSelected"); } }
         private bool _IsSelected;
     }
 
     public class CalibrationNormal
     {
-        public CalibrationNormal(List<ModDetailModel> detail,string Type)
+        public CalibrationNormal(List<ModDetailModel> detail, string Type)
         {
             DarkNoiseList = CalibrationRsourceService.GetInstance().DarkNoiseList;
             DefectPointList = CalibrationRsourceService.GetInstance().DefectPointList;
@@ -180,7 +181,7 @@ namespace ColorVision.Templates
             ColorShiftList = CalibrationRsourceService.GetInstance().ColorShiftList;
 
 
-            DarkNoise = new CalibrationBase(detail, nameof(DarkNoise) +Type);
+            DarkNoise = new CalibrationBase(detail, nameof(DarkNoise) + Type);
             DefectPoint = new CalibrationBase(detail, nameof(DefectPoint) + Type);
             DSNU = new CalibrationBase(detail, nameof(DSNU) + Type);
             Uniformity = new CalibrationBase(detail, nameof(Uniformity) + Type);
@@ -189,9 +190,9 @@ namespace ColorVision.Templates
         }
 
         public List<string> DarkNoiseList { get; set; }
-        public CalibrationBase DarkNoise { get; set; } 
+        public CalibrationBase DarkNoise { get; set; }
         public List<string> DefectPointList { get; set; }
-        public CalibrationBase DefectPoint { get; set; } 
+        public CalibrationBase DefectPoint { get; set; }
         public List<string> DSNUList { get; set; }
         public CalibrationBase DSNU { get; set; }
         public List<string> UniformityList { get; set; }
@@ -201,7 +202,7 @@ namespace ColorVision.Templates
         public List<string> ColorShiftList { get; set; }
         public CalibrationBase ColorShift { get; set; }
 
-        public Dictionary<string,object> ToDictionary()
+        public Dictionary<string, object> ToDictionary()
         {
             Dictionary<string, object> keyValuePairs = new Dictionary<string, object>();
             if (DarkNoise.IsSelected)
@@ -225,12 +226,12 @@ namespace ColorVision.Templates
 
         public CalibrationColor(List<ModDetailModel> detail)
         {
-            Luminance = new CalibrationBase(detail,nameof(Luminance));
+            Luminance = new CalibrationBase(detail, nameof(Luminance));
             LumOneColor = new CalibrationBase(detail, nameof(LumOneColor));
             LumFourColor = new CalibrationBase(detail, nameof(LumFourColor));
             LumMultiColor = new CalibrationBase(detail, nameof(LumMultiColor));
 
-            Luminance.PropertyChanged += (s, e) => 
+            Luminance.PropertyChanged += (s, e) =>
             {
                 if (Luminance.IsSelected)
                 {
@@ -290,7 +291,7 @@ namespace ColorVision.Templates
             }
         }
         public List<string> LuminanceList { get; set; }
-        public CalibrationBase Luminance { get; set; } 
+        public CalibrationBase Luminance { get; set; }
         public List<string> LumOneColorList { get; set; }
         public CalibrationBase LumOneColor { get; set; }
 
@@ -301,23 +302,23 @@ namespace ColorVision.Templates
         public CalibrationBase LumMultiColor { get; set; }
     }
 
-    public class CalibrationParam: ParamBase
+    public class CalibrationParam : ParamBase
     {
         public string CalibrationMode { get; set; } = string.Empty;
         public List<string> CalibrationModeList { get; set; }
 
-        public CalibrationNormal Normal { get; set; } 
+        public CalibrationNormal Normal { get; set; }
         public CalibrationColor Color { get; set; }
-        public CalibrationParam() 
+        public CalibrationParam()
         {
-            this.ID = -1;
-            Normal = new CalibrationNormal(new List<ModDetailModel>(),"");
+            ID = -1;
+            Normal = new CalibrationNormal(new List<ModDetailModel>(), "");
             Color = new CalibrationColor(new List<ModDetailModel>());
             CalibrationModeList = CalibrationRsourceService.GetInstance().CalibrationModeList;
         }
-        public CalibrationParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name??string.Empty, modDetails)
+        public CalibrationParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
         {
-            Normal = new CalibrationNormal(modDetails,"");
+            Normal = new CalibrationNormal(modDetails, "");
             Color = new CalibrationColor(modDetails);
             CalibrationModeList = CalibrationRsourceService.GetInstance().CalibrationModeList;
 

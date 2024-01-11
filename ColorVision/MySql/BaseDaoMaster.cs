@@ -285,7 +285,7 @@ namespace ColorVision.MySql
             else return ViewName;
         }
 
-        public T? GetByID(int id)
+        public T? GetById(int id)
         {
             string sql = $"select * from {GetTableName()} where id=@id" + GetDelSQL(true);
             Dictionary<string, object> param = new Dictionary<string, object>

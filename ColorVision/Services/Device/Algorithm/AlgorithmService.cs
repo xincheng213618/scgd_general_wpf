@@ -17,7 +17,7 @@ namespace ColorVision.Services.Device.Algorithm
     {
         public static Dictionary<string, ObservableCollection<string>> ServicesDevices { get; set; } = new Dictionary<string, ObservableCollection<string>>();
 
-        public string DeviceID { get => Config.ID; }
+        public string DeviceID { get => Config.Id; }
 
         public event MessageRecvHandler OnMessageRecved;
 

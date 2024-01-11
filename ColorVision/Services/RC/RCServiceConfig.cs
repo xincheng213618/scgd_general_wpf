@@ -10,7 +10,7 @@ namespace ColorVision.RC
         public string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
         private string _Name;
         /// <summary>
-        /// AppId App ID
+        /// AppId App Id
         /// </summary>
         public string AppId { get => _AppId; set { _AppId = value; NotifyPropertyChanged(); } }
         private string _AppId;

@@ -26,6 +26,7 @@ using System.Windows.Input;
 using ColorVision.Services.Device.Camera.Views;
 using ColorVision.SettingUp;
 using MQTTMessageLib;
+using ColorVision.Services.Device.Camera.Calibration;
 
 namespace ColorVision.Device.Camera
 {
@@ -395,7 +396,7 @@ namespace ColorVision.Device.Camera
         {
             if (sender is Button button)
             {
-                var msgRecord = DService.Open(DService.Config.ID, Device.Config.TakeImageMode, (int)DService.Config.ImageBpp);
+                var msgRecord = DService.Open(DService.Config.Id, Device.Config.TakeImageMode, (int)DService.Config.ImageBpp);
             }
         }
 

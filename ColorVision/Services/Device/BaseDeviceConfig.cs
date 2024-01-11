@@ -97,8 +97,8 @@ namespace ColorVision.Services.Device
         /// <summary>
         /// 设备序号
         /// </summary>
-        public string ID { get => _SNID; set {  _SNID = value; NotifyPropertyChanged(); } }
-        private string _SNID;
+        public string Id { get => _Id; set {  _Id = value; NotifyPropertyChanged(); } }
+        private string _Id;
 
     }
 

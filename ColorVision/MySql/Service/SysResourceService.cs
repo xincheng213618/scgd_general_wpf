@@ -39,7 +39,7 @@ namespace ColorVision.MySql.Service
 
         internal SysResourceModel? GetMasterById(int pkId)
         {
-            return resourceDao.GetByID(pkId);
+            return resourceDao.GetById(pkId);
         }
 
         internal void Save(SysResourceModel sysResource)

@@ -3,7 +3,6 @@
 using ColorVision.Services;
 using ColorVision.Services.Device;
 using ColorVision.Services.Msg;
-using ColorVision.Templates;
 using cvColorVision;
 using System;
 using System.Collections.Generic;
@@ -13,6 +12,7 @@ using MQTTMessageLib.FileServer;
 using MQTTMessageLib.Camera;
 using MQTTMessageLib;
 using ColorVision.Services.Device.Camera.Configs;
+using ColorVision.Services.Device.Camera.Calibration;
 
 namespace ColorVision.Device.Camera
 {
@@ -199,7 +199,7 @@ namespace ColorVision.Device.Camera
             {
                 EventName = "Init",
             };
-            var Params = new Dictionary<string, object>() { { "CameraType", (int)Config.CameraType }, { "SnID", Config.ID }, { "CodeID", Config.Code }, { "szCfgName", "" } };
+            var Params = new Dictionary<string, object>() { { "CameraType", (int)Config.CameraType }, { "SnID", Config.Id }, { "CodeID", Config.Code }, { "szCfgName", "" } };
             msg.Params = Params;
 
             ///如果配置电机，则传入电机的参数

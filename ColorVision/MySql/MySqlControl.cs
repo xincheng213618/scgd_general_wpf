@@ -13,8 +13,10 @@ namespace ColorVision.MySql
         private static MySqlControl _instance;
         private static readonly object _locker = new();
         public static MySqlControl GetInstance() { lock (_locker) { return _instance ??= new MySqlControl(); } }
+
         public MySqlConnection MySqlConnection { get; set; }
         public SoftwareConfig SoftwareConfig { get; set; }
+
         public MySqlConfig Config { get => SoftwareConfig.MySqlConfig; }
 
         public MySqlControl()
@@ -36,9 +38,7 @@ namespace ColorVision.MySql
                 log.Info($"正在连接数据库:{connStr}");
                 MySqlConnection = new MySqlConnection() { ConnectionString = connStr  };
                 MySqlConnection.Open();
-                Application.Current.Dispatcher.Invoke(() => {
-                    MySqlConnectChanged?.Invoke(this, new EventArgs());
-                });
+                Application.Current.Dispatcher.Invoke(() => MySqlConnectChanged?.Invoke(MySqlConnection, new EventArgs()));
                 IsConnect = true;
                 log.Info($"数据库连接成功:{connStr}");
                 return Task.FromResult(true);
@@ -51,7 +51,7 @@ namespace ColorVision.MySql
             }
         }
         public string GetConnectionString() => GetConnectionString(Config);
-        public static string GetConnectionString(MySqlConfig MySqlConfig,int timeout =3 )
+        public static string GetConnectionString(MySqlConfig MySqlConfig,int timeout = 3 )
         {
             string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset=utf8;Connect Timeout={timeout}";
             return connStr;
@@ -78,6 +78,11 @@ namespace ColorVision.MySql
         public void Close()
         {
             MySqlConnection.Close();
+        }
+
+        public void Dispose()
+        {
+            MySqlConnection.Dispose();
         }
 
     }

@@ -1,5 +1,6 @@
 ﻿using System.Windows.Controls;
 using System.Windows.Input;
+using ColorVision.Services.Device.Camera.Calibration;
 
 namespace ColorVision.Templates
 {

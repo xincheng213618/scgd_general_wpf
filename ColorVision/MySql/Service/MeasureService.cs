@@ -31,7 +31,7 @@ namespace ColorVision.MySql.Service
 
         internal MeasureMasterModel? GetMasterById(int pkId)
         {
-            return measureMaster.GetByID(pkId);
+            return measureMaster.GetById(pkId);
         }
 
         internal int MasterDeleteById(int id)

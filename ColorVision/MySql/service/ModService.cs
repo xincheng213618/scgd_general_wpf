@@ -80,7 +80,7 @@ namespace ColorVision.MySql.Service
 
         internal ModMasterModel? GetMasterById(int pkId)
         {
-            return masterModDao.GetByID(pkId);
+            return masterModDao.GetById(pkId);
         }
 
         internal int MasterDeleteById(int id)

@@ -51,21 +51,5 @@ namespace ColorVision.Services
                 firstNode.Focus();
             }
         }
-
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            //使用&&操作符可以链接多个命令，其中后续的命令仅在前一个命令成功执行后才会执行。如果你想要即使第一个命令失败，后续的命令也继续执行，你可以使用&操作符代替&&
-
-            //ColorVision.Util.Tool.ExecuteCommandAsAdmin("net stop RegistrationCenterService");
-            //ColorVision.Util.Tool.ExecuteCommandAsAdmin("net stop CVMainService_x64");
-
-            //// ... 可能需要等待服务完全停止 ...
-
-            //Col   rVision.Util.Tool.ExecuteCommandAsAdmin("net start RegistrationCenterService");
-            //ColorVision.Util.Tool.ExecuteCommandAsAdmin("net start CVMainService_x64");
-
-            //ColorVision.Util.Tool.ExecuteCommandAsAdmin("net stop RegistrationCenterService&net stop CVMainService_x64&net start RegistrationCenterService&net start CVMainService_x64");
-            RCService.GetInstance().RestartServices();
-        }
     }
 }

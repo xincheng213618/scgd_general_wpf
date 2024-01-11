@@ -11,7 +11,7 @@
         public bool IsSourceV { get => _IsSourceV; set { _IsSourceV = value; NotifyPropertyChanged(); } }
         private bool _IsSourceV = true;
 
-        public string DevName { get => ID; set { ID = value; NotifyPropertyChanged(); } }
+        public string DevName { get => Id; set { Id = value; NotifyPropertyChanged(); } }
 
 
         public double StartMeasureVal { get => _startMeasureVal; set { _startMeasureVal = value; NotifyPropertyChanged(); } }

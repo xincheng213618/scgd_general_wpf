@@ -99,7 +99,7 @@ namespace ColorVision.Services
                     case ServiceType.camera:
                         ConfigCamera cameraConfig1 = new ConfigCamera
                         {
-                            ID = TextBox_Code.Text,
+                            Id = TextBox_Code.Text,
                             Name = TextBox_Name.Text,
                             CameraType = CameraType.LV_Q,
                             TakeImageMode = TakeImageMode.Measure_Normal,
@@ -124,7 +124,7 @@ namespace ColorVision.Services
                     case ServiceType.pg:
                         ConfigPG pGConfig = new ConfigPG
                         {
-                            ID = TextBox_Code.Text,
+                            Id = TextBox_Code.Text,
                             Name = TextBox_Name.Text
                         };
                         sysResourceModel = saveConfigInfo(pGConfig, sysResource);
@@ -134,7 +134,7 @@ namespace ColorVision.Services
                     case ServiceType.Spectum:
                         deviceConfig = new ConfigSpectrum
                         {
-                            ID = TextBox_Code.Text,
+                            Id = TextBox_Code.Text,
                             Name = TextBox_Name.Text,
                             ShutterCfg = new ShutterConfig()
                             {
@@ -152,7 +152,7 @@ namespace ColorVision.Services
                     case ServiceType.SMU:
                         deviceConfig = new ConfigSMU
                         {
-                            ID = TextBox_Code.Text,
+                            Id = TextBox_Code.Text,
                             Name = TextBox_Name.Text
                         };
                         SysResourceModel model = saveConfigInfo(deviceConfig, sysResource);
@@ -162,7 +162,7 @@ namespace ColorVision.Services
                     case ServiceType.Sensor:
                         deviceConfig = new ConfigSensor
                         {
-                            ID = TextBox_Code.Text,
+                            Id = TextBox_Code.Text,
                             Name = TextBox_Name.Text
                         };
                         sysResourceModel = saveConfigInfo(deviceConfig, sysResource);
@@ -172,7 +172,7 @@ namespace ColorVision.Services
                     case ServiceType.FileServer:
                         deviceConfig = new FileServerConfig
                         {
-                            ID = TextBox_Code.Text,
+                            Id = TextBox_Code.Text,
                             Name = TextBox_Name.Text,
                             Endpoint = "tcp://127.0.0.1:" + (Math.Abs(new Random().Next()) % 99 + 6500),
                             FileBasePath = "D:\\CVTest",
@@ -184,7 +184,7 @@ namespace ColorVision.Services
                     case ServiceType.Algorithm:
                         deviceConfig = new ConfigAlgorithm
                         {
-                            ID = TextBox_Code.Text,
+                            Id = TextBox_Code.Text,
                             Name = TextBox_Name.Text,
                             FileServerCfg = new FileServerCfg()
                             {
@@ -198,7 +198,7 @@ namespace ColorVision.Services
                         break;
                     case ServiceType.CfwPort:
                         deviceConfig = new ConfigCfwPort { 
-                            ID = TextBox_Code.Text,
+                            Id = TextBox_Code.Text,
                             Name = TextBox_Name.Text,
                         };
                         sysResourceModel = saveConfigInfo(deviceConfig, sysResource);
@@ -208,7 +208,7 @@ namespace ColorVision.Services
                     case ServiceType.Calibration:
                         deviceConfig = new ConfigCalibration
                         {
-                            ID = TextBox_Code.Text,
+                            Id = TextBox_Code.Text,
                             Name = TextBox_Name.Text,
                         };
                         sysResourceModel = saveConfigInfo(deviceConfig, sysResource);
@@ -218,7 +218,7 @@ namespace ColorVision.Services
                     case ServiceType.Motor:
                         deviceConfig = new ConfigMotor
                         {
-                            ID = TextBox_Code.Text,
+                            Id = TextBox_Code.Text,
                             Name = TextBox_Name.Text,
                         };
                         sysResourceModel = saveConfigInfo(deviceConfig, sysResource);
