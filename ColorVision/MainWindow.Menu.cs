@@ -23,6 +23,7 @@ using System.Globalization;
 using System.Threading;
 using ColorVision.Extension;
 using ColorVision.Update;
+using ColorVision.Services.Device.Camera.Calibrations;
 
 namespace ColorVision
 {
@@ -48,12 +49,6 @@ namespace ColorVision
                 {
                     case "AoiParam":
                         windowTemplate = new WindowTemplate(TemplateType.AoiParam);
-                        windowTemplate.Owner = GetWindow(this);
-                        windowTemplate.ShowDialog();
-                        break;
-                    case "Calibration":
-                        Calibration calibration = TemplateControl.CalibrationParams.Count==0?new Calibration():new Calibration(TemplateControl.CalibrationParams[0].Value);
-                        windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration);
                         windowTemplate.Owner = GetWindow(this);
                         windowTemplate.ShowDialog();
                         break;

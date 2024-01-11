@@ -12,7 +12,7 @@ using MQTTMessageLib.FileServer;
 using MQTTMessageLib.Camera;
 using MQTTMessageLib;
 using ColorVision.Services.Device.Camera.Configs;
-using ColorVision.Services.Device.Camera.Calibration;
+using ColorVision.Services.Device.Camera.Calibrations;
 
 namespace ColorVision.Device.Camera
 {
@@ -24,15 +24,7 @@ namespace ColorVision.Device.Camera
 
         public ServiceCamera CameraService { get; set; }
 
-        public bool IsOnlie { get => true; }
-        public override bool IsAlive
-        {
-            get =>
-                Config.IsAlive && IsOnlie; set
-            {
-                Config.IsAlive = (value && IsOnlie); NotifyPropertyChanged();
-            }
-        }
+        public override bool IsAlive {get =>  Config.IsAlive; set { Config.IsAlive = value; NotifyPropertyChanged(); }}
 
         public DeviceServiceCamera(ConfigCamera CameraConfig, ServiceCamera cameraService) : base(CameraConfig)
         {
@@ -40,10 +32,6 @@ namespace ColorVision.Device.Camera
             CameraService.Devices.Add(this);
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
             DeviceStatus = DeviceStatusType.OffLine;
-            //DisConnected += (s, e) =>
-            //{  
-            //    DeviceStatus = DeviceStatus.UnInit;
-            //};
             GetAllCameraID();
         }
 
@@ -71,36 +59,13 @@ namespace ColorVision.Device.Camera
 
                 switch (msg.EventName)
                 {
-                    case "Init":
-                        //DeviceStatus = Services.Device.DeviceStatusType.Init;
-                        SetCfg(CameraConfigType.Camera);
-                        SetCfg(CameraConfigType.ExpTime);
-                        break;
-                    case "UnInit":
-                        //DeviceStatus = Services.Device.DeviceStatusType.UnInit;
-                        break;
-                    case "SetParam":
-                        break;
                     case "Close":
-                        //DeviceStatus = Services.Device.DeviceStatusType.Closed;
                         break;
                     case MQTTCameraEventEnum.Event_Open:
                     case MQTTCameraEventEnum.Event_OpenLive:
-                        //DeviceStatus = DeviceStatus.Opened;
-                        //break;
                     case MQTTCameraEventEnum.Event_GetData:
                         OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
-                        //DeviceStatus = Services.Device.DeviceStatusType.Opened;
                         break;
-
-                    //case "GetData":
-                    //    try
-                    //    {
-                    //        string SaveFileName = msg.Data.list[0].filename;
-                    //        Application.Current.Dispatcher.Invoke(() => FileHandler?.Invoke(this, SaveFileName));
-                    //    }
-                    //    catch { }
-                    //    break;
                     case "GetAutoExpTime":
                         if (msg.Data != null && msg.Data[0].result != null)
                         {
@@ -178,10 +143,8 @@ namespace ColorVision.Device.Camera
                         DeviceStatus = DeviceStatusType.Closed;
                         break;
                     case "Init":
-                        //DeviceStatus = DeviceStatusType.UnInit;
                         break;
                     case "UnInit":
-                        //DeviceStatus = Services.Device.DeviceStatusType.UnInit;
                         break;
                     default:
                         OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));

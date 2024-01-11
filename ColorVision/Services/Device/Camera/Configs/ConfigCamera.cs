@@ -2,6 +2,12 @@
 using cvColorVision;
 using ColorVision.Services.Device.Camera.Video;
 using System;
+using ColorVision.Services.Device.Camera.Calibrations;
+using ColorVision.Templates;
+using System.Collections.ObjectModel;
+using Xceed.Wpf.AvalonDock.Themes;
+using System.Collections.Generic;
+using ColorVision.Device.Camera;
 
 namespace ColorVision.Services.Device.Camera.Configs
 {
@@ -87,5 +93,7 @@ namespace ColorVision.Services.Device.Camera.Configs
         public FileServerCfg FileServerCfg { get; set; } = new FileServerCfg();
 
         public bool IsSaveSrcPic { get; set; }
+
+        public Dictionary<string, List<ColorVisionVCalibratioItem>> Calibration { get; set; } = new Dictionary<string, List<ColorVisionVCalibratioItem>>();
     }
 }

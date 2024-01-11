@@ -1,4 +1,4 @@
-﻿using ColorVision.Services.Device.Camera.Calibration;
+﻿using ColorVision.Services.Device.Camera.Calibrations;
 using ColorVision.Services.Msg;
 using ColorVision.Templates;
 using System;

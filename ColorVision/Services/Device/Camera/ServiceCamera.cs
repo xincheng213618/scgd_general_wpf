@@ -16,11 +16,16 @@ namespace ColorVision.Device.Camera
     public class ServiceCamera : BaseService<BaseServiceConfig>
     {
         public event DeviceStatusChangedHandler DeviceStatusChanged;
-
-        public DeviceStatusType DeviceStatus { get => _DeviceStatus; set { _DeviceStatus = value; Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value)); NotifyPropertyChanged(); NotifyPropertyChanged(nameof(DeviceStatusString)); } }
+        public DeviceStatusType DeviceStatus  { get => _DeviceStatus;
+            set 
+            {
+                if (_DeviceStatus == value) return;
+                _DeviceStatus = value;
+                Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value)); NotifyPropertyChanged();
+            } 
+        }
         private DeviceStatusType _DeviceStatus;
 
-        public string DeviceStatusString { get => DeviceStatus.ToDescription(); set { } }
         public ServiceCamera(BaseServiceConfig Config) :base(Config)
         {
             Devices = new List<DeviceServiceCamera>();
@@ -28,7 +33,6 @@ namespace ColorVision.Device.Camera
             {
                 GetAllDevice();
             };
-            //GetAllDevice();
             MsgReturnReceived += (msg) => Application.Current.Dispatcher.Invoke(()=> MQTTCamera_MsgReturnChanged(msg));
         }
 
@@ -39,7 +43,6 @@ namespace ColorVision.Device.Camera
                 case "CM_GetAllSnID":
                     try
                     {
-
                         if (msg.Data == null)
                             return;
                         JArray SnIDs = msg.Data.SnID;
@@ -54,27 +57,21 @@ namespace ColorVision.Device.Camera
                                 });
                             }
                         }
-
                         JArray MD5IDs = msg.Data.MD5ID;
-
                         if (SnIDs == null || MD5IDs == null)
                         {
                             return;
                         }
-
                         for (int i = 0; i < MD5IDs.Count; i++)
                         {
-
                             if (DevicesSNMD5.ContainsKey(SnIDs[i].ToString()))
                             {
                                 DevicesSNMD5[SnIDs[i].ToString()] = MD5IDs[i].ToString();
-
                             }
                             else
                             {
                                 DevicesSNMD5.Add(SnIDs[i].ToString(), MD5IDs[i].ToString());
                             }
-
                             LicenseManager.GetInstance().AddLicense(new LicenseConfig() { Name = SnIDs[i].ToString(), Sn = MD5IDs[i].ToString(), IsCanImport = true });
                         }
                     }
@@ -83,18 +80,13 @@ namespace ColorVision.Device.Camera
                         if (log.IsErrorEnabled)
                             log.Error(ex);
                     }
-
                     return;
             }
 
-            if (msg.Code == 0)
-            {
-
-            }
         }
-        public void GetAllDevice()
+        public MsgRecord GetAllDevice()
         {
-            PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });
+            return PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });
         }
     }
 }

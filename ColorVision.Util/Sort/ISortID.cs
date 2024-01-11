@@ -5,7 +5,7 @@ namespace ColorVision.Sorts
 {
     public interface ISortID
     {
-        public int ID { get; set; }
+        public int Id { get; set; }
     }
 
     public static partial class SortableExtension
@@ -13,7 +13,7 @@ namespace ColorVision.Sorts
         public static void SortByID<T>(this ObservableCollection<T> collection, bool descending = false) where T : ISortID
         {
             var sortedItems = collection.ToList();
-            sortedItems.Sort((x, y) => descending ? y.ID.CompareTo(x.ID) : x.ID.CompareTo(y.ID));
+            sortedItems.Sort((x, y) => descending ? y.Id.CompareTo(x.Id) : x.Id.CompareTo(y.Id));
 
             int index = 0;
             while (index < sortedItems.Count)

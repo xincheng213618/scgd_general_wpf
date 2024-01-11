@@ -15,7 +15,7 @@ namespace ColorVision.Services.Device.SMU.Views
     {
         public ViewResultSMU(SmuScanModel item)
         {
-            ID = item.Id;
+            Id = item.Id;
             CreateTime = item.CreateDate;
             BatchID = item.BatchId;
             MeasurementType = item.IsSourceV ? MeasurementType.Voltage : MeasurementType.Current;
@@ -36,7 +36,7 @@ namespace ColorVision.Services.Device.SMU.Views
 
         public ViewResultSMU(MeasurementType measurementType , float LimitEnd ,double[] VList, double[] IList)
         {
-            ID = 0;
+            Id = 0;
 
             this.VList = VList;
             this.IList = IList;
@@ -146,7 +146,7 @@ namespace ColorVision.Services.Device.SMU.Views
         public ScatterPlot ScatterPlot { get; set; }
 
 
-        public int ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
+        public int Id { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
         private int _ID;
         public DateTime? CreateTime { get; set; }
         public string? Batch { get; set; }

@@ -202,42 +202,42 @@ namespace ColorVision.Services.Device.Camera.Views
         private void Src_Click(object sender, RoutedEventArgs e)
         {
             var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-            var msgRecord = DService.GetChannel(ViewResultCamera.ID, CVImageChannelType.SRC);
+            var msgRecord = DService.GetChannel(ViewResultCamera.Id, CVImageChannelType.SRC);
         }
 
         private void X_Click(object sender, RoutedEventArgs e)
         {
             var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-            var msgRecord = DService.GetChannel(ViewResultCamera.ID, CVImageChannelType.CIE_XYZ_X);
+            var msgRecord = DService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_X);
         }
 
         private void Z_Click(object sender, RoutedEventArgs e)
         {
             var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-            var msgRecord = DService.GetChannel(ViewResultCamera.ID, CVImageChannelType.CIE_XYZ_Z);
+            var msgRecord = DService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Z);
         }
         private void Y_Click(object sender, RoutedEventArgs e)
         {
             var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-            var msgRecord = DService.GetChannel(ViewResultCamera.ID, CVImageChannelType.CIE_XYZ_Y);
+            var msgRecord = DService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Y);
 
         }
         private void B_Click(object sender, RoutedEventArgs e)
         {
             var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-            var msgRecord = DService.GetChannel(ViewResultCamera.ID, CVImageChannelType.RGB_B);
+            var msgRecord = DService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_B);
         }
 
         private void R_Click(object sender, RoutedEventArgs e)
         {
             var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-            var msgRecord = DService.GetChannel(ViewResultCamera.ID, CVImageChannelType.RGB_R);
+            var msgRecord = DService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_R);
         }
 
         private void G_Click(object sender, RoutedEventArgs e)
         {
             var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-            var msgRecord = DService.GetChannel(ViewResultCamera.ID, CVImageChannelType.RGB_G);
+            var msgRecord = DService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_G);
         }
     }
 }

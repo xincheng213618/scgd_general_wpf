@@ -13,7 +13,7 @@ namespace ColorVision.Services.Device.Camera.Views
     {
         public ViewResultCamera(MeasureImgResultModel measureImgResultModel)
         {
-            ID = measureImgResultModel.Id;
+            Id = measureImgResultModel.Id;
             Batch = measureImgResultModel.BatchCode ?? string.Empty;
             FilePath = measureImgResultModel.RawFile ?? string.Empty;
             FileType = (CameraFileType)measureImgResultModel.FileType;
@@ -25,7 +25,7 @@ namespace ColorVision.Services.Device.Camera.Views
             _totalTime = measureImgResultModel.TotalTime;
         }
 
-        public int ID { get { return _ID; } set { _ID = value; NotifyPropertyChanged(); } }
+        public int Id { get { return _ID; } set { _ID = value; NotifyPropertyChanged(); } }
         private int _ID;
 
         public string? Batch { get { return _Batch; } set { _Batch = value; NotifyPropertyChanged(); } }

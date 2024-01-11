@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
@@ -6,7 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using ColorVision.Extension;
-using ColorVision.Services.Device.Camera.Calibration;
+using ColorVision.Services.Device.Camera.Calibrations;
 using ColorVision.Services.Msg;
 using ColorVision.Sorts;
 using ColorVision.Templates;
@@ -19,14 +20,14 @@ namespace ColorVision.Device.Camera
     /// </summary>
     public partial class DeviceCameraControl : UserControl
     {
-        public DeviceCamera DeviceCamera { get; set; }
+        public DeviceCamera Device { get; set; }
 
-        public DeviceServiceCamera DService { get => DeviceCamera.DService; }
+        public DeviceServiceCamera DService { get => Device.DService; }
 
         public bool IsCanEdit { get; set; }
         public DeviceCameraControl(DeviceCamera mQTTDeviceCamera,bool isCanEdit =true)
         {
-            DeviceCamera = mQTTDeviceCamera;
+            Device = mQTTDeviceCamera;
             IsCanEdit = isCanEdit;
             InitializeComponent();
             this.Loaded += DeviceCameraControl_Loaded;
@@ -34,24 +35,28 @@ namespace ColorVision.Device.Camera
 
         private void DeviceCameraControl_Loaded(object sender, RoutedEventArgs e)
         {
-            DeviceCamera.IsEditMode = false;
+            Device.IsEditMode = false;
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
-            this.DataContext = DeviceCamera;
+            this.DataContext = Device;
             if (IsCanEdit)
             {
-                UserControl userControl = DeviceCamera.GetEditControl();
+                UserControl userControl = Device.GetEditControl();
                 if (userControl.Parent is Panel grid)
                     grid.Children.Remove(userControl);
                 MQTTEditContent.Children.Add(userControl);
             }
 
-
-            foreach (var item in Enum.GetValues(typeof(ResouceType)).Cast<ResouceType>())
+            ////var list = Enum.GetValues(typeof(ResouceType)).Cast<ResouceType>();
+            List<ResouceType> lists = new List<ResouceType>();
+            lists.Add(ResouceType.ColorVisionCalibration);
+            foreach (var item in lists)
             {
+
+
                 TabItem tabItem = new TabItem();
                 tabItem.Header = item.ToDescription();
 
@@ -61,14 +66,14 @@ namespace ColorVision.Device.Camera
                 ListView listView = new ListView();
 
                 GridView gridView = new GridView();
-                gridView.Columns.Add(new GridViewColumn() { Header = "序号", DisplayMemberBinding = new Binding("ID") });
+                gridView.Columns.Add(new GridViewColumn() { Header = "序号", DisplayMemberBinding = new Binding("Id") });
                 gridView.Columns.Add(new GridViewColumn() { Header = "名称", DisplayMemberBinding = new Binding("Name") });
                 gridView.Columns.Add(new GridViewColumn() { Header = "路径", DisplayMemberBinding = new Binding("FilePath") });
                 listView.View = gridView;
                 stackPanel.Children.Add(listView);
 
 
-                ObservableCollection<CalibrationRsource> CalibrationRsources = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item, DeviceCamera.MySqlId);
+                ObservableCollection<CalibrationRsource> CalibrationRsources = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item, Device.MySqlId);
 
                 listView.ItemsSource = CalibrationRsources;
 
@@ -154,7 +159,7 @@ namespace ColorVision.Device.Camera
                             MsgRecord msgRecord = DService?.UploadCalibrationFile(upload.UploadFileName, upload.UploadFilePath, (int)item);
                             msgRecord.MsgRecordStateChanged += (s) =>
                             {
-                                CalibrationRsources = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item, DeviceCamera.MySqlId);
+                                CalibrationRsources = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item, Device.MySqlId);
                                 listView.ItemsSource = CalibrationRsources;
                             };
                         }
@@ -166,7 +171,7 @@ namespace ColorVision.Device.Camera
                 Button button1 = new Button() { Content = "刷新", Margin = new Thickness(5) };
                 button1.Click += (s, e) =>
                 {
-                    CalibrationRsources = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item, DeviceCamera.MySqlId);
+                    CalibrationRsources = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item, Device.MySqlId);
                     listView.ItemsSource = CalibrationRsources;
                 };
                 stack.Children.Add(button1);
@@ -177,8 +182,8 @@ namespace ColorVision.Device.Camera
                     if (listView.SelectedIndex > -1)
                     {
                         CalibrationRsource calibrationRsource = CalibrationRsources[listView.SelectedIndex];
-                        CalibrationRsourceService.GetInstance().Delete(calibrationRsource.ID);
-                        CalibrationRsources = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item, DeviceCamera.MySqlId);
+                        CalibrationRsourceService.GetInstance().Delete(calibrationRsource.Id);
+                        CalibrationRsources = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item, Device.MySqlId);
                         listView.ItemsSource = CalibrationRsources;
                     }
                     else
@@ -218,7 +223,7 @@ namespace ColorVision.Device.Camera
                 switch (menuItem.Tag?.ToString() ?? string.Empty)
                 {
                     case "Calibration":
-                        Calibration calibration = TemplateControl.CalibrationParams.Count == 0 ? new Calibration() : new Calibration(TemplateControl.CalibrationParams[0].Value);
+                        CalibrationControl calibration = TemplateControl.CalibrationParams.Count == 0 ? new CalibrationControl(Device) : new CalibrationControl( Device,TemplateControl.CalibrationParams[0].Value);
                         windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration);
                         windowTemplate.Owner = Window.GetWindow(this);
                         windowTemplate.ShowDialog();

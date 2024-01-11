@@ -2,7 +2,7 @@
 using ColorVision.Services.Msg;
 using System.Windows;
 using MQTTMessageLib;
-using ColorVision.Services.Device.Camera.Calibration;
+using ColorVision.Services.Device.Camera.Calibrations;
 
 namespace ColorVision.Services.Device.Calibration
 {

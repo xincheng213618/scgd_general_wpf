@@ -26,7 +26,7 @@ using System.Windows.Input;
 using ColorVision.Services.Device.Camera.Views;
 using ColorVision.SettingUp;
 using MQTTMessageLib;
-using ColorVision.Services.Device.Camera.Calibration;
+using ColorVision.Services.Device.Camera.Calibrations;
 
 namespace ColorVision.Device.Camera
 {
@@ -344,26 +344,6 @@ namespace ColorVision.Device.Camera
                         break;
                     case DeviceStatusType.Opening:
                         break;
-                    //case DeviceStatusType.UnInit:
-                    //    StackPanelOpen.Visibility = Visibility.Collapsed;
-                    //    StackPanelImage.Visibility = Visibility.Collapsed;
-                    //    ButtonOpen.Visibility = Visibility.Collapsed;
-                    //    ButtonClose.Visibility = Visibility.Collapsed;
-                    //    ButtonInit.Content = "连接";
-                    //    ViewGridManager.GetInstance().RemoveView(View);
-                    //    break;
-                    //case DeviceStatusType.Init:
-                    //    StackPanelOpen.Visibility = Visibility.Visible;
-                    //    ButtonOpen.Visibility = Visibility.Collapsed;
-                    //    ButtonInit.Content = "断开连接";
-                    //    ViewGridManager.GetInstance().AddView(View);
-                    //    if (ViewGridManager.GetInstance().ViewMax > 4 || ViewGridManager.GetInstance().ViewMax == 3)
-                    //    {
-                    //        ViewGridManager.GetInstance().SetViewNum(-1);
-                    //    }
-                    //    break;
-                    //case DeviceStatusType.UnConnected:
-                    //    break;
                     default:
                         break;
                 }
@@ -502,7 +482,7 @@ namespace ColorVision.Device.Camera
             {
                 //if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
                 //{
-                //    MsgRecord msgRecord = DService.Calibration(param);
+                //    MsgRecord msgRecord = DService.CalibrationControl(param);
                 //    Helpers.SendCommand(button, msgRecord);
 
                 //}
@@ -548,14 +528,14 @@ namespace ColorVision.Device.Camera
                 switch (button.Tag?.ToString() ?? string.Empty)
                 {
                     case "Calibration":
-                        Calibration calibration;
+                        CalibrationControl calibration;
                         if (TemplateControl.CalibrationParams.Count>0) 
                         {
-                             calibration = new Calibration(TemplateControl.CalibrationParams[0].Value);
+                             calibration = new CalibrationControl(Device,TemplateControl.CalibrationParams[0].Value);
                         }
                         else
                         {
-                             calibration = new Calibration();
+                             calibration = new CalibrationControl(Device);
                         }
                         windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration, false);
                         windowTemplate.Owner = Window.GetWindow(this);

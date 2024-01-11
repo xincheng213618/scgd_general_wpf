@@ -133,7 +133,7 @@ namespace ColorVision.Device.Spectrum.Views
             {
                 if (item is ViewResultSpectrum result)
                 {
-                    csvBuilder.Append(result.ID + ",");
+                    csvBuilder.Append(result.Id + ",");
                     csvBuilder.Append(result.BatchID + ",");
                     csvBuilder.Append(result.IP + ",");
                     csvBuilder.Append(result.Lv + ",");
@@ -236,7 +236,7 @@ namespace ColorVision.Device.Spectrum.Views
             ColorParam colorParam = data.Data;
 
             ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(colorParam);
-            viewResultSpectrum.ID = data.ID;
+            viewResultSpectrum.Id = data.ID;
             viewResultSpectrum.V = data.V;
             viewResultSpectrum.I = data.I;
             ViewResultSpectrums.Add(viewResultSpectrum);
