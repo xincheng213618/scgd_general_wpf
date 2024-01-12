@@ -230,8 +230,8 @@ namespace ColorVision.Templates
                     case TemplateType.Calibration:
                         if (UserControl is CalibrationControl calibration && TemplateModelBases[listView.SelectedIndex].GetValue() is CalibrationParam calibrationParam)
                         {
-                            calibration.DataContext = calibrationParam;
                             calibration.CalibrationParam = calibrationParam;
+                            calibration.DataContext = calibrationParam;
                         }
                         break;
                     case TemplateType.MeasureParam:
