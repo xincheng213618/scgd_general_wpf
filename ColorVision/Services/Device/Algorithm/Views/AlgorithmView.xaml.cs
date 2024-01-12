@@ -123,7 +123,7 @@ namespace ColorVision.Services.Device.Algorithm.Views
                 string value = "";
                 foreach (var item in AlgResults)
                 {
-                    value += item.ID + "," 
+                    value += item.Id + "," 
                         +item.Batch + "," 
                         + item.POITemplateName  + "," 
                         + item.FilePath +","
@@ -265,7 +265,7 @@ namespace ColorVision.Services.Device.Algorithm.Views
                         if (result.SFRData == null)
                         {
                             result.FOVData = new ObservableCollection<FOVResultData>();
-                            List<AlgResultFOVModel> AlgResultFOVModels = resultService.GetFOVByPid(result.ID);
+                            List<AlgResultFOVModel> AlgResultFOVModels = resultService.GetFOVByPid(result.Id);
                             foreach (var item in AlgResultFOVModels)
                             {
                                 FOVResultData fOVResultData = new FOVResultData(item);
@@ -291,7 +291,7 @@ namespace ColorVision.Services.Device.Algorithm.Views
                         if (result.SFRData == null)
                         {
                             result.SFRData = new ObservableCollection<SFRResultData>();
-                            List<AlgResultSFRModel> AlgResultSFRModels = resultService.GetSFRByPid(result.ID);
+                            List<AlgResultSFRModel> AlgResultSFRModels = resultService.GetSFRByPid(result.Id);
                             foreach (var item in AlgResultSFRModels)
                             {
                                 var Pdfrequencys = JsonConvert.DeserializeObject<float[]>(item.Pdfrequency);
@@ -325,7 +325,7 @@ namespace ColorVision.Services.Device.Algorithm.Views
                         if (result.MTFData == null)
                         {
                             result.MTFData = new ObservableCollection<MTFResultData>();
-                            List<AlgResultMTFModel> AlgResultMTFModels = resultService.GetMTFByPid(result.ID);
+                            List<AlgResultMTFModel> AlgResultMTFModels = resultService.GetMTFByPid(result.Id);
                             foreach (var item in AlgResultMTFModels)
                             {
                                 MTFResultData mTFResultData = new MTFResultData(item);
@@ -354,7 +354,7 @@ namespace ColorVision.Services.Device.Algorithm.Views
                         if (result.GhostData == null)
                         {
                             result.GhostData = new ObservableCollection<GhostResultData>();
-                            List<AlgResultGhostModel> AlgResultGhostModels = resultService.GetGhostByPid(result.ID);
+                            List<AlgResultGhostModel> AlgResultGhostModels = resultService.GetGhostByPid(result.Id);
                             foreach (var item in AlgResultGhostModels)
                             {
                                 GhostResultData ghostResultData = new GhostResultData(item);
@@ -444,7 +444,7 @@ namespace ColorVision.Services.Device.Algorithm.Views
                         if (result.DistortionData == null)
                         {
                             result.DistortionData = new ObservableCollection<DistortionResultData>();
-                            var Distortions = resultService.GetDistortionByPid(result.ID);
+                            var Distortions = resultService.GetDistortionByPid(result.Id);
                             foreach (var item in Distortions)
                             {
                                 DistortionResultData distortionResultData = new DistortionResultData(item);
@@ -479,7 +479,7 @@ namespace ColorVision.Services.Device.Algorithm.Views
                         if (result.LedResultDatas == null)
                         {
                             result.LedResultDatas = new ObservableCollection<LedResultData>();
-                            List<AlgResultLedcheckModel> AlgResultLedcheckModels = algResultLedcheckDao.GetAllByPid(result.ID);
+                            List<AlgResultLedcheckModel> AlgResultLedcheckModels = algResultLedcheckDao.GetAllByPid(result.Id);
                             foreach (var item in AlgResultLedcheckModels)
                             {
                                 LedResultData ledResultData = new LedResultData(new Point((double)item.PosX, (double)item.PosY), (double)item.Radius);

@@ -45,7 +45,7 @@ namespace ColorVision.Services.Device.Algorithm.Views
         private long _totalTime;
         private string _resultDesc;
 
-        public int ID { get { return _Id; } set { _Id = value; NotifyPropertyChanged(); } }
+        public int Id { get { return _Id; } set { _Id = value; NotifyPropertyChanged(); } }
         private int _Id;
 
         public string? Batch { get { return _Batch; } set { _Batch = value; NotifyPropertyChanged(); } }

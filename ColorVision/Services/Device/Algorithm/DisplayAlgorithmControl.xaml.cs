@@ -4,6 +4,7 @@ using ColorVision.MySql.Service;
 using ColorVision.Net;
 using ColorVision.Services.Device.Algorithm.Dao;
 using ColorVision.Services.Device.Algorithm.Views;
+using ColorVision.Services.Device.Camera.Calibrations;
 using ColorVision.SettingUp;
 using ColorVision.Solution;
 using ColorVision.Templates;

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows;
 
-namespace ColorVision.Templates
+namespace ColorVision.Services.Device.Camera.Calibrations
 {
     /// <summary>
     /// UploadWindow.xaml 的交互逻辑

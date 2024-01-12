@@ -1,6 +1,7 @@
 ﻿using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.Services.Device;
+using ColorVision.Services.Device.Camera.Calibrations;
 using ColorVision.Services.Device.Camera.Configs;
 using ColorVision.Services.Device.Camera.Views;
 using ColorVision.Services.Msg;
@@ -8,15 +9,27 @@ using ColorVision.Solution;
 using ColorVision.Templates;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
+using cvColorVision;
+using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Text.Json.Nodes;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
 namespace ColorVision.Device.Camera
 {
+
+    public class ColorVisionVCalibratioItem
+    {
+        public CalibrationType CalibrationType { get; set; }
+        public string FileName { get; set; }
+        public string Title { get; set; }
+    }
+
     public class DeviceCamera : BaseDevice<ConfigCamera>
     {
         public DeviceServiceCamera DService { get; set; }
@@ -25,23 +38,13 @@ namespace ColorVision.Device.Camera
         readonly Lazy<EditCamera> EditCameraLazy;
 
         public CameraDisplayControl CameraDisplayControl { get; set; }
+
         public EditCamera EditCamera { get; set; }
 
         public ViewCamera View { get; set; }
 
         public ServiceCamera Service { get; set; }
 
-        public cvColorVision.TakeImageMode cameraMode { get => _cameraMode; set { _cameraMode = value; IsVideo = value == cvColorVision.TakeImageMode.Live; } }
-        private cvColorVision.TakeImageMode _cameraMode;
-        public bool IsVideo
-        {
-            get => _isVideo;
-            set
-            {
-                _isVideo = value; NotifyPropertyChanged();
-            }
-        }
-        private bool _isVideo;
         public RelayCommand UploadCalibrationCommand { get; set; }
 
         public DeviceCamera(SysResourceModel sysResourceModel, ServiceCamera cameraService) : base(sysResourceModel)
@@ -79,23 +82,43 @@ namespace ColorVision.Device.Camera
                 {
                     if (File.Exists(upload.UploadFilePath))
                     {
-                        string path = SolutionManager.GetInstance().CurrentSolution.FullName + "\\Cache";
+
+
+                        string path = SolutionManager.GetInstance().CurrentSolution.FullName + "\\Cache\\Cal";
+                        if (Directory.Exists(path))
+                            Directory.Delete(path, true);
+                        Directory.CreateDirectory(path);
+
                         ZipFile.ExtractToDirectory(upload.UploadFilePath, path);
-                        string filename = path +"\\" + Path.GetFileNameWithoutExtension(upload.UploadFilePath);
-                        string Cameracfg = filename + "\\Camera.cfg";
-                        string Calibrationcfg = filename + "\\Calibration.cfg";
 
+                        string Cameracfg = path + "\\Camera.cfg";
+
+                        string Calibrationcfg = path + "\\Calibration.cfg";
+                        Dictionary<string, List<ColorVisionVCalibratioItem>> keyValuePairs = JsonConvert.DeserializeObject<Dictionary<string, List<ColorVisionVCalibratioItem>>>(File.ReadAllText(Calibrationcfg));
+
+
+                        foreach (var item in keyValuePairs)
+                        {
+                            if (!Config.Calibration.ContainsKey(item.Key))
+                                Config.Calibration.Add(item.Key,item.Value);
+                        }
+                        
+                        string cachepath = path + "\\Calibration";
+                        if (Directory.Exists(cachepath))
+                            Directory.Delete(cachepath,true);
+                        Directory.CreateDirectory(cachepath);
+
+                        string CalibrationFile = path + "\\" + "Calibration.zip";
+                        ZipFile.ExtractToDirectory(CalibrationFile, cachepath);
+                        DirectoryInfo directoryInfo = new DirectoryInfo(cachepath);
+                        foreach (var item in directoryInfo.GetFiles())
+                        {
+                            MsgRecord msgRecord = DService.UploadCalibrationFile(Path.GetFileNameWithoutExtension(item.FullName), item.FullName, 1001);
+                        }
+                        MessageBox.Show("上传中");
+
+                        Save();
                     }
-
-
-                    MsgRecord msgRecord = DService?.UploadCalibrationFile(Path.GetFileNameWithoutExtension(upload.UploadFileName), upload.UploadFilePath, 1001);
-                    msgRecord.MsgRecordStateChanged += (s) =>
-                    {
-
-
-
-                        MessageBox.Show("sucess");
-                    };
                 }
             };
             uploadwindow.ShowDialog();

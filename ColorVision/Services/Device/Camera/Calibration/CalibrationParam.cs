@@ -7,8 +7,9 @@ using cvColorVision;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Security.Cryptography.X509Certificates;
 
-namespace ColorVision.Services.Device.Camera.Calibration
+namespace ColorVision.Services.Device.Camera.Calibrations
 {
 
     public enum ResouceType
@@ -38,6 +39,7 @@ namespace ColorVision.Services.Device.Camera.Calibration
     }
 
 
+
     public class CalibrationRsource : ViewModelBase, ISortID, ISortName, ISortFilePath
     {
         public SysResourceModel SysResourceModel { get; set; }
@@ -46,13 +48,12 @@ namespace ColorVision.Services.Device.Camera.Calibration
             this.SysResourceModel = SysResourceModel;
             Name = SysResourceModel.Name;
             FilePath = SysResourceModel.Value;
-            ID = SysResourceModel.Id;
+            Id = SysResourceModel.Id;
         }
 
         public string? Name { get; set; }
         public string? FilePath { get; set; }
-        public int ID { get; set; }
-
+        public int Id { get; set; }
         public int Pid { get; set; }
     }
 
@@ -82,6 +83,11 @@ namespace ColorVision.Services.Device.Camera.Calibration
         }
 
 
+
+
+
+
+
         public ObservableCollection<CalibrationRsource> GetAllCalibrationRsources(ResouceType resouceType, int id)
         {
             ObservableCollection<CalibrationRsource> ObservableCollections = new ObservableCollection<CalibrationRsource>();
@@ -102,6 +108,7 @@ namespace ColorVision.Services.Device.Camera.Calibration
                 strings.Add(item.Name ?? string.Empty);
             }
         }
+
         public int Delete(int id) => resourceDao.DeleteById(id);
 
         public int Save(SysResourceModel value) => resourceDao.Save(value);
@@ -132,7 +139,6 @@ namespace ColorVision.Services.Device.Camera.Calibration
         public List<string> LumOneColorList { get; set; }
         public List<string> LumFourColorList { get; set; }
         public List<string> LumMultiColorList { get; set; }
-
         public List<string> CalibrationModeList { get; set; }
 
     }
@@ -140,7 +146,6 @@ namespace ColorVision.Services.Device.Camera.Calibration
 
     public class CalibrationBase : ModelBase
     {
-
         public RelayCommand SelectFileCommand { get; set; }
         public CalibrationBase(List<ModDetailModel> detail, string propertyName = "") : base(detail)
         {
@@ -162,15 +167,16 @@ namespace ColorVision.Services.Device.Camera.Calibration
 
         public string FileName { get; set; }
 
-        public string FilePath { get { if (string.IsNullOrWhiteSpace(propertyName)) return GetValue(_FilePath); else return GetValue(_FilePath, propertyName); } set { if (string.IsNullOrWhiteSpace(propertyName)) SetProperty(ref _FilePath, value); else SetProperty(ref _FilePath, value, propertyName); } }
+        public string FilePath { get { if (string.IsNullOrWhiteSpace(propertyName)) return GetValue(_FilePath); else return GetValue(_FilePath, propertyName); } set { if (string.IsNullOrWhiteSpace(propertyName)) { SetProperty(ref _FilePath, value); } else { SetProperty(ref _FilePath, value, propertyName); NotifyPropertyChanged(); } } }
         private string _FilePath;
 
-        public bool IsSelected { get { if (string.IsNullOrWhiteSpace(propertyName + "IsSelected")) return GetValue(_IsSelected); else return GetValue(_IsSelected, propertyName + "IsSelected"); } set { if (string.IsNullOrWhiteSpace(propertyName + "IsSelected")) SetProperty(ref _IsSelected, value); else SetProperty(ref _IsSelected, value, propertyName + "IsSelected"); } }
+        public bool IsSelected { get { if (string.IsNullOrWhiteSpace(propertyName + "IsSelected")) return GetValue(_IsSelected); else return GetValue(_IsSelected, propertyName + "IsSelected"); } set { if (string.IsNullOrWhiteSpace(propertyName + "IsSelected")) SetProperty(ref _IsSelected, value); else SetProperty(ref _IsSelected, value, propertyName + "IsSelected"); NotifyPropertyChanged(); } }
         private bool _IsSelected;
     }
 
     public class CalibrationNormal
     {
+
         public CalibrationNormal(List<ModDetailModel> detail, string Type)
         {
             DarkNoiseList = CalibrationRsourceService.GetInstance().DarkNoiseList;
@@ -179,7 +185,6 @@ namespace ColorVision.Services.Device.Camera.Calibration
             UniformityList = CalibrationRsourceService.GetInstance().UniformityList;
             DistortionList = CalibrationRsourceService.GetInstance().DistortionList;
             ColorShiftList = CalibrationRsourceService.GetInstance().ColorShiftList;
-
 
             DarkNoise = new CalibrationBase(detail, nameof(DarkNoise) + Type);
             DefectPoint = new CalibrationBase(detail, nameof(DefectPoint) + Type);
@@ -306,9 +311,9 @@ namespace ColorVision.Services.Device.Camera.Calibration
     {
         public string CalibrationMode { get; set; } = string.Empty;
         public List<string> CalibrationModeList { get; set; }
-
         public CalibrationNormal Normal { get; set; }
         public CalibrationColor Color { get; set; }
+
         public CalibrationParam()
         {
             ID = -1;
@@ -316,12 +321,12 @@ namespace ColorVision.Services.Device.Camera.Calibration
             Color = new CalibrationColor(new List<ModDetailModel>());
             CalibrationModeList = CalibrationRsourceService.GetInstance().CalibrationModeList;
         }
-        public CalibrationParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
+
+        public CalibrationParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) 
         {
             Normal = new CalibrationNormal(modDetails, "");
             Color = new CalibrationColor(modDetails);
             CalibrationModeList = CalibrationRsourceService.GetInstance().CalibrationModeList;
-
         }
     }
 

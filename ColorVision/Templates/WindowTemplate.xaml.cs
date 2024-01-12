@@ -3,7 +3,7 @@ using ColorVision.Flow.Templates;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.Services.Device.Algorithm.Templates;
-using ColorVision.Services.Device.Camera.Calibration;
+using ColorVision.Services.Device.Camera.Calibrations;
 using ColorVision.Services.Device.PG.Templates;
 using ColorVision.Util;
 using Newtonsoft.Json;
@@ -228,7 +228,7 @@ namespace ColorVision.Templates
                 switch (TemplateType)
                 {
                     case TemplateType.Calibration:
-                        if (UserControl is Calibration calibration && TemplateModelBases[listView.SelectedIndex].GetValue() is CalibrationParam calibrationParam)
+                        if (UserControl is CalibrationControl calibration && TemplateModelBases[listView.SelectedIndex].GetValue() is CalibrationParam calibrationParam)
                         {
                             calibration.DataContext = calibrationParam;
                             calibration.CalibrationParam = calibrationParam;

@@ -15,7 +15,7 @@ namespace ColorVision.Device.Spectrum.Views
     public class ViewResultSpectrum : ViewModelBase,ISortable
     {
         private static int No;
-        public int ID { get; set; }
+        public int Id { get; set; }
         public DateTime? CreateTime { get; set; }
         public string? Batch { get; set; }
         public int? BatchID { get; set; }
@@ -66,7 +66,7 @@ namespace ColorVision.Device.Spectrum.Views
 
         public ViewResultSpectrum(SpectumResultModel item)
         {
-            ID = item.Id;
+            Id = item.Id;
             BatchID = item.BatchId;
             CreateTime = item.CreateDate;
             fx = item.fx ?? 0;
@@ -100,7 +100,7 @@ namespace ColorVision.Device.Spectrum.Views
 
         public ViewResultSpectrum(ColorParam colorParam)
         {
-            ID = No++; 
+            Id = No++; 
             fx = colorParam.fx;
             fy = colorParam.fy;
             fu = colorParam.fu;

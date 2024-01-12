@@ -2,7 +2,7 @@
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision
+namespace ColorVision.Services.Device.Camera.Calibrations
 {
     /// <summary>
     /// WindowFourColorCalibration.xaml 的交互逻辑

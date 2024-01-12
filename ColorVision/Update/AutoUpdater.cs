@@ -161,7 +161,7 @@ namespace ColorVision.Update
         }
 
 
-        private void RestartApplication(string downloadPath)
+        private static void RestartApplication(string downloadPath)
         {
             // 启动新的实例
             ProcessStartInfo startInfo = new ProcessStartInfo();
