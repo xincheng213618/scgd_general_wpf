@@ -114,7 +114,7 @@
                                     <DockPanel Margin="0,2" >
                                         <CheckBox DockPanel.Dock="Right" Content="网络" Width="50" Margin="5" IsChecked="{Binding Config.IsNet}"/>
                                         <TextBlock Text="设备地址"  Width="120"/>
-                                        <TextBox Text="{Binding Config.ID}" Width="300" Visibility="{Binding Config.IsNet,Converter={StaticResource bool2VisibilityConverter}}" Margin="38,0,0,0"/>
+                                        <TextBox Text="{Binding Config.Id}" Width="300" Visibility="{Binding Config.IsNet,Converter={StaticResource bool2VisibilityConverter}}" Margin="38,0,0,0"/>
                                         <hc:ComboBox  x:Name="TextSerial" IsEditable="True"  Width="300" Text="{Binding Config.ID}"  Visibility="{Binding Config.IsNet,Converter={StaticResource bool2VisibilityConverter1}}" hc:InfoElement.ShowClearButton="True"  />
                                     </DockPanel>
                                 </StackPanel>

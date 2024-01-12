@@ -165,8 +165,6 @@ namespace ColorVision.Services.Device.Camera.Calibrations
 
         private string propertyName = string.Empty;
 
-        public string FileName { get; set; }
-
         public string FilePath { get { if (string.IsNullOrWhiteSpace(propertyName)) return GetValue(_FilePath); else return GetValue(_FilePath, propertyName); } set { if (string.IsNullOrWhiteSpace(propertyName)) { SetProperty(ref _FilePath, value); } else { SetProperty(ref _FilePath, value, propertyName); NotifyPropertyChanged(); } } }
         private string _FilePath;
 
@@ -322,8 +320,9 @@ namespace ColorVision.Services.Device.Camera.Calibrations
             CalibrationModeList = CalibrationRsourceService.GetInstance().CalibrationModeList;
         }
 
-        public CalibrationParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) 
+        public CalibrationParam(ModMasterModel modMaster, List<ModDetailModel> modDetails)
         {
+            ID =modMaster.Id;
             Normal = new CalibrationNormal(modDetails, "");
             Color = new CalibrationColor(modDetails);
             CalibrationModeList = CalibrationRsourceService.GetInstance().CalibrationModeList;

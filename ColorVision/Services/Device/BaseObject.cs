@@ -23,7 +23,12 @@ namespace ColorVision.Services.Device
         }
     }
 
-    public class BaseObject : ViewModelBase
+    public interface ITreeViewItem
+    {
+        public bool IsExpanded { get; set; }
+    }
+
+    public class BaseObject : ViewModelBase,ITreeViewItem
     {
         public RelayCommand SaveCommand { get; set; }
         public RelayCommand DeleteCommand { get; set; }
@@ -60,7 +65,12 @@ namespace ColorVision.Services.Device
             VisualChildren.Remove(baseObject);
         }
 
+        public bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; NotifyPropertyChanged(); } }
+        private bool _IsExpanded = true;
+
+
         public virtual string Name { get; set; }
+
 
         public virtual void Save()
         {
