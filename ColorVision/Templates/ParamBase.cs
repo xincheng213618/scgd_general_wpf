@@ -194,7 +194,6 @@ namespace ColorVision.Templates
             this.ID = No++;
         }
 
-
         public ParamBase(int id,string  name,List<ModDetailModel> detail):base (detail)
         {
             this.ID = id;

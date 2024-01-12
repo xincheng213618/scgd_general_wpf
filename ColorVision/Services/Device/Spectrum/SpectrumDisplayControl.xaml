@@ -57,7 +57,7 @@
 
                 <StackPanel Margin="5" Visibility="Visible">
                     <UniformGrid Columns="2">
-                        <Button x:Name="btn_connect" Content="{Binding Config.DeviceStatus}" Click="Button_Click_Open"/>
+                        <Button x:Name="btn_connect" Content="{Binding Config.BtnDeviceStatus}" Click="Button_Click_Open"/>
                         <!--<Button x:Name="btn_getPatam" Content="获取参数"  Click="Button_Click_GetParam"/>-->
                         <Button x:Name="btn_oneTest" Content="单次测试"  Click="Button_Click_OneTest"/>
                         <Button x:Name="btn_autoTest" Content="自动测试"  Click="Button_Click_AutoTest"/>
