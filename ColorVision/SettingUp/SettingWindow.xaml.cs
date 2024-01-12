@@ -28,14 +28,14 @@ namespace ColorVision.SettingUp
         public SettingWindow()
         {
             InitializeComponent();
-            IsBlurEnabled = GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting.TransparentWindow && IsBlurEnabled;
+            IsBlurEnabled = ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.TransparentWindow && IsBlurEnabled;
             this.Background = IsBlurEnabled ? this.Background : Brushes.Gray;
         }
         private void Window_Initialized(object sender, EventArgs e)
         {
-            SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
+            SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
             this.DataContext = SoftwareConfig;
-            AutoRunDock.DataContext = GlobalSetting.GetInstance();
+            AutoRunDock.DataContext = ConfigHandler.GetInstance();
             GlobalConst.LogLevel.ForEach(it =>
             {
                 cmbloglevel.Items.Add(it);
@@ -167,7 +167,7 @@ namespace ColorVision.SettingUp
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             SoftwareConfig.MQTTSetting.MsgRecords.Clear();
-            GlobalSetting.GetInstance().SaveSoftwareConfig();
+            ConfigHandler.GetInstance().SaveSoftwareConfig();
             MessageBox.Show("MQTT历史记录清理完毕", "ColorVision");
         }
 

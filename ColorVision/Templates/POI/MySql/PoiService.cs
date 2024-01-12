@@ -31,10 +31,10 @@ namespace ColorVision.Templates.POI.MySql
             List<PoiDetailModel> poiDetails = new List<PoiDetailModel>();
             foreach (PoiParamData pt in poiParam.PoiPoints)
             {
-                PoiDetailModel poiDetail = new PoiDetailModel(poiParam.ID, pt);
+                PoiDetailModel poiDetail = new PoiDetailModel(poiParam.Id, pt);
                 poiDetails.Add(poiDetail);
             }
-            poiDetail.SaveByPid(poiParam.ID, poiDetails);
+            poiDetail.SaveByPid(poiParam.Id, poiDetails);
 
         }
 

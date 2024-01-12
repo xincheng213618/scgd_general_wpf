@@ -38,7 +38,7 @@ namespace ColorVision
         {
             if (sender is MenuItem menuItem)
             {
-                SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
+                SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
                 WindowTemplate windowTemplate;
                 if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
                 {
@@ -269,7 +269,7 @@ namespace ColorVision
 
         private void SettingF_Click(object sender, RoutedEventArgs e)
         {
-            Process.Start("explorer.exe", $"{Path.GetDirectoryName(GlobalSetting.GetInstance().SoftwareConfigFileName)}");
+            Process.Start("explorer.exe", $"{Path.GetDirectoryName(ConfigHandler.GetInstance().SoftwareConfigFileName)}");
         }
         private void Log_Click(object sender, RoutedEventArgs e)
         {
@@ -293,7 +293,7 @@ namespace ColorVision
 
         private void Setting_Click(object sender, RoutedEventArgs e)
         {
-            string fileName = GlobalSetting.GetInstance().SoftwareConfigFileName;
+            string fileName = ConfigHandler.GetInstance().SoftwareConfigFileName;
             bool result = Tool.HasDefaultProgram(fileName);
             if (!result)
                 Process.Start(result ? "explorer.exe" : "notepad.exe", fileName);
@@ -310,13 +310,13 @@ namespace ColorVision
                 LanguageItem.Click += (s, e) =>
                 {
                     string temp = Thread.CurrentThread.CurrentUICulture.Name;
-                    GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting.UICulture = item;
-                    GlobalSetting.GetInstance().SaveSoftwareConfig();
+                    ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.UICulture = item;
+                    ConfigHandler.GetInstance().SaveSoftwareConfig();
                     bool sucess = LanguageManager.Current.LanguageChange(item);
                     if (!sucess)
                     {
-                        GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting.UICulture = temp;
-                        GlobalSetting.GetInstance().SaveSoftwareConfig();
+                        ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.UICulture = temp;
+                        ConfigHandler.GetInstance().SaveSoftwareConfig();
                     }
                 };
                 LanguageItem.Tag = item;
@@ -353,8 +353,8 @@ namespace ColorVision
                 ThemeItem.Header = Properties.Resource.ResourceManager.GetString(item.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
                 ThemeItem.Click += (s, e) =>
                 {
-                    GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting.Theme = item;
-                    GlobalSetting.GetInstance().SaveSoftwareConfig();
+                    ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.Theme = item;
+                    ConfigHandler.GetInstance().SaveSoftwareConfig();
                     Application.Current.ApplyTheme(item);
                 };
                 ThemeItem.Tag = item;

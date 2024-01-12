@@ -26,12 +26,12 @@ namespace ColorVision.Flow
             InitializeComponent();
         }
 
-        public GlobalSetting GlobalSetting { get; set; }
+        public ConfigHandler ConfigHandler { get; set; }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            GlobalSetting = GlobalSetting.GetInstance();
-            MQTTConfig mQTTConfig = GlobalSetting.SoftwareConfig.MQTTConfig;
+            ConfigHandler = ConfigHandler.GetInstance();
+            MQTTConfig mQTTConfig = ConfigHandler.SoftwareConfig.MQTTConfig;
             FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
 
             using System.Drawing.Graphics graphics = System.Drawing.Graphics.FromHwnd(IntPtr.Zero);

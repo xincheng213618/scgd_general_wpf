@@ -44,7 +44,7 @@ namespace ColorVision.MySql
             MySqlConfig.UserPwd = PasswordBox1.Password;
             MySqlConfigs.Remove(MySqlConfig);
 
-            GlobalSetting.GetInstance().SaveSoftwareConfig();
+            ConfigHandler.GetInstance().SaveSoftwareConfig();
             Task.Run(() => MySqlControl.GetInstance().Connect());
             this.Close();
         }
@@ -64,12 +64,12 @@ namespace ColorVision.MySql
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            MySqlConfig= GlobalSetting.GetInstance().SoftwareConfig.MySqlConfig;
+            MySqlConfig= ConfigHandler.GetInstance().SoftwareConfig.MySqlConfig;
             GridMQTT.DataContext = MySqlConfig;
             MySqlConfigBackUp = new MySqlConfig();
             MySqlConfig.CopyTo(MySqlConfigBackUp);
             PasswordBox1.Password = MySqlConfig.UserPwd;
-            MySqlConfigs = GlobalSetting.GetInstance().SoftwareConfig.MySqlConfigs;
+            MySqlConfigs = ConfigHandler.GetInstance().SoftwareConfig.MySqlConfigs;
             ListViewMySql.ItemsSource = MySqlConfigs;
 
             MySqlConfigs.Insert(0, MySqlConfig);
@@ -119,7 +119,7 @@ namespace ColorVision.MySql
                 MySqlConfig = MySqlConfigs[listView.SelectedIndex];
                 GridMQTT.DataContext = MySqlConfig;
                 PasswordBox1.Password = MySqlConfig.UserPwd;
-                GlobalSetting.GetInstance().SoftwareConfig.MySqlConfig = MySqlConfig;
+                ConfigHandler.GetInstance().SoftwareConfig.MySqlConfig = MySqlConfig;
             }
         }
 

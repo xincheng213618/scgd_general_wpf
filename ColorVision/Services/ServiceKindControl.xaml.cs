@@ -59,7 +59,7 @@ namespace ColorVision.Services
                     MessageBox.Show("服务标识已存在,不允许重复添加");
                     return;
                 }
-                SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, serviceKind.SysDictionaryModel.Value, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, serviceKind.SysDictionaryModel.Value, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
                
                 BaseServiceConfig serviceConfig = new BaseServiceConfig
                 {

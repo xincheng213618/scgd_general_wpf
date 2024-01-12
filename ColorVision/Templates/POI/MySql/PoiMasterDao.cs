@@ -34,7 +34,7 @@ namespace ColorVision.Templates.POI.MySql
 
         public PoiMasterModel(PoiParam poiParam)
         {
-            Id = poiParam.ID;
+            Id = poiParam.Id;
             Name = poiParam.PoiName;
             Type = poiParam.Type;
             Width = poiParam.Width;

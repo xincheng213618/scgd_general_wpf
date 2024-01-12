@@ -115,7 +115,7 @@
                                             <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding SoftwareSetting.IsDefaultOpenService}"/>
                                             <TextBlock Text="启动自动配置服务"/>
                                         </DockPanel>
-                                        <DockPanel x:Name="AutoRunDock" Margin="5"  d:DataContext="{d:DesignInstance local:GlobalSetting}">
+                                        <DockPanel x:Name="AutoRunDock" Margin="5"  d:DataContext="{d:DesignInstance local:ConfigHandler}">
                                             <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding IsAutoRun}"/>
                                             <TextBlock Text="{x:Static resx:Resource.TbSettingsStartBoot}"/>
                                         </DockPanel>

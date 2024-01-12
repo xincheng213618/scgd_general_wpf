@@ -23,7 +23,7 @@ namespace ColorVision.Services
         {
             MQTTDevices = ServiceManager.GetInstance().LastGenControl ?? ServiceManager.GetInstance().Devices;
             TreeView1.ItemsSource = MQTTDevices;
-            Grid1.DataContext = GlobalSetting.GetInstance().SoftwareConfig.UserConfig;
+            Grid1.DataContext = ConfigHandler.GetInstance().SoftwareConfig.UserConfig;
             ButtonOK.Focus();
         }
 

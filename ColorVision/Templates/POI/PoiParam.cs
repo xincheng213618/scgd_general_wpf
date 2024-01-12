@@ -14,12 +14,12 @@ namespace ColorVision.Templates
 
         public PoiParam()
         {
-            this.ID = No++;
+            this.Id = No++;
         }
 
         public PoiParam(PoiMasterModel dbModel)
         {
-            this.ID = dbModel.Id;
+            this.Id = dbModel.Id;
 
             this.PoiName = dbModel.Name ?? string.Empty;
             this.Width = dbModel.Width ?? 0;

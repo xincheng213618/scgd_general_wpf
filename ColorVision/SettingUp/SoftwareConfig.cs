@@ -2,6 +2,7 @@
 using ColorVision.MVVM;
 using ColorVision.MySql;
 using ColorVision.RC;
+using ColorVision.Services.Device.Camera.Video;
 using ColorVision.SettingUp;
 using ColorVision.Solution;
 using ColorVision.Templates;
@@ -14,6 +15,8 @@ using System.Text.Json.Serialization;
 namespace ColorVision
 {
     public delegate void UseMySqlHandler(bool IsUseMySql);
+    public delegate void UseMQTTHandler(bool IsUseMQTT);
+    public delegate void UseRcServicelHandler(bool IsUseRcServicel);
 
     /// <summary>
     /// 软件配置

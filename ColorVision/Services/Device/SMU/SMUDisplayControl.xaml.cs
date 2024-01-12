@@ -216,7 +216,7 @@ namespace ColorVision.Services.Device.SMU
         {
             if (sender is Control control)
             {
-                SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
+                SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
                 WindowTemplate windowTemplate;
                 if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
                 {

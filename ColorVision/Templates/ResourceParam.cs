@@ -14,7 +14,7 @@ namespace ColorVision.Templates
 
         public ResourceParam(SysResourceModel dbModel) 
         {
-            this.ID =dbModel.Id;
+            this.Id =dbModel.Id;
             JsonValue = dbModel.Value;
         }
 

@@ -42,7 +42,7 @@ namespace ColorVision.MQTT
                 MQTTConfig.Name = MQTTConfig.Host +"_" +MQTTConfig.Port;
             }
             MQTTConfigs.Remove(MQTTConfig);
-            GlobalSetting.GetInstance().SaveSoftwareConfig();
+            ConfigHandler.GetInstance().SaveSoftwareConfig();
             FlowEngineLib.MQTTHelper.SetDefaultCfg(MQTTConfig.Host, MQTTConfig.Port, MQTTConfig.UserName, MQTTConfig.UserPwd, false, null);
             Task.Run(() => MQTTControl.GetInstance().Connect(MQTTConfig));
             this.Close();
@@ -62,12 +62,12 @@ namespace ColorVision.MQTT
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            MQTTConfig= GlobalSetting.GetInstance().SoftwareConfig.MQTTConfig;
+            MQTTConfig= ConfigHandler.GetInstance().SoftwareConfig.MQTTConfig;
             GridMQTT.DataContext = MQTTConfig;
             MQTTConfigBackUp = new MQTTConfig();
             MQTTConfig.CopyTo(MQTTConfigBackUp);
 
-            MQTTConfigs = GlobalSetting.GetInstance().SoftwareConfig.MQTTConfigs;
+            MQTTConfigs = ConfigHandler.GetInstance().SoftwareConfig.MQTTConfigs;
             ListViewMQTT.ItemsSource = MQTTConfigs;
 
             MQTTConfigs.Insert(0, MQTTConfig);
@@ -113,7 +113,7 @@ namespace ColorVision.MQTT
             {
                 MQTTConfig = MQTTConfigs[listView.SelectedIndex];
                 GridMQTT.DataContext = MQTTConfig;
-                GlobalSetting.GetInstance().SoftwareConfig.MQTTConfig = MQTTConfig;
+                ConfigHandler.GetInstance().SoftwareConfig.MQTTConfig = MQTTConfig;
             }
 
         }

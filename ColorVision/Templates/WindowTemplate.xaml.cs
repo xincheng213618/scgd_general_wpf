@@ -204,7 +204,7 @@ namespace ColorVision.Templates
                             WindowFocusPoint.Closed += async (s, e) =>
                             {
                                 await Task.Delay(30);
-                                TemplateModelBases[listView.SelectedIndex].Tag = $"{poiParam.Width}*{poiParam.Height}{(GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql ? "" : $"_{poiParam.PoiPoints.Count}")}";
+                                TemplateModelBases[listView.SelectedIndex].Tag = $"{poiParam.Width}*{poiParam.Height}{(ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql ? "" : $"_{poiParam.PoiPoints.Count}")}";
                             };
                             WindowFocusPoint.Show();
                         }
@@ -237,8 +237,8 @@ namespace ColorVision.Templates
                     case TemplateType.MeasureParam:
                         if (UserControl is MeasureParamControl mpc && TemplateModelBases[listView.SelectedIndex].GetValue() is MeasureParam mp)
                         {
-                            mpc.MasterID = mp.ID;
-                            List<MeasureDetailModel> des = TemplateControl.LoadMeasureDetail(mp.ID);
+                            mpc.MasterID = mp.Id;
+                            List<MeasureDetailModel> des = TemplateControl.LoadMeasureDetail(mp.Id);
                             mpc.Reload(des);
                             mpc.ModTypeConfigs.Clear();
                             mpc.ModTypeConfigs.Add(new MParamConfig(-1,"关注点","POI"));
@@ -423,7 +423,7 @@ namespace ColorVision.Templates
         {
             if (!string.IsNullOrEmpty(TextBox1.Text))
             {
-                if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+                if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
                 {
                     CreateNewTemplateFromDB();
                 }
@@ -452,8 +452,8 @@ namespace ColorVision.Templates
         {
             void TemplateDel<T>(ObservableCollection<TemplateModel<T>> keyValuePairs) where T : ParamBase
             {
-                if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
-                    TemplateControl.ModMasterDeleteById(keyValuePairs[ListView1.SelectedIndex].Value.ID);
+                if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
+                    TemplateControl.ModMasterDeleteById(keyValuePairs[ListView1.SelectedIndex].Value.Id);
                 keyValuePairs.RemoveAt(ListView1.SelectedIndex);
             }
 

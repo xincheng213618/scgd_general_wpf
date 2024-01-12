@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ColorVision"
         mc:Ignorable="d"
         xmlns:SettingUp ="clr-namespace:ColorVision.SettingUp"
-        d:DataContext="{d:DesignInstance local:GlobalSetting}"
+        d:DataContext="{d:DesignInstance local:ConfigHandler}"
         Title="MQTT日志" Height="550" Width="800" Background="{StaticResource GlobalBackground}" >
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">

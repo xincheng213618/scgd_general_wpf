@@ -420,8 +420,8 @@ namespace ColorVision.Device.Camera
             if (!DService.IsVideoOpen)
             {
                 DService.CurrentTakeImageMode = TakeImageMode.Live;
-                string host = GlobalSetting.GetInstance().SoftwareConfig.VideoConfig.Host;
-                int port = GlobalSetting.GetInstance().SoftwareConfig.VideoConfig.Port;
+                string host = ConfigHandler.GetInstance().SoftwareConfig.VideoConfig.Host;
+                int port = ConfigHandler.GetInstance().SoftwareConfig.VideoConfig.Port;
                 //bool IsLocal = (host == "127.0.0.1");
                 port = CameraVideoControl.Open(host, port);
                 if (port > 0)
@@ -443,7 +443,7 @@ namespace ColorVision.Device.Camera
                 else
                 {
                     MessageBox.Show("视频模式下，本地端口打开失败");
-                    logger.ErrorFormat("Local socket open failed.{0}:{1}", host, GlobalSetting.GetInstance().SoftwareConfig.VideoConfig.Port);
+                    logger.ErrorFormat("Local socket open failed.{0}:{1}", host, ConfigHandler.GetInstance().SoftwareConfig.VideoConfig.Port);
                 }
             }
         }
@@ -521,7 +521,7 @@ namespace ColorVision.Device.Camera
             if (sender is Button button)
             {
                 TemplateControl = TemplateControl.GetInstance();
-                SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
+                SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
                 WindowTemplate windowTemplate;
                 if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
                 {

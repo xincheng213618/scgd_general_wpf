@@ -212,7 +212,7 @@ namespace ColorVision.Device.Camera
         {
             if (sender is Control menuItem)
             {
-                SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
+                SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
                 WindowTemplate windowTemplate;
                 TemplateControl TemplateControl = TemplateControl.GetInstance();
                 if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)

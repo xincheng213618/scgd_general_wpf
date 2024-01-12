@@ -30,16 +30,16 @@ namespace ColorVision
     /// <summary>
     /// 全局设置
     /// </summary>
-    public class GlobalSetting:ViewModelBase
+    public class ConfigHandler:ViewModelBase
     {
-        private static GlobalSetting _instance;
+        private static ConfigHandler _instance;
         private static readonly object _locker = new();
-        public static GlobalSetting GetInstance() { lock (_locker) { return _instance ??= new GlobalSetting(); } }
-        internal static readonly ILog log = LogManager.GetLogger(typeof(GlobalSetting));
+        public static ConfigHandler GetInstance() { lock (_locker) { return _instance ??= new ConfigHandler(); } }
+        internal static readonly ILog log = LogManager.GetLogger(typeof(ConfigHandler));
         public string SoftwareConfigFileName { get; set; }
         public string MQTTMsgRecordsFileName { get; set; }
 
-        public GlobalSetting()
+        public ConfigHandler()
         {
             if (Directory.Exists(GlobalConst.ConfigPath))
             {

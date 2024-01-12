@@ -57,7 +57,7 @@ namespace ColorVision.Services
             svrDevices = new Dictionary<string, List<BaseService>>();
             ServiceTokens = new Dictionary<string,string>();
 
-            UserConfig = GlobalSetting.GetInstance().SoftwareConfig.UserConfig;
+            UserConfig = ConfigHandler.GetInstance().SoftwareConfig.UserConfig;
             StackPanel = new StackPanel();
 
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => Reload();

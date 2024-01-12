@@ -33,7 +33,7 @@ namespace ColorVision.Templates
         {
             storage = value;
 
-            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+            if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
             {
                 if (parameters.TryGetValue(propertyName, out ModDetailModel modDetailModel))
                 {
@@ -92,7 +92,7 @@ namespace ColorVision.Templates
 
         public T? GetValue<T>(T? storage, [CallerMemberName] string propertyName = "")
         {
-            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+            if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
             {
                 string val = "";
                 if (parameters.TryGetValue(propertyName, out ModDetailModel modDetailModel))
@@ -179,8 +179,8 @@ namespace ColorVision.Templates
         private bool _IsEnable;
 
         [Browsable(false)]
-        public int ID { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
-        private int _ID;
+        public int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
+        private int _Id;
 
         [Browsable(false)]
         public string Name { get => _Name; set { _Name = value ; NotifyPropertyChanged(); } }
@@ -191,12 +191,12 @@ namespace ColorVision.Templates
 
         public ParamBase() : base(new List<ModDetailModel>())
         {
-            this.ID = No++;
+            this.Id = No++;
         }
 
         public ParamBase(int id,string  name,List<ModDetailModel> detail):base (detail)
         {
-            this.ID = id;
+            this.Id = id;
             this.Name = name;
         }
 

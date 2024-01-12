@@ -8,7 +8,7 @@ namespace ColorVision.Templates
         public MeasureParam() { }
         public MeasureParam(MeasureMasterModel dbModel)
         {
-            this.ID = dbModel.Id;
+            this.Id = dbModel.Id;
             this.IsEnable = dbModel.IsEnable;
         }
     }

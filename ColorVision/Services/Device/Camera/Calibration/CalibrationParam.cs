@@ -314,7 +314,7 @@ namespace ColorVision.Services.Device.Camera.Calibrations
 
         public CalibrationParam()
         {
-            ID = -1;
+            Id = -1;
             Normal = new CalibrationNormal(new List<ModDetailModel>(), "");
             Color = new CalibrationColor(new List<ModDetailModel>());
             CalibrationModeList = CalibrationRsourceService.GetInstance().CalibrationModeList;
