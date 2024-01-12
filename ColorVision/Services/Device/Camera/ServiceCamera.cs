@@ -87,6 +87,7 @@ namespace ColorVision.Device.Camera
         public MsgRecord GetAllDevice()
         {
             //PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });
+            return null;
         }
     }
 }
