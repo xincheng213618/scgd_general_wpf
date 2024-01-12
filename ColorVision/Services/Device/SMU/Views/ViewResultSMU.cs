@@ -22,8 +22,8 @@ namespace ColorVision.Services.Device.SMU.Views
             LimitStart = item.SrcBegin;
             LimitEnd = item.SrcEnd;
 
-            VList = JsonConvert.DeserializeObject<double[]>(item.VResult);
-            IList = JsonConvert.DeserializeObject<double[]>(item.IResult);
+            VList = JsonConvert.DeserializeObject<double[]>(item.VResult??string.Empty)?? Array.Empty<Double>();
+            IList = JsonConvert.DeserializeObject<double[]>(item.IResult ?? string.Empty) ?? Array.Empty<Double>();
             if (VList != null && IList != null)
             {
                 for (int i = 0; i < VList.Length; i++)

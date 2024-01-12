@@ -1,4 +1,5 @@
-﻿using ColorVision.Extension;
+﻿using ColorVision.Common.Extension;
+using ColorVision.Extension;
 using System;
 using System.Globalization;
 using System.Windows.Data;

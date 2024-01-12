@@ -20,7 +20,7 @@ namespace ColorVision.OnlineLicensing
         public LicenseMangerWindow()
         {
             InitializeComponent();
-            IsBlurEnabled = GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting.TransparentWindow && IsBlurEnabled;
+            IsBlurEnabled = ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.TransparentWindow && IsBlurEnabled;
             this.Background = IsBlurEnabled ? this.Background : Brushes.Gray;
         }
 

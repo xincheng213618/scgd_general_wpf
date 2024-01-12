@@ -33,7 +33,7 @@ namespace ColorVision.Solution
 
 
             DirectoryPath = RecentNewCreateCacheList[0];
-            this.Name = NewCreateFileName(GlobalSetting.GetInstance().SoftwareConfig.SolutionSetting.DefaultCreatName);
+            this.Name = NewCreateFileName(ConfigHandler.GetInstance().SoftwareConfig.SolutionSetting.DefaultCreatName);
             RecentNewCreateNameCacheList.Add(Name);
         }
 

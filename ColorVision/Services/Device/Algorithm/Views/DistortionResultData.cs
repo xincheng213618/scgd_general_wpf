@@ -3,6 +3,7 @@ using ColorVision.MVVM;
 using ColorVision.Services.Device.Algorithm.Dao;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
+using System;
 
 namespace ColorVision.Services.Device.Algorithm.Views
 {
@@ -25,7 +26,7 @@ namespace ColorVision.Services.Device.Algorithm.Views
             LayoutType = algResultDistortionModel.LayoutType;
             CornerType = algResultDistortionModel.CornerType;
             MaxRatio = (double)algResultDistortionModel.MaxRatio;
-            FinalPoints = JsonConvert.DeserializeObject<PointFloat[]>(algResultDistortionModel.FinalPoints);
+            FinalPoints = JsonConvert.DeserializeObject<PointFloat[]>(algResultDistortionModel.FinalPoints)??Array.Empty<PointFloat>();
         }
 
         public DistortionType DisType { get; set; }

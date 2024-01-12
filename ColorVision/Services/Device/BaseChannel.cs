@@ -1,11 +1,10 @@
 ﻿#pragma warning disable  CS8604,CS8631
 using ColorVision.Extension;
+using ColorVision.Handler;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.RC;
 using Newtonsoft.Json;
-using QRCoder.Xaml;
-using QRCoder;
 using System;
 using System.IO;
 using System.Windows;
@@ -93,8 +92,8 @@ namespace ColorVision.Services.Device
 
         public override ImageSource Icon { get => _Icon; set { _Icon = value; NotifyPropertyChanged(); } }
         private ImageSource _Icon;
-        public  ImageSource QRIcon { get => _QRIcon; set { _QRIcon = value; NotifyPropertyChanged(); } }
-        private ImageSource _QRIcon;
+        public  ImageSource? QRIcon { get => _QRIcon; set { _QRIcon = value; NotifyPropertyChanged(); } }
+        private ImageSource? _QRIcon;
 
         public override object GetConfig() => Config;
 
@@ -199,7 +198,7 @@ namespace ColorVision.Services.Device
             }
             Config.Code = SysResourceModel.Code ?? string.Empty;
             Config.Name = SysResourceModel.Name ?? string.Empty;
-            QRIcon = GetQRCode("http://m.color-vision.com/sys-pd/1.html");
+            QRIcon = QRCodeHelper.GetQRCode("http://m.color-vision.com/sys-pd/1.html");
 
         }
 
@@ -220,24 +219,10 @@ namespace ColorVision.Services.Device
 
             ///每次提交之后重启服务
             RCService.GetInstance().RestartServices();
-            QRIcon = GetQRCode("http://m.color-vision.com/sys-pd/1.html");
+            QRIcon = QRCodeHelper.GetQRCode("http://m.color-vision.com/sys-pd/1.html");
         }
 
-        public static DrawingImage? GetQRCode(string strContent)
-        {
-            try
-            {
-                QRCodeGenerator qrGenerator = new();
-                QRCodeData qrCodeData = qrGenerator.CreateQrCode(strContent, QRCodeGenerator.ECCLevel.H);
-                XamlQRCode qrCode = new(qrCodeData);
-                DrawingImage qrCodeAsXaml = qrCode.GetGraphic(40);
-                return qrCodeAsXaml;
-            }
-            catch
-            {
-                return null;
-            }
-        }
+
 
         public override void Delete()
         {

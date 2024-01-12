@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace ColorVision.Extension
+namespace ColorVision.Common.Extension
 {
     /// <summary>
     /// 对字典的扩展(解决输出不规范的问题)

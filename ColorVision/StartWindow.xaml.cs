@@ -71,7 +71,7 @@ namespace ColorVision
         private async Task InitializedOver()
         {
             //检测服务连接情况，需要在界面启动之后，否则会出现问题。因为界面启动之后才会初始化MQTTControl和MySqlControl，所以代码上问题不大
-            SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
+            SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
 
             Application.Current.Dispatcher.Invoke(() =>
             {
@@ -168,7 +168,7 @@ namespace ColorVision
                 ServiceManager ServiceManager = ServiceManager.GetInstance();
                 try
                 {
-                    if (!GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting.IsDefaultOpenService)
+                    if (!ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.IsDefaultOpenService)
                     {
                         TextBoxMsg.Text += $"{Environment.NewLine}初始化服务";
                         new WindowDevices() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();

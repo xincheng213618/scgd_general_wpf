@@ -369,7 +369,7 @@ namespace ColorVision.Services.Device.Algorithm
                 }
             }
             var pm = TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value;
-            Service.POI(imgFileName, pm.ID, ComboxPoiTemplate.Text, sn);
+            Service.POI(imgFileName, pm.Id, ComboxPoiTemplate.Text, sn);
             handler = PendingBox.Show(Application.Current.MainWindow, "", "计算关注点", true);
             handler.Cancelling += delegate
             {
@@ -405,7 +405,7 @@ namespace ColorVision.Services.Device.Algorithm
             {
                 var pm = TemplateControl.GetInstance().MTFParams[ComboxMTFTemplate.SelectedIndex].Value;
                 var poi_pm = TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value;
-                var ss = Service.MTF(imgFileName, fileExtType, pm.ID, ComboxMTFTemplate.Text, sn, poi_pm.ID, ComboxPoiTemplate.Text);
+                var ss = Service.MTF(imgFileName, fileExtType, pm.Id, ComboxMTFTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate.Text);
                 Helpers.SendCommand(ss, "MTF");
             }
         }
@@ -425,7 +425,7 @@ namespace ColorVision.Services.Device.Algorithm
             if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
             {
                 var pm = TemplateControl.GetInstance().SFRParams[ComboxSFRTemplate.SelectedIndex].Value;
-                var msg = Service.SFR(imgFileName, fileExtType, pm.ID, ComboxSFRTemplate.Text, sn);
+                var msg = Service.SFR(imgFileName, fileExtType, pm.Id, ComboxSFRTemplate.Text, sn);
                 Helpers.SendCommand(msg, "SFR");
             }
 
@@ -445,7 +445,7 @@ namespace ColorVision.Services.Device.Algorithm
             if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
             {
                 var pm = TemplateControl.GetInstance().GhostParams[ComboxGhostTemplate.SelectedIndex].Value;
-                var msg = Service.Ghost(imgFileName, fileExtType, pm.ID, ComboxGhostTemplate.Text, sn);
+                var msg = Service.Ghost(imgFileName, fileExtType, pm.Id, ComboxGhostTemplate.Text, sn);
                 Helpers.SendCommand(msg, "Ghost");
             }
         }
@@ -464,7 +464,7 @@ namespace ColorVision.Services.Device.Algorithm
             if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
             {
                 var pm = TemplateControl.GetInstance().DistortionParams[ComboxDistortionTemplate.SelectedIndex].Value;
-                var msg = Service.Distortion(imgFileName, fileExtType, pm.ID, ComboxDistortionTemplate.Text, sn);
+                var msg = Service.Distortion(imgFileName, fileExtType, pm.Id, ComboxDistortionTemplate.Text, sn);
                 Helpers.SendCommand(msg, "Distortion");
             }
         }
@@ -517,7 +517,7 @@ namespace ColorVision.Services.Device.Algorithm
             if (GetAlgSN(ref sn,ref imgFileName ,ref fileExtType))
             {
                 var pm = TemplateControl.GetInstance().FOVParams[ComboxFOVTemplate.SelectedIndex].Value;
-                var msg = Service.FOV(imgFileName, fileExtType, pm.ID, ComboxFOVTemplate.Text, sn);
+                var msg = Service.FOV(imgFileName, fileExtType, pm.Id, ComboxFOVTemplate.Text, sn);
                 Helpers.SendCommand(msg, "FOV");
             }
         }
@@ -587,7 +587,7 @@ namespace ColorVision.Services.Device.Algorithm
             if (sender is Control button)
             {
                 TemplateControl= TemplateControl.GetInstance();
-                SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
+                SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
                 WindowTemplate windowTemplate;
                 if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
                 {
@@ -670,7 +670,7 @@ namespace ColorVision.Services.Device.Algorithm
             if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
             {
                 var pm = TemplateControl.GetInstance().FocusPointsParams[ComboxFocusPointsTemplate.SelectedIndex].Value;
-                var ss = Service.FocusPoints(ImageFile.Text, fileExtType, pm.ID, ComboxFocusPointsTemplate.Text, sn);
+                var ss = Service.FocusPoints(ImageFile.Text, fileExtType, pm.Id, ComboxFocusPointsTemplate.Text, sn);
                 Helpers.SendCommand(ss, "FocusPoints");
             }
         }
@@ -690,7 +690,7 @@ namespace ColorVision.Services.Device.Algorithm
             if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
             {
                 var pm = TemplateControl.GetInstance().LedCheckParams[ComboxLedCheckTemplate.SelectedIndex].Value;
-                var ss = Service.LedCheck(ImageFile.Text, fileExtType, pm.ID, ComboxLedCheckTemplate.Text, sn);
+                var ss = Service.LedCheck(ImageFile.Text, fileExtType, pm.Id, ComboxLedCheckTemplate.Text, sn);
                 Helpers.SendCommand(ss, "正在计算灯珠");
             }
         }

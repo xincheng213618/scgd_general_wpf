@@ -57,7 +57,7 @@ namespace ColorVision.Services
             svrDevices = new Dictionary<string, List<BaseService>>();
             ServiceTokens = new Dictionary<string,string>();
 
-            UserConfig = GlobalSetting.GetInstance().SoftwareConfig.UserConfig;
+            UserConfig = ConfigHandler.GetInstance().SoftwareConfig.UserConfig;
             StackPanel = new StackPanel();
 
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => Reload();
@@ -143,7 +143,10 @@ namespace ColorVision.Services
                         if (!svrDevices.ContainsKey(svrKey))
                         {
                             svrDevices?.Add(svrKey, new List<BaseService>());
-                            ServiceTokens.Add(service.Code, string.Empty);
+                            if (service.Code != null)
+                            {
+                                ServiceTokens.Add(service.Code, string.Empty);
+                            }
                         }
 
                         foreach (var device in devices)

@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Reflection;
 
-namespace ColorVision.Extension
+namespace ColorVision.Common.Extension
 {
     public static class EnumExtensions
     {

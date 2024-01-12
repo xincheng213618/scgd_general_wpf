@@ -126,7 +126,7 @@ namespace ColorVision.MySql.Service
         {
             List<ModDetailModel> list = new List<ModDetailModel>();
             flowParam.GetDetail(list);
-            detailDao.UpdateByPid(flowParam.ID,list);
+            detailDao.UpdateByPid(flowParam.Id,list);
             ModDetailModel fn = flowParam.GetParameter(FlowParam.propertyName);
             if (fn == null)
             {
@@ -159,7 +159,7 @@ namespace ColorVision.MySql.Service
 
         internal void Save(ParamBase value)
         {
-            if (GetMasterById(value.ID) is ModMasterModel modMasterModel && modMasterModel.Pcode != null)
+            if (GetMasterById(value.Id) is ModMasterModel modMasterModel && modMasterModel.Pcode != null)
             {
                 modMasterModel.Name = value.Name;
                 ModMasterDao modMasterDao = new ModMasterDao(modMasterModel.Pcode);
@@ -167,7 +167,7 @@ namespace ColorVision.MySql.Service
             }
             List<ModDetailModel> list = new List<ModDetailModel>();
             value.GetDetail(list);
-            detailDao.UpdateByPid(value.ID, list);
+            detailDao.UpdateByPid(value.Id, list);
 
 
         }

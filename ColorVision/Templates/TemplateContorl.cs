@@ -81,9 +81,9 @@ namespace ColorVision.Templates
             FocusPointsParams = new ObservableCollection<TemplateModel<FocusPointsParam>>();
             
 
-            GlobalSetting.GetInstance().SoftwareConfig.UseMySqlChanged += (s) =>
+            ConfigHandler.GetInstance().SoftwareConfig.UseMySqlChanged += (s) =>
             {
-                if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+                if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
                     CSVSave();
 
                 Thread  thread  = new Thread(async () =>
@@ -107,7 +107,7 @@ namespace ColorVision.Templates
 
             Application.Current.MainWindow.Closed += (s, e) =>
             {
-                if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+                if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
                     return;
                 CSVSave();
             };
@@ -115,7 +115,7 @@ namespace ColorVision.Templates
             SolutionManager.GetInstance().SolutionLoaded += (s, e) =>
             {
                 TemplatePath = SolutionManager.GetInstance().SolutionDirectory.FullName;
-                if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+                if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
                 {
                     LoadFlowParam();
                 }
@@ -283,7 +283,7 @@ namespace ColorVision.Templates
                 case TemplateType.PoiParam:
                     Save(PoiParams, ModMasterType.POI);
 
-                    if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+                    if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
                     {
                         foreach (var item in PoiParams)
                         {
@@ -340,7 +340,7 @@ namespace ColorVision.Templates
 
         private void Save<T>(ObservableCollection<TemplateModel<T>> t ,string code) where T: ParamBase
         {
-            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+            if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
                 Save2DB(t);
             else 
                 SaveDefault(code, t);
@@ -378,10 +378,10 @@ namespace ColorVision.Templates
 
         public ObservableCollection<TemplateModel<PoiParam>> LoadPoiParam()
         {
-            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+            if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
             {
                 PoiParams.Clear();
-                List<PoiMasterModel> poiMaster = poiService.GetMasterAll(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                List<PoiMasterModel> poiMaster = poiService.GetMasterAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
                 foreach (var dbModel in poiMaster)
                 {
                     PoiParams.Add(new TemplateModel<PoiParam>(dbModel.Name ?? "default", new PoiParam(dbModel)));
@@ -399,7 +399,7 @@ namespace ColorVision.Templates
 
         public PoiParam? AddPoiParam(string TemplateName)
         {
-            PoiMasterModel poiMaster = new PoiMasterModel(TemplateName, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            PoiMasterModel poiMaster = new PoiMasterModel(TemplateName, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             poiService.Save(poiMaster);
 
             int pkId = poiMaster.GetPK();
@@ -416,7 +416,7 @@ namespace ColorVision.Templates
         internal void LoadPoiDetailFromDB(PoiParam poiParam)
         {
             poiParam.PoiPoints.Clear();
-            List<PoiDetailModel> poiDetail = poiService.GetDetailByPid(poiParam.ID);
+            List<PoiDetailModel> poiDetail = poiService.GetDetailByPid(poiParam.Id);
             foreach (var dbModel in poiDetail)
             {
                 poiParam.PoiPoints.Add(new PoiParamData(dbModel));
@@ -426,7 +426,7 @@ namespace ColorVision.Templates
 
         public T? AddParamMode<T>(string code,string Name) where T: ParamBase,new ()
         {
-            ModMasterModel modMaster = new ModMasterModel(code, Name, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            ModMasterModel modMaster = new ModMasterModel(code, Name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             modService.Save(modMaster);
             int pkId = modMaster.GetPK();
             if (pkId > 0)
@@ -441,7 +441,7 @@ namespace ColorVision.Templates
         }
         internal FlowParam? AddFlowParam(string text)
         {
-            ModMasterModel flowMaster = new ModMasterModel(ModMasterType.Flow, text, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            ModMasterModel flowMaster = new ModMasterModel(ModMasterType.Flow, text, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             modService.Save(flowMaster);
             int pkId = flowMaster.GetPK();
             if (pkId > 0)
@@ -455,7 +455,7 @@ namespace ColorVision.Templates
 
         internal ResourceParam? AddDeviceParam(string name, string code, int type, int pid)
         {
-            SysResourceModel sysResource = new SysResourceModel(name, code, type,pid, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            SysResourceModel sysResource = new SysResourceModel(name, code, type,pid, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             resourceService.Save(sysResource);
             int pkId = sysResource.GetPK();
             if (pkId > 0)
@@ -467,7 +467,7 @@ namespace ColorVision.Templates
 
         internal ResourceParam? AddServiceParam(string name,string code,int type)
         {
-            SysResourceModel sysResource = new SysResourceModel(name, code, type, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            SysResourceModel sysResource = new SysResourceModel(name, code, type, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             resourceService.Save(sysResource);
             int pkId = sysResource.GetPK();
             if (pkId > 0)
@@ -479,7 +479,7 @@ namespace ColorVision.Templates
 
         internal MeasureParam? AddMeasureParam(string name)
         {
-            MeasureMasterModel model = new MeasureMasterModel(name, GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            MeasureMasterModel model = new MeasureMasterModel(name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             measureService.Save(model);
             int pkId = model.GetPK();
             if (pkId > 0)
@@ -505,11 +505,11 @@ namespace ColorVision.Templates
         {
                 DicTemplate.TryAdd(ModeType, ParamModes);
             ParamModes.Clear();
-            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+            if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
             {
                 ModMasterDao masterFlowDao = new ModMasterDao(ModeType);
 
-                List<ModMasterModel> smus = masterFlowDao.GetAll(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                List<ModMasterModel> smus = masterFlowDao.GetAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
                 foreach (var dbModel in smus)
                 {
                     List<ModDetailModel> smuDetails = modService.GetDetailByPid(dbModel.Id);
@@ -532,7 +532,7 @@ namespace ColorVision.Templates
         internal ObservableCollection<TemplateModel<FlowParam>> LoadFlowParam()
         {
             FlowParams.Clear();
-            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+            if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
             {
                 List<ModMasterModel> flows = modService.GetFlowAll(UserCenter.GetInstance().TenantId);
                 foreach (var dbModel in flows)
@@ -567,16 +567,16 @@ namespace ColorVision.Templates
 
         internal List<SysResourceModel> LoadAllServices()
         {
-            return resourceService.GetAllServices(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            return resourceService.GetAllServices(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
         }
 
 
         internal ObservableCollection<TemplateModel<MeasureParam>> LoadMeasureParams()
         {
             MeasureParams.Clear();
-            if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
+            if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
             {
-                List<MeasureMasterModel> devices = measureService.GetAll(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                List<MeasureMasterModel> devices = measureService.GetAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
                 foreach (var dbModel in devices)
                 {
                     MeasureParams.Add(new TemplateModel<MeasureParam>(dbModel.Name ?? "default", new MeasureParam(dbModel)));
@@ -618,7 +618,7 @@ namespace ColorVision.Templates
 
         internal List<SysModMasterModel> LoadSysModMaster()
         {
-            return sysModService.GetAll(GlobalSetting.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            return sysModService.GetAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
         }
 
         internal List<ModMasterModel> LoadModMasterByPid(int pid)

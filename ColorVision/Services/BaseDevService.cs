@@ -1,5 +1,5 @@
 ﻿using ColorVision.Services.Device;
-using ColorVision.Extension;
+using ColorVision.Common.Extension;
 using ColorVision.MQTT;
 using ColorVision.MVVM;
 using ColorVision.Services.Msg;

@@ -1,5 +1,5 @@
 ﻿using ColorVision.Draw;
-using ColorVision.Extension;
+using ColorVision.Common.Extension;
 using ColorVision.Media;
 using ColorVision.MVVM;
 using ColorVision.Net;
@@ -368,7 +368,7 @@ namespace ColorVision.Templates
                     UpdateVisualLayout(IsLayoutUpdated);
                 }
             };
-            SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
+            SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
 
             if (PoiParam.Height != 0 && PoiParam.Width != 0)
             {

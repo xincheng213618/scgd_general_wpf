@@ -25,13 +25,13 @@ namespace ColorVision.RC
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            rcServiceConfig = GlobalSetting.GetInstance().SoftwareConfig.RcServiceConfig;
+            rcServiceConfig = ConfigHandler.GetInstance().SoftwareConfig.RcServiceConfig;
             GridRCService.DataContext = rcServiceConfig;
             rcServiceConfigBackUp = new RCServiceConfig();
             rcServiceConfig.CopyTo(rcServiceConfigBackUp);
             PasswordBox1.Password = rcServiceConfig.AppSecret;
 
-            rcServiceConfigs = GlobalSetting.GetInstance().SoftwareConfig.RcServiceConfigs;
+            rcServiceConfigs = ConfigHandler.GetInstance().SoftwareConfig.RcServiceConfigs;
             ListViewRC.ItemsSource = rcServiceConfigs;
 
             rcServiceConfigs.Insert(0, rcServiceConfig);
@@ -61,7 +61,7 @@ namespace ColorVision.RC
             rcServiceConfig.AppSecret = PasswordBox1.Password;
             rcServiceConfigs.Remove(rcServiceConfig);
 
-            GlobalSetting.GetInstance().SaveSoftwareConfig();
+            ConfigHandler.GetInstance().SaveSoftwareConfig();
             Task.Run(() => RCService.GetInstance().ReRegist());
             this.Close();
         }
@@ -111,7 +111,7 @@ namespace ColorVision.RC
                 rcServiceConfig = rcServiceConfigs[listView.SelectedIndex];
                 GridRCService.DataContext = rcServiceConfig;
                 PasswordBox1.Password = rcServiceConfig.AppSecret;
-                GlobalSetting.GetInstance().SoftwareConfig.RcServiceConfig = rcServiceConfig;
+                ConfigHandler.GetInstance().SoftwareConfig.RcServiceConfig = rcServiceConfig;
             }
         }
 

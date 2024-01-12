@@ -1,6 +1,6 @@
 ﻿using ColorVision.Device.Camera.Video;
 using ColorVision.Util;
-using ColorVision.Extension;
+using ColorVision.Common.Extension;
 using System;
 using System.Collections.Generic;
 using System.Windows;
@@ -230,23 +230,23 @@ namespace ColorVision.Device.Camera
 
             foreach (var item in TemplateControl.GetInstance().CalibrationParams)
                 CalibrationParams.Add(item);
+
             TemplateControl.GetInstance().CalibrationParams.CollectionChanged += (s, e) =>
             {
                 switch (e.Action)
                 {
                     case NotifyCollectionChangedAction.Add:
                         // 处理添加项
-                        foreach (TemplateModel<CalibrationParam> newItem in e.NewItems)
-                        {
-                            CalibrationParams.Add(newItem);
-                        }
+                        if(e.NewItems!=null)
+                            foreach (TemplateModel<CalibrationParam> newItem in e.NewItems)
+                                CalibrationParams.Add(newItem);
+
                         break;
                     case NotifyCollectionChangedAction.Remove:
                         // 处理移除项
-                        foreach (TemplateModel<CalibrationParam> oldItem in e.OldItems)
-                        {
-                            CalibrationParams.Remove(oldItem);
-                        }
+                        if (e.OldItems != null)
+                            foreach (TemplateModel<CalibrationParam> newItem in e.OldItems)
+                                CalibrationParams.Remove(newItem);
                         break;
                     case NotifyCollectionChangedAction.Replace:
                         // 处理替换项
@@ -388,12 +388,10 @@ namespace ColorVision.Device.Camera
             }
         }
 
-        private void SendDemo3_Click(object sender, RoutedEventArgs e)
+        private void GetData_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
             {
-                string filename = DateTime.Now.ToString("yyyyMMddHHmmss") + ".tif";
-
                 if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
                 {
                     double[] expTime = null;
@@ -422,8 +420,8 @@ namespace ColorVision.Device.Camera
             if (!DService.IsVideoOpen)
             {
                 DService.CurrentTakeImageMode = TakeImageMode.Live;
-                string host = GlobalSetting.GetInstance().SoftwareConfig.VideoConfig.Host;
-                int port = GlobalSetting.GetInstance().SoftwareConfig.VideoConfig.Port;
+                string host = ConfigHandler.GetInstance().SoftwareConfig.VideoConfig.Host;
+                int port = ConfigHandler.GetInstance().SoftwareConfig.VideoConfig.Port;
                 //bool IsLocal = (host == "127.0.0.1");
                 port = CameraVideoControl.Open(host, port);
                 if (port > 0)
@@ -445,7 +443,7 @@ namespace ColorVision.Device.Camera
                 else
                 {
                     MessageBox.Show("视频模式下，本地端口打开失败");
-                    logger.ErrorFormat("Local socket open failed.{0}:{1}", host, GlobalSetting.GetInstance().SoftwareConfig.VideoConfig.Port);
+                    logger.ErrorFormat("Local socket open failed.{0}:{1}", host, ConfigHandler.GetInstance().SoftwareConfig.VideoConfig.Port);
                 }
             }
         }
@@ -523,7 +521,7 @@ namespace ColorVision.Device.Camera
             if (sender is Button button)
             {
                 TemplateControl = TemplateControl.GetInstance();
-                SoftwareConfig SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
+                SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
                 WindowTemplate windowTemplate;
                 if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
                 {

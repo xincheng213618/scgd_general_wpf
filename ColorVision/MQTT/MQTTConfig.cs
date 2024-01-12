@@ -11,7 +11,7 @@ namespace ColorVision.MQTT
     public class MQTTSetting : ViewModelBase
     {
         private static readonly object _locker = new();
-        private  static string MQTTMsgRecordsFileName { get => GlobalSetting.GetInstance().MQTTMsgRecordsFileName; }
+        private  static string MQTTMsgRecordsFileName { get => ConfigHandler.GetInstance().MQTTMsgRecordsFileName; }
         public MQTTSetting()
         {
             if (File.Exists(MQTTMsgRecordsFileName))

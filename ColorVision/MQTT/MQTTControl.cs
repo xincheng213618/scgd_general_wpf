@@ -59,7 +59,7 @@ namespace ColorVision.MQTT
 
         private MQTTControl()
         {
-            SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
+            SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
         }
 
         public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; MQTTConnectChanged?.Invoke(this, new EventArgs());  NotifyPropertyChanged(); } }

@@ -13,7 +13,7 @@
         public SoftwareConfig SoftwareConfig { get; set; }
         public UserCenter()
         {
-            SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
+            SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
         }
 
 

@@ -39,7 +39,7 @@ namespace ColorVision.Templates
         }
 
         [JsonIgnore]
-        public override int ID { get => Value.ID;}
+        public override int ID { get => Value.Id;}
 
         [JsonIgnore]
         public override string Key

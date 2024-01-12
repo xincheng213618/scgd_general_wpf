@@ -82,7 +82,7 @@ namespace ColorVision.Update
                         {
                             WindowUpdate windowUpdate = new WindowUpdate() {  Owner =Application.Current.MainWindow ,WindowStartupLocation = WindowStartupLocation.CenterOwner};
                             windowUpdate.Show();
-                            DownloadAndUpdate(LatestVersion);
+                            Task.Run(() => DownloadAndUpdate(LatestVersion));
                         }
                     });              
                 }

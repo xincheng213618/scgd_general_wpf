@@ -33,7 +33,7 @@ namespace ColorVision.Solution.V
                 FileInfo fileInfo = new FileInfo(FullPath);
                 if (fileInfo !=null)
                 {
-                    DirectoryInfo = fileInfo.Directory;
+                    DirectoryInfo = fileInfo.Directory ??new DirectoryInfo(FullPath);
                     this.Name = Path.GetFileNameWithoutExtension(FullPath);
                     if (DirectoryInfo != null)
                     {

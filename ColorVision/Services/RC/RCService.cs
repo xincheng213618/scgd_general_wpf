@@ -85,7 +85,7 @@ namespace ColorVision.RC
 
         public void LoadCfg()
         {
-            RCServiceConfig RcServiceConfig = GlobalSetting.GetInstance().SoftwareConfig.RcServiceConfig;
+            RCServiceConfig RcServiceConfig = ConfigHandler.GetInstance().SoftwareConfig.RcServiceConfig;
             this.AppId = RcServiceConfig.AppId;
             this.AppSecret = RcServiceConfig.AppSecret;
             this.RCNodeName = RcServiceConfig.RCName;
@@ -218,7 +218,6 @@ namespace ColorVision.RC
         public static void UpdateServiceStatus(Dictionary<string, List<MQTTNodeService>> data)
         {
             List<ServiceKind> svrs = new List<ServiceKind>(ServiceManager.GetInstance().Services);
-           Dictionary<string,string> tokens = ServiceManager.GetInstance().ServiceTokens;
             foreach (var serviceKind in svrs)
             {
                 //if (serviceKind.ServiceType.ToString() == ServiceType.Algorithm.ToString())
@@ -230,10 +229,6 @@ namespace ColorVision.RC
                         Dictionary<string, List<MQTTNodeService>> keyValuePairs = new Dictionary<string, List<MQTTNodeService>>();
                         foreach (var nodeService in item.Value)
                         {
-                            if (tokens.ContainsKey(nodeService.ServiceName))
-                            {
-                                tokens[nodeService.ServiceName] = nodeService.ServiceToken;
-                            }
                             if (keyValuePairs.ContainsKey(nodeService.UpChannel))
                                 keyValuePairs[nodeService.UpChannel].Add(nodeService);
                             else

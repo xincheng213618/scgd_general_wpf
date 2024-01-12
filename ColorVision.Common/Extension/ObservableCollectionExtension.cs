@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 
-namespace ColorVision.Extension
+namespace ColorVision.Common.Extension
 {
     /// <summary>
     /// ObservableCollection 类的一些扩展函数。

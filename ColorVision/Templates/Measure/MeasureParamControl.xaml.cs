@@ -27,7 +27,7 @@ namespace ColorVision.Templates
 
         public MParamConfig(PoiParam item)
         {
-            ID = item.ID;
+            ID = item.Id;
             Name = item.PoiName;
             Type = "POI";
         }

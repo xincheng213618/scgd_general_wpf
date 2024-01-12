@@ -307,20 +307,21 @@ namespace ColorVision.Services.Device.Camera.Calibrations
 
     public class CalibrationParam : ParamBase
     {
-        public string CalibrationMode { get; set; } = string.Empty;
+        public string CalibrationMode { get { return GetValue(_CalibrationMode); } set {  SetProperty(ref _CalibrationMode, value);  } }
+        private string _CalibrationMode;
         public List<string> CalibrationModeList { get; set; }
         public CalibrationNormal Normal { get; set; }
         public CalibrationColor Color { get; set; }
 
         public CalibrationParam()
         {
-            ID = -1;
+            Id = -1;
             Normal = new CalibrationNormal(new List<ModDetailModel>(), "");
             Color = new CalibrationColor(new List<ModDetailModel>());
             CalibrationModeList = CalibrationRsourceService.GetInstance().CalibrationModeList;
         }
 
-        public CalibrationParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ,modDetails)
+        public CalibrationParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name??string.Empty ,modDetails)
         {
             Normal = new CalibrationNormal(modDetails, "");
             Color = new CalibrationColor(modDetails);

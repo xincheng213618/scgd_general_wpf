@@ -1,5 +1,5 @@
-﻿using ColorVision.Extension;
-using ColorVision.MVVM;
+﻿using ColorVision.MVVM;
+using ColorVision.Common.Extension;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;

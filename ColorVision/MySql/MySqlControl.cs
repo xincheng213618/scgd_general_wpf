@@ -21,7 +21,7 @@ namespace ColorVision.MySql
 
         public MySqlControl()
         {
-            SoftwareConfig = GlobalSetting.GetInstance().SoftwareConfig;
+            SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
         }
 
         public event EventHandler MySqlConnectChanged;

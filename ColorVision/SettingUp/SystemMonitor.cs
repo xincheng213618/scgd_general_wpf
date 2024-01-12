@@ -58,7 +58,7 @@ namespace ColorVision.SettingUp
 
         public SystemMonitor()
         {
-            Setting = GlobalSetting.GetInstance().SoftwareConfig.SystemMonitorSetting;
+            Setting = ConfigHandler.GetInstance().SoftwareConfig.SystemMonitorSetting;
             Task.Run(() => 
             {
                 try

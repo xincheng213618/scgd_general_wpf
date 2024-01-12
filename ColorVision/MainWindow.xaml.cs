@@ -25,14 +25,14 @@ namespace ColorVision
     {
         public ViewGridManager ViewGridManager { get; set; }
 
-        public GlobalSetting GlobalSetting { get; set; }
+        public ConfigHandler ConfigHandler { get; set; }
         public SoftwareSetting SoftwareSetting
         {
             get
             {
-                if (GlobalSetting.SoftwareConfig.SoftwareSetting == null)
-                    GlobalSetting.SoftwareConfig.SoftwareSetting = new SoftwareSetting();
-                return GlobalSetting.SoftwareConfig.SoftwareSetting;
+                if (ConfigHandler.SoftwareConfig.SoftwareSetting == null)
+                    ConfigHandler.SoftwareConfig.SoftwareSetting = new SoftwareSetting();
+                return ConfigHandler.SoftwareConfig.SoftwareSetting;
             }
         }  
         public MainWindow()
@@ -62,7 +62,7 @@ namespace ColorVision
 
         private  void Window_Initialized(object sender, EventArgs e)
         {
-            GlobalSetting = GlobalSetting.GetInstance();
+            ConfigHandler = ConfigHandler.GetInstance();
             SolutionManager.GetInstance();
 
             if (!WindowConfig.IsExist||(WindowConfig.IsExist&& WindowConfig.Icon == null)) {
@@ -83,8 +83,8 @@ namespace ColorVision
             ViewGridManager = ViewGridManager.GetInstance();
             ViewGridManager.MainView = ViewGrid;
 
-            StatusBarGrid.DataContext = GlobalSetting.GetInstance();
-            MenuStatusBar.DataContext = GlobalSetting.GetInstance().SoftwareConfig;
+            StatusBarGrid.DataContext = ConfigHandler.GetInstance();
+            MenuStatusBar.DataContext = ConfigHandler.GetInstance().SoftwareConfig;
 
             FlowDisplayControl flowDisplayControl = new FlowDisplayControl();
             SPDisplay.Children.Insert(0, flowDisplayControl);
@@ -145,7 +145,7 @@ namespace ColorVision
 
 #endif
 
-            if (GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting.IsAutoUpdate)
+            if (ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.IsAutoUpdate)
             {
                 Thread thread1 = new Thread(async () => await CheckUpdate()) { IsBackground = true };
                 thread1.Start();

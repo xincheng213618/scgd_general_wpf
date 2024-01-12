@@ -369,13 +369,13 @@ namespace ColorVision.Device.Camera
                 Params = Params
             };
             Params.Add("ExpTime", expTime);
-            if (param.ID == -1)
+            if (param.Id == -1)
             {
-                Params.Add("Calibration", new CVTemplateParam() { ID = param.ID,Name = string.Empty });
+                Params.Add("Calibration", new CVTemplateParam() { ID = param.Id,Name = string.Empty });
             }
             else
             {
-                Params.Add("Calibration", new CVTemplateParam() { ID = param.ID, Name = param.Name });
+                Params.Add("Calibration", new CVTemplateParam() { ID = param.Id, Name = param.Name });
             }
 
             double timeout = 0;

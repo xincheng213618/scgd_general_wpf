@@ -18,39 +18,39 @@
     <StackPanel Margin="0">
         <DockPanel  Margin="0,2">
             <TextBlock DockPanel.Dock="Left" Text="校正文件"  Width="80" />
-            <hc:ComboBox  Text="{Binding CalibrationMode}" ItemsSource="{Binding CalibrationModeList}"  SelectionChanged="ComboBox_SelectionChanged" />
+            <hc:ComboBox Text="{Binding CalibrationMode}" ItemsSource="{Binding CalibrationModeList}"  SelectionChanged="ComboBox_SelectionChanged" />
         </DockPanel>
         <Border  BorderThickness="1" BorderBrush="{DynamicResource  BorderBrush}" CornerRadius="5" Margin="0,5">
             <StackPanel Margin="5">
                 <DockPanel  Margin="0,2">
                     <TextBlock DockPanel.Dock="Left" Text="暗噪声"  Width="80" />
                     <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding  Normal.DarkNoise.IsSelected}"   Margin="5,0"/>
-                    <TextBox  Text="{Binding  Normal.DarkNoise.FilePath}"/>
+                    <TextBox IsEnabled="False"  Text="{Binding  Normal.DarkNoise.FilePath}"/>
                 </DockPanel>
                 <DockPanel  Margin="0,2">
                     <TextBlock DockPanel.Dock="Left" Text="DSNU" Width="80"  />
                     <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding Normal.DSNU.IsSelected}"   Margin="5,0"/>
-                    <TextBox  Text="{Binding  Normal.DSNU.FilePath}"  />
+                    <TextBox IsEnabled="False" Text="{Binding  Normal.DSNU.FilePath}"  />
                 </DockPanel>
                 <DockPanel  Margin="0,2">
                     <TextBlock DockPanel.Dock="Left" Text="缺陷点" Width="80"  />
                     <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding Normal.DefectPoint.IsSelected}"   Margin="5,0"/>
-                    <TextBox  Text="{Binding  Normal.DefectPoint.FilePath}" />
+                    <TextBox IsEnabled="False" Text="{Binding  Normal.DefectPoint.FilePath}" />
                 </DockPanel>
                 <DockPanel  Margin="0,2">
                     <TextBlock DockPanel.Dock="Left" Text="色偏" Width="80"  />
                     <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding Normal.ColorShift.IsSelected}"   Margin="5,0"/>
-                    <TextBox  Text="{Binding  Normal.ColorShift.FilePath}" />
+                    <TextBox IsEnabled="False" Text="{Binding  Normal.ColorShift.FilePath}" />
                 </DockPanel>
                 <DockPanel  Margin="0,2">
                     <TextBlock DockPanel.Dock="Left" Text="畸变" Width="80"  />
                     <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding Normal.Distortion.IsSelected}"   Margin="5,0"/>
-                    <TextBox  Text="{Binding  Normal.Distortion.FilePath}" />
+                    <TextBox IsEnabled="False" Text="{Binding  Normal.Distortion.FilePath}" />
                 </DockPanel>
                 <DockPanel Margin="0,2">
                     <TextBlock DockPanel.Dock="Left" Text="均匀场" Width="80"  />
                     <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding Normal.Uniformity.IsSelected}"   Margin="5,0"/>
-                    <TextBox  Text="{Binding Normal.Uniformity.FilePath}" />
+                    <TextBox IsEnabled="False" Text="{Binding Normal.Uniformity.FilePath}" />
                 </DockPanel>
             </StackPanel>
         </Border>
@@ -60,22 +60,22 @@
                 <DockPanel  Margin="0,2">
                     <TextBlock DockPanel.Dock="Left" Text="亮度" Width="80"  />
                     <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding Color.Luminance.IsSelected}"   Margin="5,0"/>
-                    <TextBox  Text="{Binding Color.Luminance.FilePath}"  />
+                    <TextBox IsEnabled="False" Text="{Binding Color.Luminance.FilePath}"  />
                 </DockPanel>
                 <DockPanel  Margin="0,2">
                     <TextBlock DockPanel.Dock="Left" Text="单色" Width="80"  />
                     <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding Color.LumOneColor.IsSelected}"   Margin="5,0"/>
-                    <TextBox Text="{Binding Color.LumOneColor.FilePath}" />
+                    <TextBox IsEnabled="False" Text="{Binding Color.LumOneColor.FilePath}" />
                 </DockPanel>
                 <DockPanel  Margin="0,2">
                     <TextBlock DockPanel.Dock="Left" Text="四色" Width="80"  />
                     <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding Color.LumFourColor.IsSelected}"   Margin="5,0"/>
-                    <TextBox Text="{Binding Color.LumFourColor.FilePath}"  />
+                    <TextBox IsEnabled="False" Text="{Binding Color.LumFourColor.FilePath}"  />
                 </DockPanel>
                 <DockPanel  Margin="0,2">
                     <TextBlock DockPanel.Dock="Left" Text="多色" Width="80"  />
                     <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding Color.LumMultiColor.IsSelected}"   Margin="5,0"/>
-                    <TextBox Text="{Binding Color.LumMultiColor.FilePath}" />
+                    <TextBox IsEnabled="False" Text="{Binding Color.LumMultiColor.FilePath}" />
                 </DockPanel>
             </StackPanel>
         </GroupBox>

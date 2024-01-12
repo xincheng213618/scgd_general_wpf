@@ -29,7 +29,7 @@ namespace ColorVision
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
-            var SoftwareSetting = GlobalSetting.GetInstance().SoftwareConfig.SoftwareSetting;
+            var SoftwareSetting = ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting;
             this.ApplyTheme(SoftwareSetting.Theme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(SoftwareSetting.UICulture);
             //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en");
