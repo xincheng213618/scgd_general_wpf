@@ -8,13 +8,6 @@
         xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         mc:Ignorable="d"
         Title="四色标定" Height="450" Width="800" Background="#F0F0F0">
-    <Window.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/ColorVision;component/Theme/GroupBox.xaml"/>
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition  Width="auto"/>
@@ -91,13 +84,6 @@
                 </draw:ZoomboxSub>
             </Border>
             <ListView  x:Name="ListView1" Grid.Row="1" ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged" >
-                <ListView.Resources>
-                    <ResourceDictionary>
-                        <ResourceDictionary.MergedDictionaries>
-                            <ResourceDictionary Source="/Theme/Listview.xaml"/>
-                        </ResourceDictionary.MergedDictionaries>
-                    </ResourceDictionary>
-                </ListView.Resources>
                 <ListView.View>
                     <GridView>
                         <GridViewColumn >

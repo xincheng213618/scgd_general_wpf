@@ -12,8 +12,5 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         <local:TreeViewControl/>
-
-
-
     </Grid>
 </Window>
