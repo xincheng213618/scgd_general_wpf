@@ -1,5 +1,7 @@
 ﻿using ColorVision.Services;
 using ColorVision.Services.Device;
+using MQTTMessageLib;
+using Newtonsoft.Json;
 
 namespace ColorVision.Device.Spectrum.Configs
 {
@@ -21,5 +23,35 @@ namespace ColorVision.Device.Spectrum.Configs
         public ShutterConfig ShutterCfg { get => _ShutterCfg; set { _ShutterCfg = value; NotifyPropertyChanged(); } }
         private ShutterConfig _ShutterCfg;
 
+        [JsonIgnore]
+        public string BtnDeviceStatus
+        {
+            get
+            {
+                string text = DeviceStatus.ToString();
+                switch (DeviceStatus)
+                {
+                    case DeviceStatusType.Unknown:
+                        break;
+                    case DeviceStatusType.Closed:
+                        text = "打开";
+                        break;
+                    case DeviceStatusType.Closing:
+                        break;
+                    case DeviceStatusType.Opened:
+                        text = "关闭";
+                        break;
+                    case DeviceStatusType.Opening:
+                        break;
+                    case DeviceStatusType.Busy:
+                        break;
+                    case DeviceStatusType.Free:
+                        break;
+                    default:
+                        break;
+                }
+                return text;
+            }
+        }
     }
 }
