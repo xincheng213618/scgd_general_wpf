@@ -88,6 +88,9 @@
                 <Button HorizontalAlignment="Right"   Click="Button_Del_Click" >
                     <TextBlock Text="删除"/>
                 </Button>
+                <Button HorizontalAlignment="Right"   Click="Button_Save_Click" >
+                    <TextBlock Text="保存"/>
+                </Button>
                 <Button  HorizontalAlignment="Right"  Click="Button_Export_Click" >
                     <TextBlock Text="导出"/>
                 </Button>

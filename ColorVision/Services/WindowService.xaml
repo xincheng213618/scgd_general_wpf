@@ -23,7 +23,7 @@
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <TreeView x:Name="TreeView1" Loaded="TreeView1_Loaded" ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectedItemChanged="TreeView1_SelectedItemChanged " Margin="5">
+                <TreeView x:Name="TreeView1" Loaded="TreeView1_Loaded"  ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectedItemChanged="TreeView1_SelectedItemChanged " Margin="5">
                     <TreeView.Resources>
                         <HierarchicalDataTemplate DataType="{x:Type local:ServiceKind}" ItemsSource="{Binding VisualChildren}" >
                             <StackPanel >
@@ -46,6 +46,7 @@
                     <TreeView.ItemContainerStyle>
                         <Style TargetType="{x:Type TreeViewItem}" BasedOn="{StaticResource TreeViewItemBaseStyle}">
                             <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                            <Setter Property="IsExpanded" Value="{Binding IsExpanded}"/>
                         </Style>
                     </TreeView.ItemContainerStyle>
                 </TreeView>

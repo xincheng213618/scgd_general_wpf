@@ -503,7 +503,7 @@ namespace ColorVision.Templates
 
         private void LoadModParam<T>(ObservableCollection<TemplateModel<T>> ParamModes, string ModeType) where T : ParamBase,new ()
         {
-            DicTemplate.TryAdd(ModeType, ParamModes);
+                DicTemplate.TryAdd(ModeType, ParamModes);
             ParamModes.Clear();
             if (GlobalSetting.GetInstance().SoftwareConfig.IsUseMySql)
             {

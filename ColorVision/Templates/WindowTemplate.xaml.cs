@@ -398,6 +398,7 @@ namespace ColorVision.Templates
 
         private void Button_Save_Click(object sender, RoutedEventArgs e)
         {
+            TemplateSave();
         }
 
         private void Button_New_Click(object sender, RoutedEventArgs e)
