@@ -94,7 +94,7 @@ namespace ColorVision.Device.Camera
         }
         public void GetAllDevice()
         {
-            PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });
+            //PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });
         }
     }
 }
