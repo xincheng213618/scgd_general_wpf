@@ -388,12 +388,10 @@ namespace ColorVision.Device.Camera
             }
         }
 
-        private void SendDemo3_Click(object sender, RoutedEventArgs e)
+        private void GetData_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
             {
-                string filename = DateTime.Now.ToString("yyyyMMddHHmmss") + ".tif";
-
                 if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
                 {
                     double[] expTime = null;
