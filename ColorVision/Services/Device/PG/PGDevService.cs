@@ -191,7 +191,8 @@ namespace ColorVision.Device.PG
                 if (Config.Code.Equals(item.Key, System.StringComparison.Ordinal))
                 {
                     var dev = item.Value;
-                    switch (dev.Status)
+                    DeviceStatusType devStatus = (DeviceStatusType)System.Enum.Parse(typeof(DeviceStatusType), dev.Status);
+                    switch (devStatus)
                     {
                         case MQTTMessageLib.DeviceStatusType.Unknown:
                             heartbeat.DeviceStatus = DeviceStatusType.Closed;

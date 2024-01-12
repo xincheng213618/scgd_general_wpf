@@ -36,6 +36,7 @@ namespace ColorVision.Services
 
 
         public ObservableCollection<ServiceKind> Services { get; set; }
+        public Dictionary<string,string> ServiceTokens { get; set; }
         public ObservableCollection<BaseChannel> Devices { get; set; }
 
         public SysResourceService ResourceService { get; set; }
@@ -54,6 +55,7 @@ namespace ColorVision.Services
             Services = new ObservableCollection<ServiceKind>();
             Devices = new ObservableCollection<BaseChannel>();
             svrDevices = new Dictionary<string, List<BaseService>>();
+            ServiceTokens = new Dictionary<string,string>();
 
             UserConfig = GlobalSetting.GetInstance().SoftwareConfig.UserConfig;
             StackPanel = new StackPanel();
@@ -140,7 +142,10 @@ namespace ColorVision.Services
 
                         svrDevices ??= new Dictionary<string, List<BaseService>>();
                         if (!svrDevices.ContainsKey(svrKey))
+                        {
                             svrDevices?.Add(svrKey, new List<BaseService>());
+                            ServiceTokens.Add(service.Code, string.Empty);
+                        }
 
                         foreach (var device in devices)
                         {

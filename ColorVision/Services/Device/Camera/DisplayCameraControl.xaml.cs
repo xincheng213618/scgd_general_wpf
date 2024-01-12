@@ -324,6 +324,10 @@ namespace ColorVision.Device.Camera
             {
                 switch (e)
                 {
+                    case DeviceStatusType.OffLine:
+                        ButtonInit.Visibility = Visibility.Visible;
+                        StackPanelOpen.Visibility = Visibility.Collapsed;
+                        break;
                     case DeviceStatusType.Closed:
                         ButtonInit.Visibility = Visibility.Collapsed;
                         StackPanelOpen.Visibility = Visibility.Visible;
@@ -334,6 +338,7 @@ namespace ColorVision.Device.Camera
                         break;
                     case DeviceStatusType.Closing:
                         break;
+                    case DeviceStatusType.LiveOpened:
                     case DeviceStatusType.Opened:
                         ButtonOpen.Visibility = Visibility.Collapsed;
                         ButtonClose.Visibility = Visibility.Visible;
