@@ -24,7 +24,7 @@
                 <Button Background="Transparent" BorderThickness="0" Command="{Binding PropertyCommand}" />
             </Grid>
             <Grid>
-                <TextBlock HorizontalAlignment="Right" Text="{Binding Config.BtnDeviceStatus}"/>
+                <TextBlock HorizontalAlignment="Right" Text="{Binding Config.DeviceStatus}"/>
                 <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Content="{Binding Config.Name}"  FontSize="15"  IsChecked="{Binding IsDisplayOpen}" />
                 <Grid  Height="18"   HorizontalAlignment="Left" MouseLeftButtonDown="Grid_MouseLeftButtonDown" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" Background="{DynamicResource GlobalBackground}" Margin="4,0,0,0">
                     <Image Source="{Binding Icon}"/>
