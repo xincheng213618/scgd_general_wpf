@@ -36,7 +36,7 @@
                 <DockPanel Margin="2">
                     <CheckBox IsChecked="{Binding Config.IsNet}" VerticalAlignment="Center" Content="网络" DockPanel.Dock="Right" IsEnabled="False"/>
                     <Button x:Name="ButtonSourceMeter1" Margin="10,0" DockPanel.Dock="Right" Content="打开"  Click="ButtonSourceMeter1_Click"/>
-                    <TextBox x:Name="TextSourceMeterIP" Text="{Binding Config.ID}" BorderThickness="0,0,0,1" IsEnabled="False" />
+                    <TextBox x:Name="TextSourceMeterIP" Text="{Binding Config.Id}" BorderThickness="0,0,0,1" IsEnabled="False" />
                 </DockPanel>
                 
                 <GroupBox Header="源选择" Margin="0,5">
