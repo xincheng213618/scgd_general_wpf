@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1401,CA1051
+﻿#pragma warning disable CA1401,CA1051,CA2101
 using System;
 using System.Runtime.InteropServices;
 

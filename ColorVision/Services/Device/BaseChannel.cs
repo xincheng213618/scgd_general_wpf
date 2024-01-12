@@ -92,8 +92,8 @@ namespace ColorVision.Services.Device
 
         public override ImageSource Icon { get => _Icon; set { _Icon = value; NotifyPropertyChanged(); } }
         private ImageSource _Icon;
-        public  ImageSource QRIcon { get => _QRIcon; set { _QRIcon = value; NotifyPropertyChanged(); } }
-        private ImageSource _QRIcon;
+        public  ImageSource? QRIcon { get => _QRIcon; set { _QRIcon = value; NotifyPropertyChanged(); } }
+        private ImageSource? _QRIcon;
 
         public override object GetConfig() => Config;
 

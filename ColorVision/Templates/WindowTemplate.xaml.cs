@@ -679,7 +679,8 @@ namespace ColorVision.Templates
 
                         CalibrationParam? calibrationParam1 = JsonConvert.DeserializeObject<CalibrationParam>(File.ReadAllText(ofd.FileName));
                         CalibrationParam? calibrationParam = TemplateControl.AddParamMode<CalibrationParam>(TemplateTypeFactory.GetModeTemplateType(TemplateType), name);
-                        calibrationParam1.CopyTo(calibrationParam);
+                        if (calibrationParam1 != null && calibrationParam!=null)
+                            calibrationParam1.CopyTo(calibrationParam);
                         if (calibrationParam != null)
                         {
                             CreateNewTemplate(TemplateControl.CalibrationParams, name, calibrationParam);

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ColorVision.Extension
+namespace ColorVision.Common.Extension
 {
     public static class TypeExtensions
     {

@@ -96,13 +96,12 @@ namespace ColorVision.Device.Camera
                         string Calibrationcfg = path + "\\Calibration.cfg";
                         Dictionary<string, List<ColorVisionVCalibratioItem>> keyValuePairs = JsonConvert.DeserializeObject<Dictionary<string, List<ColorVisionVCalibratioItem>>>(File.ReadAllText(Calibrationcfg));
 
+                        if (keyValuePairs != null)
+                            foreach (var item in keyValuePairs)
+                                if (!Config.Calibration.ContainsKey(item.Key))
+                                    Config.Calibration.Add(item.Key, item.Value);
 
-                        foreach (var item in keyValuePairs)
-                        {
-                            if (!Config.Calibration.ContainsKey(item.Key))
-                                Config.Calibration.Add(item.Key,item.Value);
-                        }
-                        
+
                         string cachepath = path + "\\Calibration";
                         if (Directory.Exists(cachepath))
                             Directory.Delete(cachepath,true);

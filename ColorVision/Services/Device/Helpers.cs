@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 using Panuon.WPF.UI;
-using ColorVision.Extension;
+using ColorVision.Common.Extension;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Input;

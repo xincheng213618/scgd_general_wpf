@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using ColorVision.Extension;
+using ColorVision.Common.Extension;
 using ColorVision.Themes;
 using ColorVision.Language;
 using System.Globalization;

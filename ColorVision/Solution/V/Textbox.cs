@@ -1,17 +1,16 @@
-﻿using ColorVision.Solution.V;
+﻿#pragma warning disable CA1010
+using ColorVision.Solution.V;
 using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace ColorVision.Solution
 {
-
-
-
-
     public partial class TreeViewTextbox : ResourceDictionary
     {
+
         private void TextBox_LostFocus(object sender, RoutedEventArgs e)
         {
             if (sender is TextBox tb && tb.Tag is VObject baseObject)

@@ -186,9 +186,6 @@ namespace ColorVision.Templates
         public string Name { get => _Name; set { _Name = value ; NotifyPropertyChanged(); } }
         private string _Name;
 
-
-        private Dictionary<string, ModDetailModel> parameters;
-
         public ParamBase() : base(new List<ModDetailModel>())
         {
             this.Id = No++;

@@ -1,5 +1,5 @@
 ﻿using ColorVision.Draw;
-using ColorVision.Extension;
+using ColorVision.Common.Extension;
 using ColorVision.Media;
 using ColorVision.MVVM;
 using ColorVision.Net;

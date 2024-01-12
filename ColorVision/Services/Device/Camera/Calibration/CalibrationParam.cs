@@ -320,7 +320,7 @@ namespace ColorVision.Services.Device.Camera.Calibrations
             CalibrationModeList = CalibrationRsourceService.GetInstance().CalibrationModeList;
         }
 
-        public CalibrationParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ,modDetails)
+        public CalibrationParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name??string.Empty ,modDetails)
         {
             Normal = new CalibrationNormal(modDetails, "");
             Color = new CalibrationColor(modDetails);

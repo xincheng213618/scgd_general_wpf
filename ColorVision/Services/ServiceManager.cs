@@ -144,7 +144,10 @@ namespace ColorVision.Services
                         if (!svrDevices.ContainsKey(svrKey))
                         {
                             svrDevices?.Add(svrKey, new List<BaseService>());
-                            ServiceTokens.Add(service.Code, string.Empty);
+                            if (service.Code != null)
+                            {
+                                ServiceTokens.Add(service.Code, string.Empty);
+                            }
                         }
 
                         foreach (var device in devices)

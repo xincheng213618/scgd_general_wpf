@@ -6,7 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
-using ColorVision.Extension;
+using ColorVision.Common.Extension;
 using ColorVision.Services.Device.Camera.Calibrations;
 using ColorVision.Services.Msg;
 using ColorVision.Sorts;
@@ -156,12 +156,15 @@ namespace ColorVision.Device.Camera
                     {
                         if (s is Upload upload)
                         {
-                            MsgRecord msgRecord = DService?.UploadCalibrationFile(upload.UploadFileName, upload.UploadFilePath, (int)item);
-                            msgRecord.MsgRecordStateChanged += (s) =>
+                            if (DService != null)
                             {
-                                CalibrationRsources = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item, Device.MySqlId);
-                                listView.ItemsSource = CalibrationRsources;
-                            };
+                                MsgRecord msgRecord = DService.UploadCalibrationFile(upload.UploadFileName, upload.UploadFilePath, (int)item);
+                                msgRecord.MsgRecordStateChanged += (s) =>
+                                {
+                                    CalibrationRsources = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item, Device.MySqlId);
+                                    listView.ItemsSource = CalibrationRsources;
+                                };
+                            }
                         }
                     };
                     uploadCalibration.ShowDialog();

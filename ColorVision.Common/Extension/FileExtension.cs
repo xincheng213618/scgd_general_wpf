@@ -1,4 +1,6 @@
-﻿namespace ColorVision.Util.Extension
+﻿using ColorVision.Util;
+
+namespace ColorVision.Common.Extension
 {
     public static class FileExtension
     {

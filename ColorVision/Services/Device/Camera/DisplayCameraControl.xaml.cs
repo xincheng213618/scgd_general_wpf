@@ -1,6 +1,6 @@
 ﻿using ColorVision.Device.Camera.Video;
 using ColorVision.Util;
-using ColorVision.Extension;
+using ColorVision.Common.Extension;
 using System;
 using System.Collections.Generic;
 using System.Windows;
@@ -230,23 +230,23 @@ namespace ColorVision.Device.Camera
 
             foreach (var item in TemplateControl.GetInstance().CalibrationParams)
                 CalibrationParams.Add(item);
+
             TemplateControl.GetInstance().CalibrationParams.CollectionChanged += (s, e) =>
             {
                 switch (e.Action)
                 {
                     case NotifyCollectionChangedAction.Add:
                         // 处理添加项
-                        foreach (TemplateModel<CalibrationParam> newItem in e.NewItems)
-                        {
-                            CalibrationParams.Add(newItem);
-                        }
+                        if(e.NewItems!=null)
+                            foreach (TemplateModel<CalibrationParam> newItem in e.NewItems)
+                                CalibrationParams.Add(newItem);
+
                         break;
                     case NotifyCollectionChangedAction.Remove:
                         // 处理移除项
-                        foreach (TemplateModel<CalibrationParam> oldItem in e.OldItems)
-                        {
-                            CalibrationParams.Remove(oldItem);
-                        }
+                        if (e.OldItems != null)
+                            foreach (TemplateModel<CalibrationParam> newItem in e.OldItems)
+                                CalibrationParams.Remove(newItem);
                         break;
                     case NotifyCollectionChangedAction.Replace:
                         // 处理替换项

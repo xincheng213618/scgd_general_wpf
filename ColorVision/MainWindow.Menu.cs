@@ -21,7 +21,7 @@ using ColorVision.Language;
 using ColorVision.Themes;
 using System.Globalization;
 using System.Threading;
-using ColorVision.Extension;
+using ColorVision.Common.Extension;
 using ColorVision.Update;
 using ColorVision.Services.Device.Camera.Calibrations;
 
