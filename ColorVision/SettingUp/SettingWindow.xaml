@@ -225,7 +225,7 @@
                                     </StackPanel>
                                 </Border>
 
-                                <Border Style="{StaticResource BorderModuleArea}" CornerRadius="8" Margin="0,5">
+                                <Border Style="{StaticResource BorderModuleArea}" CornerRadius="8">
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="5" >
                                             <Button DockPanel.Dock="Right" Content="{x:Static resx:Resource.Reset}" Click="SetProjectDefault__Click"  />
