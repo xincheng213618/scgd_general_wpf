@@ -32,7 +32,6 @@ namespace ColorVision
     /// </summary>
     public partial class MainWindow
     {
-        TemplateControl TemplateControl { get; set; }
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
