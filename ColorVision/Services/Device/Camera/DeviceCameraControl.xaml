@@ -93,6 +93,8 @@
                                                 </DockPanel>
                                                 <Button Content="上传校正文件"  Command="{Binding UploadCalibrationCommand}" />
                                                 <Button Content="校正模板设置" Tag="Calibration"  Click="MenuItem_Template" />
+                                                <Button Content="校正模板管理" Tag="Calibration"  Click="MenuItem_Template" />
+
                                             </StackPanel>
                                             <Image Source="{Binding QRIcon}"  Height="100" Width="100"  HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0"/>
                                         </Grid>
