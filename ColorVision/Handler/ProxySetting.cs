@@ -1,6 +1,8 @@
 ﻿using Microsoft.Win32;
+using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using static v2rayN.Handler.ProxySetting.InternetConnectionOption;
+using static ColorVision.Handler.ProxySetting.InternetConnectionOption;
 
 namespace ColorVision.Handler
 {
@@ -52,7 +54,7 @@ namespace ColorVision.Handler
             }
             else if (type is 2 or 4) // named proxy or autoproxy script URL
             {
-                optionCount = Utils.IsNullOrEmpty(exceptions) ? 2 : 3;
+                optionCount = String.IsNullOrEmpty(exceptions) ? 2 : 3;
             }
 
             int m_Int = (int)PerConnFlags.PROXY_TYPE_DIRECT;

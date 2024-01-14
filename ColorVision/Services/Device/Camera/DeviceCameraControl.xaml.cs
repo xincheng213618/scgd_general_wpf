@@ -239,5 +239,10 @@ namespace ColorVision.Device.Camera
         {
 
         }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("导入模板");
+        }
     }
 }
