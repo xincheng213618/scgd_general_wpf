@@ -20,6 +20,8 @@ namespace ColorVision
 
         public const string ConfigPath = "Config";
 
+        public const string UpdatePath = "http://xc213618.ddns.me:9999/D%3A";
+
         public const string AutoRunRegPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
         public const string AutoRunName = "ColorVisionAutoRun";
 

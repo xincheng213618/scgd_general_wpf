@@ -21,7 +21,7 @@ namespace ColorVision.Update
         public static AutoUpdater GetInstance() { lock (_locker) { return _instance ??= new AutoUpdater(); } }
 
         public string UpdateUrl { get => _UpdateUrl; set { _UpdateUrl = value; NotifyPropertyChanged(); } }
-        private string _UpdateUrl = "http://xc213618.ddns.me:9999/D%3A/LATEST_RELEASE";
+        private string _UpdateUrl = GlobalConst.UpdatePath + "/LATEST_RELEASE";
 
         public Version LatestVersion { get => _LatestVersion; set { _LatestVersion = value; NotifyPropertyChanged(); } }
         private Version _LatestVersion;
@@ -115,7 +115,7 @@ namespace ColorVision.Update
         private async Task DownloadAndUpdate(Version latestVersion)
         {
             // 构建下载URL，这里假设下载路径与版本号相关
-            string downloadUrl = $"http://xc213618.ddns.me:9999/D%3A/ColorVision/ColorVision-{latestVersion}.exe";
+            string downloadUrl = $"{GlobalConst.UpdatePath}/ColorVision/ColorVision-{latestVersion}.exe";
 
             // 指定下载路径
             string downloadPath = Path.Combine(Path.GetTempPath(), $"ColorVision-{latestVersion}.exe");
@@ -135,7 +135,6 @@ namespace ColorVision.Update
                 {
                     ProgressValue = e.ProgressPercentage;
                 };
-
                 // 绑定下载完成事件
                 client.DownloadFileCompleted += (sender, e) =>
                 {
