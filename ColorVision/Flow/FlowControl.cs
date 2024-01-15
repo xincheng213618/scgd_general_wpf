@@ -1,5 +1,6 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.MVVM;
+using ColorVision.Services;
 using log4net;
 using Newtonsoft.Json;
 using System;
@@ -92,7 +93,7 @@ namespace ColorVision.Flow
             }
             else
             {
-                flowEngine.StartNode(sn);
+                flowEngine.StartNode(sn, ServiceManager.GetInstance().ServiceTokens);
             }
         }
 

@@ -62,7 +62,6 @@ namespace ColorVision.Services
 
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => Reload();
 
-
             Reload();
         }
         public ObservableCollection<BaseChannel> LastGenControl { get; set; }
