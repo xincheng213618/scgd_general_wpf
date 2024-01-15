@@ -13,6 +13,7 @@ using cvColorVision;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.IO.Compression;
 using System.Text.Json.Nodes;
@@ -33,6 +34,11 @@ namespace ColorVision.Device.Camera
     public class DeviceCamera : BaseDevice<ConfigCamera>
     {
         public DeviceServiceCamera DService { get; set; }
+
+        /// <summary>
+        /// 矫正参数
+        /// </summary>
+        public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; } = new ObservableCollection<TemplateModel<CalibrationParam>>();
 
         readonly Lazy<CameraDisplayControl> CameraDisplayControlLazy;
         readonly Lazy<EditCamera> EditCameraLazy;

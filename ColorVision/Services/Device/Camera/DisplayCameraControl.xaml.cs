@@ -228,7 +228,7 @@ namespace ColorVision.Device.Camera
             CalibrationParams = new ObservableCollection<TemplateModel<CalibrationParam>>();
             CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam()));
 
-            foreach (var item in TemplateControl.GetInstance().CalibrationParams)
+            foreach (var item in Device.CalibrationParams)
                 CalibrationParams.Add(item);
 
             TemplateControl.GetInstance().CalibrationParams.CollectionChanged += (s, e) =>
@@ -531,15 +531,15 @@ namespace ColorVision.Device.Camera
                 {
                     case "Calibration":
                         CalibrationControl calibration;
-                        if (TemplateControl.CalibrationParams.Count>0) 
+                        if (Device.CalibrationParams.Count>0) 
                         {
-                             calibration = new CalibrationControl(Device,TemplateControl.CalibrationParams[0].Value);
+                             calibration = new CalibrationControl(Device, Device.CalibrationParams[0].Value);
                         }
                         else
                         {
                              calibration = new CalibrationControl(Device);
                         }
-                        windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration, false);
+                        windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration, Device, false);
                         windowTemplate.Owner = Window.GetWindow(this);
                         windowTemplate.ShowDialog();
                         break;

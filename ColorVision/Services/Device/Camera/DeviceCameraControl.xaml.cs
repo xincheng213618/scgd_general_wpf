@@ -227,7 +227,7 @@ namespace ColorVision.Device.Camera
                 {
                     case "Calibration":
                         CalibrationControl calibration = TemplateControl.CalibrationParams.Count == 0 ? new CalibrationControl(Device) : new CalibrationControl( Device,TemplateControl.CalibrationParams[0].Value);
-                        windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration);
+                        windowTemplate  = new WindowTemplate(TemplateType.Calibration, calibration, Device);
                         windowTemplate.Owner = Window.GetWindow(this);
                         windowTemplate.ShowDialog();
                         break;
