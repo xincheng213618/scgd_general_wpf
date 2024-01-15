@@ -1,7 +1,5 @@
 ﻿namespace ColorVision.Services.Device.SMU.Configs
 {
-
-
     public class ConfigSMU : BaseDeviceConfig
     {
         private bool _IsNet;
@@ -12,7 +10,8 @@
         private bool _IsSourceV = true;
 
         public string DevName { get => Id; set { Id = value; NotifyPropertyChanged(); } }
-
+        public string DevType { get => _DevType; set { _DevType = value; NotifyPropertyChanged(); } }
+        private string _DevType;
 
         public double StartMeasureVal { get => _startMeasureVal; set { _startMeasureVal = value; NotifyPropertyChanged(); } }
         private double _startMeasureVal;
