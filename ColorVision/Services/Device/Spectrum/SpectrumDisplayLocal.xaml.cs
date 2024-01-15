@@ -18,7 +18,6 @@ namespace ColorVision.Device.Spectrum
         public ViewSpectrum View { get; set; }
         public SpectrumDisplayLocal(DeviceSpectrum DeviceSpectrum)
         {
-            View = new ViewSpectrum();
             InitializeComponent();
         }
 
