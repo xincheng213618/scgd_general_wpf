@@ -9,8 +9,10 @@ namespace ColorVision.Services
         public SysDictionaryModel SysDictionaryModel { get; set; }
 
         public ServiceType ServiceType { get =>  (ServiceType)SysDictionaryModel.Value; }
+
         public ServiceKind() : base()
         {
+
         }
 
         public List<string> ServicesCodes { get

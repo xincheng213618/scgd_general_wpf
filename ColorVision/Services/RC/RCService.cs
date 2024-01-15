@@ -156,62 +156,52 @@ namespace ColorVision.RC
             return Task.CompletedTask;
         }
 
-        private static MQTTNodeServiceStatus GetService(string serviceType, List<MQTTNodeServiceStatus> data)
-        {
-            MQTTNodeServiceStatus result = null;
-            foreach (var item in data)
-            {
-                if (item.ServiceType == serviceType)
-                {
-                    result = item;
-                    break;
-                }
-            }
-
-            return result;
-        }
 
         public static void UpdateServiceStatus(List<MQTTNodeServiceStatus> data)
         {
-            List<ServiceKind> svrs = new List<ServiceKind>(ServiceManager.GetInstance().Services);
-            foreach (var serviceKind in svrs)
+            foreach (var serviceKind in ServiceManager.GetInstance().Services.ToList())
             {
-                MQTTNodeServiceStatus ss = GetService(serviceKind.ServiceType.ToString(), data);
-                if (ss == null) continue;
-                if (serviceKind.ServiceType.ToString() == ServiceType.Spectum.ToString())
+                foreach (var baseObject in serviceKind.VisualChildren)
                 {
-                    log.Debug(serviceKind.ServiceType.ToString());
-                }
-                foreach (var item in data)
-                {
-                    foreach (var baseObject in serviceKind.VisualChildren)
+                    if (baseObject is ServiceTerminal serviceTerminal)
                     {
-                        if (baseObject is ServiceTerminal serviceTerminal)
+                        foreach (var ss in data)
                         {
-                            foreach (var devNew in ss.DeviceList)
+                            if (ss.ServiceType.ToLower() == serviceKind.ServiceType.ToString().ToLower() && ss.ServiceName == serviceTerminal.Code)
                             {
-                                foreach (var dev in serviceTerminal.VisualChildren)
+                                serviceTerminal.Config.IsAlive = true;
+                                serviceTerminal.Config.LastAliveTime = DateTime.Now;
+                                foreach (var devNew in ss.DeviceList)
                                 {
-                                    if (dev is BaseChannel baseChannel && baseChannel.GetConfig() is BaseDeviceConfig baseDeviceConfig)
+                                    foreach (var dev in serviceTerminal.VisualChildren)
                                     {
-                                        if (devNew.Code == baseDeviceConfig.Code)
+                                        if (dev is BaseChannel baseChannel && baseChannel.GetConfig() is BaseDeviceConfig baseDeviceConfig)
                                         {
-                                            //baseDeviceConfig.IsAlive = true;
-                                            baseDeviceConfig.LastAliveTime = DateTime.Parse(ss.LiveTime);
-                                            baseDeviceConfig.DeviceStatus = (DeviceStatusType)Enum.Parse(typeof(DeviceStatusType), devNew.Status);
-                                            if (dev is DeviceCamera)
+                                            if (devNew.Code == baseDeviceConfig.Code)
                                             {
-                                                DeviceCamera deviceCamera = (DeviceCamera)dev;
-                                                deviceCamera.DService.DeviceStatus = baseDeviceConfig.DeviceStatus;
+                                                //baseDeviceConfig.IsAlive = true;
+                                                baseDeviceConfig.LastAliveTime = DateTime.Parse(ss.LiveTime);
+                                                baseDeviceConfig.DeviceStatus = (DeviceStatusType)Enum.Parse(typeof(DeviceStatusType), devNew.Status);
+                                                if (dev is DeviceCamera)
+                                                {
+                                                    DeviceCamera deviceCamera = (DeviceCamera)dev;
+                                                    deviceCamera.DService.DeviceStatus = baseDeviceConfig.DeviceStatus;
+                                                }
+                                                break;
                                             }
-                                            break;
                                         }
                                     }
                                 }
+
+
+
                             }
                         }
+
                     }
+
                 }
+
             }
         }
 

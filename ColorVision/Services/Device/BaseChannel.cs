@@ -111,12 +111,7 @@ namespace ColorVision.Services.Device
             {
                 Delete();
             };
-
-
             ContextMenu.Items.Add(menuItem);
-
-
-
             ExportCommand = new RelayCommand(a => {
                 System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
                 ofd.Filter = "*.config|*.config";

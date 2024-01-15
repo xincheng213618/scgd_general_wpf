@@ -49,7 +49,7 @@ namespace ColorVision
             thread.Start();
 
         }
-        public static string GetTargetFrameworkVersion()
+        public static string? GetTargetFrameworkVersion()
         {
             var assembly = Assembly.GetExecutingAssembly();
             var targetFrameworkAttribute = assembly.GetCustomAttribute<TargetFrameworkAttribute>();
