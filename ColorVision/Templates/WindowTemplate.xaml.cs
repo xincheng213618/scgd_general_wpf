@@ -23,7 +23,7 @@ namespace ColorVision.Templates
 
 
     /// <summary>
-    /// WindowTemplate.xaml 的交互逻辑
+    /// CalibrationTemplate.xaml 的交互逻辑
     /// </summary>
     public partial class WindowTemplate : Window
     {

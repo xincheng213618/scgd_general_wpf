@@ -634,7 +634,6 @@ namespace ColorVision.Media
         public void Clear()
         {
             ImageShow.Source = null;
-
         }
 
         public void OpenImage(string? filePath)

@@ -3,6 +3,7 @@ using ColorVision.MySql;
 using ColorVision.RC;
 using ColorVision.Services;
 using ColorVision.Themes;
+using ColorVision.Wizards;
 using log4net;
 using log4net.Config;
 using System;
@@ -41,7 +42,12 @@ namespace ColorVision
 
             //代码先进入启动窗口
 
-            if (!IsReStart)
+            if (!SoftwareSetting.WizardCompletionKey)
+            {
+                WizardWindow wizardWindow = new WizardWindow();
+                wizardWindow.Show();
+            }
+            else if (!IsReStart)
             {
                 StartWindow StartWindow = new StartWindow();
                 StartWindow.Show();

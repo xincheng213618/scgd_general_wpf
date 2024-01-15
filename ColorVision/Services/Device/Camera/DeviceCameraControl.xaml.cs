@@ -50,12 +50,9 @@ namespace ColorVision.Device.Camera
                 MQTTEditContent.Children.Add(userControl);
             }
 
-            ////var list = Enum.GetValues(typeof(ResouceType)).Cast<ResouceType>();
-            List<ResouceType> lists = new List<ResouceType>();
-            lists.Add(ResouceType.ColorVisionCalibration);
+            var lists = Enum.GetValues(typeof(ResouceType)).Cast<ResouceType>();
             foreach (var item in lists)
             {
-
 
                 TabItem tabItem = new TabItem();
                 tabItem.Header = item.ToDescription();
@@ -242,7 +239,8 @@ namespace ColorVision.Device.Camera
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("导入模板");
+            CalibrationEdit CalibrationEdit = new CalibrationEdit();
+            CalibrationEdit.Show();
         }
     }
 }

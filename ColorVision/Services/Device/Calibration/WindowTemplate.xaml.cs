@@ -20,13 +20,13 @@ using System.Windows.Input;
 namespace ColorVision.Services.Device.Calibration
 {
     /// <summary>
-    /// WindowTemplate.xaml 的交互逻辑
+    /// CalibrationTemplate.xaml 的交互逻辑
     /// </summary>
-    public partial class WindowTemplate : Window
+    public partial class CalibrationTemplate : Window
     {
         public ObservableCollection<TemplateModelBase> TemplateModelBases { get; set; } = new ObservableCollection<TemplateModelBase>();
 
-        public WindowTemplate()
+        public CalibrationTemplate()
         {
             InitializeComponent();
         }

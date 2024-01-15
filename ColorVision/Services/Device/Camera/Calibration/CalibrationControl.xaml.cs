@@ -1,8 +1,6 @@
 ﻿using System.Windows.Controls;
 using System.Windows.Input;
 using ColorVision.Device.Camera;
-using ColorVision.Services.Device.Camera.Calibrations;
-using NPOI.SS.Formula.Functions;
 
 namespace ColorVision.Services.Device.Camera.Calibrations
 {
@@ -154,6 +152,12 @@ namespace ColorVision.Services.Device.Camera.Calibrations
                 }
 
             }
+        }
+
+        private void Button_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            CalibrationEdit CalibrationEdit = new CalibrationEdit();
+            CalibrationEdit.Show();
         }
     }
 

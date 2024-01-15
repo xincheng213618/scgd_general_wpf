@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8603,CS0649
+using ColorVision.Device.Camera;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
 using ColorVision.Sorts;
@@ -34,8 +35,6 @@ namespace ColorVision.Services.Device.Camera.Calibrations
         LumFourColor = 39,
         [Description("多色")]
         LumMultiColor = 40,
-        [Description("校正压缩文件")]
-        ColorVisionCalibration = 1001
     }
 
 
@@ -79,7 +78,6 @@ namespace ColorVision.Services.Device.Camera.Calibrations
             LumOneColorList = new List<string>();
             LumFourColorList = new List<string>();
             LumMultiColorList = new List<string>();
-            CalibrationModeList = new List<string>();
         }
 
 
@@ -125,9 +123,7 @@ namespace ColorVision.Services.Device.Camera.Calibrations
             GetCalibrationRsourceList(LumOneColorList, ResouceType.LumOneColor);
             GetCalibrationRsourceList(LumFourColorList, ResouceType.LumFourColor);
             GetCalibrationRsourceList(LumMultiColorList, ResouceType.LumMultiColor);
-            GetCalibrationRsourceList(CalibrationModeList, ResouceType.ColorVisionCalibration);
         }
-
 
         public List<string> DarkNoiseList { get; set; }
         public List<string> DefectPointList { get; set; }
@@ -139,7 +135,6 @@ namespace ColorVision.Services.Device.Camera.Calibrations
         public List<string> LumOneColorList { get; set; }
         public List<string> LumFourColorList { get; set; }
         public List<string> LumMultiColorList { get; set; }
-        public List<string> CalibrationModeList { get; set; }
 
     }
 
@@ -309,23 +304,25 @@ namespace ColorVision.Services.Device.Camera.Calibrations
     {
         public string CalibrationMode { get { return GetValue(_CalibrationMode); } set {  SetProperty(ref _CalibrationMode, value);  } }
         private string _CalibrationMode;
-        public List<string> CalibrationModeList { get; set; }
+        public Dictionary<string, List<ColorVisionVCalibratioItem>> CalibrationModeList { get; set; }
         public CalibrationNormal Normal { get; set; }
         public CalibrationColor Color { get; set; }
+
+        public DeviceCamera DeviceCamera { get; set; }
 
         public CalibrationParam()
         {
             Id = -1;
             Normal = new CalibrationNormal(new List<ModDetailModel>(), "");
             Color = new CalibrationColor(new List<ModDetailModel>());
-            CalibrationModeList = CalibrationRsourceService.GetInstance().CalibrationModeList;
+            CalibrationModeList = DeviceCamera?.Config.Calibration;
         }
 
         public CalibrationParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name??string.Empty ,modDetails)
         {
             Normal = new CalibrationNormal(modDetails, "");
             Color = new CalibrationColor(modDetails);
-            CalibrationModeList = CalibrationRsourceService.GetInstance().CalibrationModeList;
+            CalibrationModeList = DeviceCamera?.Config.Calibration;
         }
     }
 

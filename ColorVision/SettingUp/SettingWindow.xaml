@@ -159,6 +159,10 @@
                                             <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding SoftwareSetting.TransparentWindow}"/>
                                             <TextBlock Text="禁用硬件加速"/>
                                         </DockPanel>
+                                        <DockPanel  Margin="5">
+                                            <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding SoftwareSetting.WizardCompletionKey,Converter={StaticResource Boolean2BooleanReConverter}}"/>
+                                            <TextBlock Text="向导"/>
+                                        </DockPanel>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
