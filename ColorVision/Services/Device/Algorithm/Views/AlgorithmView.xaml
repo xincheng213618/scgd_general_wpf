@@ -91,7 +91,7 @@
                             <GridViewColumn  Header="序号" Width="50">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type  local:AlgorithmResult}">
-                                        <TextBlock Text="{ Binding  ID}"/>
+                                        <TextBlock Text="{Binding Id}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>

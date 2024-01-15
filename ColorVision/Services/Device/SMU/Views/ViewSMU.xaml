@@ -91,7 +91,7 @@
                             <GridViewColumn  Header="序号" Width="{Binding IsIDShow,Converter={StaticResource WidthToBooleanConverter}}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSMU}">
-                                        <TextBlock Text="{ Binding  ID}"/>
+                                        <TextBlock Text="{Binding Id}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>

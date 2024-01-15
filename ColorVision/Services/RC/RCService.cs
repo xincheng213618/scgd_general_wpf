@@ -9,6 +9,7 @@ using MQTTnet.Client;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -167,7 +168,7 @@ namespace ColorVision.RC
                     {
                         foreach (var ss in data)
                         {
-                            if (ss.ServiceType.ToLower() == serviceKind.ServiceType.ToString().ToLower() && ss.ServiceName == serviceTerminal.Code)
+                            if (ss.ServiceType.ToLower(CultureInfo.CurrentCulture) == serviceKind.ServiceType.ToString().ToLower(CultureInfo.CurrentCulture) && ss.ServiceName == serviceTerminal.Code)
                             {
                                 serviceTerminal.Config.IsAlive = true;
                                 serviceTerminal.Config.LastAliveTime = DateTime.Now;
