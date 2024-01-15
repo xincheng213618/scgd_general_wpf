@@ -5,6 +5,9 @@
         private bool _IsNet;
         public bool IsNet { get => _IsNet; set { _IsNet = value; NotifyPropertyChanged(); } }
 
+        private bool _IsAutoStart;
+        public bool IsAutoStart { get => _IsAutoStart; set { _IsAutoStart = value; NotifyPropertyChanged(); } }
+
 
         public bool IsSourceV { get => _IsSourceV; set { _IsSourceV = value; NotifyPropertyChanged(); } }
         private bool _IsSourceV = true;
