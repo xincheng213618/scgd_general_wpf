@@ -67,10 +67,10 @@ namespace ColorVision.Update
         // 调用函数以删除所有更新文件
         public async void CheckAndUpdate(bool detection = true)
         {
+            // 获取本地版本
+            var localVersion = Assembly.GetExecutingAssembly().GetName().Version;
             try
             {
-                // 获取本地版本
-                var localVersion = Assembly.GetExecutingAssembly().GetName().Version;
                 // 获取服务器版本
                 LatestVersion = await GetLatestVersionNumber(UpdateUrl);
 
@@ -98,6 +98,7 @@ namespace ColorVision.Update
             }
             catch (Exception ex)
             {
+                LatestVersion = localVersion;
                 Console.WriteLine("An error occurred while updating: " + ex.Message);
             }
         }
