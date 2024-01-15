@@ -59,6 +59,10 @@
                             <GroupBox Header="基本信息" Margin="0,5">
                                 <StackPanel Margin="5">
                                     <DockPanel>
+                                        <TextBlock Text="设备类型:" Width="120"/>
+                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.DevType}"/>
+                                    </DockPanel>
+                                    <DockPanel>
                                         <TextBlock Text="设备Code:" Width="120"/>
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.Code}"/>
                                     </DockPanel>
@@ -81,6 +85,10 @@
                                     <DockPanel>
                                         <TextBlock Text="Token"  Width="120"/>
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.ServiceToken}"/>
+                                    </DockPanel>
+                                    <DockPanel>
+                                        <TextBlock Text="设备自启动"  Width="120"/>
+                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.IsAutoStart}"/>
                                     </DockPanel>
                                 </StackPanel>
                             </GroupBox>
@@ -112,10 +120,18 @@
                             <GroupBox Header="配置信息" Margin="0,5">
                                 <StackPanel Margin="5">
                                     <DockPanel Margin="0,2" >
+                                        <TextBlock Text="设备类型" Width="120"/>
+                                        <hc:ComboBox x:Name="SMUType" IsEditable="True" Text="{Binding Config.DevType}" Margin="38,0,0,0" />
+                                    </DockPanel>
+                                    <DockPanel Margin="0,2" >
                                         <CheckBox DockPanel.Dock="Right" Content="网络" Width="50" Margin="5" IsChecked="{Binding Config.IsNet}"/>
                                         <TextBlock Text="设备地址"  Width="120"/>
                                         <TextBox Text="{Binding Config.Id}" Width="300" Visibility="{Binding Config.IsNet,Converter={StaticResource bool2VisibilityConverter}}" Margin="38,0,0,0"/>
                                         <hc:ComboBox  x:Name="TextSerial" IsEditable="True"  Width="300" Text="{Binding Config.Id}"  Visibility="{Binding Config.IsNet,Converter={StaticResource bool2VisibilityConverter1}}" hc:InfoElement.ShowClearButton="True"  />
+                                    </DockPanel>
+                                    <DockPanel Margin="0,2" >
+                                        <TextBlock Text="设备自启动" Width="120"/>
+                                        <CheckBox Content="启用" Margin="5" IsChecked="{Binding Config.IsAutoStart}"/>
                                     </DockPanel>
                                 </StackPanel>
                             </GroupBox>
