@@ -160,6 +160,7 @@ namespace ColorVision.Device.Spectrum.Views
                     for (int i = 0; i < result.SpectralDatas.Count; i++)
                     {
                         csvBuilder.Append(result.SpectralDatas[i].AbsoluteSpectrum);
+                        csvBuilder.Append(',');
                     }
                     for (int i = 0; i < result.SpectralDatas.Count; i++)
                     {
