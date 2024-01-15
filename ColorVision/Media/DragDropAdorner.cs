@@ -20,7 +20,7 @@ namespace ColorVision.Media
             base.OnRender(drawingContext);
             if (mDraggedElement != null)
             {
-                POINT screenPos = new POINT();
+                POINT screenPos = new POINT();  
                 if (GetCursorPos(ref screenPos))
                 {
                     Point pos = this.PointFromScreen(new System.Windows.Point(screenPos.X, screenPos.Y));

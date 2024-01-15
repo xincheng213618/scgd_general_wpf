@@ -36,9 +36,8 @@
                             </Image.RenderTransform>
                         </Image>
                     </ToggleButton>
-                    <ToggleButton  x:Name="toggle2" Click="Button_Click_2" Margin="2,0,0,0" >
-                        <Image Stretch="Uniform"  Source="{DynamicResource DrawingImageList}" >
-                        </Image>
+                    <ToggleButton  x:Name="toggle2" Click="Button_Click_2" Margin="2,0,0,0" IsChecked="True">
+                        <Image Stretch="Uniform"  Source="{DynamicResource DrawingImageList}"/>
                     </ToggleButton>
                     <Button Click="Button_Click" Margin="2,0,0,0" >
                         <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSave}" />

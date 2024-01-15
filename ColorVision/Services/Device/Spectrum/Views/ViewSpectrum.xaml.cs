@@ -34,9 +34,11 @@ namespace ColorVision.Device.Spectrum.Views
 
 
         public View View { get; set; }
+        public DeviceSpectrum Device { get; set; }
 
-        public ViewSpectrum()
+        public ViewSpectrum(DeviceSpectrum device)
         {
+            Device = device;
             InitializeComponent();
         }
 
@@ -62,7 +64,7 @@ namespace ColorVision.Device.Spectrum.Views
             wpfplot1.Plot.XLabel("波长[nm]");
             wpfplot1.Plot.YLabel("相对光谱");
             wpfplot1.Plot.Clear();
-            wpfplot1.Plot.SetAxisLimitsX(380, 810);
+            wpfplot1.Plot.SetAxisLimitsX(380, 780);
             wpfplot1.Plot.SetAxisLimitsY(0, 1);
             wpfplot1.Plot.XAxis.SetBoundary(370, 1000);
             wpfplot1.Plot.YAxis.SetBoundary(0, 1);
@@ -104,11 +106,15 @@ namespace ColorVision.Device.Spectrum.Views
             properties.Add("半波宽");
             properties.Add("电压");
             properties.Add("电流");
-            for (int i = 380; i <= 1000; i++)
+
+            for (int i = 380; i <= 780; i++)
             {
                 properties.Add(i.ToString());
             }
-
+            for (int i = 380; i <= 780; i++)
+            {
+                properties.Add("sp" + i.ToString());
+            }
             // 写入列头
             for (int i = 0; i < properties.Count; i++)
             {
@@ -154,18 +160,17 @@ namespace ColorVision.Device.Spectrum.Views
                     for (int i = 0; i < result.SpectralDatas.Count; i++)
                     {
                         csvBuilder.Append(result.SpectralDatas[i].AbsoluteSpectrum);
+                    }
+                    for (int i = 0; i < result.SpectralDatas.Count; i++)
+                    {
+                        csvBuilder.Append(result.SpectralDatas[i].RelativeSpectrum);
                         if (i < result.SpectralDatas.Count - 1)
                             csvBuilder.Append(',');
                     }
                     csvBuilder.AppendLine();
                 }
             }
-
-
-
-
             File.WriteAllText(dialog.FileName, csvBuilder.ToString(), Encoding.UTF8);
-
         }
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -183,9 +188,9 @@ namespace ColorVision.Device.Spectrum.Views
         private void DrawPlot()
         {
             if (listView1.SelectedIndex < 0) return;
-            wpfplot1.Plot.SetAxisLimitsX(ViewResultSpectrums[listView1.SelectedIndex].fSpect1, ViewResultSpectrums[listView1.SelectedIndex].fSpect2);
+            wpfplot1.Plot.SetAxisLimitsX(380, 780);
             wpfplot1.Plot.SetAxisLimitsY(0, 1);
-            wpfplot1.Plot.XAxis.SetBoundary(ViewResultSpectrums[listView1.SelectedIndex].fSpect1 - 10, ViewResultSpectrums[listView1.SelectedIndex].fSpect2 + 10);
+            wpfplot1.Plot.XAxis.SetBoundary(ViewResultSpectrums[listView1.SelectedIndex].fSpect1, ViewResultSpectrums[listView1.SelectedIndex].fSpect2);
             wpfplot1.Plot.YAxis.SetBoundary(0, 1);
 
             if (ScatterPlots.Count > 0)
@@ -230,6 +235,7 @@ namespace ColorVision.Device.Spectrum.Views
             if (!First)
             {
                 listView1.Visibility = Visibility.Visible;
+                listView2.Visibility = Visibility.Visible;
                 First = true;
             }
 
@@ -460,6 +466,7 @@ namespace ColorVision.Device.Spectrum.Views
             if (ViewResultSpectrums.Count > 0)
             {
                 listView1.Visibility = Visibility.Visible;
+                listView2.Visibility = Visibility.Visible;
                 First = true;
                 listView1.SelectedIndex = 0;
             }

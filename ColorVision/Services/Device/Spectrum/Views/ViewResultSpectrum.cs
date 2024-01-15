@@ -36,7 +36,7 @@ namespace ColorVision.Device.Spectrum.Views
             for (int i = 20; i <= 120; i++)
                 sum2 += fPL[i * 10];
             Blue = Math.Round(sum1 / sum2 * 100, 2).ToString();
-            for (int i = 0; i < (fSpect2 - 380) * 10; i += 10)
+            for (int i = 0; i <= 780; i += 10)
             {
                 SpectralData SpectralData = new SpectralData();
                 SpectralData.Wavelength = i / 10 + 380;
