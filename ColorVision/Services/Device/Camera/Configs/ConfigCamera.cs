@@ -94,6 +94,6 @@ namespace ColorVision.Services.Device.Camera.Configs
 
         public bool IsSaveSrcPic { get; set; }
 
-        public Dictionary<string, List<ColorVisionVCalibratioItem>> Calibration { get; set; } = new Dictionary<string, List<ColorVisionVCalibratioItem>>();
+        public Dictionary<string,CalibrationRsourcesGroup> CalibrationRsourcesGroups { get; set; } = new Dictionary<string,CalibrationRsourcesGroup>();
     }
 }

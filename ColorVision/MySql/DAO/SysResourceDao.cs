@@ -101,10 +101,17 @@ namespace ColorVision.MySql.DAO
             }
             return list;
         }
-        internal List<SysResourceModel> GetAllTypeCamera(int type,int id)
+
+        public DataTable GetTableAllByTypeAndCamera(int type, int cameraId)
+        {
+            string sql = $"select * from {GetTableName()} where type={type} &&pid ={cameraId} " + GetDelSQL(true);
+            DataTable d_info = GetData(sql);
+            return d_info;
+        }
+        internal List<SysResourceModel> GetAllTypeCamera(int type,int cameraId)
         {
             List<SysResourceModel> list = new List<SysResourceModel>();
-            DataTable d_info = GetTableAllByTypeAndCamera(type,id);
+            DataTable d_info = GetTableAllByTypeAndCamera(type, cameraId);
             foreach (var item in d_info.AsEnumerable())
             {
                 SysResourceModel? model = GetModel(item);

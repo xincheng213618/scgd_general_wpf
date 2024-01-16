@@ -104,8 +104,68 @@ namespace ColorVision.Device.Camera
 
                         if (keyValuePairs != null)
                             foreach (var item in keyValuePairs)
-                                if (!Config.Calibration.ContainsKey(item.Key))
-                                    Config.Calibration.Add(item.Key, item.Value);
+                            {
+                                if (!Config.CalibrationRsourcesGroups.ContainsKey(item.Key))
+                                {
+                                    CalibrationRsourcesGroup calibrationRsourcesGroup = new CalibrationRsourcesGroup() { Title = item.Key };
+
+
+                                    foreach (var item1 in item.Value)
+                                    {
+                                        switch (item1.CalibrationType)
+                                        {
+                                            case cvColorVision.CalibrationType.DarkNoise:
+                                                calibrationRsourcesGroup.DarkNoise = item.Key;
+                                                break;
+                                            case cvColorVision.CalibrationType.DefectWPoint:
+                                                calibrationRsourcesGroup.DefectPoint = item.Key;
+                                                break;
+                                            case cvColorVision.CalibrationType.DefectBPoint:
+                                                calibrationRsourcesGroup.DefectPoint = item.Key;
+                                                break;
+                                            case cvColorVision.CalibrationType.DefectPoint:
+                                                calibrationRsourcesGroup.DefectPoint = item.Key;
+                                                break;
+                                            case cvColorVision.CalibrationType.DSNU:
+                                                calibrationRsourcesGroup.DSNU = item.Key;
+                                                break;
+                                            case cvColorVision.CalibrationType.Uniformity:
+                                                calibrationRsourcesGroup.Uniformity = item.Key;
+                                                break;
+                                            case cvColorVision.CalibrationType.Luminance:
+                                                calibrationRsourcesGroup.Luminance = item.Key;
+                                                break;
+                                            case cvColorVision.CalibrationType.LumOneColor:
+                                                calibrationRsourcesGroup.LumOneColor = item.Key;
+                                                break;
+                                            case cvColorVision.CalibrationType.LumFourColor:
+                                                calibrationRsourcesGroup.LumFourColor = item.Key;
+                                                break;
+                                            case cvColorVision.CalibrationType.LumMultiColor:
+                                                calibrationRsourcesGroup.LumMultiColor = item.Key;
+                                                break;
+                                            case cvColorVision.CalibrationType.LumColor:
+                                                calibrationRsourcesGroup.Luminance = item.Key;
+                                                break;
+                                            case cvColorVision.CalibrationType.Distortion:
+                                                calibrationRsourcesGroup.Distortion = item.Key;
+                                                break;
+                                            case cvColorVision.CalibrationType.ColorShift:
+                                                calibrationRsourcesGroup.ColorShift = item.Key;
+                                                break;
+                                            case cvColorVision.CalibrationType.Empty_Num:
+                                                break;
+                                            default:
+                                                break;
+                                        }
+                                    }
+                                    Config.CalibrationRsourcesGroups.Add(item.Key,calibrationRsourcesGroup);
+                                }
+
+
+
+                            }
+
 
 
                         string cachepath = path + "\\Calibration";

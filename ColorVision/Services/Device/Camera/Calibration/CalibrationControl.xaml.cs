@@ -1,6 +1,8 @@
-﻿using System.Windows.Controls;
+﻿using System.Collections.Generic;
+using System.Windows.Controls;
 using System.Windows.Input;
 using ColorVision.Device.Camera;
+using MQTTMessageLib.Camera;
 
 namespace ColorVision.Services.Device.Camera.Calibrations
 {
@@ -9,21 +11,12 @@ namespace ColorVision.Services.Device.Camera.Calibrations
     /// </summary>
     public partial class CalibrationControl : UserControl
     {
-
         private bool IsFirst = true;
         public CalibrationParam CalibrationParam { get => _CalibrationParam; set { _CalibrationParam = value; IsFirst = true; } }
         private CalibrationParam _CalibrationParam;
 
-
-
-        public CalibrationControl()
-        {
-            InitializeComponent();
-            this.CalibrationParam = new CalibrationParam();
-            this.DataContext = CalibrationParam;
-        }
-
         public DeviceCamera DeviceCamera { get; set; }
+
         public CalibrationControl(DeviceCamera DeviceCamera)
         {
             this.DeviceCamera = DeviceCamera;
@@ -32,12 +25,31 @@ namespace ColorVision.Services.Device.Camera.Calibrations
             this.DataContext = CalibrationParam;
         }
 
+        public Dictionary<string, List<ColorVisionVCalibratioItem>> CalibrationModeList { get; set; }
+
         public CalibrationControl(DeviceCamera DeviceCamera,CalibrationParam calibrationParam)
         {
             this.DeviceCamera = DeviceCamera;
             InitializeComponent();
             this.CalibrationParam = calibrationParam;
             this.DataContext = CalibrationParam;
+        }
+
+        public void Initializedsss(DeviceCamera DeviceCamera, CalibrationParam calibrationParam)
+        {
+            this.DeviceCamera = DeviceCamera;
+            this.CalibrationParam = calibrationParam;
+            this.DataContext = CalibrationParam;
+
+
+            ComboBoxList.ItemsSource = DeviceCamera.Config.CalibrationRsourcesGroups;
+            ComboBoxList.DisplayMemberPath = "Key";
+            ComboBoxList.SelectedValuePath = "Value";
+
+        }
+
+        private void UserControl_Initialized(object sender, System.EventArgs e)
+        {
         }
 
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -82,73 +94,18 @@ namespace ColorVision.Services.Device.Camera.Calibrations
                 CalibrationParam.Color.LumMultiColor.IsSelected = false;
                 CalibrationParam.Color.LumOneColor.IsSelected = false;
 
-                string key = comboBox.Text;
-                if (DeviceCamera.Config.Calibration.TryGetValue(key, out var colorVisionVCalibratioItems))
+                if (comboBox.SelectedValue is CalibrationRsourcesGroup calibrationRsourcesGroup)
                 {
-                    foreach (var item in colorVisionVCalibratioItems)
-                    {
-                        switch (item.CalibrationType)
-                        {
-                            case cvColorVision.CalibrationType.DarkNoise:
-                                CalibrationParam.Normal.DarkNoise.FilePath = item.Title;
-                                CalibrationParam.Normal.DarkNoise.IsSelected = true;
-                                break;
-                            case cvColorVision.CalibrationType.DefectWPoint:
-                                CalibrationParam.Normal.DefectPoint.FilePath = item.Title;
-                                CalibrationParam.Normal.DefectPoint.IsSelected = true;
-                                break;
-                            case cvColorVision.CalibrationType.DefectBPoint:
-                                CalibrationParam.Normal.DefectPoint.FilePath = item.Title;
-                                CalibrationParam.Normal.DefectPoint.IsSelected = true;
-                                break;
-                            case cvColorVision.CalibrationType.DefectPoint:
-                                CalibrationParam.Normal.DefectPoint.FilePath = item.Title;
-                                CalibrationParam.Normal.DefectPoint.IsSelected = true;
-                                break;
-                            case cvColorVision.CalibrationType.DSNU:
-                                CalibrationParam.Normal.DSNU.FilePath = item.Title;
-                                CalibrationParam.Normal.DSNU.IsSelected = true;
-                                break;
-                            case cvColorVision.CalibrationType.Uniformity:
-                                CalibrationParam.Normal.Uniformity.FilePath = item.Title;
-                                CalibrationParam.Normal.Uniformity.IsSelected = true;
-
-                                break;
-                            case cvColorVision.CalibrationType.Luminance:
-                                CalibrationParam.Color.Luminance.FilePath = item.Title;
-                                CalibrationParam.Color.Luminance.IsSelected = true;
-                                break;
-                            case cvColorVision.CalibrationType.LumOneColor:
-                                CalibrationParam.Color.LumOneColor.FilePath = item.Title;
-                                CalibrationParam.Color.LumOneColor.IsSelected = true;
-                                break;
-                            case cvColorVision.CalibrationType.LumFourColor:
-                                CalibrationParam.Color.LumFourColor.FilePath = item.Title;
-                                CalibrationParam.Color.LumFourColor.IsSelected = true;
-                                break;
-                            case cvColorVision.CalibrationType.LumMultiColor:
-                                CalibrationParam.Color.LumMultiColor.FilePath = item.Title;
-                                CalibrationParam.Color.LumMultiColor.IsSelected = true;
-                                break;
-                            case cvColorVision.CalibrationType.LumColor:
-                                CalibrationParam.Color.Luminance.FilePath = item.Title;
-                                CalibrationParam.Color.Luminance.IsSelected = true;
-                                break;
-                            case cvColorVision.CalibrationType.Distortion:
-                                CalibrationParam.Normal.Distortion.FilePath = item.Title;
-                                CalibrationParam.Normal.Distortion.IsSelected = true;
-                                break;
-                            case cvColorVision.CalibrationType.ColorShift:
-                                CalibrationParam.Normal.ColorShift.FilePath = item.Title;
-                                CalibrationParam.Normal.ColorShift.IsSelected = true;
-                                break;
-                            case cvColorVision.CalibrationType.Empty_Num:
-                                break;
-                            default:
-                                break;
-                        }
-   
-                    }
+                    CalibrationParam.Normal.DarkNoise.FilePath = calibrationRsourcesGroup.DarkNoise;
+                    CalibrationParam.Normal.DefectPoint.FilePath = calibrationRsourcesGroup.DefectPoint;
+                    CalibrationParam.Normal.DSNU.FilePath = calibrationRsourcesGroup.DSNU;
+                    CalibrationParam.Normal.Distortion.FilePath = calibrationRsourcesGroup.Distortion;
+                    CalibrationParam.Normal.ColorShift.FilePath = calibrationRsourcesGroup.ColorShift;
+                    CalibrationParam.Normal.Uniformity.FilePath = calibrationRsourcesGroup.Uniformity;
+                    CalibrationParam.Color.Luminance.FilePath = calibrationRsourcesGroup.Luminance;
+                    CalibrationParam.Color.LumFourColor.FilePath = calibrationRsourcesGroup.LumFourColor;
+                    CalibrationParam.Color.LumMultiColor.FilePath = calibrationRsourcesGroup.LumMultiColor;
+                    CalibrationParam.Color.LumOneColor.FilePath = calibrationRsourcesGroup.LumOneColor;
                 }
 
             }
@@ -156,9 +113,11 @@ namespace ColorVision.Services.Device.Camera.Calibrations
 
         private void Button_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            CalibrationEdit CalibrationEdit = new CalibrationEdit();
+            CalibrationEdit CalibrationEdit = new CalibrationEdit(DeviceCamera);
             CalibrationEdit.Show();
         }
+
+
     }
 
 

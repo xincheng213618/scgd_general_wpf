@@ -2,72 +2,24 @@
 using ColorVision.Device.Camera;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
-using ColorVision.Sorts;
 using ColorVision.Templates;
 using cvColorVision;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Security.Cryptography.X509Certificates;
+
 
 namespace ColorVision.Services.Device.Camera.Calibrations
 {
-
-    public enum ResouceType
-    {
-        [Description("暗噪声")]
-        DarkNoise = 31,
-        [Description("缺陷点")]
-        DefectPoint = 32,
-        [Description("DSNU")]
-        DSNU = 33,
-        [Description("均匀场")]
-        Uniformity = 34,
-        [Description("畸变")]
-        Distortion = 35,
-        [Description("色偏")]
-        ColorShift = 36,
-        [Description("亮度")]
-        Luminance = 37,
-        [Description("单色")]
-        LumOneColor = 38,
-        [Description("四色")]
-        LumFourColor = 39,
-        [Description("多色")]
-        LumMultiColor = 40,
-    }
-
-
-
-    public class CalibrationRsource : ViewModelBase, ISortID, ISortName, ISortFilePath
-    {
-        public SysResourceModel SysResourceModel { get; set; }
-        public CalibrationRsource(SysResourceModel SysResourceModel)
-        {
-            this.SysResourceModel = SysResourceModel;
-            Name = SysResourceModel.Name;
-            FilePath = SysResourceModel.Value;
-            Id = SysResourceModel.Id;
-        }
-
-        public string? Name { get; set; }
-        public string? FilePath { get; set; }
-        public int Id { get; set; }
-        public int Pid { get; set; }
-    }
-
-
     public class CalibrationRsourceService
     {
         private static CalibrationRsourceService _instance;
         private static readonly object _locker = new();
         public static CalibrationRsourceService GetInstance() { lock (_locker) { return _instance ??= new CalibrationRsourceService(); } }
 
-        private SysResourceDao resourceDao;
+        private SysResourceDao resourceDao = new SysResourceDao();
 
         public CalibrationRsourceService()
         {
-            resourceDao = new SysResourceDao();
             DarkNoiseList = new List<string>();
             DefectPointList = new List<string>();
             DSNUList = new List<string>();
@@ -80,16 +32,10 @@ namespace ColorVision.Services.Device.Camera.Calibrations
             LumMultiColorList = new List<string>();
         }
 
-
-
-
-
-
-
-        public ObservableCollection<CalibrationRsource> GetAllCalibrationRsources(ResouceType resouceType, int id)
+        public ObservableCollection<CalibrationRsource> GetAllCalibrationRsources(ResouceType resouceType, int CameraId)
         {
             ObservableCollection<CalibrationRsource> ObservableCollections = new ObservableCollection<CalibrationRsource>();
-            var resouces = resourceDao.GetAllTypeCamera((int)resouceType, id);
+            var resouces = resourceDao.GetAllTypeCamera((int)resouceType, CameraId);
             foreach (var item in resouces)
             {
                 ObservableCollections.Add(new CalibrationRsource(item));
@@ -157,7 +103,6 @@ namespace ColorVision.Services.Device.Camera.Calibrations
             });
             this.propertyName = propertyName;
         }
-
         private string propertyName = string.Empty;
 
         public string FilePath { get { if (string.IsNullOrWhiteSpace(propertyName)) return GetValue(_FilePath); else return GetValue(_FilePath, propertyName); } set { if (string.IsNullOrWhiteSpace(propertyName)) { SetProperty(ref _FilePath, value); } else { SetProperty(ref _FilePath, value, propertyName); NotifyPropertyChanged(); } } }
@@ -166,6 +111,8 @@ namespace ColorVision.Services.Device.Camera.Calibrations
         public bool IsSelected { get { if (string.IsNullOrWhiteSpace(propertyName + "IsSelected")) return GetValue(_IsSelected); else return GetValue(_IsSelected, propertyName + "IsSelected"); } set { if (string.IsNullOrWhiteSpace(propertyName + "IsSelected")) SetProperty(ref _IsSelected, value); else SetProperty(ref _IsSelected, value, propertyName + "IsSelected"); NotifyPropertyChanged(); } }
         private bool _IsSelected;
     }
+
+
 
     public class CalibrationNormal
     {
@@ -221,7 +168,6 @@ namespace ColorVision.Services.Device.Camera.Calibrations
 
     public class CalibrationColor
     {
-
         public CalibrationColor(List<ModDetailModel> detail)
         {
             Luminance = new CalibrationBase(detail, nameof(Luminance));
@@ -271,7 +217,6 @@ namespace ColorVision.Services.Device.Camera.Calibrations
             LumFourColorList = CalibrationRsourceService.GetInstance().LumFourColorList;
             LumMultiColorList = CalibrationRsourceService.GetInstance().LumMultiColorList;
         }
-
         public CalibrationType CalibrationType
         {
             get
@@ -300,11 +245,13 @@ namespace ColorVision.Services.Device.Camera.Calibrations
         public CalibrationBase LumMultiColor { get; set; }
     }
 
+
+
     public class CalibrationParam : ParamBase
     {
         public string CalibrationMode { get { return GetValue(_CalibrationMode); } set {  SetProperty(ref _CalibrationMode, value);  } }
         private string _CalibrationMode;
-        public Dictionary<string, List<ColorVisionVCalibratioItem>> CalibrationModeList { get; set; }
+
         public CalibrationNormal Normal { get; set; }
         public CalibrationColor Color { get; set; }
 
@@ -315,14 +262,12 @@ namespace ColorVision.Services.Device.Camera.Calibrations
             Id = -1;
             Normal = new CalibrationNormal(new List<ModDetailModel>(), "");
             Color = new CalibrationColor(new List<ModDetailModel>());
-            CalibrationModeList = DeviceCamera?.Config.Calibration;
         }
 
         public CalibrationParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name??string.Empty ,modDetails)
         {
             Normal = new CalibrationNormal(modDetails, "");
             Color = new CalibrationColor(modDetails);
-            CalibrationModeList = DeviceCamera?.Config.Calibration;
         }
     }
 

@@ -239,7 +239,7 @@ namespace ColorVision.Device.Camera
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            CalibrationEdit CalibrationEdit = new CalibrationEdit();
+            CalibrationEdit CalibrationEdit = new CalibrationEdit(Device);
             CalibrationEdit.Show();
         }
     }
