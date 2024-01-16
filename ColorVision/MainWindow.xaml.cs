@@ -182,18 +182,6 @@ namespace ColorVision
                     excmd += "1";
                     ColorVision.Util.Tool.ExecuteCommandAsAdmin(excmd);
                 }
-                if (sc.Status == ServiceControllerStatus.Stopped)
-                {
-                    MessageBox.Show("RegistrationCenterService 启动失败");
-                }
-                if (sc1.Status == ServiceControllerStatus.Stopped)
-                {
-                    MessageBox.Show("CVMainService_x86 启动失败");
-                }
-                if (sc2.Status == ServiceControllerStatus.Stopped)
-                {
-                    MessageBox.Show("CVMainService_x64 启动失败");
-                }
                 ///非管理员模式无法直接通过sc启动程序
             }
             catch (Exception ex)
