@@ -1,4 +1,5 @@
-﻿using ColorVision.Extension;
+﻿using ColorVision.Device.Camera;
+using ColorVision.Extension;
 using ColorVision.Flow.Templates;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
@@ -164,6 +165,20 @@ namespace ColorVision.Templates
             InitializeComponent();
             GridProperty.Children.Clear();
             GridProperty.Margin = new Thickness(5,5,5,5);
+            UserControl = userControl;
+            GridProperty.Children.Add(UserControl);
+        }
+
+        public DeviceCamera DeviceCamera { get; set; }
+        public WindowTemplate(TemplateType windowTemplateType, UserControl userControl,DeviceCamera deviceCamera ,bool IsReLoad = true)
+        {
+            DeviceCamera = deviceCamera;
+            TemplateType = windowTemplateType;
+            TemplateControl = TemplateControl.GetInstance();
+            Load(windowTemplateType, IsReLoad);
+            InitializeComponent();
+            GridProperty.Children.Clear();
+            GridProperty.Margin = new Thickness(5, 5, 5, 5);
             UserControl = userControl;
             GridProperty.Children.Add(UserControl);
         }
