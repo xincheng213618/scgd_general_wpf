@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.IO.Compression;
+using System.Text;
 using System.Text.Json.Nodes;
 using System.Windows;
 using System.Windows.Controls;
@@ -78,7 +79,43 @@ namespace ColorVision.Device.Camera
 
             UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));
         }
-        
+
+        public static void ExtractToDirectoryWithOverwrite(string zipPath, string extractPath)
+        {
+            // 确保解压目录存在
+            Directory.CreateDirectory(extractPath);
+
+            // 打开ZIP文件
+            using (ZipArchive archive = ZipFile.Open(zipPath,ZipArchiveMode.Read, Encoding.GetEncoding("gbk")))
+            {
+                foreach (ZipArchiveEntry entry in archive.Entries)
+                {
+                    // 获取在目标路径中的完整路径
+                    string destinationPath = Path.GetFullPath(Path.Combine(extractPath, entry.FullName));
+
+                    // 确保文件不会解压到目录外面去
+                    if (!destinationPath.StartsWith(Path.GetFullPath(extractPath), StringComparison.Ordinal))
+                    {
+                        throw new IOException("试图解压缩到目录外的文件.");
+                    }
+
+                    // 如果文件已存在，删除它
+                    if (File.Exists(destinationPath))
+                    {
+                        File.Delete(destinationPath);
+                    }
+                    else if (!Directory.Exists(Path.GetDirectoryName(destinationPath)))
+                    {
+                        // 确保文件的目录存在
+                        Directory.CreateDirectory(Path.GetDirectoryName(destinationPath));
+                    }
+
+                    // 解压缩文件
+                    entry.ExtractToFile(destinationPath);
+                }
+            }
+        }
+
         public void UploadCalibration(object sender)
         {
             UploadWindow uploadwindow = new UploadWindow("校正文件(*.zip, *.cvcal)|*.zip;*.cvcal") { WindowStartupLocation = WindowStartupLocation.CenterScreen };
@@ -95,92 +132,136 @@ namespace ColorVision.Device.Camera
                             Directory.Delete(path, true);
                         Directory.CreateDirectory(path);
 
-                        ZipFile.ExtractToDirectory(upload.UploadFilePath, path);
+                        ExtractToDirectoryWithOverwrite(upload.UploadFilePath, path);
 
                         string Cameracfg = path + "\\Camera.cfg";
 
                         string Calibrationcfg = path + "\\Calibration.cfg";
-                        Dictionary<string, List<ColorVisionVCalibratioItem>> keyValuePairs = JsonConvert.DeserializeObject<Dictionary<string, List<ColorVisionVCalibratioItem>>>(File.ReadAllText(Calibrationcfg));
+                        Dictionary<string, List<ColorVisionVCalibratioItem>> keyValuePairs1 = JsonConvert.DeserializeObject<Dictionary<string, List<ColorVisionVCalibratioItem>>>(File.ReadAllText(Calibrationcfg));
 
-                        if (keyValuePairs != null)
-                            foreach (var item in keyValuePairs)
+
+                        if (keyValuePairs1 != null)
+                            foreach (var item in keyValuePairs1)
                             {
-                                if (!Config.CalibrationRsourcesGroups.ContainsKey(item.Key))
+                                foreach (var item1 in item.Value)
                                 {
-                                    CalibrationRsourcesGroup calibrationRsourcesGroup = new CalibrationRsourcesGroup() { Title = item.Key };
-
-
-                                    foreach (var item1 in item.Value)
+                                    MsgRecord msgRecord;
+                                    switch (item1.CalibrationType)
                                     {
-                                        switch (item1.CalibrationType)
-                                        {
-                                            case cvColorVision.CalibrationType.DarkNoise:
-                                                calibrationRsourcesGroup.DarkNoise = item.Key;
-                                                break;
-                                            case cvColorVision.CalibrationType.DefectWPoint:
-                                                calibrationRsourcesGroup.DefectPoint = item.Key;
-                                                break;
-                                            case cvColorVision.CalibrationType.DefectBPoint:
-                                                calibrationRsourcesGroup.DefectPoint = item.Key;
-                                                break;
-                                            case cvColorVision.CalibrationType.DefectPoint:
-                                                calibrationRsourcesGroup.DefectPoint = item.Key;
-                                                break;
-                                            case cvColorVision.CalibrationType.DSNU:
-                                                calibrationRsourcesGroup.DSNU = item.Key;
-                                                break;
-                                            case cvColorVision.CalibrationType.Uniformity:
-                                                calibrationRsourcesGroup.Uniformity = item.Key;
-                                                break;
-                                            case cvColorVision.CalibrationType.Luminance:
-                                                calibrationRsourcesGroup.Luminance = item.Key;
-                                                break;
-                                            case cvColorVision.CalibrationType.LumOneColor:
-                                                calibrationRsourcesGroup.LumOneColor = item.Key;
-                                                break;
-                                            case cvColorVision.CalibrationType.LumFourColor:
-                                                calibrationRsourcesGroup.LumFourColor = item.Key;
-                                                break;
-                                            case cvColorVision.CalibrationType.LumMultiColor:
-                                                calibrationRsourcesGroup.LumMultiColor = item.Key;
-                                                break;
-                                            case cvColorVision.CalibrationType.LumColor:
-                                                calibrationRsourcesGroup.Luminance = item.Key;
-                                                break;
-                                            case cvColorVision.CalibrationType.Distortion:
-                                                calibrationRsourcesGroup.Distortion = item.Key;
-                                                break;
-                                            case cvColorVision.CalibrationType.ColorShift:
-                                                calibrationRsourcesGroup.ColorShift = item.Key;
-                                                break;
-                                            case cvColorVision.CalibrationType.Empty_Num:
-                                                break;
-                                            default:
-                                                break;
-                                        }
+                                        case cvColorVision.CalibrationType.DarkNoise:
+                                            msgRecord = DService.UploadCalibrationFile(item1.Title, path + "\\Calibration\\" + "DarkNoise\\" + item1.FileName, (int)ResouceType.DarkNoise);
+                                            break;
+                                        case cvColorVision.CalibrationType.DefectWPoint:
+                                             msgRecord = DService.UploadCalibrationFile(item1.Title, path + "\\Calibration\\" + "DefectPoint\\" + item1.FileName, (int)ResouceType.DefectPoint);
+                                            break;
+                                        case cvColorVision.CalibrationType.DefectBPoint:
+                                            msgRecord = DService.UploadCalibrationFile(item1.Title, path + "\\Calibration\\" + "DefectPoint\\" + item1.FileName, (int)ResouceType.DefectPoint);
+                                            break;
+                                        case cvColorVision.CalibrationType.DefectPoint:
+                                            msgRecord = DService.UploadCalibrationFile(item1.Title, path + "\\Calibration\\" + "DefectPoint\\" + item1.FileName, (int)ResouceType.DefectPoint);
+                                            break;
+                                        case cvColorVision.CalibrationType.DSNU:
+                                            msgRecord = DService.UploadCalibrationFile(item1.Title, path + "\\Calibration\\" + "DSNU\\" + item1.FileName, (int)ResouceType.DSNU);
+                                            break;
+                                        case cvColorVision.CalibrationType.Uniformity:
+                                            msgRecord = DService.UploadCalibrationFile(item1.Title, path + "\\Calibration\\" + "Uniformity\\" + item1.FileName, (int)ResouceType.Uniformity);
+                                            break;
+                                        case cvColorVision.CalibrationType.Luminance:
+                                            msgRecord = DService.UploadCalibrationFile(item1.Title, path + "\\Calibration\\" + "Luminance\\" + item1.FileName, (int)ResouceType.Luminance);
+                                            break;
+                                        case cvColorVision.CalibrationType.LumOneColor:
+                                            msgRecord = DService.UploadCalibrationFile(item1.Title, path + "\\Calibration\\" + "LumOneColor\\" + item1.FileName, (int)ResouceType.LumOneColor);
+                                            break;
+                                        case cvColorVision.CalibrationType.LumFourColor:
+                                            msgRecord = DService.UploadCalibrationFile(item1.Title, path + "\\Calibration\\" + "LumFourColor\\" + item1.FileName, (int)ResouceType.LumFourColor);
+                                            break;
+                                        case cvColorVision.CalibrationType.LumMultiColor:
+                                            msgRecord = DService.UploadCalibrationFile(item1.Title, path + "\\Calibration\\" + "LumMultiColor\\" + item1.FileName, (int)ResouceType.LumMultiColor);
+                                            break;
+                                        case cvColorVision.CalibrationType.LumColor:
+                                            break;
+                                        case cvColorVision.CalibrationType.Distortion:
+                                            msgRecord = DService.UploadCalibrationFile(item1.Title, path + "\\Calibration\\" + "Distortion\\" + item1.FileName, (int)ResouceType.Distortion);
+                                            break;
+                                        case cvColorVision.CalibrationType.ColorShift:
+                                            msgRecord = DService.UploadCalibrationFile(item1.Title, path + "\\Calibration\\" + "ColorShift\\" + item1.FileName, (int)ResouceType.ColorShift);
+                                            break;
+                                        case cvColorVision.CalibrationType.Empty_Num:
+                                            break;
+                                        default:
+                                            break;
                                     }
-                                    Config.CalibrationRsourcesGroups.Add(item.Key,calibrationRsourcesGroup);
                                 }
 
-
-
                             }
+                    
 
-
-
-                        string cachepath = path + "\\Calibration";
-                        if (Directory.Exists(cachepath))
-                            Directory.Delete(cachepath,true);
-                        Directory.CreateDirectory(cachepath);
-
-                        string CalibrationFile = path + "\\" + "Calibration.zip";
-                        ZipFile.ExtractToDirectory(CalibrationFile, cachepath);
-                        DirectoryInfo directoryInfo = new DirectoryInfo(cachepath);
-                        foreach (var item in directoryInfo.GetFiles())
+                        string CalibrationFile = path + "\\" + "Calibration";
+                        DirectoryInfo directoryInfo = new DirectoryInfo(CalibrationFile);
+                        foreach (var item2 in directoryInfo.GetFiles())
                         {
-                            MsgRecord msgRecord = DService.UploadCalibrationFile(Path.GetFileNameWithoutExtension(item.FullName), item.FullName, 1001);
+                            Dictionary<string, List<ColorVisionVCalibratioItem>> keyValuePairs = JsonConvert.DeserializeObject<Dictionary<string, List<ColorVisionVCalibratioItem>>>(File.ReadAllText(item2.FullName));
+
+                            if (keyValuePairs != null)
+                                foreach (var item in keyValuePairs)
+                                {
+                                    if (!Config.CalibrationRsourcesGroups.ContainsKey(item.Key))
+                                    {
+                                        CalibrationRsourcesGroup calibrationRsourcesGroup = new CalibrationRsourcesGroup() { Title = item.Key };
+                                        foreach (var item1 in item.Value)
+                                        {
+                                            switch (item1.CalibrationType)
+                                            {
+                                                case cvColorVision.CalibrationType.DarkNoise:
+                                                    calibrationRsourcesGroup.DarkNoise = item.Key;
+                                                    break;
+                                                case cvColorVision.CalibrationType.DefectWPoint:
+                                                    calibrationRsourcesGroup.DefectPoint = item.Key;
+                                                    break;
+                                                case cvColorVision.CalibrationType.DefectBPoint:
+                                                    calibrationRsourcesGroup.DefectPoint = item.Key;
+                                                    break;
+                                                case cvColorVision.CalibrationType.DefectPoint:
+                                                    calibrationRsourcesGroup.DefectPoint = item.Key;
+                                                    break;
+                                                case cvColorVision.CalibrationType.DSNU:
+                                                    calibrationRsourcesGroup.DSNU = item.Key;
+                                                    break;
+                                                case cvColorVision.CalibrationType.Uniformity:
+                                                    calibrationRsourcesGroup.Uniformity = item.Key;
+                                                    break;
+                                                case cvColorVision.CalibrationType.Luminance:
+                                                    calibrationRsourcesGroup.Luminance = item.Key;
+                                                    break;
+                                                case cvColorVision.CalibrationType.LumOneColor:
+                                                    calibrationRsourcesGroup.LumOneColor = item.Key;
+                                                    break;
+                                                case cvColorVision.CalibrationType.LumFourColor:
+                                                    calibrationRsourcesGroup.LumFourColor = item.Key;
+                                                    break;
+                                                case cvColorVision.CalibrationType.LumMultiColor:
+                                                    calibrationRsourcesGroup.LumMultiColor = item.Key;
+                                                    break;
+                                                case cvColorVision.CalibrationType.LumColor:
+                                                    calibrationRsourcesGroup.Luminance = item.Key;
+                                                    break;
+                                                case cvColorVision.CalibrationType.Distortion:
+                                                    calibrationRsourcesGroup.Distortion = item.Key;
+                                                    break;
+                                                case cvColorVision.CalibrationType.ColorShift:
+                                                    calibrationRsourcesGroup.ColorShift = item.Key;
+                                                    break;
+                                                case cvColorVision.CalibrationType.Empty_Num:
+                                                    break;
+                                                default:
+                                                    break;
+                                            }
+                                        }
+                                        Config.CalibrationRsourcesGroups.Add(item.Key, calibrationRsourcesGroup);
+                                    }
+                                }
                         }
-                        MessageBox.Show("上传中");
+                        MessageBox.Show("上传成功");
 
                         Save();
                     }
