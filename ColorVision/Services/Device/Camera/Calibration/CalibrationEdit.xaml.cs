@@ -43,6 +43,7 @@ namespace ColorVision.Services.Device.Camera.Calibrations
                 CalibrationRsourcesGroups.Add(item.Value);
             }
             ListView1.ItemsSource = CalibrationRsourcesGroups;
+            ListView1.SelectedIndex = 0;
         }
 
         private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -77,8 +78,16 @@ namespace ColorVision.Services.Device.Camera.Calibrations
         {
             if (ListView1.SelectedIndex > -1)
             {
-                CalibrationRsourcesGroups.RemoveAt(ListView1.SelectedIndex);
+                CalibrationRsourcesGroup ss = CalibrationRsourcesGroups[ListView1.SelectedIndex];
+                CalibrationRsourcesGroups.Remove(ss);
+                DeviceCamera.Config.CalibrationRsourcesGroups.Remove(ss.Title);
+
             }
+        }
+
+        private void Window_Closed(object sender, EventArgs e)
+        {
+            DeviceCamera.Save();
         }
     }
 }

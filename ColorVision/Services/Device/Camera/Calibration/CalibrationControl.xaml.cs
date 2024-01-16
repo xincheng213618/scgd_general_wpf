@@ -1,7 +1,9 @@
 ﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Windows.Controls;
 using System.Windows.Input;
 using ColorVision.Device.Camera;
+using FlowEngineLib.Algorithm;
 using MQTTMessageLib.Camera;
 
 namespace ColorVision.Services.Device.Camera.Calibrations
@@ -12,7 +14,7 @@ namespace ColorVision.Services.Device.Camera.Calibrations
     public partial class CalibrationControl : UserControl
     {
         private bool IsFirst = true;
-        public CalibrationParam CalibrationParam { get => _CalibrationParam; set { _CalibrationParam = value; IsFirst = true; } }
+        public CalibrationParam CalibrationParam { get => _CalibrationParam; set { _CalibrationParam = value;} }
         private CalibrationParam _CalibrationParam;
 
         public DeviceCamera DeviceCamera { get; set; }
@@ -34,22 +36,31 @@ namespace ColorVision.Services.Device.Camera.Calibrations
             this.CalibrationParam = calibrationParam;
             this.DataContext = CalibrationParam;
         }
+        public ObservableCollection<KeyValuePair<string, CalibrationRsourcesGroup>> CalibrationRsourcesGroups { get; set; } = new ObservableCollection<KeyValuePair<string, CalibrationRsourcesGroup>>();
+
 
         public void Initializedsss(DeviceCamera DeviceCamera, CalibrationParam calibrationParam)
         {
             this.DeviceCamera = DeviceCamera;
             this.CalibrationParam = calibrationParam;
             this.DataContext = CalibrationParam;
-
-
-            ComboBoxList.ItemsSource = DeviceCamera.Config.CalibrationRsourcesGroups;
-            ComboBoxList.DisplayMemberPath = "Key";
-            ComboBoxList.SelectedValuePath = "Value";
+            string CalibrationMode = calibrationParam.CalibrationMode;
+            ComboBoxList.SelectionChanged -= ComboBox_SelectionChanged;
+            CalibrationRsourcesGroups.Clear();
+            foreach (var item in DeviceCamera.Config.CalibrationRsourcesGroups)
+            {
+                CalibrationRsourcesGroups.Add(item);
+            }
+            ComboBoxList.Text = CalibrationMode;
+            ComboBoxList.SelectionChanged += ComboBox_SelectionChanged;
 
         }
 
         private void UserControl_Initialized(object sender, System.EventArgs e)
         {
+            ComboBoxList.ItemsSource = CalibrationRsourcesGroups;
+            ComboBoxList.DisplayMemberPath = "Key";
+            ComboBoxList.SelectedValuePath = "Value";
         }
 
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -62,12 +73,6 @@ namespace ColorVision.Services.Device.Camera.Calibrations
 
         private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (IsFirst)
-            {
-                IsFirst = false;
-                return;
-            }
-
             if (sender is ComboBox comboBox)
             {
                 CalibrationParam.Normal.DarkNoise.FilePath = string.Empty;
@@ -114,7 +119,17 @@ namespace ColorVision.Services.Device.Camera.Calibrations
         private void Button_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             CalibrationEdit CalibrationEdit = new CalibrationEdit(DeviceCamera);
+            CalibrationEdit.Closed += (s, e) =>
+            {
+                CalibrationRsourcesGroups.Clear();
+                foreach (var item in DeviceCamera.Config.CalibrationRsourcesGroups)
+                {
+                    CalibrationRsourcesGroups.Add(item);
+                }
+            };
             CalibrationEdit.Show();
+
+
         }
 
 

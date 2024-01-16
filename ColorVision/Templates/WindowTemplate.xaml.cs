@@ -76,6 +76,7 @@ namespace ColorVision.Templates
                     if (IsReLoad) 
                         TemplateControl.LoadParams(TemplateControl.CalibrationParams);
                     TemplateModelBases = TemplateControl.GetTemplateModelBases(TemplateControl.CalibrationParams);
+
                     Title = "校正参数设置";
                     break;
                 case TemplateType.LedResult:
@@ -161,11 +162,11 @@ namespace ColorVision.Templates
         {
             TemplateType = windowTemplateType;
             TemplateControl = TemplateControl.GetInstance();
+            UserControl = userControl;
             Load(windowTemplateType, IsReLoad);
             InitializeComponent();
             GridProperty.Children.Clear();
             GridProperty.Margin = new Thickness(5,5,5,5);
-            UserControl = userControl;
             GridProperty.Children.Add(UserControl);
         }
 
@@ -175,17 +176,18 @@ namespace ColorVision.Templates
             DeviceCamera = deviceCamera;
             TemplateType = windowTemplateType;
             TemplateControl = TemplateControl.GetInstance();
+            UserControl = userControl;
             Load(windowTemplateType, IsReLoad);
             InitializeComponent();
             GridProperty.Children.Clear();
             GridProperty.Margin = new Thickness(5, 5, 5, 5);
-            UserControl = userControl;
             GridProperty.Children.Add(UserControl);
         }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
             ListView1.ItemsSource = TemplateModelBases;
+            ListView1.SelectedIndex = 0;
             this.Closed += WindowTemplate_Closed;
 
             switch (TemplateType)

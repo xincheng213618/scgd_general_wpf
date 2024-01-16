@@ -6,7 +6,7 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:local="clr-namespace:ColorVision.Services.Device.Camera.Calibrations"
         mc:Ignorable="d"
-        Title="CalibrationEdit"  Background="{DynamicResource GlobalBackground}"  Height="400" Width="600" Initialized="Window_Initialized" >
+        Title="CalibrationEdit"  Background="{DynamicResource GlobalBackground}"  Closed="Window_Closed" Height="400" Width="600" Initialized="Window_Initialized" >
     <Window.Resources>
         <Style  TargetType="TextBox" BasedOn="{StaticResource TextBox.Small}"/>
         <Style TargetType="hc:ComboBox" BasedOn="{StaticResource ComboBox.Small}">
