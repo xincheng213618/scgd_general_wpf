@@ -154,6 +154,19 @@ namespace ColorVision
             {
                 Task.Run(CheckLocalService);
             }
+            Task.Run(CheckVersion);
+        }
+
+        public async Task CheckVersion()
+        {
+            await Task.Delay(500);
+            if (System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString() != ConfigHandler.SoftwareConfig.Version)
+            {
+                MessageBox.Show(System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString() +"更新如下记录");
+                ConfigHandler.SoftwareConfig.Version = System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString();
+                ConfigHandler.SaveSoftwareConfig();
+
+            }
         }
 
         public static async Task CheckLocalService()
