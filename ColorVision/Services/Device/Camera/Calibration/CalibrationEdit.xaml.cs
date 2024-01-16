@@ -81,7 +81,6 @@ namespace ColorVision.Services.Device.Camera.Calibrations
                 CalibrationRsourcesGroup ss = CalibrationRsourcesGroups[ListView1.SelectedIndex];
                 CalibrationRsourcesGroups.Remove(ss);
                 DeviceCamera.Config.CalibrationRsourcesGroups.Remove(ss.Title);
-
             }
         }
 

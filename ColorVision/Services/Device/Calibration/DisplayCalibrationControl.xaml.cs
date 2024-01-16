@@ -26,10 +26,6 @@ namespace ColorVision.Services.Device.Calibration
         {
             this.DataContext = Device;
 
-
-            ComboxCalibrationTemplate.ItemsSource = TemplateControl.GetInstance().CalibrationParams;
-            ComboxCalibrationTemplate.SelectedIndex = 0;
-
         }
 
         private void Calibration_Click(object sender, RoutedEventArgs e)

@@ -223,7 +223,7 @@ namespace ColorVision.Device.Camera
                 switch (menuItem.Tag?.ToString() ?? string.Empty)
                 {
                     case "Calibration":
-                        CalibrationControl calibration = TemplateControl.CalibrationParams.Count == 0 ? new CalibrationControl(Device) : new CalibrationControl( Device,TemplateControl.CalibrationParams[0].Value);
+                        CalibrationControl calibration = Device.CalibrationParams.Count == 0 ? new CalibrationControl(Device) : new CalibrationControl(Device, Device.CalibrationParams[0].Value);
                         windowTemplate  = new WindowTemplate(TemplateType.Calibration, calibration, Device);
                         windowTemplate.Owner = Window.GetWindow(this);
                         windowTemplate.ShowDialog();

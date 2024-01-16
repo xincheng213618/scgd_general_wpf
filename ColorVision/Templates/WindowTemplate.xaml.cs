@@ -3,6 +3,7 @@ using ColorVision.Extension;
 using ColorVision.Flow.Templates;
 using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
+using ColorVision.MySql.Service;
 using ColorVision.Services.Device.Algorithm.Templates;
 using ColorVision.Services.Device.Camera.Calibrations;
 using ColorVision.Services.Device.PG.Templates;
@@ -73,10 +74,12 @@ namespace ColorVision.Templates
                     Title = "测量设置";
                     break;
                 case TemplateType.Calibration:
-                    if (IsReLoad) 
-                        TemplateControl.LoadParams(TemplateControl.CalibrationParams);
-                    TemplateModelBases = TemplateControl.GetTemplateModelBases(TemplateControl.CalibrationParams);
-
+                    if (IsReLoad)
+                    {
+                        CalibrationRsourceService.GetInstance().Refresh();
+                        TemplateControl.LoadModCabParam(DeviceCamera.CalibrationParams, DeviceCamera.SysResourceModel.Id, ModMasterType.Calibration);
+                    }
+                    TemplateModelBases = TemplateControl.GetTemplateModelBases(DeviceCamera.CalibrationParams);
                     Title = "校正参数设置";
                     break;
                 case TemplateType.LedResult:
@@ -291,8 +294,8 @@ namespace ColorVision.Templates
             switch (TemplateType)
             {
                 case TemplateType.Calibration:
-                    CalibrationParam? CalibrationParam = TemplateControl.AddParamMode<CalibrationParam>(TemplateTypeFactory.GetModeTemplateType(TemplateType), TextBox1.Text);
-                    if (CalibrationParam != null) CreateNewTemplate(TemplateControl.CalibrationParams, TextBox1.Text, CalibrationParam);
+                    CalibrationParam? CalibrationParam = TemplateControl.AddCalibrationParam(TemplateTypeFactory.GetModeTemplateType(TemplateType), TextBox1.Text,DeviceCamera.SysResourceModel.Id);
+                    if (CalibrationParam != null) CreateNewTemplate(DeviceCamera.CalibrationParams, TextBox1.Text, CalibrationParam);
                     else MessageBox.Show("数据库创建CalibrationParam模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     break;
                 case TemplateType.LedResult:
@@ -371,7 +374,7 @@ namespace ColorVision.Templates
                     CreateNewTemplate(TemplateControl.AoiParams, TextBox1.Text, new AOIParam());
                     break;
                 case TemplateType.Calibration:
-                    CreateNewTemplate(TemplateControl.CalibrationParams, TextBox1.Text, new CalibrationParam());
+                    CreateNewTemplate(DeviceCamera.CalibrationParams, TextBox1.Text, new CalibrationParam());
                     break;
                 case TemplateType.PGParam:
                     CreateNewTemplate(TemplateControl.PGParams, TextBox1.Text, new PGParam());
@@ -430,7 +433,16 @@ namespace ColorVision.Templates
 
         public void TemplateSave()
         {
-            TemplateControl.Save(TemplateType);
+            if (TemplateType == TemplateType.Calibration)
+            {
+                TemplateControl.Save(DeviceCamera.CalibrationParams, ModMasterType.Calibration);
+            }
+            else
+            {
+                TemplateControl.Save(TemplateType);
+
+            }
+
             this.Close();
         }
 
@@ -483,7 +495,7 @@ namespace ColorVision.Templates
                             TemplateDel(TemplateControl.AoiParams);
                             break;
                         case TemplateType.Calibration:
-                            TemplateDel(TemplateControl.CalibrationParams);
+                            TemplateDel(DeviceCamera.CalibrationParams);
                             break;
                         case TemplateType.PGParam:
                             TemplateDel(TemplateControl.PGParams);
@@ -699,7 +711,7 @@ namespace ColorVision.Templates
                             calibrationParam1.CopyTo(calibrationParam);
                         if (calibrationParam != null)
                         {
-                            CreateNewTemplate(TemplateControl.CalibrationParams, name, calibrationParam);
+                            CreateNewTemplate(DeviceCamera.CalibrationParams, name, calibrationParam);
                             TemplateControl.GetInstance().Save2DB(calibrationParam);
                         }
                         else MessageBox.Show("数据库创建流程模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);

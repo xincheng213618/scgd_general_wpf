@@ -11,6 +11,7 @@ using ColorVision.Templates.POI.MySql;
 using ColorVision.User;
 using ColorVision.Util;
 using cvColorVision.Util;
+using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -64,7 +65,6 @@ namespace ColorVision.Templates
         public TemplateControl()
         {
             AoiParams = new ObservableCollection<TemplateModel<AOIParam>>();
-            CalibrationParams = new ObservableCollection<TemplateModel<CalibrationParam>>();
             PGParams = new ObservableCollection<TemplateModel<PGParam>>();
             LedReusltParams = new ObservableCollection<TemplateModel<LedReusltParam>>();
             SMUParams = new ObservableCollection<TemplateModel<SMUParam>>();
@@ -130,7 +130,6 @@ namespace ColorVision.Templates
             LoadParams(LedReusltParams);
             LoadParams(PoiParams);
             LoadParams(FlowParams);
-            LoadParams(CalibrationParams);
             LoadParams(AoiParams);
             LoadParams(SMUParams);
             LoadParams(PGParams);
@@ -147,8 +146,6 @@ namespace ColorVision.Templates
             switch (typeof(T))
             {
                 case Type t when t == typeof(CalibrationParam):
-                    CalibrationRsourceService.GetInstance().Refresh();
-                    LoadModParam(CalibrationParams, ModMasterType.Calibration);
                     break;
                 case Type t when t == typeof(LedReusltParam):
                     IDefault(FileNameLedJudgeParams, new LedReusltParam());
@@ -275,7 +272,6 @@ namespace ColorVision.Templates
             switch (windowTemplateType)
             {
                 case TemplateType.Calibration:
-                    Save(CalibrationParams, ModMasterType.Calibration);
                     break;
                 case TemplateType.LedResult:
                     SaveDefault(FileNameLedJudgeParams, LedReusltParams);
@@ -338,7 +334,7 @@ namespace ColorVision.Templates
             }
         }
 
-        private void Save<T>(ObservableCollection<TemplateModel<T>> t ,string code) where T: ParamBase
+        public void Save<T>(ObservableCollection<TemplateModel<T>> t ,string code) where T: ParamBase
         {
             if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
                 Save2DB(t);
@@ -437,8 +433,12 @@ namespace ColorVision.Templates
                 else return null;
             }
             return null;
-
         }
+
+
+
+
+
         internal FlowParam? AddFlowParam(string text)
         {
             ModMasterModel flowMaster = new ModMasterModel(ModMasterType.Flow, text, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
@@ -526,6 +526,41 @@ namespace ColorVision.Templates
                 foreach (var item in keyValuePairs)
                     ParamModes.Add(item);
             }
+        }
+
+        public void LoadModCabParam(ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParamModes ,int resourceId , string ModeType)
+        {
+            DicTemplate.TryAdd(ModeType, CalibrationParamModes);
+            CalibrationParamModes.Clear();
+            if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
+            {
+                ModMasterDao masterFlowDao = new ModMasterDao(ModeType);
+                List<ModMasterModel> smus = masterFlowDao.GetResourceAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId, resourceId);
+                foreach (var dbModel in smus)
+                {
+                    List<ModDetailModel> smuDetails = modService.GetDetailByPid(dbModel.Id);
+                    foreach (var dbDetail in smuDetails)
+                    {
+                        dbDetail.ValueA = dbDetail?.ValueA?.Replace("\\r", "\r");
+                    }
+                    CalibrationParamModes.Add(new TemplateModel<CalibrationParam>(dbModel.Name ?? "default", new CalibrationParam( dbModel, smuDetails)));
+                }
+            }
+        }
+        public CalibrationParam? AddCalibrationParam(string code, string Name, int resourceId)
+        {
+            ModMasterModel modMaster = new ModMasterModel(code, Name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            modMaster.ResourceId = resourceId;
+            modService.Save(modMaster);
+            int pkId = modMaster.GetPK();
+            if (pkId > 0)
+            {
+                ModMasterModel modMasterModel = modService.GetMasterById(pkId);
+                List<ModDetailModel> modDetailModels = modService.GetDetailByPid(pkId);
+                if (modMasterModel != null) return new CalibrationParam(modMasterModel, modDetailModels);
+                else return null;
+            }
+            return null;
         }
 
 
@@ -643,7 +678,6 @@ namespace ColorVision.Templates
 
         public ObservableCollection<TemplateModel<MeasureParam>> MeasureParams { get; set; }
         public ObservableCollection<TemplateModel<AOIParam>> AoiParams { get; set; }
-        public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; } 
         public ObservableCollection<TemplateModel<PGParam>> PGParams { get; set; }
         public ObservableCollection<TemplateModel<SMUParam>> SMUParams { get; set; }
         public ObservableCollection<TemplateModel<LedReusltParam>> LedReusltParams { get; set; }

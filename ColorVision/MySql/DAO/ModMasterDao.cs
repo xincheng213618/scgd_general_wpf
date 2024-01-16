@@ -1,4 +1,6 @@
-﻿using System;
+﻿using NPOI.SS.Formula.Functions;
+using System;
+using System.Collections.Generic;
 using System.Data;
 
 namespace ColorVision.MySql.DAO
@@ -21,6 +23,9 @@ namespace ColorVision.MySql.DAO
         public string? Remark { get; set; }
         public int TenantId { get; set; }
         public int Pid { get; set; }
+
+        public int? ResourceId { get; set; }
+
         public string? Pcode { get; set; }
     }
     public class ModMasterDao : BaseDaoMaster<ModMasterModel>
@@ -59,6 +64,7 @@ namespace ColorVision.MySql.DAO
                 Remark = item.Field<string?>("remark"),
                 Pcode = item.Field<string>("pcode"),
                 Pid = item.Field<int>("pid"),
+                ResourceId = item.Field<int?>("res_pid"),
             };
 
             return model;
@@ -71,13 +77,52 @@ namespace ColorVision.MySql.DAO
                 if (item.Id > 0) row["id"] = item.Id;
                 if (item.Name != null) row["name"] = item.Name;
                 row["create_date"] = item.CreateDate;
-                //row["is_enable"] = item.IsEnable;
-                //row["is_delete"] = item.IsDelete;
                 if (item.Remark != null) row["remark"] = item.Remark;
                 row["tenant_id"] = item.TenantId;
+                row["res_pid"] = item.ResourceId??-1;
                 row["mm_id"] = item.Pid;
             }
             return row;
         }
+
+        public DataTable GetTableAllByTenantIdAdnResId(int tenantId,int resourceId)
+        {
+            string sql = $"select * from {GetTableName()} where tenant_id={tenantId} and pcode='{_code}' and res_pid={resourceId}" + GetDelSQL(true);
+            DataTable d_info = GetData(sql);
+            return d_info;
+        }
+
+        public List<ModMasterModel> GetResourceAll(int tenantId, int resourceId)
+        {
+            List<ModMasterModel> list = new List<ModMasterModel>();
+            DataTable d_info = GetTableAllByTenantIdAdnResId(tenantId, resourceId);
+            foreach (var item in d_info.AsEnumerable())
+            {
+                ModMasterModel? model = GetModel(item);
+                if (model != null)
+                {
+                    list.Add(model);
+                }
+            }
+            return list;
+        }
+
+
+        public List<ModMasterModel> GetAll(int tenantId)
+        {
+            List<ModMasterModel> list = new List<ModMasterModel>();
+            DataTable d_info = GetTableAllByTenantId(tenantId);
+            foreach (var item in d_info.AsEnumerable())
+            {
+                ModMasterModel? model = GetModel(item);
+                if (model != null)
+                {
+                    list.Add(model);
+                }
+            }
+            return list;
+        }
+
+
     }
 }

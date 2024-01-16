@@ -231,7 +231,7 @@ namespace ColorVision.Device.Camera
             foreach (var item in Device.CalibrationParams)
                 CalibrationParams.Add(item);
 
-            TemplateControl.GetInstance().CalibrationParams.CollectionChanged += (s, e) =>
+            Device.CalibrationParams.CollectionChanged += (s, e) =>
             {
                 switch (e.Action)
                 {
