@@ -65,7 +65,7 @@ namespace ColorVision
         private bool _TransparentWindow = true;
 
         public bool WizardCompletionKey { get => _WizardCompletionKey; set { _WizardCompletionKey = value; NotifyPropertyChanged(); } }
-        private bool _WizardCompletionKey = true;
+        private bool _WizardCompletionKey = false;
 
         /// <summary>
         /// 主题
@@ -86,6 +86,8 @@ namespace ColorVision
         public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; NotifyPropertyChanged(); } }
         private bool _IsAutoUpdate = true;
 
+        public bool IsOpenLoaclService { get => _IsOpenLoaclService; set { _IsOpenLoaclService = value; NotifyPropertyChanged(); } }
+        private bool _IsOpenLoaclService = true;
 
         /// <summary>
         /// 是否默认配置

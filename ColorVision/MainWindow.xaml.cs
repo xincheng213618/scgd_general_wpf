@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.ServiceProcess;
 
 namespace ColorVision
 {
@@ -149,6 +150,57 @@ namespace ColorVision
                 Thread thread1 = new Thread(async () => await CheckUpdate()) { IsBackground = true };
                 thread1.Start();
             }
+            if (ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.IsOpenLoaclService)
+            {
+                Task.Run(CheckLocalService);
+            }
+        }
+
+        public static async Task CheckLocalService()
+        {
+            await Task.Delay(2000);
+            try
+            {
+                string excmd = string.Empty;
+                ServiceController sc = new ServiceController("RegistrationCenterService");
+                if (sc.Status == ServiceControllerStatus.Stopped)
+                {
+                    excmd += "net start RegistrationCenterService&&";
+                }
+                ServiceController sc1 = new ServiceController("CVMainService_x86");
+                if (sc1.Status == ServiceControllerStatus.Stopped)
+                {
+                    excmd += "net start CVMainService_x86&&";
+                }
+                ServiceController sc2 = new ServiceController("CVMainService_x64");
+                if (sc2.Status == ServiceControllerStatus.Stopped)
+                {
+                    excmd += "net start CVMainService_x64&&";
+                }
+                if (!string.IsNullOrEmpty(excmd))
+                {
+                    excmd += "1";
+                    ColorVision.Util.Tool.ExecuteCommandAsAdmin(excmd);
+                }
+                if (sc.Status == ServiceControllerStatus.Stopped)
+                {
+                    MessageBox.Show("RegistrationCenterService 启动失败");
+                }
+                if (sc1.Status == ServiceControllerStatus.Stopped)
+                {
+                    MessageBox.Show("CVMainService_x86 启动失败");
+                }
+                if (sc2.Status == ServiceControllerStatus.Stopped)
+                {
+                    MessageBox.Show("CVMainService_x64 启动失败");
+                }
+                ///非管理员模式无法直接通过sc启动程序
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+
         }
 
         public static async Task CheckUpdate()

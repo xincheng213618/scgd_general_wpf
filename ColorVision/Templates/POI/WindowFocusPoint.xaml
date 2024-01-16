@@ -85,7 +85,7 @@
                                 <WindowsFormsHost Height="300" >
                                     <winf:PropertyGrid  x:Name="PropertyGridAutoFocus" />
                                 </WindowsFormsHost>
-                               
+
                                 <GroupBox x:Name="GridMark" Header="灯珠像素边长" Margin="5" >
                                     <StackPanel>
                                         <StackPanel  x:Name="StackPanelLedLen"   d:DataContext="{d:DesignInstance Template:DatumArea}" Margin="5">
@@ -111,54 +111,54 @@
                                     </StackPanel>
                                 </GroupBox>
                             </StackPanel>
+                            <TextBlock Text="基准定位点"/>
+                            <StackPanel  x:Name="StackPanelDatumAreaPoints"   d:DataContext="{d:DesignInstance Template:DatumArea}" Margin="5">
+                                <UniformGrid Columns="2">
+                                    <DockPanel  Margin="2">
+                                        <TextBlock Text="X1.X:" />
+                                        <TextBox  Text="{Binding X1X}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                    </DockPanel>
+                                    <DockPanel Margin="2" >
+                                        <TextBlock Text="X1Y:" />
+                                        <TextBox   Text="{Binding X1Y}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                    </DockPanel>
+                                    <DockPanel  Margin="2">
+                                        <TextBlock Text="X2X:" />
+                                        <TextBox  Text="{Binding X2X}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                    </DockPanel>
+                                    <DockPanel Margin="2" >
+                                        <TextBlock Text="X2Y:" />
+                                        <TextBox   Text="{Binding X2Y}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                    </DockPanel>
+                                    <DockPanel  Margin="2">
+                                        <TextBlock Text="X3X:" />
+                                        <TextBox  Text="{Binding X3X}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                    </DockPanel>
+                                    <DockPanel Margin="2" >
+                                        <TextBlock Text="X3Y:" />
+                                        <TextBox   Text="{Binding X3Y}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                    </DockPanel>
+                                    <DockPanel  Margin="2">
+                                        <TextBlock Text="X4X:" />
+                                        <TextBox  Text="{Binding X4X}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                    </DockPanel>
+                                    <DockPanel Margin="2" >
+                                        <TextBlock Text="X4Y:" />
+                                        <TextBox   Text="{Binding X4Y}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                    </DockPanel>
+                                    <DockPanel  Margin="2">
+                                        <TextBlock Text="CtX:"/>
+                                        <TextBox  Text="{Binding CenterX}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                    </DockPanel>
+                                    <DockPanel Margin="2" >
+                                        <TextBlock Text="CtY:"/>
+                                        <TextBox   Text="{Binding CenterY}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                    </DockPanel>
+                                </UniformGrid>
+                            </StackPanel>
 
-                            <GroupBox x:Name="GridBenckMark" Header="设置基准定位点" Margin="5" >
+                            <GroupBox x:Name="GridBenckMark" Header="基准定位点" Margin="5" >
                                 <StackPanel>
-                                    <StackPanel  x:Name="StackPanelDatumAreaPoints"   d:DataContext="{d:DesignInstance Template:DatumArea}" Margin="5">
-                                        <UniformGrid Columns="2">
-                                            <DockPanel  Margin="2">
-                                                <TextBlock Text="X1.X:" />
-                                                <TextBox  Text="{Binding X1X}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
-                                            </DockPanel>
-                                            <DockPanel Margin="2" >
-                                                <TextBlock Text="X1Y:" />
-                                                <TextBox   Text="{Binding X1Y}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
-                                            </DockPanel>
-                                            <DockPanel  Margin="2">
-                                                <TextBlock Text="X2X:" />
-                                                <TextBox  Text="{Binding X2X}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
-                                            </DockPanel>
-                                            <DockPanel Margin="2" >
-                                                <TextBlock Text="X2Y:" />
-                                                <TextBox   Text="{Binding X2Y}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
-                                            </DockPanel>
-                                            <DockPanel  Margin="2">
-                                                <TextBlock Text="X3X:" />
-                                                <TextBox  Text="{Binding X3X}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
-                                            </DockPanel>
-                                            <DockPanel Margin="2" >
-                                                <TextBlock Text="X3Y:" />
-                                                <TextBox   Text="{Binding X3Y}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
-                                            </DockPanel>
-                                            <DockPanel  Margin="2">
-                                                <TextBlock Text="X4X:" />
-                                                <TextBox  Text="{Binding X4X}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
-                                            </DockPanel>
-                                            <DockPanel Margin="2" >
-                                                <TextBlock Text="X4Y:" />
-                                                <TextBox   Text="{Binding X4Y}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
-                                            </DockPanel>
-                                            <DockPanel  Margin="2">
-                                                <TextBlock Text="CtX:"/>
-                                                <TextBox  Text="{Binding CenterX}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
-                                            </DockPanel>
-                                            <DockPanel Margin="2" >
-                                                <TextBlock Text="CtY:"/>
-                                                <TextBox   Text="{Binding CenterY}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
-                                            </DockPanel>
-                                        </UniformGrid>
-
-                                    </StackPanel>
                                     <StackPanel  Margin="5">
                                         <UniformGrid Columns="3" Margin="5">
                                             <RadioButton x:Name="RadioButtonBuildMode2" Content="边距计算"  />
@@ -202,7 +202,7 @@
                             <GroupBox Header="布点区域" Margin="5" Visibility="{Binding ElementName=RadioButtonMode1, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
                                 <StackPanel>
                                     <UniformGrid Columns="3" Margin="5">
-                                        <RadioButton x:Name="RadioButtonAreaCircle"  GroupName="shapeArea" IsChecked="{Binding DatumArea.IsAreaCircle}" Content="圆行"/>
+                                        <RadioButton x:Name="RadioButtonAreaCircle"  GroupName="shapeArea" IsChecked="{Binding DatumArea.IsAreaCircle}" Content="圆"/>
                                         <RadioButton x:Name="RadioButtonAreaRect"  GroupName="shapeArea" IsChecked="{Binding DatumArea.IsAreaRect}"  Content="矩形"/>
                                         <RadioButton x:Name="RadioButtonAreaMask"  GroupName="shapeArea" IsChecked="{Binding DatumArea.IsAreaMask}"  Content="四边形"/>
                                     </UniformGrid>

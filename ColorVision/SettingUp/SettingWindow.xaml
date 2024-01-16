@@ -160,6 +160,11 @@
                                             <TextBlock Text="禁用硬件加速"/>
                                         </DockPanel>
                                         <DockPanel  Margin="5">
+                                            <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding SoftwareSetting.IsOpenLoaclService}"/>
+                                            <TextBlock Text="软件启动时打开本地服务"/>
+                                        </DockPanel>
+                                        
+                                        <DockPanel  Margin="5">
                                             <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding SoftwareSetting.WizardCompletionKey,Converter={StaticResource Boolean2BooleanReConverter}}"/>
                                             <TextBlock Text="向导"/>
                                         </DockPanel>
