@@ -72,6 +72,7 @@ namespace ColorVision.Device.Camera
                     Icon = drawingImage;
                 View.View.Icon = Icon;
             };
+
             View.View.Title = "相机视图";
             View.View.Icon = Icon;
 
