@@ -55,6 +55,7 @@ namespace ColorVision.Services
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             RCService.GetInstance().RestartServices();
+            MessageBox.Show(Application.Current.MainWindow,"命令已经发送");
         }
     }
 }
