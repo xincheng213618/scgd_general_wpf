@@ -162,10 +162,13 @@ namespace ColorVision
             await Task.Delay(500);
             if (System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString() != ConfigHandler.SoftwareConfig.Version)
             {
-                MessageBox.Show(System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString() +"更新如下记录");
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MessageBox.Show(Application.Current.MainWindow, System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString() + "更新记录");
+
+                });
                 ConfigHandler.SoftwareConfig.Version = System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString();
                 ConfigHandler.SaveSoftwareConfig();
-
             }
         }
 
