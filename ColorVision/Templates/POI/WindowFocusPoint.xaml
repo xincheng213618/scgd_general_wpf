@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Templates.POI"
-        xmlns:Template="clr-namespace:ColorVision.Templates"
+        xmlns:Template="clr-namespace:ColorVision.Templates.POI"
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         xmlns:converter="clr-namespace:ColorVision.Draw.Converter;assembly=ColorVision.Util"
         xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util"
@@ -13,7 +13,7 @@
         xmlns:resx="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Template:PoiParam}"
-        Title="关注点编辑"  Height="720" Width="1280" Initialized="Window_Initialized">
+        Title="关注点编辑"  Height="1080" Width="1920" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}"/>
     </Window.Resources>
@@ -33,14 +33,14 @@
                     <UniformGrid Columns="2">
                         <DockPanel  Margin="2">
                             <TextBlock Text="W:" Width="20"/>
-                            <TextBox   x:Name="TextBoxCADW" Text="{Binding Width}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                            <TextBox x:Name="TextBoxCADW" Text="{Binding Width}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                         </DockPanel>
                         <DockPanel Margin="2" >
                             <TextBlock Text="H:" Width="20"/>
-                            <TextBox  x:Name="TextBoxCADH"  Text="{Binding Height}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                            <TextBox x:Name="TextBoxCADH"  Text="{Binding Height}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                         </DockPanel>
                     </UniformGrid>
-                    <UniformGrid Columns="3" >
+                    <UniformGrid Columns="3">
                         <Button  Content="默认画布" Click="OpenCAD_Click"  Margin="2"/>
                         <Button  Content="视频导入" Click="Button1_Click" Margin="2"/>
                         <Button x:Name="button1" Content="图像导入" Click="Button1_Click"  Margin="2"/>
