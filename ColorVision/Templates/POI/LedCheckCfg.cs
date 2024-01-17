@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace ColorVision.Templates
+namespace ColorVision.Templates.POI
 {
     public class LedPicData 
     {

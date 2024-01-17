@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace ColorVision.Templates.POI.MySql
+namespace ColorVision.Templates.POI.Dao
 {
     public class PoiService
     {

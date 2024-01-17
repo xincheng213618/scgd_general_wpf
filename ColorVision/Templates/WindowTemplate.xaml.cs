@@ -7,6 +7,7 @@ using ColorVision.MySql.Service;
 using ColorVision.Services.Device.Algorithm.Templates;
 using ColorVision.Services.Device.Camera.Calibrations;
 using ColorVision.Services.Device.PG.Templates;
+using ColorVision.Templates.POI;
 using ColorVision.Util;
 using Newtonsoft.Json;
 using System;
@@ -20,10 +21,6 @@ using System.Windows.Input;
 
 namespace ColorVision.Templates
 {
-
-
-
-
     /// <summary>
     /// CalibrationTemplate.xaml 的交互逻辑
     /// </summary>

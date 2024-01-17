@@ -1,9 +1,10 @@
-﻿<base:BaseWindow x:Class="ColorVision.Templates.WindowFocusPointAdd"
+﻿<base:BaseWindow x:Class="ColorVision.Templates.POI.WindowFocusPointAdd"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ColorVision.Templates"
+        xmlns:local="clr-namespace:ColorVision.Templates.POI"
+        xmlns:Templates="clr-namespace:ColorVision.Templates"
         xmlns:base ="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util"
         mc:Ignorable="d"
         Background="Transparent" IsBlurEnabled="True"  ResizeMode="NoResize" Height="450" Width="200">
@@ -11,7 +12,7 @@
         <TextBlock Text="导入关注点" FontSize="20"  HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,-20,0,0"/>
         <ListView x:Name="ListView1"   Margin="5,5,5,5"  Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" SelectionChanged="ListView1_SelectionChanged">
             <ListView.ItemTemplate>
-                <DataTemplate DataType="{x:Type local:TemplateModelBase}" >
+                <DataTemplate DataType="{x:Type Templates:TemplateModelBase}" >
                     <Border>
                         <TextBlock  Text="{Binding Key}" TextTrimming = "CharacterEllipsis"/>
                     </Border>

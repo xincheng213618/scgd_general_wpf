@@ -1,5 +1,6 @@
 ﻿using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
+using ColorVision.Templates.POI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

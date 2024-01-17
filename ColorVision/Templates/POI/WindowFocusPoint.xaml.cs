@@ -3,7 +3,7 @@ using ColorVision.Common.Extension;
 using ColorVision.Media;
 using ColorVision.MVVM;
 using ColorVision.Net;
-using ColorVision.Templates.POI.MySql;
+using ColorVision.Templates.POI.Dao;
 using ColorVision.Util;
 using cvColorVision;
 using cvColorVision.Util;
@@ -30,7 +30,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace ColorVision.Templates
+namespace ColorVision.Templates.POI
 {
 
 

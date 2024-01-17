@@ -2,7 +2,7 @@
 using System;
 using System.Data;
 
-namespace ColorVision.Templates.POI.MySql
+namespace ColorVision.Templates.POI.Dao
 {
     public class PoiMasterModel : PKModel
     {

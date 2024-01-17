@@ -1,9 +1,9 @@
-﻿using ColorVision.Templates.POI.MySql;
+﻿using ColorVision.Templates.POI.Dao;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-namespace ColorVision.Templates
+namespace ColorVision.Templates.POI
 {
     /// <summary>
     /// 关注点模板
