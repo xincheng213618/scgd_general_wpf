@@ -1,59 +1,10 @@
-﻿using ColorVision.Services;
-using ColorVision.User;
-using ColorVision.User.MySql;
+﻿using ColorVision.Users;
+using ColorVision.Users.Dao;
 using System;
 using System.Windows;
 
-namespace ColorVision
+namespace ColorVision.Users
 {
-    public class PermissionsControl
-    {
-        public static PermissionsControl Current { get; set; } = new PermissionsControl();
-
-        public PermissionsControl()
-        {
-
-        }
-        private string daccount = "admin";
-
-        private string dpassword = "123456";
-
-        public bool Login(string account,string password)
-        {
-            if (account == daccount && password == dpassword)
-            {
-                UserManager.Current.UserConfig = new UserConfig()
-                {
-                    Account = account,
-                    UserPwd = password,
-                    UserName =account,
-                    PerMissionMode = PerMissionMode.Administrator,
-                };
-                new WindowService() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show(); ;
-                return true;
-            }
-            else if (account != "admin")
-            {
-                UserManager.Current.UserConfig = new UserConfig()
-                {
-                    Account = account,
-                    UserPwd = password,
-                    UserName = account,
-                    PerMissionMode = PerMissionMode.User,
-                };
-
-                new WindowDevices() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show(); ;
-                return true;
-            }
-            else 
-            {
-                return false;
-            }
-
-        }
-    }
-
-
     /// <summary>
     /// LoginWindow.xaml 的交互逻辑
     /// </summary>
@@ -71,8 +22,8 @@ namespace ColorVision
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            UserDao administrator = new UserDao();
-            if (administrator.Checklogin(Account1.Text, PasswordBox1.Password))
+            UserDao userDao = new UserDao();
+            if (userDao.Checklogin(Account1.Text, PasswordBox1.Password))
             {
                 this.Close();
             }

@@ -1,7 +1,7 @@
 ﻿using ColorVision.MVVM;
 using System.ComponentModel;
 
-namespace ColorVision.User
+namespace ColorVision.Users
 {
     public class UserConfig : ViewModelBase
     {

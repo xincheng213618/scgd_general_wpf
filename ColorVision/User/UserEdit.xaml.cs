@@ -3,7 +3,7 @@ using System;
 using ColorVision.MVVM;
 using System.Windows;
 
-namespace ColorVision.User
+namespace ColorVision.Users
 {
     /// <summary>
     /// UserEdit.xaml 的交互逻辑

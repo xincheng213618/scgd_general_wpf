@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 
-namespace ColorVision.User
+namespace ColorVision.Users
 {
     /// <summary>
     /// UserManager.xaml 的交互逻辑

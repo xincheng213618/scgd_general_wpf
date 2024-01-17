@@ -1,4 +1,4 @@
-﻿namespace ColorVision.User
+﻿namespace ColorVision.Users
 {
     public class UserCenter
     {

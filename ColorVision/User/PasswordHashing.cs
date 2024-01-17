@@ -2,7 +2,7 @@
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Crypto.Digests;
 
-namespace ColorVision.User
+namespace ColorVision.Users
 {
     public class PasswordHashing
     {

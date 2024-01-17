@@ -9,7 +9,7 @@ using ColorVision.Services.Device.PG.Templates;
 using ColorVision.Solution;
 using ColorVision.Templates.POI;
 using ColorVision.Templates.POI.Dao;
-using ColorVision.User;
+using ColorVision.Users;
 using ColorVision.Util;
 using cvColorVision.Util;
 using NPOI.SS.Formula.Functions;

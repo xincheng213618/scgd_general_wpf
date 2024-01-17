@@ -3,7 +3,7 @@ using ColorVision.MySql;
 using log4net;
 using MySql.Data.MySqlClient;
 
-namespace ColorVision.User.MySql
+namespace ColorVision.Users.Dao
 {
     public class UserDao
     {
@@ -34,10 +34,10 @@ namespace ColorVision.User.MySql
         {
             try
             {
-                string query = "SELECT passwd FROM t_scgd_sys_user WHERE username = @username";
+                string query = "SELECT pwd FROM t_scgd_sys_user WHERE name = @name";
                 using (var command = new MySqlCommand(query, MySqlConnection))
                 {
-                    command.Parameters.AddWithValue("@username", account);
+                    command.Parameters.AddWithValue("@name", account);
                     object result = command.ExecuteScalar();
                     if (result != null)
                     {

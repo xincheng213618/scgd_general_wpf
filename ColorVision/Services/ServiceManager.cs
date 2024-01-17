@@ -16,7 +16,7 @@ using ColorVision.Services.Device.Sensor;
 using ColorVision.Services.Device.SMU;
 using ColorVision.Services.Device.SMU.Dao;
 using ColorVision.Services.Device.Spectrum.Dao;
-using ColorVision.User;
+using ColorVision.Users;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
