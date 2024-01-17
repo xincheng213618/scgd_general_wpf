@@ -89,7 +89,7 @@ namespace ColorVision.Device.Spectrum
                                 //cmdMap.Remove(json.MsgID);
                             }
                         }
-                        else if (json.EventName == "Heartbeat" && json.ServiceName.Equals(this.ServiceName, System.StringComparison.Ordinal))
+                        else if (json.EventName == "Heartbeat" && json.ServiceName.Equals(this.ServiceName, StringComparison.Ordinal))
                         {
                             List<SpectumDeviceHeartbeatParam> devs_heartbeat = JsonConvert.DeserializeObject<List<SpectumDeviceHeartbeatParam>>(JsonConvert.SerializeObject(json.Data));
                             if (devs_heartbeat != null && devs_heartbeat.Count > 0) DoSpectumHeartbeat(devs_heartbeat);
@@ -264,31 +264,31 @@ namespace ColorVision.Device.Spectrum
             HeartbeatParam heartbeat = new HeartbeatParam();
             foreach (var item in nodeService.Devices)
             {
-                if (Config.Code.Equals(item.Key, System.StringComparison.Ordinal))
+                if (Config.Code.Equals(item.Key, StringComparison.Ordinal))
                 {
                     var dev = item.Value;
                     DeviceStatusType devStatus = (DeviceStatusType)Enum.Parse(typeof(DeviceStatusType), dev.Status);
                     switch (devStatus)
                     {
-                        case MQTTMessageLib.DeviceStatusType.Unknown:
+                        case DeviceStatusType.Unknown:
                             heartbeat.DeviceStatus = DeviceStatusType.Closed;
                             break;
-                        case MQTTMessageLib.DeviceStatusType.Closed:
+                        case DeviceStatusType.Closed:
                             heartbeat.DeviceStatus = DeviceStatusType.Closed;
                             break;
-                        case MQTTMessageLib.DeviceStatusType.Closing:
+                        case DeviceStatusType.Closing:
                             heartbeat.DeviceStatus = DeviceStatusType.Closing;
                             break;
-                        case MQTTMessageLib.DeviceStatusType.Opened:
+                        case DeviceStatusType.Opened:
                             heartbeat.DeviceStatus = DeviceStatusType.Opened;
                             break;
-                        case MQTTMessageLib.DeviceStatusType.Opening:
+                        case DeviceStatusType.Opening:
                             heartbeat.DeviceStatus = DeviceStatusType.Opening;
                             break;
-                        case MQTTMessageLib.DeviceStatusType.Busy:
+                        case DeviceStatusType.Busy:
                             heartbeat.DeviceStatus = DeviceStatusType.Busy;
                             break;
-                        case MQTTMessageLib.DeviceStatusType.Free:
+                        case DeviceStatusType.Free:
                             heartbeat.DeviceStatus = DeviceStatusType.Free;
                             break;
                         default:

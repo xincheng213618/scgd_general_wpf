@@ -216,12 +216,12 @@ namespace ColorVision.Device.Spectrum
 
         private bool ConnectSpectrum()
         {
-            if (GCSDLL.JKStartServer() != 0)
+            if (JKStartServer() != 0)
             {
                 MessageBox.Show("启动光谱仪软件的服务失败");
                 return false;
             }
-            if (GCSDLL.CVInit() != 0)
+            if (CVInit() != 0)
             {
                 MessageBox.Show("连接光谱仪失败");
                 return false;
@@ -231,12 +231,12 @@ namespace ColorVision.Device.Spectrum
         }
         private static bool DisconnectSpectrum()
         {
-            if (GCSDLL.JKEmissionClose() != 0)
+            if (JKEmissionClose() != 0)
             {
                 MessageBox.Show("断开光谱仪失败");
                 return false;
             }
-            if (GCSDLL.JKCloseServer() != 0)
+            if (JKCloseServer() != 0)
             {
                 MessageBox.Show("断开光谱仪软件的服务失败");
                 return false;
@@ -266,14 +266,14 @@ namespace ColorVision.Device.Spectrum
         {
             float fIntTime = 100;
             int iAveNum = 1;
-            if (GCSDLL.CVInitDark(fIntTime, iAveNum) == 0)
+            if (CVInitDark(fIntTime, iAveNum) == 0)
                 MessageBox.Show("校零成功");
             else
                 MessageBox.Show("校零失败");
         }
         private void SpectrumSingleTest(object sender, RoutedEventArgs e)
         {
-            GCSDLL.CVOneTest(SpectrumData, (float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value, false, false);
+            CVOneTest(SpectrumData, (float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value, false, false);
         }
 
         public void TestResult(ref ColorParam data, float intTime, int resultCode)

@@ -43,7 +43,7 @@ namespace ColorVision.Services.Device.Algorithm.Views
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            TextBox TextBox1 = new TextBox() { Width = 10, Background = System.Windows.Media.Brushes.Transparent, BorderThickness = new Thickness(0), Foreground = System.Windows.Media.Brushes.Transparent };
+            TextBox TextBox1 = new TextBox() { Width = 10, Background = Brushes.Transparent, BorderThickness = new Thickness(0), Foreground = Brushes.Transparent };
             Grid.SetColumn(TextBox1, 0);
             Grid.SetRow(TextBox1, 0);
             MainGrid.Children.Insert(0, TextBox1);

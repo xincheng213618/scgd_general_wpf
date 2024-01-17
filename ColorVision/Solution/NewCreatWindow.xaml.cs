@@ -114,7 +114,7 @@ namespace ColorVision.Solution
             string SolutionDirectoryPath = NewCreateViewMode.DirectoryPath + "\\" + NewCreateViewMode.Name;
 
 
-            if (SolutionDirectoryPath.IndexOfAny(System.IO.Path.GetInvalidPathChars()) >= 0 || NewCreateViewMode.Name.IndexOfAny(Path.GetInvalidFileNameChars())>=0)
+            if (SolutionDirectoryPath.IndexOfAny(Path.GetInvalidPathChars()) >= 0 || NewCreateViewMode.Name.IndexOfAny(Path.GetInvalidFileNameChars())>=0)
             {
                 MessageBox.Show("工程名不能包含特殊字符", "ColorVision");
                 return;

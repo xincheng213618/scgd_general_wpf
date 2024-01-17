@@ -78,7 +78,7 @@ namespace ColorVision.Services
         {
             foreach (DeviceHeartbeatParam dev_heartbeat in devsheartbeat)
             {
-                if (dev_heartbeat.DeviceName.Equals(Config.Code, System.StringComparison.Ordinal))
+                if (dev_heartbeat.DeviceName.Equals(Config.Code, StringComparison.Ordinal))
                 {
                     HeartbeatParam heartbeat = new HeartbeatParam();
                     heartbeat.DeviceStatus = dev_heartbeat.DeviceStatus;
@@ -96,7 +96,7 @@ namespace ColorVision.Services
     public class BaseService : ViewModelBase, IHeartbeat, IServiceConfig, IDisposable
     {
         internal static readonly ILog log = LogManager.GetLogger(typeof(BaseService));
-        private static readonly log4net.ILog logger = log4net.LogManager.GetLogger(typeof(BaseService));
+        private static readonly log4net.ILog logger = LogManager.GetLogger(typeof(BaseService));
         public MQTTSetting MQTTSetting { get; set; }
         public MQTTControl MQTTControl { get; set; }
 

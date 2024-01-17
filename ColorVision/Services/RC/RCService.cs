@@ -355,7 +355,7 @@ namespace ColorVision.RC
             }
 
             List<DeviceHeartbeat> deviceStatues = new List<DeviceHeartbeat>();
-            deviceStatues.Add(new DeviceHeartbeat(DevcieName, MQTTMessageLib.DeviceStatusType.Opened.ToString()));
+            deviceStatues.Add(new DeviceHeartbeat(DevcieName, DeviceStatusType.Opened.ToString()));
             string serviceHeartbeat = JsonConvert.SerializeObject(new MQTTServiceHeartbeat(NodeName, "", "", NodeType, ServiceName, deviceStatues, Token.AccessToken, (int)(heartbeatTime * 1.5f)));
 
             PublishAsyncClient(RCHeartbeatTopic, serviceHeartbeat);

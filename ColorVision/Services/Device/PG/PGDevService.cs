@@ -194,25 +194,25 @@ namespace ColorVision.Device.PG
                     DeviceStatusType devStatus = (DeviceStatusType)System.Enum.Parse(typeof(DeviceStatusType), dev.Status);
                     switch (devStatus)
                     {
-                        case MQTTMessageLib.DeviceStatusType.Unknown:
+                        case DeviceStatusType.Unknown:
                             heartbeat.DeviceStatus = DeviceStatusType.Closed;
                             break;
-                        case MQTTMessageLib.DeviceStatusType.Closed:
+                        case DeviceStatusType.Closed:
                             heartbeat.DeviceStatus = DeviceStatusType.Closed;
                             break;
-                        case MQTTMessageLib.DeviceStatusType.Closing:
+                        case DeviceStatusType.Closing:
                             heartbeat.DeviceStatus = DeviceStatusType.Closing;
                             break;
-                        case MQTTMessageLib.DeviceStatusType.Opened:
+                        case DeviceStatusType.Opened:
                             heartbeat.DeviceStatus = DeviceStatusType.Opened;
                             break;
-                        case MQTTMessageLib.DeviceStatusType.Opening:
+                        case DeviceStatusType.Opening:
                             heartbeat.DeviceStatus = DeviceStatusType.Opening;
                             break;
-                        case MQTTMessageLib.DeviceStatusType.Busy:
+                        case DeviceStatusType.Busy:
                             heartbeat.DeviceStatus = DeviceStatusType.Busy;
                             break;
-                        case MQTTMessageLib.DeviceStatusType.Free:
+                        case DeviceStatusType.Free:
                             heartbeat.DeviceStatus = DeviceStatusType.Free;
                             break;
                         default:

@@ -280,8 +280,8 @@ namespace ColorVision.Services
                     fSpect1 = item.fSpect1 ?? 0,
                     fSpect2 = item.fSpect2 ?? 0,
                     fInterval = item.fInterval ?? 0,
-                    fPL = JsonConvert.DeserializeObject<float[]>(item.fPL ?? string.Empty) ?? System.Array.Empty<float>(),
-                    fRi = JsonConvert.DeserializeObject<float[]>(item.fRi ?? string.Empty) ?? System.Array.Empty<float>(),
+                    fPL = JsonConvert.DeserializeObject<float[]>(item.fPL ?? string.Empty) ?? Array.Empty<float>(),
+                    fRi = JsonConvert.DeserializeObject<float[]>(item.fRi ?? string.Empty) ?? Array.Empty<float>(),
                 };
                 SpectumData data = new SpectumData(item.Id, param);
                 if (i < resultSMU.Count)

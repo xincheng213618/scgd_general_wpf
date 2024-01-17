@@ -117,7 +117,7 @@ namespace ColorVision.Media
                     String valText = String.Format("{0}-{1}", (int)nowStep, (int)nextStep);
                     nowStep = nextStep;
                     //int idx = this.dataGridView1.Rows.Add();
-                    DataGridValues.Add(new DataGridValue() { Color = new SolidColorBrush(System.Windows.Media.Color.FromArgb(clrMap[i].A, clrMap[i].R, clrMap[i].G, clrMap[i].B)), ValText = valText });
+                    DataGridValues.Add(new DataGridValue() { Color = new SolidColorBrush(Color.FromArgb(clrMap[i].A, clrMap[i].R, clrMap[i].G, clrMap[i].B)), ValText = valText });
                     //this.dataGridView1.Rows[clrMap.Length - 1 - i].Cells[0].Value = valText;
                     //this.dataGridView1.Rows[clrMap.Length - 1 - i].Cells[1].Value = clrMap[i];
 

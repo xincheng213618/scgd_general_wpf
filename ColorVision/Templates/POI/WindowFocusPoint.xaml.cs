@@ -385,7 +385,7 @@ namespace ColorVision.Templates
                 if (PoiParam.PoiPoints.Count > 500)
                     IsLayoutUpdated = false;
 
-                CreateImage(PoiParam.Width, PoiParam.Height, System.Windows.Media.Colors.White,false);
+                CreateImage(PoiParam.Width, PoiParam.Height, Colors.White,false);
                 WaitControlProgressBar.Value = 20;
                 DatumSet();
                 ShowDatumArea();
@@ -1688,7 +1688,7 @@ namespace ColorVision.Templates
         {
             if (sender is ToggleButton toggleButton)
             {
-                var window = Window.GetWindow(ImageContentGrid);
+                var window = GetWindow(ImageContentGrid);
 
                 if (toggleButton.IsChecked == true)
                 {
