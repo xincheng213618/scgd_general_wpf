@@ -56,9 +56,8 @@ namespace ColorVision
 
         public ViewConfig ViewConfig { get; set; }
 
-
-
-        public static string Version { get => System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString() ?? "1.0"; } 
+        public string? Version { get => _Version; set { _Version = value; NotifyPropertyChanged(); } }
+        private string? _Version = string.Empty;
 
         public bool IsUseMySql { get => _IsUseMySql; set { _IsUseMySql = value; NotifyPropertyChanged(); UseMySqlChanged?.Invoke(value); } }
         private bool _IsUseMySql = true;
