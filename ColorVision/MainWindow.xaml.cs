@@ -1,5 +1,4 @@
-﻿using ColorVision.Templates;
-using System;
+﻿using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
@@ -15,6 +14,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.ServiceProcess;
+using ColorVision.Users;
 
 namespace ColorVision
 {

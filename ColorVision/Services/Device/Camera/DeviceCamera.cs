@@ -1,5 +1,6 @@
 ﻿using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
+using ColorVision.MySql.Service;
 using ColorVision.Services.Device;
 using ColorVision.Services.Device.Camera.Calibrations;
 using ColorVision.Services.Device.Camera.Configs;
@@ -77,6 +78,10 @@ namespace ColorVision.Device.Camera
             CameraDisplayControlLazy = new Lazy<CameraDisplayControl>(() => CameraDisplayControl ?? new CameraDisplayControl(this));
             EditCameraLazy = new Lazy<EditCamera>(() => EditCamera ?? new EditCamera(this));
             UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));
+
+
+            CalibrationRsourceService.GetInstance().Refresh();
+            TemplateControl.GetInstance().LoadModCabParam(CalibrationParams, SysResourceModel.Id, ModMasterType.Calibration);
         }
 
         public static void ExtractToDirectoryWithOverwrite(string zipPath, string extractPath)
