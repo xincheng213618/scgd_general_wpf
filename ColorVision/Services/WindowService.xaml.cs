@@ -51,5 +51,10 @@ namespace ColorVision.Services
                 firstNode.Focus();
             }
         }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            RCService.GetInstance().RestartServices();
+        }
     }
 }
