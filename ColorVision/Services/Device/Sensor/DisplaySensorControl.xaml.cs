@@ -5,7 +5,7 @@ using System.Windows.Controls;
 namespace ColorVision.Services.Device.Sensor
 {
     /// <summary>
-    /// SMUDisplayControl.xaml 的交互逻辑
+    /// DisplaySMUControl.xaml 的交互逻辑
     /// </summary>
     public partial class DisplaySensorControl : UserControl
     {

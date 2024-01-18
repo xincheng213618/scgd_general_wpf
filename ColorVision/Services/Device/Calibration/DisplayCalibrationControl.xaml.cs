@@ -8,7 +8,7 @@ using System.Windows.Controls;
 namespace ColorVision.Services.Device.Calibration
 {
     /// <summary>
-    /// SMUDisplayControl.xaml 的交互逻辑
+    /// DisplaySMUControl.xaml 的交互逻辑
     /// </summary>
     public partial class DisplayCalibrationControl : UserControl
     {

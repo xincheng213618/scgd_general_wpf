@@ -20,7 +20,7 @@ namespace ColorVision.Device.Spectrum
 
         public override UserControl GetDeviceControl() => new DeviceSpectrumControl(this);
         public override UserControl GetDeviceInfo() => new DeviceSpectrumControl(this, false);
-        public override UserControl GetDisplayControl() => new SpectrumDisplayControl(this);
+        public override UserControl GetDisplayControl() => new DisplaySpectrumControl(this);
 
     }
 }

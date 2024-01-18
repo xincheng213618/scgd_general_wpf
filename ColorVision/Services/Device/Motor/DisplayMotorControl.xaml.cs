@@ -6,7 +6,7 @@ using System.Windows.Controls;
 namespace ColorVision.Services.Device.Motor
 {
     /// <summary>
-    /// SMUDisplayControl.xaml 的交互逻辑
+    /// DisplaySMUControl.xaml 的交互逻辑
     /// </summary>
     public partial class DisplayMotorControl : UserControl
     {

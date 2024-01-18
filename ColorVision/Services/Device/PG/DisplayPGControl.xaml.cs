@@ -7,15 +7,15 @@ using MQTTMessageLib;
 namespace ColorVision.Device.PG
 {
     /// <summary>
-    /// PGDisplayControl.xaml 的交互逻辑
+    /// DisplayPGControl.xaml 的交互逻辑
     /// </summary>
-    public partial class PGDisplayControl : UserControl
+    public partial class DisplayPGControl : UserControl
     {
         private MQTTPG PGService { get => DevicePG.DeviceService; }
         private DevicePG DevicePG { get; set; }
 
 
-        public PGDisplayControl(DevicePG devicePG)
+        public DisplayPGControl(DevicePG devicePG)
         {
             DevicePG = devicePG;
             InitializeComponent();

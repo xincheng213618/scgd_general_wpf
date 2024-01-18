@@ -11,12 +11,12 @@ using static cvColorVision.GCSDLL;
 namespace ColorVision.Device.Spectrum
 {
     /// <summary>
-    /// SpectrumDisplayControl.xaml 的交互逻辑
+    /// DisplaySpectrumControl.xaml 的交互逻辑
     /// </summary>
-    public partial class SpectrumDisplayLocal : UserControl
+    public partial class DisplayLocalSpectrum : UserControl
     {
         public ViewSpectrum View { get; set; }
-        public SpectrumDisplayLocal(DeviceSpectrum DeviceSpectrum)
+        public DisplayLocalSpectrum(DeviceSpectrum DeviceSpectrum)
         {
             InitializeComponent();
         }
