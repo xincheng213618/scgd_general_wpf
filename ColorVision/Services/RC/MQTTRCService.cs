@@ -33,12 +33,11 @@ namespace ColorVision.RC
     /// <summary>
     /// 注册服务
     /// </summary>
-    public class RCService : MQTTDeviceService<RCConfig>
+    public class MQTTRCService : MQTTServiceBase
     {
-        private static RCService _instance;
+        private static MQTTRCService _instance;
         private static readonly object _locker = new();
-        public static RCService GetInstance() { lock (_locker) { return _instance ??= new RCService(new RCConfig()); } }
-
+        public static MQTTRCService GetInstance() { lock (_locker) { return _instance ??= new MQTTRCService(); } }
 
 
         private string NodeName;
@@ -60,9 +59,8 @@ namespace ColorVision.RC
         public bool IsConnect { get => RegStatus == ServiceNodeStatus.Registered; }
 
         public event RCServiceStatusChangedHandler StatusChangedEventHandler;
-        public RCService(RCConfig config) : base(config)
+        public MQTTRCService():base()
         {
-            Config = config;
             this.NodeType = "client";
             this.NodeName = MQTTRCServiceTypeConst.BuildNodeName(NodeType, null);
             this.DevcieName = "dev." + NodeType + ".127.0.0.1";

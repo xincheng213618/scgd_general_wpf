@@ -213,7 +213,7 @@ namespace ColorVision.Services.Device
             IsEditMode = false;
 
             ///每次提交之后重启服务
-            RCService.GetInstance().RestartServices();
+            MQTTRCService.GetInstance().RestartServices();
             QRIcon = QRCodeHelper.GetQRCode("http://m.color-vision.com/sys-pd/1.html");
         }
 

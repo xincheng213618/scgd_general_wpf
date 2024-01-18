@@ -9,16 +9,17 @@ namespace ColorVision.RC
     {
         private static readonly object _locker = new();
         private static RCServiceControl _instance;
+        public static RCServiceControl GetInstance() { lock (_locker) { return _instance ??= new RCServiceControl(); } }
+
+
         public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; NotifyPropertyChanged(); } }
         private bool _IsConnect;
 
-        public RCService RCService { get;set;}
+        public MQTTRCService RCService { get;set;}
 
         public RCServiceControl()
         {
-            RCService = RCService.GetInstance();
-            IsConnect = RCService.IsRegisted();
-
+            RCService = MQTTRCService.GetInstance();
 
             RCService.StatusChangedEventHandler += RcService_StatusChangedEventHandler;
 
@@ -28,11 +29,13 @@ namespace ColorVision.RC
             hbTimer.Enabled = true;
             GC.KeepAlive(hbTimer);
 
-
             MQTTControl.GetInstance().MQTTConnectChanged += (s, e) =>
             {
                 Task.Run(() => RCService.Regist());
             };
+
+            Task.Run(() => RCService.Regist());
+            IsConnect = RCService.IsRegisted();
         }
 
         private void RcService_StatusChangedEventHandler(object sender, RCServiceStatusChangedEvent args)
@@ -41,14 +44,6 @@ namespace ColorVision.RC
                 IsConnect = true;
             else
                 IsConnect = false;
-        }
-
-        public static RCServiceControl GetInstance()
-        {
-            lock (_locker)
-            {
-                return _instance ??= new RCServiceControl();
-            }
         }
     }
 }

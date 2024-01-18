@@ -62,7 +62,7 @@ namespace ColorVision.RC
             rcServiceConfigs.Remove(rcServiceConfig);
 
             ConfigHandler.GetInstance().SaveSoftwareConfig();
-            Task.Run(() => RCService.GetInstance().ReRegist());
+            Task.Run(() => MQTTRCService.GetInstance().ReRegist());
             this.Close();
         }
 
@@ -77,7 +77,7 @@ namespace ColorVision.RC
             rcServiceConfig.AppSecret = PasswordBox1.Password;
             Task.Run(() =>
             {
-                bool IsConnect = RCService.GetInstance().TryRegist(rcServiceConfig);
+                bool IsConnect = MQTTRCService.GetInstance().TryRegist(rcServiceConfig);
                 this.Dispatcher.BeginInvoke(() => MessageBox.Show($"连接{(IsConnect ? "成功" : "失败")}", "ColorVision")); 
             });
         }

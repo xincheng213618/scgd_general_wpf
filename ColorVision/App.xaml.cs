@@ -57,7 +57,7 @@ namespace ColorVision
                 MySqlControl.GetInstance().Connect();
                 MQTTControl.GetInstance().MQTTConnectChanged += async (s, e) =>
                 {
-                    await RCService.GetInstance().Connect();
+                    await MQTTRCService.GetInstance().Connect();
                 };
                 Task.Run(() => MQTTControl.GetInstance().Connect());
                 MainWindow MainWindow = new MainWindow();

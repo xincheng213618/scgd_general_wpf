@@ -46,7 +46,7 @@ namespace ColorVision
 
             RcServiceConfig = new RCServiceConfig();
             RcServiceConfigs = new ObservableCollection<RCServiceConfig>();
-            RcServiceControlLazy = new Lazy<RCService>(() => RCService.GetInstance());
+            RcServiceControlLazy = new Lazy<MQTTRCService>(() => MQTTRCService.GetInstance());
 
             VideoConfig = new LocalVideoConfig();
             ViewConfig = ViewConfig.GetInstance();
@@ -127,9 +127,9 @@ namespace ColorVision
         public ObservableCollection<RCServiceConfig> RcServiceConfigs { get; set; }
 
         [JsonIgnore]
-        readonly Lazy<RCService> RcServiceControlLazy;
+        readonly Lazy<MQTTRCService> RcServiceControlLazy;
         [JsonIgnore]
-        public RCService RCService { get => RcServiceControlLazy.Value; }
+        public MQTTRCService RCService { get => RcServiceControlLazy.Value; }
     }
 
     public class UserManager
