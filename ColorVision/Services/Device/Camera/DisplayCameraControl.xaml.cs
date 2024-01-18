@@ -68,13 +68,28 @@ namespace ColorVision.Device.Camera
         {
             if (data.ResultCode == 0 && data.FilePath!=null)
             {
+                string localName = netFileUtil.GetCacheFileFullName(data.FilePath);
                 switch (data.FileType)
                 {
                     case CameraFileType.SrcFile:
-                        doOpen(data.FilePath, FileExtType.Raw);
+                        if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
+                        {
+                            DService.DownloadFile(localName, FileExtType.Raw);
+                        }
+                        else
+                        {
+                            netFileUtil.OpenLocalFile(localName, FileExtType.Raw);
+                        }
                         break;
                     case CameraFileType.CIEFile:
-                        doOpen(data.FilePath, FileExtType.CIE);
+                        if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
+                        {
+                            DService.DownloadFile(localName, FileExtType.CIE);
+                        }
+                        else
+                        {
+                            netFileUtil.OpenLocalFile(localName, FileExtType.CIE);
+                        }
                         break;
                     default:
                         break;
@@ -82,18 +97,6 @@ namespace ColorVision.Device.Camera
             }
         }
 
-        private void doOpen(string fileName, FileExtType extType)
-        {
-            string localName = netFileUtil.GetCacheFileFullName(fileName);
-            if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
-            {
-                DService.DownloadFile(fileName, extType);
-            }
-            else  
-            {
-                netFileUtil.OpenLocalFile(localName, extType);
-            }
-        }
 
         private void CameraService_OnMessageRecved(object sender, Services.MessageRecvArgs arg)
         {

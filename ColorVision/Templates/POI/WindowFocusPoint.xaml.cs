@@ -29,6 +29,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using ColorVision.MySql.DAO;
 
 namespace ColorVision.Templates.POI
 {
@@ -1734,9 +1735,24 @@ namespace ColorVision.Templates.POI
             };
             windowFocusPointAd.ShowDialog();
         }
+
+        MeasureImgResultDao MeasureImgResultDao = new MeasureImgResultDao();
         private void Service_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("22222");
+            var imgs = MeasureImgResultDao.GetCreateDate();
+            if (imgs.Count != 0)
+            {
+                foreach (var item in imgs)
+                {
+
+                }
+
+
+            }
+            else
+            {
+                MessageBox.Show(this, "找不到刚拍摄的图像");
+            }
         }
     }
 
