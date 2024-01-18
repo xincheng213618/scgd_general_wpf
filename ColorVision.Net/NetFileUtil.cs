@@ -127,6 +127,8 @@ namespace ColorVision.Net
             }
             handler?.Invoke(this, new NetFileEvent(code, fileName, fileInfo));
         }
+
+
         private int DoDownloadFile(string serverEndpoint, string fileName, FileExtType extType, ref CVCIEFileInfo fileInfo)
         {
             int code = -1;

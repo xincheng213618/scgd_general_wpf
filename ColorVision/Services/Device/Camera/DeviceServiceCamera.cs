@@ -585,6 +585,7 @@ namespace ColorVision.Device.Camera
              return PublishAsyncClient(msg);
         }
 
+
         public MsgRecord CacheClear()
         {
             MsgSend msg = new MsgSend
