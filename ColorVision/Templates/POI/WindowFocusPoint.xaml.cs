@@ -1418,15 +1418,6 @@ namespace ColorVision.Templates.POI
             }
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("生成关注点", "ColorVision");
-        }
-
-        private void RadioButtonMode1_Checked(object sender, RoutedEventArgs e)
-        {
-
-        }
         public LedCheckCfg ledCheckCfg { get; set; } = new LedCheckCfg();
 
 
@@ -1742,12 +1733,7 @@ namespace ColorVision.Templates.POI
             var imgs = MeasureImgResultDao.GetCreateDate();
             if (imgs.Count != 0)
             {
-                foreach (var item in imgs)
-                {
-
-                }
-
-
+                OpenImage(imgs[0].FileUrl);
             }
             else
             {

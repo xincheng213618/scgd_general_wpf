@@ -186,7 +186,7 @@ namespace ColorVision
                             // 如果找到匹配项，提取变更日志
                             string changeLogForCurrentVersion = match.Groups[1].Value.Trim();
                             // 显示变更日志
-                            MessageBox.Show($"{currentVersion} 的变更日志：\n{changeLogForCurrentVersion}");
+                            MessageBox.Show($"{currentVersion} 的变更日志：\n{Environment.NewLine}{changeLogForCurrentVersion}");
                         }
                         else
                         {
