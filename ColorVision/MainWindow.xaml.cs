@@ -171,7 +171,6 @@ namespace ColorVision
                 {
                     try
                     {
-
                         string currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
                         string changelogPath = "CHANGELOG.md";
 
@@ -186,14 +185,13 @@ namespace ColorVision
                         {
                             // 如果找到匹配项，提取变更日志
                             string changeLogForCurrentVersion = match.Groups[1].Value.Trim();
-
                             // 显示变更日志
                             MessageBox.Show($"{currentVersion} 的变更日志：\n{changeLogForCurrentVersion}");
                         }
                         else
                         {
                             // 如果未找到匹配项，说明没有为当前版本列出变更日志
-                            MessageBox.Show("未找到当前版本的变更日志信息。");
+                            MessageBox.Show($"($\"{currentVersion}变更：\\n {Environment.NewLine}1.修复了一些已知的BUG");
                         }
 
                     }
@@ -253,7 +251,6 @@ namespace ColorVision
                 AutoUpdater autoUpdater = AutoUpdater.GetInstance();
                 autoUpdater.CheckAndUpdate(false);
             });
-
         }
 
         class SpectralData

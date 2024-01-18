@@ -34,7 +34,6 @@ namespace ColorVision.Services
         private static readonly object _locker = new();
         public static ServiceManager GetInstance() { lock (_locker) { return _instance ??= new ServiceManager(); } }
 
-
         public ObservableCollection<ServiceKind> Services { get; set; }
         public Dictionary<string,string> ServiceTokens { get; set; }
         public ObservableCollection<BaseChannel> Devices { get; set; }
@@ -108,6 +107,10 @@ namespace ColorVision.Services
             Devices.Clear();
             LastGenControl?.Clear();
             svrDevices?.Clear();
+
+            DeviceCamera.DeviceCameraList.Clear();
+
+
             List<SysResourceModel> Services = ResourceService.GetAllServices(UserConfig.TenantId);
             List<SysResourceModel> devices = ResourceService.GetAllDevices(UserConfig.TenantId);
 
@@ -164,6 +167,7 @@ namespace ColorVision.Services
                                             svrObj = deviceCamera.DService;
                                             mQTTService.AddChild(deviceCamera);
                                             Devices.Add(deviceCamera);
+                                            DeviceCamera.DeviceCameraList.Add(deviceCamera);
                                         }
                                         break;
                                     case ServiceType.pg:
