@@ -163,13 +163,16 @@ namespace ColorVision.Update
 
         private static void RestartApplication(string downloadPath)
         {
+            // 保存数据库配置
+            ConfigHandler.GetInstance().SaveSoftwareConfig();
+
+
             // 启动新的实例
             ProcessStartInfo startInfo = new ProcessStartInfo();
             startInfo.UseShellExecute = true; // 必须为true才能使用Verb属性
             startInfo.WorkingDirectory = Environment.CurrentDirectory;
             startInfo.FileName = downloadPath;
             startInfo.Verb = "runas"; // "runas"指定启动程序时请求管理员权限
-
             try
             {
                 Process p = Process.Start(startInfo);
