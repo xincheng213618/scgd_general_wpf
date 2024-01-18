@@ -94,6 +94,7 @@ namespace ColorVision.Themes
         {
             "/HandyControl;component/Themes/basic/colors/colorsviolet.xaml",
             "/HandyControl;component/Themes/Theme.xaml",
+            "/ColorVision.Util;component/Themes/White.xaml",
             "/ColorVision.Util;component/Themes/Pink.xaml",
             "/ColorVision.Util;component/Themes/Base.xaml",
             "/ColorVision.Util;component/Themes/Menu.xaml",

@@ -1734,8 +1734,6 @@ namespace ColorVision.Templates.POI
             };
             windowFocusPointAd.ShowDialog();
         }
-
-
         private void Service_Click(object sender, RoutedEventArgs e)
         {
             MessageBox.Show("22222");
