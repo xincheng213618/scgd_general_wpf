@@ -1,8 +1,8 @@
 ﻿#pragma warning disable CS8603
-using ColorVision.Device.Camera;
 using ColorVision.MQTT;
 using ColorVision.Services;
-using ColorVision.Services.Device;
+using ColorVision.Services.Devices;
+using ColorVision.Services.Devices.Camera;
 using MQTTMessageLib;
 using MQTTMessageLib.RC;
 using MQTTnet.Client;
@@ -181,9 +181,8 @@ namespace ColorVision.RC
                                                 //baseDeviceConfig.IsAlive = true;
                                                 baseDeviceConfig.LastAliveTime = DateTime.Parse(ss.LiveTime);
                                                 baseDeviceConfig.DeviceStatus = (DeviceStatusType)Enum.Parse(typeof(DeviceStatusType), devNew.Status);
-                                                if (dev is DeviceCamera)
+                                                if (dev is DeviceCamera deviceCamera)
                                                 {
-                                                    DeviceCamera deviceCamera = (DeviceCamera)dev;
                                                     deviceCamera.DService.DeviceStatus = baseDeviceConfig.DeviceStatus;
                                                 }
                                                 break;

@@ -1,5 +1,5 @@
 ﻿using ColorVision.RC;
-using ColorVision.Services.Device;
+using ColorVision.Services.Devices;
 using System;
 using System.Collections.ObjectModel;
 using System.Windows;

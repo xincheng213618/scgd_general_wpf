@@ -1,4 +1,4 @@
-﻿using ColorVision.Services.Device;
+﻿using ColorVision.Services.Devices;
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;

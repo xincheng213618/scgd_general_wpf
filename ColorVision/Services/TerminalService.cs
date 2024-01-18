@@ -1,7 +1,7 @@
-﻿using ColorVision.Device.Camera;
-using ColorVision.MVVM;
+﻿using ColorVision.MVVM;
 using ColorVision.MySql.DAO;
-using ColorVision.Services.Device;
+using ColorVision.Services.Devices;
+using ColorVision.Services.Devices.Camera;
 using ColorVision.Themes;
 using Newtonsoft.Json;
 using System.Collections.Generic;

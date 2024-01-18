@@ -1,4 +1,4 @@
-﻿using ColorVision.Services.Device;
+﻿using ColorVision.Services.Devices;
 
 namespace ColorVision.Services
 {

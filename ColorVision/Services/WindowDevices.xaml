@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Services"
-        xmlns:mqtt="clr-namespace:ColorVision.Services.Device"
+        xmlns:mqtt="clr-namespace:ColorVision.Services.Devices"
         xmlns:resx="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         xmlns:set="clr-namespace:ColorVision.SettingUp"

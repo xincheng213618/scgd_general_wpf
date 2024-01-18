@@ -1,6 +1,4 @@
-﻿
-using ColorVision.Device.Camera;
-using ColorVision.MQTT;
+﻿using ColorVision.MQTT;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -13,7 +11,6 @@ namespace ColorVision.Services
         public virtual ObservableCollection<string> DevicesSN { get; set; } = new ObservableCollection<string>();
         public virtual Dictionary<string, string> DevicesSNMD5 { get; set; } = new Dictionary<string, string>();
 
-        public List<MQTTCamera> Devices { get; set; }
     }
 
 

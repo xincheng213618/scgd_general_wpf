@@ -23,7 +23,7 @@ using System.Globalization;
 using System.Threading;
 using ColorVision.Common.Extension;
 using ColorVision.Update;
-using ColorVision.Services.Device.Camera.Calibrations;
+using ColorVision.Services.Devices.Camera.Calibrations;
 
 namespace ColorVision
 {

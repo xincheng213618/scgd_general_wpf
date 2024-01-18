@@ -1,0 +1,18 @@
+﻿<Window x:Class="ColorVision.Services.Devices.Camera.Calibrations.UploadWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.Services.Devices.Camera.Calibrations"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        xmlns:controls ="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util"
+        mc:Ignorable="d"
+        Title="CalibrationUpload" Height="300" Width="600" AllowDrop="True" Initialized="Window_Initialized" >
+    <Grid>
+        <Image Source="/Assets/Image/uploadbg.avif"  Stretch="UniformToFill"/>
+        <controls:Upload  x:Name="Upload1"  Margin="30"/>
+        <DockPanel Margin="0,5"  HorizontalAlignment="Center" VerticalAlignment="Bottom">
+            <Button Content="上传"  Click="Button_Click_1"/>
+        </DockPanel>
+    </Grid>
+</Window>

@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using System.Windows;
+﻿using System.Windows;
 
 namespace ColorVision.Services
 {

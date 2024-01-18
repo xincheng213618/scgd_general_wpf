@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Services"
         xmlns:system="clr-namespace:System;assembly=mscorlib"
-        xmlns:mqtt="clr-namespace:ColorVision.Services.Device" 
+        xmlns:mqtt="clr-namespace:ColorVision.Services.Devices" 
         xmlns:resx="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         Height="450" Width="800" Title="高级设置" Background="{DynamicResource GlobalBackground}"  WindowStyle="ToolWindow" WindowStartupLocation="CenterScreen" Initialized="Window_Initialied">
