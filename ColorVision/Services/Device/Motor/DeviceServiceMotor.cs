@@ -4,7 +4,7 @@ using MQTTMessageLib;
 
 namespace ColorVision.Services.Device.Motor
 {
-    public class DeviceServiceMotor : BaseDevService<ConfigMotor>
+    public class DeviceServiceMotor : DeviceServiceBase<ConfigMotor>
     {
         public DeviceServiceMotor(ConfigMotor config) : base(config)
         {

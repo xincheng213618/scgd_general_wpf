@@ -20,7 +20,7 @@ namespace ColorVision.Device.Spectrum
     public delegate void MQTTAutoParamHandler(AutoIntTimeParam colorPara);
     public delegate void MQTTSpectrumHeartbeatHandler(SpectumHeartbeatParam heartbeat);
 
-    public class SpectrumService : BaseDevService<ConfigSpectrum>
+    public class SpectrumService : DeviceServiceBase<ConfigSpectrum>
     {
         public event MQTTSpectrumDataHandler DataHandlerEvent;
         public event MQTTAutoParamHandler AutoParamHandlerEvent;

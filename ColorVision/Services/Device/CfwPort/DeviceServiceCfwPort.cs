@@ -5,7 +5,7 @@ using MQTTMessageLib;
 
 namespace ColorVision.Services.Device.CfwPort
 {
-    public class DeviceServiceCfwPort : BaseDevService<ConfigCfwPort>
+    public class DeviceServiceCfwPort : DeviceServiceBase<ConfigCfwPort>
     {
         public DeviceServiceCfwPort(ConfigCfwPort config) : base(config)
         {

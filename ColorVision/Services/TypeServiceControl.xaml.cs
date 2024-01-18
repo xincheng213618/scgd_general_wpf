@@ -8,14 +8,14 @@ using System.Windows.Controls;
 namespace ColorVision.Services
 {
     /// <summary>
-    /// ServiceKindControl.xaml 的交互逻辑
+    /// TypeServiceControl.xaml 的交互逻辑
     /// </summary>
-    public partial class ServiceKindControl : UserControl
+    public partial class TypeServiceControl : UserControl
     {
-        public ServiceKind ServiceKind { get; set; }
+        public TypeService ServiceKind { get; set; }
 
         public ServiceManager ServiceControl { get; set; }
-        public ServiceKindControl(ServiceKind mQTTServiceKind)
+        public TypeServiceControl(TypeService mQTTServiceKind)
         {
             this.ServiceKind = mQTTServiceKind;
             InitializeComponent();
@@ -25,7 +25,7 @@ namespace ColorVision.Services
         {
             ServiceControl = ServiceManager.GetInstance();
             this.DataContext = ServiceKind;
-            TextBox_Type.ItemsSource = ServiceControl.Services;
+            TextBox_Type.ItemsSource = ServiceControl.TypeServices;
             TextBox_Type.SelectedItem = ServiceKind;
 
             if (ServiceKind.VisualChildren.Count == 0)
@@ -48,10 +48,10 @@ namespace ColorVision.Services
 
         private void Button_New_Click(object sender, RoutedEventArgs e)
         {
-            if (!Util.IsInvalidPath(TextBox_Name.Text, "服务名称") || !Util.IsInvalidPath(TextBox_Code.Text, "服务标识"))
+            if (!ServicesHelper.IsInvalidPath(TextBox_Name.Text, "服务名称") || !ServicesHelper.IsInvalidPath(TextBox_Code.Text, "服务标识"))
                 return;
 
-            if (TextBox_Type.SelectedItem is ServiceKind serviceKind)
+            if (TextBox_Type.SelectedItem is TypeService serviceKind)
             {
 
                 if (serviceKind.ServicesCodes.Contains(TextBox_Code.Text))
@@ -74,7 +74,7 @@ namespace ColorVision.Services
 
                 int pkId = sysResource.GetPK();
                 if (pkId > 0 && sysResourceService.GetMasterById(pkId) is SysResourceModel model)
-                    serviceKind.AddChild(new ServiceTerminal(model));
+                    serviceKind.AddChild(new TerminalService(model));
             }
 
         }
@@ -83,7 +83,7 @@ namespace ColorVision.Services
         {
             if (sender is ListView listView && listView.SelectedIndex > -1)
             {
-                if (ServiceKind.VisualChildren[listView.SelectedIndex] is ServiceTerminal serviceTerminal)
+                if (ServiceKind.VisualChildren[listView.SelectedIndex] is TerminalService serviceTerminal)
                 {
                     if (this.Parent is Grid grid)
                     {

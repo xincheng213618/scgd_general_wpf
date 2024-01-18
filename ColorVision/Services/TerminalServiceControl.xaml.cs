@@ -23,14 +23,14 @@ using System.Windows.Controls.Primitives;
 namespace ColorVision.Services
 {
     /// <summary>
-    /// ServiceTerminalControl.xaml 的交互逻辑
+    /// TerminalServiceControl.xaml 的交互逻辑
     /// </summary>
-    public partial class ServiceTerminalControl : UserControl
+    public partial class TerminalServiceControl : UserControl
     {
-        public ServiceTerminal ServiceTerminal { get; set; }
+        public TerminalService ServiceTerminal { get; set; }
         public ServiceManager ServiceControl { get; set; }
 
-        public ServiceTerminalControl(ServiceTerminal mQTTService)
+        public TerminalServiceControl(TerminalService mQTTService)
         {
             this.ServiceTerminal = mQTTService;
             InitializeComponent();
@@ -76,12 +76,12 @@ namespace ColorVision.Services
         }
         private void Button_New_Click(object sender, RoutedEventArgs e)
         {
-            if (TextBox_Type.SelectedItem is ServiceTerminal serviceTerminal)
+            if (TextBox_Type.SelectedItem is TerminalService serviceTerminal)
             {
                 ///这里对相机做一个特殊处理
-                if (serviceTerminal.Type != ServiceType.camera)
+                if (serviceTerminal.Type != ServiceTypes.camera)
                 {
-                    if (!Util.IsInvalidPath(TextBox_Name.Text, "资源名称") || !Util.IsInvalidPath(TextBox_Code.Text, "资源标识"))
+                    if (!ServicesHelper.IsInvalidPath(TextBox_Name.Text, "资源名称") || !ServicesHelper.IsInvalidPath(TextBox_Code.Text, "资源标识"))
                         return;
                 }
                 if (serviceTerminal.ServicesCodes.Contains(TextBox_Code.Text))
@@ -96,7 +96,7 @@ namespace ColorVision.Services
                 BaseDeviceConfig deviceConfig;
                 switch (serviceTerminal.Type)
                 {
-                    case ServiceType.camera:
+                    case ServiceTypes.camera:
                         ConfigCamera cameraConfig1 = new ConfigCamera
                         {
                             Id = TextBox_Code.Text,
@@ -121,7 +121,7 @@ namespace ColorVision.Services
                             }
                         }
                         break;
-                    case ServiceType.pg:
+                    case ServiceTypes.pg:
                         ConfigPG pGConfig = new ConfigPG
                         {
                             Id = TextBox_Code.Text,
@@ -131,7 +131,7 @@ namespace ColorVision.Services
                         if (sysResourceModel != null)
                             serviceTerminal.AddChild(new DevicePG(sysResourceModel));
                         break;
-                    case ServiceType.Spectum:
+                    case ServiceTypes.Spectum:
                         deviceConfig = new ConfigSpectrum
                         {
                             Id = TextBox_Code.Text,
@@ -149,7 +149,7 @@ namespace ColorVision.Services
                         if (sysResourceModel != null)
                             serviceTerminal.AddChild(new DeviceSpectrum(sysResourceModel));
                         break;
-                    case ServiceType.SMU:
+                    case ServiceTypes.SMU:
                         deviceConfig = new ConfigSMU
                         {
                             Id = TextBox_Code.Text,
@@ -159,7 +159,7 @@ namespace ColorVision.Services
                         if (model != null)
                             serviceTerminal.AddChild(new DeviceSMU(model));
                         break;
-                    case ServiceType.Sensor:
+                    case ServiceTypes.Sensor:
                         deviceConfig = new ConfigSensor
                         {
                             Id = TextBox_Code.Text,
@@ -169,7 +169,7 @@ namespace ColorVision.Services
                         if (sysResourceModel != null)
                             serviceTerminal.AddChild(new DeviceSensor(sysResourceModel));
                         break;
-                    case ServiceType.FileServer:
+                    case ServiceTypes.FileServer:
                         deviceConfig = new FileServerConfig
                         {
                             Id = TextBox_Code.Text,
@@ -181,7 +181,7 @@ namespace ColorVision.Services
                         if (sysResourceModel != null)
                             serviceTerminal.AddChild(new DeviceFileServer(sysResourceModel));
                         break;
-                    case ServiceType.Algorithm:
+                    case ServiceTypes.Algorithm:
                         deviceConfig = new ConfigAlgorithm
                         {
                             Id = TextBox_Code.Text,
@@ -196,7 +196,7 @@ namespace ColorVision.Services
                         if (sysResourceModel != null)
                             serviceTerminal.AddChild(new DeviceAlgorithm(sysResourceModel));
                         break;
-                    case ServiceType.CfwPort:
+                    case ServiceTypes.CfwPort:
                         deviceConfig = new ConfigCfwPort { 
                             Id = TextBox_Code.Text,
                             Name = TextBox_Name.Text,
@@ -205,7 +205,7 @@ namespace ColorVision.Services
                         if (sysResourceModel != null)
                             serviceTerminal.AddChild(new DeviceCfwPort(sysResourceModel));
                         break;
-                    case ServiceType.Calibration:
+                    case ServiceTypes.Calibration:
                         deviceConfig = new ConfigCalibration
                         {
                             Id = TextBox_Code.Text,
@@ -215,7 +215,7 @@ namespace ColorVision.Services
                         if (sysResourceModel != null)
                             serviceTerminal.AddChild(new DeviceCalibration(sysResourceModel));
                         break;
-                    case ServiceType.Motor:
+                    case ServiceTypes.Motor:
                         deviceConfig = new ConfigMotor
                         {
                             Id = TextBox_Code.Text,

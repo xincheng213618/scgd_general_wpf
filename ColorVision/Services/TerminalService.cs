@@ -11,7 +11,7 @@ using System.Windows.Media;
 
 namespace ColorVision.Services
 {
-    public class BaseServiceTerminal : BaseObject
+    public class TerminalServiceBase : BaseObject
     {
         public virtual UserControl GenDeviceControl()
         {
@@ -19,13 +19,13 @@ namespace ColorVision.Services
         }
     }
 
-    public class ServiceTerminal : BaseServiceTerminal
+    public class TerminalService : TerminalServiceBase
     {
         public SysResourceModel SysResourceModel { get; set; }
         public BaseServiceConfig Config { get; set; }
         public BaseServiceBase BaseService { get; set; }
 
-        public ServiceType ServiceType { get => (ServiceType)SysResourceModel.Type; }
+        public ServiceTypes ServiceType { get => (ServiceTypes)SysResourceModel.Type; }
 
         public override string Name { get => SysResourceModel.Name??string.Empty ; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
 
@@ -35,7 +35,7 @@ namespace ColorVision.Services
 
         public RelayCommand RefreshCommand { get; set; }
 
-        public ServiceTerminal(SysResourceModel sysResourceModel) : base()
+        public TerminalService(SysResourceModel sysResourceModel) : base()
         {
             SysResourceModel = sysResourceModel;
             if (string.IsNullOrEmpty(SysResourceModel.Value))
@@ -63,7 +63,7 @@ namespace ColorVision.Services
 
             switch (ServiceType)
             {
-                case ServiceType.camera:
+                case ServiceTypes.camera:
                     ServiceCamera cameraService = new ServiceCamera(Config);
                     BaseService = cameraService;
                     RefreshCommand = new RelayCommand(a => cameraService.GetAllDevice());
@@ -77,7 +77,7 @@ namespace ColorVision.Services
                     };
 
                     break;
-                case ServiceType.Algorithm:
+                case ServiceTypes.Algorithm:
                     if (Application.Current.TryFindResource("DrawingImageAlgorithm") is DrawingImage DrawingImageAlgorithm)
                         Icon = DrawingImageAlgorithm;
                     ThemeManager.Current.CurrentUIThemeChanged += (s) =>
@@ -87,7 +87,7 @@ namespace ColorVision.Services
                     };
                     BaseService = new BaseService<BaseServiceConfig>(Config);
                     break;
-                case ServiceType.SMU:
+                case ServiceTypes.SMU:
                     if (Application.Current.TryFindResource("SMUDrawingImage") is DrawingImage SMUDrawingImage)
                         Icon = SMUDrawingImage;
                     ThemeManager.Current.CurrentUIThemeChanged += (s) =>
@@ -97,7 +97,7 @@ namespace ColorVision.Services
                     };
                     BaseService = new BaseService<BaseServiceConfig>(Config);
                     break;
-                case ServiceType.Motor:
+                case ServiceTypes.Motor:
                     if (Application.Current.TryFindResource("COMDrawingImage") is DrawingImage COMDrawingImage)
                         Icon = COMDrawingImage;
                     ThemeManager.Current.CurrentUIThemeChanged += (s) =>
@@ -107,7 +107,7 @@ namespace ColorVision.Services
                     };
                     BaseService = new BaseService<BaseServiceConfig>(Config);
                     break;
-                case ServiceType.CfwPort:
+                case ServiceTypes.CfwPort:
                     if (Application.Current.TryFindResource("CfwPortDrawingImage") is DrawingImage CfwPortDrawingImage)
                         Icon = CfwPortDrawingImage;
                     ThemeManager.Current.CurrentUIThemeChanged += (s) =>
@@ -143,7 +143,7 @@ namespace ColorVision.Services
             }
         }
 
-        public ServiceType Type { get => (ServiceType)SysResourceModel.Type; }
+        public ServiceTypes Type { get => (ServiceTypes)SysResourceModel.Type; }
 
         public List<string> ServicesCodes
         {
@@ -165,7 +165,7 @@ namespace ColorVision.Services
 
 
 
-        public override UserControl GenDeviceControl() => new ServiceTerminalControl(this);
+        public override UserControl GenDeviceControl() => new TerminalServiceControl(this);
 
         public override void Save()
         {

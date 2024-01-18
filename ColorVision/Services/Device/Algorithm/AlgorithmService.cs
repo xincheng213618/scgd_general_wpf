@@ -13,7 +13,7 @@ using System.Windows;
 
 namespace ColorVision.Services.Device.Algorithm
 {
-    public class AlgorithmService : BaseDevService<ConfigAlgorithm>
+    public class AlgorithmService : DeviceServiceBase<ConfigAlgorithm>
     {
         public static Dictionary<string, ObservableCollection<string>> ServicesDevices { get; set; } = new Dictionary<string, ObservableCollection<string>>();
 

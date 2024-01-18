@@ -34,7 +34,7 @@ namespace ColorVision.Services
         private static readonly object _locker = new();
         public static ServiceManager GetInstance() { lock (_locker) { return _instance ??= new ServiceManager(); } }
 
-        public ObservableCollection<ServiceKind> Services { get; set; }
+        public ObservableCollection<TypeService> TypeServices { get; set; }
         public Dictionary<string,string> ServiceTokens { get; set; }
         public ObservableCollection<BaseChannel> Devices { get; set; }
 
@@ -46,14 +46,14 @@ namespace ColorVision.Services
 
         public StackPanel StackPanel { get; set; }
 
-        private Dictionary<string, List<BaseService>> svrDevices;
+        private Dictionary<string, List<ServiceBase>> svrDevices;
         public ServiceManager()
         {
             ResourceService = new SysResourceService();
             resultService = new ResultService();
-            Services = new ObservableCollection<ServiceKind>();
+            TypeServices = new ObservableCollection<TypeService>();
             Devices = new ObservableCollection<BaseChannel>();
-            svrDevices = new Dictionary<string, List<BaseService>>();
+            svrDevices = new Dictionary<string, List<ServiceBase>>();
             ServiceTokens = new Dictionary<string,string>();
 
             UserConfig = ConfigHandler.GetInstance().SoftwareConfig.UserConfig;
@@ -85,7 +85,7 @@ namespace ColorVision.Services
         {
             LastGenControl = new ObservableCollection<BaseChannel>();
             StackPanel.Children.Clear();
-            foreach (var serviceKind in Services)
+            foreach (var serviceKind in TypeServices)
             {
                 foreach (var service in serviceKind.VisualChildren)
                 {
@@ -103,7 +103,7 @@ namespace ColorVision.Services
         }
         public void Reload()
         {
-            this.Services.Clear();
+            this.TypeServices.Clear();
             Devices.Clear();
             LastGenControl?.Clear();
             svrDevices?.Clear();
@@ -116,7 +116,7 @@ namespace ColorVision.Services
 
             SysDictionaryService sysDictionaryService = new SysDictionaryService();
 
-            var ServiceTypes = Enum.GetValues(typeof(ServiceType)).Cast<ServiceType>();
+            var ServiceTypes = Enum.GetValues(typeof(ServiceTypes)).Cast<ServiceTypes>();
 
             foreach (var item in sysDictionaryService.GetAllServiceType())
             {
@@ -132,20 +132,20 @@ namespace ColorVision.Services
                 if (!IsserviceType)
                     continue;
 
-                ServiceKind mQTTServicetype = new ServiceKind();
+                TypeService mQTTServicetype = new TypeService();
                 mQTTServicetype.Name = item.Name ?? string.Empty;
                 mQTTServicetype.SysDictionaryModel = item;
                 foreach (var service in Services)
                 {
                     if (service.Type == item.Value)
                     {
-                        ServiceTerminal mQTTService = new ServiceTerminal(service);
+                        TerminalService mQTTService = new TerminalService(service);
                         string svrKey = GetServiceKey(service.TypeCode ?? string.Empty, service.Code ?? string.Empty);
 
-                        svrDevices ??= new Dictionary<string, List<BaseService>>();
+                        svrDevices ??= new Dictionary<string, List<ServiceBase>>();
                         if (!svrDevices.ContainsKey(svrKey))
                         {
-                            svrDevices?.Add(svrKey, new List<BaseService>());
+                            svrDevices?.Add(svrKey, new List<ServiceBase>());
                             if (service.Code != null)
                             {
                                 ServiceTokens.Add(service.Code, string.Empty);
@@ -154,12 +154,12 @@ namespace ColorVision.Services
 
                         foreach (var device in devices)
                         {
-                            BaseService svrObj = null;
+                            ServiceBase svrObj = null;
                             if (device.Pid == service.Id)
                             {
-                                switch ((ServiceType)device.Type)
+                                switch ((ServiceTypes)device.Type)
                                 {
-                                    case ServiceType.camera:
+                                    case ColorVision.Services.ServiceTypes.camera:
 
                                         if (mQTTService.BaseService is ServiceCamera cameraService)
                                         {
@@ -170,55 +170,55 @@ namespace ColorVision.Services
                                             DeviceCamera.DeviceCameraList.Add(deviceCamera);
                                         }
                                         break;
-                                    case ServiceType.pg:
+                                    case ColorVision.Services.ServiceTypes.pg:
                                         DevicePG devicePG = new DevicePG(device);
                                         svrObj = devicePG.DeviceService;
                                         mQTTService.AddChild(devicePG);
                                         Devices.Add(devicePG);
                                         break;
-                                    case ServiceType.Spectum:
+                                    case ColorVision.Services.ServiceTypes.Spectum:
                                         DeviceSpectrum deviceSpectrum = new DeviceSpectrum(device);
                                         svrObj = deviceSpectrum.DeviceService;
                                         mQTTService.AddChild(deviceSpectrum);
                                         Devices.Add(deviceSpectrum);
                                         break;
-                                    case ServiceType.SMU:
+                                    case ColorVision.Services.ServiceTypes.SMU:
                                         DeviceSMU deviceSMU = new DeviceSMU(device);
                                         svrObj = deviceSMU.Service;
                                         mQTTService.AddChild(deviceSMU);
                                         Devices.Add(deviceSMU);
                                         break;
-                                    case ServiceType.Sensor:
+                                    case ColorVision.Services.ServiceTypes.Sensor:
                                         DeviceSensor device1 = new DeviceSensor(device);
                                         svrObj = device1.DeviceService;
                                         mQTTService.AddChild(device1);
                                         Devices.Add(device1);
                                         break;
-                                    case ServiceType.FileServer:
+                                    case ColorVision.Services.ServiceTypes.FileServer:
                                         DeviceFileServer img = new DeviceFileServer(device);
                                         svrObj = img.DeviceService;
                                         mQTTService.AddChild(img);
                                         Devices.Add(img);
                                         break;
-                                    case ServiceType.Algorithm:
+                                    case ColorVision.Services.ServiceTypes.Algorithm:
                                         DeviceAlgorithm alg = new DeviceAlgorithm(device);
                                         svrObj = alg.DeviceService;
                                         mQTTService.AddChild(alg);
                                         Devices.Add(alg);
                                         break;
-                                    case ServiceType.Calibration:
+                                    case ColorVision.Services.ServiceTypes.Calibration:
                                         DeviceCalibration deviceCalibration = new DeviceCalibration(device);
                                         svrObj = deviceCalibration.DeviceService;
                                         mQTTService.AddChild(deviceCalibration);
                                         Devices.Add(deviceCalibration);
                                         break;
-                                    case ServiceType.CfwPort:
+                                    case ColorVision.Services.ServiceTypes.CfwPort:
                                         DeviceCfwPort deviceCfwPort = new DeviceCfwPort(device);
                                         svrObj = deviceCfwPort.DeviceService;
                                         mQTTService.AddChild(deviceCfwPort);
                                         Devices.Add(deviceCfwPort);
                                         break;
-                                    case ServiceType.Motor:
+                                    case ColorVision.Services.ServiceTypes.Motor:
                                         DeviceMotor deviceMotor = new DeviceMotor(device);
                                         svrObj = deviceMotor.DeviceService;
                                         mQTTService.AddChild(deviceMotor);
@@ -238,7 +238,7 @@ namespace ColorVision.Services
                         mQTTServicetype.AddChild(mQTTService);
                     }
                 }
-                this.Services.Add(mQTTServicetype);
+                this.TypeServices.Add(mQTTServicetype);
             }
 
         }

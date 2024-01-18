@@ -33,7 +33,7 @@ namespace ColorVision.Services
             if (TreeView1.SelectedItem is BaseChannel baseObject)
                 StackPanelShow.Children.Add(baseObject.GetDeviceControl());
 
-            if (TreeView1.SelectedItem is BaseServiceTerminal baseService)
+            if (TreeView1.SelectedItem is TerminalServiceBase baseService)
                 StackPanelShow.Children.Add(baseService.GenDeviceControl());
         }
 

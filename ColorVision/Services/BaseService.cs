@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Services
 {
-    public class BaseServiceBase : BaseService
+    public class BaseServiceBase : ServiceBase
     {
         public virtual ObservableCollection<string> DevicesSN { get; set; } = new ObservableCollection<string>();
         public virtual Dictionary<string, string> DevicesSNMD5 { get; set; } = new Dictionary<string, string>();

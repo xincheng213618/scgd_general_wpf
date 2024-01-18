@@ -33,7 +33,7 @@ namespace ColorVision.RC
     /// <summary>
     /// 注册服务
     /// </summary>
-    public class RCService : BaseDevService<RCConfig>
+    public class RCService : DeviceServiceBase<RCConfig>
     {
         private static RCService _instance;
         private static readonly object _locker = new();
@@ -160,15 +160,15 @@ namespace ColorVision.RC
 
         public static void UpdateServiceStatus(List<MQTTNodeServiceStatus> data)
         {
-            foreach (var serviceKind in ServiceManager.GetInstance().Services.ToList())
+            foreach (var serviceKind in ServiceManager.GetInstance().TypeServices.ToList())
             {
                 foreach (var baseObject in serviceKind.VisualChildren)
                 {
-                    if (baseObject is ServiceTerminal serviceTerminal)
+                    if (baseObject is TerminalService serviceTerminal)
                     {
                         foreach (var ss in data)
                         {
-                            if (ss.ServiceType.ToLower(CultureInfo.CurrentCulture) == serviceKind.ServiceType.ToString().ToLower(CultureInfo.CurrentCulture) && ss.ServiceName == serviceTerminal.Code)
+                            if (ss.ServiceType.ToLower(CultureInfo.CurrentCulture) == serviceKind.ServiceTypes.ToString().ToLower(CultureInfo.CurrentCulture) && ss.ServiceName == serviceTerminal.Code)
                             {
                                 serviceTerminal.Config.IsAlive = true;
                                 serviceTerminal.Config.LastAliveTime = DateTime.Now;
@@ -208,15 +208,15 @@ namespace ColorVision.RC
 
         public static void UpdateServiceStatus(Dictionary<string, List<MQTTNodeService>> data)
         {
-            List<ServiceKind> svrs = new List<ServiceKind>(ServiceManager.GetInstance().Services);
+            List<TypeService> svrs = new List<TypeService>(ServiceManager.GetInstance().TypeServices);
             Dictionary<string, string> tokens = ServiceManager.GetInstance().ServiceTokens;
             foreach (var serviceKind in svrs)
             {
-                //if (serviceKind.ServiceType.ToString() == ServiceType.Algorithm.ToString())
+                //if (serviceKind.ServiceTypes.ToString() == ServiceTypes.Algorithm.ToString())
                 //    continue;
                 foreach (var item in data)
                 {
-                    if (item.Key.ToString() == serviceKind.ServiceType.ToString())
+                    if (item.Key.ToString() == serviceKind.ServiceTypes.ToString())
                     {
                         Dictionary<string, List<MQTTNodeService>> keyValuePairs = new Dictionary<string, List<MQTTNodeService>>();
                         foreach (var nodeService in item.Value)
@@ -233,7 +233,7 @@ namespace ColorVision.RC
 
                         foreach (var baseObject in serviceKind.VisualChildren)
                         {
-                            if (baseObject is ServiceTerminal serviceTerminal)
+                            if (baseObject is TerminalService serviceTerminal)
                             {
                                 foreach (var item1 in keyValuePairs)
                                 {

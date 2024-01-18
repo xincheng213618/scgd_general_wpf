@@ -17,10 +17,10 @@ namespace ColorVision.Services
         {
             InitializeComponent();
         }
-        public ObservableCollection<ServiceKind> MQTTServices { get; set; }
+        public ObservableCollection<TypeService> MQTTServices { get; set; }
         private void Window_Initialized(object sender, EventArgs e)
         {
-            MQTTServices = ServiceManager.GetInstance().Services;
+            MQTTServices = ServiceManager.GetInstance().TypeServices;
             TreeView1.ItemsSource = MQTTServices;
             ButtonOK.Focus();
         }
@@ -31,7 +31,7 @@ namespace ColorVision.Services
             if (TreeView1.SelectedItem is BaseChannel baseObject)
                 StackPanelShow.Children.Add(baseObject.GetDeviceControl());
 
-            if (TreeView1.SelectedItem is BaseServiceTerminal baseService)
+            if (TreeView1.SelectedItem is TerminalServiceBase baseService)
                 StackPanelShow.Children.Add(baseService.GenDeviceControl());
         }
 

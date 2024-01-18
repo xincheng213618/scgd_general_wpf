@@ -18,7 +18,7 @@ namespace ColorVision.Device.Camera
 {
     public delegate void MQTTCameraMsgHandler(object sender, MsgReturn msg);
 
-    public class DeviceServiceCamera : BaseDevService<ConfigCamera>
+    public class DeviceServiceCamera : DeviceServiceBase<ConfigCamera>
     {
         public event MessageRecvHandler OnMessageRecved;
 

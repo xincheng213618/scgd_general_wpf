@@ -28,7 +28,7 @@ namespace ColorVision.Device.FileServer
         }
     }
     public delegate void MQTTImageDataHandler(object sender, FileServerDataEvent arg);
-    public class FileServerService : BaseDevService<FileServerConfig>
+    public class FileServerService : DeviceServiceBase<FileServerConfig>
     {
         public event MQTTImageDataHandler OnImageData;
         public FileServerService(FileServerConfig config) : base(config)

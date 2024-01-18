@@ -32,7 +32,7 @@ namespace ColorVision.Device.PG
     };
 
 
-    public class PGDevService : BaseDevService<ConfigPG>
+    public class PGDevService : DeviceServiceBase<ConfigPG>
     {
         public Dictionary<string, Dictionary<string, string>> PGCategoryLib { get; }
 

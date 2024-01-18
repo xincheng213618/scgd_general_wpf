@@ -45,7 +45,7 @@ namespace ColorVision.Device.Camera
         /// </summary>
         public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; } = new ObservableCollection<TemplateModel<CalibrationParam>>();
 
-        readonly Lazy<CameraDisplayControl> CameraDisplayControlLazy;
+        readonly Lazy<CameraDisplayControl> CameraDisplayControlLazy;  
         readonly Lazy<EditCamera> EditCameraLazy;
 
         public CameraDisplayControl CameraDisplayControl { get; set; }

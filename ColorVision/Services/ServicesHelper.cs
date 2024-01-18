@@ -3,7 +3,7 @@ using System.Windows;
 
 namespace ColorVision.Services
 {
-    internal static class Util
+    internal static class ServicesHelper
     {
         public static bool IsInvalidPath(string Path, string Hint = "名称")
         {
@@ -24,19 +24,6 @@ namespace ColorVision.Services
             }
             return true;
         }
-
-        public static T? DeserializeObject<T>(string? str)
-        {
-            try
-            {
-                return JsonConvert.DeserializeObject<T>(str ?? string.Empty);
-            }
-            catch
-            {
-                return default;
-            };
-        }
-
 
     }
 }

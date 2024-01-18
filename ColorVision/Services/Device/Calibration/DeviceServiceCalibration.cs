@@ -6,7 +6,7 @@ using ColorVision.Services.Device.Camera.Calibrations;
 
 namespace ColorVision.Services.Device.Calibration
 {
-    public class DeviceServiceCalibration : BaseDevService<ConfigCalibration>
+    public class DeviceServiceCalibration : DeviceServiceBase<ConfigCalibration>
     {
         public DeviceServiceCalibration(ConfigCalibration config) : base(config)
         {
