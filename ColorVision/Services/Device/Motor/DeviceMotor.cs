@@ -8,11 +8,11 @@ namespace ColorVision.Services.Device.Motor
 {
     public class DeviceMotor : DeviceService<ConfigMotor>
     {
-        public DeviceServiceMotor DeviceService { get; set; }
+        public MQTTMotor DeviceService { get; set; }
 
         public DeviceMotor(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
-            DeviceService = new DeviceServiceMotor(Config);
+            DeviceService = new MQTTMotor(Config);
 
             if (Application.Current.TryFindResource("COMDrawingImage") is DrawingImage drawingImage)
                 Icon = drawingImage;

@@ -5,9 +5,9 @@ using MQTTMessageLib;
 
 namespace ColorVision.Services.Device.CfwPort
 {
-    public class DeviceServiceCfwPort : DeviceServiceBase<ConfigCfwPort>
+    public class MQTTCfwPort : MQTTDeviceService<ConfigCfwPort>
     {
-        public DeviceServiceCfwPort(ConfigCfwPort config) : base(config)
+        public MQTTCfwPort(ConfigCfwPort config) : base(config)
         {
             MsgReturnReceived += ProcessingReceived;
             DeviceStatus = DeviceStatusType.Closed;

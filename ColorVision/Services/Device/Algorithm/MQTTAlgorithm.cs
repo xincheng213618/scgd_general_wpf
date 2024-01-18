@@ -1,6 +1,4 @@
-﻿
-using ColorVision.Services.Device;
-using ColorVision.Services.Msg;
+﻿using ColorVision.Services.Msg;
 using cvColorVision;
 using MQTTMessageLib;
 using MQTTMessageLib.Algorithm;
@@ -13,7 +11,7 @@ using System.Windows;
 
 namespace ColorVision.Services.Device.Algorithm
 {
-    public class AlgorithmService : DeviceServiceBase<ConfigAlgorithm>
+    public class MQTTAlgorithm : MQTTDeviceService<ConfigAlgorithm>
     {
         public static Dictionary<string, ObservableCollection<string>> ServicesDevices { get; set; } = new Dictionary<string, ObservableCollection<string>>();
 
@@ -22,7 +20,8 @@ namespace ColorVision.Services.Device.Algorithm
         public event MessageRecvHandler OnMessageRecved;
 
         public DeviceAlgorithm DeviceAlgorithm { get; set; }
-        public AlgorithmService(DeviceAlgorithm device, ConfigAlgorithm Config) : base(Config)
+
+        public MQTTAlgorithm(DeviceAlgorithm device, ConfigAlgorithm Config) : base(Config)
         {
             DeviceAlgorithm = device;
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;

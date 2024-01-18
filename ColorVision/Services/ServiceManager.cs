@@ -108,9 +108,6 @@ namespace ColorVision.Services
             LastGenControl?.Clear();
             svrDevices?.Clear();
 
-            DeviceCamera.DeviceCameraList.Clear();
-
-
             List<SysResourceModel> Services = ResourceService.GetAllServices(UserConfig.TenantId);
             List<SysResourceModel> devices = ResourceService.GetAllDevices(UserConfig.TenantId);
 
@@ -161,7 +158,7 @@ namespace ColorVision.Services
                                 {
                                     case ColorVision.Services.ServiceTypes.camera:
 
-                                        if (mQTTService.MQTTServiceTerminalBase is ServiceCamera cameraService)
+                                        if (mQTTService.MQTTServiceTerminalBase is MQTTTerminalCamera cameraService)
                                         {
                                             DeviceCamera deviceCamera = new DeviceCamera(device, cameraService);
                                             svrObj = deviceCamera.DService;
@@ -202,7 +199,7 @@ namespace ColorVision.Services
                                         break;
                                     case ColorVision.Services.ServiceTypes.Algorithm:
                                         DeviceAlgorithm alg = new DeviceAlgorithm(device);
-                                        svrObj = alg.DeviceService;
+                                        svrObj = alg.MQTTService;
                                         mQTTService.AddChild(alg);
                                         Devices.Add(alg);
                                         break;

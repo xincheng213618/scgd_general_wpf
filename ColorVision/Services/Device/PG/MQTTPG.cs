@@ -1,5 +1,4 @@
 ﻿using ColorVision.MQTT;
-using ColorVision.Services;
 using ColorVision.Services.Device;
 using ColorVision.Services.Device.PG.Templates;
 using ColorVision.Services.Msg;
@@ -32,11 +31,11 @@ namespace ColorVision.Device.PG
     };
 
 
-    public class PGDevService : DeviceServiceBase<ConfigPG>
+    public class MQTTPG : MQTTDeviceService<ConfigPG>
     {
         public Dictionary<string, Dictionary<string, string>> PGCategoryLib { get; }
 
-        public PGDevService(ConfigPG pGConfig) : base(pGConfig)
+        public MQTTPG(ConfigPG pGConfig) : base(pGConfig)
         {
             Config = pGConfig;
 

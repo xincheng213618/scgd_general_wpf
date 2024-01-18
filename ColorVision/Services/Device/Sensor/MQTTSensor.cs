@@ -9,10 +9,10 @@ namespace ColorVision.Services.Device.Sensor
     /// 传感器的部分
     /// </summary>
 
-    public class DeviceServiceSensor : DeviceServiceBase<ConfigSensor>
+    public class MQTTSensor : MQTTDeviceService<ConfigSensor>
     {
 
-        public DeviceServiceSensor(ConfigSensor sensorConfig) : base(sensorConfig)
+        public MQTTSensor(ConfigSensor sensorConfig) : base(sensorConfig)
         {
 
         }

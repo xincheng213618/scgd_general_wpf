@@ -1,6 +1,5 @@
 ﻿using ColorVision.Device.Spectrum.Configs;
 using ColorVision.MQTT;
-using ColorVision.Services;
 using ColorVision.Services.Device;
 using ColorVision.Services.Msg;
 using MQTTMessageLib;
@@ -20,7 +19,7 @@ namespace ColorVision.Device.Spectrum
     public delegate void MQTTAutoParamHandler(AutoIntTimeParam colorPara);
     public delegate void MQTTSpectrumHeartbeatHandler(SpectumHeartbeatParam heartbeat);
 
-    public class SpectrumService : DeviceServiceBase<ConfigSpectrum>
+    public class MQTTSpectrum : MQTTDeviceService<ConfigSpectrum>
     {
         public event MQTTSpectrumDataHandler DataHandlerEvent;
         public event MQTTAutoParamHandler AutoParamHandlerEvent;
@@ -28,7 +27,7 @@ namespace ColorVision.Device.Spectrum
 
         public Dictionary<string, MsgSend> cmdMap { get; set; }
 
-        public SpectrumService(ConfigSpectrum spectrumConfig) : base(spectrumConfig)
+        public MQTTSpectrum(ConfigSpectrum spectrumConfig) : base(spectrumConfig)
         {
             Config = spectrumConfig;
 

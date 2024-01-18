@@ -37,7 +37,7 @@ namespace ColorVision.Device.Camera
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(CameraDisplayControl));
         public DeviceCamera Device { get; set; }
-        public DeviceServiceCamera DService { get => Device.DService; }
+        public MQTTCamera DService { get => Device.DService; }
 
         public ViewCamera View { get; set; }
 
@@ -98,7 +98,7 @@ namespace ColorVision.Device.Camera
         }
 
 
-        private void CameraService_OnMessageRecved(object sender, Services.MessageRecvArgs arg)
+        private void CameraService_OnMessageRecved(object sender, MessageRecvArgs arg)
         {
             if (arg.ResultCode == 0)
             {

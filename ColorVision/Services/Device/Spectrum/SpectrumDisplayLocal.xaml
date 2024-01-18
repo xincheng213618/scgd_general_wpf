@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:ColorVision.Device.Spectrum" 
              xmlns:hc="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d" 
-             d:DataContext="{d:DesignInstance local:SpectrumService}"
+             d:DataContext="{d:DesignInstance local:MQTTSpectrum}"
              d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized">
 
     <StackPanel Margin="0,5" x:Name="StackPanelSpectrum"  >

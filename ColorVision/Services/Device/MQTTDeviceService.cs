@@ -1,12 +1,11 @@
-﻿using ColorVision.Services.Device;
-using ColorVision.Common.Extension;
+﻿using ColorVision.Common.Extension;
 using ColorVision.MQTT;
 using MQTTMessageLib;
 using System;
 using System.Collections.Generic;
 using System.Windows;
 
-namespace ColorVision.Services
+namespace ColorVision.Services.Device
 {
     public class MessageRecvArgs
     {
@@ -17,30 +16,29 @@ namespace ColorVision.Services
 
         public MessageRecvArgs(string eventName, string serialNumber, int resultCode, dynamic Data)
         {
-            this.ResultCode = resultCode;
-            this.EventName = eventName;
-            this.SerialNumber = serialNumber;
+            ResultCode = resultCode;
+            EventName = eventName;
+            SerialNumber = serialNumber;
             this.Data = Data;
         }
     }
 
-
     public delegate void MessageRecvHandler(object sender, MessageRecvArgs arg);
 
 
-    public class DeviceServiceBase : MQTTServiceBase
-    {
-
-    }
-
-
-    public class DeviceServiceBase<T> : DeviceServiceBase where T : BaseConfig
+    public class MQTTDeviceService<T> : MQTTServiceBase where T : BaseConfig
     {
         public event DeviceStatusChangedHandler DeviceStatusChanged;
 
-        public DeviceStatusType DeviceStatus { get => _DeviceStatus; set { _DeviceStatus = value; 
+        public DeviceStatusType DeviceStatus
+        {
+            get => _DeviceStatus; set
+            {
+                _DeviceStatus = value;
                 Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value));
-                NotifyPropertyChanged(); NotifyPropertyChanged(nameof(DeviceStatusString)); } }
+                NotifyPropertyChanged(); NotifyPropertyChanged(nameof(DeviceStatusString));
+            }
+        }
         private DeviceStatusType _DeviceStatus;
 
         public string DeviceStatusString { get => _DeviceStatus.ToDescription(); set { } }
@@ -63,7 +61,7 @@ namespace ColorVision.Services
 
         public override string ServiceToken { get => Config.ServiceToken; set => Config.ServiceToken = value; }
 
-        public DeviceServiceBase(T config):base()
+        public MQTTDeviceService(T config) : base()
         {
             Config = config;
             SendTopic = Config.SendTopic;

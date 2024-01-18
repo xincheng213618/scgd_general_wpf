@@ -14,7 +14,7 @@ namespace ColorVision.Services.Device.Sensor
     {
         public DeviceSensor DeviceSensor { get; set; }
 
-        public DeviceServiceSensor Service { get => DeviceSensor.DeviceService; }
+        public MQTTSensor Service { get => DeviceSensor.DeviceService; }
 
         public bool IsCanEdit { get; set; }
         public DeviceSensorControl(DeviceSensor deviceSensor, bool isCanEdit = true)

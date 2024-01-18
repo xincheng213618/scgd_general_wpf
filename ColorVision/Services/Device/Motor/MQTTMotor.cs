@@ -4,9 +4,9 @@ using MQTTMessageLib;
 
 namespace ColorVision.Services.Device.Motor
 {
-    public class DeviceServiceMotor : DeviceServiceBase<ConfigMotor>
+    public class MQTTMotor : MQTTDeviceService<ConfigMotor>
     {
-        public DeviceServiceMotor(ConfigMotor config) : base(config)
+        public MQTTMotor(ConfigMotor config) : base(config)
         {
             MsgReturnReceived += ProcessingReceived;
             DeviceStatus = DeviceStatusType.Closed;

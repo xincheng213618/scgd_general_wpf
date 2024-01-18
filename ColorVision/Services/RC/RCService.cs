@@ -33,7 +33,7 @@ namespace ColorVision.RC
     /// <summary>
     /// 注册服务
     /// </summary>
-    public class RCService : DeviceServiceBase<RCConfig>
+    public class RCService : MQTTDeviceService<RCConfig>
     {
         private static RCService _instance;
         private static readonly object _locker = new();

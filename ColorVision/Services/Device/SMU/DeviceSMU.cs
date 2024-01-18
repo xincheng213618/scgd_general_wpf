@@ -10,14 +10,14 @@ namespace ColorVision.Services.Device.SMU
 {
     public class DeviceSMU : DeviceService<ConfigSMU>
     {
-        public SMUService Service { get; set; }
+        public MQTTSMU Service { get; set; }
 
         public ViewSMU View { get; set; }
 
 
         public DeviceSMU(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
-            Service = new SMUService(Config);
+            Service = new MQTTSMU(Config);
             View = new ViewSMU();
 
             if (Application.Current.TryFindResource("SMUDrawingImage") is DrawingImage SMUDrawingImage)

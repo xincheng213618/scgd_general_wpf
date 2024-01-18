@@ -65,7 +65,7 @@ namespace ColorVision.Services
             switch (ServiceType)
             {
                 case ServiceTypes.camera:
-                    ServiceCamera cameraService = new ServiceCamera(Config);
+                    MQTTTerminalCamera cameraService = new MQTTTerminalCamera(Config);
                     MQTTServiceTerminalBase = cameraService;
                     RefreshCommand = new RelayCommand(a => cameraService.GetAllDevice());
 

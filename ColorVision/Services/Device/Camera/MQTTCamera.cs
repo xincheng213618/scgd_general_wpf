@@ -18,15 +18,15 @@ namespace ColorVision.Device.Camera
 {
     public delegate void MQTTCameraMsgHandler(object sender, MsgReturn msg);
 
-    public class DeviceServiceCamera : DeviceServiceBase<ConfigCamera>
+    public class MQTTCamera : MQTTDeviceService<ConfigCamera>
     {
         public event MessageRecvHandler OnMessageRecved;
 
-        public ServiceCamera CameraService { get; set; }
+        public MQTTTerminalCamera CameraService { get; set; }
 
         public override bool IsAlive {get =>  Config.IsAlive; set { Config.IsAlive = value; NotifyPropertyChanged(); }}
 
-        public DeviceServiceCamera(ConfigCamera CameraConfig, ServiceCamera cameraService) : base(CameraConfig)
+        public MQTTCamera(ConfigCamera CameraConfig, MQTTTerminalCamera cameraService) : base(CameraConfig)
         {
             CameraService = cameraService;
             CameraService.Devices.Add(this);

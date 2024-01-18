@@ -11,7 +11,7 @@ namespace ColorVision.Device.PG
     /// </summary>
     public partial class PGDisplayControl : UserControl
     {
-        private PGDevService PGService { get => DevicePG.DeviceService; }
+        private MQTTPG PGService { get => DevicePG.DeviceService; }
         private DevicePG DevicePG { get; set; }
 
 

@@ -11,7 +11,7 @@ namespace ColorVision.Services.Device.Algorithm
     public partial class DeviceAlgorithmControl : UserControl
     {
         public DeviceAlgorithm Device { get; set; }
-        public AlgorithmService DService { get => Device.DeviceService; }
+        public MQTTAlgorithm DService { get => Device.MQTTService; }
 
         public bool IsCanEdit { get; set; }
 

@@ -36,9 +36,7 @@ namespace ColorVision.Device.Camera
 
     public class DeviceCamera : DeviceService<ConfigCamera>
     {
-        public static ObservableCollection<DeviceCamera> DeviceCameraList { get; set; } = new ObservableCollection<DeviceCamera>();
-
-        public DeviceServiceCamera DService { get; set; }
+        public MQTTCamera DService { get; set; }
 
         /// <summary>
         /// 矫正参数
@@ -54,14 +52,14 @@ namespace ColorVision.Device.Camera
 
         public ViewCamera View { get; set; }
 
-        public ServiceCamera Service { get; set; }
+        public MQTTTerminalCamera Service { get; set; }
 
         public RelayCommand UploadCalibrationCommand { get; set; }
 
-        public DeviceCamera(SysResourceModel sysResourceModel, ServiceCamera cameraService) : base(sysResourceModel)
+        public DeviceCamera(SysResourceModel sysResourceModel, MQTTTerminalCamera cameraService) : base(sysResourceModel)
         {
             Service = cameraService;
-            DService = new DeviceServiceCamera(Config, Service);
+            DService = new MQTTCamera(Config, Service);
             this.Config.SendTopic = Service.SendTopic;
             this.Config.SubscribeTopic = Service.SubscribeTopic;
 

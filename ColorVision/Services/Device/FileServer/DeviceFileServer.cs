@@ -7,13 +7,13 @@ namespace ColorVision.Device.FileServer
 {
     public class DeviceFileServer : DeviceService<FileServerConfig>
     {
-        public FileServerService DeviceService { get; set; }
+        public MQTTService DeviceService { get; set; }
 
         public ImageView View { get; set; }
 
         public DeviceFileServer(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
-            DeviceService = new FileServerService(Config);
+            DeviceService = new MQTTService(Config);
             View = new ImageView();
         }
 

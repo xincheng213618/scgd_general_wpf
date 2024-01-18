@@ -13,7 +13,7 @@ using ColorVision.Services.Device;
 
 namespace ColorVision.Device.Camera
 {
-    public class ServiceCamera : MQTTServiceTerminalBase<TerminalServiceConfig>
+    public class MQTTTerminalCamera : MQTTServiceTerminalBase<TerminalServiceConfig>
     {
         public event DeviceStatusChangedHandler DeviceStatusChanged;
         public DeviceStatusType DeviceStatus  { get => _DeviceStatus;
@@ -26,9 +26,9 @@ namespace ColorVision.Device.Camera
         }
         private DeviceStatusType _DeviceStatus;
 
-        public ServiceCamera(TerminalServiceConfig Config) :base(Config)
+        public MQTTTerminalCamera(TerminalServiceConfig Config) :base(Config)
         {
-            Devices = new List<DeviceServiceCamera>();
+            Devices = new List<MQTTCamera>();
             Connected += (s, e) =>
             {
                 GetAllDevice();

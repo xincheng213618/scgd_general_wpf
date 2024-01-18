@@ -18,7 +18,7 @@ namespace ColorVision.Services.Device.SMU
     {
 
         public DeviceSMU Device { get; set; }
-        private SMUService DService { get => Device.Service;  }
+        private MQTTSMU DService { get => Device.Service;  }
         private ConfigSMU Config { get => Device.Config; }
 
         public ViewSMU View { get => Device.View; }

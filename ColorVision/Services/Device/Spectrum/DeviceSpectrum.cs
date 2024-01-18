@@ -8,13 +8,13 @@ namespace ColorVision.Device.Spectrum
 {
     public class DeviceSpectrum : DeviceService<ConfigSpectrum>
     {
-        public SpectrumService DeviceService { get; set; }
+        public MQTTSpectrum DeviceService { get; set; }
 
         public ViewSpectrum View { get; set; }
 
         public DeviceSpectrum(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
-            DeviceService = new SpectrumService(Config);
+            DeviceService = new MQTTSpectrum(Config);
             View = new ViewSpectrum(this);
         }
 

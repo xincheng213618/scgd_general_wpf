@@ -12,11 +12,11 @@ using System.Windows;
 
 namespace ColorVision.Services.Device.SMU
 {
-    public class SMUService : DeviceServiceBase<ConfigSMU>
+    public class MQTTSMU : MQTTDeviceService<ConfigSMU>
     {
         public event MQTTSMUScanResultHandler ScanResultEvent;
         public event MQTTSMUResultHandler ResultEvent;
-        public SMUService(ConfigSMU sMUConfig) : base(sMUConfig)
+        public MQTTSMU(ConfigSMU sMUConfig) : base(sMUConfig)
         {
             Config = sMUConfig;
 

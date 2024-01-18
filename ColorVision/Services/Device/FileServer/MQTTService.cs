@@ -1,6 +1,6 @@
 ﻿
 using ColorVision.MQTT;
-using ColorVision.Services;
+using ColorVision.Services.Device;
 using ColorVision.Services.Msg;
 using MQTTMessageLib.FileServer;
 using MQTTnet.Client;
@@ -28,10 +28,10 @@ namespace ColorVision.Device.FileServer
         }
     }
     public delegate void MQTTImageDataHandler(object sender, FileServerDataEvent arg);
-    public class FileServerService : DeviceServiceBase<FileServerConfig>
+    public class MQTTService : MQTTDeviceService<FileServerConfig>
     {
         public event MQTTImageDataHandler OnImageData;
-        public FileServerService(FileServerConfig config) : base(config)
+        public MQTTService(FileServerConfig config) : base(config)
         {
             Config = config;
 

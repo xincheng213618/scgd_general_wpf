@@ -115,7 +115,7 @@ namespace ColorVision.Services
                         sysResourceModel = saveConfigInfo(cameraConfig1, sysResource);
                         if (sysResourceModel != null)
                         {
-                            if (serviceTerminal.MQTTServiceTerminalBase is ServiceCamera cameraService)
+                            if (serviceTerminal.MQTTServiceTerminalBase is MQTTTerminalCamera cameraService)
                             {
                                 serviceTerminal.AddChild(new DeviceCamera(sysResourceModel, cameraService));
                             }

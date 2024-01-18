@@ -13,7 +13,7 @@ namespace ColorVision.Device.Spectrum
     {
         public DeviceSpectrum MQTTDeviceSp { get; set; }
 
-        private SpectrumService? SpectrumService;
+        private MQTTSpectrum? SpectrumService;
         private bool disposedValue;
         private bool disposedObj;
 

@@ -8,11 +8,11 @@ namespace ColorVision.Services.Device.CfwPort
 {
     public class DeviceCfwPort : DeviceService<ConfigCfwPort>
     {
-        public DeviceServiceCfwPort DeviceService { get; set; }
+        public MQTTCfwPort DeviceService { get; set; }
 
         public DeviceCfwPort(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
-            DeviceService = new DeviceServiceCfwPort(Config);
+            DeviceService = new MQTTCfwPort(Config);
 
             if (Application.Current.TryFindResource("CfwPortDrawingImage") is DrawingImage drawingImage)
                 Icon = drawingImage;

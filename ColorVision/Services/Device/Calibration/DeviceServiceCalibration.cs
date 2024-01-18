@@ -6,7 +6,7 @@ using ColorVision.Services.Device.Camera.Calibrations;
 
 namespace ColorVision.Services.Device.Calibration
 {
-    public class DeviceServiceCalibration : DeviceServiceBase<ConfigCalibration>
+    public class DeviceServiceCalibration : MQTTDeviceService<ConfigCalibration>
     {
         public DeviceServiceCalibration(ConfigCalibration config) : base(config)
         {

@@ -12,7 +12,7 @@ namespace ColorVision.Services.Device.Motor
     {
 
         public DeviceMotor Device { get; set; }
-        private DeviceServiceMotor DeviceService { get => Device.DeviceService;  }
+        private MQTTMotor DeviceService { get => Device.DeviceService;  }
 
         public DisplayMotorControl(DeviceMotor device)
         {

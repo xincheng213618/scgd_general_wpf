@@ -29,7 +29,7 @@ namespace ColorVision.Services.Device.Algorithm
 
         public DeviceAlgorithm Device { get; set; }
 
-        public AlgorithmService Service { get => Device.DeviceService; }
+        public MQTTAlgorithm Service { get => Device.MQTTService; }
 
         public AlgorithmView View { get => Device.View; }
 

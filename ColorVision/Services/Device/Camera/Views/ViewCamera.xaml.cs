@@ -29,8 +29,8 @@ namespace ColorVision.Services.Device.Camera.Views
 
         public event ImgCurSelectionChanged OnCurSelectionChanged;
         public ObservableCollection<ViewResultCamera> ViewResultCameras { get; set; } = new ObservableCollection<ViewResultCamera>();
-        public DeviceServiceCamera DService{ get; set; }
-        public ViewCamera(DeviceServiceCamera ds)
+        public MQTTCamera DService{ get; set; }
+        public ViewCamera(MQTTCamera ds)
         {
             this.DService = ds;
             InitializeComponent();

@@ -6,11 +6,11 @@ namespace ColorVision.Device.PG
 {
     public class DevicePG : DeviceService<ConfigPG>
     {
-        public PGDevService DeviceService { get; set; }
+        public MQTTPG DeviceService { get; set; }
 
         public DevicePG(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
-            DeviceService = new PGDevService(Config);
+            DeviceService = new MQTTPG(Config);
         }
 
         public override UserControl GetDeviceControl() => new DevicePGControl(this);

@@ -19,7 +19,7 @@ namespace ColorVision.Device.Spectrum
     public partial class SpectrumDisplayControl : UserControl
     {
         public DeviceSpectrum DeviceSpectrum { get; set; }
-        public SpectrumService SpectrumService { get => DeviceSpectrum.DeviceService; }
+        public MQTTSpectrum SpectrumService { get => DeviceSpectrum.DeviceService; }
 
         public ViewSpectrum View { get => DeviceSpectrum.View;}
         public SpectrumDisplayControl(DeviceSpectrum DeviceSpectrum)

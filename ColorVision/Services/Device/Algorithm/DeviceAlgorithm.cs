@@ -10,13 +10,13 @@ namespace ColorVision.Services.Device.Algorithm
 {
     public class DeviceAlgorithm : DeviceService<ConfigAlgorithm>
     {
-        public AlgorithmService DeviceService { get; set; }
+        public MQTTAlgorithm MQTTService { get; set; }
         public AlgorithmView View { get; set; }
 
         public DeviceAlgorithm(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             View ??= new AlgorithmView(this);
-            DeviceService = new AlgorithmService(this, Config);
+            MQTTService = new MQTTAlgorithm(this, Config);
 
             if (Application.Current.TryFindResource("DrawingImageAlgorithm") is DrawingImage DrawingImageAlgorithm)
                 Icon = DrawingImageAlgorithm;
