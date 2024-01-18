@@ -15,17 +15,17 @@ using System.Windows;
 
 namespace ColorVision.Services
 {
-    public class ServiceBase : ViewModelBase, IHeartbeat, IServiceConfig, IDisposable
+    public class MQTTServiceBase : ViewModelBase, IHeartbeat, IServiceConfig, IDisposable
     {
-        internal static readonly ILog log = LogManager.GetLogger(typeof(ServiceBase));
-        private static readonly log4net.ILog logger = LogManager.GetLogger(typeof(ServiceBase));
+        internal static readonly ILog log = LogManager.GetLogger(typeof(MQTTServiceBase));
+        private static readonly log4net.ILog logger = LogManager.GetLogger(typeof(MQTTServiceBase));
         public MQTTSetting MQTTSetting { get; set; }
         public MQTTControl MQTTControl { get; set; }
 
         public event EventHandler Connected;
         public event EventHandler DisConnected;
 
-        public ServiceBase()
+        public MQTTServiceBase()
         {
             MQTTControl = MQTTControl.GetInstance();
             MQTTSetting = MQTTControl.Setting;

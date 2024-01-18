@@ -5,7 +5,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Device.FileServer
 {
-    public class DeviceFileServer : BaseDevice<FileServerConfig>
+    public class DeviceFileServer : DeviceService<FileServerConfig>
     {
         public FileServerService DeviceService { get; set; }
 

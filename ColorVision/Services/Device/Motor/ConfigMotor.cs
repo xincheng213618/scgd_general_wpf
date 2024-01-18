@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 
 namespace ColorVision.Services.Device.Motor
 {
-    public class ConfigMotor: BaseDeviceConfig
+    public class ConfigMotor: DeviceServiceConfig
     {
         public FOCUS_COMMUN eFOCUSCOMMUN { get => _eFOCUSCOMMUN; set { _eFOCUSCOMMUN = value; NotifyPropertyChanged(); } }
         private FOCUS_COMMUN _eFOCUSCOMMUN;

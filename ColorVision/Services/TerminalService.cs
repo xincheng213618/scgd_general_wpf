@@ -22,8 +22,9 @@ namespace ColorVision.Services
     public class TerminalService : TerminalServiceBase
     {
         public SysResourceModel SysResourceModel { get; set; }
-        public BaseServiceConfig Config { get; set; }
-        public BaseServiceBase BaseService { get; set; }
+        public TerminalServiceConfig Config { get; set; }
+
+        public MQTTServiceTerminalBase MQTTServiceTerminalBase { get; set; }
 
         public ServiceTypes ServiceType { get => (ServiceTypes)SysResourceModel.Type; }
 
@@ -40,17 +41,17 @@ namespace ColorVision.Services
             SysResourceModel = sysResourceModel;
             if (string.IsNullOrEmpty(SysResourceModel.Value))
             {
-                Config ??= new BaseServiceConfig();
+                Config ??= new TerminalServiceConfig();
             }
             else
             {
                 try
                 {
-                    Config = JsonConvert.DeserializeObject<BaseServiceConfig>(SysResourceModel.Value) ?? new BaseServiceConfig();
+                    Config = JsonConvert.DeserializeObject<TerminalServiceConfig>(SysResourceModel.Value) ?? new TerminalServiceConfig();
                 }
                 catch
                 {
-                    Config = new BaseServiceConfig();
+                    Config = new TerminalServiceConfig();
                 }
             }
             Config.Code = SysResourceModel.Code ?? string.Empty;
@@ -65,7 +66,7 @@ namespace ColorVision.Services
             {
                 case ServiceTypes.camera:
                     ServiceCamera cameraService = new ServiceCamera(Config);
-                    BaseService = cameraService;
+                    MQTTServiceTerminalBase = cameraService;
                     RefreshCommand = new RelayCommand(a => cameraService.GetAllDevice());
 
                     if (Application.Current.TryFindResource("DrawingImageCamera") is DrawingImage DrawingImageCamera)
@@ -85,7 +86,7 @@ namespace ColorVision.Services
                         if (Application.Current.TryFindResource("DrawingImageAlgorithm") is DrawingImage drawingImage)
                             Icon = drawingImage;
                     };
-                    BaseService = new BaseService<BaseServiceConfig>(Config);
+                    MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
                 case ServiceTypes.SMU:
                     if (Application.Current.TryFindResource("SMUDrawingImage") is DrawingImage SMUDrawingImage)
@@ -95,7 +96,7 @@ namespace ColorVision.Services
                         if (Application.Current.TryFindResource("SMUDrawingImage") is DrawingImage drawingImage)
                             Icon = drawingImage;
                     };
-                    BaseService = new BaseService<BaseServiceConfig>(Config);
+                    MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
                 case ServiceTypes.Motor:
                     if (Application.Current.TryFindResource("COMDrawingImage") is DrawingImage COMDrawingImage)
@@ -105,7 +106,7 @@ namespace ColorVision.Services
                         if (Application.Current.TryFindResource("COMDrawingImage") is DrawingImage drawingImage)
                             Icon = drawingImage;
                     };
-                    BaseService = new BaseService<BaseServiceConfig>(Config);
+                    MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
                 case ServiceTypes.CfwPort:
                     if (Application.Current.TryFindResource("CfwPortDrawingImage") is DrawingImage CfwPortDrawingImage)
@@ -115,11 +116,11 @@ namespace ColorVision.Services
                         if (Application.Current.TryFindResource("CfwPortDrawingImage") is DrawingImage drawingImage)
                             Icon = drawingImage;
                     };
-                    BaseService = new BaseService<BaseServiceConfig>(Config);
+                    MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
 
                 default:
-                    BaseService = new BaseService<BaseServiceConfig>(Config);
+                    MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
             }
 
@@ -152,7 +153,7 @@ namespace ColorVision.Services
                 List<string> codes = new List<string>();
                 foreach (var item in VisualChildren)
                 {
-                    if (item is BaseChannel baseChannel)
+                    if (item is DeviceService baseChannel)
                     {
                         if (!string.IsNullOrWhiteSpace(baseChannel.SysResourceModel.Code))
                             codes.Add(baseChannel.SysResourceModel.Code);

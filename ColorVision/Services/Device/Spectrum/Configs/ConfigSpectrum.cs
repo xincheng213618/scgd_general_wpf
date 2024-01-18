@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 namespace ColorVision.Device.Spectrum.Configs
 {
 
-    public class ConfigSpectrum : BaseDeviceConfig, IServiceConfig
+    public class ConfigSpectrum : DeviceServiceConfig, IServiceConfig
     {
         private int _TimeLimit;
         public int MaxIntegralTime { get => _TimeLimit; set { _TimeLimit = value; NotifyPropertyChanged(); } }

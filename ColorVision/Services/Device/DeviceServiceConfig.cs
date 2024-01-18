@@ -53,7 +53,7 @@ namespace ColorVision.Services.Device
     /// <summary>
     /// 基础硬件配置信息
     /// </summary>
-    public class BaseDeviceConfig : BaseConfig
+    public class DeviceServiceConfig : BaseConfig
     {
         /// <summary>
         /// 设备序号
@@ -61,6 +61,8 @@ namespace ColorVision.Services.Device
         public string Id { get => _Id; set {  _Id = value; NotifyPropertyChanged(); } }
         private string _Id;
     }
+
+
 
     public delegate void HeartbeatHandler(HeartbeatParam heartbeat);
 

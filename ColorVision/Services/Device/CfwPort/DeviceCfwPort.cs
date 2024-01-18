@@ -6,7 +6,7 @@ using System.Windows.Media;
 
 namespace ColorVision.Services.Device.CfwPort
 {
-    public class DeviceCfwPort : BaseDevice<ConfigCfwPort>
+    public class DeviceCfwPort : DeviceService<ConfigCfwPort>
     {
         public DeviceServiceCfwPort DeviceService { get; set; }
 

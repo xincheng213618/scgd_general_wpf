@@ -8,7 +8,7 @@ using System.Windows.Media;
 
 namespace ColorVision.Services.Device.Algorithm
 {
-    public class DeviceAlgorithm : BaseDevice<ConfigAlgorithm>
+    public class DeviceAlgorithm : DeviceService<ConfigAlgorithm>
     {
         public AlgorithmService DeviceService { get; set; }
         public AlgorithmView View { get; set; }

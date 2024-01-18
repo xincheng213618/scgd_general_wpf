@@ -36,7 +36,7 @@ namespace ColorVision.Services
 
         public ObservableCollection<TypeService> TypeServices { get; set; }
         public Dictionary<string,string> ServiceTokens { get; set; }
-        public ObservableCollection<BaseChannel> Devices { get; set; }
+        public ObservableCollection<DeviceService> Devices { get; set; }
 
         public SysResourceService ResourceService { get; set; }
 
@@ -46,14 +46,14 @@ namespace ColorVision.Services
 
         public StackPanel StackPanel { get; set; }
 
-        private Dictionary<string, List<ServiceBase>> svrDevices;
+        private Dictionary<string, List<MQTTServiceBase>> svrDevices;
         public ServiceManager()
         {
             ResourceService = new SysResourceService();
             resultService = new ResultService();
             TypeServices = new ObservableCollection<TypeService>();
-            Devices = new ObservableCollection<BaseChannel>();
-            svrDevices = new Dictionary<string, List<ServiceBase>>();
+            Devices = new ObservableCollection<DeviceService>();
+            svrDevices = new Dictionary<string, List<MQTTServiceBase>>();
             ServiceTokens = new Dictionary<string,string>();
 
             UserConfig = ConfigHandler.GetInstance().SoftwareConfig.UserConfig;
@@ -63,15 +63,15 @@ namespace ColorVision.Services
 
             Reload();
         }
-        public ObservableCollection<BaseChannel> LastGenControl { get; set; }
+        public ObservableCollection<DeviceService> LastGenControl { get; set; }
 
-        public void GenControl(ObservableCollection<BaseChannel> MQTTDevices)
+        public void GenControl(ObservableCollection<DeviceService> MQTTDevices)
         {
             LastGenControl = MQTTDevices;
             StackPanel.Children.Clear();
             foreach (var item in MQTTDevices)
             {
-                if (item is BaseChannel device)
+                if (item is DeviceService device)
                 {
                     StackPanel.Children.Add(device.GetDisplayControl());
                 }
@@ -83,7 +83,7 @@ namespace ColorVision.Services
         /// </summary>
         public void GenDeviceDisplayControl()
         {
-            LastGenControl = new ObservableCollection<BaseChannel>();
+            LastGenControl = new ObservableCollection<DeviceService>();
             StackPanel.Children.Clear();
             foreach (var serviceKind in TypeServices)
             {
@@ -91,7 +91,7 @@ namespace ColorVision.Services
                 {
                     foreach (var item in service.VisualChildren)  
                     {
-                        if (item is BaseChannel device)
+                        if (item is DeviceService device)
                         {
                             LastGenControl.Add(device);
                             StackPanel.Children.Add(device.GetDisplayControl());
@@ -142,10 +142,10 @@ namespace ColorVision.Services
                         TerminalService mQTTService = new TerminalService(service);
                         string svrKey = GetServiceKey(service.TypeCode ?? string.Empty, service.Code ?? string.Empty);
 
-                        svrDevices ??= new Dictionary<string, List<ServiceBase>>();
+                        svrDevices ??= new Dictionary<string, List<MQTTServiceBase>>();
                         if (!svrDevices.ContainsKey(svrKey))
                         {
-                            svrDevices?.Add(svrKey, new List<ServiceBase>());
+                            svrDevices?.Add(svrKey, new List<MQTTServiceBase>());
                             if (service.Code != null)
                             {
                                 ServiceTokens.Add(service.Code, string.Empty);
@@ -154,14 +154,14 @@ namespace ColorVision.Services
 
                         foreach (var device in devices)
                         {
-                            ServiceBase svrObj = null;
+                            MQTTServiceBase svrObj = null;
                             if (device.Pid == service.Id)
                             {
                                 switch ((ServiceTypes)device.Type)
                                 {
                                     case ColorVision.Services.ServiceTypes.camera:
 
-                                        if (mQTTService.BaseService is ServiceCamera cameraService)
+                                        if (mQTTService.MQTTServiceTerminalBase is ServiceCamera cameraService)
                                         {
                                             DeviceCamera deviceCamera = new DeviceCamera(device, cameraService);
                                             svrObj = deviceCamera.DService;

@@ -3,7 +3,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Services.Device.Sensor
 {
-    public class DeviceSensor : BaseDevice<ConfigSensor>
+    public class DeviceSensor : DeviceService<ConfigSensor>
     {
         public DeviceServiceSensor DeviceService { get; set; }
 

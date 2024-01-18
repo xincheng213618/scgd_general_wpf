@@ -61,7 +61,7 @@ namespace ColorVision.Services
             };
         }
 
-        private SysResourceModel? saveConfigInfo(BaseDeviceConfig deviceConfig, SysResourceModel sysResource)
+        private SysResourceModel? saveConfigInfo(DeviceServiceConfig deviceConfig, SysResourceModel sysResource)
         {
             deviceConfig.Name = TextBox_Name.Text;
             deviceConfig.Code = TextBox_Code.Text;
@@ -93,7 +93,7 @@ namespace ColorVision.Services
 
 
                 SysResourceModel sysResourceModel;
-                BaseDeviceConfig deviceConfig;
+                DeviceServiceConfig deviceConfig;
                 switch (serviceTerminal.Type)
                 {
                     case ServiceTypes.camera:
@@ -115,7 +115,7 @@ namespace ColorVision.Services
                         sysResourceModel = saveConfigInfo(cameraConfig1, sysResource);
                         if (sysResourceModel != null)
                         {
-                            if (serviceTerminal.BaseService is ServiceCamera cameraService)
+                            if (serviceTerminal.MQTTServiceTerminalBase is ServiceCamera cameraService)
                             {
                                 serviceTerminal.AddChild(new DeviceCamera(sysResourceModel, cameraService));
                             }
@@ -241,7 +241,7 @@ namespace ColorVision.Services
 
             foreach (var item in ServiceTerminal.VisualChildren)
             {
-                if(item is BaseChannel mQTTDevice)
+                if(item is DeviceService mQTTDevice)
                 {
                     mQTTDevice.SendTopic = ServiceTerminal.Config.SendTopic;
                     mQTTDevice.SubscribeTopic = ServiceTerminal.Config.SubscribeTopic;
@@ -263,7 +263,7 @@ namespace ColorVision.Services
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
             MQTTCreate.Visibility = MQTTCreate.Visibility == Visibility.Visible? Visibility.Collapsed : Visibility.Visible;
-            if (ServiceTerminal.BaseService is BaseServiceBase baseServiceBase)
+            if (ServiceTerminal.MQTTServiceTerminalBase is MQTTServiceTerminalBase baseServiceBase)
             {
                 TextBox_Code.ItemsSource = baseServiceBase.DevicesSN;
                 TextBox_Name.ItemsSource = baseServiceBase.DevicesSN;
@@ -275,7 +275,7 @@ namespace ColorVision.Services
         {
             if (sender is ListView listView && listView.SelectedIndex > -1)
             {
-                if (ServiceTerminal.VisualChildren[listView.SelectedIndex] is BaseChannel baseObject)
+                if (ServiceTerminal.VisualChildren[listView.SelectedIndex] is DeviceService baseObject)
                 {
                     if (this.Parent is Grid grid)
                     {

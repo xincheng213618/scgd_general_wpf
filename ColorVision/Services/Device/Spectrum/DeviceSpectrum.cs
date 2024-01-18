@@ -6,7 +6,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Device.Spectrum
 {
-    public class DeviceSpectrum : BaseDevice<ConfigSpectrum>
+    public class DeviceSpectrum : DeviceService<ConfigSpectrum>
     {
         public SpectrumService DeviceService { get; set; }
 

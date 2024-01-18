@@ -61,7 +61,7 @@ namespace ColorVision.Services
                 }
                 SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, serviceKind.SysDictionaryModel.Value, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
                
-                BaseServiceConfig serviceConfig = new BaseServiceConfig
+                TerminalServiceConfig serviceConfig = new TerminalServiceConfig
                 {
                     SendTopic = serviceKind.SysDictionaryModel.Code + "/" + "CMD/" + sysResource.Code,
                     SubscribeTopic = serviceKind.SysDictionaryModel.Code + "/" + "STATUS/" + sysResource.Code

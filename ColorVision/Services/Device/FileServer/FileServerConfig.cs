@@ -2,7 +2,7 @@
 
 namespace ColorVision.Device.FileServer
 {
-    public class FileServerConfig : BaseDeviceConfig
+    public class FileServerConfig : DeviceServiceConfig
     {
         public string Endpoint { get => _Endpoint; set { _Endpoint = value;NotifyPropertyChanged(); } }
         private string _Endpoint;

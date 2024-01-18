@@ -176,7 +176,7 @@ namespace ColorVision.RC
                                 {
                                     foreach (var dev in serviceTerminal.VisualChildren)
                                     {
-                                        if (dev is BaseChannel baseChannel && baseChannel.GetConfig() is BaseDeviceConfig baseDeviceConfig)
+                                        if (dev is DeviceService baseChannel && baseChannel.GetConfig() is DeviceServiceConfig baseDeviceConfig)
                                         {
                                             if (devNew.Code == baseDeviceConfig.Code)
                                             {
@@ -254,12 +254,12 @@ namespace ColorVision.RC
                                         serviceTerminal.Config.LastAliveTime = DateTime.Now;
                                         serviceTerminal.Config.IsAlive = true;
                                         serviceTerminal.Config.HeartbeatTime = DateNodeServices[sortedDates.LastOrDefault()].OverTime;
-                                        if (serviceTerminal.BaseService.ServiceToken != DateNodeServices[sortedDates.LastOrDefault()].ServiceToken)
-                                            serviceTerminal.BaseService.ServiceToken = DateNodeServices[sortedDates.LastOrDefault()].ServiceToken;
+                                        if (serviceTerminal.MQTTServiceTerminalBase.ServiceToken != DateNodeServices[sortedDates.LastOrDefault()].ServiceToken)
+                                            serviceTerminal.MQTTServiceTerminalBase.ServiceToken = DateNodeServices[sortedDates.LastOrDefault()].ServiceToken;
 
                                         foreach (var baseObject1 in serviceTerminal.VisualChildren)
                                         {
-                                            if (baseObject1 is BaseChannel baseChannel && baseChannel.GetConfig() is BaseDeviceConfig baseDeviceConfig)
+                                            if (baseObject1 is DeviceService baseChannel && baseChannel.GetConfig() is DeviceServiceConfig baseDeviceConfig)
                                             {
                                                 //baseDeviceConfig.IsAlive = true;
                                                 if (!string.IsNullOrEmpty(ns.LiveTime)) baseDeviceConfig.LastAliveTime = DateTime.Parse(ns.LiveTime);

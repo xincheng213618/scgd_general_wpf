@@ -28,7 +28,7 @@ namespace ColorVision.Services
     public delegate void MessageRecvHandler(object sender, MessageRecvArgs arg);
 
 
-    public class DeviceServiceBase : ServiceBase
+    public class DeviceServiceBase : MQTTServiceBase
     {
 
     }

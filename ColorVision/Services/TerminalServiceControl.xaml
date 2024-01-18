@@ -152,28 +152,28 @@
                     <GridView>
                         <GridViewColumn  Header="设备标识" Width="200">
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type mqtt:BaseChannel}">
+                                <DataTemplate  DataType="{x:Type mqtt:DeviceService}">
                                     <TextBlock Text="{ Binding Code}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn  Header="设备名称" Width="200">
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type mqtt:BaseChannel}">
+                                <DataTemplate  DataType="{x:Type mqtt:DeviceService}">
                                     <TextBlock Text="{ Binding Name}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn  Header="状态" Width="150">
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type mqtt:BaseChannel}">
+                                <DataTemplate  DataType="{x:Type mqtt:DeviceService}">
                                     <TextBlock Text="{ Binding  IsAlive}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn   Width="60">
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate DataType="{x:Type mqtt:BaseChannel}">
+                                <DataTemplate DataType="{x:Type mqtt:DeviceService}">
                                     <Grid Height="30">
                                         <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" />
                                         <Button Background="Transparent"  BorderThickness="0"  Command="{Binding DeleteCommand}"/>

@@ -1,6 +1,6 @@
 ﻿namespace ColorVision.Services.Device.Calibration
 {
-    public class ConfigCalibration: BaseDeviceConfig
+    public class ConfigCalibration: DeviceServiceConfig
     {
         public double ExpTimeR { get => _ExpTimeR; set { _ExpTimeR = value; NotifyPropertyChanged(); } }
         private double _ExpTimeR = 10;

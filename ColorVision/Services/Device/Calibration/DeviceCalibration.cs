@@ -3,7 +3,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Services.Device.Calibration
 {
-    public class DeviceCalibration : BaseDevice<ConfigCalibration>
+    public class DeviceCalibration : DeviceService<ConfigCalibration>
     {
         public DeviceServiceCalibration DeviceService { get; set; }
 

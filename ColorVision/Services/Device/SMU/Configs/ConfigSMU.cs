@@ -1,6 +1,6 @@
 ﻿namespace ColorVision.Services.Device.SMU.Configs
 {
-    public class ConfigSMU : BaseDeviceConfig
+    public class ConfigSMU : DeviceServiceConfig
     {
         private bool _IsNet;
         public bool IsNet { get => _IsNet; set { _IsNet = value; NotifyPropertyChanged(); } }

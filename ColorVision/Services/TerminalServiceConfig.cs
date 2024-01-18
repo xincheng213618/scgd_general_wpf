@@ -2,7 +2,7 @@
 
 namespace ColorVision.Services
 {
-    public class BaseServiceConfig : BaseConfig, IServiceConfig, IHeartbeat
+    public class TerminalServiceConfig : BaseConfig, IServiceConfig, IHeartbeat
     {
         public ServiceTypes ServiceType { get; set; }
 

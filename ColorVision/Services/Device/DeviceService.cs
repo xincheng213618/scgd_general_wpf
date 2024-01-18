@@ -13,7 +13,7 @@ using System.Windows.Media;
 
 namespace ColorVision.Services.Device
 {
-    public class BaseChannel : BaseObject, IDisposable
+    public class DeviceService : BaseObject, IDisposable
     {
         public virtual string Code { get; set; }
 
@@ -86,7 +86,7 @@ namespace ColorVision.Services.Device
     }
 
 
-    public class BaseDevice<T> : BaseChannel where T :BaseDeviceConfig,new()
+    public class DeviceService<T> : DeviceService where T :DeviceServiceConfig,new()
     {
         public T Config { get; set; }
 
@@ -102,7 +102,7 @@ namespace ColorVision.Services.Device
 
         public int MySqlId { get => SysResourceModel.Id; }
 
-        public BaseDevice(SysResourceModel sysResourceModel) : base()
+        public DeviceService(SysResourceModel sysResourceModel) : base()
         {
             SysResourceModel = sysResourceModel;
             ContextMenu = new ContextMenu();

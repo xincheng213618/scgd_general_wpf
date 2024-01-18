@@ -6,7 +6,7 @@ using System.Windows.Media;
 
 namespace ColorVision.Services.Device.Motor
 {
-    public class DeviceMotor : BaseDevice<ConfigMotor>
+    public class DeviceMotor : DeviceService<ConfigMotor>
     {
         public DeviceServiceMotor DeviceService { get; set; }
 

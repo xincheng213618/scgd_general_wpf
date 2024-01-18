@@ -2,7 +2,7 @@
 
 namespace ColorVision.Services.Device.Sensor
 {
-    public class ConfigSensor : BaseDeviceConfig
+    public class ConfigSensor : DeviceServiceConfig
     {
         public CommunicateType CommunicateType { get => _CommunicateType; set { _CommunicateType = value; NotifyPropertyChanged(); } }
         private CommunicateType _CommunicateType;

@@ -34,7 +34,7 @@ namespace ColorVision.Device.Camera
         public string Title { get; set; }
     }
 
-    public class DeviceCamera : BaseDevice<ConfigCamera>
+    public class DeviceCamera : DeviceService<ConfigCamera>
     {
         public static ObservableCollection<DeviceCamera> DeviceCameraList { get; set; } = new ObservableCollection<DeviceCamera>();
 

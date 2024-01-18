@@ -2,7 +2,7 @@
 
 namespace ColorVision.RC
 {
-    public class RCConfig : BaseDeviceConfig
+    public class RCConfig : DeviceServiceConfig
     {
     }
 }

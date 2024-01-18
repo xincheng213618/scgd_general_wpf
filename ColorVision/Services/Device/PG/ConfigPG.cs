@@ -3,7 +3,7 @@ using ColorVision.Services.Device;
 
 namespace ColorVision.Device.PG
 {
-    public class ConfigPG : BaseDeviceConfig, IServiceConfig
+    public class ConfigPG : DeviceServiceConfig, IServiceConfig
     {
         public string Category { get; set; }
         public bool IsNet { get; set; }
