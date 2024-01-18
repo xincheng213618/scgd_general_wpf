@@ -164,7 +164,7 @@ namespace ColorVision.Update
         private static void RestartApplication(string downloadPath)
         {
             // 保存数据库配置
-            ConfigHandler.GetInstance().SaveSoftwareConfig();
+            ConfigHandler.GetInstance().SaveConfig();
 
 
             // 启动新的实例

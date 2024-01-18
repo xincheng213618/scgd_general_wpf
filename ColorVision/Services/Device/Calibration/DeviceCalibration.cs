@@ -5,11 +5,11 @@ namespace ColorVision.Services.Device.Calibration
 {
     public class DeviceCalibration : DeviceService<ConfigCalibration>
     {
-        public DeviceServiceCalibration DeviceService { get; set; }
+        public MQTTCalibration DeviceService { get; set; }
 
         public DeviceCalibration(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
-            DeviceService = new DeviceServiceCalibration(Config);
+            DeviceService = new MQTTCalibration(Config);
         }
 
         public override UserControl GetDeviceControl() => new DeviceCalibrationControl(this);

@@ -204,7 +204,7 @@ namespace ColorVision
 
                 });
                 ConfigHandler.SoftwareConfig.Version = System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString();
-                ConfigHandler.SaveSoftwareConfig();
+                ConfigHandler.SaveConfig();
             }
         }
 

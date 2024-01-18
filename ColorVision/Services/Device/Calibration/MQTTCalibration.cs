@@ -6,9 +6,9 @@ using ColorVision.Services.Device.Camera.Calibrations;
 
 namespace ColorVision.Services.Device.Calibration
 {
-    public class DeviceServiceCalibration : MQTTDeviceService<ConfigCalibration>
+    public class MQTTCalibration : MQTTDeviceService<ConfigCalibration>
     {
-        public DeviceServiceCalibration(ConfigCalibration config) : base(config)
+        public MQTTCalibration(ConfigCalibration config) : base(config)
         {
             MsgReturnReceived += ProcessingReceived;
             DeviceStatus = DeviceStatusType.Unknown;
