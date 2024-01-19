@@ -62,7 +62,9 @@ namespace ColorVision.RC
             rcServiceConfigs.Remove(rcServiceConfig);
 
             ConfigHandler.GetInstance().SaveSoftwareConfig();
-            Task.Run(() => RCService.GetInstance().ReRegist());
+            Task.Run(() => {
+                RCService.GetInstance().QueryServices();
+                RCService.GetInstance().ReRegist(); });
             this.Close();
         }
 
