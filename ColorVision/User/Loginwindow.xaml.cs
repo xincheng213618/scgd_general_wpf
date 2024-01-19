@@ -1,5 +1,4 @@
-﻿using ColorVision.Users;
-using ColorVision.Users.Dao;
+﻿using ColorVision.Users.Dao;
 using System;
 using System.Windows;
 

@@ -8,7 +8,6 @@ namespace ColorVision.MySql.Service
 
         public static BatchResultMasterModel? GetBatch(int id) => id >= 0 ? BatchResultMasterDao.GetById(id) : null;
 
-
         private static MeasureImgResultDao MeasureImgResultDao { get; set; } = new MeasureImgResultDao();
 
         public static MeasureImgResultModel? GetMeasureResultImg(int id) => id >= 0 ? MeasureImgResultDao.GetById(id) : null;

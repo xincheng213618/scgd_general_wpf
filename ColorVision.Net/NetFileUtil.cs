@@ -11,13 +11,14 @@ using System.Runtime.InteropServices;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using System.Windows.Markup;
+using log4net;
 
 namespace ColorVision.Net
 {
     public delegate void NetFileHandler(object sender, NetFileEvent arg);
     public class NetFileUtil
     {
-        private static readonly log4net.ILog logger = log4net.LogManager.GetLogger(typeof(NetFileUtil));
+        private static readonly ILog log = LogManager.GetLogger(typeof(NetFileUtil));
 
         public event NetFileHandler handler;
         private Dictionary<string, string> fileCache;
@@ -126,6 +127,8 @@ namespace ColorVision.Net
             }
             handler?.Invoke(this, new NetFileEvent(code, fileName, fileInfo));
         }
+
+
         private int DoDownloadFile(string serverEndpoint, string fileName, FileExtType extType, ref CVCIEFileInfo fileInfo)
         {
             int code = -1;
@@ -150,7 +153,7 @@ namespace ColorVision.Net
             }
             catch (Exception ex)
             {
-                logger.Error(ex);
+                log.Error(ex);
                 client?.Close();
                 client?.Dispose();
             }
@@ -193,18 +196,18 @@ namespace ColorVision.Net
                 message.Add(fileData.data);
                 try
                 {
-                    logger.Debug("Begin TrySendMultipartBytes ......");
+                    log.Debug("Begin TrySendMultipartBytes ......");
                     client = new DealerSocket(serverEndpoint);
                     client?.SendMultipartBytes(message);
                     sendResult = client?.TryReceiveFrameString(TimeSpan.FromSeconds(30), out signRecv);
                     code = 0;
-                    logger.Debug("End TrySendMultipartBytes.");
+                    log.Debug("End TrySendMultipartBytes.");
                     client?.Close();
                     client?.Dispose();
                 }
                 catch (Exception ex)
                 {
-                    logger.Error(ex);
+                    log.Error(ex);
                     client?.Close();
                     client?.Dispose();
                 }
@@ -238,13 +241,13 @@ namespace ColorVision.Net
                 }
                 else
                 {
-                    logger.WarnFormat("File {0} Length is 0.", path);
+                    log.WarnFormat("File {0} Length is 0.", path);
                     code = -2;
                 }
             }
             else
             {
-                logger.ErrorFormat("File {0} is not exist.", path);
+                log.ErrorFormat("File {0} is not exist.", path);
             }
             return code;
         }
@@ -266,9 +269,9 @@ namespace ColorVision.Net
                 try
                 {
                     folder.Create();
-                    logger.InfoFormat(" Directory {0} is not exist. Create it.", dir);
+                    log.InfoFormat(" Directory {0} is not exist. Create it.", dir);
                 }
-                catch (Exception ex) { logger.Error(ex); }
+                catch (Exception ex) { log.Error(ex); }
             }
         }
 
@@ -344,6 +347,17 @@ namespace ColorVision.Net
             handler?.Invoke(this, new NetFileEvent(code, fileName, fileInfo));
         }
 
+        public CVCIEFileInfo OpenLocalCVCIEFile(string fileName, FileExtType extType)
+        {
+            int code = 0;
+            CVCIEFileInfo fileInfo = new CVCIEFileInfo();
+            if (extType == FileExtType.CIE) code = ReadLocalBinaryCIEFile(fileName, ref fileInfo);
+            else if (extType == FileExtType.Raw) code = ReadLocalBinaryRawFile(fileName, ref fileInfo);
+            else if (extType == FileExtType.Tif) code = ReadTIFImage(fileName, ref fileInfo);
+            else code = ReadLocalBinaryFile(fileName, ref fileInfo);
+            return fileInfo;
+        }
+
         private int ReadLocalBinaryRawFile(string fileName, ref CVCIEFileInfo fileInfo)
         {
             return ReadCVImageRaw(fileName, ref fileInfo);
@@ -380,7 +394,7 @@ namespace ColorVision.Net
             }
             else
             {
-                logger.ErrorFormat("Raw file({0}) is not exist.", fileName);
+                log.ErrorFormat("Raw file({0}) is not exist.", fileName);
             }
 
             return code;
@@ -414,7 +428,7 @@ namespace ColorVision.Net
                 int len = (int)(w * h * channels);
                 fileInfo.data = new byte[len];
                 Marshal.Copy(dst.Data, fileInfo.data, 0, len);
-                logger.DebugFormat("Raw src file({0}) convert rgb.", fileName);
+                log.DebugFormat("Raw src file({0}) convert rgb.", fileName);
                 fileInfo.fileType = FileExtType.Raw;
                 fileInfo.width = (int)w;
                 fileInfo.height = (int)h;
@@ -425,7 +439,7 @@ namespace ColorVision.Net
             }
             else
             {
-                logger.ErrorFormat("Raw file({0}) is not exist.", fileName);
+                log.ErrorFormat("Raw file({0}) is not exist.", fileName);
             }
 
             return code;
@@ -500,13 +514,13 @@ namespace ColorVision.Net
                     }
 
                     int code = ReadLocalBinaryFile(srcFileName,ref fileInfo);
-                    logger.WarnFormat("CIE src file({0}) is not exist. opencv real build.", srcFileName);
+                    log.WarnFormat("CIE src file({0}) is not exist. opencv real build.", srcFileName);
                     return code;
                 }
             }
             else
             {
-                logger.ErrorFormat("CIE file({0}) is not exist.", fileName);
+                log.ErrorFormat("CIE file({0}) is not exist.", fileName);
             }
 
             return -1;

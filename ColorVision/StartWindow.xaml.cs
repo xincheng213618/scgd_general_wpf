@@ -136,7 +136,7 @@ namespace ColorVision
                     {
                         TextBoxMsg.Text += $"{Environment.NewLine}正在检测注册中心连接情况";
                     });
-                    bool IsConnect = await RCService.GetInstance().Connect();
+                    bool IsConnect = await MQTTRCService.GetInstance().Connect();
                     Application.Current.Dispatcher.Invoke(() => 
                     {
                         TextBoxMsg.Text += $"{Environment.NewLine}注册中心: {(IsConnect ? "成功" : "失败")}";

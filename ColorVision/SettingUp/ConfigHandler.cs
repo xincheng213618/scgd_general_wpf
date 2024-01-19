@@ -83,7 +83,7 @@ namespace ColorVision
             });
             AppDomain.CurrentDomain.ProcessExit += (s, e) =>
             {
-                SaveSoftwareConfig();
+                SaveConfig();
             };
 
             PerformanceControlLazy = new Lazy<SystemMonitor>(() => SystemMonitor.GetInstance());
@@ -103,7 +103,7 @@ namespace ColorVision
 
         public SoftwareConfig SoftwareConfig { get => SoftwareConfigLazy.Value; }
 
-        public void SaveSoftwareConfig()
+        public void SaveConfig()
         {
             string Temp0 = SoftwareConfig.MySqlConfig.UserPwd;
             string Temp1 = SoftwareConfig.MQTTConfig.UserPwd;

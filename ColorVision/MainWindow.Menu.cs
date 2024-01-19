@@ -23,7 +23,7 @@ using System.Globalization;
 using System.Threading;
 using ColorVision.Common.Extension;
 using ColorVision.Update;
-using ColorVision.Services.Device.Camera.Calibrations;
+using ColorVision.Services.Devices.Camera.Calibrations;
 
 namespace ColorVision
 {
@@ -310,12 +310,12 @@ namespace ColorVision
                 {
                     string temp = Thread.CurrentThread.CurrentUICulture.Name;
                     ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.UICulture = item;
-                    ConfigHandler.GetInstance().SaveSoftwareConfig();
+                    ConfigHandler.GetInstance().SaveConfig();
                     bool sucess = LanguageManager.Current.LanguageChange(item);
                     if (!sucess)
                     {
                         ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.UICulture = temp;
-                        ConfigHandler.GetInstance().SaveSoftwareConfig();
+                        ConfigHandler.GetInstance().SaveConfig();
                     }
                 };
                 LanguageItem.Tag = item;
@@ -353,7 +353,7 @@ namespace ColorVision
                 ThemeItem.Click += (s, e) =>
                 {
                     ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.Theme = item;
-                    ConfigHandler.GetInstance().SaveSoftwareConfig();
+                    ConfigHandler.GetInstance().SaveConfig();
                     Application.Current.ApplyTheme(item);
                 };
                 ThemeItem.Tag = item;

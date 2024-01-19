@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Services"
-        xmlns:mqtt="clr-namespace:ColorVision.Services.Device"
+        xmlns:mqtt="clr-namespace:ColorVision.Services.Devices"
         xmlns:resx="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         xmlns:set="clr-namespace:ColorVision.SettingUp"
@@ -42,18 +42,18 @@
             </Grid.ColumnDefinitions>
             <TreeView x:Name="TreeView1" Loaded="TreeView1_Loaded" ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectedItemChanged="TreeView1_SelectedItemChanged " Margin="5,0,5,0">
                 <TreeView.Resources>
-                    <HierarchicalDataTemplate DataType="{x:Type local:ServiceKind}" ItemsSource="{Binding VisualChildren}" >
+                    <HierarchicalDataTemplate DataType="{x:Type local:TypeService}" ItemsSource="{Binding VisualChildren}" >
                         <StackPanel >
                             <TextBlock Text="{Binding Name}"/>
                         </StackPanel>
                     </HierarchicalDataTemplate>
-                    <HierarchicalDataTemplate DataType="{x:Type local:ServiceTerminal}" ItemsSource="{Binding VisualChildren}" >
+                    <HierarchicalDataTemplate DataType="{x:Type local:TerminalService}" ItemsSource="{Binding VisualChildren}" >
                         <DockPanel>
                             <Image Source="{Binding Icon}" Height="18" HorizontalAlignment="Left"  Margin="0,0,4,0"/>
                             <TextBlock Text="{Binding Name}"/>
                         </DockPanel>
                     </HierarchicalDataTemplate>
-                    <HierarchicalDataTemplate DataType="{x:Type mqtt:BaseChannel}" ItemsSource="{Binding VisualChildren}" >
+                    <HierarchicalDataTemplate DataType="{x:Type mqtt:DeviceService}" ItemsSource="{Binding VisualChildren}" >
                         <DockPanel>
                             <Image Source="{Binding Icon}" Height="18" HorizontalAlignment="Left"  Margin="0,0,4,0"/>
                             <TextBlock Text="{Binding Name}"/>

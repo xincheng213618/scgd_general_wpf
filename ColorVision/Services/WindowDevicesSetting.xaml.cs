@@ -5,7 +5,7 @@ using System;
 using System.Windows.Documents;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
-using ColorVision.Services.Device;
+using ColorVision.Services.Devices;
 
 namespace ColorVision.Services
 {
@@ -14,14 +14,14 @@ namespace ColorVision.Services
     /// </summary>
     public partial class WindowDevicesSetting : Window
     {
-        public ObservableCollection<BaseChannel> MQTTDevices { get; set; }
-        public ObservableCollection<BaseChannel> MQTTDevices1 { get; set; }
+        public ObservableCollection<DeviceService> MQTTDevices { get; set; }
+        public ObservableCollection<DeviceService> MQTTDevices1 { get; set; }
 
         AdornerLayer mAdornerLayer { get; set; }
-        public WindowDevicesSetting(ObservableCollection<BaseChannel> Devices)
+        public WindowDevicesSetting(ObservableCollection<DeviceService> Devices)
         {
-            MQTTDevices = new ObservableCollection<BaseChannel>();
-            MQTTDevices1 = new ObservableCollection<BaseChannel>();
+            MQTTDevices = new ObservableCollection<DeviceService>();
+            MQTTDevices1 = new ObservableCollection<DeviceService>();
 
             foreach (var item in ServiceManager.GetInstance().Devices)
             {
@@ -50,7 +50,7 @@ namespace ColorVision.Services
 
         private void Button_Click_4(object sender, RoutedEventArgs e)
         {
-            if (SeriesExportTreeView2.SelectedItem is BaseChannel mQTTDevice)
+            if (SeriesExportTreeView2.SelectedItem is DeviceService mQTTDevice)
             {
                 MQTTDevices1.Remove(mQTTDevice);
                 MQTTDevices1.Insert(MQTTDevices1.Count, mQTTDevice);
@@ -74,7 +74,7 @@ namespace ColorVision.Services
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
-            if (SeriesExportTreeView2.SelectedItem is BaseChannel mQTTDevice)
+            if (SeriesExportTreeView2.SelectedItem is DeviceService mQTTDevice)
             {
                 int index = MQTTDevices1.IndexOf(mQTTDevice);
                 if (index -1 >=0)
@@ -89,7 +89,7 @@ namespace ColorVision.Services
 
         private void Button_Click_3(object sender, RoutedEventArgs e)
         {
-            if (SeriesExportTreeView2.SelectedItem is BaseChannel mQTTDevice)
+            if (SeriesExportTreeView2.SelectedItem is DeviceService mQTTDevice)
             {
                 int index = MQTTDevices1.IndexOf(mQTTDevice);
                 if (index +1< MQTTDevices1.Count)
@@ -105,7 +105,7 @@ namespace ColorVision.Services
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            if (SeriesExportTreeView2.SelectedItem is BaseChannel mQTTDevice)
+            if (SeriesExportTreeView2.SelectedItem is DeviceService mQTTDevice)
             {
                 MQTTDevices1.Remove(mQTTDevice);
                 MQTTDevices1.Insert(0,mQTTDevice);
@@ -140,7 +140,7 @@ namespace ColorVision.Services
 
         private void Button_Click_03(object sender, RoutedEventArgs e)
         {
-            if (SeriesExportTreeView2.SelectedItem is BaseChannel mQTTDevice)
+            if (SeriesExportTreeView2.SelectedItem is DeviceService mQTTDevice)
             {
                 MQTTDevices1.Remove(mQTTDevice);
                 MQTTDevices.Add(mQTTDevice);
@@ -149,7 +149,7 @@ namespace ColorVision.Services
 
         private void Button_Click_02(object sender, RoutedEventArgs e)
         {
-            if (SeriesExportTreeView1.SelectedItem is BaseChannel mQTTDevice)
+            if (SeriesExportTreeView1.SelectedItem is DeviceService mQTTDevice)
             {
                 MQTTDevices.Remove(mQTTDevice);
                 MQTTDevices1.Add(mQTTDevice);

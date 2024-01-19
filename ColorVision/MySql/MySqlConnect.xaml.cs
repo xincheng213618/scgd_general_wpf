@@ -44,7 +44,7 @@ namespace ColorVision.MySql
             MySqlConfig.UserPwd = PasswordBox1.Password;
             MySqlConfigs.Remove(MySqlConfig);
 
-            ConfigHandler.GetInstance().SaveSoftwareConfig();
+            ConfigHandler.GetInstance().SaveConfig();
             Task.Run(() => MySqlControl.GetInstance().Connect());
             this.Close();
         }

@@ -1,5 +1,5 @@
 ﻿using ColorVision.RC;
-using ColorVision.Services.Device;
+using ColorVision.Services.Devices;
 using System;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -17,10 +17,10 @@ namespace ColorVision.Services
         {
             InitializeComponent();
         }
-        public ObservableCollection<ServiceKind> MQTTServices { get; set; }
+        public ObservableCollection<TypeService> MQTTServices { get; set; }
         private void Window_Initialized(object sender, EventArgs e)
         {
-            MQTTServices = ServiceManager.GetInstance().Services;
+            MQTTServices = ServiceManager.GetInstance().TypeServices;
             TreeView1.ItemsSource = MQTTServices;
             ButtonOK.Focus();
         }
@@ -28,10 +28,10 @@ namespace ColorVision.Services
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             StackPanelShow.Children.Clear();
-            if (TreeView1.SelectedItem is BaseChannel baseObject)
+            if (TreeView1.SelectedItem is DeviceService baseObject)
                 StackPanelShow.Children.Add(baseObject.GetDeviceControl());
 
-            if (TreeView1.SelectedItem is BaseServiceTerminal baseService)
+            if (TreeView1.SelectedItem is TerminalServiceBase baseService)
                 StackPanelShow.Children.Add(baseService.GenDeviceControl());
         }
 
@@ -50,6 +50,12 @@ namespace ColorVision.Services
                 firstNode.IsSelected = true;
                 firstNode.Focus();
             }
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            MQTTRCService.GetInstance().RestartServices();
+            MessageBox.Show(Application.Current.MainWindow,"命令已经发送");
         }
     }
 }

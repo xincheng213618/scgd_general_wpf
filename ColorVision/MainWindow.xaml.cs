@@ -15,6 +15,8 @@ using System.Globalization;
 using System.IO;
 using System.ServiceProcess;
 using ColorVision.Users;
+using System.Text.RegularExpressions;
+using log4net;
 
 namespace ColorVision
 {
@@ -24,6 +26,8 @@ namespace ColorVision
     /// 
     public partial class MainWindow : Window
     {
+
+        private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
         public ViewGridManager ViewGridManager { get; set; }
 
         public ConfigHandler ConfigHandler { get; set; }
@@ -155,6 +159,7 @@ namespace ColorVision
                 Task.Run(CheckLocalService);
             }
             Task.Run(CheckVersion);
+
         }
 
         public async Task CheckVersion()
@@ -164,11 +169,42 @@ namespace ColorVision
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    MessageBox.Show(Application.Current.MainWindow, System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString() + "更新记录");
+                    try
+                    {
+                        string currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+                        string changelogPath = "CHANGELOG.md";
+
+                        // 读取CHANGELOG.md文件的所有内容
+                        string changelogContent = File.ReadAllText(changelogPath);
+
+                        // 使用正则表达式来匹配当前版本的日志条目
+                        string versionPattern = $"## \\[{currentVersion}\\].*?\\n(.*?)(?=\\n## |$)";
+                        Match match = Regex.Match(changelogContent, versionPattern, RegexOptions.Singleline);
+
+                        if (match.Success)
+                        {
+                            // 如果找到匹配项，提取变更日志
+                            string changeLogForCurrentVersion = match.Groups[1].Value.Trim();
+                            // 显示变更日志
+                            MessageBox.Show($"{currentVersion} 的变更日志：\n{Environment.NewLine}{changeLogForCurrentVersion}");
+                        }
+                        else
+                        {
+                            // 如果未找到匹配项，说明没有为当前版本列出变更日志
+                            MessageBox.Show($"($\"{currentVersion}变更：\\n {Environment.NewLine}1.修复了一些已知的BUG");
+                        }
+
+                    }
+                    catch(Exception ex)
+                    {
+                        log.Error(ex.Message);
+                    }
+
+
 
                 });
                 ConfigHandler.SoftwareConfig.Version = System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString();
-                ConfigHandler.SaveSoftwareConfig();
+                ConfigHandler.SaveConfig();
             }
         }
 
@@ -215,7 +251,6 @@ namespace ColorVision
                 AutoUpdater autoUpdater = AutoUpdater.GetInstance();
                 autoUpdater.CheckAndUpdate(false);
             });
-
         }
 
         class SpectralData
