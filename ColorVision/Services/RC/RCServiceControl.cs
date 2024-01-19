@@ -23,9 +23,9 @@ namespace ColorVision.RC
 
             RCService.StatusChangedEventHandler += RcService_StatusChangedEventHandler;
 
-            int heartbeatTime = 10 * 1000;
+            int heartbeatTime = 5 * 1000;
             System.Timers.Timer hbTimer = new System.Timers.Timer(heartbeatTime);
-            hbTimer.Elapsed += (s, e) => RCService.KeepLive(heartbeatTime);
+            hbTimer.Elapsed += (s, e) => RCService.KeepLive(10*1000);
             hbTimer.Enabled = true;
             GC.KeepAlive(hbTimer);
 
