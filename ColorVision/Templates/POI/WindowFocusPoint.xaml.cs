@@ -1742,7 +1742,13 @@ namespace ColorVision.Templates.POI
             var imgs = MeasureImgResultDao.GetCreateDate();
             if (imgs.Count != 0)
             {
-                OpenImage(new NetFileUtil("1").OpenLocalCVCIEFile(imgs[0].FileUrl, FileExtType.Src));
+                try
+                {
+                    OpenImage(new NetFileUtil("1").OpenLocalCVCIEFile(imgs[0].FileUrl, FileExtType.Raw));
+                }catch(Exception ex)
+                {
+                    MessageBox.Show("打开最近服务拍摄的图像失败",ex.Message);
+                }
             }
             else
             {
