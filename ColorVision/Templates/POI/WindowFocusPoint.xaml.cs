@@ -1745,7 +1745,8 @@ namespace ColorVision.Templates.POI
                 try
                 {
                     OpenImage(new NetFileUtil("1").OpenLocalCVCIEFile(imgs[0].FileUrl, FileExtType.Raw));
-                }catch(Exception ex)
+                }
+                catch(Exception ex)
                 {
                     MessageBox.Show("打开最近服务拍摄的图像失败",ex.Message);
                 }
@@ -1799,6 +1800,36 @@ namespace ColorVision.Templates.POI
                 var src = OpenCvSharp.Cv2.ImDecode(data, OpenCvSharp.ImreadModes.Unchanged);
                 SetImageSource(src.ToBitmapSource());
             }
+        }
+
+        private ObservableCollection<MeasureImgResultModel> MeasureImgResultModels = new ObservableCollection<MeasureImgResultModel>();
+        private void Button_RefreshImg_Click(object sender, RoutedEventArgs e)
+        {
+            MeasureImgResultModels.Clear();
+            var imgs = MeasureImgResultDao.GetAll();
+            imgs.Reverse();
+            foreach (var item in imgs)
+            {
+                MeasureImgResultModels.Add(item);
+            }
+            ComboBoxImg.ItemsSource = MeasureImgResultModels;
+            ComboBoxImg.DisplayMemberPath = "RawFile";
+        }
+
+        private void Button_Service_Click(object sender, RoutedEventArgs e)
+        {
+            if (ComboBoxImg.SelectedIndex > -1)
+            {
+                try
+                {
+                    OpenImage(new NetFileUtil("1").OpenLocalCVCIEFile(MeasureImgResultModels[ComboBoxImg.SelectedIndex].FileUrl, FileExtType.Raw));
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("打开最近服务拍摄的图像失败", ex.Message);
+                }
+            }
+           
         }
     }
 

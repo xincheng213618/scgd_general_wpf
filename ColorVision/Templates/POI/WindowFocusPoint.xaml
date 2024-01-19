@@ -84,7 +84,14 @@
                             </Border>
                         </Popup>
                     </Grid>
-                    <Button x:Name="button4" Content="服务导入" Click="Service_Click" Margin="2"/>
+                    <DockPanel >
+                        <Button DockPanel.Dock="Right"  Content="刷新" Click="Button_RefreshImg_Click"/>
+                        <Button DockPanel.Dock="Right"  Content="导入" Click="Button_Service_Click"/>
+                        <ComboBox x:Name="ComboBoxImg"  Style="{StaticResource ComboBox.Small}"/>
+
+                    </DockPanel>
+                    
+                    <Button x:Name="button4" Content="导入相机服务最近的一张图像" Click="Service_Click" Margin="2"/>
 
                     <StackPanel x:Name="StackPanelDatumAreaPoints" d:DataContext="{d:DesignInstance Template:DatumArea}" Margin="5">
                         <DockPanel  Margin="2">
