@@ -30,6 +30,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using ColorVision.MySql.DAO;
+using MQTTMessageLib.FileServer;
+using log4net.Repository.Hierarchy;
 
 namespace ColorVision.Templates.POI
 {
@@ -515,7 +517,14 @@ namespace ColorVision.Templates.POI
                 ImageShow.ImageInitialize();
             }
         }
-        private bool Init;
+
+
+
+
+
+
+
+        private bool Init; 
 
         private void CreateImage(int width, int height, Color color,bool IsClear = true)
         {
@@ -1733,11 +1742,56 @@ namespace ColorVision.Templates.POI
             var imgs = MeasureImgResultDao.GetCreateDate();
             if (imgs.Count != 0)
             {
-                OpenImage(imgs[0].FileUrl);
+                OpenImage(new NetFileUtil("1").OpenLocalCVCIEFile(imgs[0].FileUrl, FileExtType.Src));
             }
             else
             {
                 MessageBox.Show(this, "找不到刚拍摄的图像");
+            }
+        }
+
+
+        public void OpenImage(CVCIEFileInfo fileInfo)
+        {
+            if (fileInfo.fileType == MQTTMessageLib.FileServer.FileExtType.Src) OpenImage(fileInfo.data);
+            else if (fileInfo.fileType == MQTTMessageLib.FileServer.FileExtType.Raw)
+            {
+                ShowImage(fileInfo);
+            }
+        }
+
+        private void ShowImage(CVCIEFileInfo fileInfo)
+        {
+            OpenCvSharp.Mat src = new OpenCvSharp.Mat(fileInfo.height, fileInfo.width, OpenCvSharp.MatType.MakeType(fileInfo.depth, fileInfo.channels), fileInfo.data);
+            OpenCvSharp.Mat dst = null;
+            if (fileInfo.bpp == 32)
+            {
+                OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
+                dst = new OpenCvSharp.Mat();
+                src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
+            }
+            else
+            {
+                dst = src;
+            }
+            SetImageSource(dst.ToBitmapSource());
+        }
+
+        private void SetImageSource(BitmapSource bitmapImage)
+        {
+            ImageShow.Source = bitmapImage;
+            Zoombox1.ZoomUniform();
+            ToolBar1.Visibility = Visibility.Visible;
+            ImageShow.ImageInitialize();
+        }
+
+
+        public void OpenImage(byte[] data)
+        {
+            if (data != null)
+            {
+                var src = OpenCvSharp.Cv2.ImDecode(data, OpenCvSharp.ImreadModes.Unchanged);
+                SetImageSource(src.ToBitmapSource());
             }
         }
     }

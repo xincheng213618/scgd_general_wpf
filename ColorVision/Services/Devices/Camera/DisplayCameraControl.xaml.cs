@@ -73,7 +73,7 @@ namespace ColorVision.Services.Devices.Camera
                     case CameraFileType.SrcFile:
                         if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
                         {
-                            DService.DownloadFile(localName, FileExtType.Raw);
+                            DService.DownloadFile(data.FilePath, FileExtType.Raw);
                         }
                         else
                         {
@@ -83,7 +83,7 @@ namespace ColorVision.Services.Devices.Camera
                     case CameraFileType.CIEFile:
                         if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
                         {
-                            DService.DownloadFile(localName, FileExtType.CIE);
+                            DService.DownloadFile(data.FilePath, FileExtType.CIE);
                         }
                         else
                         {
@@ -131,6 +131,7 @@ namespace ColorVision.Services.Devices.Camera
                 switch (arg.EventName)
                 {
                     case MQTTCameraEventEnum.Event_GetData:
+                        ShowResultFromDB(arg.SerialNumber, Convert.ToInt32(arg.Data.MasterId));
                         break;
                     case MQTTFileServerEventEnum.Event_File_Download:
                         Application.Current.Dispatcher.Invoke(() =>
@@ -270,7 +271,7 @@ namespace ColorVision.Services.Devices.Camera
             ComboxCalibrationTemplate.ItemsSource = CalibrationParams;
             ComboxCalibrationTemplate.SelectedIndex = 0;  
 
-            StackPanelOpen.Visibility = Visibility.Collapsed;
+            StackPanelOpen.Visibility = Visibility.Visible;
             StackPanelImage.Visibility = Visibility.Collapsed;
             ButtonOpen.Visibility = Visibility.Collapsed;
 
@@ -322,6 +323,7 @@ namespace ColorVision.Services.Devices.Camera
                 ButtonOpen.Visibility = Visibility.Visible;
                 ButtonInit.Visibility = Visibility.Collapsed;
             }
+
             DService.DeviceStatusChanged += (e) =>
             {
                 switch (e)
@@ -363,20 +365,6 @@ namespace ColorVision.Services.Devices.Camera
             if (sender is Button button)
             {
                 DService.GetAllCameraID();
-                //if (DService.DeviceStatus == DeviceStatusType.UnInit && button.Content.ToString() == "连接")
-                //{
-                //    var msgRecord = DService.Init();
-                //    Helpers.SendCommand(button, msgRecord,false);
-                //}
-                //else if (DService.DeviceStatus != DeviceStatusType.UnInit || button.Content.ToString() == "断开连接")
-                //{
-                //    var msgRecord = DService.UnInit();
-                //    Helpers.SendCommand(button, msgRecord, false);
-                //}
-                //else
-                //{
-                //    MessageBox.Show(Application.Current.MainWindow, "指令已经发送请稍等", "ColorVision");
-                //}
             }
 
         }

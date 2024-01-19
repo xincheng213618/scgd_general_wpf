@@ -347,6 +347,17 @@ namespace ColorVision.Net
             handler?.Invoke(this, new NetFileEvent(code, fileName, fileInfo));
         }
 
+        public CVCIEFileInfo OpenLocalCVCIEFile(string fileName, FileExtType extType)
+        {
+            int code = 0;
+            CVCIEFileInfo fileInfo = new CVCIEFileInfo();
+            if (extType == FileExtType.CIE) code = ReadLocalBinaryCIEFile(fileName, ref fileInfo);
+            else if (extType == FileExtType.Raw) code = ReadLocalBinaryRawFile(fileName, ref fileInfo);
+            else if (extType == FileExtType.Tif) code = ReadTIFImage(fileName, ref fileInfo);
+            else code = ReadLocalBinaryFile(fileName, ref fileInfo);
+            return fileInfo;
+        }
+
         private int ReadLocalBinaryRawFile(string fileName, ref CVCIEFileInfo fileInfo)
         {
             return ReadCVImageRaw(fileName, ref fileInfo);
