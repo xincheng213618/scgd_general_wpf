@@ -136,8 +136,6 @@ namespace ColorVision.Flow
             }
         }
 
-
-
         IPendingHandler handler { get; set; }
 
         private  void Button_FlowRun_Click(object sender, RoutedEventArgs e)
@@ -155,8 +153,8 @@ namespace ColorVision.Flow
                         Application.Current.Dispatcher.Invoke(() =>
                         {
                             flowControl?.Stop();
+                            handler?.Close();
                         });
-                        handler?.Close();
                     };
 
                     flowControl.FlowData += (s, e) =>
@@ -167,7 +165,7 @@ namespace ColorVision.Flow
                             {
                                 Application.Current.Dispatcher.Invoke(() =>
                                 {
-                                    handler?.UpdateMessage( msg.Params.ToString());
+                                    handler?.UpdateMessage("TTL: " + msg.Params.TTL.ToString());
                                 });
                             }
                             catch 
