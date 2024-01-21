@@ -8,10 +8,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Threading.Channels;
 using System.Threading.Tasks;
-using System.Windows.Markup;
 using log4net;
+using static System.Net.WebRequestMethods;
 
 namespace ColorVision.Net
 {
@@ -347,10 +346,11 @@ namespace ColorVision.Net
             handler?.Invoke(this, new NetFileEvent(code, fileName, fileInfo));
         }
 
-        public CVCIEFileInfo OpenLocalCVCIEFile(string fileName, FileExtType extType)
+        public CVCIEFileInfo OpenLocalCVCIEFile(string? fileName, FileExtType extType)
         {
             int code = 0;
             CVCIEFileInfo fileInfo = new CVCIEFileInfo();
+            if (!System.IO.File.Exists(fileName)) return fileInfo;
             if (extType == FileExtType.CIE) code = ReadLocalBinaryCIEFile(fileName, ref fileInfo);
             else if (extType == FileExtType.Raw) code = ReadLocalBinaryRawFile(fileName, ref fileInfo);
             else if (extType == FileExtType.Tif) code = ReadTIFImage(fileName, ref fileInfo);

@@ -1,4 +1,5 @@
-﻿using Microsoft.Win32;
+﻿#pragma warning disable CA2201,CA2101
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -341,7 +342,7 @@ namespace ColorVision.Handler
         public static string? GetProxyProxyServer()
         {
             using RegistryKey? rk = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Internet Settings", true);
-            string ProxyServer = rk.GetValue("ProxyServer").ToString();
+            string? ProxyServer = rk?.GetValue("ProxyServer")?.ToString();
             return ProxyServer;
         }
     }

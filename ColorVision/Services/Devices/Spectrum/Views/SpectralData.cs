@@ -1,6 +1,6 @@
 ﻿using ColorVision.MVVM;
 
-namespace ColorVision.Device.Spectrum.Views
+namespace ColorVision.Services.Devices.Spectrum.Views
 {
     public class SpectralData:ViewModelBase
     {

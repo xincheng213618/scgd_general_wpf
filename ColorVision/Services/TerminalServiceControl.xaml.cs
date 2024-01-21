@@ -1,7 +1,6 @@
 ﻿using ColorVision.Device.FileServer;
 using ColorVision.Device.PG;
-using ColorVision.Device.Spectrum;
-using ColorVision.Device.Spectrum.Configs;
+using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.MySql.DAO;
 using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Algorithm;
@@ -13,6 +12,7 @@ using ColorVision.Services.Devices.Motor;
 using ColorVision.Services.Devices.Sensor;
 using ColorVision.Services.Devices.SMU;
 using ColorVision.Services.Devices.SMU.Configs;
+using ColorVision.Services.Devices.Spectrum;
 using cvColorVision;
 using Newtonsoft.Json;
 using System;

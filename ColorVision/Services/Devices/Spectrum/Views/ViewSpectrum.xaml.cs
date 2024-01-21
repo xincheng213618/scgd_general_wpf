@@ -12,12 +12,14 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using static cvColorVision.GCSDLL;
 using ColorVision.Sorts;
-using ColorVision.Device.Spectrum.Configs;
+using ColorVision.Services.Devices.Spectrum.Configs;
 using System.Runtime.CompilerServices;
 using System.ComponentModel;
 using ColorVision.Services.Devices.Spectrum.Dao;
+using Org.BouncyCastle.Asn1.Crmf;
+using System.Linq;
 
-namespace ColorVision.Device.Spectrum.Views
+namespace ColorVision.Services.Devices.Spectrum.Views
 {
     /// <summary>
     /// ViewSpectrum.xaml 的交互逻辑
@@ -29,8 +31,6 @@ namespace ColorVision.Device.Spectrum.Views
 
         public ObservableCollection<ViewResultSpectrum> ViewResultSpectrums { get; set; } = new ObservableCollection<ViewResultSpectrum>();
 
-        public bool IsIDShow { get => _IsIDShow; set { _IsIDShow = value; NotifyPropertyChanged(); } }
-        private bool _IsIDShow = true;
 
 
         public View View { get; set; }
@@ -71,8 +71,25 @@ namespace ColorVision.Device.Spectrum.Views
 
             listView1.Visibility = Visibility.Collapsed;
             listView2.Visibility = Visibility.Collapsed;
+
+            if (listView1.View is GridView gridView)
+            {
+                foreach (var item in gridView.Columns)
+                {
+                    ListViewVisibility listViewVisibility = new ListViewVisibility();
+                    listViewVisibility.Name = item.Header;
+                    listViewVisibility.gridViewColumn = item;
+                    listViewVisibility.IsVisibility = true;
+                    ListViewVisibilitys.Add(listViewVisibility);
+                }
+            }
+
+            ListViewSelect.ItemsSource = ListViewVisibilitys;
+
         }
 
+
+        public ObservableCollection<ListViewVisibility> ListViewVisibilitys { get; set; } = new ObservableCollection<ListViewVisibility>();
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             if (listView1.SelectedIndex < 0)
@@ -511,5 +528,53 @@ namespace ColorVision.Device.Spectrum.Views
         {
 
         }
+        GridViewColumn viewColumn = new GridViewColumn();
+        DataTemplate cellTemplate = new DataTemplate();
+        private void VIsomn_Click(object sender, RoutedEventArgs e)
+        {
+            VIsomnPopup.IsOpen = true;
+        }
+        private void CheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            if (listView1.View is GridView gridView)
+            {
+                foreach (var item in ListViewVisibilitys.Where(x => x.IsVisibility==false).ToList())
+                {
+                    gridView.Columns.Remove(item.gridViewColumn);
+                }
+                var lists = ListViewVisibilitys.Where(x => x.IsVisibility == true).ToList();
+                for (int i = 0; i < lists.Count; i++)
+                {
+                    var desiredColumn = lists[i].gridViewColumn;
+                    if (gridView.Columns.Contains(desiredColumn))
+                    {
+
+                        var actualIndex = gridView.Columns.IndexOf(desiredColumn);
+                        // 如果当前列的位置不正确，则将其移动到正确的位置
+                        if (actualIndex != i)
+                        {
+                            gridView.Columns.Move(actualIndex, i);
+                        }
+                    }
+                    else
+                    {
+                        gridView.Columns.Insert(i, desiredColumn);
+                    }
+
+                }
+
+            }
+
+        }
+
+    }
+
+    public class ListViewVisibility
+    {
+        public object Name { get; set; }    
+
+        public GridViewColumn gridViewColumn { get; set; }
+
+        public bool IsVisibility { get; set; }
     }
 }

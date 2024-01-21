@@ -1,5 +1,4 @@
-﻿using Microsoft.VisualBasic.Logging;
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;

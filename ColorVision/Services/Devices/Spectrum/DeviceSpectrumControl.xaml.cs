@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.Device.Spectrum.Configs;
+using ColorVision.Services.Devices.Spectrum.Configs;
 
-namespace ColorVision.Device.Spectrum
+namespace ColorVision.Services.Devices.Spectrum
 {
     /// <summary>
     /// DeviceSpectrumControl.xaml 的交互逻辑

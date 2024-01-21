@@ -4,7 +4,6 @@ using System.Windows.Input;
 using System;
 using System.Globalization;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 
 namespace ColorVision.Draw
 {

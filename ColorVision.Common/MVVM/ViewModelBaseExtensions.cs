@@ -1,13 +1,6 @@
 ﻿using System;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text.Encodings.Web;
-using System.Text.Json;
-using System.Text.Unicode;
-using System.Xml.Linq;
-using static System.Windows.Forms.Design.AxImporter;
 
 namespace ColorVision.MVVM
 {
