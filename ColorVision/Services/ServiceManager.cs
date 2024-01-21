@@ -107,6 +107,7 @@ namespace ColorVision.Services
             Devices.Clear();
             LastGenControl?.Clear();
             svrDevices?.Clear();
+            ServiceTokens.Clear();
 
             List<SysResourceModel> Services = ResourceService.GetAllServices(UserConfig.TenantId);
             List<SysResourceModel> devices = ResourceService.GetAllDevices(UserConfig.TenantId);
