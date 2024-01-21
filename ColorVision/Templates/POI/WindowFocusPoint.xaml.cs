@@ -31,7 +31,6 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using ColorVision.MySql.DAO;
 using MQTTMessageLib.FileServer;
-using log4net.Repository.Hierarchy;
 
 namespace ColorVision.Templates.POI
 {

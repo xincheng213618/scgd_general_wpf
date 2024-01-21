@@ -3,7 +3,6 @@ using System;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Input;
-using ColorVision.Draw;
 using Gu.Wpf.Geometry;
 using System.Reflection;
 using ColorVision.Draw.Ruler;

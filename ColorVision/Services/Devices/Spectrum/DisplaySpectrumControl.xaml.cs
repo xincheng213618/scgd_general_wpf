@@ -1,4 +1,4 @@
-﻿using ColorVision.Device.Spectrum.Configs;
+﻿using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Devices.Spectrum.Views;
 using ColorVision.SettingUp;
 using MQTTMessageLib;

@@ -8,9 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Threading.Channels;
 using System.Threading.Tasks;
-using System.Windows.Markup;
 using log4net;
 
 namespace ColorVision.Net

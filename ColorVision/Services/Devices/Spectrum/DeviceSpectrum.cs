@@ -1,5 +1,4 @@
-﻿using ColorVision.Device.Spectrum;
-using ColorVision.Device.Spectrum.Configs;
+﻿using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.MySql.DAO;
 using ColorVision.Services.Devices.Spectrum.Views;
 using System.Windows.Controls;

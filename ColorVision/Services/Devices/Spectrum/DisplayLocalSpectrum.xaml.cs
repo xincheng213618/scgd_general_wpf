@@ -1,6 +1,4 @@
-﻿using ColorVision;
-using ColorVision.Device.Spectrum.Configs;
-using ColorVision.Services.Devices.Spectrum;
+﻿using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Devices.Spectrum.Views;
 using System;
 using System.Collections.Generic;

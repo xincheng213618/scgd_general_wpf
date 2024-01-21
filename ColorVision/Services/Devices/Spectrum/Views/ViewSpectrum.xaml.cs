@@ -12,11 +12,10 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using static cvColorVision.GCSDLL;
 using ColorVision.Sorts;
-using ColorVision.Device.Spectrum.Configs;
+using ColorVision.Services.Devices.Spectrum.Configs;
 using System.Runtime.CompilerServices;
 using System.ComponentModel;
 using ColorVision.Services.Devices.Spectrum.Dao;
-using ColorVision.Device.Spectrum;
 
 namespace ColorVision.Services.Devices.Spectrum.Views
 {
