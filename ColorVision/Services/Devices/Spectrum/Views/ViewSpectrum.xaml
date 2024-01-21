@@ -77,9 +77,32 @@
                             </StackPanel>
                         </Border>
                     </Popup>
-                    <Button x:Name="VIsomn" Content="222222" Click="VIsomn_Click"/>
-                    <Button x:Name="VIsomn1" Content="222222" Click="VIsomn1_Click"/>
-
+                    <Button x:Name="VIsomn" Content="列显示" Click="VIsomn_Click"/>
+                    <Popup  x:Name="VIsomnPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=VIsomn}">
+                        <Border  Style="{StaticResource BorderModuleArea}" Width="150">
+                            <ListView x:Name="ListViewSelect" Margin="-5" Style="{StaticResource ListView.Small}">
+                                <ListView.View >
+                                    <GridView >
+                                        <GridView.ColumnHeaderContainerStyle>
+                                            <Style TargetType="{x:Type GridViewColumnHeader}">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </Style>
+                                        </GridView.ColumnHeaderContainerStyle>
+                                        <GridViewColumn>
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate  DataType="{x:Type local:ListViewVisibility}">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <CheckBox IsChecked="{Binding IsVisibility}" Margin="-5,0,5,0" Click="CheckBox_Click"/>
+                                                        <TextBlock Text="{Binding Name}"/>
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
+                        </Border>
+                    </Popup>
                 </ToolBar>
                 <ListView  Height="250" Grid.Row="1"  d:DataContext="{d:DesignInstance local:SpectralData}" x:Name="listView1" SelectionChanged="listView1_SelectionChanged" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
                     <ListView.View >
@@ -242,7 +265,6 @@
                     </GridViewColumn>
                 </GridView>
             </ListView.View>
-
         </ListView>
         <GridSplitter  Grid.Column="1" IsEnabled="{Binding ElementName=toggle2,Path=IsChecked}" Background="LightGray"  Width="2" HorizontalAlignment="Left"   DragCompleted="GridSplitter_DragCompleted1"  />
 

@@ -16,6 +16,8 @@ using ColorVision.Services.Devices.Spectrum.Configs;
 using System.Runtime.CompilerServices;
 using System.ComponentModel;
 using ColorVision.Services.Devices.Spectrum.Dao;
+using Org.BouncyCastle.Asn1.Crmf;
+using System.Linq;
 
 namespace ColorVision.Services.Devices.Spectrum.Views
 {
@@ -69,8 +71,25 @@ namespace ColorVision.Services.Devices.Spectrum.Views
 
             listView1.Visibility = Visibility.Collapsed;
             listView2.Visibility = Visibility.Collapsed;
+
+            if (listView1.View is GridView gridView)
+            {
+                foreach (var item in gridView.Columns)
+                {
+                    ListViewVisibility listViewVisibility = new ListViewVisibility();
+                    listViewVisibility.Name = item.Header;
+                    listViewVisibility.gridViewColumn = item;
+                    listViewVisibility.IsVisibility = true;
+                    ListViewVisibilitys.Add(listViewVisibility);
+                }
+            }
+
+            ListViewSelect.ItemsSource = ListViewVisibilitys;
+
         }
 
+
+        public ObservableCollection<ListViewVisibility> ListViewVisibilitys { get; set; } = new ObservableCollection<ListViewVisibility>();
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             if (listView1.SelectedIndex < 0)
@@ -510,21 +529,52 @@ namespace ColorVision.Services.Devices.Spectrum.Views
 
         }
         GridViewColumn viewColumn = new GridViewColumn();
+        DataTemplate cellTemplate = new DataTemplate();
         private void VIsomn_Click(object sender, RoutedEventArgs e)
         {
-            if (listView1.View is GridView gridView)
-            {
-                GridViewColumn viewColumn = gridView.Columns[0];
-                gridView.Columns.Remove(viewColumn);
-            }
+            VIsomnPopup.IsOpen = true;
         }
-
-        private void VIsomn1_Click(object sender, RoutedEventArgs e)
+        private void CheckBox_Click(object sender, RoutedEventArgs e)
         {
             if (listView1.View is GridView gridView)
             {
-                gridView.Columns.Insert(0, viewColumn);
+                foreach (var item in ListViewVisibilitys.Where(x => x.IsVisibility==false).ToList())
+                {
+                    gridView.Columns.Remove(item.gridViewColumn);
+                }
+                var lists = ListViewVisibilitys.Where(x => x.IsVisibility == true).ToList();
+                for (int i = 0; i < lists.Count; i++)
+                {
+                    var desiredColumn = lists[i].gridViewColumn;
+                    if (gridView.Columns.Contains(desiredColumn))
+                    {
+
+                        var actualIndex = gridView.Columns.IndexOf(desiredColumn);
+                        // 如果当前列的位置不正确，则将其移动到正确的位置
+                        if (actualIndex != i)
+                        {
+                            gridView.Columns.Move(actualIndex, i);
+                        }
+                    }
+                    else
+                    {
+                        gridView.Columns.Insert(i, desiredColumn);
+                    }
+
+                }
+
             }
+
         }
+
+    }
+
+    public class ListViewVisibility
+    {
+        public object Name { get; set; }    
+
+        public GridViewColumn gridViewColumn { get; set; }
+
+        public bool IsVisibility { get; set; }
     }
 }
