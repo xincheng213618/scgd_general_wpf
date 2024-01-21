@@ -15,6 +15,7 @@ using ColorVision.Services.Devices.Motor;
 using ColorVision.Services.Devices.Sensor;
 using ColorVision.Services.Devices.SMU;
 using ColorVision.Services.Devices.SMU.Dao;
+using ColorVision.Services.Devices.Spectrum;
 using ColorVision.Services.Devices.Spectrum.Dao;
 using ColorVision.Users;
 using Newtonsoft.Json;

@@ -1,9 +1,9 @@
-﻿<UserControl x:Class="ColorVision.Device.Spectrum.Views.ViewSpectrum"
+﻿<UserControl x:Class="ColorVision.Services.Devices.Spectrum.Views.ViewSpectrum"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local ="clr-namespace:ColorVision.Device.Spectrum.Views"
+             xmlns:local ="clr-namespace:ColorVision.Services.Devices.Spectrum.Views"
              xmlns:ScottPlot="clr-namespace:ScottPlot;assembly=ScottPlot.WPF"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:ViewSpectrum}"
@@ -77,10 +77,13 @@
                             </StackPanel>
                         </Border>
                     </Popup>
+                    <Button x:Name="VIsomn" Content="222222" Click="VIsomn_Click"/>
+                    <Button x:Name="VIsomn1" Content="222222" Click="VIsomn1_Click"/>
+
                 </ToolBar>
-                <ListView  Height="250" Grid.Row="1" x:Name="listView1" SelectionChanged="listView1_SelectionChanged" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
+                <ListView  Height="250" Grid.Row="1"  d:DataContext="{d:DesignInstance local:SpectralData}" x:Name="listView1" SelectionChanged="listView1_SelectionChanged" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
                     <ListView.View >
-                        <GridView>
+                        <GridView >
                             <GridView.ColumnHeaderContainerStyle>
                                 <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
                                     <Setter Property="Visibility" Value="Visible"/>
@@ -88,7 +91,7 @@
                                     <Setter Property="BorderThickness" Value="0"/>
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
-                            <GridViewColumn  Header="序号" Width="{Binding IsIDShow,Converter={StaticResource WidthToBooleanConverter}}">
+                            <GridViewColumn   Header="序号" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{Binding Id}"/>
@@ -102,7 +105,7 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="IP">
+                            <GridViewColumn  Header="IP" Width="{Binding Clip}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{Binding IP}"/>

@@ -13,6 +13,7 @@ using ColorVision.Services.Devices.Motor;
 using ColorVision.Services.Devices.Sensor;
 using ColorVision.Services.Devices.SMU;
 using ColorVision.Services.Devices.SMU.Configs;
+using ColorVision.Services.Devices.Spectrum;
 using cvColorVision;
 using Newtonsoft.Json;
 using System;

@@ -16,8 +16,9 @@ using ColorVision.Device.Spectrum.Configs;
 using System.Runtime.CompilerServices;
 using System.ComponentModel;
 using ColorVision.Services.Devices.Spectrum.Dao;
+using ColorVision.Device.Spectrum;
 
-namespace ColorVision.Device.Spectrum.Views
+namespace ColorVision.Services.Devices.Spectrum.Views
 {
     /// <summary>
     /// ViewSpectrum.xaml 的交互逻辑
@@ -29,8 +30,6 @@ namespace ColorVision.Device.Spectrum.Views
 
         public ObservableCollection<ViewResultSpectrum> ViewResultSpectrums { get; set; } = new ObservableCollection<ViewResultSpectrum>();
 
-        public bool IsIDShow { get => _IsIDShow; set { _IsIDShow = value; NotifyPropertyChanged(); } }
-        private bool _IsIDShow = true;
 
 
         public View View { get; set; }
@@ -510,6 +509,23 @@ namespace ColorVision.Device.Spectrum.Views
         private void LastNameCM_Click(object sender, RoutedEventArgs e)
         {
 
+        }
+        GridViewColumn viewColumn = new GridViewColumn();
+        private void VIsomn_Click(object sender, RoutedEventArgs e)
+        {
+            if (listView1.View is GridView gridView)
+            {
+                GridViewColumn viewColumn = gridView.Columns[0];
+                gridView.Columns.Remove(viewColumn);
+            }
+        }
+
+        private void VIsomn1_Click(object sender, RoutedEventArgs e)
+        {
+            if (listView1.View is GridView gridView)
+            {
+                gridView.Columns.Insert(0, viewColumn);
+            }
         }
     }
 }

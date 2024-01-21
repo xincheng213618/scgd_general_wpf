@@ -1,10 +1,10 @@
-﻿using ColorVision.Device.Spectrum.Configs;
-using ColorVision.Device.Spectrum.Views;
+﻿using ColorVision.Device.Spectrum;
+using ColorVision.Device.Spectrum.Configs;
 using ColorVision.MySql.DAO;
-using ColorVision.Services.Devices;
+using ColorVision.Services.Devices.Spectrum.Views;
 using System.Windows.Controls;
 
-namespace ColorVision.Device.Spectrum
+namespace ColorVision.Services.Devices.Spectrum
 {
     public class DeviceSpectrum : DeviceService<ConfigSpectrum>
     {

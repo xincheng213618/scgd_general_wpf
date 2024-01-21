@@ -13,7 +13,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace ColorVision.Device.Spectrum
+namespace ColorVision.Services.Devices.Spectrum
 {
     public delegate void MQTTSpectrumDataHandler(SpectumData? colorPara);
     public delegate void MQTTAutoParamHandler(AutoIntTimeParam colorPara);
