@@ -171,7 +171,7 @@ namespace ColorVision
                 {
                     try
                     {
-                        string currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+                        string? currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString();
                         string changelogPath = "CHANGELOG.md";
 
                         // 读取CHANGELOG.md文件的所有内容

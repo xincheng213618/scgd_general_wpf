@@ -110,8 +110,8 @@ namespace ColorVision.Services.Devices.Camera
                     }
                     else if (!Directory.Exists(Path.GetDirectoryName(destinationPath)))
                     {
-                        // 确保文件的目录存在
-                        Directory.CreateDirectory(Path.GetDirectoryName(destinationPath));
+                        if (Path.GetDirectoryName(destinationPath) is string die)
+                            Directory.CreateDirectory(die);
                     }
 
                     // 解压缩文件
@@ -273,6 +273,7 @@ namespace ColorVision.Services.Devices.Camera
                     }
                     catch (Exception ex)
                     {
+                        MessageBox.Show(ex.Message);
                     }
 
 
