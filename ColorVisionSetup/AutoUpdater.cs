@@ -39,7 +39,7 @@ namespace ColorVision.Update
                 // 获取服务器版本
                 LatestVersion = await GetLatestVersionNumber(UpdateUrl);
                 Status ="最新版本为：" + LatestVersion.ToString();
-                Task.Run(() => DownloadAndUpdate(LatestVersion));
+                _ = Task.Run(() => DownloadAndUpdate(LatestVersion));
             }
             catch (Exception ex)
             {
@@ -83,7 +83,7 @@ namespace ColorVision.Update
                 client.DownloadProgressChanged += (sender, e) =>
                 {
                     ProgressValue = e.ProgressPercentage;
-                    Status = $"正在下载更新{_ProgressValue}%";
+                    Status = $"正在下载{LatestVersion} {_ProgressValue}%";
                 };
                 // 绑定下载完成事件
                 client.DownloadFileCompleted += (sender, e) =>
@@ -100,6 +100,8 @@ namespace ColorVision.Update
                     }
                     else
                     {
+
+                        Status = "正在安装";
                         Application.Current.Dispatcher.Invoke(() =>
                         {
                             RestartApplication(downloadPath);
@@ -117,7 +119,6 @@ namespace ColorVision.Update
 
         private void RestartApplication(string downloadPath)
         {
-            Status = "正在安装";
             // 启动新的实例
             ProcessStartInfo startInfo = new ProcessStartInfo();
             startInfo.UseShellExecute = true; // 必须为true才能使用Verb属性
