@@ -106,6 +106,10 @@
                     </Popup>
                 </ToolBar>
                 <ListView  Height="250" Grid.Row="1"  d:DataContext="{d:DesignInstance local:SpectralData}" x:Name="listView1" SelectionChanged="listView1_SelectionChanged" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
+                    <ListView.Resources>
+                        <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" >
+                        </ContextMenu>
+                    </ListView.Resources>
                     <ListView.View >
                         <GridView >
                             <GridView.ColumnHeaderContainerStyle>
@@ -113,6 +117,7 @@
                                     <Setter Property="Visibility" Value="Visible"/>
                                     <Setter Property="Background" Value="Transparent"/>
                                     <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
                             <GridViewColumn   Header="序号" >
@@ -129,7 +134,7 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="IP" Width="{Binding Clip}">
+                            <GridViewColumn  Header="IP" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{Binding IP}"/>

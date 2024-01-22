@@ -14,6 +14,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -54,6 +55,43 @@ namespace ColorVision.Services.Devices.Camera.Views
         {
             if (listView1.View is GridView gridView)
                 GridViewColumnVisibility.AdjustGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
+        }
+
+        private void ContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            if (sender is ContextMenu contextMenu)
+            {
+                if (contextMenu.Items.Count == 0)
+                {
+                    MenuItem menuItemAuto = new MenuItem();
+                    menuItemAuto.Header = "自动调整列宽";
+                    menuItemAuto.Click += (s, e) =>
+                    {
+                        if (listView1.View is GridView gridView)
+                            GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
+                    };
+                    contextMenu.Items.Add(menuItemAuto);
+                    contextMenu.Items.Add(new Separator());
+                    foreach (var item in GridViewColumnVisibilitys)
+                    {
+                        MenuItem menuItem = new MenuItem();
+                        menuItem.Header = item.ColumnName;
+                        Binding binding = new Binding("IsVisible")
+                        {
+                            Source = item,
+                            Mode = BindingMode.TwoWay // 双向绑定
+                        };
+                        menuItem.SetBinding(MenuItem.IsCheckedProperty, binding);
+                        menuItem.Click += (s, e) =>
+                        {
+                            item.IsVisible = !item.IsVisible;
+                            if (listView1.View is GridView gridView)
+                                GridViewColumnVisibility.AdjustGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
+                        };
+                        contextMenu.Items.Add(menuItem);
+                    }
+                }
+            }
         }
 
         private void Button_Click_ShowResultGrid(object sender, RoutedEventArgs e)

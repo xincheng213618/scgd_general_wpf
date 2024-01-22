@@ -113,6 +113,7 @@
                     <ContextMenu x:Key="ContextMenuItem">
                         <MenuItem Header="{x:Static resx:Resource.Delete}"  Click="MenuItem_Delete_Click" Tag="{Binding .}"  />
                     </ContextMenu>
+                    <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
                 </ListView.Resources>
                 <ListView.ItemContainerStyle>
                     <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}">
@@ -120,7 +121,15 @@
                     </Style>
                 </ListView.ItemContainerStyle>
                 <ListView.View >
-                    <GridView>
+                    <GridView >
+                        <GridView.ColumnHeaderContainerStyle>
+                            <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="BorderThickness" Value="0"/>
+                                <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
+                            </Style>
+                        </GridView.ColumnHeaderContainerStyle>
                         <GridViewColumn  Header="序号" Width="50">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:ViewResultCamera}">
