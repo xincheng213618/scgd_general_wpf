@@ -35,8 +35,8 @@ namespace ColorVision.Services.Devices.Camera.Video
                     System.Drawing.Bitmap bmpNew = ReSize(bmp);
                     CameraVideoFrameReceived?.Invoke(bmpNew);
                     bmpNew.Dispose();
+                    bmp.Dispose();
                 });
-                bmp.Dispose();
             }
         }
         private System.Drawing.Bitmap ReSize(System.Drawing.Bitmap bmp)
