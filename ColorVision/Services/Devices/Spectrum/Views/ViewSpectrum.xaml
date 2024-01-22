@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local ="clr-namespace:ColorVision.Services.Devices.Spectrum.Views"
+             xmlns:vm ="clr-namespace:ColorVision.Common.MVVM;assembly=ColorVision.Common"
              xmlns:ScottPlot="clr-namespace:ScottPlot;assembly=ScottPlot.WPF"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:ViewSpectrum}"
@@ -77,10 +78,10 @@
                             </StackPanel>
                         </Border>
                     </Popup>
-                    <Button x:Name="VIsomn" Content="列显示" Click="VIsomn_Click"/>
-                    <Popup  x:Name="VIsomnPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=VIsomn}">
-                        <Border  Style="{StaticResource BorderModuleArea}" Width="150">
-                            <ListView x:Name="ListViewSelect" Margin="-5" Style="{StaticResource ListView.Small}">
+                    <Button x:Name="OpenColumnVisibilityPopupButton" Content="列显示" Click="OpenColumnVisibilityPopupButton_Click"/>
+                    <Popup  x:Name="ColumnVisibilityPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=OpenColumnVisibilityPopupButton}">
+                        <Border  Style="{StaticResource BorderModuleArea}" Background="{DynamicResource SecondaryRegionBrush}" Width="145" CornerRadius="5">
+                            <ListView x:Name="GridViewColumnVisibilityListView" BorderThickness="0" Background="Transparent" Margin="-3,-2,-3,-5"  Style="{StaticResource ListView.Small}">
                                 <ListView.View >
                                     <GridView >
                                         <GridView.ColumnHeaderContainerStyle>
@@ -90,10 +91,10 @@
                                         </GridView.ColumnHeaderContainerStyle>
                                         <GridViewColumn>
                                             <GridViewColumn.CellTemplate>
-                                                <DataTemplate  DataType="{x:Type local:ListViewVisibility}">
+                                                <DataTemplate  DataType="{x:Type vm:GridViewColumnVisibility}">
                                                     <StackPanel Orientation="Horizontal">
-                                                        <CheckBox IsChecked="{Binding IsVisibility}" Margin="-5,0,5,0" Click="CheckBox_Click"/>
-                                                        <TextBlock Text="{Binding Name}"/>
+                                                        <CheckBox IsChecked="{Binding IsVisible}" Margin="-5,0,5,0" Click="CheckBox_Click"/>
+                                                        <TextBlock Text="{Binding ColumnName}"/>
                                                     </StackPanel>
                                                 </DataTemplate>
                                             </GridViewColumn.CellTemplate>

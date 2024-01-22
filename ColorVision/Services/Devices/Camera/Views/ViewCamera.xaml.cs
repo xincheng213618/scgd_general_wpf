@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8604,CS8629
+using ColorVision.Common.MVVM;
 using ColorVision.Media;
 using ColorVision.MySql.DAO;
 using ColorVision.Net;
@@ -39,6 +40,20 @@ namespace ColorVision.Services.Devices.Camera.Views
         {
             View= new View();
             listView1.ItemsSource = ViewResultCameras;
+
+            if (listView1.View is GridView gridView)
+                GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
+            GridViewColumnVisibilityListView.ItemsSource = GridViewColumnVisibilitys;
+        }
+        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+        private void OpenColumnVisibilityPopupButton_Click(object sender, RoutedEventArgs e)
+        {
+            ColumnVisibilityPopup.IsOpen = true;
+        }
+        private void CheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            if (listView1.View is GridView gridView)
+                GridViewColumnVisibility.AdjustGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
         }
 
         private void Button_Click_ShowResultGrid(object sender, RoutedEventArgs e)

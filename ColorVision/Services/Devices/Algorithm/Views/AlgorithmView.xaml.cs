@@ -1,4 +1,5 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
+using ColorVision.Common.MVVM;
 using ColorVision.Draw;
 using ColorVision.MySql.Service;
 using ColorVision.Net;
@@ -84,11 +85,22 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                 .Select(e1 => new KeyValuePair<AlgorithmResultType, string>(e1, e1.ToString()))
                 .ToList();
             TextBoxType.ItemsSource = keyValuePairs;
-
-
-
-
+            if (listView1.View is GridView gridView)
+                GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
+            GridViewColumnVisibilityListView.ItemsSource = GridViewColumnVisibilitys;
         }
+        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+        private void OpenColumnVisibilityPopupButton_Click(object sender, RoutedEventArgs e)
+        {
+            ColumnVisibilityPopup.IsOpen = true;
+        }
+        private void CheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            if (listView1.View is GridView gridView)
+                GridViewColumnVisibility.AdjustGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
+        }
+
+
 
         public ObservableCollection<PoiResultData> PoiResultDatas { get; set; } = new ObservableCollection<PoiResultData>();
         public ObservableCollection<PoiResultData> PoiYResultDatas { get; set; } = new ObservableCollection<PoiResultData>();
