@@ -29,8 +29,8 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using ColorVision.MySql.DAO;
 using MQTTMessageLib.FileServer;
+using ColorVision.Services.Dao;
 
 namespace ColorVision.Templates.POI
 {

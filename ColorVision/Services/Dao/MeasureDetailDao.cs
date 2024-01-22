@@ -1,7 +1,7 @@
-﻿using System;
-using System.Data;
+﻿using System.Data;
+using ColorVision.MySql;
 
-namespace ColorVision.MySql.DAO
+namespace ColorVision.Services.Dao
 {
     public class MeasureDetailModel : PKModel
     {
@@ -26,13 +26,13 @@ namespace ColorVision.MySql.DAO
             {
                 Id = item.Field<int>("id"),
                 TID = item.Field<int>("t_id"),
-                TType = item.Field<SByte>("t_type"),
+                TType = item.Field<sbyte>("t_type"),
                 Pid = item.Field<int>("pid"),
                 Name = item.Field<string>("name"),
                 PCode = item.Field<string>("pcode"),
                 PName = item.Field<string>("pname"),
-                IsEnable = item.Field<SByte>("is_enable") == 1 ? true : false,
-                IsDelete = item.Field<SByte>("is_delete") == 1 ? true : false,
+                IsEnable = item.Field<sbyte>("is_enable") == 1 ? true : false,
+                IsDelete = item.Field<sbyte>("is_delete") == 1 ? true : false,
             };
 
             return model;

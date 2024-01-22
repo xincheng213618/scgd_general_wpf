@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using ColorVision.MySql;
 
-namespace ColorVision.MySql.DAO
+namespace ColorVision.Services.Dao
 {
     public class ModMasterModel : PKModel
     {
-        public ModMasterModel() : this("","",0){ }
+        public ModMasterModel() : this("", "", 0) { }
         public ModMasterModel(string pcode, string text, int tenantId)
         {
             Pcode = pcode;
@@ -78,13 +79,13 @@ namespace ColorVision.MySql.DAO
                 row["create_date"] = item.CreateDate;
                 if (item.Remark != null) row["remark"] = item.Remark;
                 row["tenant_id"] = item.TenantId;
-                row["res_pid"] = item.ResourceId??-1;
+                row["res_pid"] = item.ResourceId ?? -1;
                 row["mm_id"] = item.Pid;
             }
             return row;
         }
 
-        public DataTable GetTableAllByTenantIdAdnResId(int tenantId,int resourceId)
+        public DataTable GetTableAllByTenantIdAdnResId(int tenantId, int resourceId)
         {
             string sql = $"select * from {GetTableName()} where tenant_id={tenantId} and pcode='{_code}' and res_pid={resourceId}" + GetDelSQL(true);
             DataTable d_info = GetData(sql);
@@ -107,7 +108,7 @@ namespace ColorVision.MySql.DAO
         }
 
 
-        public new  List<ModMasterModel> GetAll(int tenantId)
+        public new List<ModMasterModel> GetAll(int tenantId)
         {
             List<ModMasterModel> list = new List<ModMasterModel>();
             DataTable d_info = GetTableAllByTenantId(tenantId);

@@ -1,8 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Data;
+using ColorVision.MySql;
 
-namespace ColorVision.MySql.DAO
+namespace ColorVision.Services.Dao
 {
     public class SysDictionaryModModel : PKModel
     {
@@ -29,9 +29,9 @@ namespace ColorVision.MySql.DAO
             return model;
         }
 
-        public SysDictionaryModModel GetByCode(string? code,int tenantId)
+        public SysDictionaryModModel GetByCode(string? code, int tenantId)
         {
-            if (String.IsNullOrEmpty(code))
+            if (string.IsNullOrEmpty(code))
                 return new SysDictionaryModModel();
             string sql = $"select * from {GetTableName()} where is_delete=0 and code=@code and tenant_id=@tenantId";
             Dictionary<string, object> param = new Dictionary<string, object>

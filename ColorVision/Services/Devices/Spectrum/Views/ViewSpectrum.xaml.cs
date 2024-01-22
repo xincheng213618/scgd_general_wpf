@@ -16,7 +16,6 @@ using ColorVision.Services.Devices.Spectrum.Configs;
 using System.Runtime.CompilerServices;
 using System.ComponentModel;
 using ColorVision.Services.Devices.Spectrum.Dao;
-using Org.BouncyCastle.Asn1.Crmf;
 using ColorVision.Common.MVVM;
 
 namespace ColorVision.Services.Devices.Spectrum.Views

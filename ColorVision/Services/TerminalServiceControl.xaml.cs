@@ -1,7 +1,6 @@
 ﻿using ColorVision.Device.FileServer;
 using ColorVision.Device.PG;
 using ColorVision.Services.Devices.Spectrum.Configs;
-using ColorVision.MySql.DAO;
 using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Algorithm;
 using ColorVision.Services.Devices.Calibration;
@@ -19,6 +18,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using ColorVision.Services.Dao;
 
 namespace ColorVision.Services
 {

@@ -2,8 +2,9 @@
 
 using System.Collections.Generic;
 using System.Data;
+using ColorVision.MySql;
 
-namespace ColorVision.MySql.DAO
+namespace ColorVision.Services.Dao
 {
     public class MeasureImgResultModel : PKModel
     {
@@ -40,7 +41,7 @@ namespace ColorVision.MySql.DAO
             MeasureImgResultModel model = new MeasureImgResultModel
             {
                 Id = item.Field<int>("id"),
-                BatchId = item.Field<int?>("batch_id")??-1,
+                BatchId = item.Field<int?>("batch_id") ?? -1,
                 BatchCode = item.Field<string?>("batch_code"),
                 RawFile = item.Field<string?>("raw_file"),
                 FileType = item.Field<sbyte>("file_type"),
@@ -56,7 +57,7 @@ namespace ColorVision.MySql.DAO
             };
             return model;
         }
-        public List<MeasureImgResultModel> GetCreateDate(int LIMIT =1)
+        public List<MeasureImgResultModel> GetCreateDate(int LIMIT = 1)
         {
             List<MeasureImgResultModel> list = new List<MeasureImgResultModel>();
             string sql = $"select * from {GetTableName()} ORDER BY create_date DESC LIMIT {LIMIT}";

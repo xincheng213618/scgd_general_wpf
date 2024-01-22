@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Data;
+using ColorVision.MySql;
 
-namespace ColorVision.MySql.DAO
+namespace ColorVision.Services.Dao
 {
     public class MeasureMasterModel : PKModel
     {
@@ -11,8 +12,8 @@ namespace ColorVision.MySql.DAO
         }
         public MeasureMasterModel(string name, int tenantId)
         {
-            this.Name = name;
-            this.TenantId = tenantId;
+            Name = name;
+            TenantId = tenantId;
         }
 
         public string? Name { get; set; }

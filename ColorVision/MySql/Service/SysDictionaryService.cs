@@ -1,4 +1,4 @@
-﻿using ColorVision.MySql.DAO;
+﻿using ColorVision.Services.Dao;
 using System.Collections.Generic;
 
 namespace ColorVision.MySql.Service

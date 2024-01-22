@@ -1,7 +1,7 @@
-﻿using System;
-using System.Data;
+﻿using System.Data;
+using ColorVision.MySql;
 
-namespace ColorVision.MySql.DAO
+namespace ColorVision.Services.Dao
 {
     public class SysDictionaryModDetaiModel : PKModel
     {
@@ -24,7 +24,7 @@ namespace ColorVision.MySql.DAO
                 Symbol = item.Field<string>("symbol"),
                 Name = item.Field<string>("name"),
                 DefaultValue = item.Field<string>("default_val"),
-                ValueType = item.Field<SByte>("val_type"),
+                ValueType = item.Field<sbyte>("val_type"),
             };
 
             return model;

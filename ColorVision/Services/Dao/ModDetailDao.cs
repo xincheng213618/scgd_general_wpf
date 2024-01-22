@@ -1,12 +1,14 @@
-﻿using ColorVision.Util;
+﻿using ColorVision.MySql;
+using ColorVision.Util;
 using System.Data;
 
-namespace ColorVision.MySql.DAO
+namespace ColorVision.Services.Dao
 {
     public class ModDetailModel : PKModel
     {
-        public ModDetailModel() :this(-1,-1,null){ }
-        public ModDetailModel(int sysPid,int pid,string? val) {
+        public ModDetailModel() : this(-1, -1, null) { }
+        public ModDetailModel(int sysPid, int pid, string? val)
+        {
             SysPid = sysPid;
             Pid = pid;
             ValueA = val;
@@ -21,7 +23,7 @@ namespace ColorVision.MySql.DAO
 
         public string GetValueMD5()
         {
-            string txt = this.ValueA + this.Id;
+            string txt = ValueA + Id;
             string code = Cryptography.GetMd5Hash(txt);
             return code;
         }

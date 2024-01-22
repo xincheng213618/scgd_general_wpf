@@ -1,5 +1,5 @@
 ﻿#pragma warning disable CA1707
-using ColorVision.MySql.DAO;
+using ColorVision.Services.Dao;
 using ColorVision.Templates;
 using System.Collections.Generic;
 using System.ComponentModel;

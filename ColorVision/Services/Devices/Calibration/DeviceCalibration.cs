@@ -1,4 +1,4 @@
-﻿using ColorVision.MySql.DAO;
+﻿using ColorVision.Services.Dao;
 using System.Windows.Controls;
 
 namespace ColorVision.Services.Devices.Calibration

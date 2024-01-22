@@ -1,9 +1,8 @@
-﻿
-using ColorVision.MySql.DAO;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel;
 using Newtonsoft.Json;
 using ColorVision.Templates;
+using ColorVision.Services.Dao;
 
 namespace ColorVision.Services.Devices.Algorithm.Templates
 {

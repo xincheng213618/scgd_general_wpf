@@ -1,5 +1,5 @@
-﻿using ColorVision.MySql.DAO;
-using ColorVision.MySql.Service;
+﻿using ColorVision.MySql.Service;
+using ColorVision.Services.Dao;
 using Newtonsoft.Json;
 using System;
 using System.Windows;

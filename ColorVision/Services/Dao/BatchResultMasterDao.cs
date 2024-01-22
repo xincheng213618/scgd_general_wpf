@@ -1,8 +1,9 @@
-﻿using System;
+﻿using ColorVision.MySql;
+using System;
 using System.Collections.Generic;
 using System.Data;
 
-namespace ColorVision.MySql.DAO
+namespace ColorVision.Services.DAO
 {
     public class BatchResultMasterModel : PKModel
     {

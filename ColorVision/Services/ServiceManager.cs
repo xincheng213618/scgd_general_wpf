@@ -3,7 +3,6 @@ using ColorVision.Device.PG;
 using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Flow;
 using ColorVision.MySql;
-using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Algorithm;
@@ -25,6 +24,8 @@ using System.Data;
 using System.Linq;
 using System.Windows.Controls;
 using static cvColorVision.GCSDLL;
+using ColorVision.Services.Dao;
+using ColorVision.Services.DAO;
 
 namespace ColorVision.Services
 {

@@ -1,8 +1,8 @@
 ﻿#pragma warning disable CS8604,CS8629
 using ColorVision.Common.MVVM;
 using ColorVision.Media;
-using ColorVision.MySql.DAO;
 using ColorVision.Net;
+using ColorVision.Services.Dao;
 using ColorVision.Sorts;
 using ColorVision.Util;
 using log4net;

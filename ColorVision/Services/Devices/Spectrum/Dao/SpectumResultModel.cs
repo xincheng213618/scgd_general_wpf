@@ -5,7 +5,6 @@ using System.Data;
 using System.Linq;
 using ColorVision;
 using ColorVision.MySql;
-using ColorVision.MySql.DAO;
 
 namespace ColorVision.Services.Devices.Spectrum.Dao
 {

@@ -1,5 +1,4 @@
-﻿
-using ColorVision.MySql.DAO;
+﻿using ColorVision.Services.Dao;
 
 namespace ColorVision.Templates
 {

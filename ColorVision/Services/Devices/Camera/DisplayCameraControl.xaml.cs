@@ -12,7 +12,6 @@ using ColorVision.Net;
 using ColorVision.Solution;
 using Panuon.WPF.UI;
 using MQTTMessageLib.Camera;
-using ColorVision.MySql.DAO;
 using ColorVision.MySql.Service;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
@@ -26,6 +25,7 @@ using ColorVision.SettingUp;
 using MQTTMessageLib;
 using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Devices.Camera.Video;
+using ColorVision.Services.Dao;
 
 namespace ColorVision.Services.Devices.Camera
 {

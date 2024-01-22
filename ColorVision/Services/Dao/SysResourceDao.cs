@@ -2,29 +2,30 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using ColorVision.MySql;
 
-namespace ColorVision.MySql.DAO
+namespace ColorVision.Services.Dao
 {
     public class SysResourceModel : PKModel
     {
         public SysResourceModel() { }
         public SysResourceModel(string name, string code, int tp, int pid, int tenantId)
         {
-            this.Name = name;
-            this.Code = code;
-            this.TenantId = tenantId;
-            this.Type = tp;
-            this.Pid = pid;
-            this.CreateDate = DateTime.Now;
+            Name = name;
+            Code = code;
+            TenantId = tenantId;
+            Type = tp;
+            Pid = pid;
+            CreateDate = DateTime.Now;
         }
 
         public SysResourceModel(string name, string code, int tp, int tenantId)
         {
-            this.Name = name;
-            this.Code = code;
-            this.TenantId = tenantId;
-            this.Type = tp;
-            this.CreateDate = DateTime.Now;
+            Name = name;
+            Code = code;
+            TenantId = tenantId;
+            Type = tp;
+            CreateDate = DateTime.Now;
         }
 
         public string? Name { get; set; }
@@ -39,8 +40,9 @@ namespace ColorVision.MySql.DAO
     public class SysResourceDao : BaseDaoMaster<SysResourceModel>
     {
 
-        public SysResourceDao() : base("v_scgd_sys_resource", "t_scgd_sys_resource", "id", true)
+        public SysResourceDao() : base("v_scgd_sys_resource", "id", true)
         {
+
         }
 
         public override SysResourceModel GetModel(DataRow item)
@@ -72,7 +74,7 @@ namespace ColorVision.MySql.DAO
                 if (item.Type >= 0) row["type"] = item.Type;
                 row["tenant_id"] = item.TenantId;
                 row["create_date"] = item.CreateDate;
-           }
+            }
             return row;
         }
 
@@ -108,7 +110,7 @@ namespace ColorVision.MySql.DAO
             DataTable d_info = GetData(sql);
             return d_info;
         }
-        internal List<SysResourceModel> GetAllTypeCamera(int type,int cameraId)
+        internal List<SysResourceModel> GetAllTypeCamera(int type, int cameraId)
         {
             List<SysResourceModel> list = new List<SysResourceModel>();
             DataTable d_info = GetTableAllByTypeAndCamera(type, cameraId);
@@ -148,7 +150,7 @@ namespace ColorVision.MySql.DAO
 
         internal int DeleteInCodes(string[] codes)
         {
-            string sqlCode= string.Join(',', codes);
+            string sqlCode = string.Join(',', codes);
             string sql = $"update {TableName} set is_delete=1 where code in ('{sqlCode}')";
             return ExecuteNonQuery(sql);
         }

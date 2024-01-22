@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Data;
+using ColorVision.MySql;
 
-namespace ColorVision.MySql.DAO
+namespace ColorVision.Services.Dao
 {
     public class LicenseModel : PKModel
     {
@@ -18,7 +19,7 @@ namespace ColorVision.MySql.DAO
     }
     public class LicenseDao : BaseDaoMaster<LicenseModel>
     {
-        public LicenseDao() : base(string.Empty, "t_scgd_license", "id", true)
+        public LicenseDao() : base("t_scgd_license", "id", true)
         {
         }
         public override DataTable CreateColumns(DataTable dInfo)

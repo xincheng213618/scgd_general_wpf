@@ -1,7 +1,7 @@
 ﻿using ColorVision.Services.Devices.Spectrum.Configs;
-using ColorVision.MySql.DAO;
 using ColorVision.Services.Devices.Spectrum.Views;
 using System.Windows.Controls;
+using ColorVision.Services.Dao;
 
 namespace ColorVision.Services.Devices.Spectrum
 {
