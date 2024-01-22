@@ -48,7 +48,7 @@ namespace ColorVision.Services.Devices.Camera.Views
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
         private void OpenColumnVisibilityPopupButton_Click(object sender, RoutedEventArgs e)
         {
-            ColumnVisibilityPopup.IsOpen = true;
+            ColumnVisibilityPopup.IsOpen = true;    
         }
         private void CheckBox_Click(object sender, RoutedEventArgs e)
         {

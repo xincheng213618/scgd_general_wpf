@@ -6,8 +6,21 @@ using ColorVision.Common.Extension;
 
 namespace ColorVision.Common.MVVM
 {
+    public static class GridViewColumnVisibilityExtension
+    {
+        public static void AddGridViewColumn(this ObservableCollection<GridViewColumnVisibility> gridViewColumnVisibilitys, GridViewColumnCollection gridViewColumns) => GridViewColumnVisibility.AddGridViewColumn(gridViewColumns, gridViewColumnVisibilitys);
+        public static void AdjustGridViewColumn(this ObservableCollection<GridViewColumnVisibility> gridViewColumnVisibilitys, GridViewColumnCollection gridViewColumns) => GridViewColumnVisibility.AdjustGridViewColumn(gridViewColumns, gridViewColumnVisibilitys);
+    }
+
     public class GridViewColumnVisibility
     {
+        public static void AddGridViewColumn(GridViewColumnCollection gridViewColumns, ObservableCollection<GridViewColumnVisibility> gridViewColumnVisibilitys)
+        {
+            gridViewColumnVisibilitys ??= new ObservableCollection<GridViewColumnVisibility>();
+            foreach (var item in gridViewColumns)
+                gridViewColumnVisibilitys.Add(new GridViewColumnVisibility() { ColumnName = item.Header, GridViewColumn = item, IsVisible = true });
+        }
+
         public static void AdjustGridViewColumn(GridViewColumnCollection gridViewColumns, ObservableCollection<GridViewColumnVisibility> gridViewColumnVisibilitys)
         {
             ///HashSet效率更高
@@ -34,13 +47,6 @@ namespace ColorVision.Common.MVVM
                     gridViewColumns.Insert(i, desiredColumn);
                 }
             }
-        }
-
-        public static void AddGridViewColumn(GridViewColumnCollection gridViewColumns, ObservableCollection<GridViewColumnVisibility> gridViewColumnVisibilitys)
-        {
-            gridViewColumnVisibilitys ??= new ObservableCollection<GridViewColumnVisibility>();
-            foreach (var item in gridViewColumns)
-                gridViewColumnVisibilitys.Add(new GridViewColumnVisibility() { ColumnName = item.Header, GridViewColumn = item, IsVisible = true });
         }
 
         public object ColumnName { get; set; }    
