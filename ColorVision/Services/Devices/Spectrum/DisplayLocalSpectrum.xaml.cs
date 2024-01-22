@@ -1,5 +1,5 @@
-﻿using ColorVision.Device.Spectrum.Configs;
-using ColorVision.Device.Spectrum.Views;
+﻿using ColorVision.Services.Devices.Spectrum.Configs;
+using ColorVision.Services.Devices.Spectrum.Views;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -7,7 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using static cvColorVision.GCSDLL;
 
-namespace ColorVision.Device.Spectrum
+namespace ColorVision.Services.Devices.Spectrum
 {
     /// <summary>
     /// DisplaySpectrumControl.xaml 的交互逻辑

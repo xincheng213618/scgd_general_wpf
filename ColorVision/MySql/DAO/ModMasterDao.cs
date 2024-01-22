@@ -107,7 +107,7 @@ namespace ColorVision.MySql.DAO
         }
 
 
-        public List<ModMasterModel> GetAll(int tenantId)
+        public new  List<ModMasterModel> GetAll(int tenantId)
         {
             List<ModMasterModel> list = new List<ModMasterModel>();
             DataTable d_info = GetTableAllByTenantId(tenantId);

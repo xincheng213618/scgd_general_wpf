@@ -12,12 +12,14 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using static cvColorVision.GCSDLL;
 using ColorVision.Sorts;
-using ColorVision.Device.Spectrum.Configs;
+using ColorVision.Services.Devices.Spectrum.Configs;
 using System.Runtime.CompilerServices;
 using System.ComponentModel;
 using ColorVision.Services.Devices.Spectrum.Dao;
+using Org.BouncyCastle.Asn1.Crmf;
+using ColorVision.Common.MVVM;
 
-namespace ColorVision.Device.Spectrum.Views
+namespace ColorVision.Services.Devices.Spectrum.Views
 {
     /// <summary>
     /// ViewSpectrum.xaml 的交互逻辑
@@ -29,8 +31,6 @@ namespace ColorVision.Device.Spectrum.Views
 
         public ObservableCollection<ViewResultSpectrum> ViewResultSpectrums { get; set; } = new ObservableCollection<ViewResultSpectrum>();
 
-        public bool IsIDShow { get => _IsIDShow; set { _IsIDShow = value; NotifyPropertyChanged(); } }
-        private bool _IsIDShow = true;
 
 
         public View View { get; set; }
@@ -71,7 +71,23 @@ namespace ColorVision.Device.Spectrum.Views
 
             listView1.Visibility = Visibility.Collapsed;
             listView2.Visibility = Visibility.Collapsed;
+
+            if (listView1.View is GridView gridView)
+                GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
+            GridViewColumnVisibilityListView.ItemsSource = GridViewColumnVisibilitys;
         }
+        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+        private void OpenColumnVisibilityPopupButton_Click(object sender, RoutedEventArgs e)
+        {
+            ColumnVisibilityPopup.IsOpen = true;
+        }
+        private void CheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            if (listView1.View is GridView gridView)
+                GridViewColumnVisibility.AdjustGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
+        }
+
+
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -499,17 +515,6 @@ namespace ColorVision.Device.Spectrum.Views
 
             }
             OrderPopup.IsOpen = false;
-        }
-
-        private void MenuItem_Click(object sender, KeyEventArgs e)
-        {
-            if (sender is MenuItem menuItem)
-                menuItem.IsChecked = !menuItem.IsChecked;
-        }
-
-        private void LastNameCM_Click(object sender, RoutedEventArgs e)
-        {
-
         }
     }
 }

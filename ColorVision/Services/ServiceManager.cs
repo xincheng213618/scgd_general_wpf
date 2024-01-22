@@ -1,7 +1,6 @@
 ﻿using ColorVision.Device.FileServer;
 using ColorVision.Device.PG;
-using ColorVision.Device.Spectrum;
-using ColorVision.Device.Spectrum.Configs;
+using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Flow;
 using ColorVision.MySql;
 using ColorVision.MySql.DAO;
@@ -15,6 +14,7 @@ using ColorVision.Services.Devices.Motor;
 using ColorVision.Services.Devices.Sensor;
 using ColorVision.Services.Devices.SMU;
 using ColorVision.Services.Devices.SMU.Dao;
+using ColorVision.Services.Devices.Spectrum;
 using ColorVision.Services.Devices.Spectrum.Dao;
 using ColorVision.Users;
 using Newtonsoft.Json;
@@ -107,6 +107,7 @@ namespace ColorVision.Services
             Devices.Clear();
             LastGenControl?.Clear();
             svrDevices?.Clear();
+            ServiceTokens.Clear();
 
             List<SysResourceModel> Services = ResourceService.GetAllServices(UserConfig.TenantId);
             List<SysResourceModel> devices = ResourceService.GetAllDevices(UserConfig.TenantId);

@@ -1,4 +1,5 @@
-﻿using ColorVision.Services.Devices.SMU.Dao;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Services.Devices.SMU.Dao;
 using ColorVision.Templates;
 using ColorVision.Util;
 using ScottPlot;
@@ -49,6 +50,19 @@ namespace ColorVision.Services.Devices.SMU.Views
             wpfplot2.Plot.XLabel("电压(V)");
             wpfplot2.Plot.YLabel("电流(A)");
             wpfplot2.Plot.Title("电压曲线");
+            if (listView1.View is GridView gridView)
+                GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
+            GridViewColumnVisibilityListView.ItemsSource = GridViewColumnVisibilitys;
+        }
+        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+        private void OpenColumnVisibilityPopupButton_Click(object sender, RoutedEventArgs e)
+        {
+            ColumnVisibilityPopup.IsOpen = true;
+        }
+        private void CheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            if (listView1.View is GridView gridView)
+                GridViewColumnVisibility.AdjustGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

@@ -10,7 +10,6 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
     /// </summary>
     public partial class CalibrationControl : UserControl
     {
-        private bool IsFirst = true;
         public CalibrationParam CalibrationParam { get => _CalibrationParam; set { _CalibrationParam = value;} }
         private CalibrationParam _CalibrationParam;
 

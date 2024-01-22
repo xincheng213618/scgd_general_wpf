@@ -9,13 +9,14 @@ using ScottPlot;
 using ScottPlot.Plottable;
 using static cvColorVision.GCSDLL;
 
-namespace ColorVision.Device.Spectrum.Views
+namespace ColorVision.Services.Devices.Spectrum.Views
 {
 
     public class ViewResultSpectrum : ViewModelBase,ISortable
     {
         private static int No;
         public int Id { get; set; }
+
         public DateTime? CreateTime { get; set; }
         public string? Batch { get; set; }
         public int? BatchID { get; set; }
@@ -129,6 +130,7 @@ namespace ColorVision.Device.Spectrum.Views
             Gen();
 
         }
+
         public float V { get; set; }
         public float I { get; set; }
 

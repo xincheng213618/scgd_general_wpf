@@ -97,7 +97,7 @@ namespace ColorVision.Update
             }
             catch (Exception ex)
             {
-                LatestVersion = localVersion;
+                LatestVersion = localVersion??new Version();
                 Console.WriteLine("An error occurred while updating: " + ex.Message);
             }
         }
@@ -121,6 +121,7 @@ namespace ColorVision.Update
             string downloadPath = Path.Combine(Path.GetTempPath(), $"ColorVision-{latestVersion}.exe");
 
             // 实例化 WebClient
+#pragma warning disable SYSLIB0014 // 类型或成员已过时
             using (var client = new WebClient())
             {
                 // 创建进度报告器并订阅进度更新事件
@@ -157,6 +158,7 @@ namespace ColorVision.Update
                 };
                 await client.DownloadFileTaskAsync(new Uri(downloadUrl), downloadPath);
             }
+#pragma warning restore SYSLIB0014 // 类型或成员已过时
         }
 
 

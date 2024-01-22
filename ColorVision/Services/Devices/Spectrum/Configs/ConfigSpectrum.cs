@@ -1,9 +1,7 @@
-﻿using ColorVision.Services;
-using ColorVision.Services.Devices;
-using MQTTMessageLib;
+﻿using MQTTMessageLib;
 using Newtonsoft.Json;
 
-namespace ColorVision.Device.Spectrum.Configs
+namespace ColorVision.Services.Devices.Spectrum.Configs
 {
 
     public class ConfigSpectrum : DeviceServiceConfig, IServiceConfig

@@ -153,8 +153,8 @@ namespace ColorVision.Flow
                         Application.Current.Dispatcher.Invoke(() =>
                         {
                             flowControl?.Stop();
+                            handler?.Close();
                         });
-                        handler?.Close();
                     };
 
                     flowControl.FlowData += (s, e) =>
