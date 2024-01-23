@@ -14,7 +14,7 @@
                 <ResourceDictionary Source="/ColorVision.Util;component/Themes/Base.xaml"/>
                 <ResourceDictionary Source="/ColorVision.Util;component/Themes/Menu.xaml"/>
                 <ResourceDictionary Source="/ColorVision.Util;component/Themes/GroupBox.xaml"/>
-                <ResourceDictionary Source="/ColorVision.Util;component/Themes/Icons.xaml"/>c
+                <ResourceDictionary Source="/ColorVision.Util;component/Themes/Icons.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

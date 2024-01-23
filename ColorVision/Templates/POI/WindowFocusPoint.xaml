@@ -93,7 +93,8 @@
                     
                     <Button x:Name="button4" Content="导入相机服务最近的一张图像" Click="Service_Click" Margin="2"/>
 
-                    <StackPanel x:Name="StackPanelDatumAreaPoints" d:DataContext="{d:DesignInstance Template:DatumArea}" Margin="5">
+                    <ToggleButton x:Name="DatumAreaToggleButton"  Content="基准点设置" Style="{StaticResource ToggleButtonDefault.Small}" IsChecked="False" HorizontalAlignment="Left"/>
+                    <StackPanel x:Name="StackPanelDatumAreaPoints" d:DataContext="{d:DesignInstance Template:DatumArea}" Visibility="{Binding ElementName=DatumAreaToggleButton,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" Margin="5">
                         <DockPanel  Margin="2">
                             <TextBlock Text="X1"   MinWidth="40"/>
                             <TextBox Text="{Binding X1X}" Width="80" Margin="5,0" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>

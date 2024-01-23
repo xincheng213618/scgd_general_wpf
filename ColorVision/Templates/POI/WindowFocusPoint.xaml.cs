@@ -458,9 +458,24 @@ namespace ColorVision.Templates.POI
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 string filePath = openFileDialog.FileName;
-                ledPicData ??= new LedPicData();
-                ledPicData.picUrl = filePath;
-                OpenImage(filePath);
+
+                if (Path.GetExtension(filePath).Contains("cvraw"))
+                {
+                    try
+                    {
+                        OpenImage(new NetFileUtil("1").OpenLocalCVCIEFile(filePath, FileExtType.Raw));
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.Message);
+                    }
+                }
+                else
+                {
+                    ledPicData ??= new LedPicData();
+                    ledPicData.picUrl = filePath;
+                    OpenImage(filePath);
+                }
             }
         }
 
@@ -496,32 +511,29 @@ namespace ColorVision.Templates.POI
                         }
 
                         BitmapSource bitmapSource = src.ToBitmapSource();
-                        ImageShow.Source = bitmapSource;
-                        InitDatumAreaValue((int)fileInfo.width, (int)fileInfo.height);
-                        PoiParam.Width = bitmapSource.PixelWidth;
-                        PoiParam.Height = bitmapSource.PixelHeight;
+                        SetImageSource(bitmapSource);
                     }
                 }
                 else
                 {
                     BitmapSource bitmapImage = new BitmapImage(new Uri(filePath));
-                    ImageShow.Source = bitmapImage;
+                    SetImageSource(bitmapImage);
                     Zoombox1.ZoomUniform();
-                    InitDatumAreaValue((int)bitmapImage.Width, (int)bitmapImage.Height);
-                    PoiParam.Width = bitmapImage.PixelWidth;
-                    PoiParam.Height = bitmapImage.PixelHeight;
                 }
-
-
-                ImageShow.ImageInitialize();
             }
         }
 
-
-
-
-
-
+        public void SetImageSource(ImageSource imageSource)
+        {
+            ImageShow.Source = imageSource;
+            if (imageSource is BitmapSource bitmapSource)
+            {
+                PoiParam.Width = bitmapSource.PixelWidth;
+                PoiParam.Height = bitmapSource.PixelHeight;
+                InitDatumAreaValue(bitmapSource.PixelWidth, bitmapSource.PixelHeight);
+            }
+            ImageShow.ImageInitialize();
+        }
 
         private bool Init; 
 
@@ -971,7 +983,7 @@ namespace ColorVision.Templates.POI
 
         private async void Button2_Click(object sender, RoutedEventArgs e)
         {
-            if (ImageShow.Source is BitmapImage bitmapImage)
+            if (ImageShow.Source is BitmapSource bitmapImage)
             {
                 int Num =0;
 
@@ -1781,15 +1793,9 @@ namespace ColorVision.Templates.POI
                 dst = src;
             }
             SetImageSource(dst.ToBitmapSource());
+
         }
 
-        private void SetImageSource(BitmapSource bitmapImage)
-        {
-            ImageShow.Source = bitmapImage;
-            Zoombox1.ZoomUniform();
-            ToolBar1.Visibility = Visibility.Visible;
-            ImageShow.ImageInitialize();
-        }
 
 
         public void OpenImage(byte[] data)
