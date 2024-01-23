@@ -6,6 +6,9 @@ namespace ColorVision.Services.Devices.Spectrum.Configs
 
     public class ConfigSpectrum : DeviceServiceConfig, IServiceConfig
     {
+        private bool _IsAutoStart;
+        public bool IsAutoStart { get => _IsAutoStart; set { _IsAutoStart = value; NotifyPropertyChanged(); } }
+
         private int _TimeLimit;
         public int MaxIntegralTime { get => _TimeLimit; set { _TimeLimit = value; NotifyPropertyChanged(); } }
 
