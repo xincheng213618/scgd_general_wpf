@@ -330,4 +330,112 @@
   <data name="ThemePink" xml:space="preserve">
     <value>Pink</value>
   </data>
+  <data name="EnableDatabase" xml:space="preserve">
+    <value>Enable database</value>
+  </data>
+  <data name="StartRecoverUILayout" xml:space="preserve">
+    <value>Start recovery interface layout</value>
+  </data>
+  <data name="AutoSwitchSelectedView" xml:space="preserve">
+    <value>Automatically switch selected views</value>
+  </data>
+  <data name="LogLevel" xml:space="preserve">
+    <value>Log level</value>
+  </data>
+  <data name="SoftwareVersion" xml:space="preserve">
+    <value>Software version</value>
+  </data>
+  <data name="DisableHardwareAcceleration" xml:space="preserve">
+    <value>Disable hardware acceleration</value>
+  </data>
+  <data name="LaunchSoftwareWithLocalService" xml:space="preserve">
+    <value>Open the local service when the software starts</value>
+  </data>
+  <data name="Wizard" xml:space="preserve">
+    <value>wizard</value>
+  </data>
+  <data name="ClearCache" xml:space="preserve">
+    <value>clear cache</value>
+  </data>
+  <data name="Clear" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="HistoryCache" xml:space="preserve">
+    <value>history cache</value>
+  </data>
+  <data name="PerformanceTest" xml:space="preserve">
+    <value>Performance testing</value>
+  </data>
+  <data name="ProjectSettings" xml:space="preserve">
+    <value>Project settings</value>
+  </data>
+  <data name="GeneralSettings" xml:space="preserve">
+    <value>General settings</value>
+  </data>
+  <data name="CheckForUpdates" xml:space="preserve">
+    <value>Check for updates</value>
+  </data>
+  <data name="CheckUpdatesOnStartup" xml:space="preserve">
+    <value>Detect updates when software starts</value>
+  </data>
+  <data name="TransparentWindow" xml:space="preserve">
+    <value>transparent window</value>
+  </data>
+  <data name="General" xml:space="preserve">
+    <value>Universal</value>
+  </data>
+  <data name="Project" xml:space="preserve">
+    <value>project</value>
+  </data>
+  <data name="DefaultExportStorageFormat" xml:space="preserve">
+    <value>Default export storage format</value>
+  </data>
+  <data name="NewProjectFormat" xml:space="preserve">
+    <value>New project format</value>
+  </data>
+  <data name="ConfigureNewProject" xml:space="preserve">
+    <value>Configure new project</value>
+  </data>
+  <data name="ProjectName" xml:space="preserve">
+    <value>project name</value>
+  </data>
+  <data name="CreateProject" xml:space="preserve">
+    <value>Create project</value>
+  </data>
+  <data name="SelectProjectSaveLocation" xml:space="preserve">
+    <value>Choose where to save the project</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>refresh</value>
+  </data>
+  <data name="Export" xml:space="preserve">
+    <value>Export</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>application</value>
+  </data>
+  <data name="Import" xml:space="preserve">
+    <value>import</value>
+  </data>
+  <data name="SearchProjectFiles" xml:space="preserve">
+    <value>Search project files</value>
+  </data>
+  <data name="ServiceAgreement" xml:space="preserve">
+    <value>Service Agreement</value>
+  </data>
+  <data name="MyLicense_R" xml:space="preserve">
+    <value>My License(R)</value>
+  </data>
+  <data name="SaveWindowLayout" xml:space="preserve">
+    <value>Save window layout</value>
+  </data>
+  <data name="ApplyWindowLayout" xml:space="preserve">
+    <value>Apply window layout</value>
+  </data>
+  <data name="WorkflowEngine_F" xml:space="preserve">
+    <value>Process Engine(F)</value>
+  </data>
+  <data name="RegistryCenter" xml:space="preserve">
+    <value>Registration center</value>
+  </data>
 </root>

@@ -5,17 +5,18 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Solution"
         xmlns:hc="https://handyorg.github.io/handycontrol"
+        xmlns:properties="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:NewCreateViewMode}"
-        Title="配置新工程" Height="300" Width="500" Background="{DynamicResource GlobalBackground}" >
+        Title="{x:Static properties:Resource.ConfigureNewProject}" Height="300" Width="500" Background="{DynamicResource GlobalBackground}" >
     <Grid>
         <Grid Margin="30,20,20,20" >
             <StackPanel>
-                <hc:ComboBox  Margin="0,0,0,20" Width="400" HorizontalAlignment="Left"  IsEditable="True" SelectedIndex="0" Text="{Binding Name}"  hc:InfoElement.Title="项目名称" 
+                <hc:ComboBox  Margin="0,0,0,20" Width="400" HorizontalAlignment="Left"  IsEditable="True" SelectedIndex="0" Text="{Binding Name}"  hc:InfoElement.Title="{x:Static properties:Resource.ProjectName}" 
                 hc:InfoElement.Necessary="True" hc:InfoElement.ShowClearButton="True"  hc:InfoElement.Symbol="*" ItemsSource="{Binding RecentNewCreateNameCacheList}"  />
                 <DockPanel >
                     <Button Content=".." DockPanel.Dock="Right" VerticalAlignment="Bottom" Height="30" Width="30" Click="Button_Click"/>
-                    <hc:ComboBox  Margin="0,0,0,0"  Width="400"  HorizontalAlignment="Left"  IsEditable="True" SelectedIndex="0" SelectionChanged="ComboBox_SelectionChanged" Text="{Binding DirectoryPath}"  hc:InfoElement.Title="选择项目保存位置" 
+                    <hc:ComboBox  Margin="0,0,0,0"  Width="400"  HorizontalAlignment="Left"  IsEditable="True" SelectedIndex="0" SelectionChanged="ComboBox_SelectionChanged" Text="{Binding DirectoryPath}"  hc:InfoElement.Title="{x:Static properties:Resource.SelectProjectSaveLocation}"
                               hc:InfoElement.Necessary="True"  hc:InfoElement.Symbol="*" 
                               ItemsSource="{Binding RecentNewCreateCacheList}"/>
                 </DockPanel>
@@ -23,7 +24,7 @@
             </StackPanel>
 
             <DockPanel  VerticalAlignment="Bottom" HorizontalAlignment="Right"  >
-                <Button Content="创建工程" Height="40"   Padding="20,0" FontSize="15" IsEnabled="{Binding IsCanCreate}" Click="Button_Close_Click">
+                <Button Content="{x:Static properties:Resource.CreateProject}" Height="40"   Padding="20,0" FontSize="15" IsEnabled="{Binding IsCanCreate}" Click="Button_Close_Click">
                     <Button.Template>
                         <ControlTemplate TargetType="{x:Type Button}">
                             <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"	CornerRadius="3">

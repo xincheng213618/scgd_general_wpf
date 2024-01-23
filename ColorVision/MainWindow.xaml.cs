@@ -129,7 +129,7 @@ namespace ColorVision
             menulogs.Items.Insert(3, menulog3);
 
 #if (DEBUG == true)
-            MenuItem menuItem = new MenuItem() { Header = "测试" };
+            MenuItem menuItem = new MenuItem() { Header = "实验性功能" };
             MenuItem menuItem1 = new MenuItem() { Header = "折线图" };
             menuItem1.Click += Test_Click;
             menuItem.Items.Add(menuItem1);

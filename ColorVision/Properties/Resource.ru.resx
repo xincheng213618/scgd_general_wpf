@@ -330,4 +330,112 @@
   <data name="ThemePink" xml:space="preserve">
     <value>розовый</value>
   </data>
+  <data name="EnableDatabase" xml:space="preserve">
+    <value>Включить базу данных</value>
+  </data>
+  <data name="StartRecoverUILayout" xml:space="preserve">
+    <value>Макет интерфейса запуска восстановления</value>
+  </data>
+  <data name="AutoSwitchSelectedView" xml:space="preserve">
+    <value>Автоматически переключать выбранные представления</value>
+  </data>
+  <data name="LogLevel" xml:space="preserve">
+    <value>Уровень журнала</value>
+  </data>
+  <data name="SoftwareVersion" xml:space="preserve">
+    <value>Версия ПО</value>
+  </data>
+  <data name="DisableHardwareAcceleration" xml:space="preserve">
+    <value>Отключить аппаратное ускорение</value>
+  </data>
+  <data name="LaunchSoftwareWithLocalService" xml:space="preserve">
+    <value>Откройте локальную службу при запуске программного обеспечения.</value>
+  </data>
+  <data name="Wizard" xml:space="preserve">
+    <value>волшебник</value>
+  </data>
+  <data name="ClearCache" xml:space="preserve">
+    <value>очистить кэш</value>
+  </data>
+  <data name="Clear" xml:space="preserve">
+    <value>Прозрачный</value>
+  </data>
+  <data name="HistoryCache" xml:space="preserve">
+    <value>кэш истории</value>
+  </data>
+  <data name="PerformanceTest" xml:space="preserve">
+    <value>Тестирование производительности</value>
+  </data>
+  <data name="ProjectSettings" xml:space="preserve">
+    <value>Настройки проекта</value>
+  </data>
+  <data name="GeneralSettings" xml:space="preserve">
+    <value>Общие настройки</value>
+  </data>
+  <data name="CheckForUpdates" xml:space="preserve">
+    <value>Проверьте наличие обновлений</value>
+  </data>
+  <data name="CheckUpdatesOnStartup" xml:space="preserve">
+    <value>Обнаружение обновлений при запуске программного обеспечения</value>
+  </data>
+  <data name="TransparentWindow" xml:space="preserve">
+    <value>прозрачное окно</value>
+  </data>
+  <data name="General" xml:space="preserve">
+    <value>Универсальный</value>
+  </data>
+  <data name="Project" xml:space="preserve">
+    <value>проект</value>
+  </data>
+  <data name="DefaultExportStorageFormat" xml:space="preserve">
+    <value>Формат хранения экспорта по умолчанию</value>
+  </data>
+  <data name="NewProjectFormat" xml:space="preserve">
+    <value>Новый формат проекта</value>
+  </data>
+  <data name="ConfigureNewProject" xml:space="preserve">
+    <value>Настроить новый проект</value>
+  </data>
+  <data name="ProjectName" xml:space="preserve">
+    <value>название проекта</value>
+  </data>
+  <data name="CreateProject" xml:space="preserve">
+    <value>Создать проект</value>
+  </data>
+  <data name="SelectProjectSaveLocation" xml:space="preserve">
+    <value>Выберите, где сохранить проект</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>обновить</value>
+  </data>
+  <data name="Export" xml:space="preserve">
+    <value>Экспорт</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>приложение</value>
+  </data>
+  <data name="Import" xml:space="preserve">
+    <value>Импортировать</value>
+  </data>
+  <data name="SearchProjectFiles" xml:space="preserve">
+    <value>Поиск файлов проекта</value>
+  </data>
+  <data name="ServiceAgreement" xml:space="preserve">
+    <value>Сервисное соглашение</value>
+  </data>
+  <data name="MyLicense_R" xml:space="preserve">
+    <value>Моя лицензия(R)</value>
+  </data>
+  <data name="SaveWindowLayout" xml:space="preserve">
+    <value>Сохранить макет окна</value>
+  </data>
+  <data name="ApplyWindowLayout" xml:space="preserve">
+    <value>Применить макет окна</value>
+  </data>
+  <data name="WorkflowEngine_F" xml:space="preserve">
+    <value>Механизм процесса(F)</value>
+  </data>
+  <data name="RegistryCenter" xml:space="preserve">
+    <value>Регистрационный центр</value>
+  </data>
 </root>

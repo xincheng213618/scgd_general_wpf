@@ -7,7 +7,7 @@
         xmlns:local="clr-namespace:ColorVision"
         xmlns:SettingUp ="clr-namespace:ColorVision.SettingUp"
         xmlns:hc="https://handyorg.github.io/handycontrol"
-        xmlns:resx="clr-namespace:ColorVision.Properties"
+        xmlns:properties="clr-namespace:ColorVision.Properties"
         xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:MainWindow}"
@@ -21,21 +21,21 @@
         <Border Grid.Row="0"  Height ="27 " BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
             <Grid>
                 <Menu x:Name="Menu1"  Initialized="Menu_Initialized">
-                    <MenuItem x:Name="FileMenuItem" Header="{x:Static resx:Resource.MenuFile}">
-                        <MenuItem Header="{x:Static resx:Resource.MenuNew}" Click="MenuItem_ProjectNew_Click" InputGestureText="Ctrl + N">
+                    <MenuItem x:Name="FileMenuItem" Header="{x:Static properties:Resource.MenuFile}">
+                        <MenuItem Header="{x:Static properties:Resource.MenuNew}" Click="MenuItem_ProjectNew_Click" InputGestureText="Ctrl + N">
                             <MenuItem.Icon >
                                 <TextBlock Text="&#xE8F4;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
                             </MenuItem.Icon>
                         </MenuItem>
-                        <MenuItem Header="{x:Static resx:Resource.MenuOpen}" Click="MenuItem_ProjectOpen_Click" InputGestureText="Ctrl + O">
+                        <MenuItem Header="{x:Static properties:Resource.MenuOpen}" Click="MenuItem_ProjectOpen_Click" InputGestureText="Ctrl + O">
                             <MenuItem.Icon >
                                 <TextBlock Text="&#xE8E5;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
                             </MenuItem.Icon>
                         </MenuItem>
                         <Separator/>
-                        <MenuItem Header="{x:Static resx:Resource.MenuExit}" InputGestureText="Alt + F4" Click="MenuItem_Exit"/>
+                        <MenuItem Header="{x:Static properties:Resource.MenuExit}" InputGestureText="Alt + F4" Click="MenuItem_Exit"/>
                     </MenuItem>
-                    <MenuItem Header="{x:Static resx:Resource.MenuTemplate}">
+                    <MenuItem Header="{x:Static properties:Resource.MenuTemplate}">
                         <MenuItem Header="流程模板设置(_F)" Tag="FlowParam"  Click="MenuItem_Template"/>
                         <MenuItem Header="关注点模板设置(_P)" Tag="FocusParm" Click="MenuItem_Template"/>
                         <MenuItem Header="测量模板设置(_S)" Tag="MeasureParm" Click="MenuItem_Template"/>
@@ -54,39 +54,39 @@
                         <MenuItem Header="灯珠检测模板设置(_L)"  Tag="LedCheckParam" Click="MenuItem_Template"/>
                         <MenuItem Header="发光区检测模板设置(_P)"  Tag="FocusPointsParam" Click="MenuItem_Template"/>
                     </MenuItem>
-                    <MenuItem Header="{x:Static resx:Resource.MenuTool}">
-                        <MenuItem Header="流程引擎(_F)" Click="MenuItem9_Click"/>
+                    <MenuItem Header="{x:Static properties:Resource.MenuTool}">
+                        <MenuItem Header="{x:Static properties:Resource.WorkflowEngine_F}" Click="MenuItem9_Click"/>
                         <MenuItem Header="MQTT日志(_Q)" Click="MenuItem_Click"/>
                         <MenuItem Header="Msg列表(_L)" Click="MenuItem12_Click"/>
                         <MenuItem Header="管理员服务配置(_S)"  Tag="ServiceParam" Click="MenuItem_Template"/>
                         <MenuItem Header="设备配置(_D)"  Tag="DeviceParam" Click="MenuItem_Template"/>
 
-                        <MenuItem Header="{x:Static resx:Resource.Sign_in}"  Click="Login_Click"/>
+                        <MenuItem Header="{x:Static properties:Resource.Sign_in}"  Click="Login_Click"/>
                         <Separator/>
-                        <MenuItem x:Name="MenuLanguage" Header="{x:Static resx:Resource.MenuLanguage}" Initialized="MenuLanguage_Initialized" Loaded="MenuLanguage_Loaded"/>
-                        <MenuItem x:Name="MenuTheme" Header="{x:Static resx:Resource.MenuTheme}" Initialized="MenuTheme_Initialized" Loaded="MenuTheme_Loaded"/>
+                        <MenuItem x:Name="MenuLanguage" Header="{x:Static properties:Resource.MenuLanguage}" Initialized="MenuLanguage_Initialized" Loaded="MenuLanguage_Loaded"/>
+                        <MenuItem x:Name="MenuTheme" Header="{x:Static properties:Resource.MenuTheme}" Initialized="MenuTheme_Initialized" Loaded="MenuTheme_Loaded"/>
 
-                        <MenuItem Header="{x:Static resx:Resource.MenuOptions}"  Click="MenuItem_Click_2"   InputGestureText="Ctrl + I"  >
+                        <MenuItem Header="{x:Static properties:Resource.MenuOptions}"  Click="MenuItem_Click_2"   InputGestureText="Ctrl + I"  >
                             <MenuItem.Icon >
                                 <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
                             </MenuItem.Icon>
                         </MenuItem>
                     </MenuItem>
-                    <MenuItem  x:Name="MenuStatusBar"  d:DataContext="{d:DesignInstance local:SoftwareConfig}"  Header="{ x:Static resx:Resource.MenuView}">
-                        <MenuItem Header="{x:Static resx:Resource.MenuViewStatusBar}" IsChecked="{Binding SoftwareSetting.IsOpenStatusBar}"  Click="MenuStatusBar_Click" />
+                    <MenuItem  x:Name="MenuStatusBar"  d:DataContext="{d:DesignInstance local:SoftwareConfig}"  Header="{ x:Static properties:Resource.MenuView}">
+                        <MenuItem Header="{x:Static properties:Resource.MenuViewStatusBar}" IsChecked="{Binding SoftwareSetting.IsOpenStatusBar}"  Click="MenuStatusBar_Click" />
                         <Separator/>
-                        <MenuItem Header="保存窗口布局"  Click="MenuStatusBar_Click" />
-                        <MenuItem Header="应用窗口布局"  Click="MenuStatusBar_Click" />
+                        <MenuItem Header="{x:Static properties:Resource.SaveWindowLayout}"  Click="MenuStatusBar_Click" />
+                        <MenuItem Header="{x:Static properties:Resource.ApplyWindowLayout}"  Click="MenuStatusBar_Click" />
                     </MenuItem>
-                    <MenuItem x:Name="MenuHelp" Header="{x:Static resx:Resource.MenuHelp}">
+                    <MenuItem x:Name="MenuHelp" Header="{x:Static properties:Resource.MenuHelp}">
                         <MenuItem Header="打开日志(_L)"  Click="Log_Click"/>
                         <MenuItem Header="打开日志文件夹(_F)"  Click="LogF_Click"/>
                         <MenuItem Header="打开配置文件(_S)"  Click="Setting_Click"/>
                         <MenuItem Header="打开配置文件夹(_F)" Click="SettingF_Click"/>
                         <Separator/>
-                        <MenuItem Header="{x:Static resx:Resource.MenuUpdate}" Click="Update_Click"/>
-                        <MenuItem Header="我的许可证(_R)"  Click="License_Click"/>
-                        <MenuItem Header="{x:Static resx:Resource.MenuAbout}" Click="About_Click"/>
+                        <MenuItem Header="{x:Static properties:Resource.MenuUpdate}" Click="Update_Click"/>
+                        <MenuItem Header="{x:Static properties:Resource.MyLicense_R}"  Click="License_Click"/>
+                        <MenuItem Header="{x:Static properties:Resource.MenuAbout}" Click="About_Click"/>
                     </MenuItem>
                 </Menu>
                 <Image Source="{DynamicResource DrawingImageUser}" Width="20" HorizontalAlignment="Right" Margin="0,0,10,0"/>
@@ -172,7 +172,7 @@
                         <StatusBarItem MouseLeftButtonDown="TextBlock_MouseLeftButtonDown" Visibility="{Binding SoftwareConfig.IsUseMQTT,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="MQTT">
                             <ToggleButton  x:Name="StatusBarMqtt"   Style="{DynamicResource ButtonDrawingImageMQTT}"  Height="20"  Margin="0,-10" IsChecked="{Binding SoftwareConfig.MQTTControl.IsConnect,Mode=OneWay}" IsEnabled="False" />
                         </StatusBarItem>
-                        <StatusBarItem MouseLeftButtonDown="TextBlock_MouseLeftButtonDown_RC" Visibility="{Binding SoftwareConfig.IsUseRCService,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="注册中心">
+                        <StatusBarItem MouseLeftButtonDown="TextBlock_MouseLeftButtonDown_RC" Visibility="{Binding SoftwareConfig.IsUseRCService,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="{x:Static properties:Resource.RegistryCenter}">
                             <ToggleButton  x:Name="StatusBarRCService"   Style="{DynamicResource ButtonDrawingImageRCService}"  Height="15"  Margin="0,-10" IsChecked="{Binding SoftwareConfig.RCService.IsConnect,Mode=OneWay}" IsEnabled="False" />
                         </StatusBarItem>
                         <StatusBarItem MouseLeftButtonDown="TextBlock_MouseLeftButtonDown_RC" Visibility="{Binding SoftwareConfig.SolutionSetting.IsLackWarning,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="硬盘剩余空间">

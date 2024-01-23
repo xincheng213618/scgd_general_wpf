@@ -7,7 +7,7 @@
         xmlns:base ="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-        xmlns:resx="clr-namespace:ColorVision.Properties"
+        xmlns:properties="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"     
         d:DataContext="{d:DesignInstance local:SoftwareConfig}"
         Height="450" IsBlurEnabled="True" WindowStartupLocation="CenterScreen"  Background="Transparent" ResizeMode="NoResize" Width="600" Initialized="Window_Initialized">
@@ -64,7 +64,7 @@
             <TabControl.Resources>
                 
             </TabControl.Resources>
-            <TabItem  x:Name="UniversalTabItem" MinWidth="100" Header="通用设置" >
+            <TabItem  x:Name="UniversalTabItem" MinWidth="100" Header="{x:Static properties:Resource.GeneralSettings}" >
                 <TabItem.Style>
                     <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">
                         <Style.Triggers>
@@ -78,7 +78,7 @@
                 <Grid Background="{DynamicResource GlobalBorderBrush}">
                     <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
                         <GroupBox.Header>
-                            <TextBlock Text="通用" FontSize="20"/>
+                            <TextBlock Text="{x:Static properties:Resource.General}" FontSize="20"/>
                         </GroupBox.Header>
                         <ScrollViewer    HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" >
                             <StackPanel>
@@ -86,7 +86,7 @@
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="5" ToolTip="模板数据保存Mysql数据库">
                                             <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding IsUseMySql}"/>
-                                            <TextBlock Text="启用数据库    "/>
+                                            <TextBlock Text="{x:Static properties:Resource.EnableDatabase}"/>
                                             <DockPanel  MouseLeftButtonDown="TextBlock_MouseLeftButtonDown1" Visibility="{Binding IsUseMySql,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="MySql" >
                                                 <ToggleButton x:Name="StatusBarMysql" Style="{StaticResource ButtonDrawingImageMysql}"   Margin="0,-10" IsChecked="{Binding MySqlControl.IsConnect,Mode=OneWay}" Height="20" IsEnabled="False"/>
                                             </DockPanel>
@@ -117,56 +117,56 @@
                                         </DockPanel>
                                         <DockPanel x:Name="AutoRunDock" Margin="5"  d:DataContext="{d:DesignInstance local:ConfigHandler}">
                                             <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding IsAutoRun}"/>
-                                            <TextBlock Text="{x:Static resx:Resource.TbSettingsStartBoot}"/>
+                                            <TextBlock Text="{x:Static properties:Resource.TbSettingsStartBoot}"/>
                                         </DockPanel>
                                         <DockPanel  Margin="5">
                                             <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding SoftwareSetting.IsRestoreWindow}"/>
-                                            <TextBlock Text="启动恢复界面布局"/>
+                                            <TextBlock Text="{x:Static properties:Resource.StartRecoverUILayout}"/>
                                         </DockPanel>
                                         <DockPanel Margin="5">
                                             <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding ViewConfig.IsAutoSelect}"/>
-                                            <TextBlock Text="自动切换选中视图"/>
+                                            <TextBlock Text="{x:Static properties:Resource.AutoSwitchSelectedView}"/>
                                         </DockPanel>
                                         <DockPanel  Margin="5">
                                             <hc:ComboBox x:Name="cmbloglevel" Text="{Binding SoftwareSetting.LogLevel}" hc:InfoElement.Placeholder="Level"  DockPanel.Dock="Right"  Style="{StaticResource ComboBox.Small}" Width="150"  />
-                                            <TextBlock Text="日志级别"/>
+                                            <TextBlock Text="{x:Static properties:Resource.LogLevel}"/>
                                         </DockPanel>
                                         <DockPanel  Margin="5" >
-                                            <hc:ComboBox x:Name="cmtheme" SelectedValue="{Binding SoftwareSetting.Theme}" hc:InfoElement.Placeholder="{x:Static resx:Resource.Theme}"  DockPanel.Dock="Right" Style="{StaticResource ComboBox.Small}" Width="150"  />
-                                            <TextBlock Text="{x:Static resx:Resource.Theme}"/>
+                                            <hc:ComboBox x:Name="cmtheme" SelectedValue="{Binding SoftwareSetting.Theme}" hc:InfoElement.Placeholder="{x:Static properties:Resource.Theme}"  DockPanel.Dock="Right" Style="{StaticResource ComboBox.Small}" Width="150"  />
+                                            <TextBlock Text="{x:Static properties:Resource.Theme}"/>
                                         </DockPanel>
                                         <DockPanel Margin="5">
                                             <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding SoftwareSetting.TransparentWindow}"/>
-                                            <TextBlock Text="透明窗口"/>
+                                            <TextBlock Text="{x:Static properties:Resource.TransparentWindow}"/>
                                         </DockPanel>
   
 
                                         <DockPanel  Margin="5" x:Name="lauagDock">
-                                            <hc:ComboBox x:Name="cmlauage" SelectedValue="{Binding SoftwareSetting.UICulture}" hc:InfoElement.Placeholder="{x:Static resx:Resource.Language}"  DockPanel.Dock="Right" Style="{StaticResource ComboBox.Small}" Width="150" />
-                                            <TextBlock Text="{x:Static resx:Resource.Language}"/>
+                                            <hc:ComboBox x:Name="cmlauage" SelectedValue="{Binding SoftwareSetting.UICulture}" hc:InfoElement.Placeholder="{x:Static properties:Resource.Language}"  DockPanel.Dock="Right" Style="{StaticResource ComboBox.Small}" Width="150" />
+                                            <TextBlock Text="{x:Static properties:Resource.Language}"/>
                                         </DockPanel>
                                         <DockPanel  Margin="5">
                                             <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding SoftwareSetting.IsAutoUpdate}"/>
-                                            <TextBlock Text="软件启动时检测更新"/>
+                                            <TextBlock Text="{x:Static properties:Resource.CheckUpdatesOnStartup}"/>
                                         </DockPanel>
                                         <DockPanel  Margin="5">
-                                            <Button  DockPanel.Dock="Right" Content="检查更新" Command="{Binding AutoUpdater.UpdateCommand}"/>
+                                            <Button  DockPanel.Dock="Right" Content="{x:Static properties:Resource.CheckForUpdates}" Command="{Binding AutoUpdater.UpdateCommand}"/>
                                             <TextBlock Text="{Binding AutoUpdater.LatestVersion}"/>
-                                            <TextBlock Text="软件版本"/>
+                                            <TextBlock Text="{x:Static properties:Resource.SoftwareVersion}"/>
                                         </DockPanel>
                                         <ProgressBar Height="15"  Foreground="#B41515" Maximum="100" Minimum="0" Value="{Binding AutoUpdater.ProgressValue}" Background="#373B41" BorderThickness="0" Margin="5" VerticalAlignment="Bottom" />
                                         <DockPanel  Margin="5">
                                             <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding SoftwareSetting.TransparentWindow}"/>
-                                            <TextBlock Text="禁用硬件加速"/>
+                                            <TextBlock Text="{x:Static properties:Resource.DisableHardwareAcceleration}"/>
                                         </DockPanel>
                                         <DockPanel  Margin="5">
                                             <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding SoftwareSetting.IsOpenLoaclService}"/>
-                                            <TextBlock Text="软件启动时打开本地服务"/>
+                                            <TextBlock Text="{x:Static properties:Resource.LaunchSoftwareWithLocalService}"/>
                                         </DockPanel>
                                         
                                         <DockPanel  Margin="5">
                                             <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding SoftwareSetting.WizardCompletionKey,Converter={StaticResource Boolean2BooleanReConverter}}"/>
-                                            <TextBlock Text="向导"/>
+                                            <TextBlock Text="{x:Static properties:Resource.Wizard}"/>
                                         </DockPanel>
                                     </StackPanel>
                                 </Border>
@@ -175,7 +175,7 @@
                     </GroupBox>
                 </Grid>
             </TabItem>
-            <TabItem  Header="工程设置" >
+            <TabItem  Header="{x:Static properties:Resource.ProjectSettings}" >
                 <TabItem.Style>
                     <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">
                         <Style.Triggers>
@@ -191,7 +191,7 @@
                     <StackPanel>
                         <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
                             <GroupBox.Header>
-                                <TextBlock Text="工程" FontSize="20"/>
+                                <TextBlock Text="{x:Static properties:Resource.Project}" FontSize="20"/>
                             </GroupBox.Header>
                             <StackPanel>
                                 <Border Style="{StaticResource BorderModuleArea}" >
@@ -210,20 +210,20 @@
                                         </DockPanel>
 
                                         <DockPanel Margin="5" >
-                                            <Button  DockPanel.Dock="Right"  Content="清除"    />
-                                            <TextBlock Text="清除缓存 " />
+                                            <Button  DockPanel.Dock="Right"  Content="{x:Static properties:Resource.Clear}"    />
+                                            <TextBlock Text="{x:Static properties:Resource.ClearCache}" />
                                         </DockPanel>
                                     </StackPanel>
                                 </Border>
                                 <Border Style="{StaticResource BorderModuleArea}" CornerRadius="8">
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="5" >
-                                            <Button DockPanel.Dock="Right" Content="{x:Static resx:Resource.Reset}" Click="SetProjectDefaultCreatName_Click"  />
-                                            <TextBlock Text="新建工程格式:" MinWidth="150" />
+                                            <Button DockPanel.Dock="Right" Content="{x:Static properties:Resource.Reset}" Click="SetProjectDefaultCreatName_Click"  />
+                                            <TextBlock Text="{x:Static properties:Resource.NewProjectFormat}" MinWidth="150" />
                                             <TextBox Text="{Binding SolutionSetting.DefaultCreatName}"  HorizontalAlignment="Left" Width="200"/>
                                         </DockPanel>
                                         <DockPanel Margin="5" >
-                                            <Button DockPanel.Dock="Right" Content="{x:Static resx:Resource.Reset}" Click="SetProjectDefault__Click"  />
+                                            <Button DockPanel.Dock="Right" Content="{x:Static properties:Resource.Reset}" Click="SetProjectDefault__Click"  />
                                             <TextBlock Text="默认文件存储格式:"  MinWidth="150"  />
                                             <TextBox Text="{Binding SolutionSetting.DefaultSaveName}" HorizontalAlignment="Left" Width="200" />
                                         </DockPanel>
@@ -237,8 +237,8 @@
                                 <Border Style="{StaticResource BorderModuleArea}" CornerRadius="8">
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="5" >
-                                            <Button DockPanel.Dock="Right" Content="{x:Static resx:Resource.Reset}" Click="SetProjectDefault__Click"  />
-                                            <TextBlock Text="默导出存储格式:"  MinWidth="150"  />
+                                            <Button DockPanel.Dock="Right" Content="{x:Static properties:Resource.Reset}" Click="SetProjectDefault__Click"  />
+                                            <TextBlock Text="{x:Static properties:Resource.DefaultExportStorageFormat}"  MinWidth="150"  />
                                             <TextBox Text="{Binding SolutionSetting.DefaultImageSaveName}" HorizontalAlignment="Left" Width="200" />
                                         </DockPanel>
                                     </StackPanel>
@@ -271,8 +271,8 @@
                                 <Border Style="{StaticResource BorderModuleArea}" >
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="5">
-                                            <Button  DockPanel.Dock="Right" Content="清除" Click="Button_Click_1" Width="80"/>
-                                            <TextBlock Text="历史缓存"/>
+                                            <Button  DockPanel.Dock="Right" Content="{x:Static properties:Resource.Clear}" Click="Button_Click_1" Width="80"/>
+                                            <TextBlock Text="{x:Static properties:Resource.HistoryCache}"/>
                                         </DockPanel>
                                         <DockPanel Margin="5,2">
                                             <TextBox DockPanel.Dock="Right" Text="{Binding MQTTSetting.CacheLength}" HorizontalContentAlignment="Right" Style="{StaticResource  TextBox.Small}" Width="80"/>
@@ -288,7 +288,7 @@
                 </ScrollViewer>
             </TabItem>
 
-            <TabItem  Header="性能检测" >
+            <TabItem  Header="{x:Static properties:Resource.PerformanceTest}" >
                 <TabItem.Style>
                     <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">
                         <Style.Triggers>
@@ -377,7 +377,7 @@
                 </Grid>
             </TabItem>
 
-            <TabItem  Header="{x:Static resx:Resource.HotKeys}">
+            <TabItem  Header="{x:Static properties:Resource.HotKeys}">
                 <TabItem.Style>
                     <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">
                         <Style.Triggers>
@@ -399,7 +399,7 @@
                         <StackPanel>
                             <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
                                 <GroupBox.Header>
-                                    <TextBlock Text="{x:Static resx:Resource.HotKeys}" FontSize="20"/>
+                                    <TextBlock Text="{x:Static properties:Resource.HotKeys}" FontSize="20"/>
                                 </GroupBox.Header>
                                 <Border  Style="{StaticResource BorderModuleArea}" >
                                     <StackPanel x:Name="HotKeyStackPanel"  Margin="10,5" Initialized="HotKeyStackPanel_Initialized"/>

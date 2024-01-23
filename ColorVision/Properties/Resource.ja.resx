@@ -330,4 +330,112 @@
   <data name="ThemePink" xml:space="preserve">
     <value>ピンク</value>
   </data>
+  <data name="EnableDatabase" xml:space="preserve">
+    <value>データベースを有効にする</value>
+  </data>
+  <data name="StartRecoverUILayout" xml:space="preserve">
+    <value>回復インターフェイスのレイアウトを開始します</value>
+  </data>
+  <data name="AutoSwitchSelectedView" xml:space="preserve">
+    <value>選択したビューを自動的に切り替える</value>
+  </data>
+  <data name="LogLevel" xml:space="preserve">
+    <value>ログレベル</value>
+  </data>
+  <data name="SoftwareVersion" xml:space="preserve">
+    <value>ソフトウェアバージョン</value>
+  </data>
+  <data name="DisableHardwareAcceleration" xml:space="preserve">
+    <value>ハードウェアアクセラレーションを無効にする</value>
+  </data>
+  <data name="LaunchSoftwareWithLocalService" xml:space="preserve">
+    <value>ソフトウェアの起動時にローカルサービスを開きます</value>
+  </data>
+  <data name="Wizard" xml:space="preserve">
+    <value>ウィザード</value>
+  </data>
+  <data name="ClearCache" xml:space="preserve">
+    <value>キャッシュの消去</value>
+  </data>
+  <data name="Clear" xml:space="preserve">
+    <value>クリア</value>
+  </data>
+  <data name="HistoryCache" xml:space="preserve">
+    <value>履歴キャッシュ</value>
+  </data>
+  <data name="PerformanceTest" xml:space="preserve">
+    <value>性能試験</value>
+  </data>
+  <data name="ProjectSettings" xml:space="preserve">
+    <value>プロジェクト設定</value>
+  </data>
+  <data name="GeneralSettings" xml:space="preserve">
+    <value>一般設定</value>
+  </data>
+  <data name="CheckForUpdates" xml:space="preserve">
+    <value>アップデートを確認</value>
+  </data>
+  <data name="CheckUpdatesOnStartup" xml:space="preserve">
+    <value>ソフトウェアの起動時にアップデートを検出する</value>
+  </data>
+  <data name="TransparentWindow" xml:space="preserve">
+    <value>透明な窓</value>
+  </data>
+  <data name="General" xml:space="preserve">
+    <value>ユニバーサル</value>
+  </data>
+  <data name="Project" xml:space="preserve">
+    <value>プロジェクト</value>
+  </data>
+  <data name="DefaultExportStorageFormat" xml:space="preserve">
+    <value>デフォルトのエクスポート保存形式</value>
+  </data>
+  <data name="NewProjectFormat" xml:space="preserve">
+    <value>新しいプロジェクト形式</value>
+  </data>
+  <data name="ConfigureNewProject" xml:space="preserve">
+    <value>新しいプロジェクトを構成する</value>
+  </data>
+  <data name="ProjectName" xml:space="preserve">
+    <value>プロジェクト名</value>
+  </data>
+  <data name="CreateProject" xml:space="preserve">
+    <value>プロジェクトの作成</value>
+  </data>
+  <data name="SelectProjectSaveLocation" xml:space="preserve">
+    <value>プロジェクトを保存する場所を選択します</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>リフレッシュする</value>
+  </data>
+  <data name="Export" xml:space="preserve">
+    <value>輸出</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>応用</value>
+  </data>
+  <data name="Import" xml:space="preserve">
+    <value>輸入</value>
+  </data>
+  <data name="SearchProjectFiles" xml:space="preserve">
+    <value>プロジェクトファイルの検索</value>
+  </data>
+  <data name="ServiceAgreement" xml:space="preserve">
+    <value>役務契約</value>
+  </data>
+  <data name="MyLicense_R" xml:space="preserve">
+    <value>マイライセンス(R)</value>
+  </data>
+  <data name="SaveWindowLayout" xml:space="preserve">
+    <value>ウィンドウレイアウトを保存</value>
+  </data>
+  <data name="ApplyWindowLayout" xml:space="preserve">
+    <value>ウィンドウレイアウトを適用する</value>
+  </data>
+  <data name="WorkflowEngine_F" xml:space="preserve">
+    <value>プロセスエンジン(F)</value>
+  </data>
+  <data name="RegistryCenter" xml:space="preserve">
+    <value>登録センター</value>
+  </data>
 </root>

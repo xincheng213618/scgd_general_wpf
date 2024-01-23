@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:resx="clr-namespace:ColorVision.Properties"
+        xmlns:properties="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         ShowInTaskbar="False"
         xmlns:base ="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util"
@@ -14,9 +14,7 @@
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
         </Style>
     </base:BaseWindow.Resources>
-
-
-<Grid  Margin="0,-30,0,0">
+    <Grid  Margin="0,-30,0,0">
         <Grid x:Name="Grid1"  Background="#FFFFFF" Opacity="0.04" >
         </Grid>
         <Grid Margin="20,40,10,10">
@@ -97,7 +95,7 @@
             <StackPanel Grid.Row="1" VerticalAlignment="Bottom" Margin="5">
                 <TextBlock x:Name="TextBlockVision" Margin="5"  HorizontalAlignment="Center" TextWrapping = "Wrap"  Text="ColorVision (64位) -  1.0.0.0"/>
                 <TextBlock VerticalAlignment="Center" TextAlignment="Center" Text="CopyRight © 2023-2024 ColorVision All Rigths Reserved"/>
-                <TextBlock VerticalAlignment="Center" TextAlignment="Center" Text="服务协议"/>
+                <TextBlock VerticalAlignment="Center" TextAlignment="Center" Text="{x:Static properties:Resource.ServiceAgreement}"/>
             </StackPanel>
 
 
