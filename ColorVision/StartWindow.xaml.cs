@@ -89,7 +89,7 @@ namespace ColorVision
 
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    TextBoxMsg.Text += $"{Environment.NewLine}MySQL数据库连接{(MySqlControl.GetInstance().IsConnect ? "成功" : "失败")}";
+                    TextBoxMsg.Text += $"{Environment.NewLine}MySQL数据库连接{(MySqlControl.GetInstance().IsConnect ? Properties.Resource.Success : Properties.Resource.Failure)}";
                     if (!IsConnect)
                     {
                         MySqlConnect mySqlConnect = new MySqlConnect() { Owner = this };
@@ -114,7 +114,7 @@ namespace ColorVision
                 bool IsConnect = await MQTTControl.GetInstance().Connect();
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    TextBoxMsg.Text += $"{Environment.NewLine}MQTT服务器连接{(MQTTControl.GetInstance().IsConnect ? "成功" : "失败")}";
+                    TextBoxMsg.Text += $"{Environment.NewLine}MQTT服务器连接{(MQTTControl.GetInstance().IsConnect ? Properties.Resource.Success : Properties.Resource.Failure)}";
                     if (!IsConnect)
                     {
                         MQTTConnect mQTTConnect = new MQTTConnect() { Owner = this };
@@ -139,7 +139,7 @@ namespace ColorVision
                     bool IsConnect = await MQTTRCService.GetInstance().Connect();
                     Application.Current.Dispatcher.Invoke(() => 
                     {
-                        TextBoxMsg.Text += $"{Environment.NewLine}注册中心: {(IsConnect ? "成功" : "失败")}";
+                        TextBoxMsg.Text += $"{Environment.NewLine}注册中心: {(IsConnect ? Properties.Resource.Success : Properties.Resource.Failure)}";
                         if (!IsConnect)
                         {
                             RCServiceConnect rcServiceConnect = new RCServiceConnect() { Owner = this };

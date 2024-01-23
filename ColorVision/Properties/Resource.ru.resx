@@ -438,4 +438,13 @@
   <data name="ClearCache" xml:space="preserve">
     <value>очистить кэш</value>
   </data>
+  <data name="Success" xml:space="preserve">
+    <value>успех</value>
+  </data>
+  <data name="Failure" xml:space="preserve">
+    <value>неудача</value>
+  </data>
+  <data name="Acquire" xml:space="preserve">
+    <value>коллекция</value>
+  </data>
 </root>

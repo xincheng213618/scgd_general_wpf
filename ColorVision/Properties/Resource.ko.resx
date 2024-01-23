@@ -438,4 +438,13 @@
   <data name="ClearCache" xml:space="preserve">
     <value>캐시 지우기</value>
   </data>
+  <data name="Success" xml:space="preserve">
+    <value>성공</value>
+  </data>
+  <data name="Failure" xml:space="preserve">
+    <value>실패하다</value>
+  </data>
+  <data name="Acquire" xml:space="preserve">
+    <value>수집</value>
+  </data>
 </root>

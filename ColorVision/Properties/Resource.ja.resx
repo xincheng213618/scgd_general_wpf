@@ -438,4 +438,13 @@
   <data name="ClearCache" xml:space="preserve">
     <value>キャッシュの消去</value>
   </data>
+  <data name="Success" xml:space="preserve">
+    <value>成功</value>
+  </data>
+  <data name="Failure" xml:space="preserve">
+    <value>失敗</value>
+  </data>
+  <data name="Acquire" xml:space="preserve">
+    <value>コレクション</value>
+  </data>
 </root>

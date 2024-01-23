@@ -88,6 +88,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 采集 的本地化字符串。
+        /// </summary>
+        public static string Acquire {
+            get {
+                return ResourceManager.GetString("Acquire", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 添加 的本地化字符串。
         /// </summary>
         public static string Add {
@@ -273,6 +282,15 @@ namespace ColorVision.Properties {
         public static string Export {
             get {
                 return ResourceManager.GetString("Export", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 失败 的本地化字符串。
+        /// </summary>
+        public static string Failure {
+            get {
+                return ResourceManager.GetString("Failure", resourceCulture);
             }
         }
         
@@ -885,6 +903,15 @@ namespace ColorVision.Properties {
         public static string Submit {
             get {
                 return ResourceManager.GetString("Submit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 成功 的本地化字符串。
+        /// </summary>
+        public static string Success {
+            get {
+                return ResourceManager.GetString("Success", resourceCulture);
             }
         }
         

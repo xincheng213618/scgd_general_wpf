@@ -438,4 +438,13 @@
   <data name="RegistryCenter" xml:space="preserve">
     <value>注册中心</value>
   </data>
+  <data name="Success" xml:space="preserve">
+    <value>成功</value>
+  </data>
+  <data name="Failure" xml:space="preserve">
+    <value>失败</value>
+  </data>
+  <data name="Acquire" xml:space="preserve">
+    <value>采集</value>
+  </data>
 </root>
