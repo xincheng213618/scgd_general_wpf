@@ -40,7 +40,7 @@ namespace ColorVision.Services.Dao
     public class SysResourceDao : BaseDaoMaster<SysResourceModel>
     {
 
-        public SysResourceDao() : base("v_scgd_sys_resource", "id", true)
+        public SysResourceDao() : base("v_scgd_sys_resource", "t_scgd_sys_resource", "id", true)
         {
 
         }
