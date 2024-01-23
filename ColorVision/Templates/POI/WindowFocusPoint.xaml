@@ -41,26 +41,8 @@
             </Grid.RowDefinitions>
             <Border Margin="0" Style="{StaticResource BorderModuleArea}"  CornerRadius="0,0,5,5">
                 <StackPanel Margin="3">
-                    <UniformGrid Columns="2" Margin="0,3">
-                        <DockPanel  Margin="5,0">
-                            <TextBlock Text="Width" MinWidth="20" Margin="0,0,5,0"/>
-                            <TextBox x:Name="TextBoxCADW" Text="{Binding Width}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
-                        </DockPanel>
-                        <DockPanel  Margin="5,0" >
-                            <TextBlock Text="Height" MinWidth="20" Margin="0,0,5,0"/>
-                            <TextBox x:Name="TextBoxCADH"  Text="{Binding Height}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
-                        </DockPanel>
-                    </UniformGrid>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <UniformGrid Columns="2" Grid.Column="1">
-                            <Button  Content="默认画布" Click="OpenCAD_Click"  Margin="2"/>
-                            <Button x:Name="button1" Content="图像导入" Click="Button1_Click" Margin="2"/>
-                        </UniformGrid>
-                        <Grid x:Name="SettingGrid" Width="20" Margin="5,0" HorizontalAlignment="Left" Grid.Column="0">
+                    <DockPanel Margin="0,3">
+                        <Grid x:Name="SettingGrid" DockPanel.Dock="Right" Width="20" Margin="5,0" HorizontalAlignment="Left" Grid.Column="0">
                             <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
                             <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Click="Button_Setting_Click" />
                         </Grid>
@@ -83,97 +65,107 @@
                                 </StackPanel>
                             </Border>
                         </Popup>
-                    </Grid>
-                    <DockPanel >
-                        <Button DockPanel.Dock="Right"  Content="刷新" Click="Button_RefreshImg_Click"/>
-                        <Button DockPanel.Dock="Right"  Content="导入" Click="Button_Service_Click"/>
-                        <ComboBox x:Name="ComboBoxImg"  Style="{StaticResource ComboBox.Small}"/>
 
+                        <DockPanel  Margin="5,0">
+                            <TextBlock Text="Width" MinWidth="25" Margin="0,0,5,0"/>
+                            <TextBox x:Name="TextBoxCADW" Text="{Binding Width}" Width="55" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                        </DockPanel>
+                        <DockPanel  Margin="5,0"  HorizontalAlignment="Left">
+                            <TextBlock Text="Height" MinWidth="25" Margin="0,0,5,0"/>
+                            <TextBox x:Name="TextBoxCADH"  Text="{Binding Height}" Width="55" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                        </DockPanel>
                     </DockPanel>
-                    
-                    <Button x:Name="button4" Content="导入相机服务最近的一张图像" Click="Service_Click" Margin="2"/>
-
-                    <ToggleButton x:Name="DatumAreaToggleButton"  Content="基准点设置" Style="{StaticResource ToggleButtonDefault.Small}" IsChecked="False" HorizontalAlignment="Left"/>
-                    <StackPanel x:Name="StackPanelDatumAreaPoints" d:DataContext="{d:DesignInstance Template:DatumArea}" Visibility="{Binding ElementName=DatumAreaToggleButton,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" Margin="5">
-                        <DockPanel  Margin="2">
-                            <TextBlock Text="X1"   MinWidth="40"/>
-                            <TextBox Text="{Binding X1X}" Width="80" Margin="5,0" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
-                            <TextBox   Text="{Binding X1Y}" Width="80" Margin="5,0"   BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
-                        </DockPanel>
-                        <DockPanel  Margin="2">
-                            <TextBlock Text="X2"  MinWidth="40"/>
-                            <TextBox  Text="{Binding X2X}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
-                            <TextBox   Text="{Binding X2Y}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
-                        </DockPanel>
-                        <DockPanel  Margin="2">
-                            <TextBlock  Text="X3"  MinWidth="40" />
-                            <TextBox  Text="{Binding X3X}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
-                            <TextBox   Text="{Binding X3Y}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
-                        </DockPanel>
-
-                        <DockPanel  Margin="2">
-                            <TextBlock Text="X4"   MinWidth="40"/>
-                            <TextBox  Text="{Binding X4X}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
-                            <TextBox   Text="{Binding X4Y}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
-                        </DockPanel>
-                        <DockPanel  Margin="2">
-                            <TextBlock Text="中心点:"  MinWidth="40"/>
-                            <TextBox  Text="{Binding CenterX}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
-                            <TextBox  Text="{Binding CenterY}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
-                        </DockPanel>
-                        <StackPanel  Margin="0,5">
-                            <UniformGrid Columns="3">
-                                <RadioButton x:Name="RadioButtonBuildMode1" Content="手动添加"  IsChecked="True" />
-                                <RadioButton x:Name="RadioButtonBuildMode2" Content="边距计算"  />
-                                <RadioButton x:Name="RadioButtonBuildMode3" Content="自动计算"  />
-                            </UniformGrid>
-                        </StackPanel>
-                        <StackPanel  Margin="5"  Visibility="{Binding ElementName=RadioButtonBuildMode2, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
-                            <ComboBox x:Name="ComboBoxBorderType"   Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" Margin="0,0,6,0"/>
-                            <UniformGrid Columns="2" >
-                                <DockPanel Margin="2">
-                                    <TextBlock VerticalAlignment="Center"  Text="上:" Width="20"/>
-                                    <TextBox  x:Name="TextBoxUp" Text="10" Margin="5,0" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
-                                </DockPanel>
-                                <DockPanel Margin="2"  >
-                                    <TextBlock  VerticalAlignment="Center"  Text="左:" Width="20"/>
-                                    <TextBox   x:Name="TextBoxLeft" Text="10" Margin="5,0" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
-                                </DockPanel>
-                                <DockPanel Margin="2"  >
-                                    <TextBlock  VerticalAlignment="Center"  Text="下:" Width="20"/>
-                                    <TextBox  x:Name="TextBoxDown"  Text="10" Margin="5,0" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
-                                </DockPanel>
-                                <DockPanel Margin="2">
-                                    <TextBlock VerticalAlignment="Center"  Text="右:" Width="20"/>
-                                    <TextBox  x:Name="TextBoxRight"  Text="10" Margin="5,0" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
-                                </DockPanel>
-                            </UniformGrid>
-                        </StackPanel>
-                        <StackPanel Margin="5"  Visibility="{Binding ElementName=RadioButtonBuildMode3, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
-                            <UniformGrid Columns="2">
-                                <DockPanel Margin="2" >
-                                    <TextBlock Text="阈值:" Width="30"/>
-                                    <TextBox   Text="3" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
-                                </DockPanel>
-                            </UniformGrid>
-                        </StackPanel>
-                        <Button Content="设置基准点" Click="SetDefault_Click"/>
+                    <StackPanel  Orientation="Horizontal" Margin="0,2">
+                        <Button  Content="默认画布" DockPanel.Dock="Right" Click="OpenCAD_Click"  Style="{StaticResource ButtonDefault.Small}" Margin="2,0" />
+                        <Button x:Name="button1" Content="图像导入" HorizontalAlignment="Left"   Style="{StaticResource ButtonDefault.Small}"  Click="Button1_Click" Margin="2,0"/>
+                        <Button x:Name="button4" Content="导入服务最新的图像" Click="Service_Click"  Style="{StaticResource ButtonDefault.Small}" Margin="2,0" />
+                    </StackPanel>
+                    <DockPanel Margin="0,2">
+                        <Button DockPanel.Dock="Right" Margin="2,0" Content="导入" Click="Button_Service_Click"/>
+                        <Button DockPanel.Dock="Right" Margin="2,0"   Content="刷新" Click="Button_RefreshImg_Click"/>
+                        <ComboBox x:Name="ComboBoxImg"  Margin="2,0"  Style="{StaticResource ComboBox.Small}"/>
+                    </DockPanel>
+                    <StackPanel  Margin="2" Orientation="Horizontal">
+                        <Button  ToolTip="保存关注点" Click="Button_save_Click" HorizontalAlignment="Right" Margin="0,0,5,0">
+                            <Image Source="{StaticResource DrawingImageSave}" Height="20" />
+                        </Button>
+                        <Button x:Name="button3" ToolTip="清空关注点" Click="Button3_Click" HorizontalAlignment="Right">
+                            <Image Source="{StaticResource DrawingImageClear}" Height="20"/>
+                        </Button>
                     </StackPanel>
                 </StackPanel>
             </Border>
             
             <ScrollViewer x:Name="ScrollViewer1" Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                 <StackPanel Margin="0" Grid.Row="0" >
-                    <StackPanel  Margin="2">
-                        <UniformGrid Columns="3">
-                            <Button Margin="2" ToolTip="保存关注点" Click="Button_save_Click">
-                                <Image Source="{StaticResource DrawingImageSave}" Height="20"/>
-                            </Button>
-                            <Button x:Name="button3"  Margin="2"  ToolTip="清空关注点" Click="Button3_Click">
-                                <Image Source="{StaticResource DrawingImageClear}" Height="20"/>
-                            </Button>
-                        </UniformGrid>
-                    </StackPanel>
+                    <ToggleButton x:Name="DatumAreaToggleButton" Margin="0,5" Content="基准点设置" Style="{StaticResource ButtonPageControl1}" IsChecked="False" HorizontalAlignment="Left"/>
+                    <Border  Style="{StaticResource BorderModuleArea}" Margin="0,0,0,5" CornerRadius="0">
+                        <StackPanel x:Name="StackPanelDatumAreaPoints" Margin="5" d:DataContext="{d:DesignInstance Template:DatumArea}" Visibility="{Binding ElementName=DatumAreaToggleButton,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
+                            <DockPanel  Margin="2">
+                                <TextBlock Text="X1"   MinWidth="40"/>
+                                <TextBox Text="{Binding X1X}" Width="80" Margin="5,0" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                <TextBox   Text="{Binding X1Y}" Width="80" Margin="5,0"   BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                            </DockPanel>
+                            <DockPanel  Margin="2">
+                                <TextBlock Text="X2"  MinWidth="40"/>
+                                <TextBox  Text="{Binding X2X}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                <TextBox   Text="{Binding X2Y}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                            </DockPanel>
+                            <DockPanel  Margin="2">
+                                <TextBlock  Text="X3"  MinWidth="40" />
+                                <TextBox  Text="{Binding X3X}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                <TextBox   Text="{Binding X3Y}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                            </DockPanel>
+
+                            <DockPanel  Margin="2">
+                                <TextBlock Text="X4"   MinWidth="40"/>
+                                <TextBox  Text="{Binding X4X}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                <TextBox   Text="{Binding X4Y}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                            </DockPanel>
+                            <DockPanel  Margin="2">
+                                <TextBlock Text="中心点:"  MinWidth="40"/>
+                                <TextBox  Text="{Binding CenterX}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                <TextBox  Text="{Binding CenterY}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                            </DockPanel>
+                            <StackPanel  Margin="0,5">
+                                <UniformGrid Columns="3">
+                                    <RadioButton x:Name="RadioButtonBuildMode1" Content="手动添加"  IsChecked="True" />
+                                    <RadioButton x:Name="RadioButtonBuildMode2" Content="边距计算"  />
+                                    <RadioButton x:Name="RadioButtonBuildMode3" Content="自动计算"  />
+                                </UniformGrid>
+                            </StackPanel>
+                            <StackPanel  Margin="5"  Visibility="{Binding ElementName=RadioButtonBuildMode2, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
+                                <ComboBox x:Name="ComboBoxBorderType"   Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" Margin="0,0,6,0"/>
+                                <UniformGrid Columns="2" >
+                                    <DockPanel Margin="2">
+                                        <TextBlock VerticalAlignment="Center"  Text="上:" Width="20"/>
+                                        <TextBox  x:Name="TextBoxUp" Text="10" Margin="5,0" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
+                                    </DockPanel>
+                                    <DockPanel Margin="2"  >
+                                        <TextBlock  VerticalAlignment="Center"  Text="左:" Width="20"/>
+                                        <TextBox   x:Name="TextBoxLeft" Text="10" Margin="5,0" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
+                                    </DockPanel>
+                                    <DockPanel Margin="2"  >
+                                        <TextBlock  VerticalAlignment="Center"  Text="下:" Width="20"/>
+                                        <TextBox  x:Name="TextBoxDown"  Text="10" Margin="5,0" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
+                                    </DockPanel>
+                                    <DockPanel Margin="2">
+                                        <TextBlock VerticalAlignment="Center"  Text="右:" Width="20"/>
+                                        <TextBox  x:Name="TextBoxRight"  Text="10" Margin="5,0" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
+                                    </DockPanel>
+                                </UniformGrid>
+                            </StackPanel>
+                            <StackPanel Margin="5"  Visibility="{Binding ElementName=RadioButtonBuildMode3, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
+                                <UniformGrid Columns="2">
+                                    <DockPanel Margin="2" >
+                                        <TextBlock Text="阈值:" Width="30"/>
+                                        <TextBox   Text="3" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                    </DockPanel>
+                                </UniformGrid>
+                            </StackPanel>
+                            <Button Content="设置基准点" Click="SetDefault_Click"/>
+                        </StackPanel>
+                    </Border>
                     <Border Margin="0" Style="{StaticResource BorderModuleArea}"  CornerRadius="0,0,5,5">
                         <TabControl Background="Transparent">
                             <TabItem Header="配置参数">
