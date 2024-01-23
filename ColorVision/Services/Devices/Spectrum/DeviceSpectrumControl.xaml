@@ -63,10 +63,6 @@
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.Code}"/>
                                     </DockPanel>
                                     <DockPanel>
-                                        <TextBlock Text="光谱仪ID" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.Id}"/>
-                                    </DockPanel>
-                                    <DockPanel>
                                         <TextBlock Text="发送信道" Width="120"/>
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.SendTopic}"/>
                                     </DockPanel>
@@ -77,6 +73,10 @@
                                     <DockPanel>
                                         <TextBlock Text="心跳时间(ms)"  Width="120"/>
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.HeartbeatTime}"/>
+                                    </DockPanel>
+                                    <DockPanel>
+                                        <TextBlock Text="设备自连接"  Width="120"/>
+                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.IsAutoStart}"/>
                                     </DockPanel>
                                 </StackPanel>
                             </GroupBox>
@@ -141,7 +141,7 @@
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="0,2" >
                                             <TextBlock Text="Code" Width="120"/>
-                                            <TextBox Text="{Binding Name}"/>
+                                            <TextBox Text="{Binding Config.Code}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,2" >
                                             <TextBlock Text="界面展示名称" Width="120"/>
@@ -150,6 +150,10 @@
                                         <DockPanel Margin="0,2" >
                                             <TextBlock Text="心跳时间(ms)"  Width="120"/>
                                             <TextBox Text="{Binding Config.HeartbeatTime}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,5" >
+                                            <TextBlock Text="设备自连接" Width="120"/>
+                                            <CheckBox Content="启用" IsChecked="{Binding Config.IsAutoStart}"/>
                                         </DockPanel>
                                     </StackPanel>
                                 </GroupBox>

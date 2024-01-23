@@ -4,6 +4,7 @@ using System.Windows;
 using CVImageChannelLib;
 using log4net;
 using OpenCvSharp.Extensions;
+using ScottPlot.Drawing.Colormaps;
 
 namespace ColorVision.Services.Devices.Camera.Video
 {
@@ -32,12 +33,23 @@ namespace ColorVision.Services.Devices.Camera.Video
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    System.Drawing.Bitmap bmpNew = ReSize(bmp);
-                    CameraVideoFrameReceived?.Invoke(bmpNew);
-                    bmpNew.Dispose();
-                    bmp.Dispose();
+                    if(IsResize(bmp.Width, bmp.Height)) {
+                        System.Drawing.Bitmap bmpNew = ReSize(bmp);
+                        CameraVideoFrameReceived?.Invoke(bmpNew);
+                        bmpNew.Dispose();
+                        bmp.Dispose();
+                    }
+                    else
+                    {
+                        CameraVideoFrameReceived?.Invoke(bmp);
+                        bmp.Dispose();
+                    }
                 });
             }
+        }
+        private bool IsResize(int width,int height)
+        {
+            return (this.width != width || this.height != height);
         }
         private System.Drawing.Bitmap ReSize(System.Drawing.Bitmap bmp)
         {
