@@ -60,9 +60,6 @@ namespace ColorVision.Templates.POI.Dao
             dInfo.Columns.Add("pix_height", typeof(int));
             dInfo.Columns.Add("pix_x", typeof(int));
             dInfo.Columns.Add("pix_y", typeof(int));
-            //dataTable.Columns.Add("create_date", typeof(DateTime));
-            dInfo.Columns.Add("is_enable", typeof(bool));
-            dInfo.Columns.Add("is_delete", typeof(bool));
             dInfo.Columns.Add("remark", typeof(string));
             return dInfo;
         }
@@ -73,17 +70,14 @@ namespace ColorVision.Templates.POI.Dao
             PoiDetailModel model = new PoiDetailModel
             {
                 Id = item.Field<int>("id"),
-                Name = item.Field<string>("name"),
+                Name = item.Field<string?>("name"),
                 Type = item.Field<sbyte>("pt_type"),
-                Pid = item.Field<int>("pid"),
-                PixWidth = item.Field<int>("pix_width"),
-                PixHeight = item.Field<int>("pix_height"),
-                PixX = item.Field<int>("pix_x"),
-                PixY = item.Field<int>("pix_y"),
-                //CreateDate = item.Field<DateTime>("create_date"),
-                IsEnable = item.Field<bool>("is_enable"),
-                IsDelete = item.Field<bool>("is_delete"),
-                Remark = item.Field<string>("remark"),
+                Pid = item.Field<int?>("pid"),
+                PixWidth = item.Field<int?>("pix_width"),
+                PixHeight = item.Field<int?>("pix_height"),
+                PixX = item.Field<int?>("pix_x"),
+                PixY = item.Field<int?>("pix_y"),
+                Remark = item.Field<string?>("remark"),
             };
             return model;
         }
@@ -100,9 +94,6 @@ namespace ColorVision.Templates.POI.Dao
                 if (item.PixHeight > 0) row["pix_height"] = item.PixHeight;
                 if (item.PixX >= 0) row["pix_x"] = item.PixX;
                 if (item.PixY >= 0) row["pix_y"] = item.PixY;
-                //row["create_date"] = item.CreateDate;
-                //row["is_enable"] = item.IsEnable;
-                //row["is_delete"] = item.IsDelete;
                 if (item.Remark != null) row["remark"] = item.Remark;
             }
             return row;

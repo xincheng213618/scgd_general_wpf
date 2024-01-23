@@ -330,9 +330,6 @@
   <data name="ThemePink" xml:space="preserve">
     <value>розовый</value>
   </data>
-  <data name="EnableDatabase" xml:space="preserve">
-    <value>Включить базу данных</value>
-  </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>Макет интерфейса запуска восстановления</value>
   </data>
@@ -349,13 +346,10 @@
     <value>Отключить аппаратное ускорение</value>
   </data>
   <data name="LaunchSoftwareWithLocalService" xml:space="preserve">
-    <value>Откройте локальную службу при запуске программного обеспечения.</value>
+    <value>Откройте локальную службу при запуске программного обеспечения</value>
   </data>
   <data name="Wizard" xml:space="preserve">
     <value>волшебник</value>
-  </data>
-  <data name="ClearCache" xml:space="preserve">
-    <value>очистить кэш</value>
   </data>
   <data name="Clear" xml:space="preserve">
     <value>Прозрачный</value>
@@ -437,5 +431,20 @@
   </data>
   <data name="RegistryCenter" xml:space="preserve">
     <value>Регистрационный центр</value>
+  </data>
+  <data name="EnableDatabase" xml:space="preserve">
+    <value>Включить базу данных</value>
+  </data>
+  <data name="ClearCache" xml:space="preserve">
+    <value>очистить кэш</value>
+  </data>
+  <data name="Success" xml:space="preserve">
+    <value>успех</value>
+  </data>
+  <data name="Failure" xml:space="preserve">
+    <value>неудача</value>
+  </data>
+  <data name="Acquire" xml:space="preserve">
+    <value>коллекция</value>
   </data>
 </root>

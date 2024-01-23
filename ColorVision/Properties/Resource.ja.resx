@@ -324,14 +324,8 @@
   <data name="Code" xml:space="preserve">
     <value>コード</value>
   </data>
-  <data name="MTFToolTip" xml:space="preserve">
-    <value>Modulation Transfer Function</value>
-  </data>
   <data name="ThemePink" xml:space="preserve">
     <value>ピンク</value>
-  </data>
-  <data name="EnableDatabase" xml:space="preserve">
-    <value>データベースを有効にする</value>
   </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>回復インターフェイスのレイアウトを開始します</value>
@@ -353,9 +347,6 @@
   </data>
   <data name="Wizard" xml:space="preserve">
     <value>ウィザード</value>
-  </data>
-  <data name="ClearCache" xml:space="preserve">
-    <value>キャッシュの消去</value>
   </data>
   <data name="Clear" xml:space="preserve">
     <value>クリア</value>
@@ -437,5 +428,23 @@
   </data>
   <data name="RegistryCenter" xml:space="preserve">
     <value>登録センター</value>
+  </data>
+  <data name="MTFToolTip" xml:space="preserve">
+    <value>変調伝達関数</value>
+  </data>
+  <data name="EnableDatabase" xml:space="preserve">
+    <value>データベースを有効にする</value>
+  </data>
+  <data name="ClearCache" xml:space="preserve">
+    <value>キャッシュの消去</value>
+  </data>
+  <data name="Success" xml:space="preserve">
+    <value>成功</value>
+  </data>
+  <data name="Failure" xml:space="preserve">
+    <value>失敗</value>
+  </data>
+  <data name="Acquire" xml:space="preserve">
+    <value>コレクション</value>
   </data>
 </root>

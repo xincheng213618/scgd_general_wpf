@@ -131,8 +131,6 @@ namespace ColorVision.Templates.POI.Dao
                 if (item.CfgJson != null) row["cfg_json"] = item.CfgJson;
                 row["dynamics"] = item.IsDynamics;
                 row["create_date"] = item.CreateDate;
-                //row["is_enable"] = item.IsEnable;
-                //row["is_delete"] = item.IsDelete;
                 if (item.Remark != null) row["remark"] = item.Remark;
                 row["tenant_id"] = item.TenantId;
             }

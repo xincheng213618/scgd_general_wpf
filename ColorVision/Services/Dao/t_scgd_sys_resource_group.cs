@@ -18,8 +18,6 @@ namespace ColorVision.Services.Dao
 
         }
 
-
-
         public override ResourceGroupAssociation GetModel(DataRow item)
         {
             ResourceGroupAssociation model = new ResourceGroupAssociation

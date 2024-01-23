@@ -331,7 +331,7 @@
     <value>粉色</value>
   </data>
   <data name="EnableDatabase" xml:space="preserve">
-    <value>启用数据库    </value>
+    <value>启用数据库</value>
   </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>启动恢复界面布局</value>
@@ -355,7 +355,7 @@
     <value>向导</value>
   </data>
   <data name="ClearCache" xml:space="preserve">
-    <value>清除缓存 </value>
+    <value>清除缓存</value>
   </data>
   <data name="Clear" xml:space="preserve">
     <value>清除</value>
@@ -437,5 +437,14 @@
   </data>
   <data name="RegistryCenter" xml:space="preserve">
     <value>注册中心</value>
+  </data>
+  <data name="Success" xml:space="preserve">
+    <value>成功</value>
+  </data>
+  <data name="Failure" xml:space="preserve">
+    <value>失败</value>
+  </data>
+  <data name="Acquire" xml:space="preserve">
+    <value>采集</value>
   </data>
 </root>

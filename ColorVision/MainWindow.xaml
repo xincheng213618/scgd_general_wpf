@@ -110,7 +110,7 @@
                     <TranslateTransform />
                 </UIElement.RenderTransform>
                 <TabControl Style="{StaticResource TabControlBaseStyle}" TabStripPlacement="Bottom" >
-                    <TabItem x:Name="ViewTab" Header="采集" Width="150" >
+                    <TabItem x:Name="ViewTab" Header="{x:Static properties:Resource.Acquire}" Width="150" >
                         <ScrollViewer x:Name="ScrollViewerDisplay" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" >
                             <StackPanel x:Name="SPDisplay" >
                                 <StackPanel x:Name="StackPanelSPD" Initialized="StackPanelSPD_Initialized" >
@@ -119,7 +119,7 @@
                         </ScrollViewer>
 
                     </TabItem>
-                    <TabItem x:Name="SolutionTab" Header="工程" Width="150" >
+                    <TabItem x:Name="SolutionTab" Header="{x:Static properties:Resource.Project}" Width="150" >
                         <Solution:TreeViewControl  />
                     </TabItem>
                 </TabControl>
