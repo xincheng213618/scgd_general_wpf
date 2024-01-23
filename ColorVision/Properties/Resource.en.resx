@@ -324,14 +324,8 @@
   <data name="Code" xml:space="preserve">
     <value>Code</value>
   </data>
-  <data name="MTFToolTip" xml:space="preserve">
-    <value>Modulation Transfer Function</value>
-  </data>
   <data name="ThemePink" xml:space="preserve">
     <value>Pink</value>
-  </data>
-  <data name="EnableDatabase" xml:space="preserve">
-    <value>Enable database</value>
   </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>Start recovery interface layout</value>
@@ -353,9 +347,6 @@
   </data>
   <data name="Wizard" xml:space="preserve">
     <value>wizard</value>
-  </data>
-  <data name="ClearCache" xml:space="preserve">
-    <value>clear cache</value>
   </data>
   <data name="Clear" xml:space="preserve">
     <value>Clear</value>
@@ -437,5 +428,14 @@
   </data>
   <data name="RegistryCenter" xml:space="preserve">
     <value>Registration center</value>
+  </data>
+  <data name="MTFToolTip" xml:space="preserve">
+    <value>modulation transfer function</value>
+  </data>
+  <data name="EnableDatabase" xml:space="preserve">
+    <value>Enable Database</value>
+  </data>
+  <data name="ClearCache" xml:space="preserve">
+    <value>Clear Cache</value>
   </data>
 </root>

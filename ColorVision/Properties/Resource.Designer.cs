@@ -160,7 +160,7 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 清除缓存  的本地化字符串。
+        ///   查找类似 清除缓存 的本地化字符串。
         /// </summary>
         public static string ClearCache {
             get {
@@ -259,7 +259,7 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 启用数据库     的本地化字符串。
+        ///   查找类似 启用数据库 的本地化字符串。
         /// </summary>
         public static string EnableDatabase {
             get {

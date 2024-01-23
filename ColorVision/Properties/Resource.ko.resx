@@ -199,7 +199,7 @@
     <value>UI 언어</value>
   </data>
   <data name="MenuLanguage" xml:space="preserve">
-    <value>語言(_L）</value>
+    <value>언어(_L)</value>
   </data>
   <data name="Theme" xml:space="preserve">
     <value>테마</value>
@@ -324,14 +324,8 @@
   <data name="Code" xml:space="preserve">
     <value>암호</value>
   </data>
-  <data name="MTFToolTip" xml:space="preserve">
-    <value>Modulation Transfer Function</value>
-  </data>
   <data name="ThemePink" xml:space="preserve">
     <value>분홍색</value>
-  </data>
-  <data name="EnableDatabase" xml:space="preserve">
-    <value>데이터베이스 활성화</value>
   </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>복구 인터페이스 레이아웃 시작</value>
@@ -353,9 +347,6 @@
   </data>
   <data name="Wizard" xml:space="preserve">
     <value>마법사</value>
-  </data>
-  <data name="ClearCache" xml:space="preserve">
-    <value>캐시 지우기</value>
   </data>
   <data name="Clear" xml:space="preserve">
     <value>분명한</value>
@@ -437,5 +428,14 @@
   </data>
   <data name="RegistryCenter" xml:space="preserve">
     <value>등록센터</value>
+  </data>
+  <data name="MTFToolTip" xml:space="preserve">
+    <value>변조 전달 함수</value>
+  </data>
+  <data name="EnableDatabase" xml:space="preserve">
+    <value>데이터베이스 활성화</value>
+  </data>
+  <data name="ClearCache" xml:space="preserve">
+    <value>캐시 지우기</value>
   </data>
 </root>

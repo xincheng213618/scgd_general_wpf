@@ -199,13 +199,10 @@
     <value>語言</value>
   </data>
   <data name="MenuLanguage" xml:space="preserve">
-    <value>언어(_L)</value>
+    <value>語言(_L）</value>
   </data>
   <data name="Theme" xml:space="preserve">
     <value>主題</value>
-  </data>
-  <data name="MenuTheme" xml:space="preserve">
-    <value>테마(_H)</value>
   </data>
   <data name="FillPassword" xml:space="preserve">
     <value>請輸入密碼</value>
@@ -324,14 +321,8 @@
   <data name="Code" xml:space="preserve">
     <value>程式碼</value>
   </data>
-  <data name="MTFToolTip" xml:space="preserve">
-    <value>Modulation Transfer Function</value>
-  </data>
   <data name="ThemePink" xml:space="preserve">
     <value>粉紅色</value>
-  </data>
-  <data name="EnableDatabase" xml:space="preserve">
-    <value>啟用資料庫</value>
   </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>啟動復原介面佈局</value>
@@ -353,9 +344,6 @@
   </data>
   <data name="Wizard" xml:space="preserve">
     <value>嚮導</value>
-  </data>
-  <data name="ClearCache" xml:space="preserve">
-    <value>清除快取</value>
   </data>
   <data name="Clear" xml:space="preserve">
     <value>清除</value>
@@ -437,5 +425,17 @@
   </data>
   <data name="RegistryCenter" xml:space="preserve">
     <value>註冊中心</value>
+  </data>
+  <data name="MenuTheme" xml:space="preserve">
+    <value>主題(H)</value>
+  </data>
+  <data name="MTFToolTip" xml:space="preserve">
+    <value>調製傳遞函數</value>
+  </data>
+  <data name="EnableDatabase" xml:space="preserve">
+    <value>啟用資料庫</value>
+  </data>
+  <data name="ClearCache" xml:space="preserve">
+    <value>清除快取</value>
   </data>
 </root>
