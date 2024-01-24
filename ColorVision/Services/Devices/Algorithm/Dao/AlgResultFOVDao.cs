@@ -20,7 +20,7 @@ namespace ColorVision.Services.Devices.Algorithm.Dao
         {
         }
 
-        public override AlgResultFOVModel GetModel(DataRow item)
+        public override AlgResultFOVModel GetModelFromDataRow(DataRow item)
         {
             AlgResultFOVModel model = new AlgResultFOVModel
             {

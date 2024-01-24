@@ -29,7 +29,7 @@ namespace ColorVision.Services.Dao
         {
         }
 
-        public override MeasureMasterModel GetModel(DataRow item)
+        public override MeasureMasterModel GetModelFromDataRow(DataRow item)
         {
             MeasureMasterModel model = new MeasureMasterModel
             {

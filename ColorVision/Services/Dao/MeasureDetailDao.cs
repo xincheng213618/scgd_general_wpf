@@ -20,7 +20,7 @@ namespace ColorVision.Services.Dao
         {
         }
 
-        public override MeasureDetailModel GetModel(DataRow item)
+        public override MeasureDetailModel GetModelFromDataRow(DataRow item)
         {
             MeasureDetailModel model = new MeasureDetailModel
             {

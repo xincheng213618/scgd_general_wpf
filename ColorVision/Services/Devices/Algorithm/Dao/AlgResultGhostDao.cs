@@ -26,7 +26,7 @@ namespace ColorVision.Services.Devices.Algorithm.Dao
         {
         }
 
-        public override AlgResultGhostModel GetModel(DataRow item)
+        public override AlgResultGhostModel GetModelFromDataRow(DataRow item)
         {
             AlgResultGhostModel model = new AlgResultGhostModel
             {

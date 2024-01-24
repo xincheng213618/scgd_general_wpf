@@ -83,7 +83,7 @@ namespace ColorVision.Templates.POI.Dao
 
         }
 
-        public override PoiMasterModel GetModel(DataRow item)
+        public override PoiMasterModel GetModelFromDataRow(DataRow item)
         {
             PoiMasterModel model = new PoiMasterModel
             {

@@ -31,6 +31,7 @@
                 <Image Source="{DynamicResource DrawingImageProperty}" Height="18" Margin="0,0,0,0"/>
                 <Button Background="Transparent" BorderThickness="0" Command="{Binding PropertyCommand}" />
             </Grid>
+            <Button Content="温度"  DockPanel.Dock="Right" Command="{Binding FetchLatestTemperatureCommand}"/>
             <Grid>
                 <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}" Content="{Binding Config.Name}"  FontSize="15"  IsChecked="{Binding IsDisplayOpen}" />
                 <Grid  Height="18"   HorizontalAlignment="Left" MouseLeftButtonDown="Grid_MouseLeftButtonDown" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" Background="{DynamicResource GlobalBackground}" Margin="4,0,0,0">

@@ -24,7 +24,7 @@ namespace ColorVision.Services.Dao
         {
         }
 
-        public override POIPointResultModel GetModel(DataRow item)
+        public override POIPointResultModel GetModelFromDataRow(DataRow item)
         {
             POIPointResultModel model = new POIPointResultModel
             {

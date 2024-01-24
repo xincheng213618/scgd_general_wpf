@@ -1871,12 +1871,11 @@ namespace ColorVision.Templates.POI
         MeasureImgResultDao MeasureImgResultDao = new MeasureImgResultDao();
         private void Service_Click(object sender, RoutedEventArgs e)
         {
-            var imgs = MeasureImgResultDao.GetCreateDate();
-            if (imgs.Count != 0)
+            if (MeasureImgResultDao.GetLatestMeasureImgResult() is MeasureImgResultModel measureImgResultModel)
             {
                 try
                 {
-                    OpenImage(new NetFileUtil("1").OpenLocalCVCIEFile(imgs[0].FileUrl, FileExtType.Raw));
+                    OpenImage(new NetFileUtil("1").OpenLocalCVCIEFile(measureImgResultModel.FileUrl, FileExtType.Raw));
                 }
                 catch(Exception ex)
                 {

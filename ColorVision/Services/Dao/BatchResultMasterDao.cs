@@ -35,7 +35,7 @@ namespace ColorVision.Services.DAO
         {
         }
 
-        public override BatchResultMasterModel GetModel(DataRow item)
+        public override BatchResultMasterModel GetModelFromDataRow(DataRow item)
         {
             BatchResultMasterModel model = new BatchResultMasterModel
             {
@@ -76,7 +76,7 @@ namespace ColorVision.Services.DAO
                 { "code", code }
             };
             DataTable d_info = GetData(sql, param);
-            return (d_info !=null && d_info.Rows.Count == 1) ? GetModel(d_info.Rows[0]) : default;
+            return (d_info !=null && d_info.Rows.Count == 1) ? GetModelFromDataRow(d_info.Rows[0]) : default;
         }
 
         public int UpdateEnd(string bid, int totalTime, string result)

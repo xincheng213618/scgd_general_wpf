@@ -23,7 +23,7 @@ namespace ColorVision.Services.Devices.Algorithm.Dao
         {
         }
 
-        public override AlgResultMTFModel GetModel(DataRow item)
+        public override AlgResultMTFModel GetModelFromDataRow(DataRow item)
         {
             AlgResultMTFModel model = new AlgResultMTFModel
             {

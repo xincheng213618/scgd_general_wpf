@@ -176,10 +176,11 @@ namespace ColorVision
                     {
                         InstallCertificate(x509Certificate2);
                     };
-                    MenuHelp.Items.Insert(4, menuItem);
+                    MenuHelp.Items.Insert(5, menuItem);
                 }
             });
         }
+
         static X509Certificate2? GetCertificateFromSignedFile(string? fileName)
         {
             if (!File.Exists(fileName)) return null;
@@ -213,8 +214,6 @@ namespace ColorVision
                 Console.WriteLine($"An error occurred while installing the certificate: {ex.Message}");
             }
         }
-
-
 
         public async Task CheckVersion()
         {

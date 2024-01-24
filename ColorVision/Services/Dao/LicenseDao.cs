@@ -37,7 +37,7 @@ namespace ColorVision.Services.Dao
         }
 
 
-        public override LicenseModel GetModel(DataRow item)
+        public override LicenseModel GetModelFromDataRow(DataRow item)
         {
             LicenseModel model = new LicenseModel
             {

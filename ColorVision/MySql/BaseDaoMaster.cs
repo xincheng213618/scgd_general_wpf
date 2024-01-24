@@ -297,7 +297,7 @@ namespace ColorVision.MySql
                 { "id", id }
             };
             DataTable d_info = GetData(sql, param);
-            return d_info.Rows.Count == 1 ? GetModel(d_info.Rows[0]) : default;
+            return d_info.Rows.Count == 1 ? GetModelFromDataRow(d_info.Rows[0]) : default;
         }
 
         public virtual DataTable GetTableAllByTenantId(int tenantId)
@@ -362,7 +362,7 @@ namespace ColorVision.MySql
             DataTable d_info = GetData(sql);
             foreach (var item in d_info.AsEnumerable())
             {
-                T? model = GetModel(item);
+                T? model = GetModelFromDataRow(item);
                 if (model != null)
                 {
                     list.Add(model);
@@ -390,7 +390,7 @@ namespace ColorVision.MySql
             DataTable d_info = GetData(sql);
             foreach (var item in d_info.AsEnumerable())
             {
-                T? model = GetModel(item);
+                T? model = GetModelFromDataRow(item);
                 if (model != null)
                 {
                     list.Add(model);
@@ -408,7 +408,7 @@ namespace ColorVision.MySql
             DataTable d_info = GetTableAllByTenantId(tenantId);
             foreach (var item in d_info.AsEnumerable())
             {
-                T? model = GetModel(item);
+                T? model = GetModelFromDataRow(item);
                 if(model != null)
                 {
                     list.Add(model);
@@ -423,7 +423,7 @@ namespace ColorVision.MySql
             DataTable d_info = GetTablePidIsNotNullByTenantId(tenantId);
             foreach (var item in d_info.AsEnumerable())
             {
-                T? model = GetModel(item);
+                T? model = GetModelFromDataRow(item);
                 if (model != null)
                 {
                     list.Add(model);
@@ -438,7 +438,7 @@ namespace ColorVision.MySql
             DataTable d_info = GetTablePidIsNullByTenantId(tenantId);
             foreach (var item in d_info.AsEnumerable())
             {
-                T? model = GetModel(item);
+                T? model = GetModelFromDataRow(item);
                 if (model != null)
                 {
                     list.Add(model);
@@ -455,7 +455,7 @@ namespace ColorVision.MySql
             DataTable d_info = GetTableAllByPid(pid);
             foreach (var item in d_info.AsEnumerable())
             {
-                T? model = GetModel(item);
+                T? model = GetModelFromDataRow(item);
                 if (model != null)
                 {
                     list.Add(model);
@@ -470,7 +470,7 @@ namespace ColorVision.MySql
             DataTable d_info = GetTableAllByBatchid(pid);
             foreach (var item in d_info.AsEnumerable())
             {
-                T? model = GetModel(item);
+                T? model = GetModelFromDataRow(item);
                 if (model != null)
                 {
                     list.Add(model);
@@ -485,7 +485,7 @@ namespace ColorVision.MySql
             DataTable d_info = GetTableAllByBatchCode(code);
             foreach (var item in d_info.AsEnumerable())
             {
-                T? model = GetModel(item);
+                T? model = GetModelFromDataRow(item);
                 if (model != null)
                 {
                     list.Add(model);
@@ -507,7 +507,7 @@ namespace ColorVision.MySql
             DataTable d_info = GetTableAllByPcode(pcode);
             foreach (var item in d_info.AsEnumerable())
             {
-                T? model = GetModel(item);
+                T? model = GetModelFromDataRow(item);
                 if (model != null)
                 {
                     list.Add(model);
@@ -516,7 +516,7 @@ namespace ColorVision.MySql
             return list;
         }
 
-        public virtual T? GetModel(DataRow item) => default;
+        public virtual T? GetModelFromDataRow(DataRow item) => default;
 
         public DataRow GetRow(T item, DataTable dataTable)
         {

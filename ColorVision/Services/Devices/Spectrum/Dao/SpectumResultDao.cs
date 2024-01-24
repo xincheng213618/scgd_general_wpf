@@ -21,7 +21,7 @@ namespace ColorVision.Services.Devices.Spectrum.Dao
             DataTable d_info = GetTableAllBySN(sn);
             foreach (var item in d_info.AsEnumerable())
             {
-                SpectumResultModel? model = GetModel(item);
+                SpectumResultModel? model = GetModelFromDataRow(item);
                 if (model != null)
                 {
                     list.Add(model);
@@ -46,7 +46,7 @@ namespace ColorVision.Services.Devices.Spectrum.Dao
         }
 
 
-        public override SpectumResultModel GetModel(DataRow item)
+        public override SpectumResultModel GetModelFromDataRow(DataRow item)
         {
             SpectumResultModel model = new SpectumResultModel
             {

@@ -52,7 +52,7 @@ namespace ColorVision.Services.Dao
 
         public string GetPCode() { return _code; }
 
-        public override ModMasterModel GetModel(DataRow item)
+        public override ModMasterModel GetModelFromDataRow(DataRow item)
         {
             ModMasterModel model = new ModMasterModel
             {
@@ -98,7 +98,7 @@ namespace ColorVision.Services.Dao
             DataTable d_info = GetTableAllByTenantIdAdnResId(tenantId, resourceId);
             foreach (var item in d_info.AsEnumerable())
             {
-                ModMasterModel? model = GetModel(item);
+                ModMasterModel? model = GetModelFromDataRow(item);
                 if (model != null)
                 {
                     list.Add(model);
@@ -114,7 +114,7 @@ namespace ColorVision.Services.Dao
             DataTable d_info = GetTableAllByTenantId(tenantId);
             foreach (var item in d_info.AsEnumerable())
             {
-                ModMasterModel? model = GetModel(item);
+                ModMasterModel? model = GetModelFromDataRow(item);
                 if (model != null)
                 {
                     list.Add(model);

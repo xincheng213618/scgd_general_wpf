@@ -2,6 +2,7 @@
 
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using ColorVision.MySql;
 
 namespace ColorVision.Services.Dao
@@ -32,11 +33,9 @@ namespace ColorVision.Services.Dao
     {
         public MeasureImgResultDao() : base("v_scgd_measure_result_img", "t_scgd_measure_result_img", "id", false)
         {
+
         }
-
-
-
-        public override MeasureImgResultModel GetModel(DataRow item)
+        public override MeasureImgResultModel GetModelFromDataRow(DataRow item)
         {
             MeasureImgResultModel model = new MeasureImgResultModel
             {
@@ -57,14 +56,24 @@ namespace ColorVision.Services.Dao
             };
             return model;
         }
-        public List<MeasureImgResultModel> GetCreateDate(int LIMIT = 1)
+
+        public MeasureImgResultModel? GetLatestMeasureImgResult()
+        {
+            return GetMeasureImgResultByCreateDate(limit: 1).FirstOrDefault();
+        }
+
+        public List<MeasureImgResultModel> GetMeasureImgResultByCreateDate(int limit = 1)
         {
             List<MeasureImgResultModel> list = new List<MeasureImgResultModel>();
-            string sql = $"select * from {GetTableName()} ORDER BY create_date DESC LIMIT {LIMIT}";
-            DataTable d_info = GetData(sql);
+            string sql = $"select * from {GetTableName()} ORDER BY create_date DESC LIMIT @Limit";
+            var parameters = new Dictionary<string, object>
+            {
+                {"@Limit", limit}
+            };
+            DataTable d_info = GetData(sql, parameters);
             foreach (var item in d_info.AsEnumerable())
             {
-                MeasureImgResultModel? model = GetModel(item);
+                MeasureImgResultModel? model = GetModelFromDataRow(item);
                 if (model != null)
                 {
                     list.Add(model);

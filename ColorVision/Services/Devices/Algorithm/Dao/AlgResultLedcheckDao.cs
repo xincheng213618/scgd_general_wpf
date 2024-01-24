@@ -16,7 +16,7 @@ namespace ColorVision.Services.Devices.Algorithm.Dao
         {
         }
 
-        public override AlgResultLedcheckModel GetModel(DataRow item)
+        public override AlgResultLedcheckModel GetModelFromDataRow(DataRow item)
         {
             AlgResultLedcheckModel model = new AlgResultLedcheckModel
             {

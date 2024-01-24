@@ -35,7 +35,7 @@ namespace ColorVision.Services.Dao
         {
         }
 
-        public override ModDetailModel GetModel(DataRow item)
+        public override ModDetailModel GetModelFromDataRow(DataRow item)
         {
             ModDetailModel model = new ModDetailModel
             {

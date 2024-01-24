@@ -20,7 +20,7 @@ namespace ColorVision.Services.Dao
         {
         }
 
-        public override SysModMasterModel GetModel(DataRow item)
+        public override SysModMasterModel GetModelFromDataRow(DataRow item)
         {
             SysModMasterModel model = new SysModMasterModel
             {

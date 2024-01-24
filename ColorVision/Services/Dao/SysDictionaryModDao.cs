@@ -16,7 +16,7 @@ namespace ColorVision.Services.Dao
         {
         }
 
-        public override SysDictionaryModModel GetModel(DataRow item)
+        public override SysDictionaryModModel GetModelFromDataRow(DataRow item)
         {
             SysDictionaryModModel model = new SysDictionaryModModel
             {
@@ -40,7 +40,7 @@ namespace ColorVision.Services.Dao
                 { "tenantId", tenantId }
             };
             DataTable d_info = GetData(sql, param);
-            return d_info.Rows.Count == 1 ? GetModel(d_info.Rows[0]) : new SysDictionaryModModel();
+            return d_info.Rows.Count == 1 ? GetModelFromDataRow(d_info.Rows[0]) : new SysDictionaryModModel();
         }
     }
 }

@@ -18,7 +18,7 @@ namespace ColorVision.Services.Dao
         {
         }
 
-        public override SysDictionaryModel GetModel(DataRow item)
+        public override SysDictionaryModel GetModelFromDataRow(DataRow item)
         {
             SysDictionaryModel model = new SysDictionaryModel
             {

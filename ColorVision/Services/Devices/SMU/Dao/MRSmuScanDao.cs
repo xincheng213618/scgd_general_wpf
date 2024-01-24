@@ -82,7 +82,7 @@ namespace ColorVision.Services.Devices.SMU.Dao
             DataTable d_info = GetTableAllBySN(sn);
             foreach (var item in d_info.AsEnumerable())
             {
-                SmuScanModel? model = GetModel(item);
+                SmuScanModel? model = GetModelFromDataRow(item);
                 if (model != null)
                 {
                     list.Add(model);
@@ -98,7 +98,7 @@ namespace ColorVision.Services.Devices.SMU.Dao
             return d_info;
         }
 
-        public override SmuScanModel GetModel(DataRow item)
+        public override SmuScanModel GetModelFromDataRow(DataRow item)
         {
             SmuScanModel model = new SmuScanModel
             {

@@ -91,7 +91,7 @@ namespace ColorVision.Services.Devices.Algorithm.Dao
         }
 
 
-        public override AlgResultMasterModel GetModel(DataRow item)
+        public override AlgResultMasterModel GetModelFromDataRow(DataRow item)
         {
             AlgResultMasterModel model = new AlgResultMasterModel
             {

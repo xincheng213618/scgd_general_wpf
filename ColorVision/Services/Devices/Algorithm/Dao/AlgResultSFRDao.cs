@@ -20,7 +20,7 @@ namespace ColorVision.Services.Devices.Algorithm.Dao
         {
         }
 
-        public override AlgResultSFRModel GetModel(DataRow item)
+        public override AlgResultSFRModel GetModelFromDataRow(DataRow item)
         {
             AlgResultSFRModel model = new AlgResultSFRModel
             {

@@ -53,6 +53,8 @@ namespace ColorVision.Services.Devices.Camera
         public MQTTTerminalCamera Service { get; set; }
 
         public RelayCommand UploadCalibrationCommand { get; set; }
+        public RelayCommand FetchLatestTemperatureCommand { get; set; }
+
 
         public DeviceCamera(SysResourceModel sysResourceModel, MQTTTerminalCamera cameraService) : base(sysResourceModel)
         {
@@ -82,6 +84,23 @@ namespace ColorVision.Services.Devices.Camera
 
             CalibrationRsourceService.GetInstance().Refresh();
             TemplateControl.GetInstance().LoadModCabParam(CalibrationParams, SysResourceModel.Id, ModMasterType.Calibration);
+
+            FetchLatestTemperatureCommand =  new RelayCommand(a => FetchLatestTemperature(a));
+
+        }
+        public CameraTempDao cameraTempDao { get; set; } = new CameraTempDao();   
+
+        private void FetchLatestTemperature(object a)
+        {
+            var model = cameraTempDao.GetLatestCameraTemp(SysResourceModel.Id);
+            if (model != null)
+            {
+                MessageBox.Show(Application.Current.MainWindow, $"{model.CreateDate:HH:mm:ss} {Environment.NewLine}温度:{model.TempValue}，PWM:{model.PwmValue}");
+            }
+            else
+            {
+                MessageBox.Show(Application.Current.MainWindow, "查询不到对应的温度数据");
+            }
         }
 
         public static void ExtractToDirectoryWithOverwrite(string zipPath, string extractPath)

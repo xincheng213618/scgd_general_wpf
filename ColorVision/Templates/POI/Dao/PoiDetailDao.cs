@@ -65,7 +65,7 @@ namespace ColorVision.Templates.POI.Dao
         }
 
 
-        public override PoiDetailModel GetModel(DataRow item)
+        public override PoiDetailModel GetModelFromDataRow(DataRow item)
         {
             PoiDetailModel model = new PoiDetailModel
             {

@@ -22,7 +22,7 @@ namespace ColorVision.Services.Dao
             return dInfo;
         }
 
-        public override CameraModel GetModel(DataRow item)
+        public override CameraModel GetModelFromDataRow(DataRow item)
         {
             CameraModel model = new CameraModel
             {

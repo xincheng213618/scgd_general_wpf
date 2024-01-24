@@ -44,7 +44,7 @@ namespace ColorVision.Services.Dao
 
         }
 
-        public override SysResourceModel GetModel(DataRow item)
+        public override SysResourceModel GetModelFromDataRow(DataRow item)
         {
             SysResourceModel model = new SysResourceModel
             {
@@ -85,7 +85,7 @@ namespace ColorVision.Services.Dao
                 { "code", code }
             };
             DataTable d_info = GetData(sql, param);
-            return d_info.Rows.Count == 1 ? GetModel(d_info.Rows[0]) : default;
+            return d_info.Rows.Count == 1 ? GetModelFromDataRow(d_info.Rows[0]) : default;
         }
 
         internal List<SysResourceModel> GetServices(int tenantId)
@@ -94,7 +94,7 @@ namespace ColorVision.Services.Dao
             DataTable d_info = GetTablePidIsNullByPPcodeAndTenantId(tenantId);
             foreach (var item in d_info.AsEnumerable())
             {
-                SysResourceModel? model = GetModel(item);
+                SysResourceModel? model = GetModelFromDataRow(item);
                 if (model != null)
                 {
                     list.Add(model);
@@ -115,7 +115,7 @@ namespace ColorVision.Services.Dao
             DataTable d_info = GetTableAllByTypeAndCamera(type, cameraId);
             foreach (var item in d_info.AsEnumerable())
             {
-                SysResourceModel? model = GetModel(item);
+                SysResourceModel? model = GetModelFromDataRow(item);
                 if (model != null)
                 {
                     list.Add(model);
@@ -130,7 +130,7 @@ namespace ColorVision.Services.Dao
             DataTable d_info = GetTableAllByType(type);
             foreach (var item in d_info.AsEnumerable())
             {
-                SysResourceModel? model = GetModel(item);
+                SysResourceModel? model = GetModelFromDataRow(item);
                 if (model != null)
                 {
                     list.Add(model);
