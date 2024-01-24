@@ -1,6 +1,6 @@
-﻿using ColorVision.Flow;
-using ColorVision.Flow.Templates;
-using ColorVision.MQTT;
+﻿using ColorVision.MQTT;
+using ColorVision.Services.Flow;
+using ColorVision.Services.Flow.Templates;
 using ColorVision.Solution;
 using ColorVision.Templates;
 using ColorVision.Util;
@@ -14,7 +14,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision
+namespace ColorVision.Services.Flow
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml

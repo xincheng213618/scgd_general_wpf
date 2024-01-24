@@ -1,11 +1,11 @@
 ﻿#pragma warning disable CS8604
-using ColorVision.Flow.Templates;
 using ColorVision.MySql;
 using ColorVision.MySql.Service;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Algorithm.Templates;
 using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Devices.PG.Templates;
+using ColorVision.Services.Flow.Templates;
 using ColorVision.Solution;
 using ColorVision.Templates.POI;
 using ColorVision.Templates.POI.Dao;

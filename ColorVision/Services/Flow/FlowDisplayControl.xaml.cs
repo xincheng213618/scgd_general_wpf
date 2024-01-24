@@ -10,9 +10,10 @@ using ColorVision.Services;
 using ColorVision.Themes;
 using System.Windows.Media;
 using ColorVision.Solution;
-using ColorVision.Flow.Templates;
+using ColorVision.Services.Flow;
+using ColorVision.Services.Flow.Templates;
 
-namespace ColorVision.Flow
+namespace ColorVision.Services.Flow
 {
     /// <summary>
     /// FlowDisplayControl.xaml 的交互逻辑

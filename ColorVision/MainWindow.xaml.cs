@@ -3,7 +3,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using ColorVision.Themes;
-using ColorVision.Flow;
 using System.Diagnostics;
 using ColorVision.Services;
 using ColorVision.Solution;
@@ -17,6 +16,7 @@ using System.ServiceProcess;
 using ColorVision.Users;
 using System.Text.RegularExpressions;
 using log4net;
+using ColorVision.Services.Flow;
 
 namespace ColorVision
 {
@@ -186,12 +186,12 @@ namespace ColorVision
                             // 如果找到匹配项，提取变更日志
                             string changeLogForCurrentVersion = match.Groups[1].Value.Trim();
                             // 显示变更日志
-                            MessageBox.Show($"{currentVersion} 的变更日志：\n{Environment.NewLine}{changeLogForCurrentVersion}");
+                            MessageBox.Show($"{currentVersion} 的变更日志：{Environment.NewLine}{changeLogForCurrentVersion}");
                         }
                         else
                         {
                             // 如果未找到匹配项，说明没有为当前版本列出变更日志
-                            MessageBox.Show($"($\"{currentVersion}变更：\\n {Environment.NewLine}1.修复了一些已知的BUG");
+                            MessageBox.Show($"($\"{currentVersion}变更： {Environment.NewLine}1.修复了一些已知的BUG");
                         }
 
                     }

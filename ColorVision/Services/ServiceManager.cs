@@ -1,7 +1,6 @@
 ﻿using ColorVision.Device.FileServer;
 using ColorVision.Device.PG;
 using ColorVision.Services.Devices.Spectrum.Configs;
-using ColorVision.Flow;
 using ColorVision.MySql;
 using ColorVision.MySql.Service;
 using ColorVision.Services.Devices;
@@ -26,6 +25,7 @@ using System.Windows.Controls;
 using static cvColorVision.GCSDLL;
 using ColorVision.Services.Dao;
 using ColorVision.Services.DAO;
+using ColorVision.Services.Flow;
 
 namespace ColorVision.Services
 {

@@ -4,7 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Flow
+namespace ColorVision.Services.Flow
 {
     /// <summary>
     /// CVFlowView.xaml 的交互逻辑

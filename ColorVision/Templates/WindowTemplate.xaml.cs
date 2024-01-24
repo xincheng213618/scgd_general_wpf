@@ -1,5 +1,4 @@
 ﻿using ColorVision.Extension;
-using ColorVision.Flow.Templates;
 using ColorVision.MVVM;
 using ColorVision.MySql.Service;
 using ColorVision.Services.Dao;
@@ -7,6 +6,8 @@ using ColorVision.Services.Devices.Algorithm.Templates;
 using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Devices.PG.Templates;
+using ColorVision.Services.Flow;
+using ColorVision.Services.Flow.Templates;
 using ColorVision.Templates.POI;
 using ColorVision.Util;
 using Newtonsoft.Json;

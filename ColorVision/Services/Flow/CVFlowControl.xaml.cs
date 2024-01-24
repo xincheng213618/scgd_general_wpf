@@ -4,14 +4,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Flow
+namespace ColorVision.Services.Flow
 {
-
-    public interface IFlowView
-    {
-        public View View { get; set; }
-        public FlowEngineLib.FlowEngineControl FlowEngineControl { get; set; }
-    }
 
 
     /// <summary>

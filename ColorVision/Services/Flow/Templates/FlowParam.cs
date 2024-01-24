@@ -2,7 +2,7 @@
 using ColorVision.Templates;
 using System.Collections.Generic;
 
-namespace ColorVision.Flow.Templates
+namespace ColorVision.Services.Flow.Templates
 {
     /// <summary>
     /// 流程引擎模板
