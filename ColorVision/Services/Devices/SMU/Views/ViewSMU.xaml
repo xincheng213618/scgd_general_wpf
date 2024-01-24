@@ -7,9 +7,9 @@
              xmlns:vm ="clr-namespace:ColorVision.Common.MVVM;assembly=ColorVision.Common"
              xmlns:ScottPlot="clr-namespace:ScottPlot;assembly=ScottPlot.WPF"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800" Initialized="UserControl_Initialized" >
+             d:DesignHeight="450" Background="{DynamicResource  BackgroundBrush}" d:DesignWidth="800" Initialized="UserControl_Initialized" >
 
-    <Grid x:Name="MainGrid">
+    <Grid x:Name="MainGrid" >
         <Grid.ColumnDefinitions>
             <ColumnDefinition x:Name="ListCol1" Width="*"/>
             <ColumnDefinition x:Name="ListCol2" Width="Auto"/>
@@ -112,7 +112,8 @@
                         </Border>
                     </Popup>
                 </ToolBar>
-                <ListView  Height="250" Grid.Row="1" x:Name="listView1" SelectionChanged="listView1_SelectionChanged" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
+                
+                <ListView  Height="250" Grid.Row="1" x:Name="listView1" SelectionChanged="listView1_SelectionChanged" Background="Transparent" Margin="-5" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
                     <ListView.Resources>
                         <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" >
                         </ContextMenu>
@@ -176,9 +177,20 @@
             </Grid>
             <GridSplitter  Grid.Row="1" IsEnabled="{Binding ElementName=toggle1,Path=IsChecked}" Background="#EEF4F9"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
         </Grid>
-        <ListView x:Name="listView2"  Grid.Column="1"  Style="{StaticResource ListView.Small}"  SelectionChanged="listView2_SelectionChanged" >
+        <ListView x:Name="listView2"  Grid.Column="1"  Style="{StaticResource ListView.Small}" Background="Transparent" Margin="-5" BorderThickness="0" SelectionChanged="listView2_SelectionChanged" >
+            <ListView.Resources>
+                <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu1_Opened" />
+            </ListView.Resources>
             <ListView.View >
-                <GridView>
+                <GridView >
+                    <GridView.ColumnHeaderContainerStyle>
+                        <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
+                        </Style>
+                    </GridView.ColumnHeaderContainerStyle>
                     <GridViewColumn  Header="电压" Width="{Binding IsIDShow,Converter={StaticResource WidthToBooleanConverter}}">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SMUData}">

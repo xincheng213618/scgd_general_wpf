@@ -7,7 +7,7 @@
              xmlns:vm ="clr-namespace:ColorVision.Common.MVVM;assembly=ColorVision.Common"
              xmlns:media="clr-namespace:ColorVision.Media"
              mc:Ignorable="d" 
-             d:DesignHeight="600" d:DesignWidth="1280" Initialized="UserControl_Initialized" >
+             d:DesignHeight="600" d:DesignWidth="1280" Background="{DynamicResource  BackgroundBrush}"  Initialized="UserControl_Initialized" >
 
     <Grid x:Name="MainGrid">
         <Grid.ColumnDefinitions>
@@ -112,7 +112,7 @@
                         </Border>
                     </Popup>
                 </ToolBar>
-                <ListView  Grid.Row="1" x:Name="listView1" Height ="300"  ScrollViewer.VerticalScrollBarVisibility="Visible" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" >
+                <ListView Grid.Row="1" x:Name="listView1" Height ="300" Background="Transparent" BorderThickness="0"  Margin="-5" ScrollViewer.VerticalScrollBarVisibility="Visible" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" >
                     <ListView.Resources >
                         <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
                     </ListView.Resources>
@@ -184,7 +184,23 @@
         </Grid>
         <ListView x:Name="listView2"  Grid.Column="1" SelectionChanged="listView2_SelectionChanged" Visibility="Collapsed"/>
         <ListView x:Name="listViewY"  Grid.Column="1" SelectionChanged="listViewY_SelectionChanged" Visibility="Collapsed"/>
-        <ListView x:Name="listViewSide"  Grid.Column="1" Visibility="Collapsed"/>
+        <ListView x:Name="listViewSide" Background="Transparent" BorderThickness="0"  Margin="-5" Grid.Column="1" Visibility="Collapsed">
+            <ListView.Resources >
+                <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu1_Opened" />
+            </ListView.Resources>
+            <ListView.View >
+                <GridView>
+                    <GridView.ColumnHeaderContainerStyle>
+                        <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
+                        </Style>
+                    </GridView.ColumnHeaderContainerStyle>
+                </GridView>
+            </ListView.View>
+        </ListView>
         <GridSplitter  Grid.Column="1" IsEnabled="{Binding ElementName=toggle2,Path=IsChecked}" Background="LightGray"  Width="2" HorizontalAlignment="Left"   DragCompleted="GridSplitter_DragCompleted1"  />
 
     </Grid>

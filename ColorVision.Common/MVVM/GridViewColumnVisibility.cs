@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Linq;
 using ColorVision.Common.Extension;
 using ColorVision.MVVM;
+using System.Windows.Data;
 
 namespace ColorVision.Common.MVVM
 {
@@ -80,6 +81,53 @@ namespace ColorVision.Common.MVVM
                 }
             }
         }
+
+        public static void GenContentMenuGridViewColumnZero(ContextMenu contextMenu, GridViewColumnCollection gridViewColumns, ObservableCollection<GridViewColumnVisibility>? gridViewColumnVisibilitys = null)
+        {
+            if (gridViewColumnVisibilitys == null)
+            {
+                gridViewColumnVisibilitys = new ObservableCollection<GridViewColumnVisibility>();
+            }
+            else
+            {
+                gridViewColumnVisibilitys.Clear();
+            }
+            AddGridViewColumn(gridViewColumns, gridViewColumnVisibilitys);
+            contextMenu.Items.Clear();
+            GenContentMenuGridViewColumn(contextMenu, gridViewColumns, gridViewColumnVisibilitys);
+        }
+
+        public static void GenContentMenuGridViewColumn(ContextMenu contextMenu,GridViewColumnCollection gridViewColumns, ObservableCollection<GridViewColumnVisibility> gridViewColumnVisibilitys)
+        {
+            MenuItem menuItemAuto = new MenuItem();
+            menuItemAuto.Header = "自动调整列宽";
+            menuItemAuto.Click += (s, e) =>
+            {
+                GridViewColumnVisibility.AdjustGridViewColumnAuto(gridViewColumns, gridViewColumnVisibilitys);
+            };
+            contextMenu.Items.Add(menuItemAuto);
+            contextMenu.Items.Add(new Separator());
+            foreach (var item in gridViewColumnVisibilitys)
+            {
+                MenuItem menuItem = new MenuItem();
+                menuItem.Header = item.ColumnName;
+                Binding binding = new Binding("IsVisible")
+                {
+                    Source = item,
+                    Mode = BindingMode.TwoWay // 双向绑定
+                };
+                menuItem.SetBinding(MenuItem.IsCheckedProperty, binding);
+                menuItem.Click += (s, e) =>
+                {
+                    item.IsVisible = !item.IsVisible;
+                    GridViewColumnVisibility.AdjustGridViewColumn(gridViewColumns, gridViewColumnVisibilitys);
+                };
+                contextMenu.Items.Add(menuItem);
+            }
+        }
+
+
+
 
         public object ColumnName { get; set; }    
 

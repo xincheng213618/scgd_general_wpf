@@ -8,7 +8,7 @@
              xmlns:ScottPlot="clr-namespace:ScottPlot;assembly=ScottPlot.WPF"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:ViewSpectrum}"
-             d:DesignHeight="450" d:DesignWidth="800" Initialized="UserControl_Initialized" >
+             d:DesignHeight="450" Background="{DynamicResource  BackgroundBrush}"  d:DesignWidth="800" Initialized="UserControl_Initialized" >
 
     <Grid x:Name="MainGrid">
         <Grid.ColumnDefinitions>
@@ -105,7 +105,7 @@
                         </Border>
                     </Popup>
                 </ToolBar>
-                <ListView  Height="250" Grid.Row="1"  d:DataContext="{d:DesignInstance local:SpectralData}" x:Name="listView1" SelectionChanged="listView1_SelectionChanged" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
+                <ListView  Height="250" Grid.Row="1"  d:DataContext="{d:DesignInstance local:SpectralData}"  BorderThickness="0" Background="Transparent" x:Name="listView1" Margin="-5" SelectionChanged="listView1_SelectionChanged" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
                     <ListView.Resources>
                         <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" >
                         </ContextMenu>
@@ -245,9 +245,21 @@
             </Grid>
             <GridSplitter  Grid.Row="1" IsEnabled="{Binding ElementName=toggle1,Path=IsChecked}" Background="#EEF4F9"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
         </Grid>
-        <ListView x:Name="listView2"  Grid.Column="1" SelectionChanged="listView2_SelectionChanged">
+        <ListView x:Name="listView2"  Grid.Column="1" Margin="-5" Background="Transparent" BorderThickness="0" SelectionChanged="listView2_SelectionChanged">
+            <ListView.Resources>
+                <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu1_Opened" >
+                </ContextMenu>
+            </ListView.Resources>
             <ListView.View >
-                <GridView>
+                <GridView >
+                    <GridView.ColumnHeaderContainerStyle>
+                        <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
+                        </Style>
+                    </GridView.ColumnHeaderContainerStyle>
                     <GridViewColumn  Header="波长" >
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SpectralData}">
