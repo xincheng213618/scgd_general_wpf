@@ -671,5 +671,31 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             if (sender is ContextMenu contextMenu && listViewSide.View is GridView gridView && LeftGridViewColumnVisibilitys.Count ==0)
                 GridViewColumnVisibility.GenContentMenuGridViewColumnZero(contextMenu, gridView.Columns, LeftGridViewColumnVisibilitys);
         }
+
+        private void Exchange_Click(object sender, RoutedEventArgs e)
+        {
+            if (listView1.Parent is Grid parent1 &&listViewSide.Parent is Grid parent2 )
+            {
+                var tempCol = Grid.GetColumn(listView1);
+                var tempRow = Grid.GetRow(listView1);
+
+                var tempCol1 = Grid.GetColumn(listViewSide);
+                var tempRow1 = Grid.GetRow(listViewSide);
+
+                parent1.Children.Remove(listView1);
+                parent2.Children.Remove(listViewSide);
+
+
+                parent1.Children.Add(listViewSide);
+                parent2.Children.Add(listView1);
+
+                Grid.SetColumn(listView1, tempCol1);
+                Grid.SetRow(listView1, tempRow1);
+
+                Grid.SetColumn(listViewSide, tempCol);
+                Grid.SetRow(listViewSide, tempRow);
+
+            }
+        }
     }
 }

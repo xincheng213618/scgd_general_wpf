@@ -459,6 +459,30 @@ namespace ColorVision.Services.Devices.SMU.Views
             TextBoxBatch.Text = string.Empty;
         }
 
+        private void Exchange_Click(object sender, RoutedEventArgs e)
+        {
+            if (listView1.Parent is Grid parent1 && listView2.Parent is Grid parent2)
+            {
+                var tempCol = Grid.GetColumn(listView1);
+                var tempRow = Grid.GetRow(listView1);
 
+                var tempCol1 = Grid.GetColumn(listView2);
+                var tempRow1 = Grid.GetRow(listView2);
+
+                parent1.Children.Remove(listView1);
+                parent2.Children.Remove(listView2);
+
+
+                parent1.Children.Add(listView2);
+                parent2.Children.Add(listView1);
+
+                Grid.SetColumn(listView1, tempCol1);
+                Grid.SetRow(listView1, tempRow1);
+
+                Grid.SetColumn(listView2, tempCol);
+                Grid.SetRow(listView2, tempRow);
+
+            }
+        }
     }
 }
