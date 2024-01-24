@@ -8,6 +8,7 @@ using System.Windows.Data;
 using ColorVision.Common.Extension;
 using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Msg;
+using ColorVision.SettingUp;
 using ColorVision.Sorts;
 using ColorVision.Templates;
 using ColorVision.Themes.Controls;

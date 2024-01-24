@@ -1,6 +1,7 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.MySql;
 using ColorVision.RC;
+using ColorVision.SettingUp;
 using System.Windows;
 
 namespace ColorVision.Wizards

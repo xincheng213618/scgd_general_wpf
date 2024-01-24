@@ -12,7 +12,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
 
-namespace ColorVision
+namespace ColorVision.SettingUp
 {
     public delegate void UseMySqlHandler(bool IsUseMySql);
     public delegate void UseMQTTHandler(bool IsUseMQTT);
@@ -49,7 +49,7 @@ namespace ColorVision
             RcServiceControlLazy = new Lazy<MQTTRCService>(() => MQTTRCService.GetInstance());
 
             VideoConfig = new LocalVideoConfig();
-            ViewConfig = ViewConfig.GetInstance();
+            ViewConfig = new ViewConfig();
         }
         [JsonIgnore]
         public AutoUpdater AutoUpdater { get;} = AutoUpdater.GetInstance();

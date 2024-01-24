@@ -8,7 +8,7 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace ColorVision
+namespace ColorVision.SettingUp
 {
     public static partial class GlobalConst
     {

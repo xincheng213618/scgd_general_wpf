@@ -1,6 +1,7 @@
 ﻿
 using ColorVision.MVVM;
 using ColorVision.Services.Dao;
+using ColorVision.SettingUp;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;

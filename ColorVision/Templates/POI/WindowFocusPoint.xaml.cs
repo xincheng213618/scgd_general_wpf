@@ -32,6 +32,7 @@ using System.Windows.Media.Imaging;
 using MQTTMessageLib.FileServer;
 using ColorVision.Services.Dao;
 using Xceed.Wpf.Toolkit.PropertyGrid.Attributes;
+using ColorVision.SettingUp;
 
 namespace ColorVision.Templates.POI
 {
@@ -89,10 +90,10 @@ namespace ColorVision.Templates.POI
     {
 
         public bool IsShowDatum { get => _IsShowDatum; set { _IsShowDatum = value; NotifyPropertyChanged(); } }
-        private bool _IsShowDatum = true;
+        private bool _IsShowDatum;
 
         public bool IsShowDatumArea { get => _IsShowDatumArea; set { _IsShowDatumArea = value; NotifyPropertyChanged(); } }
-        private bool _IsShowDatumArea = true;
+        private bool _IsShowDatumArea;
 
 
 
@@ -258,7 +259,7 @@ namespace ColorVision.Templates.POI
 
 
         public bool IsLayoutUpdated { get => _IsLayoutUpdated; set { _IsLayoutUpdated = value; NotifyPropertyChanged(); if (value) UpdateVisualLayout(value);  } }
-        private bool _IsLayoutUpdated = true;
+        private bool _IsLayoutUpdated;
         private void Button_Click_UpdateVisualLayout(object sender, RoutedEventArgs e)
         {
             UpdateVisualLayout(true);

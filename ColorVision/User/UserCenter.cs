@@ -1,4 +1,6 @@
-﻿namespace ColorVision.Users
+﻿using ColorVision.SettingUp;
+
+namespace ColorVision.Users
 {
     public class UserCenter
     {

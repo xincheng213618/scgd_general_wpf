@@ -17,6 +17,7 @@ using ColorVision.Users;
 using System.Text.RegularExpressions;
 using log4net;
 using ColorVision.Services.Flow;
+using ColorVision.SettingUp;
 
 namespace ColorVision
 {
@@ -35,8 +36,6 @@ namespace ColorVision
         {
             get
             {
-                if (ConfigHandler.SoftwareConfig.SoftwareSetting == null)
-                    ConfigHandler.SoftwareConfig.SoftwareSetting = new SoftwareSetting();
                 return ConfigHandler.SoftwareConfig.SoftwareSetting;
             }
         }  

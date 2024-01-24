@@ -1,4 +1,5 @@
-﻿using ColorVision.Themes.Controls;
+﻿using ColorVision.SettingUp;
+using ColorVision.Themes.Controls;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;

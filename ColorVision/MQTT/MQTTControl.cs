@@ -1,4 +1,5 @@
 ﻿using ColorVision.MVVM;
+using ColorVision.SettingUp;
 using log4net;
 using MQTTnet;
 using MQTTnet.Client;
@@ -12,38 +13,9 @@ using System.Threading.Tasks;
 
 namespace ColorVision.MQTT
 {
-
-    public interface IMessageGateway
-    {
-        // 发送消息的方法，可以根据需要添加更多参数或者创建专门的消息类
-        Task SendMessageAsync(string destination, string message);
-
-        // 发送消息并等待响应的方法，适用于需要请求/响应模式的场景
-        Task<string> SendRequestAsync(string destination, string message);
-
-        // 可能还需要一个方法来发布消息到特定的主题或频道
-        Task PublishMessageAsync(string topic, string message);
-
-        // 订阅特定主题或频道的方法
-        Task SubscribeAsync(string topic, Action<string> onMessageReceived);
-
-        // 取消订阅的方法
-        Task UnsubscribeAsync(string topic);
-
-        // 可以添加连接和断开连接的方法，这在某些通讯协议中是必要的
-        Task ConnectAsync();
-        Task DisconnectAsync();
-
-       }
-
-
-
-
-    public delegate void MQTTMsgHandler(MQMsg resultDataMQTT);
     public class MQTTControl : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MQTTControl));
-
         private static MQTTControl _instance;
         private static readonly object _locker = new();
         public static MQTTControl GetInstance() { lock (_locker) { return _instance ??= new MQTTControl(); } }
@@ -164,9 +136,6 @@ namespace ColorVision.MQTT
 
         }
 
-
-
-
         public async Task DisconnectAsyncClient()
         {
             if (MQTTClient != null && MQTTClient.IsConnected)
@@ -243,48 +212,6 @@ namespace ColorVision.MQTT
             }
             return;
         }
-    }
-
-    public class MQMsg
-    {
-        public MQMsg()
-        {
-
-        }
-        public MQMsg(int ResultCode, string ResultMsg)
-        {
-            this.ResultCode = ResultCode;
-            this.ResultMsg = ResultMsg;
-        }
-
-        public MQMsg(int ResultCode, string ResultMsg, object Topic, object Payload)
-        {
-            this.ResultCode = ResultCode;
-            this.ResultMsg = ResultMsg;
-            this.Topic = Topic;
-            this.Payload = Payload;
-        }
-
-        /// <summary>
-        /// 结果Code
-        /// 正常1，其他为异常；0不作为回复结果
-        /// </summary>
-        public int ResultCode { get; set; }
-
-        /// <summary>
-        /// 结果信息
-        /// </summary>
-        public string ResultMsg { get; set; } = string.Empty;
-
-        /// <summary>
-        /// 扩展1
-        /// </summary>
-        public object Topic { get; set; } = string.Empty;
-
-        /// <summary>
-        /// 扩展2
-        /// </summary>
-        public object Payload { get; set; } = string.Empty;
     }
 
 }

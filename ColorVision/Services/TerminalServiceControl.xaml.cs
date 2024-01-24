@@ -19,6 +19,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using ColorVision.Services.Dao;
+using ColorVision.SettingUp;
 
 namespace ColorVision.Services
 {

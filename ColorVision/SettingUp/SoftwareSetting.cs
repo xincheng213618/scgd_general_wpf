@@ -1,11 +1,12 @@
 ﻿using ColorVision.Language;
+using ColorVision.MQTT;
 using ColorVision.MVVM;
 using log4net;
 using log4net.Core;
 using log4net.Repository.Hierarchy;
 using System.Globalization;
 
-namespace ColorVision
+namespace ColorVision.SettingUp
 {
 
     public partial class SoftwareSetting
@@ -59,8 +60,6 @@ namespace ColorVision
 
     public partial class SoftwareSetting :ViewModelBase
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(SoftwareSetting));
-
         public bool TransparentWindow { get => _TransparentWindow; set { _TransparentWindow = value; NotifyPropertyChanged(); } }
         private bool _TransparentWindow = true;
 

@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ColorVision"
+        xmlns:local="clr-namespace:ColorVision.SettingUp"
         xmlns:base ="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
@@ -115,7 +115,7 @@
                                             <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding SoftwareSetting.IsDefaultOpenService}"/>
                                             <TextBlock Text="启动自动配置服务"/>
                                         </DockPanel>
-                                        <DockPanel x:Name="AutoRunDock" Margin="5"  d:DataContext="{d:DesignInstance local:ConfigHandler}">
+                                        <DockPanel x:Name="AutoRunDock" Margin="5" >
                                             <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding IsAutoRun}"/>
                                             <TextBlock Text="{x:Static properties:Resource.TbSettingsStartBoot}"/>
                                         </DockPanel>

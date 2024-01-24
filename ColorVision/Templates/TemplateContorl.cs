@@ -6,6 +6,7 @@ using ColorVision.Services.Devices.Algorithm.Templates;
 using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Devices.PG.Templates;
 using ColorVision.Services.Flow.Templates;
+using ColorVision.SettingUp;
 using ColorVision.Solution;
 using ColorVision.Templates.POI;
 using ColorVision.Templates.POI.Dao;

@@ -12,6 +12,7 @@ using System.Windows.Media;
 using ColorVision.Solution;
 using ColorVision.Services.Flow;
 using ColorVision.Services.Flow.Templates;
+using ColorVision.SettingUp;
 
 namespace ColorVision.Services.Flow
 {

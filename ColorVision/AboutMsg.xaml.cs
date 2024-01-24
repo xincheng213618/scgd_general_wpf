@@ -1,4 +1,5 @@
 ﻿
+using ColorVision.SettingUp;
 using ColorVision.Themes.Controls;
 using System;
 using System.Diagnostics;
