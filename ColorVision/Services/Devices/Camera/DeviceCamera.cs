@@ -95,7 +95,7 @@ namespace ColorVision.Services.Devices.Camera
             var model = cameraTempDao.GetLatestCameraTemp(SysResourceModel.Id);
             if (model != null)
             {
-                MessageBox.Show(Application.Current.MainWindow, $"{model.CreateDate:HH:mm:ss} {Environment.NewLine}温度:{model.TempValue}，PWM:{model.PwmValue}");
+                MessageBox.Show(Application.Current.MainWindow, $"{model.CreateDate:HH:mm:ss} {Environment.NewLine}温度:{model.TempValue}");
             }
             else
             {
