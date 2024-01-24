@@ -87,13 +87,13 @@ namespace ColorVision
         private bool _IsAutoUpdate = true;
 
         public bool IsOpenLoaclService { get => _IsOpenLoaclService; set { _IsOpenLoaclService = value; NotifyPropertyChanged(); } }
-        private bool _IsOpenLoaclService = true;
+        private bool _IsOpenLoaclService;
 
         /// <summary>
         /// 是否默认配置
         /// </summary>
         public bool IsDefaultOpenService { get=> _IsDefaultOpenService; set { _IsDefaultOpenService = value;NotifyPropertyChanged(); } }
-        private bool _IsDefaultOpenService = true;
+        private bool _IsDefaultOpenService;
 
         public bool IsOpenStatusBar { get => _IsOpenStatusBar; set { _IsOpenStatusBar = value; NotifyPropertyChanged(); } }
         private bool _IsOpenStatusBar = true;
