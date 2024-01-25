@@ -1,7 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Services.Devices.SMU.Dao;
+using ColorVision.Sorts;
 using ColorVision.Templates;
 using ColorVision.Util;
+using Org.BouncyCastle.Asn1.Crmf;
 using ScottPlot;
 using ScottPlot.Plottable;
 using System;
@@ -490,6 +492,37 @@ namespace ColorVision.Services.Devices.SMU.Views
                 Grid.SetColumn(listView2, tempCol);
                 Grid.SetRow(listView2, tempRow);
 
+            }
+        }
+
+        private void GridViewColumnSort(object sender, RoutedEventArgs e)
+        {
+            if (sender is GridViewColumnHeader gridViewColumnHeader)
+            {
+                foreach (var item in GridViewColumnVisibilitys)
+                {
+                    if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())
+                    {
+                        switch (item.ColumnName)
+                        {
+                            case "序号":
+                                item.IsSortD = !item.IsSortD;
+                                ViewResultSMUs.SortByID(item.IsSortD);
+                                break;
+                            case "测量时间":
+                                item.IsSortD = !item.IsSortD;
+                                ViewResultSMUs.SortByCreateTime(item.IsSortD);
+                                break;
+                            case "批次号":
+                                item.IsSortD = !item.IsSortD;
+                                ViewResultSMUs.SortByBatchID(item.IsSortD);
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    }
+                }
             }
         }
     }

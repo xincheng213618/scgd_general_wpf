@@ -135,5 +135,11 @@ namespace ColorVision.Common.MVVM
 
         public bool IsVisible { get => _IsVisible; set { _IsVisible = value; NotifyPropertyChanged(); } }
         private bool _IsVisible;
+
+        public bool IsSort { get => _IsSort; set { _IsSort = value; NotifyPropertyChanged(); } }
+        private bool _IsSort;
+
+        public bool IsSortD { get => _IsSortD; set { _IsSortD = value; NotifyPropertyChanged(); } }
+        private bool _IsSortD;
     }
 }

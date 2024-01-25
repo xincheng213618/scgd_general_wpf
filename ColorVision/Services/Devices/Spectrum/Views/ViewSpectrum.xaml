@@ -113,8 +113,7 @@
                 </ToolBarTray>
                 <ListView  Height="250" Grid.Row="1"  d:DataContext="{d:DesignInstance local:SpectralData}"  BorderThickness="0" Background="Transparent" x:Name="listView1" Margin="-5" SelectionChanged="listView1_SelectionChanged" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
                     <ListView.Resources>
-                        <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" >
-                        </ContextMenu>
+                        <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened"/>
                     </ListView.Resources>
                     <ListView.View >
                         <GridView >
@@ -124,6 +123,7 @@
                                     <Setter Property="Background" Value="Transparent"/>
                                     <Setter Property="BorderThickness" Value="0"/>
                                     <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
+                                    <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
                             <GridViewColumn   Header="序号" >
@@ -137,6 +137,13 @@
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{Binding BatchID}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="测量时间">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                        <TextBlock Text="{Binding CreateTime}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>

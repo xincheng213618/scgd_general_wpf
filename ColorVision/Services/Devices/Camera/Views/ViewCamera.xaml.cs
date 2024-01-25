@@ -267,5 +267,41 @@ namespace ColorVision.Services.Devices.Camera.Views
             var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
             var msgRecord = DService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_G);
         }
+
+        private void GridViewColumnSort(object sender, RoutedEventArgs e)
+        {
+            if (sender is GridViewColumnHeader gridViewColumnHeader)
+            {
+                foreach (var item in GridViewColumnVisibilitys)
+                {
+                    if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())
+                    {
+                        switch (item.ColumnName)
+                        {
+                            case "序号":
+                                item.IsSortD = !item.IsSortD;
+                                ViewResultCameras.SortByID(item.IsSortD);
+                                break;
+                            case "测量时间":
+                                item.IsSortD = !item.IsSortD;
+                                ViewResultCameras.SortByCreateTime(item.IsSortD);
+                                break;
+                            case "批次号":
+                                item.IsSortD = !item.IsSortD;
+                                ViewResultCameras.SortByBatch(item.IsSortD);
+                                break;
+                            case "图像数据文件":
+                                item.IsSortD = !item.IsSortD;
+                                ViewResultCameras.SortByFilePath(item.IsSortD);
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
     }
 }
