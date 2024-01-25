@@ -250,6 +250,24 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 是否更新 的本地化字符串。
+        /// </summary>
+        public static string ConfirmUpdate {
+            get {
+                return ResourceManager.GetString("ConfirmUpdate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 连接名 的本地化字符串。
+        /// </summary>
+        public static string ConnectionName {
+            get {
+                return ResourceManager.GetString("ConnectionName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 复制配置文件 的本地化字符串。
         /// </summary>
         public static string CopyConfigurationFile {
@@ -291,6 +309,15 @@ namespace ColorVision.Properties {
         public static string CreateProject {
             get {
                 return ResourceManager.GetString("CreateProject", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 当前版本已经是最新版本 的本地化字符串。
+        /// </summary>
+        public static string CurrentVersionIsUpToDate {
+            get {
+                return ResourceManager.GetString("CurrentVersionIsUpToDate", resourceCulture);
             }
         }
         
@@ -349,6 +376,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 下载已取消 的本地化字符串。
+        /// </summary>
+        public static string DownloadCancelled {
+            get {
+                return ResourceManager.GetString("DownloadCancelled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 编辑 的本地化字符串。
         /// </summary>
         public static string Edit {
@@ -372,6 +408,15 @@ namespace ColorVision.Properties {
         public static string EnterAcquisitionWindow {
             get {
                 return ResourceManager.GetString("EnterAcquisitionWindow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 发生错误 的本地化字符串。
+        /// </summary>
+        public static string ErrorOccurred {
+            get {
+                return ResourceManager.GetString("ErrorOccurred", resourceCulture);
             }
         }
         
@@ -781,6 +826,24 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 MQTT连接 的本地化字符串。
+        /// </summary>
+        public static string MqttConnection {
+            get {
+                return ResourceManager.GetString("MqttConnection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 MQTT连接配置 的本地化字符串。
+        /// </summary>
+        public static string MqttConnectionConfiguration {
+            get {
+                return ResourceManager.GetString("MqttConnectionConfiguration", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Msg记录窗口 的本地化字符串。
         /// </summary>
         public static string MsgLogWindow {
@@ -808,6 +871,24 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 Mysql连接 的本地化字符串。
+        /// </summary>
+        public static string MysqlConnection {
+            get {
+                return ResourceManager.GetString("MysqlConnection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Mysql连接配置 的本地化字符串。
+        /// </summary>
+        public static string MysqlConnectionConfiguration {
+            get {
+                return ResourceManager.GetString("MysqlConnectionConfiguration", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 名称 的本地化字符串。
         /// </summary>
         public static string Name {
@@ -817,11 +898,29 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 新建 的本地化字符串。
+        /// </summary>
+        public static string New {
+            get {
+                return ResourceManager.GetString("New", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 新建工程格式 的本地化字符串。
         /// </summary>
         public static string NewProjectFormat {
             get {
                 return ResourceManager.GetString("NewProjectFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 发现新版本 的本地化字符串。
+        /// </summary>
+        public static string NewVersionFound {
+            get {
+                return ResourceManager.GetString("NewVersionFound", resourceCulture);
             }
         }
         
@@ -849,6 +948,15 @@ namespace ColorVision.Properties {
         public static string Open {
             get {
                 return ResourceManager.GetString("Open", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 输出视图 的本地化字符串。
+        /// </summary>
+        public static string OutputView {
+            get {
+                return ResourceManager.GetString("OutputView", resourceCulture);
             }
         }
         
@@ -1200,6 +1308,24 @@ namespace ColorVision.Properties {
         public static string Template {
             get {
                 return ResourceManager.GetString("Template", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 模板管理窗口 的本地化字符串。
+        /// </summary>
+        public static string TemplateManagementWindow {
+            get {
+                return ResourceManager.GetString("TemplateManagementWindow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 模板名称 的本地化字符串。
+        /// </summary>
+        public static string TemplateName {
+            get {
+                return ResourceManager.GetString("TemplateName", resourceCulture);
             }
         }
         

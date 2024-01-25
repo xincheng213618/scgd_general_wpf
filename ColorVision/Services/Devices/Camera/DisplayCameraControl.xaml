@@ -10,6 +10,7 @@
              xmlns:SettingUp ="clr-namespace:ColorVision.SettingUp"
              xmlns:cv="clr-namespace:ColorVision"
              xmlns:hc="https://handyorg.github.io/handycontrol"
+             xmlns:properties="clr-namespace:ColorVision.Properties"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:DeviceCamera}"
              d:DesignHeight="800" d:DesignWidth="300" Initialized="UserControl_Initialized">
@@ -122,7 +123,7 @@
                     </StackPanel>
                 </StackPanel>
                 <DockPanel Margin="0,2,0,0" >
-                    <TextBlock Text="输出视图：" VerticalAlignment="Center" Width="100"/>
+                    <TextBlock Text="{x:Static properties:Resource.OutputView}" VerticalAlignment="Center" Width="60"/>
                     <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value" DisplayMemberPath="Key"   />
                 </DockPanel>
             </StackPanel>

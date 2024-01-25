@@ -549,4 +549,46 @@
   <data name="SerialNumber" xml:space="preserve">
     <value>Serial Number</value>
   </data>
+  <data name="CurrentVersionIsUpToDate" xml:space="preserve">
+    <value>The current version is already the latest version</value>
+  </data>
+  <data name="ConfirmUpdate" xml:space="preserve">
+    <value>Update or not</value>
+  </data>
+  <data name="NewVersionFound" xml:space="preserve">
+    <value>New version found</value>
+  </data>
+  <data name="DownloadCancelled" xml:space="preserve">
+    <value>Download canceled</value>
+  </data>
+  <data name="ErrorOccurred" xml:space="preserve">
+    <value>An error occurred</value>
+  </data>
+  <data name="TemplateManagementWindow" xml:space="preserve">
+    <value>Template Management Window</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>New</value>
+  </data>
+  <data name="TemplateName" xml:space="preserve">
+    <value>Template Name</value>
+  </data>
+  <data name="OutputView" xml:space="preserve">
+    <value>Output View</value>
+  </data>
+  <data name="MqttConnectionConfiguration" xml:space="preserve">
+    <value>MQTT Connection Configuration</value>
+  </data>
+  <data name="MqttConnection" xml:space="preserve">
+    <value>MQTT Connection</value>
+  </data>
+  <data name="ConnectionName" xml:space="preserve">
+    <value>Connection Name</value>
+  </data>
+  <data name="MysqlConnectionConfiguration" xml:space="preserve">
+    <value>Mysql Connection Configuration</value>
+  </data>
+  <data name="MysqlConnection" xml:space="preserve">
+    <value>Mysql Connection</value>
+  </data>
 </root>

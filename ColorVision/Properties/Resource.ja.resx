@@ -549,4 +549,46 @@
   <data name="SerialNumber" xml:space="preserve">
     <value>シリアルナンバー</value>
   </data>
+  <data name="CurrentVersionIsUpToDate" xml:space="preserve">
+    <value>現在のバージョンはすでに最新バージョンです</value>
+  </data>
+  <data name="ConfirmUpdate" xml:space="preserve">
+    <value>アップデートするかしないか</value>
+  </data>
+  <data name="NewVersionFound" xml:space="preserve">
+    <value>新しいバージョンが見つかりました</value>
+  </data>
+  <data name="DownloadCancelled" xml:space="preserve">
+    <value>ダウンロードがキャンセルされました</value>
+  </data>
+  <data name="ErrorOccurred" xml:space="preserve">
+    <value>エラーが発生しました</value>
+  </data>
+  <data name="TemplateManagementWindow" xml:space="preserve">
+    <value>テンプレート管理画面</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>新しい</value>
+  </data>
+  <data name="TemplateName" xml:space="preserve">
+    <value>テンプレート名</value>
+  </data>
+  <data name="OutputView" xml:space="preserve">
+    <value>出力ビュー</value>
+  </data>
+  <data name="MqttConnectionConfiguration" xml:space="preserve">
+    <value>MQTT接続の設定</value>
+  </data>
+  <data name="MqttConnection" xml:space="preserve">
+    <value>MQTT接続</value>
+  </data>
+  <data name="ConnectionName" xml:space="preserve">
+    <value>接続名</value>
+  </data>
+  <data name="MysqlConnectionConfiguration" xml:space="preserve">
+    <value>MySQL接続設定</value>
+  </data>
+  <data name="MysqlConnection" xml:space="preserve">
+    <value>MySQL接続</value>
+  </data>
 </root>

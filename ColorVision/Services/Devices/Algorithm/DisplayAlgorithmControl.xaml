@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Services.Devices.Algorithm"
+             xmlns:properties="clr-namespace:ColorVision.Properties"
              d:DataContext="{d:DesignInstance local:DeviceAlgorithm}"
              mc:Ignorable="d" 
              d:DesignHeight="700" d:DesignWidth="300" Initialized="UserControl_Initialized">
@@ -167,7 +168,7 @@
 
 
                         <DockPanel Margin="5" >
-                            <TextBlock Text="输出视图："  VerticalAlignment="Center" Width="60"/>
+                            <TextBlock Text="{x:Static properties:Resource.OutputView}" VerticalAlignment="Center" Width="60"/>
                             <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"   />
                         </DockPanel>
                     </StackPanel>

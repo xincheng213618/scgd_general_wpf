@@ -549,4 +549,46 @@
   <data name="SerialNumber" xml:space="preserve">
     <value>일련번호</value>
   </data>
+  <data name="CurrentVersionIsUpToDate" xml:space="preserve">
+    <value>현재 버전은 이미 최신 버전입니다.</value>
+  </data>
+  <data name="ConfirmUpdate" xml:space="preserve">
+    <value>업데이트 여부</value>
+  </data>
+  <data name="NewVersionFound" xml:space="preserve">
+    <value>새 버전이 발견되었습니다</value>
+  </data>
+  <data name="DownloadCancelled" xml:space="preserve">
+    <value>다운로드가 취소되었습니다.</value>
+  </data>
+  <data name="ErrorOccurred" xml:space="preserve">
+    <value>에러 발생됨</value>
+  </data>
+  <data name="TemplateManagementWindow" xml:space="preserve">
+    <value>템플릿 관리 창</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>새로운</value>
+  </data>
+  <data name="TemplateName" xml:space="preserve">
+    <value>템플릿 이름</value>
+  </data>
+  <data name="OutputView" xml:space="preserve">
+    <value>출력 보기</value>
+  </data>
+  <data name="MqttConnectionConfiguration" xml:space="preserve">
+    <value>MQTT 연결 구성</value>
+  </data>
+  <data name="MqttConnection" xml:space="preserve">
+    <value>MQTT 연결</value>
+  </data>
+  <data name="ConnectionName" xml:space="preserve">
+    <value>연결 이름</value>
+  </data>
+  <data name="MysqlConnectionConfiguration" xml:space="preserve">
+    <value>MySQL 연결 구성</value>
+  </data>
+  <data name="MysqlConnection" xml:space="preserve">
+    <value>MySQL 연결</value>
+  </data>
 </root>

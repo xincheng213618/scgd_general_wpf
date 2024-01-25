@@ -549,4 +549,46 @@
   <data name="SerialNumber" xml:space="preserve">
     <value>序列号</value>
   </data>
+  <data name="CurrentVersionIsUpToDate" xml:space="preserve">
+    <value>当前版本已经是最新版本</value>
+  </data>
+  <data name="ConfirmUpdate" xml:space="preserve">
+    <value>是否更新</value>
+  </data>
+  <data name="NewVersionFound" xml:space="preserve">
+    <value>发现新版本</value>
+  </data>
+  <data name="DownloadCancelled" xml:space="preserve">
+    <value>下载已取消</value>
+  </data>
+  <data name="ErrorOccurred" xml:space="preserve">
+    <value>发生错误</value>
+  </data>
+  <data name="TemplateManagementWindow" xml:space="preserve">
+    <value>模板管理窗口</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>新建</value>
+  </data>
+  <data name="TemplateName" xml:space="preserve">
+    <value>模板名称</value>
+  </data>
+  <data name="OutputView" xml:space="preserve">
+    <value>输出视图</value>
+  </data>
+  <data name="MqttConnectionConfiguration" xml:space="preserve">
+    <value>MQTT连接配置</value>
+  </data>
+  <data name="MqttConnection" xml:space="preserve">
+    <value>MQTT连接</value>
+  </data>
+  <data name="ConnectionName" xml:space="preserve">
+    <value>连接名</value>
+  </data>
+  <data name="MysqlConnectionConfiguration" xml:space="preserve">
+    <value>Mysql连接配置</value>
+  </data>
+  <data name="MysqlConnection" xml:space="preserve">
+    <value>Mysql连接</value>
+  </data>
 </root>

@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Services.Devices.Spectrum" 
              xmlns:hc="https://handyorg.github.io/handycontrol"
+             xmlns:properties="clr-namespace:ColorVision.Properties"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:DeviceSpectrum}"
              d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized"   >
@@ -85,7 +86,7 @@
                 </GroupBox>
 
                 <DockPanel Margin="5">
-                    <TextBlock Text="输出视图：" VerticalAlignment="Center" Width="60"/>
+                    <TextBlock Text="{x:Static properties:Resource.OutputView}" VerticalAlignment="Center" Width="60"/>
                     <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"   />
                 </DockPanel>
             </StackPanel>
