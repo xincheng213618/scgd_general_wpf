@@ -249,7 +249,7 @@
                     </ListView.View>
                 </ListView>
             </Grid>
-            <GridSplitter  Grid.Row="1" Background="#EEF4F9"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
+            <GridSplitter  Grid.Row="1" Background="#EEF4F9"  Height="2" Panel.ZIndex="999" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
         </Grid>
         <ListView x:Name="listView2"  Grid.Column="1" Margin="-5" Background="Transparent" BorderThickness="0" SelectionChanged="listView2_SelectionChanged">
             <ListView.Resources>
@@ -290,7 +290,7 @@
                 </GridView>
             </ListView.View>
         </ListView>
-        <GridSplitter  Grid.Column="1"  Background="LightGray"  Width="2" HorizontalAlignment="Left"   DragCompleted="GridSplitter_DragCompleted1"  />
+        <GridSplitter  Grid.Column="1"  Background="LightGray" Panel.ZIndex="999" Width="2" HorizontalAlignment="Left"   DragCompleted="GridSplitter_DragCompleted1"  />
 
     </Grid>
 </UserControl>

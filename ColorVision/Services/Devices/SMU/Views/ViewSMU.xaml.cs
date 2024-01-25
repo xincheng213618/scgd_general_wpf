@@ -472,6 +472,14 @@ namespace ColorVision.Services.Devices.SMU.Views
                 parent1.Children.Remove(listView1);
                 parent2.Children.Remove(listView2);
 
+                var tempwidth = listView1.ActualWidth;
+                var tempheight = listView1.ActualHeight;
+
+                listView1.Width = listView2.ActualWidth;
+                listView1.Height = listView2.ActualHeight;
+
+                listView2.Width = tempwidth;
+                listView2.Height = tempheight;
 
                 parent1.Children.Add(listView2);
                 parent2.Children.Add(listView1);
