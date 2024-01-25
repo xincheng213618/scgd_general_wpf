@@ -22,7 +22,7 @@ namespace ColorVision.Services
         public ObservableCollection<DeviceService> MQTTDevices { get; set; }
         private void Window_Initialized(object sender, EventArgs e)
         {
-            MQTTDevices = ServiceManager.GetInstance().LastGenControl ?? ServiceManager.GetInstance().Devices;
+            MQTTDevices = ServiceManager.GetInstance().LastGenControl ?? ServiceManager.GetInstance().DeviceServices;
             TreeView1.ItemsSource = MQTTDevices;
             Grid1.DataContext = ConfigHandler.GetInstance().SoftwareConfig.UserConfig;
             ButtonOK.Focus();

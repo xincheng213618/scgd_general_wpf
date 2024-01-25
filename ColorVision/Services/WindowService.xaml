@@ -22,6 +22,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <TreeView x:Name="TreeView1" Loaded="TreeView1_Loaded"  ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectedItemChanged="TreeView1_SelectedItemChanged " Margin="5">
                     <TreeView.Resources>
@@ -51,6 +52,7 @@
                     </TreeView.ItemContainerStyle>
                 </TreeView>
                 <Button Grid.Row="1" Content="重启WindowsService" Margin="5" Click="Button_Click_1" />
+                <Button Grid.Row="2" Content="切换" Margin="5" Click="Button_Click_2" />
             </Grid>
             <Border CornerRadius="5" Grid.Column="1" Margin="2,5,5,5">
                 <Grid x:Name="StackPanelShow"/>

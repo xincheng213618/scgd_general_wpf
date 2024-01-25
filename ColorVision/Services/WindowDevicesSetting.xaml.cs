@@ -23,7 +23,7 @@ namespace ColorVision.Services
             MQTTDevices = new ObservableCollection<DeviceService>();
             MQTTDevices1 = new ObservableCollection<DeviceService>();
 
-            foreach (var item in ServiceManager.GetInstance().Devices)
+            foreach (var item in ServiceManager.GetInstance().DeviceServices)
             {
                 MQTTDevices.Add(item);
             }
