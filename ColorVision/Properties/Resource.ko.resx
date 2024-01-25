@@ -447,4 +447,106 @@
   <data name="Acquire" xml:space="preserve">
     <value>수집</value>
   </data>
+  <data name="RunAsAdmin" xml:space="preserve">
+    <value>관리자로 실행</value>
+  </data>
+  <data name="NotRunAsAdmin" xml:space="preserve">
+    <value>비관리자로 실행</value>
+  </data>
+  <data name="Log" xml:space="preserve">
+    <value>통나무</value>
+  </data>
+  <data name="x64ServiceLog" xml:space="preserve">
+    <value>x64 서비스 로그</value>
+  </data>
+  <data name="LaunchSuccess" xml:space="preserve">
+    <value>성공적으로 시작되었습니다</value>
+  </data>
+  <data name="ExperimentalFeature" xml:space="preserve">
+    <value>실험적 기능</value>
+  </data>
+  <data name="SpectrometerLog" xml:space="preserve">
+    <value>분광계 로그</value>
+  </data>
+  <data name="CameraLog" xml:space="preserve">
+    <value>카메라 로그</value>
+  </data>
+  <data name="RestartService" xml:space="preserve">
+    <value>서비스 다시 시작</value>
+  </data>
+  <data name="InstallCertificate" xml:space="preserve">
+    <value>인증서 설치</value>
+  </data>
+  <data name="ApplicationExit" xml:space="preserve">
+    <value>프로그램 종료</value>
+  </data>
+  <data name="EnterAcquisitionWindow" xml:space="preserve">
+    <value>컬렉션 창에 들어가세요</value>
+  </data>
+  <data name="SelectResourceToLoad" xml:space="preserve">
+    <value>로드하려는 리소스를 선택하십시오:</value>
+  </data>
+  <data name="AdvancedSettings" xml:space="preserve">
+    <value>고급 설정</value>
+  </data>
+  <data name="BasicInformation" xml:space="preserve">
+    <value>기본 정보</value>
+  </data>
+  <data name="DeviceIdentification" xml:space="preserve">
+    <value>장비 아이덴티티</value>
+  </data>
+  <data name="DeviceName" xml:space="preserve">
+    <value>장치 이름</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>상태</value>
+  </data>
+  <data name="ServiceIdentifier" xml:space="preserve">
+    <value>서비스 ID</value>
+  </data>
+  <data name="ServiceName" xml:space="preserve">
+    <value>서비스 이름</value>
+  </data>
+  <data name="TransmitChannel" xml:space="preserve">
+    <value>채널 보내기</value>
+  </data>
+  <data name="ReceiveChannel" xml:space="preserve">
+    <value>수신 채널</value>
+  </data>
+  <data name="CreateNewConfigurationFile" xml:space="preserve">
+    <value>새 구성 파일 만들기</value>
+  </data>
+  <data name="CopyConfigurationFile" xml:space="preserve">
+    <value>구성 파일 복사</value>
+  </data>
+  <data name="ClearData" xml:space="preserve">
+    <value>데이터 지우기</value>
+  </data>
+  <data name="SimulateSend" xml:space="preserve">
+    <value>아날로그 전송</value>
+  </data>
+  <data name="SimulateReceive" xml:space="preserve">
+    <value>모의 수용</value>
+  </data>
+  <data name="ViewSentData" xml:space="preserve">
+    <value>전송 데이터 보기</value>
+  </data>
+  <data name="ViewReceivedData" xml:space="preserve">
+    <value>승인 데이터 보기</value>
+  </data>
+  <data name="MsgLogWindow" xml:space="preserve">
+    <value>메시지 녹음 창</value>
+  </data>
+  <data name="ImportLicense" xml:space="preserve">
+    <value>수입 라이센스</value>
+  </data>
+  <data name="LicenseManagement" xml:space="preserve">
+    <value>라이선스 관리</value>
+  </data>
+  <data name="CopySerialNumber" xml:space="preserve">
+    <value>일련번호 복사</value>
+  </data>
+  <data name="SerialNumber" xml:space="preserve">
+    <value>일련번호</value>
+  </data>
 </root>

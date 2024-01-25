@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Services"
              xmlns:hc ="https://handyorg.github.io/handycontrol"
-             xmlns:resx ="clr-namespace:ColorVision.Properties"
+             xmlns:properties ="clr-namespace:ColorVision.Properties"
              mc:Ignorable="d" 
              d:DesignHeight="500" d:DesignWidth="800" Initialized="UserControl_Initialized">
     <UserControl.Resources>
@@ -33,16 +33,16 @@
                         <ComboBox x:Name="TextBox_Type"  SelectedValuePath="Name" Style="{DynamicResource ComboBox.Small}"  DisplayMemberPath="Name" />
                     </DockPanel>
                     <DockPanel  Margin="0,5">
-                        <TextBlock Text="{x:Static resx:Resource.Code}" MinWidth="30"/>
+                        <TextBlock Text="{x:Static properties:Resource.Code}" MinWidth="30"/>
                         <hc:ComboBox  x:Name="TextBox_Code" IsEditable="True" SelectedIndex="0" Text=""  hc:InfoElement.ShowClearButton="True"   />
                     </DockPanel>
                     <DockPanel  Margin="0,5" >
-                        <TextBlock Text="{x:Static resx:Resource.Name}" MinWidth="30"/>
+                        <TextBlock Text="{x:Static properties:Resource.Name}" MinWidth="30"/>
                         <hc:ComboBox  x:Name="TextBox_Name" IsEditable="True" SelectedIndex="0" Text=""  hc:InfoElement.ShowClearButton="True" />
                     </DockPanel>
                 </StackPanel>
                 <Border  Grid.Column="1" Margin="5" Background="Transparent">
-                    <Button  Click="Button_New_Click"  MinWidth="100" Content="{x:Static resx:Resource.Add}" HorizontalAlignment="Right" />
+                    <Button  Click="Button_New_Click"  MinWidth="100" Content="{x:Static properties:Resource.Add}" HorizontalAlignment="Right" />
                 </Border>
             </Grid>
             <Grid Grid.Row="1">
@@ -57,35 +57,35 @@
                     </ListView.ItemContainerStyle>
                     <ListView.View >
                         <GridView>
-                            <GridViewColumn  Header="服务标识" Width="105">
+                            <GridViewColumn  Header="{x:Static properties:Resource.ServiceIdentifier}" Width="105">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TerminalService}">
                                         <TextBlock Text="{ Binding Code}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="服务名称" Width="105">
+                            <GridViewColumn  Header="{x:Static properties:Resource.ServiceName}" Width="105">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TerminalService}">
                                         <TextBlock Text="{ Binding Name}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="发送信道" Width="160">
+                            <GridViewColumn  Header="{x:Static properties:Resource.TransmitChannel}" Width="160">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TerminalService}">
                                         <TextBlock Text="{ Binding  Config.SendTopic}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="接收信道" Width="160" >
+                            <GridViewColumn  Header="{x:Static properties:Resource.ReceiveChannel}" Width="160" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TerminalService}">
                                         <TextBlock Text="{ Binding  Config.SubscribeTopic}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="状态" Width="50">
+                            <GridViewColumn  Header="{x:Static properties:Resource.Status}" Width="50">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TerminalService}">
                                         <TextBlock Text="{ Binding  Config.IsAlive}"/>

@@ -447,4 +447,106 @@
   <data name="Acquire" xml:space="preserve">
     <value>Acquire</value>
   </data>
+  <data name="RunAsAdmin" xml:space="preserve">
+    <value>Run as administrator</value>
+  </data>
+  <data name="NotRunAsAdmin" xml:space="preserve">
+    <value>Run as non-administrator</value>
+  </data>
+  <data name="Log" xml:space="preserve">
+    <value>log</value>
+  </data>
+  <data name="x64ServiceLog" xml:space="preserve">
+    <value>x64 service log</value>
+  </data>
+  <data name="LaunchSuccess" xml:space="preserve">
+    <value>Started successfully</value>
+  </data>
+  <data name="ExperimentalFeature" xml:space="preserve">
+    <value>Experimental features</value>
+  </data>
+  <data name="SpectrometerLog" xml:space="preserve">
+    <value>Spectrometer log</value>
+  </data>
+  <data name="CameraLog" xml:space="preserve">
+    <value>Camera log</value>
+  </data>
+  <data name="RestartService" xml:space="preserve">
+    <value>Restart service</value>
+  </data>
+  <data name="InstallCertificate" xml:space="preserve">
+    <value>Install certificate</value>
+  </data>
+  <data name="ApplicationExit" xml:space="preserve">
+    <value>Program closes</value>
+  </data>
+  <data name="EnterAcquisitionWindow" xml:space="preserve">
+    <value>Enter the collection window</value>
+  </data>
+  <data name="SelectResourceToLoad" xml:space="preserve">
+    <value>Please select the resource you want to load:</value>
+  </data>
+  <data name="AdvancedSettings" xml:space="preserve">
+    <value>advanced settings</value>
+  </data>
+  <data name="BasicInformation" xml:space="preserve">
+    <value>Basic Information</value>
+  </data>
+  <data name="DeviceIdentification" xml:space="preserve">
+    <value>Equipment Identity</value>
+  </data>
+  <data name="DeviceName" xml:space="preserve">
+    <value>Device Name</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="ServiceIdentifier" xml:space="preserve">
+    <value>Service ID</value>
+  </data>
+  <data name="ServiceName" xml:space="preserve">
+    <value>Service Name</value>
+  </data>
+  <data name="TransmitChannel" xml:space="preserve">
+    <value>Send Channel</value>
+  </data>
+  <data name="ReceiveChannel" xml:space="preserve">
+    <value>Receive Channel</value>
+  </data>
+  <data name="CreateNewConfigurationFile" xml:space="preserve">
+    <value>Create new configuration file</value>
+  </data>
+  <data name="CopyConfigurationFile" xml:space="preserve">
+    <value>Copy configuration file</value>
+  </data>
+  <data name="ClearData" xml:space="preserve">
+    <value>Clear data</value>
+  </data>
+  <data name="SimulateSend" xml:space="preserve">
+    <value>Analog sending</value>
+  </data>
+  <data name="SimulateReceive" xml:space="preserve">
+    <value>Mock acceptance</value>
+  </data>
+  <data name="ViewSentData" xml:space="preserve">
+    <value>View sending data</value>
+  </data>
+  <data name="ViewReceivedData" xml:space="preserve">
+    <value>View acceptance data</value>
+  </data>
+  <data name="MsgLogWindow" xml:space="preserve">
+    <value>Msg recording window</value>
+  </data>
+  <data name="ImportLicense" xml:space="preserve">
+    <value>Import license</value>
+  </data>
+  <data name="LicenseManagement" xml:space="preserve">
+    <value>License Management</value>
+  </data>
+  <data name="CopySerialNumber" xml:space="preserve">
+    <value>Copy Serial Number</value>
+  </data>
+  <data name="SerialNumber" xml:space="preserve">
+    <value>Serial Number</value>
+  </data>
 </root>

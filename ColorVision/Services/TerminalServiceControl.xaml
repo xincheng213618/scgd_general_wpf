@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Services"
              xmlns:mqtt="clr-namespace:ColorVision.Services.Devices"
-             xmlns:resx="clr-namespace:ColorVision.Properties"
+             xmlns:properties="clr-namespace:ColorVision.Properties"
              xmlns:hc ="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:TerminalService}"
@@ -47,7 +47,7 @@
                         </Border>
 
                         <Border  Background ="{DynamicResource RegionBrush}" CornerRadius="5" Margin="0,5,0,0">
-                            <GroupBox Header="基本信息" Margin="5">
+                            <GroupBox Header="{x:Static properties:Resource.BasicInformation}" Margin="5">
                                 <StackPanel Margin="5">
                                     <DockPanel >
                                         <TextBlock Text="服务代码:" Width="120"/>
@@ -78,7 +78,7 @@
                     </StackPanel>
 
                     <StackPanel  Grid.Column="1" Margin="5,0,0,0" >
-                        <Button  Margin="0,0,0,5" Height="40" Click="Button_Click_1" ToolTip="{x:Static resx:Resource.Edit}">
+                        <Button  Margin="0,0,0,5" Height="40" Click="Button_Click_1" ToolTip="{x:Static properties:Resource.Edit}">
                             <Image Source="{StaticResource DrawingImageEdit}" Height="25"/>
                         </Button>
                         <Button Margin="0,0,0,5" Height="40" Grid.Column="2"  Click="ReFresh_Click" Command="{Binding RefreshCommand}"  VerticalAlignment="Stretch"   ToolTip="刷新">
@@ -111,7 +111,7 @@
                             <TextBox Text="{Binding Config.HeartbeatTime}"/>
                         </DockPanel>
                     </StackPanel>
-                    <Button Grid.Column="1"  Content="{x:Static resx:Resource.Submit}" Click="Button_Click" Command="{Binding SaveCommand}" />
+                    <Button Grid.Column="1"  Content="{x:Static properties:Resource.Submit}" Click="Button_Click" Command="{Binding SaveCommand}" />
                 </Grid>
 
             </Grid>
@@ -150,21 +150,21 @@
                 </ListView.ItemContainerStyle>
                 <ListView.View>
                     <GridView>
-                        <GridViewColumn  Header="设备标识" Width="200">
+                        <GridViewColumn  Header="{x:Static properties:Resource.DeviceIdentification}" Width="200">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type mqtt:DeviceService}">
                                     <TextBlock Text="{ Binding Code}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn  Header="设备名称" Width="200">
+                        <GridViewColumn  Header="{x:Static properties:Resource.DeviceName}" Width="200">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type mqtt:DeviceService}">
                                     <TextBlock Text="{ Binding Name}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn  Header="状态" Width="150">
+                        <GridViewColumn  Header="{x:Static properties:Resource.Status}" Width="150">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type mqtt:DeviceService}">
                                     <TextBlock Text="{ Binding  IsAlive}"/>

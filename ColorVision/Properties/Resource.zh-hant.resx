@@ -447,4 +447,106 @@
   <data name="Acquire" xml:space="preserve">
     <value>採集</value>
   </data>
+  <data name="RunAsAdmin" xml:space="preserve">
+    <value>以管理員身份執行</value>
+  </data>
+  <data name="NotRunAsAdmin" xml:space="preserve">
+    <value>以非管理員身份執行</value>
+  </data>
+  <data name="Log" xml:space="preserve">
+    <value>紀錄</value>
+  </data>
+  <data name="x64ServiceLog" xml:space="preserve">
+    <value>x64服務日誌</value>
+  </data>
+  <data name="LaunchSuccess" xml:space="preserve">
+    <value>啟動成功</value>
+  </data>
+  <data name="ExperimentalFeature" xml:space="preserve">
+    <value>實驗性功能</value>
+  </data>
+  <data name="SpectrometerLog" xml:space="preserve">
+    <value>光譜儀日誌</value>
+  </data>
+  <data name="CameraLog" xml:space="preserve">
+    <value>相機日誌</value>
+  </data>
+  <data name="RestartService" xml:space="preserve">
+    <value>重啟服務</value>
+  </data>
+  <data name="InstallCertificate" xml:space="preserve">
+    <value>安裝證書</value>
+  </data>
+  <data name="ApplicationExit" xml:space="preserve">
+    <value>程式關閉</value>
+  </data>
+  <data name="EnterAcquisitionWindow" xml:space="preserve">
+    <value>進入採集視窗</value>
+  </data>
+  <data name="SelectResourceToLoad" xml:space="preserve">
+    <value>請選擇您要載入的資源：</value>
+  </data>
+  <data name="AdvancedSettings" xml:space="preserve">
+    <value>進階設定</value>
+  </data>
+  <data name="BasicInformation" xml:space="preserve">
+    <value>基本訊息</value>
+  </data>
+  <data name="DeviceIdentification" xml:space="preserve">
+    <value>設備識別</value>
+  </data>
+  <data name="DeviceName" xml:space="preserve">
+    <value>設備名稱</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>狀態</value>
+  </data>
+  <data name="ServiceIdentifier" xml:space="preserve">
+    <value>服務標識</value>
+  </data>
+  <data name="ServiceName" xml:space="preserve">
+    <value>服務名稱</value>
+  </data>
+  <data name="TransmitChannel" xml:space="preserve">
+    <value>傳送頻道</value>
+  </data>
+  <data name="ReceiveChannel" xml:space="preserve">
+    <value>接收頻道</value>
+  </data>
+  <data name="CreateNewConfigurationFile" xml:space="preserve">
+    <value>新建設定檔</value>
+  </data>
+  <data name="CopyConfigurationFile" xml:space="preserve">
+    <value>複製設定檔</value>
+  </data>
+  <data name="ClearData" xml:space="preserve">
+    <value>清空數據</value>
+  </data>
+  <data name="SimulateSend" xml:space="preserve">
+    <value>類比發送</value>
+  </data>
+  <data name="SimulateReceive" xml:space="preserve">
+    <value>模擬接受</value>
+  </data>
+  <data name="ViewSentData" xml:space="preserve">
+    <value>查看發送數據</value>
+  </data>
+  <data name="ViewReceivedData" xml:space="preserve">
+    <value>查看接受數據</value>
+  </data>
+  <data name="MsgLogWindow" xml:space="preserve">
+    <value>Msg記錄視窗</value>
+  </data>
+  <data name="ImportLicense" xml:space="preserve">
+    <value>導入許可證</value>
+  </data>
+  <data name="LicenseManagement" xml:space="preserve">
+    <value>許可證管理</value>
+  </data>
+  <data name="CopySerialNumber" xml:space="preserve">
+    <value>複製序號</value>
+  </data>
+  <data name="SerialNumber" xml:space="preserve">
+    <value>序號</value>
+  </data>
 </root>

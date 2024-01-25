@@ -447,4 +447,106 @@
   <data name="Acquire" xml:space="preserve">
     <value>коллекция</value>
   </data>
+  <data name="RunAsAdmin" xml:space="preserve">
+    <value>Запустить от имени администратора</value>
+  </data>
+  <data name="NotRunAsAdmin" xml:space="preserve">
+    <value>Запуск от имени администратора</value>
+  </data>
+  <data name="Log" xml:space="preserve">
+    <value>бревно</value>
+  </data>
+  <data name="x64ServiceLog" xml:space="preserve">
+    <value>журнал обслуживания x64</value>
+  </data>
+  <data name="LaunchSuccess" xml:space="preserve">
+    <value>Началось успешно</value>
+  </data>
+  <data name="ExperimentalFeature" xml:space="preserve">
+    <value>Экспериментальные возможности</value>
+  </data>
+  <data name="SpectrometerLog" xml:space="preserve">
+    <value>Журнал спектрометра</value>
+  </data>
+  <data name="CameraLog" xml:space="preserve">
+    <value>Журнал камеры</value>
+  </data>
+  <data name="RestartService" xml:space="preserve">
+    <value>Перезапустить службу</value>
+  </data>
+  <data name="InstallCertificate" xml:space="preserve">
+    <value>Установить сертификат</value>
+  </data>
+  <data name="ApplicationExit" xml:space="preserve">
+    <value>Программа закрывается</value>
+  </data>
+  <data name="EnterAcquisitionWindow" xml:space="preserve">
+    <value>Войдите в окно сбора</value>
+  </data>
+  <data name="SelectResourceToLoad" xml:space="preserve">
+    <value>Пожалуйста, выберите ресурс, который вы хотите загрузить:</value>
+  </data>
+  <data name="AdvancedSettings" xml:space="preserve">
+    <value>расширенные настройки</value>
+  </data>
+  <data name="BasicInformation" xml:space="preserve">
+    <value>Основная информация</value>
+  </data>
+  <data name="DeviceIdentification" xml:space="preserve">
+    <value>Идентификация оборудования</value>
+  </data>
+  <data name="DeviceName" xml:space="preserve">
+    <value>Имя устройства</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>состояние</value>
+  </data>
+  <data name="ServiceIdentifier" xml:space="preserve">
+    <value>Идентификатор услуги</value>
+  </data>
+  <data name="ServiceName" xml:space="preserve">
+    <value>наименование услуги</value>
+  </data>
+  <data name="TransmitChannel" xml:space="preserve">
+    <value>отправить канал</value>
+  </data>
+  <data name="ReceiveChannel" xml:space="preserve">
+    <value>канал приема</value>
+  </data>
+  <data name="CreateNewConfigurationFile" xml:space="preserve">
+    <value>Создать новый файл конфигурации</value>
+  </data>
+  <data name="CopyConfigurationFile" xml:space="preserve">
+    <value>Скопировать файл конфигурации</value>
+  </data>
+  <data name="ClearData" xml:space="preserve">
+    <value>Очистить данные</value>
+  </data>
+  <data name="SimulateSend" xml:space="preserve">
+    <value>Аналоговая отправка</value>
+  </data>
+  <data name="SimulateReceive" xml:space="preserve">
+    <value>Ложное принятие</value>
+  </data>
+  <data name="ViewSentData" xml:space="preserve">
+    <value>Просмотр данных об отправке</value>
+  </data>
+  <data name="ViewReceivedData" xml:space="preserve">
+    <value>Посмотреть данные о приемке</value>
+  </data>
+  <data name="MsgLogWindow" xml:space="preserve">
+    <value>Окно записи сообщения</value>
+  </data>
+  <data name="ImportLicense" xml:space="preserve">
+    <value>Лицензия на импорт</value>
+  </data>
+  <data name="LicenseManagement" xml:space="preserve">
+    <value>Управление лицензиями</value>
+  </data>
+  <data name="CopySerialNumber" xml:space="preserve">
+    <value>Скопировать серийный номер</value>
+  </data>
+  <data name="SerialNumber" xml:space="preserve">
+    <value>серийный номер</value>
+  </data>
 </root>

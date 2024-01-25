@@ -447,4 +447,106 @@
   <data name="Acquire" xml:space="preserve">
     <value>コレクション</value>
   </data>
+  <data name="RunAsAdmin" xml:space="preserve">
+    <value>管理者として実行</value>
+  </data>
+  <data name="NotRunAsAdmin" xml:space="preserve">
+    <value>非管理者として実行する</value>
+  </data>
+  <data name="Log" xml:space="preserve">
+    <value>ログ</value>
+  </data>
+  <data name="x64ServiceLog" xml:space="preserve">
+    <value>x64サービスログ</value>
+  </data>
+  <data name="LaunchSuccess" xml:space="preserve">
+    <value>正常に開始されました</value>
+  </data>
+  <data name="ExperimentalFeature" xml:space="preserve">
+    <value>実験的な機能</value>
+  </data>
+  <data name="SpectrometerLog" xml:space="preserve">
+    <value>分光計のログ</value>
+  </data>
+  <data name="CameraLog" xml:space="preserve">
+    <value>カメラログ</value>
+  </data>
+  <data name="RestartService" xml:space="preserve">
+    <value>サービスを再起動する</value>
+  </data>
+  <data name="InstallCertificate" xml:space="preserve">
+    <value>証明書のインストール</value>
+  </data>
+  <data name="ApplicationExit" xml:space="preserve">
+    <value>プログラムは終了します</value>
+  </data>
+  <data name="EnterAcquisitionWindow" xml:space="preserve">
+    <value>コレクションウィンドウに入る</value>
+  </data>
+  <data name="SelectResourceToLoad" xml:space="preserve">
+    <value>ロードするリソースを選択してください:</value>
+  </data>
+  <data name="AdvancedSettings" xml:space="preserve">
+    <value>高度な設定</value>
+  </data>
+  <data name="BasicInformation" xml:space="preserve">
+    <value>基本情報</value>
+  </data>
+  <data name="DeviceIdentification" xml:space="preserve">
+    <value>機器のアイデンティティ</value>
+  </data>
+  <data name="DeviceName" xml:space="preserve">
+    <value>装置名</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>状態</value>
+  </data>
+  <data name="ServiceIdentifier" xml:space="preserve">
+    <value>サービス識別子</value>
+  </data>
+  <data name="ServiceName" xml:space="preserve">
+    <value>サービス名</value>
+  </data>
+  <data name="TransmitChannel" xml:space="preserve">
+    <value>送信チャンネル</value>
+  </data>
+  <data name="ReceiveChannel" xml:space="preserve">
+    <value>受信チャンネル</value>
+  </data>
+  <data name="CreateNewConfigurationFile" xml:space="preserve">
+    <value>新しい設定ファイルを作成する</value>
+  </data>
+  <data name="CopyConfigurationFile" xml:space="preserve">
+    <value>設定ファイルをコピーする</value>
+  </data>
+  <data name="ClearData" xml:space="preserve">
+    <value>データのクリア</value>
+  </data>
+  <data name="SimulateSend" xml:space="preserve">
+    <value>アナログ送信</value>
+  </data>
+  <data name="SimulateReceive" xml:space="preserve">
+    <value>模擬合格</value>
+  </data>
+  <data name="ViewSentData" xml:space="preserve">
+    <value>送信データの表示</value>
+  </data>
+  <data name="ViewReceivedData" xml:space="preserve">
+    <value>受け入れデータの表示</value>
+  </data>
+  <data name="MsgLogWindow" xml:space="preserve">
+    <value>メッセージ記録ウィンドウ</value>
+  </data>
+  <data name="ImportLicense" xml:space="preserve">
+    <value>輸入ライセンス</value>
+  </data>
+  <data name="LicenseManagement" xml:space="preserve">
+    <value>ライセンス管理</value>
+  </data>
+  <data name="CopySerialNumber" xml:space="preserve">
+    <value>シリアル番号をコピーする</value>
+  </data>
+  <data name="SerialNumber" xml:space="preserve">
+    <value>シリアルナンバー</value>
+  </data>
 </root>

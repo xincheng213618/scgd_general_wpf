@@ -81,6 +81,11 @@ namespace ColorVision.SettingUp
                     return new SoftwareConfig();
                 }
             });
+
+            App.Current.SessionEnding += (s, e) => 
+            {
+                SaveConfig();
+            };
             AppDomain.CurrentDomain.ProcessExit += (s, e) =>
             {
                 SaveConfig();

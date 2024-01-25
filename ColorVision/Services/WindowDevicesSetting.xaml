@@ -6,9 +6,9 @@
         xmlns:local="clr-namespace:ColorVision.Services"
         xmlns:system="clr-namespace:System;assembly=mscorlib"
         xmlns:mqtt="clr-namespace:ColorVision.Services.Devices" 
-        xmlns:resx="clr-namespace:ColorVision.Properties"
+        xmlns:properties="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
-        Height="450" Width="800" Title="高级设置" Background="{DynamicResource GlobalBackground}"  WindowStyle="ToolWindow" WindowStartupLocation="CenterScreen" Initialized="Window_Initialied">
+        Height="450" Width="800" Title="{x:Static properties:Resource.AdvancedSettings}" Background="{DynamicResource GlobalBackground}"  WindowStyle="ToolWindow" WindowStartupLocation="CenterScreen" Initialized="Window_Initialied">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -20,7 +20,7 @@
     <Grid x:Name="RootGrid">
         <DockPanel>
             <UniformGrid Columns="1" DockPanel.Dock="Bottom" HorizontalAlignment="Right" Margin="10">
-                <Button Content="确定" Height="20" Width="75" Margin="5,0" Click="OK_Click"/>
+                <Button Content="{x:Static properties:Resource.OK}" Height="20" Width="75" Margin="5,0" Click="OK_Click"/>
             </UniformGrid>
             <Grid  Grid.Row="1" Margin="10">
                 <Grid.ColumnDefinitions >
