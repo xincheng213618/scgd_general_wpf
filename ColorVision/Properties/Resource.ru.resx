@@ -591,4 +591,28 @@
   <data name="MysqlConnection" xml:space="preserve">
     <value>MySQL-соединение</value>
   </data>
+  <data name="ExecutionProcess" xml:space="preserve">
+    <value>Процесс реализации</value>
+  </data>
+  <data name="StopProcess" xml:space="preserve">
+    <value>Остановить процесс</value>
+  </data>
+  <data name="Calculate" xml:space="preserve">
+    <value>вычислить</value>
+  </data>
+  <data name="RecentUsedContent" xml:space="preserve">
+    <value>Недавно использованный контент</value>
+  </data>
+  <data name="NoRelatedItemsFound" xml:space="preserve">
+    <value>Похожие товары не найдены</value>
+  </data>
+  <data name="OpenItem" xml:space="preserve">
+    <value>Открыть проект</value>
+  </data>
+  <data name="OpenLocalProjectOrFile" xml:space="preserve">
+    <value>Откройте локальный проект или файл</value>
+  </data>
+  <data name="CreateNewProjectOrFile" xml:space="preserve">
+    <value>Создать новый проект или файл</value>
+  </data>
 </root>

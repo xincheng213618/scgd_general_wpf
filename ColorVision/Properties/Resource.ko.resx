@@ -591,4 +591,28 @@
   <data name="MysqlConnection" xml:space="preserve">
     <value>MySQL 연결</value>
   </data>
+  <data name="ExecutionProcess" xml:space="preserve">
+    <value>구현 프로세스</value>
+  </data>
+  <data name="StopProcess" xml:space="preserve">
+    <value>프로세스 중지</value>
+  </data>
+  <data name="Calculate" xml:space="preserve">
+    <value>계산하다</value>
+  </data>
+  <data name="RecentUsedContent" xml:space="preserve">
+    <value>최근 사용한 콘텐츠</value>
+  </data>
+  <data name="NoRelatedItemsFound" xml:space="preserve">
+    <value>관련 항목을 찾을 수 없습니다</value>
+  </data>
+  <data name="OpenItem" xml:space="preserve">
+    <value>프로젝트 열기</value>
+  </data>
+  <data name="OpenLocalProjectOrFile" xml:space="preserve">
+    <value>로컬 프로젝트 또는 파일 열기</value>
+  </data>
+  <data name="CreateNewProjectOrFile" xml:space="preserve">
+    <value>새 프로젝트 또는 파일 만들기</value>
+  </data>
 </root>

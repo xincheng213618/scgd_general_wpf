@@ -19,7 +19,7 @@
         <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}"/>
     </UserControl.Resources>
 
-    <StackPanel Margin="0,3">
+    <StackPanel Margin="5">
         <DockPanel Margin="0,0,5,0">
             <Grid DockPanel.Dock="Right" >
                 <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  Height="10" Width="10"  HorizontalAlignment="Center" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
@@ -29,8 +29,8 @@
             <ToggleButton x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Content="{Binding Config.Name}"  FontSize="15"  IsChecked="{Binding IsDisplayOpen}" />
         </DockPanel>
         <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
-            <StackPanel >
-                <DockPanel Margin="5">
+            <StackPanel Margin="3">
+                <DockPanel Margin="0,5">
                     <TextBlock  Text="平均次数" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
                     <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=SpectrumSliderAveNum,Path=Value}"  Width="50"/>
                     <hc:PreviewSlider x:Name="SpectrumSliderAveNum"  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="1"  Value="1" Maximum="100">
@@ -39,7 +39,7 @@
                         </hc:PreviewSlider.PreviewContent>
                     </hc:PreviewSlider>
                 </DockPanel>
-                <DockPanel Margin="5">
+                <DockPanel Margin="0,5">
                     <TextBlock  Text="积分时间" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
                     <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=SpectrumSliderIntTime,Path=Value}"  Width="50"/>
                     <hc:PreviewSlider x:Name="SpectrumSliderIntTime"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="100" Maximum="6000">
@@ -48,7 +48,7 @@
                         </hc:PreviewSlider.PreviewContent>
                     </hc:PreviewSlider>
                 </DockPanel>
-                <StackPanel Margin="5" Visibility="Visible">
+                <StackPanel Margin="0,5" Visibility="Visible">
                     <UniformGrid Columns="3">
                         <CheckBox Content="自动积分" x:Name="AutoIntTime"/>
                         <CheckBox Content="自动校零"  IsChecked="{Binding Config.IsShutterEnable}" x:Name="AutoShutterDark"/>
@@ -56,7 +56,7 @@
                     </UniformGrid>
                 </StackPanel>
 
-                <StackPanel Margin="5" Visibility="Visible">
+                <StackPanel Margin="0,5" Visibility="Visible">
                     <UniformGrid Columns="2">
                         <Button x:Name="btn_connect" Content="{Binding Config.BtnDeviceStatus}" Click="Button_Click_Open"/>
                         <!--<Button x:Name="btn_getPatam" Content="获取参数"  Click="Button_Click_GetParam"/>-->
@@ -66,7 +66,7 @@
                     </UniformGrid>
                 </StackPanel>
 
-                <GroupBox Header="Shutter" Margin="5"  Visibility="{Binding Config.IsShutterEnable,Converter={StaticResource bool2VisibilityConverter}}">
+                <GroupBox Header="Shutter" Margin="0,5" Visibility="{Binding Config.IsShutterEnable,Converter={StaticResource bool2VisibilityConverter}}">
                     <StackPanel>
                         <DockPanel  Margin="0,2">
                             <TextBlock Text="{Binding Config.ShutterCfg.Addr}"/>
@@ -85,8 +85,8 @@
                     </StackPanel>
                 </GroupBox>
 
-                <DockPanel Margin="5">
-                    <TextBlock Text="{x:Static properties:Resource.OutputView}" VerticalAlignment="Center" Width="60"/>
+                <DockPanel>
+                    <TextBlock Text="{x:Static properties:Resource.OutputView}" VerticalAlignment="Center" MinWidth="40" Margin="0,0,20,0"/>
                     <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"   />
                 </DockPanel>
             </StackPanel>

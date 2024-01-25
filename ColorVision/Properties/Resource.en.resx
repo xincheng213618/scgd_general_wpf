@@ -286,7 +286,7 @@
     <value>Add</value>
   </data>
   <data name="TesConnection" xml:space="preserve">
-    <value>Test connection</value>
+    <value>Test Connection</value>
   </data>
   <data name="Host" xml:space="preserve">
     <value>Host</value>
@@ -337,7 +337,7 @@
     <value>Log level</value>
   </data>
   <data name="SoftwareVersion" xml:space="preserve">
-    <value>Software version</value>
+    <value>Software Version</value>
   </data>
   <data name="DisableHardwareAcceleration" xml:space="preserve">
     <value>Disable hardware acceleration</value>
@@ -346,7 +346,7 @@
     <value>Open the local service when the software starts</value>
   </data>
   <data name="Wizard" xml:space="preserve">
-    <value>wizard</value>
+    <value>Wizard</value>
   </data>
   <data name="Clear" xml:space="preserve">
     <value>Clear</value>
@@ -358,7 +358,7 @@
     <value>Performance testing</value>
   </data>
   <data name="ProjectSettings" xml:space="preserve">
-    <value>Project settings</value>
+    <value>Project Settings</value>
   </data>
   <data name="GeneralSettings" xml:space="preserve">
     <value>General settings</value>
@@ -370,13 +370,13 @@
     <value>Detect updates when software starts</value>
   </data>
   <data name="TransparentWindow" xml:space="preserve">
-    <value>transparent window</value>
+    <value>Transparent window</value>
   </data>
   <data name="General" xml:space="preserve">
     <value>Universal</value>
   </data>
   <data name="Project" xml:space="preserve">
-    <value>project</value>
+    <value>Project</value>
   </data>
   <data name="DefaultExportStorageFormat" xml:space="preserve">
     <value>Default export storage format</value>
@@ -388,16 +388,16 @@
     <value>Configure new project</value>
   </data>
   <data name="ProjectName" xml:space="preserve">
-    <value>project name</value>
+    <value>Project Name</value>
   </data>
   <data name="CreateProject" xml:space="preserve">
-    <value>Create project</value>
+    <value>Create Project</value>
   </data>
   <data name="SelectProjectSaveLocation" xml:space="preserve">
     <value>Choose where to save the project</value>
   </data>
   <data name="Refresh" xml:space="preserve">
-    <value>refresh</value>
+    <value>Refresh</value>
   </data>
   <data name="Export" xml:space="preserve">
     <value>Export</value>
@@ -406,7 +406,7 @@
     <value>application</value>
   </data>
   <data name="Import" xml:space="preserve">
-    <value>import</value>
+    <value>Import</value>
   </data>
   <data name="SearchProjectFiles" xml:space="preserve">
     <value>Search project files</value>
@@ -475,7 +475,7 @@
     <value>Restart service</value>
   </data>
   <data name="InstallCertificate" xml:space="preserve">
-    <value>Install certificate</value>
+    <value>Install Certificate</value>
   </data>
   <data name="ApplicationExit" xml:space="preserve">
     <value>Program closes</value>
@@ -538,7 +538,7 @@
     <value>Msg recording window</value>
   </data>
   <data name="ImportLicense" xml:space="preserve">
-    <value>Import license</value>
+    <value>Import License</value>
   </data>
   <data name="LicenseManagement" xml:space="preserve">
     <value>License Management</value>
@@ -590,5 +590,29 @@
   </data>
   <data name="MysqlConnection" xml:space="preserve">
     <value>Mysql Connection</value>
+  </data>
+  <data name="ExecutionProcess" xml:space="preserve">
+    <value>Implementation process</value>
+  </data>
+  <data name="StopProcess" xml:space="preserve">
+    <value>Stop Process</value>
+  </data>
+  <data name="Calculate" xml:space="preserve">
+    <value>Calculate</value>
+  </data>
+  <data name="RecentUsedContent" xml:space="preserve">
+    <value>Recently used content</value>
+  </data>
+  <data name="NoRelatedItemsFound" xml:space="preserve">
+    <value>No related items found</value>
+  </data>
+  <data name="OpenItem" xml:space="preserve">
+    <value>Open Project</value>
+  </data>
+  <data name="OpenLocalProjectOrFile" xml:space="preserve">
+    <value>Open a local project or file</value>
+  </data>
+  <data name="CreateNewProjectOrFile" xml:space="preserve">
+    <value>Create a new project or file</value>
   </data>
 </root>

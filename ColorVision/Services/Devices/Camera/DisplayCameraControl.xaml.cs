@@ -323,7 +323,6 @@ namespace ColorVision.Services.Devices.Camera
                 ButtonOpen.Visibility = Visibility.Visible;
                 ButtonInit.Visibility = Visibility.Collapsed;
             }
-
             DService.DeviceStatusChanged += (e) =>
             {
                 switch (e)
@@ -343,6 +342,7 @@ namespace ColorVision.Services.Devices.Camera
                         break;
                     case DeviceStatusType.LiveOpened:
                     case DeviceStatusType.Opened:
+                        ButtonInit.Visibility = Visibility.Collapsed;
                         ButtonOpen.Visibility = Visibility.Collapsed;
                         ButtonClose.Visibility = Visibility.Visible;
                         if (!DService.IsVideoOpen)

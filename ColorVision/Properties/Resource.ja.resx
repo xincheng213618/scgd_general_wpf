@@ -591,4 +591,28 @@
   <data name="MysqlConnection" xml:space="preserve">
     <value>MySQL接続</value>
   </data>
+  <data name="ExecutionProcess" xml:space="preserve">
+    <value>実装プロセス</value>
+  </data>
+  <data name="StopProcess" xml:space="preserve">
+    <value>プロセスの停止</value>
+  </data>
+  <data name="Calculate" xml:space="preserve">
+    <value>計算する</value>
+  </data>
+  <data name="RecentUsedContent" xml:space="preserve">
+    <value>最近使用したコンテンツ</value>
+  </data>
+  <data name="NoRelatedItemsFound" xml:space="preserve">
+    <value>関連商品は見つかりませんでした</value>
+  </data>
+  <data name="OpenItem" xml:space="preserve">
+    <value>プロジェクトを開く</value>
+  </data>
+  <data name="OpenLocalProjectOrFile" xml:space="preserve">
+    <value>ローカルプロジェクトまたはファイルを開きます</value>
+  </data>
+  <data name="CreateNewProjectOrFile" xml:space="preserve">
+    <value>新しいプロジェクトまたはファイルを作成する</value>
+  </data>
 </root>

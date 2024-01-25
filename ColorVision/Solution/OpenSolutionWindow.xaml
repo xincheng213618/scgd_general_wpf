@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:ColorVision.Solution"
         xmlns:base ="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util"
         xmlns:hc ="https://handyorg.github.io/handycontrol"
+        xmlns:properties="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         Height="550" Width="800"  MinWidth="500" MinHeight="500" Background="{DynamicResource GlobalBackground}" WindowStyle="ToolWindow" WindowStartupLocation="CenterScreen" Initialized="BaseWindow_Initialized">
     <base:BaseWindow.Resources>
@@ -26,7 +27,7 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <DockPanel  >
-                    <TextBlock Text="最近使用的内容"  VerticalAlignment="Center" FontSize="18"/>
+                    <TextBlock Text="{x:Static properties:Resource.RecentUsedContent}"  VerticalAlignment="Center" FontSize="18"/>
                     <TextBox x:Name="Searchbox"   BorderBrush="#CCCEDB" MaxLength="15" VerticalContentAlignment="Center"  TextChanged="Searchbox_TextChanged"   Margin="10,0" Width="200"  HorizontalAlignment="Left" VerticalAlignment="Center"/>
                 </DockPanel>
                 <Grid  Grid.Row="1" Margin="-10,0,0,0">
@@ -49,7 +50,7 @@
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
                                         <Grid Grid.Column="1" Margin="0,2">
-                                            <TextBlock  Text="{Binding Name}" TextTrimming = "CharacterEllipsis" FontWeight="Bold" VerticalAlignment="Top"/>
+                                            <TextBlock Text="{Binding Name}" TextTrimming = "CharacterEllipsis" FontWeight="Bold" VerticalAlignment="Top"/>
                                             <TextBlock Text="{Binding FullName }" TextTrimming = "CharacterEllipsis" VerticalAlignment="Bottom"/>
                                             <TextBlock Text="{Binding CreationTime}" TextTrimming = "CharacterEllipsis" VerticalAlignment="Top" HorizontalAlignment="Right"/>
                                         </Grid>
@@ -58,7 +59,7 @@
                             </DataTemplate>
                         </ListView.ItemTemplate>
                     </ListView>
-                    <TextBlock x:Name="SearchNoneText" Visibility="Collapsed" VerticalAlignment="Top" FontSize="16" Margin="20,20,0,0" Text="未找到相关项目" />
+                    <TextBlock x:Name="SearchNoneText" Visibility="Collapsed" VerticalAlignment="Top" FontSize="16" Margin="20,20,0,0" Text="{x:Static properties:Resource.NoRelatedItemsFound}" />
                 </Grid>
             </Grid>
 
@@ -86,8 +87,8 @@
                         <Viewbox Grid.Row="0" Grid.RowSpan="2"  Margin="5,10,10,10">
                             <Path Fill="#FFE39E"  Data="M970.666667 213.333333H546.586667a10.573333 10.573333 0 0 1-7.54-3.126666L429.793333 100.953333A52.986667 52.986667 0 0 0 392.08 85.333333H96a53.393333 53.393333 0 0 0-53.333333 53.333334v704a53.393333 53.393333 0 0 0 53.333333 53.333333h874.666667a53.393333 53.393333 0 0 0 53.333333-53.333333V266.666667a53.393333 53.393333 0 0 0-53.333333-53.333334z" />
                         </Viewbox>
-                        <TextBlock  Grid.Row="0" Grid.Column="1" FontSize="17"  Foreground="Black" Text="打开项目" />
-                        <TextBlock  Grid.Row="1" Grid.Column="1" FontSize="10" Foreground="Black" Text="打开本地的项目或文件" VerticalAlignment="Center"/>
+                        <TextBlock  Grid.Row="0" Grid.Column="1" FontSize="17"  Foreground="Black" Text="{x:Static properties:Resource.OpenItem}" />
+                        <TextBlock  Grid.Row="1" Grid.Column="1" FontSize="10" Foreground="Black" Text="{x:Static properties:Resource.OpenLocalProjectOrFile}" VerticalAlignment="Center"/>
                     </Grid>
                     <Button  Background="Transparent"  BorderThickness="0" Click="Button_Click" Padding="0"/>
                 </Grid>
@@ -113,8 +114,8 @@
                         <Viewbox Grid.Row="0" Grid.RowSpan="2"  Margin="5,10,10,10">
                             <Path Fill="#FFE39E"  Data="M970.666667 213.333333H546.586667a10.573333 10.573333 0 0 1-7.54-3.126666L429.793333 100.953333A52.986667 52.986667 0 0 0 392.08 85.333333H96a53.393333 53.393333 0 0 0-53.333333 53.333334v704a53.393333 53.393333 0 0 0 53.333333 53.333333h874.666667a53.393333 53.393333 0 0 0 53.333333-53.333333V266.666667a53.393333 53.393333 0 0 0-53.333333-53.333334z" />
                         </Viewbox>
-                        <TextBlock  Grid.Row="0" Grid.Column="1" FontSize="17"  Foreground="Black" Text="创建项目" />
-                        <TextBlock  Grid.Row="1" Grid.Column="1" FontSize="10" Foreground="Black" Text="创建一个新的的项目或文件" VerticalAlignment="Center"/>
+                        <TextBlock  Grid.Row="0" Grid.Column="1" FontSize="17"  Foreground="Black" Text="{x:Static properties:Resource.CreateProject}" />
+                        <TextBlock  Grid.Row="1" Grid.Column="1" FontSize="10" Foreground="Black" Text="{x:Static properties:Resource.CreateNewProjectOrFile}" VerticalAlignment="Center"/>
                     </Grid>
                     <Button  Background="Transparent"  BorderThickness="0" Click="Button_Click" Padding="0"/>
                 </Grid>

@@ -160,6 +160,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 计算 的本地化字符串。
+        /// </summary>
+        public static string Calculate {
+            get {
+                return ResourceManager.GetString("Calculate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 相机日志 的本地化字符串。
         /// </summary>
         public static string CameraLog {
@@ -304,6 +313,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 创建一个新的的项目或文件 的本地化字符串。
+        /// </summary>
+        public static string CreateNewProjectOrFile {
+            get {
+                return ResourceManager.GetString("CreateNewProjectOrFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 创建工程 的本地化字符串。
         /// </summary>
         public static string CreateProject {
@@ -417,6 +435,15 @@ namespace ColorVision.Properties {
         public static string ErrorOccurred {
             get {
                 return ResourceManager.GetString("ErrorOccurred", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 执行流程 的本地化字符串。
+        /// </summary>
+        public static string ExecutionProcess {
+            get {
+                return ResourceManager.GetString("ExecutionProcess", resourceCulture);
             }
         }
         
@@ -925,6 +952,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 未找到相关项目 的本地化字符串。
+        /// </summary>
+        public static string NoRelatedItemsFound {
+            get {
+                return ResourceManager.GetString("NoRelatedItemsFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 以非管理员身份运行 的本地化字符串。
         /// </summary>
         public static string NotRunAsAdmin {
@@ -948,6 +984,24 @@ namespace ColorVision.Properties {
         public static string Open {
             get {
                 return ResourceManager.GetString("Open", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开项目 的本地化字符串。
+        /// </summary>
+        public static string OpenItem {
+            get {
+                return ResourceManager.GetString("OpenItem", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开本地的项目或文件 的本地化字符串。
+        /// </summary>
+        public static string OpenLocalProjectOrFile {
+            get {
+                return ResourceManager.GetString("OpenLocalProjectOrFile", resourceCulture);
             }
         }
         
@@ -1047,6 +1101,15 @@ namespace ColorVision.Properties {
         public static string RecentFiles {
             get {
                 return ResourceManager.GetString("RecentFiles", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 最近使用的内容 的本地化字符串。
+        /// </summary>
+        public static string RecentUsedContent {
+            get {
+                return ResourceManager.GetString("RecentUsedContent", resourceCulture);
             }
         }
         
@@ -1272,6 +1335,15 @@ namespace ColorVision.Properties {
         public static string Status {
             get {
                 return ResourceManager.GetString("Status", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 停止流程 的本地化字符串。
+        /// </summary>
+        public static string StopProcess {
+            get {
+                return ResourceManager.GetString("StopProcess", resourceCulture);
             }
         }
         

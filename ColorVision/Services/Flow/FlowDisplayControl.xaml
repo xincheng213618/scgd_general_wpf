@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Services.Flow"
+             xmlns:properties="clr-namespace:ColorVision.Properties"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized" >
     <UserControl.Resources>
@@ -24,15 +25,15 @@
         <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel Margin="5,2">
                 <DockPanel Margin="0,2">
-                    <TextBlock Text="模板" Width="60"/>
+                    <TextBlock Text="{x:Static properties:Resource.Template}" MinWidth="40" Margin="0,0,20,0"/>
                     <ComboBox  x:Name="FlowTemplate" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                 </DockPanel>
-                <UniformGrid Columns="2"   Margin="120,2,0,2">
-                    <Button  Content="执行流程" Margin="0,0,5,0"  Click="Button_FlowRun_Click"/>
-                    <Button   Content="停止流程" Margin="5,0,0,0" Click="Button_FlowStop_Click"/>
-                </UniformGrid>
+                <StackPanel Margin="0,2" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Margin="0,0,5,0" Content="{x:Static properties:Resource.ExecutionProcess}"  Click="Button_FlowRun_Click"/>
+                    <Button Margin="5,0,0,0" Content="{x:Static properties:Resource.StopProcess}"  Click="Button_FlowStop_Click"/>
+                </StackPanel>
                 <DockPanel Margin="0,3" >
-                    <TextBlock Text="输出视图" VerticalAlignment="Center"  Width="60"/>
+                    <TextBlock Text="{x:Static properties:Resource.OutputView}" VerticalAlignment="Center" MinWidth="40" Margin="0,0,20,0" />
                     <ComboBox x:Name="ComboxView" Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"/>
                 </DockPanel>
             </StackPanel>
