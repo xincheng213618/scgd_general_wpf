@@ -428,8 +428,13 @@ namespace ColorVision
 
         }
 
-
-
-
+        private void ChangeLog_Clik(object sender, RoutedEventArgs e)
+        {
+            ChangelogWindow changelogWindow = new ChangelogWindow();
+            string changelogPath = "CHANGELOG.md";
+            string changelogContent = File.ReadAllText(changelogPath);
+            changelogWindow.SetChangelogText(changelogContent);
+            changelogWindow.ShowDialog();
+        }
     }
 }
