@@ -1,7 +1,7 @@
 ﻿using Microsoft.Win32;
 using System;
 
-namespace ColorVision.Util
+namespace ColorVision.Common.Utilities
 {
     public static class RegUtil
     {

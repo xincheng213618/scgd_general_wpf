@@ -3,7 +3,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace ColorVision.Util
+namespace ColorVision.Common.Utilities
 {
     /// <summary>
     /// 密码相关

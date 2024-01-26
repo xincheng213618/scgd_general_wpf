@@ -1,6 +1,6 @@
 ﻿using ColorVision.MVVM;
 using ColorVision.SettingUp;
-using ColorVision.Util;
+using ColorVision.Common.Utilities;
 using log4net;
 using System;
 using System.Collections.Generic;

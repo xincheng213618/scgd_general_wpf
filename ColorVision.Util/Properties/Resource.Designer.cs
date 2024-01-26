@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace ColorVision.Util.Properties {
+namespace ColorVision.Common.Utilities.Properties {
     using System;
     
     

@@ -5,7 +5,7 @@ using System.Data;
 using System.IO;
 using System.Text;
 
-namespace ColorVision.Util
+namespace ColorVision.Common.Utilities
 {
     public class CsvWriter
     {

@@ -11,15 +11,15 @@ namespace ColorVision.Converter
         {
             if (value is long memorySize)
             {
-                return Util.MemorySize.MemorySizeText(memorySize);
+                return Common.Utilities.MemorySize.MemorySizeText(memorySize);
             }
             if (value is int memorySize1)
             {
-                return Util.MemorySize.MemorySizeText((long)memorySize1);
+                return Common.Utilities.MemorySize.MemorySizeText((long)memorySize1);
             }
             if (value is double memorySize2)
             {
-                return Util.MemorySize.MemorySizeText((long)memorySize2);
+                return Common.Utilities.MemorySize.MemorySizeText((long)memorySize2);
             }
             return string.Empty;
         }

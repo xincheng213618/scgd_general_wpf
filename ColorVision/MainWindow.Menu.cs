@@ -12,7 +12,7 @@ using ColorVision.MQTT;
 using ColorVision.MySql;
 using log4net;
 using System.Diagnostics;
-using ColorVision.Util;
+using ColorVision.Common.Utilities;
 using ColorVision.Services;
 using ColorVision.RC;
 using ColorVision.OnlineLicensing;

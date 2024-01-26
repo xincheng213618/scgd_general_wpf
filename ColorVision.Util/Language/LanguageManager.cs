@@ -50,11 +50,11 @@ namespace ColorVision.Language
 
             if (Thread.CurrentThread.CurrentUICulture.Name == CultureInfo.InstalledUICulture.Name)
             {
-                keyValuePairs.TryAdd(CultureInfo.InstalledUICulture.Name, Util.Properties.Resource.UseSystem);
+                keyValuePairs.TryAdd(CultureInfo.InstalledUICulture.Name, Common.Utilities.Properties.Resource.UseSystem);
             }
             else
             {
-                keyValuePairs.TryAdd(Thread.CurrentThread.CurrentUICulture.Name, Util.Properties.Resource.ResourceManager.GetString(Thread.CurrentThread.CurrentUICulture.Name, CultureInfo.CurrentUICulture) ?? Thread.CurrentThread.CurrentUICulture.Name);
+                keyValuePairs.TryAdd(Thread.CurrentThread.CurrentUICulture.Name, Common.Utilities.Properties.Resource.ResourceManager.GetString(Thread.CurrentThread.CurrentUICulture.Name, CultureInfo.CurrentUICulture) ?? Thread.CurrentThread.CurrentUICulture.Name);
             }
 
 
@@ -67,18 +67,18 @@ namespace ColorVision.Language
                 if (files.Length > 0  && new DirectoryInfo(subDirectory).Name is string Name && !list.Contains(Name))
                 {
                     list.Add(Name);
-                    keyValuePairs.TryAdd(Name, Util.Properties.Resource.ResourceManager.GetString(Name, CultureInfo.CurrentUICulture) ?? "");
+                    keyValuePairs.TryAdd(Name, Common.Utilities.Properties.Resource.ResourceManager.GetString(Name, CultureInfo.CurrentUICulture) ?? "");
                 }
             }
             if (!list.Contains("zh-Hans"))
             {
                 list.Add("zh-Hans");
-                keyValuePairs.TryAdd("zh-Hans", Util.Properties.Resource.ResourceManager.GetString("zh-Hans", CultureInfo.CurrentUICulture) ?? "");
+                keyValuePairs.TryAdd("zh-Hans", Common.Utilities.Properties.Resource.ResourceManager.GetString("zh-Hans", CultureInfo.CurrentUICulture) ?? "");
             }
             if (!list.Contains(CultureInfo.InstalledUICulture.Name))
             {
                 list.Add(CultureInfo.InstalledUICulture.Name);
-                keyValuePairs.TryAdd(CultureInfo.InstalledUICulture.Name, Util.Properties.Resource.UseSystem);
+                keyValuePairs.TryAdd(CultureInfo.InstalledUICulture.Name, Common.Utilities.Properties.Resource.UseSystem);
             }
 
             return list;
@@ -91,7 +91,7 @@ namespace ColorVision.Language
         {
             if (Thread.CurrentThread.CurrentUICulture.Name != lang)
             {
-                if (MessageBox.Show(Util.Properties.Resource.LanguageResartSign, DefalutProcessName, MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                if (MessageBox.Show(Common.Utilities.Properties.Resource.LanguageResartSign, DefalutProcessName, MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                 {
                     Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(lang);
                     Process.Start(Application.ResourceAssembly.Location.Replace(".dll",".exe"),"-r");

@@ -151,7 +151,7 @@ namespace ColorVision
             MenuItem menuItem3 = new MenuItem() { Header = ColorVision.Properties.Resource.RestartService, Tag = "CalibrationUpload" };
             menuItem3.Click += (s,e) =>
             {
-                Util.Tool.ExecuteCommandAsAdmin("net stop RegistrationCenterService&net stop CVMainService_x64&net start RegistrationCenterService&net start CVMainService_x64");
+                Common.Utilities.Tool.ExecuteCommandAsAdmin("net stop RegistrationCenterService&net stop CVMainService_x64&net start RegistrationCenterService&net start CVMainService_x64");
             };
             menuItem.Items.Add(menuItem3);
 
@@ -297,7 +297,7 @@ namespace ColorVision
                 if (!string.IsNullOrEmpty(excmd))
                 {
                     excmd += "1";
-                    Util.Tool.ExecuteCommandAsAdmin(excmd);
+                    Common.Utilities.Tool.ExecuteCommandAsAdmin(excmd);
                 }
                 ///非管理员模式无法直接通过sc启动程序
             }

@@ -2,7 +2,7 @@
 using ColorVision.Services.Devices.SMU.Dao;
 using ColorVision.Sorts;
 using ColorVision.Templates;
-using ColorVision.Util;
+using ColorVision.Common.Utilities;
 using Org.BouncyCastle.Asn1.Crmf;
 using ScottPlot;
 using ScottPlot.Plottable;

@@ -9,7 +9,7 @@ using System.Security.Principal;
 using System.Text;
 using System.Windows.Forms;
 
-namespace ColorVision.Util
+namespace ColorVision.Common.Utilities
 {
     public static partial class Tool
     {

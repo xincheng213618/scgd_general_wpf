@@ -10,7 +10,7 @@ using ColorVision.Services.Flow;
 using ColorVision.Services.Flow.Templates;
 using ColorVision.SettingUp;
 using ColorVision.Templates.POI;
-using ColorVision.Util;
+using ColorVision.Common.Utilities;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;

@@ -52,7 +52,7 @@
                     <Button x:Name="ButtonClose" Margin="0,2" Grid.Column="0" Content="关闭"  Visibility="Collapsed" Click="Close_Click" />
 
 
-                    <DockPanel Margin="0,2" Visibility="{Binding DService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter}}">
+                    <DockPanel Margin="0,2" Visibility="{Binding DeviceService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter}}">
                         <TextBlock  Text="曝光(ms)" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0" />
                         <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTime}" MinWidth="50"/>
                         <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeLog}" Minimum="0" Maximum="11.002"/>

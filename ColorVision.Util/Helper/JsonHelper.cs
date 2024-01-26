@@ -4,7 +4,7 @@ using System.IO;
 using YamlDotNet.Serialization.NamingConventions;
 using YamlDotNet.Serialization;
 
-namespace ColorVision.Util.Helper
+namespace ColorVision.Common.Utilities.Helper
 {
 
     public static class YamlHelper

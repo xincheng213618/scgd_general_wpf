@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Net;
 using System.Text.RegularExpressions;
 
-namespace ColorVision.Util
+namespace ColorVision.Common.Utilities
 {
     /// <summary>
     /// 常用的正则辅助工具类

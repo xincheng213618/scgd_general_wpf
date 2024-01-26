@@ -5,7 +5,7 @@ using ColorVision.MySql.Service;
 using ColorVision.Net;
 using ColorVision.Services.Devices.Algorithm.Dao;
 using ColorVision.Sorts;
-using ColorVision.Util;
+using ColorVision.Common.Utilities;
 using HandyControl.Tools.Extension;
 using log4net;
 using MQTTMessageLib.Algorithm;

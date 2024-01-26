@@ -4,7 +4,7 @@ using ColorVision.Media;
 using ColorVision.MVVM;
 using ColorVision.Net;
 using ColorVision.Templates.POI.Dao;
-using ColorVision.Util;
+using ColorVision.Common.Utilities;
 using cvColorVision;
 using cvColorVision.Util;
 using log4net;

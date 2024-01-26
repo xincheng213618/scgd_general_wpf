@@ -1,4 +1,4 @@
-﻿using ColorVision.Util;
+﻿using ColorVision.Common.Utilities;
 
 namespace ColorVision.Common.Extension
 {

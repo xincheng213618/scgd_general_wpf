@@ -11,7 +11,7 @@ using ColorVision.Solution;
 using ColorVision.Templates.POI;
 using ColorVision.Templates.POI.Dao;
 using ColorVision.Users;
-using ColorVision.Util;
+using ColorVision.Common.Utilities;
 using cvColorVision.Util;
 using System;
 using System.Collections.Generic;

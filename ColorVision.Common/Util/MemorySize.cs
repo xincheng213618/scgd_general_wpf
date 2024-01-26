@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace ColorVision.Util
+namespace ColorVision.Common.Utilities
 {
     public class MemorySize
     {

@@ -2,7 +2,7 @@
 using System.Windows;
 using System.Windows.Media;
 
-namespace ColorVision.Util
+namespace ColorVision.Common.Utilities
 {
     public class ViewHelper
     {

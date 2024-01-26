@@ -4,7 +4,7 @@ using System.Windows.Media;
 using System.Windows;
 using System.IO;
 
-namespace ColorVision.Util
+namespace ColorVision.Common.Utilities
 {
     /// <summary>
     /// 图像操作的一些静态方法
