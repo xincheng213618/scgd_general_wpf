@@ -119,5 +119,9 @@ namespace ColorVision.Services.Devices.Camera.Configs
         public int Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ROIRect)); } }
         private int _Height;
 
+        /// <summary>
+        /// 温度查询时间间隔
+        /// </summary>
+        public int TempSpanTime { get; set; }
     }
 }

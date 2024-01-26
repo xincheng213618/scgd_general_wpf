@@ -70,6 +70,10 @@
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.Endpoint}"/>
                                     </DockPanel>
                                     <DockPanel Margin="0,2">
+                                        <TextBlock Text="端口范围" Width="120"/>
+                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.PortRange}"/>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,2">
                                         <Button DockPanel.Dock="Right" Content="清理" Click="ServiceCache_Click"/>
                                         <TextBlock Text="服务缓存"/>
                                     </DockPanel>
@@ -102,12 +106,16 @@
                             <GroupBox Header="配置信息" Margin="0,5">
                                 <StackPanel Margin="5">
                                     <DockPanel Margin="0,5">
-                                        <TextBlock  Text="图片目录"  Width="120"/>
+                                        <TextBlock  Text="文件目录"  Width="120"/>
                                         <TextBox  x:Name="TextBox_ImgPath" Text="{Binding Config.FileBasePath}"/>
                                     </DockPanel>
                                     <DockPanel Margin="0,5">
                                         <TextBlock  Text="端口地址" Width="120"/>
                                         <TextBox  x:Name="TextBox_Endpoint" Text="{Binding Config.Endpoint}"/>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,5">
+                                        <TextBlock  Text="端口范围" Width="120"/>
+                                        <TextBox  x:Name="TextBox_PortRange" Text="{Binding Config.PortRange}"/>
                                     </DockPanel>
                                 </StackPanel>
                             </GroupBox>

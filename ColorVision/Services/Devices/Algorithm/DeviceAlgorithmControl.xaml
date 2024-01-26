@@ -69,6 +69,10 @@
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.FileServerCfg.Endpoint}"/>
                                     </DockPanel>
                                     <DockPanel Margin="0,2">
+                                        <TextBlock Text="端口范围" Width="120"/>
+                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.FileServerCfg.PortRange}"/>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,2">
                                         <Button DockPanel.Dock="Right" Content="清理" Click="ServiceCache_Click"/>
                                         <TextBlock Text="服务缓存"/>
                                     </DockPanel>
@@ -113,6 +117,10 @@
                                     <DockPanel Margin="0,2">
                                         <TextBlock  Text="端口地址" Width="120"/>
                                         <TextBox  x:Name="TextBox_Endpoint" Text="{Binding Config.FileServerCfg.Endpoint}"/>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,2">
+                                        <TextBlock  Text="端口范围" Width="120"/>
+                                        <TextBox  x:Name="TextBox_PortRange" Text="{Binding Config.FileServerCfg.PortRange}"/>
                                     </DockPanel>
 
                                 </StackPanel>

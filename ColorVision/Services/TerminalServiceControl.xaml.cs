@@ -95,9 +95,11 @@ namespace ColorVision.Services
 
                 SysResourceModel sysResourceModel;
                 DeviceServiceConfig deviceConfig;
+                int fromPort;
                 switch (serviceTerminal.Type)
                 {
                     case ServiceTypes.camera:
+                        fromPort = (Math.Abs(new Random().Next()) % 99 + 6800);
                         ConfigCamera cameraConfig1 = new ConfigCamera
                         {
                             Id = TextBox_Code.Text,
@@ -108,8 +110,14 @@ namespace ColorVision.Services
                             Channel = ImageChannel.One,
                             FileServerCfg = new FileServerCfg()
                             {
-                                Endpoint = "tcp://127.0.0.1:" + (Math.Abs(new Random().Next()) % 99 + 6800),
+                                Endpoint = "127.0.0.1",
+                                PortRange = string.Format("{0}-{1}", fromPort, fromPort + 5),
                                 DataBasePath = "D:\\CVTest",
+                            },
+                            VideoConfig = new Devices.Camera.Video.CameraVideoConfig()
+                            {
+                                Host = "127.0.0.1",
+                                Port = (Math.Abs(new Random().Next()) % 99 + 9000),
                             }
                         };
 
@@ -133,6 +141,7 @@ namespace ColorVision.Services
                             serviceTerminal.AddChild(new DevicePG(sysResourceModel));
                         break;
                     case ServiceTypes.Spectum:
+                        fromPort = (Math.Abs(new Random().Next()) % 99 + 6700);
                         deviceConfig = new ConfigSpectrum
                         {
                             Id = TextBox_Code.Text,
@@ -145,6 +154,12 @@ namespace ColorVision.Services
                                 OpenCmd = "a",
                                 CloseCmd = "b"
                             },
+                            FileServerCfg = new FileServerCfg()
+                            {
+                                Endpoint = "127.0.0.1",
+                                PortRange = string.Format("{0}-{1}", fromPort, fromPort + 5),
+                                DataBasePath = "D:\\CVTest",
+                            }
                         };
                         sysResourceModel = saveConfigInfo(deviceConfig, sysResource);
                         if (sysResourceModel != null)
@@ -171,11 +186,13 @@ namespace ColorVision.Services
                             serviceTerminal.AddChild(new DeviceSensor(sysResourceModel));
                         break;
                     case ServiceTypes.FileServer:
+                        fromPort = (Math.Abs(new Random().Next()) % 99 + 6500);
                         deviceConfig = new FileServerConfig
                         {
                             Id = TextBox_Code.Text,
                             Name = TextBox_Name.Text,
-                            Endpoint = "tcp://127.0.0.1:" + (Math.Abs(new Random().Next()) % 99 + 6500),
+                            Endpoint = "127.0.0.1" ,
+                            PortRange = string.Format("{0}-{1}", fromPort, fromPort+5),
                             FileBasePath = "D:\\CVTest",
                         };
                         sysResourceModel = saveConfigInfo(deviceConfig, sysResource);
@@ -183,13 +200,15 @@ namespace ColorVision.Services
                             serviceTerminal.AddChild(new DeviceFileServer(sysResourceModel));
                         break;
                     case ServiceTypes.Algorithm:
+                        fromPort = (Math.Abs(new Random().Next()) % 99 + 6600);
                         deviceConfig = new ConfigAlgorithm
                         {
                             Id = TextBox_Code.Text,
                             Name = TextBox_Name.Text,
                             FileServerCfg = new FileServerCfg()
                             {
-                                Endpoint = "tcp://127.0.0.1:" + (Math.Abs(new Random().Next()) % 99 + 6600),
+                                Endpoint = "127.0.0.1",
+                                PortRange = string.Format("{0}-{1}", fromPort, fromPort + 5),
                                 DataBasePath = "D:\\CVTest",
                             }
                         };

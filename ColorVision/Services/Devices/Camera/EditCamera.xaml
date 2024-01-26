@@ -131,6 +131,10 @@
                                 <TextBlock Text="增益:" Width="120"/>
                                 <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.CameraCfg.Gain}"/>
                             </DockPanel>
+                            <DockPanel Margin="0,2">
+                                <TextBlock Text="定时查询:" Width="120"/>
+                                <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.CameraCfg.TempSpanTime}"/>
+                            </DockPanel>
                         </StackPanel>
                     </GroupBox>
 
@@ -372,6 +376,10 @@
                             <DockPanel Margin="0,2">
                                 <TextBlock Text="端口地址:" Width="120"/>
                                 <TextBox Text="{Binding Config.FileServerCfg.Endpoint}"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,2">
+                                <TextBlock Text="端口范围:" Width="120"/>
+                                <TextBox Text="{Binding Config.FileServerCfg.PortRange}"/>
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
