@@ -184,7 +184,7 @@ namespace ColorVision.RC
                                                 baseDeviceConfig.DeviceStatus = (DeviceStatusType)Enum.Parse(typeof(DeviceStatusType), devNew.Status);
                                                 if (dev is DeviceCamera deviceCamera)
                                                 {
-                                                    deviceCamera.DService.DeviceStatus = baseDeviceConfig.DeviceStatus;
+                                                    deviceCamera.DeviceService.DeviceStatus = baseDeviceConfig.DeviceStatus;
                                                 }
                                                 break;
                                             }

@@ -1,15 +1,21 @@
 ﻿#pragma warning disable CS8604,CS8629
 using ColorVision.Common.MVVM;
+using ColorVision.Draw;
 using ColorVision.Media;
 using ColorVision.Net;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Devices.Camera.Calibrations;
+using ColorVision.SettingUp;
 using ColorVision.Sorts;
+using ColorVision.Templates;
+using ColorVision.Templates.POI;
 using ColorVision.Util;
 using log4net;
 using MQTTMessageLib.Camera;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -30,22 +36,56 @@ namespace ColorVision.Services.Devices.Camera.Views
 
         public event ImgCurSelectionChanged OnCurSelectionChanged;
         public ObservableCollection<ViewResultCamera> ViewResultCameras { get; set; } = new ObservableCollection<ViewResultCamera>();
-        public MQTTCamera DService{ get; set; }
-        public ViewCamera(MQTTCamera ds)
+        public MQTTCamera DeviceService{ get; set; }
+        public DeviceCamera Device { get; set; }
+        public ViewCamera(DeviceCamera device)
         {
-            this.DService = ds;
+            Device = device;
+            this.DeviceService = device.DeviceService;
             InitializeComponent();
         }
+
+        public ObservableCollection<TemplateModel<PoiParam>> ComboxPOITemplates { get; set; }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             View= new View();
             listView1.ItemsSource = ViewResultCameras;
 
+            ComboxPOITemplates = new ObservableCollection<TemplateModel<PoiParam>>();
+            ComboxPOITemplates.Insert(0, new TemplateModel<PoiParam>("Empty", new PoiParam()));
+
+            foreach (var item in TemplateControl.GetInstance().PoiParams)
+                ComboxPOITemplates.Add(item);
+
+            TemplateControl.GetInstance().PoiParams.CollectionChanged += (s, e) =>
+            {
+                switch (e.Action)
+                {
+                    case NotifyCollectionChangedAction.Add:
+                        if (e.NewItems != null)
+                            foreach (TemplateModel<PoiParam> newItem in e.NewItems)
+                                ComboxPOITemplates.Add(newItem);
+                        break;
+                    case NotifyCollectionChangedAction.Remove:
+                        if (e.OldItems != null)
+                            foreach (TemplateModel<PoiParam> newItem in e.OldItems)
+                                ComboxPOITemplates.Remove(newItem);
+                        break;
+                    case NotifyCollectionChangedAction.Reset:
+                        ComboxPOITemplates.Clear();
+                        ComboxPOITemplates.Insert(0, new TemplateModel<PoiParam>("Empty", new PoiParam()) { ID = -1 });
+                        break;
+                }
+            };
+            ComboxPOITemplate.ItemsSource = ComboxPOITemplates;
+            ComboxPOITemplate.SelectedIndex = 0;
+
             if (listView1.View is GridView gridView)
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
             GridViewColumnVisibilityListView.ItemsSource = GridViewColumnVisibilitys;
         }
+
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
         private void OpenColumnVisibilityPopupButton_Click(object sender, RoutedEventArgs e)
         {
@@ -224,48 +264,48 @@ namespace ColorVision.Services.Devices.Camera.Views
         {
             if (listView1.SelectedIndex == -1) return;
             var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-            var msgRecord = DService.GetChannel(ViewResultCamera.Id, CVImageChannelType.SRC);
+            var msgRecord = DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.SRC);
         }
 
         private void X_Click(object sender, RoutedEventArgs e)
         {
             if (listView1.SelectedIndex == -1) return;
             var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-            var msgRecord = DService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_X);
+            var msgRecord = DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_X);
         }
 
         private void Z_Click(object sender, RoutedEventArgs e)
         {
             if (listView1.SelectedIndex == -1) return;
             var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-            var msgRecord = DService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Z);
+            var msgRecord = DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Z);
         }
         private void Y_Click(object sender, RoutedEventArgs e)
         {
             if (listView1.SelectedIndex == -1) return;
             var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-            var msgRecord = DService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Y);
+            var msgRecord = DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Y);
 
         }
         private void B_Click(object sender, RoutedEventArgs e)
         {
             if (listView1.SelectedIndex == -1) return;
             var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-            var msgRecord = DService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_B);
+            var msgRecord = DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_B);
         }
 
         private void R_Click(object sender, RoutedEventArgs e)
         {
             if (listView1.SelectedIndex == -1) return;
             var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-            var msgRecord = DService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_R);
+            var msgRecord = DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_R);
         }
 
         private void G_Click(object sender, RoutedEventArgs e)
         {
             if (listView1.SelectedIndex == -1) return;
             var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-            var msgRecord = DService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_G);
+            var msgRecord = DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_G);
         }
 
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
@@ -303,5 +343,47 @@ namespace ColorVision.Services.Devices.Camera.Views
             }
         }
 
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void POI_Click(object sender, RoutedEventArgs e)
+        {
+            if (ComboxPOITemplate.SelectedValue is PoiParam poiParams)
+            {
+                TemplateControl.GetInstance().LoadPoiDetailFromDB(poiParams);
+                ImageView.ImageShow.Clear();
+                foreach (var item in poiParams.PoiPoints)
+                {
+                    switch (item.PointType)
+                    {
+                        case RiPointTypes.Circle:
+                            DrawingVisualCircleWord Circle = new DrawingVisualCircleWord();
+                            Circle.Attribute.Center = new Point(item.PixX, item.PixY);
+                            Circle.Attribute.Radius = item.PixWidth;
+                            Circle.Attribute.Brush = Brushes.Transparent;
+                            Circle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
+                            Circle.Attribute.ID = item.ID;
+                            Circle.Attribute.Text = item.Name;
+                            Circle.Render();
+                            ImageView.ImageShow.AddVisual(Circle);
+                            break;
+                        case RiPointTypes.Rect:
+                            DrawingVisualRectangleWord Rectangle = new DrawingVisualRectangleWord();
+                            Rectangle.Attribute.Rect = new Rect(item.PixX, item.PixY, item.PixWidth, item.PixHeight);
+                            Rectangle.Attribute.Brush = Brushes.Transparent;
+                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
+                            Rectangle.Attribute.ID = item.ID;
+                            Rectangle.Attribute.Name = item.Name;
+                            Rectangle.Render();
+                            ImageView.ImageShow.AddVisual(Rectangle);
+                            break;
+                        case RiPointTypes.Mask:
+                            break;
+                    }
+               }
+            }
+        }
     }
 }

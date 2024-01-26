@@ -34,7 +34,7 @@ namespace ColorVision.Services.Devices.Camera
 
     public class DeviceCamera : DeviceService<ConfigCamera>
     {
-        public MQTTCamera DService { get; set; }
+        public MQTTCamera DeviceService { get; set; }
 
         /// <summary>
         /// 矫正参数
@@ -59,11 +59,11 @@ namespace ColorVision.Services.Devices.Camera
         public DeviceCamera(SysResourceModel sysResourceModel, MQTTTerminalCamera cameraService) : base(sysResourceModel)
         {
             Service = cameraService;
-            DService = new MQTTCamera(Config, Service);
+            DeviceService = new MQTTCamera(Config, Service);
             this.Config.SendTopic = Service.SendTopic;
             this.Config.SubscribeTopic = Service.SubscribeTopic;
 
-            View = new ViewCamera(DService);
+            View = new ViewCamera(this);
             if (Application.Current.TryFindResource("DrawingImageCamera") is DrawingImage drawingImage)
                 Icon = drawingImage;
 
@@ -181,42 +181,42 @@ namespace ColorVision.Services.Devices.Camera
                             switch (item1.CalibrationType)
                             {
                                 case CalibrationType.DarkNoise:
-                                    msgRecord = DService.UploadCalibrationFile(item1.FileName, path + "\\Calibration\\" + "DarkNoise\\" + item1.FileName, (int)ResouceType.DarkNoise);
+                                    msgRecord = DeviceService.UploadCalibrationFile(item1.FileName, path + "\\Calibration\\" + "DarkNoise\\" + item1.FileName, (int)ResouceType.DarkNoise);
                                     break;
                                 case CalibrationType.DefectWPoint:
-                                    msgRecord = DService.UploadCalibrationFile(item1.FileName, path + "\\Calibration\\" + "DefectPoint\\" + item1.FileName, (int)ResouceType.DefectPoint);
+                                    msgRecord = DeviceService.UploadCalibrationFile(item1.FileName, path + "\\Calibration\\" + "DefectPoint\\" + item1.FileName, (int)ResouceType.DefectPoint);
                                     break;
                                 case CalibrationType.DefectBPoint:
-                                    msgRecord = DService.UploadCalibrationFile(item1.FileName, path + "\\Calibration\\" + "DefectPoint\\" + item1.FileName, (int)ResouceType.DefectPoint);
+                                    msgRecord = DeviceService.UploadCalibrationFile(item1.FileName, path + "\\Calibration\\" + "DefectPoint\\" + item1.FileName, (int)ResouceType.DefectPoint);
                                     break;
                                 case CalibrationType.DefectPoint:
-                                    msgRecord = DService.UploadCalibrationFile(item1.FileName, path + "\\Calibration\\" + "DefectPoint\\" + item1.FileName, (int)ResouceType.DefectPoint);
+                                    msgRecord = DeviceService.UploadCalibrationFile(item1.FileName, path + "\\Calibration\\" + "DefectPoint\\" + item1.FileName, (int)ResouceType.DefectPoint);
                                     break;
                                 case CalibrationType.DSNU:
-                                    msgRecord = DService.UploadCalibrationFile(item1.FileName, path + "\\Calibration\\" + "DSNU\\" + item1.FileName, (int)ResouceType.DSNU);
+                                    msgRecord = DeviceService.UploadCalibrationFile(item1.FileName, path + "\\Calibration\\" + "DSNU\\" + item1.FileName, (int)ResouceType.DSNU);
                                     break;
                                 case CalibrationType.Uniformity:
-                                    msgRecord = DService.UploadCalibrationFile(item1.FileName, path + "\\Calibration\\" + "Uniformity\\" + item1.FileName, (int)ResouceType.Uniformity);
+                                    msgRecord = DeviceService.UploadCalibrationFile(item1.FileName, path + "\\Calibration\\" + "Uniformity\\" + item1.FileName, (int)ResouceType.Uniformity);
                                     break;
                                 case CalibrationType.Luminance:
-                                    msgRecord = DService.UploadCalibrationFile(item1.FileName, path + "\\Calibration\\" + "Luminance\\" + item1.FileName, (int)ResouceType.Luminance);
+                                    msgRecord = DeviceService.UploadCalibrationFile(item1.FileName, path + "\\Calibration\\" + "Luminance\\" + item1.FileName, (int)ResouceType.Luminance);
                                     break;
                                 case CalibrationType.LumOneColor:
-                                    msgRecord = DService.UploadCalibrationFile(item1.FileName, path + "\\Calibration\\" + "LumOneColor\\" + item1.FileName, (int)ResouceType.LumOneColor);
+                                    msgRecord = DeviceService.UploadCalibrationFile(item1.FileName, path + "\\Calibration\\" + "LumOneColor\\" + item1.FileName, (int)ResouceType.LumOneColor);
                                     break;
                                 case CalibrationType.LumFourColor:
-                                    msgRecord = DService.UploadCalibrationFile(item1.FileName, path + "\\Calibration\\" + "LumFourColor\\" + item1.FileName, (int)ResouceType.LumFourColor);
+                                    msgRecord = DeviceService.UploadCalibrationFile(item1.FileName, path + "\\Calibration\\" + "LumFourColor\\" + item1.FileName, (int)ResouceType.LumFourColor);
                                     break;
                                 case CalibrationType.LumMultiColor:
-                                    msgRecord = DService.UploadCalibrationFile(item1.FileName, path + "\\Calibration\\" + "LumMultiColor\\" + item1.FileName, (int)ResouceType.LumMultiColor);
+                                    msgRecord = DeviceService.UploadCalibrationFile(item1.FileName, path + "\\Calibration\\" + "LumMultiColor\\" + item1.FileName, (int)ResouceType.LumMultiColor);
                                     break;
                                 case CalibrationType.LumColor:
                                     break;
                                 case CalibrationType.Distortion:
-                                    msgRecord = DService.UploadCalibrationFile(item1.FileName, path + "\\Calibration\\" + "Distortion\\" + item1.FileName, (int)ResouceType.Distortion);
+                                    msgRecord = DeviceService.UploadCalibrationFile(item1.FileName, path + "\\Calibration\\" + "Distortion\\" + item1.FileName, (int)ResouceType.Distortion);
                                     break;
                                 case CalibrationType.ColorShift:
-                                    msgRecord = DService.UploadCalibrationFile(item1.FileName, path + "\\Calibration\\" + "ColorShift\\" + item1.FileName, (int)ResouceType.ColorShift);
+                                    msgRecord = DeviceService.UploadCalibrationFile(item1.FileName, path + "\\Calibration\\" + "ColorShift\\" + item1.FileName, (int)ResouceType.ColorShift);
                                     break;
                                 case CalibrationType.Empty_Num:
                                     break;
@@ -311,7 +311,7 @@ namespace ColorVision.Services.Devices.Camera
         public override void Dispose()
         {
             Service.Dispose();
-            DService.Dispose();
+            DeviceService.Dispose();
             base.Dispose();
             GC.SuppressFinalize(this);
         }

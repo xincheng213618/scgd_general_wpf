@@ -172,7 +172,7 @@ namespace ColorVision.Device.FileServer
             openFileDialog.FilterIndex = 1;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-               // DeviceImg.DService.UploadFile(Path.GetFileName(openFileDialog.FileName));
+               // DeviceImg.DeviceService.UploadFile(Path.GetFileName(openFileDialog.FileName));
                 DeviceImg.DeviceService.UploadFile(openFileDialog.FileName);
                 handler = PendingBox.Show(Application.Current.MainWindow, "", "上传", true);
                 handler.Cancelling += delegate

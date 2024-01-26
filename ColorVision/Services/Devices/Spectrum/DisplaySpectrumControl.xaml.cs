@@ -172,7 +172,7 @@ namespace ColorVision.Services.Devices.Spectrum
 
         private void Button_Click_3(object sender, RoutedEventArgs e)
         {
-            //DService.SetParam();
+            //DeviceService.SetParam();
         }
 
         private void Button_Click_OneTest(object sender, RoutedEventArgs e)
@@ -183,7 +183,7 @@ namespace ColorVision.Services.Devices.Spectrum
         private void Button_Click_Close(object sender, RoutedEventArgs e)
         {
             SpectrumService.Close();
-            //DService.UnInit();
+            //DeviceService.UnInit();
         }
         private void Button_Click_AutoTest(object sender, RoutedEventArgs e)
         {

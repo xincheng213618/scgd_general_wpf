@@ -16,7 +16,7 @@ namespace ColorVision.Services.Devices.Camera
     {
         public DeviceCamera DeviceCamera { get; set; }
 
-        public MQTTCamera Service { get => DeviceCamera.DService; }
+        public MQTTCamera Service { get => DeviceCamera.DeviceService; }
 
 
         public EditCamera(DeviceCamera mQTTDeviceCamera)

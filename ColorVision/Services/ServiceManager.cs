@@ -167,7 +167,7 @@ namespace ColorVision.Services
                                         if (terminalService.MQTTServiceTerminalBase is MQTTTerminalCamera cameraService)
                                         {
                                             DeviceCamera deviceCamera = new DeviceCamera(device, cameraService);
-                                            svrObj = deviceCamera.DService;
+                                            svrObj = deviceCamera.DeviceService;
                                             terminalService.AddChild(deviceCamera);
                                             DeviceServices.Add(deviceCamera);
                                         }
