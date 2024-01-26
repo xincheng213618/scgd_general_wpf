@@ -615,4 +615,10 @@
   <data name="CreateNewProjectOrFile" xml:space="preserve">
     <value>创建一个新的的项目或文件</value>
   </data>
+  <data name="DatabaseConnectionFailed" xml:space="preserve">
+    <value>数据库连接失败，请先连接数据库在操作</value>
+  </data>
+  <data name="UnderDevelopment" xml:space="preserve">
+    <value>开发中</value>
+  </data>
 </root>

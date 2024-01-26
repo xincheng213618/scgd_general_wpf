@@ -615,4 +615,10 @@
   <data name="CreateNewProjectOrFile" xml:space="preserve">
     <value>新しいプロジェクトまたはファイルを作成する</value>
   </data>
+  <data name="DatabaseConnectionFailed" xml:space="preserve">
+    <value>データベース接続に失敗しました。操作する前にデータベースに接続してください。</value>
+  </data>
+  <data name="UnderDevelopment" xml:space="preserve">
+    <value>開発中</value>
+  </data>
 </root>

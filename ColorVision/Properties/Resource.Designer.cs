@@ -349,6 +349,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 数据库连接失败，请先连接数据库在操作 的本地化字符串。
+        /// </summary>
+        public static string DatabaseConnectionFailed {
+            get {
+                return ResourceManager.GetString("DatabaseConnectionFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 默认导出存储格式 的本地化字符串。
         /// </summary>
         public static string DefaultExportStorageFormat {
@@ -1470,6 +1479,15 @@ namespace ColorVision.Properties {
         public static string TransparentWindow {
             get {
                 return ResourceManager.GetString("TransparentWindow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 开发中 的本地化字符串。
+        /// </summary>
+        public static string UnderDevelopment {
+            get {
+                return ResourceManager.GetString("UnderDevelopment", resourceCulture);
             }
         }
         
